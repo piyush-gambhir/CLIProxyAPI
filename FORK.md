@@ -26,7 +26,9 @@ git push origin piyush
 ```
 
 Never deploy an uncommitted build. Release names are immutable. Tag the tested
-commit, then publish the branch and tag. Use a new release name for each build.
+commit, then publish the branch and tag. Use a new release name for each build. Inherited release, Docker publishing, and
+main-to-dev retarget jobs are restricted to the upstream repository on this branch;
+our tags identify local builds and do not publish upstream-style packages.
 
 ## Build and deploy locally
 
