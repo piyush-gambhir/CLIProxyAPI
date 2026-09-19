@@ -1,0 +1,19 @@
+name: Piyush fork checks
+on:
+  push:
+    branches: [piyush]
+  pull_request:
+    branches: [piyush]
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./... -timeout 120s
+      - run: ./scripts/build-piyush.sh
