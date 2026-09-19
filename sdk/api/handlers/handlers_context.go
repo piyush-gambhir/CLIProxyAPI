@@ -224,3 +224,19 @@ func disallowFreeAuthFromContext(ctx context.Context) bool {
 	raw, ok := ctx.Value(disallowFreeAuthContextKey{}).(bool)
 	return ok && raw
 }
+
+// WithGatewayResponseHeaders enables protocol response headers for a gateway request.
+// Hop-by-hop, cookie and CPA-reserved headers are still filtered.
+func WithGatewayResponseHeaders(ctx context.Context) context.Context {
+	return context.WithValue(ctx, gatewayResponseHeadersKey{}, true)
+}
+
+type gatewayResponseHeadersKey struct{}
+
+func (h *BaseAPIHandler) PassthroughResponseHeaders(ctx context.Context) bool {
+	enabled := false
+	if ctx != nil {
+		enabled, _ = ctx.Value(gatewayResponseHeadersKey{}).(bool)
+	}
+	return enabled || PassthroughHeadersEnabled(h.Cfg)
+}

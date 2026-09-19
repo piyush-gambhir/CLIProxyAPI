@@ -37,6 +37,7 @@ import (
 // Server represents the main API server.
 // It encapsulates the Gin engine, HTTP server, handlers, and configuration.
 type Server struct {
+	accountGateway *accountGateway
 	// engine is the Gin web framework engine instance.
 	engine *gin.Engine
 

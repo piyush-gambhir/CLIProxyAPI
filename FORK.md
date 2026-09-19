@@ -4,7 +4,7 @@ Upstream: https://github.com/router-for-me/CLIProxyAPI
 Fork: https://github.com/piyush-gambhir/CLIProxyAPI
 
 `main` mirrors upstream without custom commits. `piyush` holds our changes and is
-the deployment branch. Keep proxy changes small; the separate private
+the deployment branch. Keep proxy changes small; the separate public
 `piyush-gambhir/cliproxy-console` repository owns the UI and account-selection
 experience. Preserve the upstream license and attribution.
 
@@ -59,3 +59,32 @@ python3 ../cliproxy-console/scripts/proxy-service.py rollback
 Account isolation must continue to pass: selecting one account must never consume
 another account on a failure. Review model names, thinking parameters, streaming,
 and management API compatibility when changing request handling.
+
+## Native account gateway
+
+`/inference/:profile/v1/messages`, `/v1/messages/count_tokens` and `/v1/models`
+under that prefix accept normal proxy client authentication. Canonical Claude model
+IDs are mapped to an account's current prefix internally, with `WithPinnedAuthID`
+locking the manager to that account even when registrations overlap. Missing,
+disabled and unsupported choices fail closed. The routes are configured through
+`GET/PUT /v0/management/account-gateway`, behind existing management authentication.
+They persist at `<config-file>.gateway/routes.json`, independently of the console.
+Set `CLIPROXY_ACCOUNT_GATEWAY_DIR` in the proxy process to relocate the private store.
+
+`GET /v0/management/account-gateway/receipts` returns up to 5,000 recent requests.
+The bounded journal retains routing/model/session/agent IDs, usage counts, completion
+and error type, never message content or keys. Two journal files rotate at 8 MiB.
+Context capability is configured, not an entitlement claim. Above-200K evidence is
+set only for completed generation whose reported input including caches exceeds 200K.
+The console imports receipts into SQLite and exposes retention controls.
+
+The gateway enables filtered response headers per request, including retry and
+provider quota headers on wrapped errors. New `anthropic-*` and `x-claude-code-*`
+request capabilities pass through when the upstream credential executor has not
+already constructed that header. Existing upstream credential/session handling is
+unchanged. Claude handlers preserve request context so account pins and callbacks
+survive both streaming and nonstreaming execution.
+
+Regression coverage includes shared model registrations, disabled accounts, quota
+failures without account fallback, SSE pings/fragmentation, metadata privacy and
+restart persistence. Native account routes do not call the Management API per request.

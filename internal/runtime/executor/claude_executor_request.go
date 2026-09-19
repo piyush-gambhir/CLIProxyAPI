@@ -503,7 +503,7 @@ func classifyClaudeUpstreamErrorWithCooling(statusCode int, headers http.Header,
 	if statusCode == http.StatusTooManyRequests || (statusCode >= 400 && statusCode < 600) {
 		retryAfter = helps.ParseClaudeRateLimitReset(headers, time.Now())
 	}
-	err := statusErr{code: statusCode, msg: string(body), retryAfter: retryAfter}
+	err := statusErr{code: statusCode, msg: string(body), retryAfter: retryAfter, headers: headers.Clone()}
 	if statusCode == http.StatusTooManyRequests {
 		if !modelLevelCooling && helps.ClaudeHeadersIndicateUnifiedRateLimitRejection(headers) {
 			return claudeRateLimitError{statusErr: err, credentialScoped: true}
@@ -1083,6 +1083,7 @@ func applyClaudeHeadersWithNativeProfile(
 		if auth != nil {
 			attrs = auth.Attributes
 		}
+		helps.PreserveClaudeCapabilityHeaders(r.Header, incomingHeaders)
 		util.ApplyCustomHeadersFromAttrs(r, attrs, incomingHeaders)
 		// Scope the custom-header escape hatch exactly like the CLI path below, which
 		// claws overrides back on api.anthropic.com (an operator Anthropic-Beta reaches
@@ -1220,6 +1221,7 @@ func applyClaudeHeadersWithNativeProfile(
 	if auth != nil {
 		attrs = auth.Attributes
 	}
+	helps.PreserveClaudeCapabilityHeaders(r.Header, incomingHeaders)
 	util.ApplyCustomHeadersFromAttrs(r, attrs, incomingHeaders)
 	// Custom credential headers are a configuration escape hatch for third-party
 	// gateways, so they keep the last word there. On api.anthropic.com they must
