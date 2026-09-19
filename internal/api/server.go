@@ -81,7 +81,8 @@ type Server struct {
 	wsAuthEnabled atomic.Bool
 
 	// management handler
-	mgmt *managementHandlers.Handler
+	mgmt    *managementHandlers.Handler
+	console *nativeConsole
 
 	// pluginHost owns dynamic plugin Management API route dispatch.
 	pluginHost *pluginhost.Host
@@ -225,6 +226,7 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 
 	// Setup routes
 	s.setupRoutes()
+	s.setupConsole()
 
 	// Apply additional router configurators from options
 	if optionState.routerConfigurator != nil {
@@ -273,6 +275,9 @@ func (s *Server) Start() error {
 		return fmt.Errorf("failed to start HTTP server: server not initialized")
 	}
 
+	if err := s.startConsoleAlias(); err != nil {
+		return fmt.Errorf("console listener: %w", err)
+	}
 	addr := s.server.Addr
 	listener, errListen := net.Listen("tcp", addr)
 	if errListen != nil {
@@ -376,6 +381,14 @@ func (s *Server) Start() error {
 // Returns:
 //   - error: An error if the server fails to stop
 func (s *Server) Stop(ctx context.Context) error {
+	if s.console != nil {
+		close(s.console.stop)
+		if s.console.alias != nil {
+			if err := s.console.alias.Shutdown(ctx); err != nil {
+				log.WithError(err).Warn("Console compatibility listener shutdown failed")
+			}
+		}
+	}
 	log.Debug("Stopping API server...")
 
 	if s.keepAliveEnabled {
@@ -396,6 +409,11 @@ func (s *Server) Stop(ctx context.Context) error {
 
 	// Shutdown the HTTP server.
 	errShutdown := s.server.Shutdown(ctx)
+	if errShutdown == nil && s.console != nil && s.console.store != nil {
+		if err := s.console.store.Close(); err != nil {
+			log.WithError(err).Warn("Console store close failed")
+		}
+	}
 	if s.codexLiveHandler != nil {
 		s.codexLiveHandler.Close()
 	}

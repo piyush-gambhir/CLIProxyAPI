@@ -23,6 +23,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/buildinfo"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/cmd"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/config"
+	consolecore "github.com/router-for-me/CLIProxyAPI/v7/internal/console"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/home"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/homeplugins"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/logging"
@@ -40,6 +41,7 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v7/sdk/pluginstore"
 	log "github.com/sirupsen/logrus"
+	"os/exec"
 )
 
 var (
@@ -71,6 +73,50 @@ func shouldEnableExampleAPIKeySafeMode(cfg *config.Config, commandMode, tuiMode,
 // It parses command-line flags, loads configuration, and starts the appropriate
 // service based on the provided flags (login, codex-login, or server mode).
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "claude" {
+		args := os.Args[2:]
+		configPath := os.Getenv("CLIPROXY_CONFIG")
+		if len(args) >= 2 && args[0] == "--proxy-config" {
+			configPath = args[1]
+			args = args[2:]
+		}
+		if configPath == "" {
+			fmt.Fprintln(os.Stderr, "Set CLIPROXY_CONFIG or pass claude --proxy-config <proxy configuration>")
+			os.Exit(2)
+		}
+		cfg, err := config.LoadConfig(configPath)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Could not load proxy configuration")
+			os.Exit(1)
+		}
+		deployment, err := consolecore.ReadDeployment(configPath)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		store, err := consolecore.Open(deployment.DataDir, home, cfg.AuthDir, configPath, fmt.Sprintf("http://127.0.0.1:%d", cfg.Port))
+		if err == nil {
+			err = store.Launch(args)
+			if closeErr := store.Close(); err == nil {
+				err = closeErr
+			}
+		}
+		if err != nil {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				os.Exit(exitErr.ExitCode())
+			}
+			fmt.Fprintln(os.Stderr, "Claude proxy:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "discover" {
 		discoverFlags := flag.NewFlagSet("discover", flag.ExitOnError)
 		timeoutSec := discoverFlags.Int("timeout", 3, "Discovery timeout in seconds")

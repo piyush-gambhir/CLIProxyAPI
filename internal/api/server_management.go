@@ -27,6 +27,7 @@ func (s *Server) registerManagementRoutes() {
 	mgmt := s.engine.Group("/v0/management")
 	mgmt.Use(s.managementAvailabilityMiddleware(), s.mgmt.Middleware())
 	{
+		mgmt.Any("/console/*path", s.handleConsole)
 		mgmt.GET("/account-gateway", s.getAccountGateway)
 		mgmt.PUT("/account-gateway", s.putAccountGateway)
 		mgmt.GET("/account-gateway/receipts", s.getAccountReceipts)

@@ -39,8 +39,8 @@ console and fork checkouts are siblings.
 ```sh
 ./scripts/build-piyush.sh piyush-YYYY.MM.DD.N
 CLIPROXY_BIN="$PWD/bin/piyush-YYYY.MM.DD.N/cliproxyapi" \
-  node ../cliproxy-console/scripts/verify-routing.mjs
-python3 ../cliproxy-console/scripts/proxy-service.py install \
+  node scripts/verify-routing.mjs
+python3 scripts/proxy-service.py install \
   --release-dir "$PWD/bin/piyush-YYYY.MM.DD.N"
 ```
 
@@ -52,8 +52,8 @@ The installer checks live health and account/routing preservation and restores
 the previous service if activation fails.
 
 ```sh
-python3 ../cliproxy-console/scripts/proxy-service.py status
-python3 ../cliproxy-console/scripts/proxy-service.py rollback
+python3 scripts/proxy-service.py status
+python3 scripts/proxy-service.py rollback
 ```
 
 Account isolation must continue to pass: selecting one account must never consume
@@ -76,7 +76,7 @@ The bounded journal retains routing/model/session/agent IDs, usage counts, compl
 and error type, never message content or keys. Two journal files rotate at 8 MiB.
 Context capability is configured, not an entitlement claim. Above-200K evidence is
 set only for completed generation whose reported input including caches exceeds 200K.
-The console imports receipts into SQLite and exposes retention controls.
+The proxy owns SQLite request history and retention controls; see [native console management](docs/native-console.md).
 
 The gateway enables filtered response headers per request, including retry and
 provider quota headers on wrapped errors. New `anthropic-*` and `x-claude-code-*`
@@ -88,3 +88,8 @@ survive both streaming and nonstreaming execution.
 Regression coverage includes shared model registrations, disabled accounts, quota
 failures without account fallback, SSE pings/fragmentation, metadata privacy and
 restart persistence. Native account routes do not call the Management API per request.
+
+## Frontend-only console
+
+All administration logic now runs in `internal/console` and `internal/api/server_console.go`.
+The React repository contains only the UI. See [native console](docs/native-console.md) for migration and deployment.

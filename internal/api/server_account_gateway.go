@@ -62,6 +62,10 @@ type accountReceipt struct {
 	ErrorType           string `json:"errorType,omitempty"`
 }
 type accountGateway struct {
+	nativeRoute    func(string) (accountGatewayRoute, bool)
+	nativeManaged  func() bool
+	persistReceipt func(accountReceipt) error
+
 	mu           sync.RWMutex
 	journalMu    sync.Mutex
 	directory    string
@@ -114,6 +118,9 @@ func newAccountGateway(configFile string) *accountGateway {
 	return g
 }
 func (g *accountGateway) route(id string) (accountGatewayRoute, bool) {
+	if g.nativeRoute != nil && g.nativeManaged != nil && g.nativeManaged() {
+		return g.nativeRoute(id)
+	}
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	for _, route := range g.config.Routes {
@@ -155,12 +162,23 @@ func (g *accountGateway) save(cfg accountGatewayConfig) error {
 	return nil
 }
 func (g *accountGateway) record(r accountReceipt) {
+	if g.persistReceipt != nil {
+		if err := g.persistReceipt(r); err != nil {
+			g.mu.Lock()
+			g.storageError = "Request history could not be saved"
+			g.mu.Unlock()
+			log.WithError(err).Warn("Native console receipt save failed")
+		}
+	}
 	g.mu.Lock()
 	g.receipts = append(g.receipts, r)
 	if len(g.receipts) > 5000 {
 		g.receipts = g.receipts[len(g.receipts)-5000:]
 	}
 	g.mu.Unlock()
+	if g.persistReceipt != nil {
+		return
+	}
 	g.journalMu.Lock()
 	defer g.journalMu.Unlock()
 	if err := g.appendReceipt(r); err != nil {
@@ -198,12 +216,27 @@ func (g *accountGateway) appendReceipt(r accountReceipt) error {
 	return closeErr
 }
 func (s *Server) getAccountGateway(c *gin.Context) {
+	if s.console != nil && s.console.store != nil && s.console.store.Managed() {
+		routes := []accountGatewayRoute{}
+		for _, p := range s.console.store.Profiles() {
+			if route, ok := s.accountGateway.route(p.ID); ok {
+				routes = append(routes, route)
+			}
+		}
+		c.JSON(200, gin.H{"version": 1, "routes": routes, "owner": "console", "directory": s.console.store.Directory})
+		return
+	}
+
 	g := s.accountGateway
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	c.JSON(200, gin.H{"version": 1, "routes": g.config.Routes, "storageError": g.storageError, "directory": g.directory, "receiptCapacity": 5000})
 }
 func (s *Server) putAccountGateway(c *gin.Context) {
+	if s.accountGateway.nativeManaged != nil && s.accountGateway.nativeManaged() {
+		c.JSON(409, gin.H{"error": "Routes are owned by console profiles and model settings. Update those through the native management API."})
+		return
+	}
 	var cfg accountGatewayConfig
 	if err := c.ShouldBindJSON(&cfg); err != nil || len(cfg.Routes) > 100 {
 		c.JSON(400, gin.H{"error": "Invalid account routes"})
@@ -241,6 +274,19 @@ func (s *Server) putAccountGateway(c *gin.Context) {
 	s.getAccountGateway(c)
 }
 func (s *Server) getAccountReceipts(c *gin.Context) {
+	if s.console != nil && s.console.store != nil {
+		rows, err := s.console.store.RecentReceipts("", 5000)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Request history could not be read"})
+			return
+		}
+		for i, j := 0, len(rows)-1; i < j; i, j = i+1, j-1 {
+			rows[i], rows[j] = rows[j], rows[i]
+		}
+		c.JSON(200, gin.H{"receipts": rows, "storageError": s.consoleStatus()["storageError"], "capacity": 5000})
+		return
+	}
+
 	g := s.accountGateway
 	g.mu.RLock()
 	defer g.mu.RUnlock()
