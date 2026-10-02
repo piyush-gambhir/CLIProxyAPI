@@ -18,9 +18,9 @@ func TestSignalWindowsClaude(t *testing.T) {
 		{
 			name: "direct utilization and an absolute reset",
 			signals: map[string]string{
-				"anthropic-ratelimit-unified-5h-utilization": "42",
+				"anthropic-ratelimit-unified-5h-utilization": "0.42",
 				"anthropic-ratelimit-unified-5h-reset":       "2026-10-03T14:00:00Z",
-				"anthropic-ratelimit-unified-7d-utilization": "61.5",
+				"anthropic-ratelimit-unified-7d-utilization": "0.615",
 				"anthropic-ratelimit-unified-7d-reset":       "2026-10-08T10:00:00Z",
 			},
 			want: map[string]Window{
@@ -41,7 +41,7 @@ func TestSignalWindowsClaude(t *testing.T) {
 		{
 			name: "a relative reset is resolved against the observation time",
 			signals: map[string]string{
-				"anthropic-ratelimit-unified-5h-utilization": "10",
+				"anthropic-ratelimit-unified-5h-utilization": "0.1",
 				"anthropic-ratelimit-unified-5h-reset":       "3600",
 			},
 			want: map[string]Window{
@@ -60,7 +60,7 @@ func TestSignalWindowsClaude(t *testing.T) {
 		{
 			name: "the fable window is recognised",
 			signals: map[string]string{
-				"anthropic-ratelimit-unified-fable-utilization": "88",
+				"anthropic-ratelimit-unified-fable-utilization": "0.88",
 			},
 			want: map[string]Window{
 				WindowFable: {UsedPercent: 88, Known: true},
@@ -77,7 +77,7 @@ func TestSignalWindowsClaude(t *testing.T) {
 		{
 			name: "an unrecognised window segment is ignored rather than guessed",
 			signals: map[string]string{
-				"anthropic-ratelimit-unified-42q-utilization": "50",
+				"anthropic-ratelimit-unified-42q-utilization": "0.5",
 			},
 			want: nil,
 		},
@@ -160,7 +160,7 @@ func TestSignalWindowsCodex(t *testing.T) {
 func TestSignalWindowsIgnoresUnpolledProviders(t *testing.T) {
 	t.Parallel()
 
-	signals := map[string]string{"anthropic-ratelimit-unified-7d-utilization": "10"}
+	signals := map[string]string{"anthropic-ratelimit-unified-7d-utilization": "0.1"}
 	if got := SignalWindows("gemini", signals, signalBase); got != nil {
 		t.Fatalf("SignalWindows(gemini) = %v, want nil", got)
 	}
@@ -304,5 +304,45 @@ func TestParseUsageRejectsBadInput(t *testing.T) {
 	}
 	if len(reading.Windows) != 0 {
 		t.Fatalf("windows = %+v, want none for an unpolled provider", reading.Windows)
+	}
+}
+
+// TestSignalWindowsClaudeLiveHeaders pins the header set a real Claude Max
+// response carried on 2026-10-03: utilization is a 0..1 fraction, resets are unix
+// seconds, and the extra unified headers must not create phantom windows.
+func TestSignalWindowsClaudeLiveHeaders(t *testing.T) {
+	t.Parallel()
+
+	signals := map[string]string{
+		"Anthropic-Ratelimit-Unified-5h-Reset":                "1790983800",
+		"Anthropic-Ratelimit-Unified-5h-Status":               "allowed",
+		"Anthropic-Ratelimit-Unified-5h-Utilization":          "0.3",
+		"Anthropic-Ratelimit-Unified-7d-Reset":                "1791223200",
+		"Anthropic-Ratelimit-Unified-7d-Status":               "allowed",
+		"Anthropic-Ratelimit-Unified-7d-Utilization":          "0.74",
+		"Anthropic-Ratelimit-Unified-Fallback-Percentage":     "0.5",
+		"Anthropic-Ratelimit-Unified-Overage-Disabled-Reason": "org_level_disabled",
+		"Anthropic-Ratelimit-Unified-Overage-Status":          "rejected",
+		"Anthropic-Ratelimit-Unified-Representative-Claim":    "five_hour",
+		"Anthropic-Ratelimit-Unified-Reset":                   "1790983800",
+		"Anthropic-Ratelimit-Unified-Status":                  "allowed",
+	}
+	got := SignalWindows("claude", signals, signalBase)
+	if len(got) != 2 {
+		t.Fatalf("windows = %v, want exactly five_hour and seven_day", got)
+	}
+	five, ok := got[WindowFiveHour]
+	if !ok || !five.Known || five.UsedPercent < 29.99 || five.UsedPercent > 30.01 {
+		t.Fatalf("five_hour = %+v, want 30%% used", five)
+	}
+	if want := time.Unix(1790983800, 0); !five.ResetAt.Equal(want) {
+		t.Fatalf("five_hour reset = %v, want %v", five.ResetAt, want)
+	}
+	week, ok := got[WindowSevenDay]
+	if !ok || !week.Known || week.UsedPercent < 73.99 || week.UsedPercent > 74.01 {
+		t.Fatalf("seven_day = %+v, want 74%% used", week)
+	}
+	if week.HardLimited || five.HardLimited {
+		t.Fatalf("allowed status must not mark a hard limit: %+v %+v", five, week)
 	}
 }

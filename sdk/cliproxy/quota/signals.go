@@ -50,7 +50,7 @@ func SignalPlan(provider string, signals map[string]string) string {
 // claudeSignalWindows reads anthropic-ratelimit-unified-<window>-<field>.
 //
 // Observed field spellings are "-remaining" plus "-limit" (a pair that yields a
-// used percentage), "-utilization" / "-used-percent" / "-percent" (a direct
+// used percentage), "-utilization" (a 0..1 fraction), "-used-percent" / "-percent" (a direct
 // percentage), "-reset" / "-reset-at" (a unix second count or an RFC3339 time)
 // and "-status" (whose "rate_limited" value marks a hard limit).
 func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[string]Window {
@@ -84,7 +84,12 @@ func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[st
 		}
 		value := strings.TrimSpace(rawValue)
 		switch field {
-		case "utilization", "used-percent", "usedpercent", "percent":
+		case "utilization":
+			// Anthropic reports utilization as a fraction: "0.74" means 74% used.
+			if parsed, ok := parseFloat(value); ok {
+				entry.used, entry.hasUsed = parsed*100, true
+			}
+		case "used-percent", "usedpercent", "percent":
 			if parsed, ok := parseFloat(value); ok {
 				entry.used, entry.hasUsed = parsed, true
 			}
