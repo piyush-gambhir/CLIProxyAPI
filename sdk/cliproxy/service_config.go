@@ -7,6 +7,7 @@ import (
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/watcher/synthesizer"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/quota"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,11 +25,18 @@ type configCommit struct {
 	sequence uint64
 }
 
+// routingRuntimeState must stay comparable: applyManagerConfig compares two
+// values with != to decide whether to rebuild the selector.
 type routingRuntimeState struct {
 	strategy                 string
 	sessionAffinity          bool
 	sessionAffinityTTL       time.Duration
 	sessionAffinitySubagents bool
+	fiveHourGuardPercent     float64
+	quotaPollerEnabled       bool
+	quotaPollerClaudeEvery   time.Duration
+	quotaPollerClaudeGap     time.Duration
+	quotaPollerCodexEvery    time.Duration
 }
 
 func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
@@ -36,6 +44,10 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 		strategy:                 "round-robin",
 		sessionAffinityTTL:       time.Hour,
 		sessionAffinitySubagents: true,
+		fiveHourGuardPercent:     quota.DefaultFiveHourGuardPercent,
+		quotaPollerClaudeEvery:   quota.DefaultClaudeInterval,
+		quotaPollerClaudeGap:     quota.DefaultClaudeMinGap,
+		quotaPollerCodexEvery:    quota.DefaultCodexInterval,
 	}
 	if cfg == nil {
 		return state
@@ -46,7 +58,21 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 		state.strategy = "weighted-round-robin"
 	case "fill-first", "fillfirst", "ff":
 		state.strategy = "fill-first"
+	case "reset-soonest", "resetsoonest", "expiring-first", "expiringfirst":
+		state.strategy = "reset-soonest"
 	}
+	if guard := cfg.Routing.ResetSoonest.FiveHourGuardPercent; guard != nil && *guard >= 0 && *guard <= 100 {
+		state.fiveHourGuardPercent = *guard
+	}
+	// The poller exists to feed reset-soonest routing, so it defaults on with
+	// that strategy and off otherwise. An explicit setting always wins.
+	state.quotaPollerEnabled = state.strategy == "reset-soonest"
+	if enabled := cfg.Routing.QuotaPoller.Enabled; enabled != nil {
+		state.quotaPollerEnabled = *enabled
+	}
+	state.quotaPollerClaudeEvery = positiveDurationOr(cfg.Routing.QuotaPoller.ClaudeInterval, state.quotaPollerClaudeEvery)
+	state.quotaPollerClaudeGap = positiveDurationOr(cfg.Routing.QuotaPoller.ClaudeMinGap, state.quotaPollerClaudeGap)
+	state.quotaPollerCodexEvery = positiveDurationOr(cfg.Routing.QuotaPoller.CodexInterval, state.quotaPollerCodexEvery)
 	state.sessionAffinity = cfg.Routing.SessionAffinity
 	if ttl := strings.TrimSpace(cfg.Routing.SessionAffinityTTL); ttl != "" {
 		if parsed, errParse := time.ParseDuration(ttl); errParse == nil && parsed > 0 {
@@ -62,6 +88,20 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 	return state
 }
 
+// positiveDurationOr parses a duration string, falling back when it is empty,
+// unparsable or not positive.
+func positiveDurationOr(raw string, fallback time.Duration) time.Duration {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return fallback
+	}
+	parsed, errParse := time.ParseDuration(trimmed)
+	if errParse != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
+}
+
 func newRoutingSelector(state routingRuntimeState) coreauth.Selector {
 	var selector coreauth.Selector
 	switch state.strategy {
@@ -69,6 +109,8 @@ func newRoutingSelector(state routingRuntimeState) coreauth.Selector {
 		selector = &coreauth.WeightedRoundRobinSelector{}
 	case "fill-first":
 		selector = &coreauth.FillFirstSelector{}
+	case "reset-soonest":
+		selector = coreauth.NewResetSoonestSelector(state.fiveHourGuardPercent)
 	default:
 		selector = &coreauth.RoundRobinSelector{}
 	}

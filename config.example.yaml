@@ -126,10 +126,32 @@ access:
 
 # Routing strategy for selecting credentials when multiple match.
 routing:
-  strategy: "round-robin" # round-robin (default), weighted-round-robin, fill-first
+  strategy: "round-robin" # round-robin (default), weighted-round-robin, fill-first, reset-soonest
   # weighted-round-robin uses each credential's integer weight (default 1, maximum 1,000,000).
   # Non-positive weights exclude the credential while this strategy is active.
   # For OAuth/file credentials, add a top-level numeric "weight" field to the auth JSON.
+  # reset-soonest (alias: expiring-first) ranks usable credentials by urgency, the share of the
+  # longest quota window still left divided by the hours until it resets, so the credential that
+  # should be spent first is picked first. Credential priority still applies as a hard pre-filter,
+  # and credentials with no quota reading rank after every credential with one, round-robin among
+  # themselves. Quota readings come from upstream response headers and from the usage poller below.
+  reset-soonest:
+    # A credential at or above this much of its 5-hour window ranks behind every credential below
+    # the guard. A ranking penalty, not a block. Default: 90.
+    five-hour-guard-percent: 90
+  quota-poller:
+    # Reads each idle credential's provider usage endpoint so reset-soonest can rank a credential
+    # that has carried no traffic. Busy credentials are skipped: their response headers are already
+    # fresher. Disabled credentials are never polled, and no poll happens on the request path.
+    # Default: true while routing.strategy is reset-soonest, false otherwise.
+    enabled: true
+    # How often one idle Claude credential is polled, and the minimum spacing between any two
+    # Claude usage calls across all credentials. After a 429 all Claude polling pauses, starting at
+    # 5 minutes and doubling to at most 1 hour. Defaults: 30m and 10m.
+    claude-interval: "30m"
+    claude-min-gap: "10m"
+    # How often one idle Codex credential is polled. Default: 5m.
+    codex-interval: "5m"
   # Enable universal session-sticky routing for all clients.
   # Explicit Claude Code, Codex, OpenCode, and pi session headers are preferred,
   # followed by prompt_cache_key, Responses conversation IDs, legacy body IDs,

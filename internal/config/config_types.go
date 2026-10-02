@@ -348,11 +348,46 @@ type QuotaExceeded struct {
 	AntigravityCredits bool `yaml:"antigravity-credits" json:"antigravity-credits"`
 }
 
+// ResetSoonestConfig tunes the reset-soonest selection strategy.
+type ResetSoonestConfig struct {
+	// FiveHourGuardPercent demotes a credential at or above this much of its
+	// five-hour window behind every credential below the guard. It is a ranking
+	// penalty, not a block. Default: 90. Values outside 0 to 100 are ignored.
+	FiveHourGuardPercent *float64 `yaml:"five-hour-guard-percent,omitempty" json:"five-hour-guard-percent,omitempty"`
+}
+
+// QuotaPollerConfig controls the in-proxy usage poller that keeps quota
+// readings fresh for idle credentials.
+type QuotaPollerConfig struct {
+	// Enabled turns the poller on. Default: true while the routing strategy is
+	// reset-soonest, off otherwise. Set false to disable it explicitly.
+	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// ClaudeInterval is how often one idle Claude credential is polled.
+	// Default: 30m. Accepts duration strings.
+	ClaudeInterval string `yaml:"claude-interval,omitempty" json:"claude-interval,omitempty"`
+
+	// ClaudeMinGap is the minimum spacing between any two Claude usage calls,
+	// across every credential. Default: 10m.
+	ClaudeMinGap string `yaml:"claude-min-gap,omitempty" json:"claude-min-gap,omitempty"`
+
+	// CodexInterval is how often one idle Codex credential is polled.
+	// Default: 5m.
+	CodexInterval string `yaml:"codex-interval,omitempty" json:"codex-interval,omitempty"`
+}
+
 // RoutingConfig configures how credentials are selected for requests.
 type RoutingConfig struct {
 	// Strategy selects the credential selection strategy.
-	// Supported values: "round-robin" (default), "weighted-round-robin", "fill-first".
+	// Supported values: "round-robin" (default), "weighted-round-robin",
+	// "fill-first", "reset-soonest" (alias "expiring-first").
 	Strategy string `yaml:"strategy,omitempty" json:"strategy,omitempty"`
+
+	// ResetSoonest tunes the reset-soonest strategy. Ignored otherwise.
+	ResetSoonest ResetSoonestConfig `yaml:"reset-soonest,omitempty" json:"reset-soonest,omitempty"`
+
+	// QuotaPoller controls the usage poller that feeds reset-soonest routing.
+	QuotaPoller QuotaPollerConfig `yaml:"quota-poller,omitempty" json:"quota-poller,omitempty"`
 
 	// SessionAffinity enables universal session-sticky routing for all clients.
 	// Explicit Claude Code, Codex, OpenCode, and pi session headers are preferred,

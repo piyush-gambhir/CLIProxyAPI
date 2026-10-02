@@ -206,6 +206,7 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 
 	s.registerModelRefreshCallback()
+	s.startQuotaPoller(ctx)
 
 	select {
 	case <-ctx.Done():
