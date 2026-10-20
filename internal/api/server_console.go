@@ -25,17 +25,18 @@ import (
 )
 
 type nativeConsole struct {
-	store      *consolecore.Store
-	err        error
-	mutations  sync.Mutex
-	file       string
-	deployment consolecore.Deployment
-	alias      *http.Server
-	stop       chan struct{}
+	managementKey string
+	store         *consolecore.Store
+	err           error
+	mutations     sync.Mutex
+	file          string
+	deployment    consolecore.Deployment
+	alias         *http.Server
+	stop          chan struct{}
 }
 
 func (s *Server) setupConsole() {
-	n := &nativeConsole{stop: make(chan struct{}), file: s.configFilePath + ".console.json"}
+	n := &nativeConsole{stop: make(chan struct{}), file: s.configFilePath + ".console.json", managementKey: strings.TrimSpace(os.Getenv("CLIPROXY_CONSOLE_MANAGEMENT_KEY"))}
 	s.console = n
 	n.deployment, n.err = consolecore.LoadDeployment(s.configFilePath)
 	if _, statErr := os.Stat(s.configFilePath); statErr != nil && os.Getenv("CLIPROXY_CONSOLE_DATA_DIR") == "" {

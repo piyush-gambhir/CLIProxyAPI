@@ -1237,6 +1237,9 @@ func applyClaudeHeadersWithNativeProfile(
 		// silently disable event negotiation.
 		applyTransportNegotiation()
 	}
+	if confirmedClaudeCode && hd.PreserveNativeHeaders {
+		helps.PreserveClaudeNativeHeaders(r.Header, incomingHeaders)
+	}
 	return nil
 }
 

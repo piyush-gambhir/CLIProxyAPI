@@ -124,6 +124,8 @@ type ClaudeConfig struct {
 // versions use the configured values. Timeout remains a fallback. Stabilized profiles
 // also pin OS and Arch and never learn newer software versions automatically.
 type ClaudeHeaderDefaults struct {
+	// PreserveNativeHeaders prefers the actual native client metadata over the configured baseline.
+	PreserveNativeHeaders  bool   `yaml:"preserve-native-headers" json:"preserve-native-headers"`
 	UserAgent              string `yaml:"user-agent" json:"user-agent"`
 	PackageVersion         string `yaml:"package-version" json:"package-version"`
 	RuntimeVersion         string `yaml:"runtime-version" json:"runtime-version"`

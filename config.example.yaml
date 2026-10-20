@@ -715,6 +715,7 @@ nonstream-keepalive-interval: 0
 # enabled, OS/arch are pinned to the values below and cached profiles remain constrained to
 # the same exact software baseline rather than learning newer client versions.
 # claude-header-defaults:
+#   preserve-native-headers: true  # forward actual native client metadata; auth/session/beta/transport remain executor-managed
 #   user-agent: "claude-cli/2.1.258 (external, cli)"
 #   package-version: "0.112.1"
 #   runtime-version: "v26.3.0"
