@@ -318,6 +318,9 @@ func normalizeRoutingStrategy(strategy string) (string, bool) {
 		return "weighted-round-robin", true
 	case "fill-first", "fillfirst", "ff":
 		return "fill-first", true
+	case "reset-soonest", "resetsoonest", "expiring-first", "expiringfirst":
+		// "expiring-first" is the name the replication spec uses for the same rule.
+		return "reset-soonest", true
 	default:
 		return "", false
 	}

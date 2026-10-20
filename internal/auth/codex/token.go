@@ -266,11 +266,28 @@ func (ts *CodexTokenStorage) SetMetadata(meta map[string]any) {
 	ts.Metadata = meta
 }
 
+// applyWebsocketsDefault opts a new Codex credential into the Responses over
+// WebSocket transport. The key is only written when it is absent, so an
+// operator who set websockets to false keeps that choice.
+func (ts *CodexTokenStorage) applyWebsocketsDefault() {
+	if ts == nil {
+		return
+	}
+	if ts.Metadata == nil {
+		ts.Metadata = make(map[string]any, 1)
+	}
+	if _, present := ts.Metadata["websockets"]; present {
+		return
+	}
+	ts.Metadata["websockets"] = true
+}
+
 // SaveTokenToFile serializes the Codex token storage to a JSON file under a per-file and inter-process lock,
 // reading and merging any existing JSON on disk before atomically replacing the file.
 func (ts *CodexTokenStorage) SaveTokenToFile(authFilePath string) error {
 	misc.LogSavingCredentials(authFilePath)
 	ts.Type = "codex"
+	ts.applyWebsocketsDefault()
 	_ = strconv.IntSize
 
 	return WithFileLock(authFilePath, func() error {

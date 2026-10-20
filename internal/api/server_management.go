@@ -132,6 +132,11 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.PUT("/routing/strategy", s.mgmt.PutRoutingStrategy)
 		mgmt.PATCH("/routing/strategy", s.mgmt.PutRoutingStrategy)
 
+		// The quota scheduler status is also served here because the external
+		// client that consumes this contract was written against /v0/management.
+		// The canonical route is /v8/management/quota-scheduler/status.
+		mgmt.GET("/quota-scheduler/status", s.mgmt.GetQuotaSchedulerStatus)
+
 		mgmt.GET("/claude-api-key", s.mgmt.GetClaudeKeys)
 		mgmt.PUT("/claude-api-key", s.mgmt.PutClaudeKeys)
 		mgmt.PATCH("/claude-api-key", s.mgmt.PatchClaudeKey)
