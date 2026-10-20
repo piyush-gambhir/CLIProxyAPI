@@ -2,6 +2,7 @@ import copy
 import hashlib
 import importlib.util
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -73,6 +74,17 @@ class ActivationTests(unittest.TestCase):
             self.assertEqual(restart.call_args_list[0].args, (target, 'label'))
             self.assertEqual(restart.call_args_list[1].args, (previous.resolve(), 'label'))
             replace_file.assert_not_called()
+
+    def test_bootstrap_retries_while_launchagent_finishes_unloading(self):
+        success = subprocess.CompletedProcess([], 0, '', '')
+        unloading = subprocess.CompletedProcess([], 5, '', 'Bootstrap failed: 5')
+        with patch.object(service, 'run', side_effect=[success, unloading, success]) as run, \
+             patch.object(service, 'point_to') as point_to, \
+             patch.object(service.time, 'sleep') as sleep:
+            service.restart(Path('/new-release'), 'label')
+            point_to.assert_called_once_with(Path('/new-release'))
+            self.assertEqual(run.call_count, 3)
+            sleep.assert_called_once_with(0.5)
 
 
 if __name__ == '__main__':

@@ -87,11 +87,20 @@ def point_to(target):
 
 
 def restart(target, label):
-    run('launchctl', 'bootout', DOMAIN + '/' + label)
+    stopped = run('launchctl', 'bootout', DOMAIN + '/' + label, check=False)
+    if stopped.returncode and run('launchctl', 'print', DOMAIN + '/' + label, check=False).returncode == 0:
+        raise RuntimeError('Could not unload the existing LaunchAgent: ' + stopped.stderr.strip())
     try:
         point_to(target)
     finally:
-        run('launchctl', 'bootstrap', DOMAIN, str(PLIST))
+        # bootout can return before launchd finishes unloading the service.
+        for _ in range(20):
+            started = run('launchctl', 'bootstrap', DOMAIN, str(PLIST), check=False)
+            if started.returncode == 0:
+                break
+            time.sleep(0.5)
+        else:
+            raise RuntimeError('Could not load the LaunchAgent: ' + started.stderr.strip())
 
 
 def manifest_at(directory):
