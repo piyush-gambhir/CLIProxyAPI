@@ -1,0 +1,77 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+  - package-ecosystem: cargo
+    directories:
+      - "/examples/plugin/auth/rust"
+      - "/examples/plugin/cli/rust"
+      - "/examples/plugin/executor/rust"
+      - "/examples/plugin/frontend-auth/rust"
+      - "/examples/plugin/host-callback/rust"
+      - "/examples/plugin/management-api/rust"
+      - "/examples/plugin/model/rust"
+      - "/examples/plugin/protocol-format/rust"
+      - "/examples/plugin/request-normalizer/rust"
+      - "/examples/plugin/request-translator/rust"
+      - "/examples/plugin/response-normalizer/rust"
+      - "/examples/plugin/response-translator/rust"
+      - "/examples/plugin/simple/rust"
+      - "/examples/plugin/thinking/rust"
+      - "/examples/plugin/usage/rust"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns: ["*"]
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directories:
+      - "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns: ["*"]
+        update-types: [minor, patch]
+  - package-ecosystem: gomod
+    directories:
+      - "/"
+      - "/examples/plugin/auth/go"
+      - "/examples/plugin/claude-web-search-router/go"
+      - "/examples/plugin/cli/go"
+      - "/examples/plugin/codex-service-tier/go"
+      - "/examples/plugin/executor/go"
+      - "/examples/plugin/frontend-auth-exclusive/go"
+      - "/examples/plugin/frontend-auth/go"
+      - "/examples/plugin/host-callback-auth-files/go"
+      - "/examples/plugin/host-callback/go"
+      - "/examples/plugin/host-model-callback/go"
+      - "/examples/plugin/management-api/go"
+      - "/examples/plugin/model/go"
+      - "/examples/plugin/protocol-format/go"
+      - "/examples/plugin/request-lifecycle/go"
+      - "/examples/plugin/request-normalizer/go"
+      - "/examples/plugin/request-translator/go"
+      - "/examples/plugin/response-normalizer/go"
+      - "/examples/plugin/response-translator/go"
+      - "/examples/plugin/scheduler/go"
+      - "/examples/plugin/simple/go"
+      - "/examples/plugin/thinking/go"
+      - "/examples/plugin/usage/go"
+      - "/examples/realtime-openai-go"
+      - "/internal/pluginhost/testdata/loader_unix_reload_plugin"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns: ["*"]
+        update-types: [minor, patch]
