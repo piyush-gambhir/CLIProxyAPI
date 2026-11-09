@@ -1232,9 +1232,9 @@ func decodeHomeModels(raw []byte) ([]homeModelEntry, error) {
 				displayName, _ = model["displayName"].(string)
 				displayName = strings.TrimSpace(displayName)
 			}
-			contextLength := int(homeModelInt64Value(model, "context_length", "contextLength", "inputTokenLimit", "max_input_tokens"))
-			maxContextLength := int(homeModelInt64Value(model, "max_context_length", "maxContextLength"))
-			maxCompletionTokens := int(homeModelInt64Value(model, "max_completion_tokens", "maxCompletionTokens", "outputTokenLimit", "max_tokens"))
+			contextLength := homeModelTokenLimit(model, "context_length", "contextLength", "inputTokenLimit", "max_input_tokens")
+			maxContextLength := homeModelTokenLimit(model, "max_context_length", "maxContextLength")
+			maxCompletionTokens := homeModelTokenLimit(model, "max_completion_tokens", "maxCompletionTokens", "outputTokenLimit", "max_tokens")
 			thinking := homeModelThinkingSupport(model)
 
 			if index, ok := indexByID[id]; ok {
@@ -1352,4 +1352,13 @@ func homeModelInt64Value(model map[string]any, keys ...string) int64 {
 		}
 	}
 	return 0
+}
+
+// Invalid or unrepresentable provider limits must not wrap into advertised capabilities.
+func homeModelTokenLimit(model map[string]any, keys ...string) int {
+	value := homeModelInt64Value(model, keys...)
+	if value < 0 || uint64(value) > uint64(^uint(0)>>1) {
+		return 0
+	}
+	return int(value)
 }

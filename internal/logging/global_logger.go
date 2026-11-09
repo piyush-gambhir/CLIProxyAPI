@@ -88,6 +88,11 @@ func formatLogFieldValue(key string, value any) string {
 	return fmt.Sprint(value)
 }
 
+var logControlEscaper = strings.NewReplacer(
+	"\r", `\r`, "\n", `\n`, "\x1b", `\x1b`,
+	"\u2028", `\u2028`, "\u2029", `\u2029`,
+)
+
 // Format renders a single log entry with custom formatting.
 func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	var buffer *bytes.Buffer
@@ -138,6 +143,8 @@ func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	} else {
 		formatted = fmt.Sprintf("[%s] [%s] [%s] %s%s\n", timestamp, reqID, levelStr, message, fieldsStr)
 	}
+	// Escape controls after assembling fields so untrusted values cannot forge log lines.
+	formatted = logControlEscaper.Replace(strings.TrimSuffix(formatted, "\n")) + "\n"
 	buffer.WriteString(formatted)
 
 	return buffer.Bytes(), nil
