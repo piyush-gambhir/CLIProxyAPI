@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"encoding/json"
+	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	"strconv"
 
 	"github.com/MoeForge/moego/ojson"
@@ -38,9 +39,9 @@ func JoinRawArray(items [][]byte) []byte {
 	if len(items) == 0 {
 		return []byte("[]")
 	}
-	size := len(items) + 1
+	size := securityutil.ByteCapacity(len(items), 1)
 	for _, item := range items {
-		size += len(item)
+		size = securityutil.ByteCapacity(size, len(item))
 	}
 	out := make([]byte, 0, size)
 	out = append(out, '[')
@@ -62,7 +63,7 @@ func SetRawArrayItems(data []byte, path string, items [][]byte) []byte {
 	if len(items) == 1 {
 		array := ojson.GetBytesNoCopy(data, path)
 		if array.Raw == "[]" && array.Index >= 0 && array.Index+len(array.Raw) <= len(data) {
-			out := make([]byte, 0, len(data)+len(items[0]))
+			out := make([]byte, 0, securityutil.ByteCapacity(len(data), len(items[0])))
 			out = append(out, data[:array.Index]...)
 			out = append(out, '[')
 			out = append(out, items[0]...)
@@ -85,7 +86,7 @@ func SetRawArrayItemsDoc(doc *ojson.Doc, path string, items [][]byte) {
 // SSEEventData builds one complete SSE frame. Each frame carries its own
 // blank-line terminator so concatenated frames stay separable downstream.
 func SSEEventData(event string, payload []byte) []byte {
-	out := make([]byte, 0, len(event)+len(payload)+16)
+	out := make([]byte, 0, securityutil.ByteCapacity(len(event), len(payload), 16))
 	out = append(out, "event: "...)
 	out = append(out, event...)
 	out = append(out, '\n')

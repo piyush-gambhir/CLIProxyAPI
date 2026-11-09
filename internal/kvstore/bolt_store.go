@@ -35,11 +35,10 @@ var (
 )
 
 func encodeEnvelope(value []byte, expiresAtUnixNano int64) []byte {
-	buf := make([]byte, envelopeHeaderSize+len(value))
+	buf := make([]byte, envelopeHeaderSize)
 	buf[0] = envelopeVersionV1
 	binary.BigEndian.PutUint64(buf[1:envelopeHeaderSize], uint64(expiresAtUnixNano))
-	copy(buf[envelopeHeaderSize:], value)
-	return buf
+	return append(buf, value...)
 }
 
 func decodeEnvelope(raw []byte, nowUnixNano int64) (payload []byte, expiresAt int64, expired bool, err error) {

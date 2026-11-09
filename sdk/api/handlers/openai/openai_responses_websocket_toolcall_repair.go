@@ -456,7 +456,7 @@ func replaceResponsesWebsocketRawResult(payload []byte, result ojson.Result, rep
 	if result.Index < 0 || result.Index > len(payload) || len(result.Raw) > len(payload)-result.Index {
 		return nil, false
 	}
-	updated := make([]byte, 0, len(payload)-len(result.Raw)+len(replacement))
+	updated := make([]byte, 0, util.ByteCapacity(len(payload)-len(result.Raw), len(replacement)))
 	updated = append(updated, payload[:result.Index]...)
 	updated = append(updated, replacement...)
 	updated = append(updated, payload[result.Index+len(result.Raw):]...)

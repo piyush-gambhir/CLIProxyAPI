@@ -2,6 +2,7 @@ package helps
 
 import (
 	"github.com/MoeForge/moego/ojson"
+	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
 // SetStringIfDifferent updates path only when its value is not already the
@@ -85,9 +86,9 @@ func SetRawIfDifferentDoc(doc *ojson.Doc, path string, value []byte) bool {
 
 // JoinRawJSONArray joins validated raw JSON array items without re-encoding them.
 func JoinRawJSONArray(items [][]byte) []byte {
-	size := len(items) + 1
+	size := securityutil.ByteCapacity(len(items), 1)
 	for _, item := range items {
-		size += len(item)
+		size = securityutil.ByteCapacity(size, len(item))
 	}
 	out := make([]byte, 0, size)
 	out = append(out, '[')
@@ -102,9 +103,9 @@ func JoinRawJSONArray(items [][]byte) []byte {
 
 // JoinRawJSONStrings joins raw JSON array items held as strings.
 func JoinRawJSONStrings(items []string) []byte {
-	size := len(items) + 1
+	size := securityutil.ByteCapacity(len(items), 1)
 	for _, item := range items {
-		size += len(item)
+		size = securityutil.ByteCapacity(size, len(item))
 	}
 	out := make([]byte, 0, size)
 	out = append(out, '[')

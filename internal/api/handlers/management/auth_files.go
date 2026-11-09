@@ -1081,7 +1081,7 @@ func isRuntimeOnlyAuth(auth *coreauth.Auth) bool {
 }
 
 func isUnsafeAuthFileName(name string) bool {
-	if strings.TrimSpace(name) == "" {
+	if strings.TrimSpace(name) == "" || name == "." || name == ".." {
 		return true
 	}
 	if strings.ContainsAny(name, "/\\") {

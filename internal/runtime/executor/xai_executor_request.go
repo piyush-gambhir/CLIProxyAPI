@@ -789,16 +789,15 @@ func (s *xaiImageRefScanner) finishKey() {
 		rawKey := s.keyArena[s.curKeyStart:]
 		var stackQuoted [260]byte
 		var quoted []byte
-		if 2+len(rawKey) <= len(stackQuoted) {
+		if len(rawKey) <= len(stackQuoted)-2 {
 			stackQuoted[0] = '"'
 			copy(stackQuoted[1:], rawKey)
 			stackQuoted[1+len(rawKey)] = '"'
 			quoted = stackQuoted[:2+len(rawKey)]
 		} else {
-			quoted = make([]byte, 2+len(rawKey))
-			quoted[0] = '"'
-			copy(quoted[1:], rawKey)
-			quoted[1+len(rawKey)] = '"'
+			quoted = append([]byte{'"'}, rawKey...)
+
+			quoted = append(quoted, '"')
 		}
 		unescaped := util.ParseGJSONBytesNoCopy(quoted).String()
 		s.keyArena = append(s.keyArena[:s.curKeyStart], unescaped...)

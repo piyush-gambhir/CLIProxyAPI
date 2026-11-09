@@ -129,7 +129,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Using auth: id=%s label=%s\n", chosen.ID, chosen.Label)
+	fmt.Printf("Using auth: id=%q label=%q\n", chosen.ID, chosen.Label)
 
 	accessToken, refreshed, err := ensureAccessToken(ctx, fileStore, chosen)
 	if err != nil {

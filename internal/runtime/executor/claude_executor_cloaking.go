@@ -3110,16 +3110,15 @@ func (s *claudeStreamDocScanner) decodeShortToken() string {
 	}
 	var stackRaw [258]byte
 	var quoted []byte
-	if 2+len(rawStr) <= len(stackRaw) {
+	if len(rawStr) <= len(stackRaw)-2 {
 		stackRaw[0] = '"'
 		copy(stackRaw[1:], rawStr)
 		stackRaw[1+len(rawStr)] = '"'
 		quoted = stackRaw[:2+len(rawStr)]
 	} else {
-		quoted = make([]byte, 2+len(rawStr))
-		quoted[0] = '"'
-		copy(quoted[1:], rawStr)
-		quoted[1+len(rawStr)] = '"'
+		quoted = append([]byte{'"'}, rawStr...)
+
+		quoted = append(quoted, '"')
 	}
 	decoded := util.ParseGJSONBytesNoCopy(quoted).String()
 	switch decoded {

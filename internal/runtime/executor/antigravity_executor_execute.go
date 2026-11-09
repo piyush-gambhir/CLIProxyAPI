@@ -772,9 +772,9 @@ func (e *AntigravityExecutor) convertStreamChunksToNonStream(chunks [][]byte) []
 	partsTotalLen := 2
 	for i, p := range parts {
 		if i > 0 {
-			partsTotalLen++
+			partsTotalLen = util.ByteCapacity(partsTotalLen, 1)
 		}
-		partsTotalLen += len(p)
+		partsTotalLen = util.ByteCapacity(partsTotalLen, len(p))
 	}
 
 	traceJSON, _ := json.Marshal(traceID)
@@ -792,7 +792,7 @@ func (e *AntigravityExecutor) convertStreamChunksToNonStream(chunks [][]byte) []
 		partsJSON = append(partsJSON, ']')
 		_ = templateDoc.SetRawBytes("candidates.0.content.parts", partsJSON)
 		templateBytes = templateDoc.Bytes()
-		output := make([]byte, 0, len(templateBytes)+len(traceJSON)+28)
+		output := make([]byte, 0, util.ByteCapacity(len(templateBytes), len(traceJSON), 28))
 		output = append(output, `{"response":`...)
 		output = append(output, templateBytes...)
 		output = append(output, `,"traceId":`...)
@@ -801,7 +801,7 @@ func (e *AntigravityExecutor) convertStreamChunksToNonStream(chunks [][]byte) []
 		return output
 	}
 
-	output := make([]byte, 0, len(templateBytes)-len(antigravityPartsPlaceholder)+partsTotalLen+len(traceJSON)+28)
+	output := make([]byte, 0, util.ByteCapacity(len(templateBytes)-len(antigravityPartsPlaceholder), partsTotalLen, len(traceJSON), 28))
 	output = append(output, `{"response":`...)
 	output = append(output, templateBytes[:placeholderIdx]...)
 	output = append(output, '[')

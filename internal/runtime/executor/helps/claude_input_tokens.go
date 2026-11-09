@@ -350,7 +350,7 @@ func (state *ClaudeInputTokenState) applyChunk(ctx context.Context, chunk []byte
 				}
 				payloadStart := lineStart + payloadOffset
 				payloadStop := lineStart + payloadEnd
-				updated := make([]byte, 0, len(chunk)+len(updatedPayload)-len(payload))
+				updated := make([]byte, 0, util.ByteCapacity(len(chunk)-len(payload), len(updatedPayload)))
 				updated = append(updated, chunk[:payloadStart]...)
 				updated = append(updated, updatedPayload...)
 				updated = append(updated, chunk[payloadStop:]...)

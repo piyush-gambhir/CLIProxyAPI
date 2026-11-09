@@ -175,7 +175,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Using auth: id=%s label=%s\n", chosen.ID, chosen.Label)
+	fmt.Printf("Using auth: id=%q label=%q\n", chosen.ID, chosen.Label)
 	fmt.Println("Fetching Devin model catalog from upstream...")
 
 	rawModels, err := fetchRawDevinModels(ctx, cfg, chosen, apiKey)

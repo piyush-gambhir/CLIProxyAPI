@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	"io"
 	"net/http"
 	"strings"
@@ -161,7 +162,7 @@ func encodeCodexWebsocketAsSSE(payload []byte) []byte {
 	if len(payload) == 0 {
 		return nil
 	}
-	line := make([]byte, 0, len("data: ")+len(payload))
+	line := make([]byte, 0, securityutil.ByteCapacity(len("data: "), len(payload)))
 	line = append(line, []byte("data: ")...)
 	line = append(line, payload...)
 	return line

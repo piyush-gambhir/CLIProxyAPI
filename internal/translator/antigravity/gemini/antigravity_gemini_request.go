@@ -170,7 +170,7 @@ func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 	common.AttachDefaultSafetySettingsDoc(reqDoc, "safetySettings")
 
 	modelJSON, _ := json.Marshal(modelName)
-	out := make([]byte, 0, 34+len(modelJSON)+reqDoc.Len())
+	out := make([]byte, 0, util.ByteCapacity(34, len(modelJSON), reqDoc.Len()))
 	out = append(out, `{"project":"","request":`...)
 	out = reqDoc.AppendTo(out)
 	out = append(out, `,"model":`...)

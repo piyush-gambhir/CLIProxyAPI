@@ -170,7 +170,7 @@ func main() {
 	// Fetch models from the upstream Antigravity API using available auths.
 	var models []modelEntry
 	for _, chosen := range agAuths {
-		fmt.Printf("Using auth: id=%s label=%s\n", chosen.ID, chosen.Label)
+		fmt.Printf("Using auth: id=%q label=%q\n", chosen.ID, chosen.Label)
 		fmt.Println("Fetching Antigravity model list from upstream...")
 
 		fetchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)

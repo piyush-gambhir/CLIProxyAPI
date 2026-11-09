@@ -596,7 +596,7 @@ func appendAPIWebsocketTimeline(ginCtx *gin.Context, chunk []byte) {
 	}
 	if existing, exists := ginCtx.Get(apiWebsocketTimelineKey); exists {
 		if existingBytes, ok := existing.([]byte); ok && len(existingBytes) > 0 {
-			combined := make([]byte, 0, len(existingBytes)+len(data)+2)
+			combined := make([]byte, 0, util.ByteCapacity(len(existingBytes), len(data), 2))
 			combined = append(combined, existingBytes...)
 			if !bytes.HasSuffix(existingBytes, []byte("\n")) {
 				combined = append(combined, '\n')

@@ -47,7 +47,7 @@ func DoClaudeLogin(cfg *config.Config, options *LoginOptions) {
 			}
 			return
 		}
-		fmt.Printf("Claude authentication failed: %v\n", err)
+		fmt.Printf("Claude authentication failed: %q\n", err)
 		return
 	}
 
