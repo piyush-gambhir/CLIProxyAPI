@@ -37,3 +37,17 @@ func TestMaskSensitiveQueryMasksValue(t *testing.T) {
 		}
 	})
 }
+
+func TestSensitiveHeadersNeverExposeShortSecretsOrCookies(t *testing.T) {
+	for _, key := range []string{"Cookie", "Set-Cookie", "X-Management-Key", "X-Password", "Authorization", "X-API-Key"} {
+		for _, value := range []string{"ab", "session=very-private-cookie-value"} {
+			got := util.MaskSensitiveHeaderValue(key, value)
+			if strings.Contains(got, value) {
+				t.Errorf("%s leaked %q: %q", key, value, got)
+			}
+		}
+	}
+	if got := util.MaskSensitiveHeaderValue("Content-Type", "application/json"); got != "application/json" {
+		t.Errorf("ordinary header changed: %q", got)
+	}
+}

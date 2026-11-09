@@ -4,6 +4,7 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -1018,8 +1019,14 @@ func intModelValue(model map[string]any, key string) int {
 	case int:
 		return value
 	case int64:
+		if value < 0 || uint64(value) > uint64(^uint(0)>>1) {
+			return 0
+		}
 		return int(value)
 	case float64:
+		if math.IsNaN(value) || value < 0 || value >= math.Exp2(strconv.IntSize-1) {
+			return 0
+		}
 		return int(value)
 	default:
 		return 0
