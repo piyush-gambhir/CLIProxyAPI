@@ -46,6 +46,11 @@ def snapshot():
     plugin_state = sorted((p['id'], p.get('enabled')) for p in plugins['plugins'])
     return {
         'config': config, 'accounts': accounts, 'plugins': plugin_state,
+        'signInRequired': sorted(
+            row['name'] for row in credentials['files']
+            if not row.get('disabled') and
+            (row.get('requires_sign_in') or row.get('next_action') == 'sign_in')
+        ),
         'version': headers.get('X-CPA-Version'),
         'commit': headers.get('X-CPA-Commit'),
     }
@@ -64,6 +69,8 @@ def wait_healthy(manifest, before, config_file, config_hash):
         raise RuntimeError('The new executable did not become healthy within 20 seconds')
     if after['accounts'] != before['accounts']:
         raise RuntimeError('Account names, providers, disabled states, prefixes, or transport settings changed')
+    if set(after.get('signInRequired', [])) - set(before.get('signInRequired', [])):
+        raise RuntimeError('An enabled account newly requires sign-in after activation')
     if after['config'] != before['config'] or hashlib.sha256(config_file.read_bytes()).hexdigest() != config_hash:
         raise RuntimeError('The existing configuration changed during activation')
     if after['plugins'] != before['plugins']:
@@ -73,7 +80,7 @@ def wait_healthy(manifest, before, config_file, config_hash):
         raise RuntimeError('Quota scheduler strategy does not match the existing config')
     with urllib.request.urlopen(ORIGIN + '/management.html', timeout=5) as response:
         if response.status != 200:
-            raise RuntimeError('The stock dashboard is unavailable')
+            raise RuntimeError('The management dashboard is unavailable')
     return after
 
 

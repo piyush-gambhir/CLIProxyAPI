@@ -44,6 +44,14 @@ class ActivationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'Account'):
             self.check_health(after)
 
+    def test_rejects_new_sign_in_requirement(self):
+        with self.assertRaisesRegex(RuntimeError, 'newly requires sign-in'):
+            self.check_health(dict(self.after, signInRequired=['claude.json']))
+
+    def test_accepts_preexisting_sign_in_requirement(self):
+        self.before['signInRequired'] = ['claude.json']
+        self.check_health(dict(self.after, signInRequired=['claude.json']))
+
     def test_rejects_changed_disabled_state(self):
         after = copy.deepcopy(self.after)
         after['accounts'][1] = ('disabled.json', 'codex', False, '', True)

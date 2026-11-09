@@ -3,12 +3,17 @@
 Fork: https://github.com/piyush-gambhir/CLIProxyAPI
 Upstream: https://github.com/router-for-me/CLIProxyAPI
 
+Current upstream baseline: `v8.0.61`. Keep the fork's newer dependency security
+patches when resolving upstream dependency conflicts.
+
 `main` is our development and deployment branch. It contains current upstream
 code and the five Theo-inspired commits for quota polling, reset-soonest routing,
-quota status, and Codex WebSocket defaults. The stock management dashboard is used.
+quota status, and Codex WebSocket defaults. The dashboard is maintained separately
+in `piyush-gambhir/Cli-Proxy-API-Management-Center`; its configured release is
+preserved during backend upgrades.
 `piyush` preserves the retired console/gateway and its unfinished work;
 `theo-v8` preserves the original October 3 implementation. Neither is a deployment
-branch. The Kiro plugin is maintained in its separate repository.
+branch. Kiro is no longer installed in the local service.
 
 ## Update from upstream
 
@@ -60,8 +65,11 @@ The installer uses the existing `com.piyush.cliproxyapi` LaunchAgent, config, an
 OAuth directory. It backs up config, credentials, and the LaunchAgent, switches
 the release symlink, and checks the reported commit, account settings, routing,
 plugin loading, and dashboard. It restores the previous executable if checks
-fail. Credentials remain in place; installation does not log in, log out,
-replace tokens, or restore old tokens over freshly refreshed credentials.
+fail or an enabled account newly requires sign-in. Credentials remain in place;
+installation does not log in, log out, replace tokens, or restore old tokens over
+freshly refreshed credentials.
+Backups include the complete OAuth directory, including the `.codex-refresh`
+journal required by v8.0.61. Preserve that journal together with its credentials.
 
 The process restarts briefly during activation. A failed release is kept for
 inspection, and backups are private under the managed service directory.
