@@ -4,7 +4,8 @@ Fork: https://github.com/piyush-gambhir/CLIProxyAPI
 Upstream: https://github.com/router-for-me/CLIProxyAPI
 
 Current upstream baseline: `v8.0.61`. Keep the fork's newer dependency security
-patches when resolving upstream dependency conflicts.
+patches when resolving upstream dependency conflicts. The recommended toolchain
+is Go 1.27.3; the module's toolchain directive selects it for local builds.
 
 `main` is our development and deployment branch. It contains current upstream
 code and the five Theo-inspired commits for quota polling, reset-soonest routing,
