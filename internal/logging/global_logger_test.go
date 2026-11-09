@@ -322,3 +322,14 @@ func TestLogFormatterEscapesUntrustedControls(t *testing.T) {
 		}
 	}
 }
+
+func TestEscapeLogControlsKeepsOnlyPrintableRunes(t *testing.T) {
+	value := "normal\x00\b\t\x1b\u0085\u009b\u2028\u2029"
+	got := escapeLogControls(value)
+	if strings.ContainsAny(got, "\x00\b\t\x1b\u0085\u009b\u2028\u2029") {
+		t.Fatalf("control character survived: %q", got)
+	}
+	if !strings.HasPrefix(got, "normal") {
+		t.Fatalf("ordinary text changed: %q", got)
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
@@ -88,10 +89,22 @@ func formatLogFieldValue(key string, value any) string {
 	return fmt.Sprint(value)
 }
 
-var logControlEscaper = strings.NewReplacer(
-	"\r", `\r`, "\n", `\n`, "\x1b", `\x1b`,
-	"\u2028", `\u2028`, "\u2029", `\u2029`,
-)
+func escapeLogControls(value string) string {
+	isControl := func(r rune) bool { return unicode.IsControl(r) || r == '\u2028' || r == '\u2029' }
+	if strings.IndexFunc(value, isControl) < 0 {
+		return value
+	}
+	var out strings.Builder
+	for _, r := range value {
+		if isControl(r) {
+			quoted := strconv.QuoteRuneToASCII(r)
+			out.WriteString(quoted[1 : len(quoted)-1])
+		} else {
+			out.WriteRune(r)
+		}
+	}
+	return out.String()
+}
 
 // Format renders a single log entry with custom formatting.
 func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
@@ -144,7 +157,7 @@ func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 		formatted = fmt.Sprintf("[%s] [%s] [%s] %s%s\n", timestamp, reqID, levelStr, message, fieldsStr)
 	}
 	// Escape controls after assembling fields so untrusted values cannot forge log lines.
-	formatted = logControlEscaper.Replace(strings.TrimSuffix(formatted, "\n")) + "\n"
+	formatted = escapeLogControls(strings.TrimSuffix(formatted, "\n")) + "\n"
 	buffer.WriteString(formatted)
 
 	return buffer.Bytes(), nil
