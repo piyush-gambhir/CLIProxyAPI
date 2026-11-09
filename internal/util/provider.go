@@ -191,7 +191,10 @@ func HideAPIKey(apiKey string) string {
 	} else if len(apiKey) > 2 {
 		return apiKey[:1] + "..." + apiKey[len(apiKey)-1:]
 	}
-	return apiKey
+	if apiKey == "" {
+		return ""
+	}
+	return "[REDACTED]"
 }
 
 // maskAuthorizationHeader masks the Authorization header value while preserving the auth type prefix.
@@ -227,6 +230,11 @@ func MaskAuthorizationHeader(value string) string {
 func MaskSensitiveHeaderValue(key, value string) string {
 	lowerKey := strings.ToLower(strings.TrimSpace(key))
 	switch {
+	case lowerKey == "cookie" || lowerKey == "set-cookie" || lowerKey == "x-management-key" || strings.Contains(lowerKey, "password"):
+		if value == "" {
+			return ""
+		}
+		return "[REDACTED]"
 	case strings.Contains(lowerKey, "authorization"):
 		return MaskAuthorizationHeader(value)
 	case strings.Contains(lowerKey, "api-key"),

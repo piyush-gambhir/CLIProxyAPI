@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MoeForge/moego/ojson"
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/logging"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	log "github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
 )
 
 const (
@@ -64,6 +64,10 @@ func requestLogCaptureEnabled(cfg *config.Config) bool {
 // RecordAPIRequest stores the upstream request metadata in Gin context for request logging.
 func RecordAPIRequest(ctx context.Context, cfg *config.Config, info UpstreamRequestLog) {
 	if cfg == nil || cfg.CommercialMode {
+		return
+	}
+	// Check the immutable policy before accessing the pooled request context.
+	if !cfg.RequestLog && logging.DeferredAPIRequestCaptureDisabled(ctx) {
 		return
 	}
 	ginCtx := ginContextFrom(ctx)
@@ -592,7 +596,7 @@ func appendAPIWebsocketTimeline(ginCtx *gin.Context, chunk []byte) {
 	}
 	if existing, exists := ginCtx.Get(apiWebsocketTimelineKey); exists {
 		if existingBytes, ok := existing.([]byte); ok && len(existingBytes) > 0 {
-			combined := make([]byte, 0, len(existingBytes)+len(data)+2)
+			combined := make([]byte, 0, util.ByteCapacity(len(existingBytes), len(data), 2))
 			combined = append(combined, existingBytes...)
 			if !bytes.HasSuffix(existingBytes, []byte("\n")) {
 				combined = append(combined, '\n')
@@ -743,9 +747,9 @@ func extractHTMLTitle(body []byte) string {
 
 // extractJSONErrorMessage attempts to extract error.message from JSON error responses
 func extractJSONErrorMessage(body []byte) string {
-	result := gjson.GetBytes(body, "error.message")
+	result := ojson.GetBytesNoCopy(body, "error.message")
 	if result.Exists() && result.String() != "" {
-		return result.String()
+		return strings.Clone(result.String())
 	}
 	return ""
 }

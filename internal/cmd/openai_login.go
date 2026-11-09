@@ -61,7 +61,7 @@ func DoCodexLogin(cfg *config.Config, options *LoginOptions) {
 			}
 			return
 		}
-		fmt.Printf("Codex authentication failed: %v\n", err)
+		fmt.Printf("Codex authentication failed: %q\n", err)
 		return
 	}
 

@@ -49,7 +49,7 @@ func DoCodexDeviceLogin(cfg *config.Config, options *LoginOptions) {
 			}
 			return
 		}
-		fmt.Printf("Codex device authentication failed: %v\n", err)
+		fmt.Printf("Codex device authentication failed: %q\n", err)
 		return
 	}
 

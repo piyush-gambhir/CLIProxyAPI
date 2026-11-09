@@ -18,7 +18,7 @@ func LogSavingCredentials(path string) {
 		return
 	}
 	// Use filepath.Clean so logs remain stable even if callers pass redundant separators.
-	fmt.Printf("Saving credentials to %s\n", filepath.Clean(path))
+	fmt.Printf("Saving credentials to %q\n", filepath.Clean(path))
 }
 
 // LogCredentialSeparator adds a visual separator to group auth/key processing logs.

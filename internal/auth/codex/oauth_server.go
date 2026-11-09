@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdhtml "html"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -263,6 +265,12 @@ func (s *OAuthServer) handleSuccess(w http.ResponseWriter, r *http.Request) {
 // Returns:
 //   - string: The HTML content for the success page
 func (s *OAuthServer) generateSuccessHTML(setupRequired bool, platformURL string) string {
+	// OAuth success pages accept only web links and escape attribute delimiters.
+	parsed, err := url.Parse(platformURL)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+		platformURL = "https://platform.openai.com"
+	}
+	platformURL = stdhtml.EscapeString(platformURL)
 	html := LoginSuccessHtml
 
 	// Replace platform URL placeholder

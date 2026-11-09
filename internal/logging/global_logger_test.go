@@ -301,3 +301,35 @@ func TestLogFormatterFormatsShortRequestID(t *testing.T) {
 		t.Fatalf("formatted line %q does not contain expected placeholder [--------]", lineEmpty)
 	}
 }
+
+func TestLogFormatterEscapesUntrustedControls(t *testing.T) {
+	entry := log.NewEntry(log.New())
+	entry.Message = "upstream\r\n[forged]\x1b[2J\u2028next"
+	entry.Data["error"] = "failure\n[forged field]"
+	entry.Data["plugin_id"] = "test"
+	entry.Data["path"] = "plugin\r\n[forged path]"
+	formatted, err := (&LogFormatter{}).Format(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := string(formatted)
+	if strings.Count(line, "\n") != 1 || !strings.HasSuffix(line, "\n") || strings.ContainsAny(line, "\r\x1b\u2028\u2029") {
+		t.Fatalf("log must contain exactly one terminal newline and no control sequences: %q", line)
+	}
+	for _, escaped := range []string{`upstream\r\n[forged]\x1b[2J\u2028next`, `error=failure\n[forged field]`, `path=plugin\r\n[forged path]`} {
+		if !strings.Contains(line, escaped) {
+			t.Errorf("missing escaped value %q in %q", escaped, line)
+		}
+	}
+}
+
+func TestEscapeLogControlsKeepsOnlyPrintableRunes(t *testing.T) {
+	value := "normal\x00\b\t\x1b\u0085\u009b\u2028\u2029"
+	got := escapeLogControls(value)
+	if strings.ContainsAny(got, "\x00\b\t\x1b\u0085\u009b\u2028\u2029") {
+		t.Fatalf("control character survived: %q", got)
+	}
+	if !strings.HasPrefix(got, "normal") {
+		t.Fatalf("ordinary text changed: %q", got)
+	}
+}

@@ -38,7 +38,7 @@ func DoAntigravityLogin(cfg *config.Config, options *LoginOptions) {
 		fmt.Printf("Authentication saved to %s\n", savedPath)
 	}
 	if record != nil && record.Label != "" {
-		fmt.Printf("Authenticated as %s\n", record.Label)
+		fmt.Printf("Authenticated as %q\n", record.Label)
 	}
 	fmt.Println("Antigravity authentication successful!")
 }

@@ -4,6 +4,7 @@ package httpwire
 import (
 	"bytes"
 	"fmt"
+	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	"io"
 	"net"
 	"strconv"
@@ -148,7 +149,7 @@ func orderRequestHeader(header []byte, order RequestHeaderOrder) ([]byte, int64,
 			}
 			colon := bytes.IndexByte(line, ':')
 			if colon > 0 && name != "" {
-				rewritten := make([]byte, 0, len(name)+len(line)-colon)
+				rewritten := make([]byte, 0, securityutil.ByteCapacity(len(name), len(line)-colon))
 				rewritten = append(rewritten, name...)
 				rewritten = append(rewritten, line[colon:]...)
 				orderedLines = append(orderedLines, rewritten)

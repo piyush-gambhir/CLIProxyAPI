@@ -3,12 +3,18 @@
 Fork: https://github.com/piyush-gambhir/CLIProxyAPI
 Upstream: https://github.com/router-for-me/CLIProxyAPI
 
+Current upstream baseline: `v8.0.61`. Keep the fork's newer dependency security
+patches when resolving upstream dependency conflicts. The recommended toolchain
+is Go 1.27.3; the module's toolchain directive selects it for local builds.
+
 `main` is our development and deployment branch. It contains current upstream
 code and the five Theo-inspired commits for quota polling, reset-soonest routing,
-quota status, and Codex WebSocket defaults. The stock management dashboard is used.
+quota status, and Codex WebSocket defaults. The dashboard is maintained separately
+in `piyush-gambhir/Cli-Proxy-API-Management-Center`; its configured release is
+preserved during backend upgrades.
 `piyush` preserves the retired console/gateway and its unfinished work;
 `theo-v8` preserves the original October 3 implementation. Neither is a deployment
-branch. The Kiro plugin is maintained in its separate repository.
+branch. Kiro is no longer installed in the local service.
 
 ## Update from upstream
 
@@ -16,11 +22,11 @@ Check weekly for new stable upstream releases. Update sooner for relevant fixes.
 Start with a clean checkout and use a temporary branch for the integration:
 
 ```sh
-git fetch upstream main --tags
+git fetch upstream --tags
 git switch main
 git pull --ff-only origin main
 git switch -c update/upstream-YYYYMMDD
-git merge upstream/main
+git merge vX.Y.Z  # Use the reviewed stable tag, not an unreviewed upstream tip.
 ```
 
 Review conflicts, especially config layout, credential persistence, session
@@ -32,11 +38,18 @@ build required before deployment:
 go test ./sdk/cliproxy/quota ./internal/auth/codex ./sdk/cliproxy/auth ./sdk/cliproxy ./internal/api/handlers/management ./internal/api -timeout 180s
 go test ./... -timeout 180s
 go build -o bin/verify-build ./cmd/server
-git switch main
-git merge --ff-only update/upstream-YYYYMMDD
 gh auth switch --user piyush-gambhir
-git push origin main
+git push -u origin HEAD
+gh pr create --base main --title 'feat: update upstream stable baseline' --body-file /path/to/review.md
+# Merge the PR after required tests and security checks pass, then:
+git switch main
+git pull --ff-only origin main
 ```
+
+Main requires a pull request and passing security checks. Triage CodeQL findings
+against their data flow, fix real defects, and document verified false positives.
+Do not bypass the gate for an upgrade. The v8.0.61 review is recorded in
+[the security triage report](docs/security/v8.0.61-codeql-triage.md).
 
 New features are evaluated individually. Upstream's `dev` branch and unmerged
 feature PRs are useful to follow; deployments use reviewed code on our `main`.
@@ -60,8 +73,11 @@ The installer uses the existing `com.piyush.cliproxyapi` LaunchAgent, config, an
 OAuth directory. It backs up config, credentials, and the LaunchAgent, switches
 the release symlink, and checks the reported commit, account settings, routing,
 plugin loading, and dashboard. It restores the previous executable if checks
-fail. Credentials remain in place; installation does not log in, log out,
-replace tokens, or restore old tokens over freshly refreshed credentials.
+fail or an enabled account newly requires sign-in. Credentials remain in place;
+installation does not log in, log out, replace tokens, or restore old tokens over
+freshly refreshed credentials.
+Backups include the complete OAuth directory, including the `.codex-refresh`
+journal required by v8.0.61. Preserve that journal together with its credentials.
 
 The process restarts briefly during activation. A failed release is kept for
 inspection, and backups are private under the managed service directory.
