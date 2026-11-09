@@ -22,11 +22,11 @@ Check weekly for new stable upstream releases. Update sooner for relevant fixes.
 Start with a clean checkout and use a temporary branch for the integration:
 
 ```sh
-git fetch upstream main --tags
+git fetch upstream --tags
 git switch main
 git pull --ff-only origin main
 git switch -c update/upstream-YYYYMMDD
-git merge upstream/main
+git merge vX.Y.Z  # Use the reviewed stable tag, not an unreviewed upstream tip.
 ```
 
 Review conflicts, especially config layout, credential persistence, session
@@ -38,11 +38,18 @@ build required before deployment:
 go test ./sdk/cliproxy/quota ./internal/auth/codex ./sdk/cliproxy/auth ./sdk/cliproxy ./internal/api/handlers/management ./internal/api -timeout 180s
 go test ./... -timeout 180s
 go build -o bin/verify-build ./cmd/server
-git switch main
-git merge --ff-only update/upstream-YYYYMMDD
 gh auth switch --user piyush-gambhir
-git push origin main
+git push -u origin HEAD
+gh pr create --base main --title 'feat: update upstream stable baseline' --body-file /path/to/review.md
+# Merge the PR after required tests and security checks pass, then:
+git switch main
+git pull --ff-only origin main
 ```
+
+Main requires a pull request and passing security checks. Triage CodeQL findings
+against their data flow, fix real defects, and document verified false positives.
+Do not bypass the gate for an upgrade. The v8.0.61 review is recorded in
+[the security triage report](docs/security/v8.0.61-codeql-triage.md).
 
 New features are evaluated individually. Upstream's `dev` branch and unmerged
 feature PRs are useful to follow; deployments use reviewed code on our `main`.
