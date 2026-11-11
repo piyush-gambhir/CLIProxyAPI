@@ -3,18 +3,18 @@
 Fork: https://github.com/piyush-gambhir/CLIProxyAPI
 Upstream: https://github.com/router-for-me/CLIProxyAPI
 
-Current upstream baseline: `v8.0.61`. Keep the fork's newer dependency security
+Current upstream baseline: `v8.0.67`. Keep the fork's newer dependency security
 patches when resolving upstream dependency conflicts. The recommended toolchain
 is Go 1.27.3; the module's toolchain directive selects it for local builds.
 
-`main` is our development and deployment branch. It contains current upstream
-code and the five Theo-inspired commits for quota polling, reset-soonest routing,
-quota status, and Codex WebSocket defaults. The dashboard is maintained separately
-in `piyush-gambhir/Cli-Proxy-API-Management-Center`; its configured release is
-preserved during backend upgrades.
-`piyush` preserves the retired console/gateway and its unfinished work;
-`theo-v8` preserves the original October 3 implementation. Neither is a deployment
-branch. Kiro is no longer installed in the local service.
+`main` is our development and deployment branch, and the only branch. It contains
+current upstream code and the five Theo-inspired commits for quota polling,
+reset-soonest routing, quota status, and Codex WebSocket defaults. The dashboard is
+maintained separately in `piyush-gambhir/Cli-Proxy-API-Management-Center`; its
+configured release is preserved during backend upgrades.
+The tag `archive/piyush-2026-10-21` preserves the retired console/gateway and its
+unfinished work (the former `piyush` branch). It is not a deployment source. Kiro is
+no longer installed in the local service.
 
 ## Update from upstream
 
