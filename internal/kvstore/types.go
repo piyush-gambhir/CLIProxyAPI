@@ -1,5 +1,3 @@
-// Package kvstore provides a unified key-value storage abstraction and a local
-// bbolt-backed implementation with binary TTL envelopes.
 package kvstore
 
 import (
@@ -11,10 +9,8 @@ import (
 	"time"
 )
 
-// ErrCompareAndSwapUnsupported reports that the backing KV store does not support CAS.
 var ErrCompareAndSwapUnsupported = errors.New("kvstore: compare-and-swap command is not supported")
 
-// KVSetOptions configures optional expiration and conditional write behavior for KVSet.
 type KVSetOptions struct {
 	EX time.Duration
 	PX time.Duration
@@ -22,7 +18,6 @@ type KVSetOptions struct {
 	XX bool
 }
 
-// KVClient defines the key-value storage contract shared by Home KV and local BoltStore.
 type KVClient interface {
 	KVGet(ctx context.Context, key string) ([]byte, bool, error)
 	KVSet(ctx context.Context, key string, value []byte, opts KVSetOptions) (bool, error)
@@ -36,7 +31,6 @@ type KVClient interface {
 	KVMSet(ctx context.Context, pairs map[string][]byte) error
 }
 
-// BuildSetArgs validates KVSet arguments and builds the canonical Redis-style argument list.
 func BuildSetArgs(key string, value []byte, opts KVSetOptions) ([]any, error) {
 	key = strings.TrimSpace(key)
 	if key == "" {
@@ -68,7 +62,6 @@ func BuildSetArgs(key string, value []byte, opts KVSetOptions) ([]any, error) {
 	return args, nil
 }
 
-// DurationCeil divides value by unit, rounding positive remainders up to the next integer unit.
 func DurationCeil(value time.Duration, unit time.Duration) int64 {
 	if value <= 0 || unit <= 0 {
 		return 0

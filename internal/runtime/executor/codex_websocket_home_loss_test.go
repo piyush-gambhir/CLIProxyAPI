@@ -23,8 +23,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// completedWriteBarrierListener holds the first downstream frame carrying response.completed
-// inside net.Conn.Write, so the handler cannot move on until proceed is closed.
 type completedWriteBarrierListener struct {
 	net.Listener
 	armed   atomic.Bool
@@ -46,7 +44,7 @@ type completedWriteBarrierConn struct {
 }
 
 func (c *completedWriteBarrierConn) Write(p []byte) (int, error) {
-	// Server frames are neither masked nor compressed here.
+
 	if bytes.Contains(p, []byte(`"response.completed"`)) && c.listener.armed.CompareAndSwap(true, false) {
 		close(c.listener.held)
 		<-c.listener.proceed
@@ -73,8 +71,6 @@ func (d *homeLossDispatcher) RPopAuthWithConstraints(ctx context.Context, model,
 	return d.RPopAuth(ctx, model, sessionID, headers, authCount)
 }
 
-// homeLossFixture runs the real handler and a Home-dispatched Codex websocket auth against an
-// upstream that serves one turn per connection and drops the connection after response.completed.
 type homeLossFixture struct {
 	dials, creates atomic.Int32
 	dispatcher     *homeLossDispatcher
@@ -122,7 +118,7 @@ func newHomeLossFixture(t *testing.T) *homeLossFixture {
 			}
 		}
 		if dial == 1 {
-			return // EOF right after response.completed
+			return
 		}
 		if ojson.GetBytes(body, "previous_response_id").Exists() {
 			t.Errorf("continuation reached upstream: %s", body)
@@ -204,8 +200,6 @@ func (f *homeLossFixture) read(t *testing.T, kind string) []byte {
 	return raw
 }
 
-// holdUntilReleased leaves the handler blocked on the response.completed write until the idle EOF
-// has released the Home selection.
 func (f *homeLossFixture) holdUntilReleased(t *testing.T) {
 	t.Helper()
 	f.send(t, `{"type":"response.create","model":"model-a","input":[{"role":"user","content":"original full context"}]}`)
@@ -231,10 +225,6 @@ func (f *homeLossFixture) finish(t *testing.T) {
 	}
 }
 
-// An upstream EOF after response.completed releases the Home selection while the turn's result is
-// still being delivered. That release must not cancel the delivering attempt, which made the
-// conductor replay the finished create on a new connection, and must keep the credential pinned so
-// a continuation returns 409 and a fresh full create reconnects on the same credential.
 func TestCodexHomeUpstreamLossDoesNotReplay(t *testing.T) {
 	f := newHomeLossFixture(t)
 	f.holdUntilReleased(t)

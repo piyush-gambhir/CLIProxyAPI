@@ -68,16 +68,8 @@ func translateCodexRequestPairWithUpdateIntentContext(ctx context.Context, from,
 	return originalTranslated, body, changed, err
 }
 
-// codexMinOutputTokens is the smallest integer max_output_tokens value the ChatGPT
-// Codex backend accepts; smaller integers are rejected with invalid_request_error.
 const codexMinOutputTokens = 16
 
-// normalizeCodexOutputBudgetDoc raises small positive integer output budgets to the
-// Codex minimum. It judges the translated payload (max_output_tokens) rather than the
-// client payload so every source format and budget field (max_tokens,
-// max_completion_tokens, generation_config, ...) is covered uniformly. Budgets that
-// are missing, non-numeric, non-integral, or <= 0 are left untouched for the upstream
-// to reject. This runs before user payload rules so overrides and filters stay final.
 func normalizeCodexOutputBudgetDoc(doc *ojson.Doc) {
 	if doc == nil {
 		return
@@ -93,7 +85,6 @@ func normalizeCodexOutputBudgetDoc(doc *ojson.Doc) {
 	_ = doc.Set("max_output_tokens", codexMinOutputTokens)
 }
 
-// PrepareRequest injects Codex credentials into the outgoing HTTP request.
 func (e *CodexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -101,7 +92,7 @@ func (e *CodexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Aut
 	apiKey, _ := codexCredsForRequest(req.Context(), auth, req.Header)
 	if codexUseSIWCForRequest(req.Context(), auth, req.Header) && req.URL != nil && req.URL.Scheme == "https" &&
 		req.URL.Host == "chatgpt.com" && req.URL.Path == "/backend-api/codex/alpha/search" {
-		// ChatGPT Alpha Search requires the original OAuth partition, not SIWC.
+
 		apiKey, _ = auth.Metadata["access_token"].(string)
 		if strings.TrimSpace(apiKey) == "" {
 			return statusErr{code: http.StatusUnauthorized, msg: "codex executor: original OAuth access_token is required for ChatGPT Alpha Search"}
@@ -123,7 +114,6 @@ func (e *CodexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Aut
 	return nil
 }
 
-// HttpRequest injects Codex credentials into the request and executes it.
 func (e *CodexExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("codex executor: request is nil")
@@ -230,7 +220,6 @@ func (e *CodexExecutor) cacheHelperDoc(ctx context.Context, from sdktranslator.F
 	return httpReq, rawJSON, nil
 }
 
-// alignCodexContentEncoding inspects a replay copy without consuming the live request body.
 func alignCodexContentEncoding(req *http.Request) {
 	if req == nil || req.GetBody == nil {
 		return
@@ -267,7 +256,7 @@ func alignCodexContentEncoding(req *http.Request) {
 			}
 		}
 	}
-	// Magic identifies only the outermost layer, so trust declared encoding chains.
+
 	if encodingCount > 1 {
 		return
 	}
@@ -277,7 +266,7 @@ func alignCodexContentEncoding(req *http.Request) {
 	case bytes.HasPrefix(prefix, []byte{0x1f, 0x8b}):
 		req.Header.Set("Content-Encoding", "gzip")
 	default:
-		// Our zstd encoder always emits its magic; preserve opaque non-zstd encodings.
+
 		var remaining []string
 		removedZstd := false
 		for _, value := range req.Header.Values("Content-Encoding") {
@@ -314,7 +303,6 @@ func decodeCodexUpstreamResponse(resp *http.Response) error {
 	return nil
 }
 
-// doCodexRequest retries a rejected zstd body once without rerunning payload rules.
 func doCodexRequest(client *http.Client, req *http.Request, upstreamBody []byte, prepareHeaders func(*http.Request), responseReady func(*http.Response)) (*http.Response, error) {
 	alignCodexContentEncoding(req)
 	compressed := req.Header.Get("Content-Encoding") == "zstd"
@@ -365,7 +353,6 @@ func applyCodexHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, s
 	applyCodexHeadersWithSIWC(r, auth, codexUseSIWCForRequest(r.Context(), auth, ginHeaders), token, stream, cfg, ginHeaders)
 }
 
-// applyModelHeaderOverrides forces models.json config.override_header onto upstream headers.
 func applyModelHeaderOverrides(headers http.Header, modelName string) {
 	if headers == nil {
 		return
@@ -382,8 +369,6 @@ func applyModelHeaderOverrides(headers http.Header, modelName string) {
 	}
 }
 
-// applyCodexDirectImageHeaders sets Codex upstream headers for direct /images/* calls.
-// Downstream client User-Agent values are not forwarded to reduce Cloudflare 1010 blocks.
 func applyCodexDirectImageHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, stream bool, cfg *config.Config, clientHeaders ...http.Header) {
 	var ginHeaders http.Header
 	if len(clientHeaders) > 0 && clientHeaders[0] != nil {
@@ -488,11 +473,7 @@ func stripCodexSIWCUnsupportedFieldsDoc(doc *ojson.Doc, hasExplicitInstructions 
 	if doc == nil {
 		return false
 	}
-	// SIWC subscriptions reject configuration_update input items, so degrade
-	// them to the classic top-level reasoning.effort and accept the cache loss.
-	// An explicit model thinking suffix is an operator override: the thinking
-	// layer has already resolved it into the top-level effort, so only the
-	// unsupported items are removed in that case.
+
 	thinking.CollapseConfigurationUpdatesDoc(doc, len(opts) > 0 && opts[0].KeepTopLevelEffort)
 	_ = doc.Delete("prompt_cache_retention")
 	_ = doc.Delete("prompt_cache_options")
@@ -584,22 +565,6 @@ func applyCodexHeadersWithSIWC(r *http.Request, auth *cliproxyauth.Auth, useSIWC
 
 const codexRoutingHintHeader = "X-Codex-Routing-Hint"
 
-// applyCodexRoutingHint sends the routing hint native Codex attaches to every
-// ChatGPT-backend Responses request: "model=<slug>" plus ";tier=<service_tier>"
-// when the body requests a tier (openai/codex rust-v0.155.0,
-// codex-rs/core/src/client.rs build_routing_hint_header). Without it, a
-// translated request carries service_tier=priority only in the body. Whether
-// the backend needs the header to grant priority is undocumented.
-//
-// The model is the resolved model written to the upstream body, while the tier
-// is read from the final body so payload rules cannot make the hint stale. A
-// hint forwarded by a native client names its original model and is replaced.
-// Operator configuration keeps precedence: when an auth "header:" rule for the
-// hint resolves to a value (static, or a "$Header" reference the request
-// carries), that value is sent, and callers apply models.json override_header
-// afterwards. A rule that resolves to nothing falls back to the derived hint.
-// API-key requests are not touched, matching native Codex, which sends no hint
-// to API-key providers.
 func applyCodexRoutingHint(ctx context.Context, headers http.Header, auth *cliproxyauth.Auth, baseModel string, upstreamBody []byte, clientHeaders http.Header) {
 	if codexAuthUsesAPIKey(auth) || codexUseSIWCForRequest(ctx, auth, clientHeaders) {
 		return
@@ -622,9 +587,6 @@ func applyCodexRoutingHint(ctx context.Context, headers http.Header, auth *clipr
 	headers.Set(codexRoutingHintHeader, hint)
 }
 
-// codexOperatorHeaderValue returns the value the auth's "header:" rules
-// resolve to for name, using the same resolver that applied them to the
-// request, so dynamic references that resolve to nothing report "".
 func codexOperatorHeaderValue(ctx context.Context, auth *cliproxyauth.Auth, clientHeaders http.Header, name string) string {
 	if auth == nil || len(auth.Attributes) == 0 {
 		return ""
@@ -706,11 +668,6 @@ func isCodexWebSearchToolType(toolType string) bool {
 	}
 }
 
-// ensureWebSearchToolForHistory reconciles replayed web_search_call input items
-// with the request's tool declarations so upstream Codex does not fail with
-// "response protection is unavailable". Standard Responses requests receive a
-// {"type":"web_search"} tool declaration when missing, while Responses Lite
-// requests (which omit top-level hosted tools) strip the replayed search items.
 func ensureWebSearchToolForHistory(body []byte, headers http.Header) []byte {
 	if !bytes.Contains(body, []byte("web_search_call")) {
 		return body
@@ -877,9 +834,6 @@ func resolveCodexGPTImage2BaseModel(cfg *config.Config) string {
 	return model
 }
 
-// normalizeCodexImageGenerationToolsDoc strips parameters rejected by the
-// hosted image_generation tool on Codex /responses (which binds to
-// gpt-image-2-codex and rejects the complexity parameter).
 func normalizeCodexImageGenerationToolsDoc(doc *ojson.Doc) bool {
 	if doc == nil {
 		return false

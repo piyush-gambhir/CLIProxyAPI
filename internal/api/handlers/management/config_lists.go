@@ -36,9 +36,6 @@ func rejectInvalidCredentialWeight(c *gin.Context, field string, weight *int) bo
 	return false
 }
 
-// rejectInvalidFingerprintProfile fails a write that carries a value the request
-// path would silently ignore, so a typo surfaces here instead of as a warning
-// behind every later request.
 func rejectInvalidFingerprintProfile(c *gin.Context, field, profile string) bool {
 	if errValidate := config.ValidateClaudeFingerprintProfile(profile); errValidate != nil {
 		c.JSON(400, gin.H{"error": fmt.Sprintf("%s: %v", field, errValidate)})
@@ -47,7 +44,6 @@ func rejectInvalidFingerprintProfile(c *gin.Context, field, profile string) bool
 	return false
 }
 
-// Generic helpers for list[string]
 func (h *Handler) putStringList(c *gin.Context, set func([]string), after func()) {
 	data, err := c.GetRawData()
 	if err != nil {
@@ -74,8 +70,6 @@ func (h *Handler) putStringList(c *gin.Context, set func([]string), after func()
 	h.persistLocked(c)
 }
 
-// patchStringList resolves the list through targetOf under h.mu, so it edits the
-// current config instead of one a reload has replaced.
 func (h *Handler) patchStringList(c *gin.Context, targetOf func() *[]string, after func()) {
 	var body struct {
 		Old   *string `json:"old"`
@@ -119,8 +113,6 @@ func (h *Handler) patchStringList(c *gin.Context, targetOf func() *[]string, aft
 	c.JSON(400, gin.H{"error": "missing fields"})
 }
 
-// deleteFromStringList resolves the list through targetOf under h.mu, so it edits
-// the current config instead of one a reload has replaced.
 func (h *Handler) deleteFromStringList(c *gin.Context, targetOf func() *[]string, after func()) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -154,7 +146,6 @@ func (h *Handler) deleteFromStringList(c *gin.Context, targetOf func() *[]string
 	c.JSON(400, gin.H{"error": "missing index or value"})
 }
 
-// api-keys
 func (h *Handler) GetAPIKeys(c *gin.Context) { c.JSON(200, gin.H{"api-keys": h.cfg.APIKeys}) }
 func (h *Handler) PutAPIKeys(c *gin.Context) {
 	h.putStringList(c, func(v []string) {
@@ -168,7 +159,6 @@ func (h *Handler) DeleteAPIKeys(c *gin.Context) {
 	h.deleteFromStringList(c, func() *[]string { return &h.cfg.APIKeys }, func() {})
 }
 
-// gemini-api-key: []GeminiKey
 func (h *Handler) GetGeminiKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"gemini-api-key": h.geminiKeysWithAuthIndex()})
 }
@@ -372,7 +362,6 @@ func (h *Handler) DeleteGeminiKey(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "missing api-key or index"})
 }
 
-// interactions-api-key: []GeminiKey
 func (h *Handler) GetInteractionsKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"interactions-api-key": h.interactionsKeysWithAuthIndex()})
 }
@@ -586,7 +575,6 @@ func (h *Handler) findExistingClaudeKey(existing []config.ClaudeKey, item config
 	prefix := strings.TrimSpace(item.Prefix)
 	proxyURL := strings.TrimSpace(item.ProxyURL)
 
-	// Match strictly by exact identity tuple (apiKey, baseURL, prefix, proxyURL)
 	var matches []*config.ClaudeKey
 	for i := range existing {
 		if strings.TrimSpace(existing[i].APIKey) == apiKey &&
@@ -603,7 +591,6 @@ func (h *Handler) findExistingClaudeKey(existing []config.ClaudeKey, item config
 	return nil
 }
 
-// claude-api-key: []ClaudeKey
 func (h *Handler) GetClaudeKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"claude-api-key": h.claudeKeysWithAuthIndex()})
 }
@@ -862,7 +849,6 @@ func (h *Handler) DeleteClaudeKey(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "missing api-key or index"})
 }
 
-// openai-compatibility: []OpenAICompatibility
 func (h *Handler) GetOpenAICompat(c *gin.Context) {
 	c.JSON(200, gin.H{"openai-compatibility": h.openAICompatibilityWithAuthIndex()})
 }
@@ -1032,7 +1018,6 @@ func (h *Handler) DeleteOpenAICompat(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "missing name or index"})
 }
 
-// vertex-api-key: []VertexCompatKey
 func (h *Handler) GetVertexCompatKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"vertex-api-key": h.vertexCompatKeysWithAuthIndex()})
 }
@@ -1220,7 +1205,6 @@ func (h *Handler) DeleteVertexCompatKey(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "missing api-key or index"})
 }
 
-// oauth-excluded-models: map[string][]string
 func (h *Handler) GetOAuthExcludedModels(c *gin.Context) {
 	c.JSON(200, gin.H{"oauth-excluded-models": config.NormalizeOAuthExcludedModels(h.cfg.OAuthExcludedModels)})
 }
@@ -1311,7 +1295,6 @@ func (h *Handler) DeleteOAuthExcludedModels(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-// oauth-model-alias: map[string][]OAuthModelAlias
 func (h *Handler) GetOAuthModelAlias(c *gin.Context) {
 	c.JSON(200, gin.H{"oauth-model-alias": sanitizedOAuthModelAlias(h.cfg.OAuthModelAlias)})
 }
@@ -1414,7 +1397,6 @@ func (h *Handler) DeleteOAuthModelAlias(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-// oauth-request-scoped-errors: map[string][]RequestScopedErrorRule
 func (h *Handler) GetOAuthRequestScopedErrors(c *gin.Context) {
 	c.JSON(200, gin.H{"oauth-request-scoped-errors": sanitizedOAuthRequestScopedErrors(h.cfg.OAuthRequestScopedErrors)})
 }
@@ -1517,7 +1499,6 @@ func (h *Handler) DeleteOAuthRequestScopedErrors(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-// codex-api-key: []CodexKey
 func (h *Handler) GetCodexKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"codex-api-key": h.codexKeysWithAuthIndex()})
 }
@@ -1538,7 +1519,7 @@ func (h *Handler) PutCodexKeys(c *gin.Context) {
 		}
 		arr = obj.Items
 	}
-	// Filter out codex entries with empty base-url (treat as removed)
+
 	filtered := make([]config.CodexKey, 0, len(arr))
 	for i := range arr {
 		entry := arr[i]
@@ -1718,7 +1699,6 @@ func (h *Handler) DeleteCodexKey(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "missing api-key or index"})
 }
 
-// xai-api-key: []XAIKey
 func (h *Handler) GetXAIKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"xai-api-key": h.xaiKeysWithAuthIndex()})
 }
@@ -1916,7 +1896,6 @@ func (h *Handler) DeleteXAIKey(c *gin.Context) {
 	c.JSON(400, gin.H{"error": "missing api-key or index"})
 }
 
-// meta-api-key: []MetaKey
 func (h *Handler) GetMetaKeys(c *gin.Context) {
 	c.JSON(200, gin.H{"meta-api-key": h.metaKeysWithAuthIndex()})
 }
@@ -2145,7 +2124,7 @@ func normalizeOpenAICompatibilityEntry(entry *config.OpenAICompatibility) {
 	if entry == nil {
 		return
 	}
-	// Trim base-url; empty base-url indicates provider should be removed by sanitization
+
 	entry.BaseURL = strings.TrimSpace(entry.BaseURL)
 	entry.Headers = config.NormalizeHeaders(entry.Headers)
 	existing := make(map[string]struct{}, len(entry.APIKeyEntries))

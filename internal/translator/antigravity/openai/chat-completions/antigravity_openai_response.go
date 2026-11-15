@@ -1,8 +1,3 @@
-// Package openai provides response translation functionality for Antigravity to OpenAI API compatibility.
-// This package handles the conversion of Antigravity API responses into OpenAI Chat Completions-compatible
-// JSON format, transforming streaming events and non-streaming responses into the format
-// expected by OpenAI API clients. It supports both streaming and non-streaming modes,
-// handling text content, tool calls, reasoning content, and usage metadata appropriately.
 package chat_completions
 
 import (
@@ -20,37 +15,21 @@ import (
 	. "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/gemini/openai/chat-completions"
 )
 
-// convertCliResponseToOpenAIChatParams holds parameters for response conversion.
 type convertCliResponseToOpenAIChatParams struct {
 	UnixTimestamp        int64
 	FunctionIndex        int
-	SawResponse          bool   // Tracks whether any upstream response chunk was seen
-	SawToolCall          bool   // Tracks if any tool call was seen in the entire stream
-	SawFinishReason      bool   // Tracks whether finish_reason has been emitted
-	UpstreamFinishReason string // Caches the upstream finish reason for final chunk
+	SawResponse          bool
+	SawToolCall          bool
+	SawFinishReason      bool
+	UpstreamFinishReason string
 	ModelVersion         string
 	ResponseID           string
 	PendingUsageMetadata []byte
 	SanitizedNameMap     map[string]string
 }
 
-// functionCallIDCounter provides a process-wide unique counter for function call identifiers.
 var functionCallIDCounter uint64
 
-// ConvertAntigravityResponseToOpenAI translates a single chunk of a streaming response from the
-// Antigravity API format to the OpenAI Chat Completions streaming format.
-// It processes various Antigravity event types and transforms them into OpenAI-compatible JSON responses.
-// The function handles text content, tool calls, reasoning content, and usage metadata, outputting
-// responses that match the OpenAI API format. It supports incremental updates for streaming responses.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response (unused in current implementation)
-//   - rawJSON: The raw JSON response from the Antigravity API
-//   - param: A pointer to a parameter object for maintaining state between calls
-//
-// Returns:
-//   - [][]byte: A slice of OpenAI-compatible JSON responses
 func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	params, ok := (*param).(*convertCliResponseToOpenAIChatParams)
 	if !ok {
@@ -65,9 +44,7 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 	}
 
 	if bytes.Equal(rawJSON, []byte("[DONE]")) {
-		// Never finalize a stream that produced no response at all: an empty
-		// upstream body must stay detectable as a failure rather than be reported
-		// as a successful empty completion.
+
 		if params.SawResponse && !params.SawFinishReason {
 			params.SawFinishReason = true
 			finishReason, nativeFinishReason := resolveOpenAIFinishReason(params)
@@ -93,16 +70,13 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		params.SawResponse = hasAntigravityResponsePayload(rawJSON)
 	}
 
-	// Initialize the OpenAI SSE template.
 	templateDoc := ojson.NewDoc([]byte(`{"id":"","object":"chat.completion.chunk","created":12345,"model":"model","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":null},"finish_reason":null,"native_finish_reason":null}]}`))
 
-	// Extract and set the model version.
 	if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "response.modelVersion"); modelVersionResult.Exists() {
 		params.ModelVersion = strings.Clone(modelVersionResult.String())
 		_ = templateDoc.Set("model", params.ModelVersion)
 	}
 
-	// Extract and set the creation timestamp.
 	if createTimeResult := ojson.GetBytesNoCopy(rawJSON, "response.createTime"); createTimeResult.Exists() {
 		t, err := time.Parse(time.RFC3339Nano, createTimeResult.String())
 		if err == nil {
@@ -113,20 +87,15 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		_ = templateDoc.Set("created", params.UnixTimestamp)
 	}
 
-	// Extract and set the response ID.
 	if responseIDResult := ojson.GetBytesNoCopy(rawJSON, "response.responseId"); responseIDResult.Exists() {
 		params.ResponseID = strings.Clone(responseIDResult.String())
 		_ = templateDoc.Set("id", params.ResponseID)
 	}
 
-	// Cache the finish reason - do NOT set it in output yet (will be set on final chunk)
 	if finishReasonResult := ojson.GetBytesNoCopy(rawJSON, "response.candidates.0.finishReason"); finishReasonResult.Exists() {
 		params.UpstreamFinishReason = strings.Clone(strings.ToUpper(finishReasonResult.String()))
 	}
 
-	// Extract and set usage metadata (token counts). FilterSSEUsageMetadata renames
-	// non-terminal usage to cpaUsageMetadata, so retain the latest copy for [DONE]
-	// instead of treating an intermediate chunk as terminal.
 	usageResult := ojson.GetBytesNoCopy(rawJSON, "response.usageMetadata")
 	if !usageResult.Exists() {
 		if pendingUsage := ojson.GetBytesNoCopy(rawJSON, "response.cpaUsageMetadata"); pendingUsage.Exists() {
@@ -136,7 +105,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		setOpenAIUsageMetadataDoc(templateDoc, usageResult)
 	}
 
-	// Process the main content part of the response.
 	partsResult := ojson.GetBytesNoCopy(rawJSON, "response.candidates.0.content.parts")
 	if partsResult.IsArray() {
 		partResults := partsResult.Array()
@@ -163,7 +131,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 			hasTextPayload := partTextResult.Exists() && partTextResult.String() != ""
 			hasContentPayload := hasTextPayload || functionCallResult.Exists() || inlineDataResult.Exists()
 
-			// Ignore encrypted thoughtSignature but keep any actual content in the same part.
 			if hasThoughtSignature && !hasContentPayload {
 				continue
 			}
@@ -171,7 +138,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 			if partTextResult.Exists() {
 				text := partTextResult.String()
 
-				// Handle text content, distinguishing between regular content and reasoning/thoughts.
 				if partResult.Get("thought").Bool() {
 					hasReasoningContent = true
 					reasoningContent.WriteString(text)
@@ -181,8 +147,8 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 				}
 				_ = templateDoc.Set("choices.0.delta.role", "assistant")
 			} else if functionCallResult.Exists() {
-				// Handle function call content.
-				(*param).(*convertCliResponseToOpenAIChatParams).SawToolCall = true // Persist across chunks
+
+				(*param).(*convertCliResponseToOpenAIChatParams).SawToolCall = true
 				functionCallIndex := (*param).(*convertCliResponseToOpenAIChatParams).FunctionIndex
 				(*param).(*convertCliResponseToOpenAIChatParams).FunctionIndex++
 				if !hasToolCallsArray {
@@ -237,12 +203,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		}
 	}
 
-	// Determine finish_reason only on the final chunk, which upstream marks with
-	// both finishReason and usage metadata. A usage-carrying chunk without
-	// finishReason must not be treated as terminal: upstream can split the two
-	// across chunks and keep streaming afterwards, and finalizing early would make
-	// strict clients drop the remaining content. When upstream never sends
-	// finishReason at all, the [DONE] branch synthesizes the terminal chunk.
 	isFinalChunk := params.UpstreamFinishReason != "" && usageResult.Exists()
 
 	if isFinalChunk {
@@ -255,19 +215,13 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 	return [][]byte{templateDoc.Bytes()}
 }
 
-// hasAntigravityResponsePayload reports whether a chunk carries actual generated
-// content or token accounting. Presence alone is not enough: an envelope such as
-// `{}`, `{"response":{}}` or `{"response":{"candidates":[]}}` must not count as a
-// started stream, otherwise a keepalive or malformed event would be enough to
-// finalize a stream that produced nothing.
 func hasAntigravityResponsePayload(rawJSON []byte) bool {
 	for _, path := range []string{"response.candidates", "candidates"} {
 		if candidates := ojson.GetBytesNoCopy(rawJSON, path); candidates.IsArray() && len(candidates.Array()) > 0 {
 			return true
 		}
 	}
-	// FilterSSEUsageMetadata renames non-terminal usage to cpaUsageMetadata before
-	// the translator sees it, so both spellings must be accepted.
+
 	for _, path := range []string{
 		"response.usageMetadata", "response.cpaUsageMetadata",
 		"usageMetadata", "cpaUsageMetadata",
@@ -279,9 +233,6 @@ func hasAntigravityResponsePayload(rawJSON []byte) bool {
 	return false
 }
 
-// resolveOpenAIFinishReason maps the cached upstream state to the OpenAI
-// finish_reason and native_finish_reason pair. Both the terminal upstream chunk
-// and the synthesized [DONE] chunk must agree on this mapping.
 func resolveOpenAIFinishReason(params *convertCliResponseToOpenAIChatParams) (finishReason, nativeFinishReason string) {
 	switch {
 	case params.SawToolCall:
@@ -328,19 +279,6 @@ func setOpenAIUsageMetadataDoc(templateDoc *ojson.Doc, usageResult ojson.Result)
 	}
 }
 
-// ConvertAntigravityResponseToOpenAINonStream converts a non-streaming Antigravity response to a non-streaming OpenAI response.
-// This function processes the complete Antigravity response and transforms it into a single OpenAI-compatible
-// JSON response. It handles message content, tool calls, reasoning content, and usage metadata, combining all
-// the information into a single response that matches the OpenAI API format.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response
-//   - rawJSON: The raw JSON response from the Antigravity API
-//   - param: A pointer to a parameter object for the conversion
-//
-// Returns:
-//   - []byte: An OpenAI-compatible JSON response containing all message content and metadata
 func ConvertAntigravityResponseToOpenAINonStream(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	responseResult := ojson.GetBytesNoCopy(rawJSON, "response")
 	if responseResult.Exists() {

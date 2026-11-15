@@ -1,4 +1,3 @@
-// Package thinking provides unified thinking configuration processing.
 package thinking
 
 import (
@@ -8,22 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// StripThinkingConfig removes thinking configuration fields from request body.
-//
-// This function is used when a model doesn't support thinking but the request
-// contains thinking configuration. The configuration is silently removed to
-// prevent upstream API errors.
-//
-// Parameters:
-//   - body: Original request body JSON
-//   - provider: Provider name (determines which fields to strip)
-//
-// Returns:
-//   - Modified request body JSON with thinking configuration removed
-//   - Original body is returned unchanged if:
-//   - body is empty or invalid JSON
-//   - provider is unknown
-//   - no thinking configuration found
 func StripThinkingConfig(body []byte, provider string) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body
@@ -35,7 +18,6 @@ func StripThinkingConfig(body []byte, provider string) []byte {
 	return doc.Bytes()
 }
 
-// StripThinkingFieldsDoc removes thinking configuration fields from doc in place.
 func StripThinkingFieldsDoc(doc *ojson.Doc, format string, keepTopLevelEffort ...bool) {
 	_ = stripThinkingFieldsDoc(doc, format, keepTopLevelEffort...)
 }
@@ -102,7 +84,6 @@ func stripThinkingFieldsDoc(doc *ojson.Doc, format string, keepTopLevelEffort ..
 		}
 	}
 
-	// Avoid leaving an empty output_config object for Claude when effort was the only field.
 	if provider == "claude" && !keepEffort {
 		if oc := doc.Get("output_config"); oc.Exists() && oc.IsObject() && len(oc.Map()) == 0 {
 			if util.DeleteJSONDocIfExists(doc, "output_config") == nil {

@@ -11,10 +11,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// executeDevinResponsesCompaction handles Codex remote compaction v2 for the
-// native Devin route. Devin has no native compaction endpoint, so the summary
-// is generated with the same model through the normal Execute path and sealed
-// into a CPA compaction capsule, mirroring the Kimi/Meta/OpenAI-compat routes.
 func (e *DevinExecutor) executeDevinResponsesCompaction(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	var resp cliproxyexecutor.Response
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
@@ -45,8 +41,6 @@ func (e *DevinExecutor) executeDevinResponsesCompaction(ctx context.Context, aut
 	}, nil
 }
 
-// executeDevinResponsesCompactionStream emits the sealed compaction response
-// as the Responses SSE event sequence Codex expects for remote compaction v2.
 func (e *DevinExecutor) executeDevinResponsesCompactionStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	summaryResp, errSummary := e.executeDevinResponsesCompaction(ctx, auth, req, opts)

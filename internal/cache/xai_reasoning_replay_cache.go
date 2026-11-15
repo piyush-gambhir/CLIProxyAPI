@@ -15,16 +15,10 @@ import (
 )
 
 const (
-	// XAIReasoningReplayCacheTTL limits how long encrypted reasoning replay
-	// items stay in process memory.
 	XAIReasoningReplayCacheTTL = 1 * time.Hour
 
-	// XAIReasoningReplayCacheMaxEntries bounds process memory for replay
-	// continuity. Oldest entries are evicted first.
 	XAIReasoningReplayCacheMaxEntries = 10240
 
-	// XAIReasoningReplayCacheEvictBatchSize leaves headroom after the cache
-	// reaches capacity so high write volume does not rescan the map every turn.
 	XAIReasoningReplayCacheEvictBatchSize = 128
 )
 
@@ -49,43 +43,30 @@ var currentXAIReasoningReplayKVClient = func() (xaiReasoningReplayKVClient, bool
 	return homekv.CurrentKVClient()
 }
 
-// CacheXAIReasoningReplayItem stores a final Grok reasoning item for stateless
-// replay. The stored item is normalized to the minimal shape accepted by
-// Responses input replay.
 func CacheXAIReasoningReplayItem(modelName, sessionKey string, item []byte) bool {
 	return CacheXAIReasoningReplayItems(modelName, sessionKey, [][]byte{item})
 }
 
-// CacheXAIReasoningReplayItems stores the final Grok assistant output items
-// needed to replay a stateless next turn.
 func CacheXAIReasoningReplayItems(modelName, sessionKey string, items [][]byte) bool {
 	return CacheXAIReasoningReplayItemsBestEffort(context.Background(), modelName, sessionKey, items)
 }
 
-// XAIReasoningReplayStoreStatus reports why a completed-turn cache write
-// succeeded or failed so callers can decide whether to keep prior entries.
 type XAIReasoningReplayStoreStatus int
 
 const (
-	// XAIReasoningReplayStoreInvalidArgs means model/session were empty.
 	XAIReasoningReplayStoreInvalidArgs XAIReasoningReplayStoreStatus = iota
-	// XAIReasoningReplayStored means a valid reasoning batch was written.
+
 	XAIReasoningReplayStored
-	// XAIReasoningReplayNoReplayableState means the completed output had no
-	// cacheable reasoning batch (for example reasoning disabled).
+
 	XAIReasoningReplayNoReplayableState
-	// XAIReasoningReplayStoreBackendError means normalize succeeded but the
-	// storage backend failed; previous entries should be retained.
+
 	XAIReasoningReplayStoreBackendError
 )
 
-// CacheXAIReasoningReplayItemsBestEffort stores replay items for completed response paths.
 func CacheXAIReasoningReplayItemsBestEffort(ctx context.Context, modelName, sessionKey string, items [][]byte) bool {
 	return StoreXAIReasoningReplayItems(ctx, modelName, sessionKey, items) == XAIReasoningReplayStored
 }
 
-// StoreXAIReasoningReplayItems stores replay items and distinguishes empty
-// completed state from backend failures.
 func StoreXAIReasoningReplayItems(ctx context.Context, modelName, sessionKey string, items [][]byte) XAIReasoningReplayStoreStatus {
 	key := xaiReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -130,7 +111,6 @@ func StoreXAIReasoningReplayItems(ctx context.Context, modelName, sessionKey str
 	return XAIReasoningReplayStored
 }
 
-// GetXAIReasoningReplayItem retrieves a normalized reasoning replay item.
 func GetXAIReasoningReplayItem(modelName, sessionKey string) ([]byte, bool) {
 	items, ok := GetXAIReasoningReplayItems(modelName, sessionKey)
 	if !ok || len(items) == 0 {
@@ -139,7 +119,6 @@ func GetXAIReasoningReplayItem(modelName, sessionKey string) ([]byte, bool) {
 	return items[0], true
 }
 
-// GetXAIReasoningReplayItems retrieves normalized assistant output items.
 func GetXAIReasoningReplayItems(modelName, sessionKey string) ([][]byte, bool) {
 	items, ok, err := GetXAIReasoningReplayItemsRequired(context.Background(), modelName, sessionKey)
 	if err == nil {
@@ -148,7 +127,6 @@ func GetXAIReasoningReplayItems(modelName, sessionKey string) ([][]byte, bool) {
 	return nil, false
 }
 
-// GetXAIReasoningReplayItemsRequired retrieves replay items for request-time paths.
 func GetXAIReasoningReplayItemsRequired(ctx context.Context, modelName, sessionKey string) ([][]byte, bool, error) {
 	key := xaiReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -191,15 +169,12 @@ func GetXAIReasoningReplayItemsRequired(ctx context.Context, modelName, sessionK
 	return cloneXAIReasoningReplayItems(entry.Items), true, nil
 }
 
-// DeleteXAIReasoningReplayItem removes one replay item after upstream rejects
-// it or the caller otherwise knows it is stale.
 func DeleteXAIReasoningReplayItem(modelName, sessionKey string) {
 	if errDelete := DeleteXAIReasoningReplayItemRequired(context.Background(), modelName, sessionKey); errDelete != nil {
 		return
 	}
 }
 
-// DeleteXAIReasoningReplayItemRequired removes one replay item for request-time paths.
 func DeleteXAIReasoningReplayItemRequired(ctx context.Context, modelName, sessionKey string) error {
 	key := xaiReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -219,7 +194,6 @@ func DeleteXAIReasoningReplayItemRequired(ctx context.Context, modelName, sessio
 	return nil
 }
 
-// ClearXAIReasoningReplayCache clears all xAI reasoning replay state.
 func ClearXAIReasoningReplayCache() {
 	xaiReasoningReplayMu.Lock()
 	xaiReasoningReplayEntries = make(map[string]xaiReasoningReplayEntry)
@@ -232,8 +206,7 @@ func xaiReasoningReplayCacheKey(modelName, sessionKey string) string {
 	if modelName == "" || sessionKey == "" {
 		return ""
 	}
-	// The session key is the continuity boundary. Keep this independent from
-	// the selected upstream xAI credential so auth failover can preserve replay.
+
 	return strings.Join([]string{"xai-reasoning-replay", modelName, sessionKey}, "\x00")
 }
 
@@ -313,7 +286,7 @@ func normalizeXAIReasoningReplayMessageItem(itemResult ojson.Result) ([]byte, bo
 			nextPart = []byte(`{"type":"output_text","text":""}`)
 			nextPart, _ = ojson.SetBytes(nextPart, "text", textValue.String())
 		case "refusal":
-			// Responses API refusal parts use the "refusal" field, not "text".
+
 			refusalValue := part.Get("refusal")
 			if refusalValue.Type != ojson.String {
 				continue

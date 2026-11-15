@@ -19,30 +19,10 @@ import (
 
 var requestLogID atomic.Uint64
 
-// LogRequest logs a complete non-streaming request/response cycle to a file.
-//
-// Parameters:
-//   - url: The request URL
-//   - method: The HTTP method
-//   - requestHeaders: The request headers
-//   - body: The request body
-//   - statusCode: The response status code
-//   - responseHeaders: The response headers
-//   - response: The raw response data
-//   - apiRequest: The API request data
-//   - apiResponse: The API response data
-//   - requestID: Optional request ID for log file naming
-//   - requestTimestamp: When the request was received
-//   - apiResponseTimestamp: When the API response was received
-//
-// Returns:
-//   - error: An error if logging fails, nil otherwise
 func (l *FileRequestLogger) LogRequest(url, method string, requestHeaders map[string][]string, body []byte, statusCode int, responseHeaders map[string][]string, response, websocketTimeline, apiRequest, apiResponse, apiWebsocketTimeline []byte, apiResponseErrors []*interfaces.ErrorMessage, requestID string, requestTimestamp, apiResponseTimestamp time.Time) error {
 	return l.logRequest(url, method, requestHeaders, body, statusCode, responseHeaders, response, websocketTimeline, apiRequest, apiResponse, apiWebsocketTimeline, apiResponseErrors, false, requestID, requestTimestamp, apiResponseTimestamp)
 }
 
-// LogRequestWithOptions logs a request with optional forced logging behavior.
-// The force flag allows writing error logs even when regular request logging is disabled.
 func (l *FileRequestLogger) LogRequestWithOptions(url, method string, requestHeaders map[string][]string, body []byte, statusCode int, responseHeaders map[string][]string, response, websocketTimeline, apiRequest, apiResponse, apiWebsocketTimeline []byte, apiResponseErrors []*interfaces.ErrorMessage, force bool, requestID string, requestTimestamp, apiResponseTimestamp time.Time) error {
 	return l.logRequestWithSources(url, method, requestHeaders, body, statusCode, responseHeaders, response, websocketTimeline, nil, apiRequest, nil, apiResponse, nil, apiWebsocketTimeline, nil, apiResponseErrors, force, requestID, requestTimestamp, apiResponseTimestamp)
 }
@@ -51,12 +31,10 @@ func (l *FileRequestLogger) logRequest(url, method string, requestHeaders map[st
 	return l.logRequestWithSources(url, method, requestHeaders, body, statusCode, responseHeaders, response, websocketTimeline, nil, apiRequest, nil, apiResponse, nil, apiWebsocketTimeline, nil, apiResponseErrors, force, requestID, requestTimestamp, apiResponseTimestamp)
 }
 
-// LogRequestWithOptionsAndSources logs a request with optional file-backed large sections.
 func (l *FileRequestLogger) LogRequestWithOptionsAndSources(url, method string, requestHeaders map[string][]string, body []byte, statusCode int, responseHeaders map[string][]string, response, websocketTimeline []byte, websocketTimelineSource *FileBodySource, apiRequest, apiResponse, apiWebsocketTimeline []byte, apiWebsocketTimelineSource *FileBodySource, apiResponseErrors []*interfaces.ErrorMessage, force bool, requestID string, requestTimestamp, apiResponseTimestamp time.Time) error {
 	return l.logRequestWithSources(url, method, requestHeaders, body, statusCode, responseHeaders, response, websocketTimeline, websocketTimelineSource, apiRequest, nil, apiResponse, nil, apiWebsocketTimeline, apiWebsocketTimelineSource, apiResponseErrors, force, requestID, requestTimestamp, apiResponseTimestamp)
 }
 
-// LogRequestWithOptionsAndAllSources logs a request with optional file-backed request and response sections.
 func (l *FileRequestLogger) LogRequestWithOptionsAndAllSources(url, method string, requestHeaders map[string][]string, body []byte, statusCode int, responseHeaders map[string][]string, response, websocketTimeline []byte, websocketTimelineSource *FileBodySource, apiRequest []byte, apiRequestSource *FileBodySource, apiResponse []byte, apiResponseSource *FileBodySource, apiWebsocketTimeline []byte, apiWebsocketTimelineSource *FileBodySource, apiResponseErrors []*interfaces.ErrorMessage, force bool, requestID string, requestTimestamp, apiResponseTimestamp time.Time) error {
 	return l.logRequestWithSources(url, method, requestHeaders, body, statusCode, responseHeaders, response, websocketTimeline, websocketTimelineSource, apiRequest, apiRequestSource, apiResponse, apiResponseSource, apiWebsocketTimeline, apiWebsocketTimelineSource, apiResponseErrors, force, requestID, requestTimestamp, apiResponseTimestamp)
 }
@@ -104,12 +82,10 @@ func (l *FileRequestLogger) logRequestWithSources(url, method string, requestHea
 		return l.forwardRequestLogToHome(context.Background(), requestHeaders, requestID, buf.String())
 	}
 
-	// Ensure logs directory exists
 	if errEnsure := l.ensureLogsDir(); errEnsure != nil {
 		return fmt.Errorf("failed to create logs directory: %w", errEnsure)
 	}
 
-	// Generate filename with request ID
 	filename := l.generateFilename(url, requestID)
 	if (force && !l.enabled) || (statusCode >= 400 && statusCode != 499) {
 		filename = l.generateErrorFilename(url, requestID)
@@ -129,7 +105,7 @@ func (l *FileRequestLogger) logRequestWithSources(url, method string, requestHea
 
 	responseToWrite, decompressErr := l.decompressResponse(responseHeaders, response)
 	if decompressErr != nil {
-		// If decompression fails, continue with original response and annotate the log output.
+
 		responseToWrite = response
 	}
 
@@ -180,18 +156,6 @@ func (l *FileRequestLogger) logRequestWithSources(url, method string, requestHea
 	return nil
 }
 
-// LogStreamingRequest initiates logging for a streaming request.
-//
-// Parameters:
-//   - url: The request URL
-//   - method: The HTTP method
-//   - headers: The request headers
-//   - body: The request body
-//   - requestID: Optional request ID for log file naming
-//
-// Returns:
-//   - StreamingLogWriter: A writer for streaming response chunks
-//   - error: An error if logging initialization fails, nil otherwise
 func (l *FileRequestLogger) LogStreamingRequest(url, method string, headers map[string][]string, body []byte, requestID string) (StreamingLogWriter, error) {
 	if !l.enabled {
 		return &NoOpStreamingLogWriter{}, nil
@@ -205,12 +169,10 @@ func (l *FileRequestLogger) LogStreamingRequest(url, method string, headers map[
 		return newHomeStreamingLogWriter(url, method, headers, body, requestID), nil
 	}
 
-	// Ensure logs directory exists
 	if err := l.ensureLogsDir(); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory: %w", err)
 	}
 
-	// Generate filename with request ID
 	filename := l.generateFilename(url, requestID)
 
 	requestHeaders := make(map[string][]string, len(headers))
@@ -232,7 +194,6 @@ func (l *FileRequestLogger) LogStreamingRequest(url, method string, headers map[
 	}
 	responseBodyPath := responseBodyFile.Name()
 
-	// Create streaming writer
 	writer := &FileStreamingLogWriter{
 		logsDir:          l.logsDir,
 		logFilename:      filename,
@@ -243,26 +204,20 @@ func (l *FileRequestLogger) LogStreamingRequest(url, method string, headers map[
 		requestBodyPath:  requestBodyPath,
 		responseBodyPath: responseBodyPath,
 		responseBodyFile: responseBodyFile,
-		chunkChan:        make(chan []byte, 100), // Buffered channel for async writes
+		chunkChan:        make(chan []byte, 100),
 		closeChan:        make(chan struct{}),
 		errorChan:        make(chan error, 1),
 	}
 
-	// Start async writer goroutine
 	go writer.asyncWriter()
 
 	return writer, nil
 }
 
-// generateErrorFilename creates a filename with an error prefix to differentiate forced error logs.
 func (l *FileRequestLogger) generateErrorFilename(url string, requestID ...string) string {
 	return fmt.Sprintf("error-%s", l.generateFilename(url, requestID...))
 }
 
-// ensureLogsDir creates the logs directory if it doesn't exist.
-//
-// Returns:
-//   - error: An error if directory creation fails, nil otherwise
 func (l *FileRequestLogger) ensureLogsDir() error {
 	if _, err := os.Stat(l.logsDir); os.IsNotExist(err) {
 		return os.MkdirAll(l.logsDir, 0755)
@@ -270,34 +225,21 @@ func (l *FileRequestLogger) ensureLogsDir() error {
 	return nil
 }
 
-// generateFilename creates a sanitized filename from the URL path and current timestamp.
-// Format: v1-responses-2025-12-23T195811-a1b2c3d4.log
-//
-// Parameters:
-//   - url: The request URL
-//   - requestID: Optional request ID to include in filename
-//
-// Returns:
-//   - string: A sanitized filename for the log file
 func (l *FileRequestLogger) generateFilename(url string, requestID ...string) string {
-	// Extract path from URL
+
 	path := url
 	if strings.Contains(url, "?") {
 		path = strings.Split(url, "?")[0]
 	}
 
-	// Remove leading slash
 	if strings.HasPrefix(path, "/") {
 		path = path[1:]
 	}
 
-	// Sanitize path for filename
 	sanitized := l.sanitizeForFilename(path)
 
-	// Add timestamp
 	timestamp := time.Now().Format("2006-01-02T150405")
 
-	// Use request ID if provided, otherwise use sequential ID
 	var idPart string
 	if len(requestID) > 0 && requestID[0] != "" {
 		idPart = ShortRequestID(requestID[0])
@@ -306,14 +248,10 @@ func (l *FileRequestLogger) generateFilename(url string, requestID ...string) st
 		idPart = fmt.Sprintf("%d", id)
 	}
 
-	// Defense in depth: the sanitizer already removes both separators, but the
-	// final component must never be able to climb out of the log directory.
 	name := fmt.Sprintf("%s-%s-%s.log", sanitized, timestamp, idPart)
 	return filepath.Base(name)
 }
 
-// createUniqueLogFile atomically opens a unique log file within dir. If a file with filename already exists,
-// it avoids overwriting by injecting an incrementing sequence number before the trailing request ID component.
 func createUniqueLogFile(dir, filename string) (*os.File, string, error) {
 	if filename == "" || filename == "." || filename == ".." || strings.ContainsAny(filename, `/\`) || strings.Contains(filename, "..") || filepath.Base(filename) != filename {
 		return nil, "", fmt.Errorf("invalid log filename: %q", filename)
@@ -351,40 +289,25 @@ func createUniqueLogFile(dir, filename string) (*os.File, string, error) {
 	return nil, "", fmt.Errorf("too many conflicting log files for %s", filename)
 }
 
-// sanitizeForFilename replaces characters that are not safe for filenames.
-//
-// Parameters:
-//   - path: The path to sanitize
-//
-// Returns:
-//   - string: A sanitized filename
 func (l *FileRequestLogger) sanitizeForFilename(path string) string {
-	// Replace slashes with hyphens. Both separators are replaced because Windows
-	// treats "\\" as a path separator too: leaving it in place let a crafted
-	// request path escape the log directory via filepath.Join.
+
 	sanitized := strings.ReplaceAll(path, "/", "-")
 	sanitized = strings.ReplaceAll(sanitized, "\\", "-")
 
-	// Replace colons with hyphens
 	sanitized = strings.ReplaceAll(sanitized, ":", "-")
 
-	// Replace other problematic characters with hyphens
 	reg := regexp.MustCompile(`[<>:"|?*\s]`)
 	sanitized = reg.ReplaceAllString(sanitized, "-")
 
-	// Never let a parent-directory sequence survive.
 	for strings.Contains(sanitized, "..") {
 		sanitized = strings.ReplaceAll(sanitized, "..", "-")
 	}
 
-	// Remove multiple consecutive hyphens
 	reg = regexp.MustCompile(`-+`)
 	sanitized = reg.ReplaceAllString(sanitized, "-")
 
-	// Remove leading/trailing hyphens and dots
 	sanitized = strings.Trim(sanitized, "-.")
 
-	// Handle empty result
 	if sanitized == "" {
 		sanitized = "root"
 	}
@@ -392,7 +315,6 @@ func (l *FileRequestLogger) sanitizeForFilename(path string) string {
 	return sanitized
 }
 
-// cleanupOldErrorLogs keeps only the newest errorLogsMaxFiles forced error log files.
 func (l *FileRequestLogger) cleanupOldErrorLogs() error {
 	if l.errorLogsMaxFiles <= 0 {
 		return nil

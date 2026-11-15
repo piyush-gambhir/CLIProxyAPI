@@ -10,14 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// SaveConfigPreserveComments writes the config back to YAML while preserving existing comments
-// and key ordering by loading the original file into a yaml.Node tree and updating values in-place.
-// Existing v8 documents are saved in the latest layout. Successful migration
-// also synchronizes cfg's OAuth scope for runtime snapshots.
 func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...bool) error {
 	persistCfg := cfg
 	migrating := len(migrateV8) > 0 && migrateV8[0]
-	// Load original YAML as a node tree to preserve comments and ordering.
+
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return err
@@ -42,7 +38,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	layout = expandConfigAliases(layout)
 	migrating = migrating || IsV8ConfigLayout(layout)
 
-	// Marshal the current cfg to YAML, then unmarshal to a yaml.Node we can merge from.
 	rendered, err := yaml.Marshal((*legacyConfig)(persistCfg))
 	if err != nil {
 		return err
@@ -58,7 +53,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 		return fmt.Errorf("expected generated root mapping node")
 	}
 
-	// Keep obsolete roots until v8 migration can preserve them as comments.
 	if !migrating {
 		removeLegacyAuthBlock(original.Content[0])
 		removeRemovedIntegrationKeys(original.Content[0])
@@ -74,14 +68,12 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	pruneMappingToGeneratedKeys(original.Content[0], generated.Content[0], "devin", "sensitive-words-replace")
 	replacePluginConfigsSubtree(original.Content[0], generated.Content[0])
 
-	// Merge generated into original in-place, preserving comments/order of existing nodes.
 	mergeMappingPreserve(original.Content[0], generated.Content[0])
 	if err = restoreV8Layout(original.Content[0], layout, data, generated.Content[0]); err != nil {
 		return err
 	}
 	if !migrating {
-		// Keep historical client fields at their original legacy paths. Otherwise
-		// the generated client path makes the next v0 save look like a v8 file.
+
 		for _, alias := range v8ClientPaths {
 			if yamlPath(layout, alias.old) == nil || yamlPath(layout, alias.current) != nil || yamlPath(original.Content[0], alias.current) == nil {
 				continue
@@ -93,7 +85,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	}
 	NormalizeCollectionNodeStyles(original.Content[0])
 
-	// Encode and validate the layout before opening the destination for writing.
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
@@ -120,14 +111,12 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 		return err
 	}
 	if migrated != nil {
-		// Keep runtime-only values intact and publish scope only after the write succeeds.
+
 		cfg.OAuthOnlyFields = migrated.OAuthOnlyFields
 	}
 	return nil
 }
 
-// SaveConfigPreserveCommentsUpdateNestedScalar updates a nested scalar key path like ["a","b"]
-// while preserving comments and positions.
 func SaveConfigPreserveCommentsUpdateNestedScalar(configFile string, path []string, value string) error {
 	data, err := os.ReadFile(configFile)
 	if err != nil {
@@ -140,8 +129,6 @@ func SaveConfigPreserveCommentsUpdateNestedScalar(configFile string, path []stri
 	return os.WriteFile(configFile, data, 0600)
 }
 
-// updateNestedScalarYAML returns data with the nested scalar key path like ["a","b"] set to
-// value, preserving comments and positions.
 func updateNestedScalarYAML(data []byte, path []string, value string) ([]byte, error) {
 	var root yaml.Node
 	if errUnmarshal := yaml.Unmarshal(data, &root); errUnmarshal != nil {
@@ -150,18 +137,17 @@ func updateNestedScalarYAML(data []byte, path []string, value string) ([]byte, e
 	if root.Kind != yaml.DocumentNode || len(root.Content) == 0 {
 		return nil, fmt.Errorf("invalid yaml document structure")
 	}
-	// Resolve aliases and merge keys before updating a path. Otherwise replacing
-	// an alias with a mapping drops inherited siblings or mutates a shared anchor.
+
 	var decoded map[string]any
 	if errDecode := root.Decode(&decoded); errDecode != nil {
 		return nil, errDecode
 	}
 	root.Content[0] = expandConfigAliases(root.Content[0])
 	node := root.Content[0]
-	// descend mapping nodes following path
+
 	for i, key := range path {
 		if i == len(path)-1 {
-			// set final scalar
+
 			v := getOrCreateMapValue(node, key)
 			v.Kind = yaml.ScalarNode
 			v.Tag = "!!str"
@@ -188,7 +174,6 @@ func updateNestedScalarYAML(data []byte, path []string, value string) ([]byte, e
 	return NormalizeCommentIndentation(buf.Bytes()), nil
 }
 
-// NormalizeCommentIndentation removes indentation from standalone YAML comment lines to keep them left aligned.
 func NormalizeCommentIndentation(data []byte) []byte {
 	lines := bytes.Split(data, []byte("\n"))
 	changed := false
@@ -209,8 +194,6 @@ func NormalizeCommentIndentation(data []byte) []byte {
 	return bytes.Join(lines, []byte("\n"))
 }
 
-// getOrCreateMapValue finds the value node for a given key in a mapping node.
-// If not found, it appends a new key/value pair and returns the new value node.
 func getOrCreateMapValue(mapNode *yaml.Node, key string) *yaml.Node {
 	if mapNode.Kind != yaml.MappingNode {
 		mapNode.Kind = yaml.MappingNode
@@ -223,16 +206,13 @@ func getOrCreateMapValue(mapNode *yaml.Node, key string) *yaml.Node {
 			return mapNode.Content[i+1]
 		}
 	}
-	// append new key/value
+
 	mapNode.Content = append(mapNode.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key})
 	val := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: ""}
 	mapNode.Content = append(mapNode.Content, val)
 	return val
 }
 
-// mergeMappingPreserve merges keys from src into dst mapping node while preserving
-// key order and comments of existing keys in dst. New keys are only added if their
-// value is non-zero and not a known default to avoid polluting the config with defaults.
 func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 	var currentPath []string
 	if len(path) > 0 {
@@ -243,8 +223,7 @@ func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 		return
 	}
 	if dst.Kind != yaml.MappingNode || src.Kind != yaml.MappingNode {
-		// If kinds do not match, prefer replacing dst with src semantics in-place
-		// but keep dst node object to preserve any attached comments at the parent level.
+
 		copyNodeShallow(dst, src)
 		return
 	}
@@ -257,11 +236,11 @@ func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 			continue
 		}
 		if idx >= 0 {
-			// Merge into existing value node (always update, even to zero values)
+
 			dv := dst.Content[idx+1]
 			mergeNodePreserve(dv, sv, childPath)
 		} else {
-			// New key: only add if value is non-zero and not a known default
+
 			candidate := deepCopyNode(sv)
 			pruneKnownDefaultsInNewNode(childPath, candidate)
 			if isKnownDefaultValue(childPath, candidate) {
@@ -272,9 +251,6 @@ func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 	}
 }
 
-// mergeNodePreserve merges src into dst for scalars, mappings and sequences while
-// reusing destination nodes to keep comments and anchors. For sequences, it updates
-// in-place by index.
 func mergeNodePreserve(dst, src *yaml.Node, path ...[]string) {
 	var currentPath []string
 	if len(path) > 0 {
@@ -294,9 +270,9 @@ func mergeNodePreserve(dst, src *yaml.Node, path ...[]string) {
 			pruneMissingMapKeys(dst, src)
 		}
 	case yaml.SequenceNode:
-		// Preserve explicit null style if dst was null and src is empty sequence
+
 		if dst.Kind == yaml.ScalarNode && dst.Tag == "!!null" && len(src.Content) == 0 {
-			// Keep as null to preserve original style
+
 			return
 		}
 		if dst.Kind != yaml.SequenceNode {
@@ -305,7 +281,7 @@ func mergeNodePreserve(dst, src *yaml.Node, path ...[]string) {
 			dst.Content = nil
 		}
 		reorderSequenceForMerge(dst, src)
-		// Update elements in place
+
 		minContent := len(dst.Content)
 		if len(src.Content) < minContent {
 			minContent = len(src.Content)
@@ -321,30 +297,28 @@ func mergeNodePreserve(dst, src *yaml.Node, path ...[]string) {
 				pruneMissingMapKeys(dst.Content[i], src.Content[i])
 			}
 		}
-		// Append any extra items from src
+
 		for i := len(dst.Content); i < len(src.Content); i++ {
 			dst.Content = append(dst.Content, deepCopyNode(src.Content[i]))
 		}
-		// Truncate if dst has extra items not in src
+
 		if len(src.Content) < len(dst.Content) {
 			dst.Content = dst.Content[:len(src.Content)]
 		}
 	case yaml.ScalarNode, yaml.AliasNode:
-		// For scalars, update Tag and Value but keep Style from dst to preserve quoting
+
 		dst.Kind = src.Kind
 		dst.Tag = src.Tag
 		dst.Value = src.Value
-		// Keep dst.Style as-is intentionally
+
 	case 0:
-		// Unknown/empty kind; do nothing
+
 	default:
-		// Fallback: replace shallowly
+
 		copyNodeShallow(dst, src)
 	}
 }
 
-// findMapKeyIndex returns the index of key node in dst mapping (index of key, not value).
-// Returns -1 when not found.
 func findMapKeyIndex(mapNode *yaml.Node, key string) int {
 	if mapNode == nil || mapNode.Kind != yaml.MappingNode {
 		return -1
@@ -357,7 +331,6 @@ func findMapKeyIndex(mapNode *yaml.Node, key string) int {
 	return -1
 }
 
-// appendPath appends a key to the path, returning a new slice to avoid modifying the original.
 func appendPath(path []string, key string) []string {
 	if len(path) == 0 {
 		return []string{key}
@@ -368,22 +341,6 @@ func appendPath(path []string, key string) []string {
 	return newPath
 }
 
-// isKnownDefaultValue returns true if the given node at the specified path
-// represents a known default value that should not be written to the config file.
-// This prevents non-zero defaults from polluting the config.
-//
-// Credential connection-pool blocks (enabled, idle-conn-timeout,
-// max-idle-conns-per-host) are deliberately absent from the pointer-backed
-// zero-value whitelist below. The pruning here only applies to keys that are new
-// to the destination document: a block already present on disk is merged into its
-// existing node and survives. So an empty block (connection-pool: {} is the opt-in
-// for the default pool), an explicit enabled: false, and an explicit
-// max-idle-conns-per-host: 0 all persist when the operator wrote them by hand or
-// through the v8 management API, which writes the YAML tree directly. The
-// remaining gap is a block that only exists in an in-memory Config, for example one
-// an SDK embedder adds through sdk/config.SaveConfigPreserveComments to a file that
-// never carried it: pruning drops those zero-valued sub-keys. No management
-// endpoint mutates ProxyConnectionPool, so that path is reachable only from code.
 func isSensitiveWordsReplaceEntryPath(path []string) bool {
 	for i, part := range path {
 		if part == "sensitive-words-replace" && i < len(path)-1 {
@@ -439,43 +396,34 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 		}
 	}
 
-	// Credential weights and retry overrides are pointer-backed: zero is explicit.
 	if len(path) > 0 && (path[len(path)-1] == "weight" || path[len(path)-1] == "request-retry") && node != nil && node.Kind == yaml.ScalarNode && node.Tag == "!!int" {
 		return false
 	}
 
-	// session-date-pin-days is pointer-backed: only an explicit zero is
-	// preserved; the default value must not pollute saves.
 	if len(path) > 0 && path[len(path)-1] == "session-date-pin-days" && node != nil && node.Kind == yaml.ScalarNode && node.Tag == "!!int" && node.Value == "0" {
 		return false
 	}
 
-	// Pointer-backed booleans (such as cache-user-id and disable-cooling): explicit false is meaningful and must be preserved.
 	if len(path) > 0 && (path[len(path)-1] == "cache-user-id" || path[len(path)-1] == "disable-cooling") && node != nil && node.Kind == yaml.ScalarNode && node.Tag == "!!bool" {
 		return false
 	}
 
-	// A parent mapping carrying an explicit session-date-pin-days value must
-	// survive the zero-value check below, or the new key is never written.
 	if node != nil && node.Kind == yaml.MappingNode {
 		if pinIdx := findMapKeyIndex(node, "session-date-pin-days"); pinIdx >= 0 {
 			return false
 		}
 	}
 
-	// First check if it's a zero value
 	if isZeroValueNode(node) {
 		return true
 	}
 
-	// Match known non-zero defaults by exact dotted path.
 	if len(path) == 0 {
 		return false
 	}
 
 	fullPath := strings.Join(path, ".")
 
-	// Check string defaults
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" {
 		switch fullPath {
 		case "pprof.addr":
@@ -489,7 +437,6 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 		}
 	}
 
-	// Check integer defaults
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!int" {
 		switch fullPath {
 		case "error-logs-max-files":
@@ -502,8 +449,6 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 	return false
 }
 
-// pruneKnownDefaultsInNewNode removes default-valued descendants from a new node
-// before it is appended into the destination YAML tree.
 func pruneKnownDefaultsInNewNode(path []string, node *yaml.Node) {
 	if node == nil || isPluginConfigsSubtreePath(path) || isSensitiveWordsReplaceEntryPath(path) {
 		return
@@ -543,9 +488,6 @@ func pruneKnownDefaultsInNewNode(path []string, node *yaml.Node) {
 	}
 }
 
-// isZeroValueNode returns true if the YAML node represents a zero/default value
-// that should not be written as a new key to preserve config cleanliness.
-// For mappings and sequences, recursively checks if all children are zero values.
 func isZeroValueNode(node *yaml.Node) bool {
 	if node == nil {
 		return true
@@ -566,7 +508,7 @@ func isZeroValueNode(node *yaml.Node) bool {
 		if len(node.Content) == 0 {
 			return true
 		}
-		// Check if all elements are zero values
+
 		for _, child := range node.Content {
 			if !isZeroValueNode(child) {
 				return false
@@ -577,7 +519,7 @@ func isZeroValueNode(node *yaml.Node) bool {
 		if len(node.Content) == 0 {
 			return true
 		}
-		// Check if all values are zero values (values are at odd indices)
+
 		for i := 1; i < len(node.Content); i += 2 {
 			if !isZeroValueNode(node.Content[i]) {
 				return false
@@ -588,7 +530,6 @@ func isZeroValueNode(node *yaml.Node) bool {
 	return false
 }
 
-// deepCopyNode creates a deep copy of a yaml.Node graph.
 func deepCopyNode(n *yaml.Node) *yaml.Node {
 	return deepCopyNodeSeen(n, map[*yaml.Node]*yaml.Node{})
 }
@@ -614,8 +555,6 @@ func deepCopyNodeSeen(n *yaml.Node, seen map[*yaml.Node]*yaml.Node) *yaml.Node {
 	return &cp
 }
 
-// copyNodeShallow copies type/tag/value and resets content to match src, but
-// keeps the same destination node pointer to preserve parent relations/comments.
 func copyNodeShallow(dst, src *yaml.Node) {
 	if dst == nil || src == nil {
 		return
@@ -623,7 +562,7 @@ func copyNodeShallow(dst, src *yaml.Node) {
 	dst.Kind = src.Kind
 	dst.Tag = src.Tag
 	dst.Value = src.Value
-	// Replace content with deep copy from src
+
 	if len(src.Content) > 0 {
 		dst.Content = make([]*yaml.Node, len(src.Content))
 		for i := range src.Content {
@@ -687,7 +626,7 @@ func matchSequenceElement(original []*yaml.Node, used []bool, target *yaml.Node)
 		}
 	default:
 	}
-	// Fallback to structural equality to preserve nodes lacking explicit identifiers.
+
 	for i := range original {
 		if used[i] || original[i] == nil {
 			continue
@@ -839,8 +778,7 @@ func pruneMappingToGeneratedKeys(dstRoot, srcRoot *yaml.Node, keyPath ...string)
 	}
 	srcIdx := findMapKeyIndex(srcRoot, key)
 	if srcIdx < 0 {
-		// Keep explicit OAuth maps when the last channel is removed. Their presence
-		// must survive saves and override legacy fields when restored to the v8 layout.
+
 		if key == "oauth-excluded-models" || key == "oauth-model-alias" || key == "oauth-request-scoped-errors" || key == "oauth-settings" {
 			dstRoot.Content[dstIdx+1] = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
 			return
@@ -899,16 +837,6 @@ func pruneMissingMapKeys(dstMap, srcMap *yaml.Node) {
 	}
 }
 
-// shouldPruneNestedMappingKeys reports whether keys missing from src should be pruned from dst.
-// This is strictly scoped to credential-nested mappings such as "cloak" and "headers" under
-// known credential sequence paths to prevent stale deleted keys from persisting while leaving
-// all other mappings and root sections unaffected.
-//
-// Credential connection-pool blocks stay out of this list on purpose. Pruning only runs while
-// merging a document from an in-memory Config, and a removed pool sub-key can mean either
-// "delete it" or "inherit the group value" depending on the caller; guessing wrong would silently
-// change pooling for a credential. Hand-edited files and v8 management saves therefore keep a
-// sub-key until the whole block is removed.
 func shouldPruneNestedMappingKeys(path []string) bool {
 	if len(path) < 2 {
 		return false
@@ -928,10 +856,6 @@ func shouldPruneNestedMappingKeys(path []string) bool {
 	}
 }
 
-// NormalizeCollectionNodeStyles forces YAML collections to use block notation, keeping
-// lists and maps readable. Empty sequences retain flow style ([]) so empty list markers
-// remain compact. It also clears double quotes from string mapping keys so JSON-derived
-// keys render as standard unquoted YAML keys.
 func NormalizeCollectionNodeStyles(node *yaml.Node) {
 	if node == nil {
 		return
@@ -963,7 +887,7 @@ func NormalizeCollectionNodeStyles(node *yaml.Node) {
 			NormalizeCollectionNodeStyles(node.Content[i])
 		}
 	default:
-		// Scalars keep their existing style to preserve quoting
+
 	}
 }
 

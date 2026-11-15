@@ -1099,7 +1099,7 @@ func TestCodexReplayPrefixFingerprintsMatchesDirectComputation(t *testing.T) {
 		ojson.Parse(`{"type":"function_call_output","call_id":"call_1","output":"ok"}`),
 	}
 	cache := newCodexReplayPrefixFingerprints(items)
-	// Out-of-order and repeated probes mirror the downward anchor scan.
+
 	for _, end := range []int{4, 2, 0, 3, 1, 4, 2} {
 		want := codexReplayInputPrefixFingerprint(items, end)
 		if got := cache.at(end); got != want {

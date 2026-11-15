@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executionregistry"
 )
 
-// ConcurrencyReleaseFrame is the cumulative release accepted by Home for one credential and model.
 type ConcurrencyReleaseFrame struct {
 	CredentialID string `json:"credential_id"`
 	Model        string `json:"model"`
@@ -46,7 +45,6 @@ func newReleaseFlusher(flushInterval, maxBackoff time.Duration, send func(contex
 	}
 }
 
-// NewReleaseFlusher creates a flusher that reads timing updates from the current limiter configuration.
 func NewReleaseFlusher(configProvider func() internalconfig.CredentialConcurrencyConfig, send func(context.Context, ConcurrencyReleaseFrame) error) *releaseFlusher {
 	flusher := newReleaseFlusher(0, 0, send)
 	flusher.SetConfigProvider(configProvider)
@@ -63,7 +61,6 @@ func (f *releaseFlusher) SetConfigProvider(provider func() internalconfig.Creden
 	f.signal()
 }
 
-// SetSender replaces the Home lifetime used for subsequent release attempts.
 func (f *releaseFlusher) SetSender(send func(context.Context, ConcurrencyReleaseFrame) error) {
 	if f == nil {
 		return
@@ -74,8 +71,6 @@ func (f *releaseFlusher) SetSender(send func(context.Context, ConcurrencyRelease
 	f.signal()
 }
 
-// MarkDirty records the latest cumulative sequence for one release group and
-// returns a ticket completed when Home acknowledges that sequence.
 func (f *releaseFlusher) MarkDirty(group executionregistry.ReleaseGroup, sequence int64) *executionregistry.ReleaseTicket {
 	if f == nil || sequence <= 0 || group.CredentialID == "" || group.Model == "" {
 		return nil
@@ -104,7 +99,6 @@ func (f *releaseFlusher) MarkDirty(group executionregistry.ReleaseGroup, sequenc
 	return executionregistry.NewReleaseTicket(group, sequence, done)
 }
 
-// Run sends dirty groups until its lifetime is cancelled.
 func (f *releaseFlusher) Run(ctx context.Context) {
 	if f == nil {
 		return
@@ -256,7 +250,6 @@ func (f *releaseFlusher) flush(ctx context.Context) bool {
 	return failed
 }
 
-// Flush waits for all currently dirty groups to be acknowledged within ctx.
 func (f *releaseFlusher) Flush(ctx context.Context) error {
 	if f == nil {
 		return nil

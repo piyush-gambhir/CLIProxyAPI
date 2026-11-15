@@ -57,9 +57,6 @@ func codexAPIKeyTestAuth(baseURL string) *cliproxyauth.Auth {
 	}
 }
 
-// A Claude Messages request with speed=fast (Claude Code Fast Mode) must reach
-// the ChatGPT Codex backend the way native Codex 0.155 sends Fast: the body
-// carries service_tier=priority and the routing hint names the same tier.
 func TestCodexExecutorRoutingHintCarriesRequestedTier(t *testing.T) {
 	const fastClaude = `{"model":"gpt-5.5","max_tokens":64,"speed":"fast","messages":[{"role":"user","content":"hi"}]}`
 	const plainClaude = `{"model":"gpt-5.5","max_tokens":64,"messages":[{"role":"user","content":"hi"}]}`

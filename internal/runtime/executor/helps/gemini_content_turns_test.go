@@ -218,7 +218,7 @@ func TestEnsureGeminiTrailingUserContent(t *testing.T) {
 }
 
 func TestEnsureGeminiBoundaryUserContent(t *testing.T) {
-	// A single model turn should get both leading and trailing user turns
+
 	inputJSON := `{"contents":[{"role":"model","parts":[{"text":"single answer"}]}]}`
 	out := EnsureGeminiBoundaryUserContent([]byte(inputJSON), "contents")
 	contents := ojson.GetBytes(out, "contents").Array()

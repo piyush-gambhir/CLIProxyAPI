@@ -31,9 +31,6 @@ var newDevinOAuthService = func(cfg *config.Config) devinOAuthService {
 	return devin.NewDevinAuthService(client)
 }
 
-// devinCallbackURL builds the required loopback callback URL for Devin OAuth.
-// Devin's authorization page strictly validates that redirect_uri matches
-// http://127.0.0.1:<port>/callback (http protocol, 127.0.0.1 host, and /callback path).
 func (h *Handler) devinCallbackURL() (string, error) {
 	cfg := h.configSnapshot()
 	if h == nil || cfg == nil || cfg.Port <= 0 {
@@ -42,7 +39,6 @@ func (h *Handler) devinCallbackURL() (string, error) {
 	return fmt.Sprintf("http://127.0.0.1:%d/callback", cfg.Port), nil
 }
 
-// RequestDevinToken starts the same callback/status flow used by the other WebUI providers.
 func (h *Handler) RequestDevinToken(c *gin.Context) {
 	redirectURI, errRedirect := h.devinCallbackURL()
 	if errRedirect != nil {
@@ -67,7 +63,7 @@ func (h *Handler) RequestDevinToken(c *gin.Context) {
 	RegisterOAuthSessionWithProxy(state, "devin", sessionProxyURL)
 	respPayload := gin.H{"status": "ok", "url": authURL, "state": state}
 	bindOAuthSessionTarget(c, state, respPayload)
-	// Do not inherit the HTTP request cancellation: login continues after returning the URL.
+
 	ctx := PopulateAuthContext(context.Background(), c)
 	authDir := ""
 	if cfg != nil {
@@ -114,7 +110,7 @@ func (h *Handler) completeDevinOAuth(ctx context.Context, authDir, state, codeVe
 
 	token, errExchange := authSvc.ExchangeCodeForToken(ctx, result.Code, codeVerifier)
 	if errExchange != nil || strings.TrimSpace(token) == "" {
-		// Upstream errors can contain tokens or authorization codes; never expose them.
+
 		if IsOAuthSessionPending(state, "devin") {
 			SetOAuthSessionError(state, "Failed to exchange authorization code for tokens")
 		}

@@ -18,7 +18,6 @@ func (s *PostgresStore) refreshTable() string {
 	return s.fullTableName(name + "_refresh_journal")
 }
 
-// RefreshClaim uses a unique database key, independent of disposable auth mirrors.
 func (s *PostgresStore) RefreshClaim(ctx context.Context, key string) (bool, error) {
 	if s == nil || s.db == nil {
 		return false, fmt.Errorf("postgres refresh journal is unavailable")
@@ -35,10 +34,6 @@ func (s *PostgresStore) RefreshClaim(ctx context.Context, key string) (bool, err
 	return count == 1, errCount
 }
 
-// Bootstrap prepares the table before refresh workers start. The lazy path also
-// supports embedded callers. A database-wide transaction lock serializes DDL
-// across instances, including differently-spelled schema/search_path aliases.
-// Only successful initialization is cached, so temporary failures can recover.
 func (s *PostgresStore) ensureRefreshSchema(ctx context.Context) error {
 	s.refreshSchemaMu.Lock()
 	defer s.refreshSchemaMu.Unlock()

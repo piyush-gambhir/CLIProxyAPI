@@ -29,8 +29,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-// lossFixture runs the real handler, manager and Codex executor against a scripted upstream.
-// script is called once per upstream connection with its 1-based index.
 type lossFixture struct {
 	t           *testing.T
 	base        *handlers.BaseAPIHandler
@@ -40,7 +38,6 @@ type lossFixture struct {
 	authIDs     sync.Map
 }
 
-// access, when given, authenticates the client with the header "Bearer key-1" on every turn.
 func newLossFixture(t *testing.T, steering bool, script func(index int, c *websocket.Conn, read func() []byte), access ...sdkaccess.Provider) *lossFixture {
 	t.Helper()
 	f := &lossFixture{t: t}
@@ -76,7 +73,7 @@ func newLossFixture(t *testing.T, steering bool, script func(index int, c *webso
 	manager := coreauth.NewManager(nil, nil, nil)
 	manager.SetConfig(cfg)
 	manager.RegisterExecutor(runtimeexecutor.NewCodexAutoExecutor(cfg))
-	// Two credentials with distinct keys, so a reconnect on another one is visible.
+
 	for _, key := range []string{"key-a", "key-b"} {
 		authID := "loss-" + key + strings.ReplaceAll(t.Name(), "/", "-")
 		if _, errRegister := manager.Register(context.Background(), &coreauth.Auth{
@@ -139,7 +136,6 @@ func (f *lossFixture) create(extra string) {
 	f.send(fmt.Sprintf(`{"type":"response.create","model":"loss-model","input":[]%s}`, extra))
 }
 
-// next returns the next downstream frame; the socket must still be open.
 func (f *lossFixture) next() []byte {
 	f.t.Helper()
 	_ = f.client.SetReadDeadline(time.Now().Add(10 * time.Second))
@@ -172,8 +168,6 @@ func (f *lossFixture) awaitCompleted() {
 	}
 }
 
-// awaitProbeCompleted sends creates until one completes. Errors are accepted only for the
-// event_id of the probe just sent.
 func (f *lossFixture) awaitProbeCompleted() {
 	f.t.Helper()
 	for i := 0; i < 10; i++ {
@@ -207,7 +201,7 @@ func TestResponsesWebsocketUpstreamLossKeepsDownstreamOpen(t *testing.T) {
 		read()
 		if index == 1 {
 			_ = c.WriteMessage(websocket.TextMessage, []byte(lossCreated))
-			return // EOF with the create outcome unknown
+			return
 		}
 		_ = c.WriteMessage(websocket.TextMessage, []byte(lossCompleted))
 		read()
@@ -217,8 +211,7 @@ func TestResponsesWebsocketUpstreamLossKeepsDownstreamOpen(t *testing.T) {
 	if got := ojson.GetBytesNoCopy(lost, "error.code").String(); got != "upstream_websocket_lost" {
 		t.Fatalf("loss error = %s", lost)
 	}
-	// The turn is not replayed and a continuation cannot resume the lost socket. The full
-	// create follows back to back: the refusal is not a loss and must not fence it.
+
 	f.create(`,"previous_response_id":"r1"`)
 	f.create("")
 	if got := ojson.GetBytesNoCopy(f.nextError(), "error.code").String(); got != "previous_response_not_found" {
@@ -249,9 +242,7 @@ func TestResponsesWebsocketIdleUpstreamEOFIsSilent(t *testing.T) {
 	f.create("")
 	f.awaitCompleted()
 	<-closed
-	// A read deadline would break the client conn for good, so silence is checked in order:
-	// awaitCompleted fails on any error frame, and a loss frame would precede the completion.
-	// The idle socket is gone: a continuation cannot resume it.
+
 	f.create(`,"previous_response_id":"r2"`)
 	if got := ojson.GetBytesNoCopy(f.nextError(), "error.code").String(); got != "previous_response_not_found" {
 		t.Fatalf("continuation after idle EOF = %s", got)
@@ -269,7 +260,7 @@ func TestResponsesWebsocketDuplexLossReportsEveryOperation(t *testing.T) {
 		read()
 		if index == 1 {
 			_ = c.WriteMessage(websocket.TextMessage, []byte(lossCreated))
-			read() // the steer; never acknowledged
+			read()
 			close(steered)
 			return
 		}
@@ -296,8 +287,6 @@ func TestResponsesWebsocketDuplexLossReportsEveryOperation(t *testing.T) {
 	}
 }
 
-// runAcceptedSteer: successor means the accepted steer's response r2 ends after the steer is
-// accepted; failure, when set, is an error event without a response id that ends it instead.
 func runAcceptedSteer(t *testing.T, successor bool, failure string) {
 	const accepted = `{"type":"response.steer.accepted","steer":{"id":"st1","previous_response_id":"r1"}}`
 	steered := make(chan struct{})
@@ -309,7 +298,7 @@ func runAcceptedSteer(t *testing.T, successor bool, failure string) {
 			return
 		}
 		_ = c.WriteMessage(websocket.TextMessage, []byte(lossCreated))
-		read() // the steer
+		read()
 		_ = c.WriteMessage(websocket.TextMessage, []byte(accepted))
 		if successor {
 			_ = c.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r2","previous_response_id":"r1","output":[]}}`))
@@ -325,7 +314,7 @@ func runAcceptedSteer(t *testing.T, successor bool, failure string) {
 	f.send(`{"type":"response.steer","previous_response_id":"r1","input":"x","event_id":"s1"}`)
 	<-steered
 	if !successor {
-		// The accepted steer and the create each get exactly one outcome-unknown error.
+
 		for _, id := range []string{"c1", "s1"} {
 			p := f.nextError()
 			if ojson.GetBytesNoCopy(p, "error.code").String() != "upstream_websocket_lost" || ojson.GetBytesNoCopy(p, "error.event_id").String() != id {
@@ -333,13 +322,9 @@ func runAcceptedSteer(t *testing.T, successor bool, failure string) {
 			}
 		}
 	}
-	// With the successor ended nothing is outstanding. A silent loss has no frame to wait
-	// for, so probe until a create completes, which can only happen on the new connection
-	// after the loss was handled. Any other error frame (such as a report for s1) fails the
-	// test. A probe caught by the loss is reported with its own event_id, which
-	// awaitProbeCompleted accepts; s1 was removed by the reader before it read the EOF.
+
 	if failure != "" {
-		f.nextError() // the successor's own failure, not a loss report
+		f.nextError()
 	} else if successor {
 		f.awaitCompleted()
 	}
@@ -355,12 +340,10 @@ func TestResponsesWebsocketDuplexLossAcceptedSteer(t *testing.T) {
 	}
 }
 
-// An id-less error ends the successor; the idle EOF that follows must stay silent.
 func TestResponsesWebsocketDuplexLossSuccessorFailedWithoutID(t *testing.T) {
 	runAcceptedSteer(t, true, `{"type":"error","status":500,"error":{"type":"server_error","message":"boom"}}`)
 }
 
-// Without steering nothing copies the create's event_id into the loss error later.
 func TestResponsesWebsocketLossCarriesEventIDWithoutSteering(t *testing.T) {
 	f := newLossFixture(t, false, func(index int, c *websocket.Conn, read func() []byte) {
 		read()
@@ -373,9 +356,6 @@ func TestResponsesWebsocketLossCarriesEventIDWithoutSteering(t *testing.T) {
 	}
 }
 
-// A create written after the previous response ended has no running turn: its correlated
-// error is the only report, with no extra unscoped loss frame, and an id-less second create
-// must not inherit the completed first create's event_id.
 func TestResponsesWebsocketDuplexLossBetweenTurnsReportsOnce(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -391,7 +371,7 @@ func TestResponsesWebsocketDuplexLossBetweenTurnsReportsOnce(t *testing.T) {
 				_ = c.WriteMessage(websocket.TextMessage, []byte(lossCreated))
 				_ = c.WriteMessage(websocket.TextMessage, []byte(lossCompleted))
 				if index == 1 {
-					read() // the second create, lost before response.created
+					read()
 					return
 				}
 				read()
@@ -403,13 +383,11 @@ func TestResponsesWebsocketDuplexLossBetweenTurnsReportsOnce(t *testing.T) {
 			if ojson.GetBytesNoCopy(p, "error.code").String() != "upstream_websocket_lost" || ojson.GetBytesNoCopy(p, "error.event_id").String() != tc.wantID {
 				t.Fatalf("error = %s, want lost with event_id=%q", p, tc.wantID)
 			}
-			f.awaitProbeCompleted() // fails on any further error frame
+			f.awaitProbeCompleted()
 		})
 	}
 }
 
-// A create refused by the per-turn authorizer is answered locally. The EOF that follows is
-// an idle loss: the refused create is not an unsent operation.
 func TestResponsesWebsocketDuplexLossAfterRefusedCreateIsSilent(t *testing.T) {
 	provider := &revocableWebsocketAccessProvider{}
 	eof := make(chan struct{})
@@ -432,7 +410,7 @@ func TestResponsesWebsocketDuplexLossAfterRefusedCreateIsSilent(t *testing.T) {
 	}
 	provider.revoked.Store(false)
 	close(eof)
-	f.awaitProbeCompleted() // fails on a not-sent report for c2
+	f.awaitProbeCompleted()
 }
 
 type turn2BarrierModelRouterHost struct {
@@ -444,7 +422,7 @@ type turn2BarrierModelRouterHost struct {
 func (*turn2BarrierModelRouterHost) HasModelRouters() bool { return true }
 
 func (h *turn2BarrierModelRouterHost) RouteModel(_ context.Context, _ pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, bool) {
-	// Call 1 is turn 1 (c1), call 2 is turn 2 (c2) after the handler-level epoch checks.
+
 	if h.calls.Add(1) == 2 {
 		close(h.turn2Reached)
 		<-h.releaseTurn2
@@ -452,9 +430,6 @@ func (h *turn2BarrierModelRouterHost) RouteModel(_ context.Context, _ pluginapi.
 	return pluginapi.ModelRouteResponse{}, false
 }
 
-// In non-steering mode, a second response.create queued while turn 1 is active must be fenced
-// with upstream_websocket_not_sent even when the idle EOF arrives after the handler's epoch check,
-// and rejecting that stale input must not fence a third create sent after the EOF.
 func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 	turn2Reached := make(chan struct{})
 	eofProcessed := make(chan struct{})
@@ -463,7 +438,7 @@ func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 		read()
 		if index == 1 {
 			_ = c.WriteMessage(websocket.TextMessage, []byte(lossCreated))
-			read() // response.interrupt sent after c2, proving c2 is already queued at epoch 0
+			read()
 			_ = c.WriteMessage(websocket.TextMessage, []byte(lossCompleted))
 			<-turn2Reached
 			if tcpConn, ok := c.UnderlyingConn().(*net.TCPConn); ok {
@@ -492,8 +467,6 @@ func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 	f.awaitCompleted()
 	<-eofProcessed
 
-	// Queue c3 after the EOF (epoch 1) while c2 is still blocked in RouteModel; the rejected
-	// interrupt proves readResponsesWebsocketInput has already stamped and queued c3.
 	f.create(`,"event_id":"c3"`)
 	f.send(`{"type":"response.interrupt","response_id":"r1"}`)
 	if interruptErr := f.nextError(); ojson.GetBytesNoCopy(interruptErr, "status").Int() != http.StatusBadRequest {
@@ -512,13 +485,11 @@ func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 	}
 }
 
-// A 502 request-scoped-errors continue rule must not replay a response.create when the upstream
-// websocket disconnects before response.created.
 func TestResponsesWebsocketLossBeforeResponseCreatedIgnoresContinueRule(t *testing.T) {
 	f := newLossFixture(t, false, func(index int, c *websocket.Conn, read func() []byte) {
 		read()
 		if index == 1 {
-			return // EOF before response.created
+			return
 		}
 		_ = c.WriteMessage(websocket.TextMessage, []byte(lossCompleted))
 		read()
@@ -540,8 +511,6 @@ func TestResponsesWebsocketLossBeforeResponseCreatedIgnoresContinueRule(t *testi
 	}
 }
 
-// A continuation (previous_response_id) that already passed the handler epoch check before an
-// idle upstream EOF must be answered with 409 previous_response_not_found rather than 502.
 func TestResponsesWebsocketQueuedContinuationBeforeIdleEOFIs409(t *testing.T) {
 	turn2Reached := make(chan struct{})
 	eofProcessed := make(chan struct{})
@@ -550,7 +519,7 @@ func TestResponsesWebsocketQueuedContinuationBeforeIdleEOFIs409(t *testing.T) {
 		read()
 		if index == 1 {
 			_ = c.WriteMessage(websocket.TextMessage, []byte(lossCreated))
-			read() // response.interrupt sent after c2, proving c2 is already queued at epoch 0
+			read()
 			_ = c.WriteMessage(websocket.TextMessage, []byte(lossCompleted))
 			<-turn2Reached
 			if tcpConn, ok := c.UnderlyingConn().(*net.TCPConn); ok {
@@ -725,8 +694,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 				t.Cleanup(downstream.Close)
 				wsURL := "ws" + strings.TrimPrefix(downstream.URL, "http") + "/v1/responses"
 
-				// 1. Request 1 selects auth-a first, receives early 429, fails over to auth-b
-				// within the same downstream WebSocket request, and completes without closing downstream.
 				conn1, resp1, errDial1 := websocket.DefaultDialer.Dial(wsURL, nil)
 				if resp1 != nil && resp1.Body != nil {
 					defer func() {
@@ -794,7 +761,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 					t.Fatalf("after followup on conn1: authBConns=%d authBCreates=%d, want 1 and 2", authBConns.Load(), authBCreates.Load())
 				}
 
-				// 2. A subsequent independent request can still select auth-a when cooling is disabled.
 				authA429Next.Store(false)
 				conn2, resp2, errDial2 := websocket.DefaultDialer.Dial(wsURL, nil)
 				if resp2 != nil && resp2.Body != nil {
@@ -836,7 +802,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 					t.Fatalf("after request 2: authACreates=%d authBCreates=%d, want 2 and 2", authACreates.Load(), authBCreates.Load())
 				}
 
-				// 3. A continuation with previous_response_id on the pinned connection refuses cross-credential replay.
 				authA429Next.Store(true)
 				req3 := fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":"resp-a-2","input":[{"type":"message","id":"msg-3","role":"user","content":"continuation"}]}`, modelName)
 				if errWrite := conn2.WriteMessage(websocket.TextMessage, []byte(req3)); errWrite != nil {
@@ -852,7 +817,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 					t.Fatalf("after continuation failure: authACreates=%d authBCreates=%d, want 3 and 2 (must not replay previous_response_id on auth-b)", authACreates.Load(), authBCreates.Load())
 				}
 
-				// 4. When all eligible credentials return early 429, the downstream WebSocket receives a terminal 429 error frame before closing.
 				authA429Next.Store(true)
 				authB429Next.Store(true)
 				conn3, resp3, errDial3 := websocket.DefaultDialer.Dial(wsURL, nil)
@@ -985,7 +949,6 @@ func TestResponsesWebsocketTerminal429WhenAllCredentialsExhaustedOrCooling(t *te
 	t.Cleanup(downstream.Close)
 	wsURL := "ws" + strings.TrimPrefix(downstream.URL, "http") + "/v1/responses"
 
-	// 1. First turn succeeds and pins the single credential.
 	conn1, resp1, errDial1 := websocket.DefaultDialer.Dial(wsURL, nil)
 	if resp1 != nil && resp1.Body != nil {
 		defer func() {
@@ -1018,8 +981,6 @@ func TestResponsesWebsocketTerminal429WhenAllCredentialsExhaustedOrCooling(t *te
 		}
 	}
 
-	// 2. Continuation on the pinned single credential hits 429 usage_limit_reached.
-	// With no alternative credential to fail over to, it must emit a terminal 429 error frame directly instead of 1012.
 	return429.Store(true)
 	req2 := fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":"resp-single-1","input":[{"type":"message","id":"msg-2","role":"user","content":"followup"}]}`, modelName)
 	if errWrite := conn1.WriteMessage(websocket.TextMessage, []byte(req2)); errWrite != nil {
@@ -1049,8 +1010,6 @@ func TestResponsesWebsocketTerminal429WhenAllCredentialsExhaustedOrCooling(t *te
 		t.Fatalf("expected socket close after terminal 429 error frame, got frame: %s", extraFrame)
 	}
 
-	// 3. The single credential is now cooling down. A subsequent connection must receive
-	// a terminal 429 model_cooldown error frame with reset_seconds and Retry-After.
 	conn2, resp2, errDial2 := websocket.DefaultDialer.Dial(wsURL, nil)
 	if resp2 != nil && resp2.Body != nil {
 		defer func() {

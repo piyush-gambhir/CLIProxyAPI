@@ -75,7 +75,7 @@ func TestMetaExecutorTTFT(t *testing.T) {
 		{name: "http_error_fallback", httpStatus: http.StatusTooManyRequests, wantFailed: true},
 		{name: "nonstream_keeps_first_byte_timing", event: textDelta, content: "hello", nonstream: true},
 	}
-	// Keep the global usage dispatcher outside the fake-clock bubble.
+
 	coreusage.StartDefault(context.Background())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestMetaExecutorTTFT(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				started := time.Now()
 				transport := metaTTFTRoundTripFunc(func(req *http.Request) (*http.Response, error) {
-					// All delays use synctest's virtual clock. Headers precede the first body byte.
+
 					time.Sleep(10 * time.Millisecond)
 					reader, writer := io.Pipe()
 					go func() {
@@ -123,7 +123,7 @@ func TestMetaExecutorTTFT(t *testing.T) {
 						if !write(tt.event) || tt.terminal {
 							return
 						}
-						// A later completion must not replace the first effective-token time.
+
 						time.Sleep(100 * time.Millisecond)
 						write(completed)
 					}()

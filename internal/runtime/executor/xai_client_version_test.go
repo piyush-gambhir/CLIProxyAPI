@@ -10,7 +10,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// xaiVersionAtLeast compares dotted numeric version strings.
 func xaiVersionAtLeast(got, floor string) bool {
 	gotParts := strings.Split(got, ".")
 	floorParts := strings.Split(floor, ".")
@@ -30,8 +29,7 @@ func xaiVersionAtLeast(got, floor string) bool {
 }
 
 func TestXAIChatProxyClientVersionMeetsServerFloor(t *testing.T) {
-	// cli-chat-proxy.grok.com started rejecting client versions older than
-	// 1.0.13 with HTTP 426 ("Your Grok CLI version is outdated"); see #6249.
+
 	const serverFloor = "1.0.13"
 	if !xaiVersionAtLeast(xaiClientVersionValue, serverFloor) {
 		t.Fatalf("xaiClientVersionValue = %q, cli-chat-proxy rejects clients older than %s with 426", xaiClientVersionValue, serverFloor)

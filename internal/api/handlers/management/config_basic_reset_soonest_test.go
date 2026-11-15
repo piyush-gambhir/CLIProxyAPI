@@ -2,9 +2,6 @@ package management
 
 import "testing"
 
-// TestNormalizeRoutingStrategyAcceptsResetSoonestAndItsAlias pins both spellings
-// of the strategy. "expiring-first" is the name the replication spec uses; the
-// canonical value stored in the config is "reset-soonest".
 func TestNormalizeRoutingStrategyAcceptsResetSoonestAndItsAlias(t *testing.T) {
 	t.Parallel()
 
@@ -19,8 +16,6 @@ func TestNormalizeRoutingStrategyAcceptsResetSoonestAndItsAlias(t *testing.T) {
 	}
 }
 
-// TestNormalizeRoutingStrategyKeepsTheExistingValues guards the upstream names
-// against a regression from the new case.
 func TestNormalizeRoutingStrategyKeepsTheExistingValues(t *testing.T) {
 	t.Parallel()
 

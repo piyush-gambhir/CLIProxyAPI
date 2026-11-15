@@ -29,8 +29,7 @@ func TestManagerSessionAffinityAliasCooldownPreservesSelection(t *testing.T) {
 					t.Cleanup(selector.Stop)
 					manager := NewManager(nil, selector, nil)
 					manager.SetRetryConfig(0, 0, 0)
-					// Order the lower tier first to catch fallback paths that forget to
-					// narrow the manager's across-priority candidates before selecting.
+
 					highID, lowID := "z-high-"+t.Name(), "a-low-"+t.Name()
 					retryAfter := time.Hour
 					cool := func(id, model string) {
@@ -50,8 +49,7 @@ func TestManagerSessionAffinityAliasCooldownPreservesSelection(t *testing.T) {
 						}
 						cool(candidate.ID, routeModel)
 					}
-					// Introduce an alias while both credentials retain cooldowns under
-					// its old name. The newly resolved target is healthy on both.
+
 					manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 						"codex": {{Name: targetModel, Alias: routeModel, Fork: true}},
 					})

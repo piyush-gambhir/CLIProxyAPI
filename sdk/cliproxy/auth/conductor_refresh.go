@@ -18,7 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RefreshEvaluator allows runtime state to override refresh decisions.
 type RefreshEvaluator interface {
 	ShouldRefresh(now time.Time, auth *Auth) bool
 }
@@ -30,10 +29,7 @@ const (
 	refreshFailureBackoff   = 5 * time.Minute
 	invalidGrantBackoffBase = time.Minute
 	invalidGrantBackoffMax  = 30 * time.Minute
-	// refreshIneffectiveBackoff throttles refresh attempts when an executor returns
-	// success but the auth still evaluates as needing refresh (e.g. token expiry
-	// wasn't updated). Without this guard, the auto-refresh loop can tight-loop and
-	// burn CPU at idle.
+
 	refreshIneffectiveBackoff = 30 * time.Second
 	quotaBackoffBase          = time.Second
 	quotaBackoffMax           = 30 * time.Minute
@@ -41,9 +37,6 @@ const (
 	transientErrorCooldown    = time.Minute
 )
 
-// StartAutoRefresh launches a background loop that evaluates auth freshness
-// every few seconds and triggers refresh operations when required.
-// Only one loop is kept alive; starting a new one cancels the previous run.
 func (m *Manager) StartAutoRefresh(parent context.Context, interval time.Duration) {
 	if interval <= 0 {
 		interval = refreshCheckInterval
@@ -71,8 +64,6 @@ func (m *Manager) StartAutoRefresh(parent context.Context, interval time.Duratio
 	go loop.run(ctx)
 }
 
-// StopAutoRefresh cancels the background refresh loop, if running.
-// It also stops the selector if it implements StoppableSelector.
 func (m *Manager) StopAutoRefresh() {
 	m.mu.Lock()
 	cancel := m.refreshCancel
@@ -82,7 +73,7 @@ func (m *Manager) StopAutoRefresh() {
 	if cancel != nil {
 		cancel()
 	}
-	// Stop selector if it implements StoppableSelector (e.g., SessionAffinitySelector)
+
 	sel := m.Selector()
 	if stoppable, ok := sel.(StoppableSelector); ok && stoppable != nil {
 		stoppable.Stop()
@@ -115,8 +106,6 @@ func (m *Manager) queueRefreshUnschedule(authID string) {
 	loop.remove(authID)
 }
 
-// codexAutoRefreshUnavailable mirrors the executor's local renewal requirements.
-// Runtime evaluators and Home retain control over their own refresh mechanisms.
 func (m *Manager) codexAutoRefreshUnavailable(a *Auth, now time.Time) bool {
 	if a == nil || !strings.EqualFold(strings.TrimSpace(a.Provider), "codex") || m.HomeEnabled() {
 		return false
@@ -124,7 +113,7 @@ func (m *Manager) codexAutoRefreshUnavailable(a *Auth, now time.Time) bool {
 	if evaluator, ok := a.Runtime.(RefreshEvaluator); ok && evaluator != nil {
 		return false
 	}
-	// Intentionally ignore refreshToken: the local Codex executor only reads refresh_token.
+
 	if authMetadataString(a, "refresh_token") != "" {
 		return false
 	}
@@ -408,13 +397,13 @@ func (m *Manager) finishRefreshJob(job *authRefreshJob, retryAt time.Time, queue
 	}
 	delete(m.refreshJobs, job.id)
 	if auth := m.auths[job.id]; auth != nil && auth.RegistrationEpoch == job.registrationEpoch && auth.NextRefreshAfter.Equal(job.pendingUntil) {
-		// Clear only this job's pending marker, preserving newer refresh outcomes.
+
 		auth.NextRefreshAfter = retryAt
 		auth.Generation++
 		auth.UpdatedAt = time.Now()
 	}
 	m.mu.Unlock()
-	// Notify the current loop, which may differ from the job's original loop.
+
 	m.queueRefreshReschedule(job.id)
 }
 
@@ -468,13 +457,11 @@ func authHasRefreshCredential(auth *Auth) bool {
 	if _, hasSIWC, _ := CodexSIWCNeedsRefresh(auth, time.Now()); hasSIWC {
 		return true
 	}
-	// Meta exchanges its device token for a replacement API key after a 401.
+
 	return auth != nil && strings.EqualFold(strings.TrimSpace(auth.Provider), "meta") &&
 		(authMetadataString(auth, "dca_token") != "" || strings.TrimSpace(auth.Attributes["dca_token"]) != "")
 }
 
-// CredentialsChanged reports whether authentication credentials (tokens or API keys)
-// differ between two Auth records.
 func CredentialsChanged(existing, incoming *Auth) bool {
 	if existing == nil || incoming == nil {
 		return false
@@ -686,7 +673,7 @@ func applyPreservedRenewalState(existing, updated *Auth, mode updateAuthMode, no
 		}
 		upstreamVerified := updated.CodexRefreshPatch == nil || updated.CodexRefreshPatch.UpstreamRefreshed()
 		if !upstreamVerified {
-			// Disk-only credential adoption during Refresh: treat as a newly loaded grant awaiting its first renewal.
+
 			updated.RequiresSignIn = false
 			updated.RefreshError = nil
 			updated.RejectedRefreshToken = ""
@@ -915,20 +902,12 @@ func shouldPreserveRejectedAccessToken(existing, updated *Auth, isRefresh bool) 
 	return false
 }
 
-// ClearUnauthorizedModelStates resets model states whose last error was an unauthorized failure.
 func ClearUnauthorizedModelStates(auth *Auth, now time.Time) []string {
 	return clearUnauthorizedModelStates(auth, now)
 }
 
-// devinQuotaRevalidateInterval bounds how often a quota-exhausted Devin
-// credential re-queries upstream status for early restoration (issue #6690).
 const devinQuotaRevalidateInterval = time.Hour
 
-// devinQuotaRevalidateAt returns the next quota revalidation instant for a
-// Devin auth under an active credential quota. Devin session tokens never
-// expire, so without this the auto-refresh loop would never re-observe quota
-// and early restoration could never be detected. It is scoped strictly to
-// the exhausted state; healthy credentials are unaffected.
 func devinQuotaRevalidateAt(a *Auth, now time.Time) (time.Time, bool) {
 	if a == nil || !strings.EqualFold(strings.TrimSpace(a.Provider), "devin") {
 		return time.Time{}, false
@@ -950,12 +929,6 @@ func devinQuotaRevalidateAt(a *Auth, now time.Time) (time.Time, bool) {
 	return next, true
 }
 
-// devinQuotaObservationRestored reports whether the refreshed auth carries a
-// newer Devin quota observation confirming daily and weekly quota are
-// available again while existing is under an active credential quota. The
-// observation must be strictly newer than both the stored snapshot and the
-// moment the exhausted state was last written, so a stale or replayed
-// refresh can never resurrect an exhausted credential.
 func devinQuotaObservationRestored(auth, existing *Auth, now time.Time) bool {
 	if auth == nil || existing == nil {
 		return false
@@ -978,12 +951,6 @@ func devinQuotaObservationRestored(auth, existing *Auth, now time.Time) bool {
 	return okDaily && okWeekly && daily > 0 && weekly > 0
 }
 
-// applyDevinQuotaRestoration releases a Devin credential-wide quota cooldown
-// early when the refreshed auth carries an authoritative, newer observation
-// showing both usage quotas available again (issue #6690). It never touches
-// unauthorized failures, non-quota failure states, or model states whose
-// block is not the auth-level credential quota propagation; unrelated
-// cooldowns survive via aggregated availability recomputation.
 func applyDevinQuotaRestoration(auth, existing *Auth, now time.Time) bool {
 	if !devinQuotaObservationRestored(auth, existing, now) {
 		return false
@@ -1002,11 +969,7 @@ func applyDevinQuotaRestoration(auth, existing *Auth, now time.Time) bool {
 		if !state.Quota.Exceeded || (reason != "quota" && !wrapped) {
 			continue
 		}
-		// A wrapped sibling carries its independent layer in the shadow.
-		// Reinstate that exact block (if still live) instead of erasing it;
-		// the reporting model ("quota" unwrapped) and pure propagation
-		// targets (no shadow) fully release. Deadline or status heuristics
-		// cannot recover this provenance reliably.
+
 		if shadow := state.credentialQuotaShadow; shadow != nil && isModelStateActiveCooldown(shadow, now) {
 			*state = *shadow.cloneShallow()
 			state.UpdatedAt = now
@@ -1046,10 +1009,6 @@ func applyDevinQuotaRestoration(auth, existing *Auth, now time.Time) bool {
 	return true
 }
 
-// isDevinQuotaExhaustionMessage reports whether text is Devin's explicit
-// daily/weekly usage-quota exhaustion message. It mirrors the executor's
-// narrow classifier and is used only to tell credential-derived legacy
-// "quota" states apart from genuine model-scoped rate limits.
 func isDevinQuotaExhaustionMessage(text string) bool {
 	lower := strings.ToLower(text)
 	if !strings.Contains(lower, "quota") || !strings.Contains(lower, "exhausted") {
@@ -1075,7 +1034,6 @@ func devinStateErrorText(state *ModelState) string {
 	return state.StatusMessage
 }
 
-// devinRemainingPercent parses a Devin quota signal such as "55%".
 func devinRemainingPercent(raw string) (int64, bool) {
 	value, errParse := strconv.ParseInt(strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(raw), "%")), 10, 64)
 	if errParse != nil {
@@ -1124,8 +1082,6 @@ func clearUnauthorizedModelStates(auth *Auth, now time.Time) []string {
 	return resumed
 }
 
-// RefreshHomeSelectionAfterUnauthorized only reuses a newer snapshot already
-// installed by Home. It never refreshes or mutates Home-owned credentials.
 func (m *Manager) RefreshHomeSelectionAfterUnauthorized(ctx context.Context, selection *HomeDispatchSelection, failedAuth *Auth) (*Auth, bool, error) {
 	if m == nil || selection == nil {
 		return nil, false, nil
@@ -1144,18 +1100,15 @@ func (m *Manager) RefreshHomeSelectionAfterUnauthorized(ctx context.Context, sel
 	return current, false, nil
 }
 
-// tryRefreshAfterUnauthorized refreshes local OAuth credentials once after a
-// 401 so the current auth can be retried before fallback/suspend.
 func (m *Manager) tryRefreshAfterUnauthorized(ctx context.Context, auth *Auth, execErr error, alreadyTried bool, clientHeaders ...http.Header) (*Auth, bool) {
 	if m == nil || auth == nil || execErr == nil {
 		return auth, false
 	}
-	// Request-scoped failures describe this request, not stale credentials.
-	// Refreshing would turn a direct error response into an implicit retry.
+
 	if isRequestScopedError(execErr) || !isUnauthorizedError(execErr) {
 		return auth, false
 	}
-	// A 401 matched by a configured request-scoped rule is the rule's to handle: no rejection, no refresh.
+
 	if _, ruleMatched := matchRequestScopedErrorAction(auth, execErr, m.requestScopedErrorConfig(ctx)); ruleMatched {
 		return auth, false
 	}
@@ -1197,16 +1150,12 @@ func (m *Manager) refreshAuth(ctx context.Context, id string) {
 	_, _ = m.refreshAuthForRequest(ctx, id, "")
 }
 
-// refreshAuthForRequest performs a synchronous credential refresh for the given auth.
-// failedAccessToken lets concurrent callers reuse a refresh that already replaced the
-// access token that produced the unauthorized response.
 func (m *Manager) refreshAuthForRequest(ctx context.Context, id, failedAccessToken string) (*Auth, error) {
 	return m.refreshAuthForRequestAtEpoch(ctx, id, failedAccessToken, 0)
 }
 
 type forceRefreshContextKey struct{}
 
-// WithForceRefresh marks ctx as an explicit forced credential refresh.
 func WithForceRefresh(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -1214,7 +1163,6 @@ func WithForceRefresh(ctx context.Context) context.Context {
 	return context.WithValue(ctx, forceRefreshContextKey{}, true)
 }
 
-// IsForceRefreshContext reports whether ctx carries an explicit forced credential refresh marker.
 func IsForceRefreshContext(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -1283,8 +1231,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 	var exec ProviderExecutor
 	store := m.store
 	if auth != nil {
-		// Use the same effective provider key as request execution so OpenAI-compat
-		// auths registered under namespaced keys still resolve for refresh.
+
 		exec, _ = m.executorLocked(executorKeyFromAuth(auth))
 	}
 	m.mu.RUnlock()
@@ -1314,14 +1261,12 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 		return nil, errors.New("auth is unauthorized")
 	}
 
-	// Another request may already have refreshed this credential.
 	if failedAccessToken != "" {
 		if !authMatchesTokenPartition(auth, failedAccessToken) && (authAccessToken(auth) != "" || authOuterAccessToken(auth) != "") {
 			return auth.Clone(), nil
 		}
 	}
 
-	// Do not repeatedly submit an unchanged refresh grant already known to be terminally rejected.
 	if !forceRefresh && authHasUnchangedRejectedRefreshToken(auth) {
 		checkNow := time.Now()
 		accessTokenRejected := failedAccessToken != "" && authMatchesTokenPartition(auth, failedAccessToken)
@@ -1361,7 +1306,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 			}
 			return nil, errors.New("refresh token requires sign-in")
 		}
-		// Access token has expired (or was rejected by a 401) while refresh grant remains terminally rejected.
+
 		m.mu.Lock()
 		if current := m.auths[id]; current != nil &&
 			current.RegistrationEpoch == auth.RegistrationEpoch &&
@@ -1515,8 +1460,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 					current.RenewalEventAt = now
 				}
 			} else if authHasAnyRejectedRefreshPartition(current) {
-				// Preserve existing terminal sign-in requirement from the other partition
-				// when a healthy partition encounters a transient refresh failure.
+
 				current.RequiresSignIn = true
 				if current.RefreshError == nil || !isTerminalRefreshError(current, current.RefreshError) {
 					current.RefreshError = sanitizedRefreshErr
@@ -1528,8 +1472,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 
 			isDisabled = current.Disabled || current.Status == StatusDisabled
 			hasValidAccessToken := current.HasValidAccessToken(now)
-			// failedAccessToken is set only when upstream rejected this exact access
-			// token. Its expiry time no longer proves it is usable.
+
 			accessTokenRejected := failedAccessToken != "" && authMatchesTokenPartition(current, failedAccessToken)
 			if isDisabled && invalidGrant {
 				current.Unavailable = true
@@ -1569,9 +1512,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 				}
 				shouldReschedule = true
 			} else if accessTokenRejected && (invalidGrant || terminalRefresh) {
-				// Neither token can recover without a new login. Stop selecting the
-				// credential until its tokens change instead of retrying it after
-				// every cooldown and returning the same 401 to clients.
+
 				current.Unavailable = true
 				current.Status = StatusError
 				current.NextRefreshAfter = time.Time{}
@@ -1612,9 +1553,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 					shouldReschedule = true
 				}
 			} else if terminalRefresh {
-				// Access token remains valid, but refresh grant was terminally rejected.
-				// Preserve working inference and defer refresh check until access_token expiry
-				// when no other healthy refresh partition remains.
+
 				current.RefreshFailures = 0
 				if !authHasUnchangedRejectedRefreshToken(current) {
 					current.NextRefreshAfter = time.Time{}
@@ -1635,7 +1574,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 					log.Warnf("credential refresh failed for %s (%s): %s; retaining active credential as access token is unexpired", current.Provider, current.ID, sanitizedRefreshErr.Message)
 				}
 			} else {
-				// Access token remains valid. Preserve current in-flight/cooldown status without overwrite.
+
 				nextRetry := now.Add(refreshFailureBackoff)
 				if invalidGrant {
 					current.RefreshFailures++
@@ -1669,8 +1608,7 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 	if updated == nil {
 		updated = base.Clone()
 	}
-	// Preserve runtime created by the executor during Refresh.
-	// If executor didn't set one, fall back to the previous runtime.
+
 	if updated.Runtime == nil {
 		updated.Runtime = auth.Runtime
 	}
@@ -1710,11 +1648,10 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 	if m.shouldRefresh(updated, now) {
 		updated.NextRefreshAfter = now.Add(refreshIneffectiveBackoff)
 	}
-	// A successful refresh may have rotated upstream tokens after cancellation.
-	// Commit its result with context values intact; keep epoch checks and save ordering.
+
 	saved, errUpdate := m.UpdateRefreshedAuth(context.WithoutCancel(ctx), base, updated)
 	if errUpdate != nil {
-		// Warn, not debug: a restart after a lost persist fails with invalid_grant.
+
 		log.WithFields(log.Fields{"auth_id": auth.ID, "credential": auth.ID, "provider": auth.Provider}).Warnf("persist refreshed auth %s (%s) failed: %v", auth.Provider, auth.ID, errUpdate)
 		return nil, errUpdate
 	}
@@ -1736,7 +1673,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 	return saved.Clone(), nil
 }
 
-// ForceRefreshAuth triggers an immediate synchronous refresh for the credential.
 func (m *Manager) ForceRefreshAuth(ctx context.Context, id string) (*Auth, error) {
 	if m == nil {
 		return nil, errors.New("auth manager is nil")
@@ -1758,14 +1694,12 @@ func (m *Manager) refreshWorkers() int {
 	return workers
 }
 
-// ForceRefreshResult records the outcome of a forced refresh for one credential.
 type ForceRefreshResult struct {
 	ID      string `json:"id"`
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
 }
 
-// ForceRefreshAll triggers an immediate refresh for all credentials that have refresh tokens or custom refresh evaluators.
 func (m *Manager) ForceRefreshAll(ctx context.Context) []ForceRefreshResult {
 	if m == nil {
 		return nil

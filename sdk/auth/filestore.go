@@ -17,13 +17,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-// PluginAuthParser parses auth JSON owned by plugin providers.
 type PluginAuthParser interface {
 	ParseAuth(context.Context, pluginapi.AuthParseRequest) (*cliproxyauth.Auth, bool, error)
 }
 
-// PluginMultiAuthParser expands one auth JSON payload into multiple plugin auth records.
-// Returning handled=true with an empty slice means the plugin intentionally suppresses built-in parsing.
 type PluginMultiAuthParser interface {
 	ParseAuths(context.Context, pluginapi.AuthParseRequest) ([]*cliproxyauth.Auth, bool, error)
 }
@@ -34,7 +31,6 @@ type pluginAuthParserHolder struct {
 
 var pluginAuthParserValue atomic.Value
 
-// RegisterPluginAuthParser registers the current plugin auth parser.
 func RegisterPluginAuthParser(parser PluginAuthParser) {
 	pluginAuthParserValue.Store(pluginAuthParserHolder{parser: parser})
 }
@@ -51,27 +47,22 @@ func currentPluginAuthParser() PluginAuthParser {
 	return holder.parser
 }
 
-// FileTokenStore persists token records and auth metadata using the filesystem as backing storage.
 type FileTokenStore struct {
 	mu      sync.Mutex
 	dirLock sync.RWMutex
 	baseDir string
 }
 
-// NewFileTokenStore creates a token store that saves credentials to disk through the
-// TokenStorage implementation embedded in the token record.
 func NewFileTokenStore() *FileTokenStore {
 	return &FileTokenStore{}
 }
 
-// SetBaseDir updates the default directory used for auth JSON persistence when no explicit path is provided.
 func (s *FileTokenStore) SetBaseDir(dir string) {
 	s.dirLock.Lock()
 	s.baseDir = strings.TrimSpace(dir)
 	s.dirLock.Unlock()
 }
 
-// Save persists token storage and metadata to the resolved auth file path.
 func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
 		return "", fmt.Errorf("auth filestore: auth is nil")
@@ -89,9 +80,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 		return "", fmt.Errorf("auth filestore: missing file path attribute for %s", auth.ID)
 	}
 
-	// Runtime updates must not recreate a disabled credential whose source file
-	// was deliberately removed. Login and migration callers explicitly mark the
-	// save when creating a missing disabled credential is intentional.
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
 			return "", nil
@@ -105,7 +93,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 		return "", fmt.Errorf("auth filestore: create dir failed: %w", err)
 	}
 
-	// metadataSetter is a private interface for TokenStorage implementations that support metadata injection.
 	type metadataSetter interface {
 		SetMetadata(map[string]any)
 	}
@@ -174,7 +161,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 	return path, nil
 }
 
-// List enumerates all auth JSON files under the configured directory.
 func (s *FileTokenStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error) {
 	dir := s.baseDirSnapshot()
 	if dir == "" {
@@ -206,7 +192,6 @@ func (s *FileTokenStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error)
 	return entries, nil
 }
 
-// Delete removes the auth file.
 func (s *FileTokenStore) Delete(ctx context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -413,7 +398,7 @@ func (s *FileTokenStore) idFor(path, baseDir string) string {
 			id = rel
 		}
 	}
-	// On Windows, normalize ID casing to avoid duplicate auth entries caused by case-insensitive paths.
+
 	if runtime.GOOS == "windows" {
 		id = strings.ToLower(id)
 	}
@@ -489,7 +474,6 @@ func extractAccessToken(metadata map[string]any) string {
 	return ""
 }
 
-// jsonEqual compares two JSON blobs by parsing them into Go objects and deep comparing.
 func jsonEqual(a, b []byte) bool {
 	var objA any
 	var objB any

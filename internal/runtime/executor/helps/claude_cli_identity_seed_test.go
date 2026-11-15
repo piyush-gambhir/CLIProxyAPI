@@ -28,7 +28,6 @@ func TestEnsureClaudeCLIFingerprintIdentitySynthesizesStableSources(t *testing.T
 		t.Fatalf("device pool = %#v, want stable single device", deviceIDs)
 	}
 
-	// Second call must not rotate identity.
 	if err := EnsureClaudeCLIFingerprintIdentity(auth, "key-a", true); err != nil {
 		t.Fatalf("second EnsureClaudeCLIFingerprintIdentity() error = %v", err)
 	}
@@ -133,7 +132,7 @@ func TestPrepareClaudeCLIFingerprintAuthIsolatesUnlockedMetadataReaders(t *testi
 	go func() {
 		defer wg.Done()
 		for range 200 {
-			// Same unlocked read Kimi OpenAI-compat requests perform via kimiCreds.
+
 			_ = shared.Metadata["access_token"].(string)
 		}
 	}()

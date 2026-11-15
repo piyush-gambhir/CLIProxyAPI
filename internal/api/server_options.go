@@ -29,7 +29,6 @@ type serverOptionConfig struct {
 	exampleAPIKeySafeMode bool
 }
 
-// ServerOption customises HTTP server construction.
 type ServerOption func(*serverOptionConfig)
 
 func defaultRequestLoggerFactory(cfg *config.Config, configPath string) logging.RequestLogger {
@@ -53,35 +52,30 @@ func effectiveSDKConfig(cfg *config.Config) *config.SDKConfig {
 	return &sdkCfg
 }
 
-// WithMiddleware appends additional Gin middleware during server construction.
 func WithMiddleware(mw ...gin.HandlerFunc) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.extraMiddleware = append(cfg.extraMiddleware, mw...)
 	}
 }
 
-// WithEngineConfigurator allows callers to mutate the Gin engine prior to middleware setup.
 func WithEngineConfigurator(fn func(*gin.Engine)) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.engineConfigurator = fn
 	}
 }
 
-// WithRouterConfigurator appends a callback after default routes are registered.
 func WithRouterConfigurator(fn func(*gin.Engine, *handlers.BaseAPIHandler, *config.Config)) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.routerConfigurator = fn
 	}
 }
 
-// WithLocalManagementPassword stores a runtime-only management password accepted for localhost requests.
 func WithLocalManagementPassword(password string) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.localPassword = password
 	}
 }
 
-// WithKeepAliveEndpoint enables a keep-alive endpoint with the provided timeout and callback.
 func WithKeepAliveEndpoint(timeout time.Duration, onTimeout func()) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		if timeout <= 0 || onTimeout == nil {
@@ -93,42 +87,36 @@ func WithKeepAliveEndpoint(timeout time.Duration, onTimeout func()) ServerOption
 	}
 }
 
-// WithRequestLoggerFactory customises request logger creation.
 func WithRequestLoggerFactory(factory func(*config.Config, string) logging.RequestLogger) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.requestLoggerFactory = factory
 	}
 }
 
-// WithPostAuthHook registers a hook to be called after auth record creation.
 func WithPostAuthHook(hook auth.PostAuthHook) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.postAuthHook = hook
 	}
 }
 
-// WithPostAuthPersistHook registers a hook to be called after auth persistence.
 func WithPostAuthPersistHook(hook auth.PostAuthHook) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.postAuthPersistHook = hook
 	}
 }
 
-// WithPluginHost registers dynamic plugin HTTP adapters with the server.
 func WithPluginHost(host *pluginhost.Host) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.pluginHost = host
 	}
 }
 
-// WithConfigReloadHook registers a callback used after management saves config changes.
 func WithConfigReloadHook(hook func(context.Context, *config.Config)) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.configReloadHook = hook
 	}
 }
 
-// WithExampleAPIKeySafeMode blocks proxy API endpoints while template API keys remain configured.
 func WithExampleAPIKeySafeMode() ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.exampleAPIKeySafeMode = true

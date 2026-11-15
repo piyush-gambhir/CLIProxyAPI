@@ -16,9 +16,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// A user turn that only holds a file Antigravity cannot receive must be refused
-// before any HTTP call, for every entry point and for both execution paths
-// (Gemini models and Claude-on-Antigravity models), even after earlier turns.
 func TestAntigravityExecutorRefusesAFileOnlyTurnBeforeCallingUpstream(t *testing.T) {
 	var upstreamCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -30,9 +27,9 @@ func TestAntigravityExecutorRefusesAFileOnlyTurnBeforeCallingUpstream(t *testing
 	const (
 		claudeFile = `{"max_tokens":8,"messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"container_upload","file_id":"file_not_stored"}]}]}`
 		openAIFile = `{"messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"file","file":{"file_id":"file-not-stored"}}]}]}`
-		// The attachment-only user turn is followed by a developer step that must not hide it.
+
 		interactionsDeveloper = `{"input":[{"type":"user_input","content":[{"type":"text","text":"hello"}]},{"type":"model_output","content":[{"type":"text","text":"hi"}]},{"type":"user_input","content":[{"type":"document","uri":"gs://b/a.pdf"}]},{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}]}`
-		// The only new user turn is a remote image URL, so the earlier turn must not be answered in its place.
+
 		openAIImageURL = `{"messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"image_url","image_url":{"url":"https://x.test/a.png"}}]}]}`
 	)
 	cases := []struct {

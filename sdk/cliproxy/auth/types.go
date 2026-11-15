@@ -22,13 +22,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 )
 
-// PostAuthHook defines a function that is called after an Auth record is created
-// but before it is persisted to storage. This allows for modification of the
-// Auth record (e.g., injecting metadata) based on external context.
 type PostAuthHook func(context.Context, *Auth) error
 
-// RequestInfo holds information extracted from the HTTP request.
-// It is injected into the context passed to PostAuthHook.
 type RequestInfo struct {
 	Query   url.Values
 	Headers http.Header
@@ -36,12 +31,10 @@ type RequestInfo struct {
 
 type requestInfoKey struct{}
 
-// WithRequestInfo returns a new context with the given RequestInfo attached.
 func WithRequestInfo(ctx context.Context, info *RequestInfo) context.Context {
 	return context.WithValue(ctx, requestInfoKey{}, info)
 }
 
-// GetRequestInfo retrieves the RequestInfo from the context, if present.
 func GetRequestInfo(ctx context.Context) *RequestInfo {
 	if val, ok := ctx.Value(requestInfoKey{}).(*RequestInfo); ok {
 		return val
@@ -49,108 +42,96 @@ func GetRequestInfo(ctx context.Context) *RequestInfo {
 	return nil
 }
 
-// Auth encapsulates the runtime state and metadata associated with a single credential.
 type Auth struct {
-	// ID uniquely identifies the auth record across restarts.
 	ID string `json:"id"`
-	// RegistrationEpoch tracks monotonic registration cycles across unregister/re-register.
+
 	RegistrationEpoch uint64 `json:"registration_epoch,omitempty"`
-	// CredentialVersion tracks monotonic credential replacements for secret material.
+
 	CredentialVersion uint64 `json:"credential_version,omitempty"`
-	// Generation tracks monotonic mutations to resolve scheduler/reconcile snapshot races.
+
 	Generation uint64 `json:"generation,omitempty"`
-	// Index is a stable runtime identifier derived from auth metadata (not persisted).
+
 	Index string `json:"-"`
-	// Provider is the upstream provider key (e.g. "gemini", "claude").
+
 	Provider string `json:"provider"`
-	// Prefix optionally namespaces models for routing (e.g., "teamA/gemini-3-pro-preview").
+
 	Prefix string `json:"prefix,omitempty"`
-	// FileName stores the relative or absolute path of the backing auth file.
+
 	FileName string `json:"-"`
-	// Storage holds the token persistence implementation used during login flows.
+
 	Storage baseauth.TokenStorage `json:"-"`
-	// CodexRefreshPatch carries an immutable pending credential update, never configuration.
+
 	CodexRefreshPatch *codex.CredentialRefreshPatch `json:"-"`
-	// Label is an optional human readable label for logging.
+
 	Label string `json:"label,omitempty"`
-	// Status is the lifecycle status managed by the AuthManager.
+
 	Status Status `json:"status"`
-	// StatusMessage holds a short description for the current status.
+
 	StatusMessage string `json:"status_message,omitempty"`
-	// Disabled indicates the auth is intentionally disabled by operator.
+
 	Disabled bool `json:"disabled"`
-	// Unavailable flags transient provider unavailability (e.g. quota exceeded).
+
 	Unavailable bool `json:"unavailable"`
-	// ProxyURL overrides the global proxy setting for this auth if provided.
+
 	ProxyURL string `json:"proxy_url,omitempty"`
-	// ProxyConnectionPool carries the connection-pool block of this api-key
-	// credential. Nil means no pooling, which is the default. Pools are per
-	// credential, so an override here never shares connections with another auth.
+
 	ProxyConnectionPool *ProxyConnectionPoolOverride `json:"proxy_connection_pool,omitempty"`
-	// Attributes stores provider specific metadata needed by executors (immutable configuration).
+
 	Attributes map[string]string `json:"attributes,omitempty"`
-	// Metadata stores runtime mutable provider state (e.g. tokens, cookies).
+
 	Metadata map[string]any `json:"metadata,omitempty"`
-	// Quota captures recent quota information for load balancers.
+
 	Quota QuotaState `json:"quota"`
-	// LastError stores the last failure encountered while executing or refreshing.
+
 	LastError *Error `json:"last_error,omitempty"`
-	// CreatedAt is the creation timestamp in UTC.
+
 	CreatedAt time.Time `json:"created_at"`
-	// UpdatedAt is the last modification timestamp in UTC.
+
 	UpdatedAt time.Time `json:"updated_at"`
-	// LastRefreshedAt records the last successful refresh time in UTC.
+
 	LastRefreshedAt time.Time `json:"last_refreshed_at"`
-	// NextRefreshAfter is the earliest time a refresh should retrigger.
+
 	NextRefreshAfter time.Time `json:"next_refresh_after"`
-	// RefreshFailures tracks consecutive refresh failures for exponential backoff (in-memory only).
+
 	RefreshFailures int `json:"-"`
-	// NextRetryAfter is the earliest time a retry should retrigger.
+
 	NextRetryAfter time.Time `json:"next_retry_after"`
-	// ModelStates tracks per-model runtime availability data.
+
 	ModelStates map[string]*ModelState `json:"model_states,omitempty"`
 
-	// Runtime carries non-serialisable data used during execution (in-memory only).
 	Runtime any `json:"-"`
 
-	// RejectedAccessToken tracks the access token rejected by upstream 401 until a refresh succeeds.
 	RejectedAccessToken string `json:"-"`
-	// RejectedSIWCAccessToken tracks the nested SIWC access token rejected by upstream 401 until replaced.
+
 	RejectedSIWCAccessToken string `json:"-"`
-	// RejectedRefreshToken tracks the outer refresh token rejected as terminal until replaced.
+
 	RejectedRefreshToken string `json:"-"`
-	// RejectedSIWCRefreshToken tracks the nested SIWC refresh token rejected as terminal until replaced.
+
 	RejectedSIWCRefreshToken string `json:"-"`
-	// RenewalWarnedRefreshToken tracks the rejected refresh token that already emitted a terminal warning/event.
+
 	RenewalWarnedRefreshToken string `json:"-"`
-	// RequiresSignIn flags that automatic credential renewal failed with a terminal grant rejection.
+
 	RequiresSignIn bool `json:"-"`
-	// RefreshError stores the sanitized last refresh failure without being overwritten by request execution results.
+
 	RefreshError *Error `json:"-"`
-	// RenewalEventAt records when the deduplicated terminal renewal failure event was first observed for the current grant.
+
 	RenewalEventAt time.Time `json:"-"`
-	// AdoptedAt records when the current credential version was adopted into runtime state.
+
 	AdoptedAt time.Time `json:"-"`
-	// AdoptedGrantHash records the fingerprint of the credential grant when it was adopted into runtime state,
-	// preserved across upstream automatic refresh rotations and reset when the credential grant is externally replaced.
+
 	AdoptedGrantHash string `json:"-"`
-	// InferenceVerified reports whether the current credential version completed a real inference response.
+
 	InferenceVerified bool `json:"-"`
-	// LastInferenceVerifiedAt records when the current credential version last completed an inference response.
+
 	LastInferenceVerifiedAt time.Time `json:"-"`
-	// RenewalVerified reports whether the current credential version completed an automatic/proactive refresh cycle.
+
 	RenewalVerified bool `json:"-"`
-	// LastRenewalVerifiedAt records when the current credential version last completed a token refresh.
+
 	LastRenewalVerifiedAt time.Time `json:"-"`
 
 	Success int64 `json:"-"`
 	Failed  int64 `json:"-"`
 
-	// cooldownRecordedSeq is the execution sequence watermark captured when
-	// the current auth-level cooldown was recorded. Successes from executions
-	// stamped at or below it were dispatched before the cooldown existed and
-	// must not clear it. Runtime only: zero after restart so restored
-	// cooldowns can still be cleared by any success.
 	cooldownRecordedSeq uint64    `json:"-"`
 	forceCooldownUntil  time.Time `json:"-"`
 	credQuotaForceUntil time.Time `json:"-"`
@@ -158,10 +139,7 @@ type Auth struct {
 
 	recentRequests recentRequestRing `json:"-"`
 	indexAssigned  bool              `json:"-"`
-	// fileSnapshotPath and fileSnapshotDigest bind an unversioned file-synthesized
-	// Auth snapshot to the source file path and SHA-256 byte digest it observed.
-	// Cleared when committed to a Manager so runtime clones are not treated as
-	// unversioned file snapshots.
+
 	fileSnapshotPath   string `json:"-"`
 	fileSnapshotDigest string `json:"-"`
 }
@@ -189,8 +167,6 @@ func canonicalAuthFileDigest(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// BindFileSnapshot binds an unversioned file-synthesized Auth snapshot to the
-// source file path and canonical SHA-256 digest of the bytes from which it was parsed.
 func (a *Auth) BindFileSnapshot(path string, data []byte) {
 	if a == nil || len(data) == 0 {
 		return
@@ -205,8 +181,6 @@ func (a *Auth) BindFileSnapshot(path string, data []byte) {
 
 const invalidatedFileSnapshotDigest = "invalidated"
 
-// ClearFileSnapshot removes any unversioned file-observation binding once the
-// Auth is committed to runtime state or normalized for comparison.
 func (a *Auth) ClearFileSnapshot() {
 	if a == nil {
 		return
@@ -215,8 +189,6 @@ func (a *Auth) ClearFileSnapshot() {
 	a.fileSnapshotDigest = ""
 }
 
-// InvalidateFileSnapshot marks an unversioned file snapshot as discarded so a
-// subsequent re-read of identical or reformatted file content is not suppressed.
 func (a *Auth) InvalidateFileSnapshot() {
 	if !a.HasFileSnapshot() {
 		return
@@ -224,13 +196,10 @@ func (a *Auth) InvalidateFileSnapshot() {
 	a.fileSnapshotDigest = invalidatedFileSnapshotDigest
 }
 
-// HasFileSnapshot reports whether this Auth is an unversioned file-synthesized
-// snapshot bound to a specific file observation digest.
 func (a *Auth) HasFileSnapshot() bool {
 	return a != nil && a.Generation == 0 && a.RegistrationEpoch == 0 && a.fileSnapshotDigest != ""
 }
 
-// FileSnapshotPath returns the backing file path bound to this file snapshot.
 func (a *Auth) FileSnapshotPath() string {
 	if a == nil {
 		return ""
@@ -245,8 +214,6 @@ func (a *Auth) FileSnapshotPath() string {
 	return path
 }
 
-// SameFileSnapshot reports whether two unversioned file snapshots observed the
-// same canonical file content.
 func (a *Auth) SameFileSnapshot(other *Auth) bool {
 	if !a.HasFileSnapshot() || !other.HasFileSnapshot() {
 		return false
@@ -257,9 +224,6 @@ func (a *Auth) SameFileSnapshot(other *Auth) bool {
 	return a.fileSnapshotDigest == other.fileSnapshotDigest && a.fileSnapshotPath == other.fileSnapshotPath
 }
 
-// FileSnapshotMatchesDisk reports whether the backing file on disk still
-// exists, is readable, and matches the canonical digest observed when this
-// snapshot was synthesized.
 func (a *Auth) FileSnapshotMatchesDisk() bool {
 	if !a.HasFileSnapshot() {
 		return true
@@ -282,7 +246,6 @@ const (
 	pluginVirtualAttrEnabled = "true"
 )
 
-// MarkPluginVirtualAuth marks an auth that was expanded from a plugin-owned source file.
 func MarkPluginVirtualAuth(auth *Auth, sourcePath string, ordinal int) {
 	if auth == nil {
 		return
@@ -310,7 +273,6 @@ func MarkPluginVirtualAuth(auth *Auth, sourcePath string, ordinal int) {
 	}, "|")
 }
 
-// IsPluginVirtualAuth reports whether an auth was expanded from a plugin-owned source file.
 func IsPluginVirtualAuth(auth *Auth) bool {
 	if auth == nil || len(auth.Attributes) == 0 {
 		return false
@@ -339,32 +301,23 @@ type RecentRequestBucket struct {
 	Failed  int64  `json:"failed"`
 }
 
-// QuotaState contains limiter tracking data for a credential.
 type QuotaState struct {
-	// Exceeded indicates the credential recently hit a quota error.
 	Exceeded bool `json:"exceeded"`
-	// Reason provides an optional provider specific human readable description.
+
 	Reason string `json:"reason,omitempty"`
-	// NextRecoverAt is when the credential may become available again.
+
 	NextRecoverAt time.Time `json:"next_recover_at"`
-	// BackoffLevel stores the progressive cooldown exponent used for rate limits.
+
 	BackoffLevel int `json:"backoff_level,omitempty"`
-	// ObservedAt is the time the current Signals snapshot was observed.
+
 	ObservedAt time.Time `json:"observed_at,omitempty"`
-	// Signals stores bounded, provider-specific quota watermark values observed
-	// from upstream response headers or websocket quota events. It is a snapshot
-	// of one upstream response, not an accumulation across responses, so an
-	// expired watermark cannot linger after the response that produced it.
-	// Cooldown transitions must use applyCooldownFields so they cannot replace
-	// this snapshot.
+
 	Signals map[string]string `json:"signals,omitempty"`
-	// cooldownSignals retains rejected quota headers captured when the active
-	// cooldown was recorded so out-of-order completions cannot overwrite them.
+
 	cooldownSignals   map[string]string
 	cooldownEvaluated bool
 }
 
-// Clone returns an independent copy of the quota state.
 func (q QuotaState) Clone() QuotaState {
 	copyQuota := q
 	if len(q.Signals) > 0 {
@@ -382,45 +335,27 @@ func (q QuotaState) Clone() QuotaState {
 	return copyQuota
 }
 
-// ModelState captures the execution state for a specific model under an auth entry.
 type ModelState struct {
-	// Status reflects the lifecycle status for this model.
 	Status Status `json:"status"`
-	// StatusMessage provides an optional short description of the status.
+
 	StatusMessage string `json:"status_message,omitempty"`
-	// Unavailable mirrors whether the model is temporarily blocked for retries.
+
 	Unavailable bool `json:"unavailable"`
-	// NextRetryAfter defines the per-model retry time.
+
 	NextRetryAfter time.Time `json:"next_retry_after"`
-	// LastError records the latest error observed for this model.
+
 	LastError *Error `json:"last_error,omitempty"`
-	// Quota retains quota information if this model hit rate limits.
+
 	Quota QuotaState `json:"quota"`
-	// UpdatedAt tracks the last update timestamp for this model state.
+
 	UpdatedAt time.Time `json:"updated_at"`
-	// cooldownRecordedSeq is the execution sequence watermark captured when
-	// the current model cooldown was recorded. Successes from executions
-	// stamped at or below it were dispatched before the cooldown existed and
-	// must not clear it. Runtime only: zero after restart so restored
-	// cooldowns can still be cleared by any success.
+
 	cooldownRecordedSeq uint64    `json:"-"`
 	forceCooldownUntil  time.Time `json:"-"`
 	forceCooldownSeeded bool      `json:"-"`
-	// credentialQuotaShadow holds this model's independent (own-failure)
-	// cooldown layer while the outer fields present the auth-level
-	// credential quota propagated over it, so quota restoration can drop
-	// only the propagated layer and reinstate precisely what the model's
-	// own failures justify (issue #6690). It is nil when no independent
-	// live block exists beneath an outer credential_quota label. Persisted
-	// via CooldownStateRecord.IndependentState (unexported fields are
-	// invisible to JSON, so the record owns the serialized form).
+
 	credentialQuotaShadow *ModelState `toml:"credential_quota_shadow,omitempty"`
-	// credentialQuotaPropagated marks that credential-quota propagation has
-	// already wrapped this state, distinguishing "no independent block"
-	// from "not yet propagated" so repeated propagation never mistakes its
-	// own earlier layer for an independent block. Persisted via
-	// CooldownStateRecord.CredentialQuotaPropagated across restarts,
-	// including for shadow-less reporting models.
+
 	credentialQuotaPropagated bool `toml:"credential_quota_propagated,omitempty"`
 }
 
@@ -488,7 +423,6 @@ func (a *Auth) RecentRequestsSnapshot(now time.Time) []RecentRequestBucket {
 	return out
 }
 
-// Clone shallow copies the Auth structure, duplicating maps to avoid accidental mutation.
 func (a *Auth) Clone() *Auth {
 	if a == nil {
 		return nil
@@ -525,15 +459,12 @@ func (a *Auth) Clone() *Auth {
 	return &copyAuth
 }
 
-// ProxyConnectionPoolOverride holds the per-api-key connection-pool settings.
-// Omitted fields fall back to the pool defaults (300s idle, 2 idle per host).
 type ProxyConnectionPoolOverride struct {
 	Enabled             *bool  `json:"enabled,omitempty"`
 	IdleConnTimeout     string `json:"idle-conn-timeout,omitempty"`
 	MaxIdleConnsPerHost *int   `json:"max-idle-conns-per-host,omitempty"`
 }
 
-// Clone deep copies the override so auth snapshots never share mutable state.
 func (o *ProxyConnectionPoolOverride) seedKey() string {
 	if o == nil {
 		return ""
@@ -601,7 +532,6 @@ func stableAuthIndex(seed string) string {
 	return hex.EncodeToString(sum[:8])
 }
 
-// OAuthGrantFingerprint computes a SHA-256 fingerprint of an OAuth grant's tokens and account identity.
 func OAuthGrantFingerprint(accessToken, refreshToken, email, accountID string) string {
 	accessToken = strings.TrimSpace(accessToken)
 	refreshToken = strings.TrimSpace(refreshToken)
@@ -614,7 +544,6 @@ func OAuthGrantFingerprint(accessToken, refreshToken, email, accountID string) s
 	return hex.EncodeToString(sum[:])
 }
 
-// AuthGrantFingerprint computes a SHA-256 fingerprint of the credential's token grant and account identity.
 func AuthGrantFingerprint(a *Auth) string {
 	if a == nil {
 		return ""
@@ -736,7 +665,6 @@ func (a *Auth) indexSeed() string {
 	return ""
 }
 
-// EnsureIndex returns a stable index derived from the auth file name or credential identity.
 func (a *Auth) EnsureIndex() string {
 	if a == nil {
 		return ""
@@ -758,7 +686,6 @@ func (a *Auth) EnsureIndex() string {
 	return idx
 }
 
-// Clone duplicates a model state including nested error details.
 func (m *ModelState) Clone() *ModelState {
 	if m == nil {
 		return nil
@@ -779,7 +706,6 @@ func (m *ModelState) Clone() *ModelState {
 	return &copyState
 }
 
-// cloneShallow copies a shadow state one level deep; shadows never nest.
 func (m *ModelState) cloneShallow() *ModelState {
 	if m == nil {
 		return nil
@@ -812,9 +738,6 @@ func (a *Auth) ProxyInfo() string {
 	return "via proxy"
 }
 
-// DisableCoolingOverride returns the auth-scoped disable_cooling override when present.
-// The value is read from metadata key "disable_cooling" (or legacy "disable-cooling").
-// The second return value distinguishes explicit false from an absent override.
 func (a *Auth) DisableCoolingOverride() (bool, bool) {
 	if a == nil || a.Metadata == nil {
 		return false, false
@@ -832,9 +755,6 @@ func (a *Auth) DisableCoolingOverride() (bool, bool) {
 	return false, false
 }
 
-// ToolPrefixDisabled returns whether the proxy_ tool name prefix should be
-// skipped for this auth. When true, tool names are sent to Anthropic unchanged.
-// The value is read from metadata key "tool_prefix_disabled" (or "tool-prefix-disabled").
 func (a *Auth) ToolPrefixDisabled() bool {
 	if a == nil || a.Metadata == nil {
 		return false
@@ -849,9 +769,6 @@ func (a *Auth) ToolPrefixDisabled() bool {
 	return false
 }
 
-// RequestRetryOverride returns the auth-scoped request_retry override when present.
-// The value is read from metadata key "request_retry" (or legacy "request-retry").
-// A negative value is treated as unset and falls back to the global request-retry.
 func (a *Auth) RequestRetryOverride() (int, bool) {
 	if a == nil || a.Metadata == nil {
 		return 0, false
@@ -966,7 +883,6 @@ func (a *Auth) AccountInfo() (string, string) {
 	}
 }
 
-// IsCodexUseSIWC reports whether a Codex auth record is configured to use its nested "siwc" section.
 func IsCodexUseSIWC(a *Auth) bool {
 	if a == nil {
 		return false
@@ -987,7 +903,6 @@ func IsCodexUseSIWC(a *Auth) bool {
 	return enabled
 }
 
-// IsCodexClientUserAgent reports whether userAgent identifies a Codex client.
 func IsCodexClientUserAgent(userAgent string) bool {
 	ua := strings.ToLower(strings.TrimSpace(userAgent))
 	if ua == "" {
@@ -1023,8 +938,6 @@ func headerValueFromHTTPHeader(headers http.Header, name string) string {
 
 type codexClientRequestContextKey struct{}
 
-// WithCodexClientRequest stores the resolved Codex client detection flag in ctx
-// so asynchronous post-request paths do not read a reused gin.Context.
 func WithCodexClientRequest(ctx context.Context, isCodexClient bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -1032,7 +945,6 @@ func WithCodexClientRequest(ctx context.Context, isCodexClient bool) context.Con
 	return context.WithValue(ctx, codexClientRequestContextKey{}, isCodexClient)
 }
 
-// IsCodexClientRequest reports whether the request originates from a Codex client.
 func IsCodexClientRequest(ctx context.Context, clientHeaders ...http.Header) bool {
 	for _, headers := range clientHeaders {
 		if IsCodexClientUserAgent(headerValueFromHTTPHeader(headers, "User-Agent")) {
@@ -1052,8 +964,6 @@ func IsCodexClientRequest(ctx context.Context, clientHeaders ...http.Header) boo
 	return false
 }
 
-// IsCodexUseSIWCForRequest reports whether a request should use the nested SIWC credential section.
-// Requests from Codex clients ignore use_siwc and always use non-SIWC credentials.
 func IsCodexUseSIWCForRequest(ctx context.Context, a *Auth, clientHeaders ...http.Header) bool {
 	if !IsCodexUseSIWC(a) {
 		return false
@@ -1064,7 +974,6 @@ func IsCodexUseSIWCForRequest(ctx context.Context, a *Auth, clientHeaders ...htt
 	return true
 }
 
-// OuterExpirationTime extracts the outer credential expiration timestamp, ignoring the nested "siwc" section.
 func (a *Auth) OuterExpirationTime() (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1084,8 +993,6 @@ func (a *Auth) OuterExpirationTime() (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// ExpirationTime attempts to extract the active credential expiration timestamp from metadata.
-// When use_siwc is enabled on a Codex credential, the active SIWC section expiration is returned.
 func (a *Auth) ExpirationTime() (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1100,16 +1007,10 @@ func (a *Auth) ExpirationTime() (time.Time, bool) {
 	return a.OuterExpirationTime()
 }
 
-// CodexOuterRefreshLead is the conservative proactive refresh lead time before
-// the nominal 10-day Codex OAuth JWT expiration, refreshing tokens well ahead
-// of early upstream access-token invalidation.
 const CodexOuterRefreshLead = 96 * time.Hour
 
-// CodexSIWCRefreshLead is the minimum remaining validity required before refreshing
-// a Sign in with ChatGPT (SIWC) token, matching pi's DEFAULT_OAUTH_MINIMUM_VALIDITY_MS (5 minutes).
 const CodexSIWCRefreshLead = 5 * time.Minute
 
-// SIWCEarliestRefreshTime returns the server's lower bound for SIWC token renewal.
 func (a *Auth) SIWCEarliestRefreshTime() (time.Time, bool) {
 	if a == nil || a.Metadata == nil {
 		return time.Time{}, false
@@ -1118,7 +1019,6 @@ func (a *Auth) SIWCEarliestRefreshTime() (time.Time, bool) {
 	return lookupMetadataTime(siwc, "earliest_refresh_at")
 }
 
-// SIWCStatus represents the read-only validity state of a Codex SIWC credential.
 type SIWCStatus string
 
 const (
@@ -1127,9 +1027,6 @@ const (
 	SIWCStatusInvalid SIWCStatus = "invalid"
 )
 
-// SIWCRealExpirationTime extracts the real (unbuffered) expiration timestamp for the nested
-// "siwc" access token. It reads "expires_at" (saved from OAuth expires_in) or the JWT "exp"
-// claim of "access_token", without using the margin-deducted "expired" field.
 func (a *Auth) SIWCRealExpirationTime() (time.Time, bool) {
 	if a == nil || a.Metadata == nil {
 		return time.Time{}, false
@@ -1166,8 +1063,6 @@ func (a *Auth) isSIWCAccessTokenRejected(siwcToken string) bool {
 		(a.RejectedAccessToken != "" && a.RejectedAccessToken == siwcToken)
 }
 
-// CodexSIWCStatus evaluates the local SIWC credential status ("off", "valid", or "invalid")
-// at the given time without triggering any refresh or upstream request.
 func (a *Auth) CodexSIWCStatus(now time.Time) SIWCStatus {
 	if a == nil || !IsCodexUseSIWC(a) {
 		return SIWCStatusOff
@@ -1189,7 +1084,6 @@ func (a *Auth) CodexSIWCStatus(now time.Time) SIWCStatus {
 	return SIWCStatusValid
 }
 
-// SIWCExpirationTime extracts the expiration timestamp from the nested "siwc" metadata section.
 func (a *Auth) SIWCExpirationTime() (time.Time, bool) {
 	if a == nil || a.Metadata == nil {
 		return time.Time{}, false
@@ -1209,7 +1103,6 @@ func (a *Auth) SIWCExpirationTime() (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// CodexOuterNeedsRefresh evaluates the outer credential refresh due time and whether it needs refresh at now.
 func CodexOuterNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh bool, needsRefresh bool) {
 	if a == nil {
 		return time.Time{}, false, false
@@ -1304,7 +1197,6 @@ func CodexOuterNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh
 	return now, true, true
 }
 
-// CodexSIWCNeedsRefresh evaluates the nested "siwc" credential section refresh due time and whether it needs refresh at now.
 func CodexSIWCNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh bool, needsRefresh bool) {
 	if a == nil || a.Metadata == nil {
 		return time.Time{}, false, false
@@ -1337,7 +1229,7 @@ func CodexSIWCNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh 
 	siwcToken = strings.TrimSpace(siwcToken)
 	due := now
 	if siwcToken != "" && !a.isSIWCAccessTokenRejected(siwcToken) {
-		// The legacy expired field already includes a margin; prefer the real expiry.
+
 		expiry, hasExpiry := a.SIWCRealExpirationTime()
 		if !hasExpiry {
 			expiry, hasExpiry = a.SIWCExpirationTime()
@@ -1357,8 +1249,6 @@ func CodexSIWCNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh 
 	return due, true, false
 }
 
-// OuterAccessTokenExpirationTime returns the expiration time of the outer access_token,
-// ignoring the nested "siwc" section.
 func (a *Auth) OuterAccessTokenExpirationTime() (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1376,8 +1266,6 @@ func (a *Auth) OuterAccessTokenExpirationTime() (time.Time, bool) {
 	return a.OuterExpirationTime()
 }
 
-// AccessTokenExpirationTimeForRequest returns the expiration time of the access_token
-// selected for the request context and client headers.
 func (a *Auth) AccessTokenExpirationTimeForRequest(ctx context.Context, clientHeaders ...http.Header) (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1388,8 +1276,6 @@ func (a *Auth) AccessTokenExpirationTimeForRequest(ctx context.Context, clientHe
 	return a.AccessTokenExpirationTime()
 }
 
-// AccessTokenExpirationTime returns the expiration time of the specific access_token.
-// If the access_token is a JWT, its exp claim takes strict precedence.
 func (a *Auth) AccessTokenExpirationTime() (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1412,7 +1298,6 @@ func (a *Auth) AccessTokenExpirationTime() (time.Time, bool) {
 	return a.ExpirationTime()
 }
 
-// HasValidAccessToken returns whether the auth has a non-empty access token that is unexpired at the given time.
 func (a *Auth) HasValidAccessToken(now time.Time) bool {
 	if a == nil {
 		return false
@@ -1442,7 +1327,6 @@ const (
 	RecoveryStageLoaded            = "loaded"
 )
 
-// RenewalStateAt returns the structured renewal lifecycle state at the given time.
 func (a *Auth) RenewalStateAt(now time.Time) string {
 	if a == nil {
 		return ""
@@ -1465,7 +1349,6 @@ func (a *Auth) RenewalStateAt(now time.Time) string {
 	return RenewalStateAwaitingFirstRenewal
 }
 
-// RecoveryStageAt returns the structured post-login / runtime adoption and verification stage at the given time.
 func (a *Auth) RecoveryStageAt(now time.Time) string {
 	if a == nil {
 		return ""
@@ -1568,7 +1451,6 @@ func expirationFromMap(meta map[string]any) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// parseJWTExp extracts the "exp" claim timestamp from a JWT token string without signature verification.
 func parseJWTExp(token string) (time.Time, bool) {
 	token = strings.TrimSpace(token)
 	if token == "" {
@@ -1719,7 +1601,7 @@ func normaliseUnix(raw int64) time.Time {
 	if raw <= 0 {
 		return time.Time{}
 	}
-	// Heuristic: treat values with millisecond precision (>1e12) accordingly.
+
 	if raw > 1_000_000_000_000 {
 		return time.UnixMilli(raw)
 	}

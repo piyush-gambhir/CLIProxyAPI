@@ -34,8 +34,6 @@ func TestJSONMayContainASCII(t *testing.T) {
 	}
 }
 
-// The pre-filters must never change an answer, including when the matched
-// text is spelled with \u escapes.
 func TestPrefilteredClassifiersKeepEscapedMatches(t *testing.T) {
 	escapedTitle := `{"model":"m","system":[{"type":"text","text":"You are naming a\u0020coding session."}],` +
 		`"messages":[{"role":"user","content":"hi"}]}`
@@ -65,9 +63,6 @@ func TestPrefilteredClassifiersKeepEscapedMatches(t *testing.T) {
 	}
 }
 
-// largeClaudeCodeBody builds a Claude Code style request with n tool round
-// trips, about 2.2 KB each, ending with the top-level keys Claude Code sends
-// after messages.
 func largeClaudeCodeBody(n int) []byte {
 	var b strings.Builder
 	b.WriteString(`{"model":"claude-opus-5-5","messages":[`)
@@ -108,8 +103,6 @@ func BenchmarkClaudePayloadHas1hTTLLarge(b *testing.B) {
 	}
 }
 
-// The worst cases: a printable-ASCII escape forces the full walk, so the
-// pre-filter's scan is pure overhead.
 func BenchmarkClaudePayloadHas1hTTLLargeEscapeFallback(b *testing.B) {
 	body := largeClaudeCodeBody(1500)
 	body = append([]byte(`{"note":"\u0041",`), body[1:]...)

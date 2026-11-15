@@ -30,7 +30,6 @@ func legacyToolIDHistory(callCount int) []byte {
 	return []byte(body.String())
 }
 
-// Rewriting the entire transcript per field must fail this allocation bound.
 func TestIssue6478_NormalizeLargeHistoryAllocation(t *testing.T) {
 	const callCount = 5211
 	body := legacyToolIDHistory(callCount)

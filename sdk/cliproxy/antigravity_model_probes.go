@@ -7,8 +7,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// antigravityModelRefreshRequest captures publication ownership at admission.
-// A queued successor must not adopt a later epoch from an external publisher.
 type antigravityModelRefreshRequest struct {
 	ctx           context.Context
 	auth          *coreauth.Auth
@@ -25,9 +23,6 @@ type antigravityHintPersistRequest struct {
 	cancel   context.CancelFunc
 }
 
-// queueAntigravityModelRefresh coalesces registration and periodic probes into
-// one worker per account. Repeated updates replace a single queued successor,
-// rather than accumulating singleflight followers while an upstream is stalled.
 func (s *Service) queueAntigravityModelRefresh(ctx context.Context, auth *coreauth.Auth, provider string) {
 	if s == nil || auth == nil || auth.ID == "" || auth.Disabled || s.antigravityHomeEnabled() {
 		return
@@ -53,7 +48,7 @@ func (s *Service) queueAntigravityModelRefresh(ctx context.Context, auth *coreau
 		auth: request.auth, routeKey: s.antigravityCapabilityKey(request.auth), token: strings.TrimSpace(token),
 	}
 	s.antigravityProbeMu.Lock()
-	// Late stale callers must not replace the latest queued auth snapshot.
+
 	if ctx.Err() != nil || !s.antigravityAccountProbeCurrent(probe) {
 		s.antigravityProbeMu.Unlock()
 		return
@@ -63,7 +58,7 @@ func (s *Service) queueAntigravityModelRefresh(ctx context.Context, auth *coreau
 	}
 	queued, running := s.antigravityRefreshPending[auth.ID]
 	if queued != nil && queued.registryEpoch > request.registryEpoch {
-		// Concurrent registration callers can reach admission out of order.
+
 		s.antigravityProbeMu.Unlock()
 		return
 	}
@@ -116,8 +111,6 @@ func (s *Service) executeAntigravityModelRefresh(request *antigravityModelRefres
 	}
 }
 
-// antigravityAccountProbe owns both queued and connected work for one auth snapshot.
-// Cancellation releases network slots without imposing an upstream timeout.
 type antigravityAccountProbe struct {
 	auth      *coreauth.Auth
 	routeKey  string
@@ -141,8 +134,7 @@ func (s *Service) beginAntigravityAccountProbe(parent context.Context, auth *cor
 	var changes <-chan struct{}
 	var unsubscribe func()
 	if s.coreManager != nil {
-		// Subscribe before validation, so a native refresh/removal cannot fall
-		// between checking the auth and installing the invalidation observer.
+
 		changes, unsubscribe = s.coreManager.WatchAuthChanges(auth.ID)
 	}
 	var watcherDone chan struct{}
@@ -202,7 +194,6 @@ func (s *Service) beginAntigravityAccountProbe(parent context.Context, auth *cor
 	return ctx, cleanup, true
 }
 
-// Caller holds antigravityProbeMu, making tracking and invalidation indivisible.
 func (s *Service) antigravityAccountProbeCurrent(probe *antigravityAccountProbe) bool {
 	if s.antigravityHomeEnabled() {
 		return false
@@ -221,9 +212,6 @@ func (s *Service) antigravityAccountProbeCurrent(probe *antigravityAccountProbe)
 		s.antigravityCapabilityKey(current) == probe.routeKey && strings.TrimSpace(token) == probe.token
 }
 
-// Run after the manager/config mutation. New probes check current state while
-// joining this same map, so deletion cannot slip between validation and tracking.
-// Empty authID invalidates stale probes across all accounts after config changes.
 func (s *Service) queueAntigravityHintPersistence(ctx context.Context, auth *coreauth.Auth, expectedKey, endpoint string, hints antigravityModelCapabilityHints) {
 	if s == nil || s.coreManager == nil || auth == nil || auth.ID == "" || auth.Disabled || expectedKey == "" || hints.ModelIDs == nil || hints.revision == 0 || s.antigravityHomeEnabled() {
 		return
@@ -356,8 +344,7 @@ func (s *Service) cancelStaleAntigravityProbes(authID string) {
 		for probe := range probes {
 			if !s.antigravityAccountProbeCurrent(probe) {
 				probe.cancel()
-				// An updated snapshot with the same token may start immediately instead
-				// of joining an obsolete leader that is still unwinding its HTTP request.
+
 				antigravityCapabilityGroup.Forget(probe.flightKey)
 				delete(probes, probe)
 			}

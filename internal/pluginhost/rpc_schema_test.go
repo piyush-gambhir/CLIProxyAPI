@@ -549,7 +549,6 @@ func TestRPCAuthIdentifierEntriesAndMetadataFallback(t *testing.T) {
 		t.Fatalf("OAuthProviderEntries = %#v, want %#v", infos[0].OAuthProviderEntries, wantEntries)
 	}
 
-	// Verify wire-level tolerance when auth.identifier returns only entries (empty identifier/identifiers) and unknown keys.
 	rawWireClient := &lifecycleTestClient{call: func(_ context.Context, method string, _ []byte) ([]byte, error) {
 		switch method {
 		case pluginabi.MethodPluginRegister:
@@ -891,7 +890,6 @@ func TestRPCSchedulerAndUsageSelectionIDCompatibility(t *testing.T) {
 		t.Fatalf("decodedUsage.SelectionID = %q, want %q", decodedUsage.SelectionID, "sel-rpc-123")
 	}
 
-	// Old plugins compiled against a legacy UsageRecord without SelectionID must still unmarshal cleanly.
 	type legacyUsageRecord struct {
 		Provider  string
 		Model     string
@@ -982,7 +980,6 @@ func TestUsageRecordRPCModalityTokenCounters(t *testing.T) {
 		t.Fatalf("expected absent modality counters to remain nil over RPC, got %+v", got)
 	}
 
-	// Legacy plugins compiled against the 7-field UsageDetail must still unmarshal cleanly.
 	type legacyUsageDetail struct {
 		InputTokens         int64
 		OutputTokens        int64
@@ -1106,8 +1103,7 @@ func TestRPCRequestBodyPatchRawCABIAndSchemaVersionGate(t *testing.T) {
 	if len(clientV8.methods) != 2 || clientV8.methods[1] != pluginabi.MethodRequestPatchBodyBefore {
 		t.Fatalf("called methods = %v, want [%s %s]", clientV8.methods, pluginabi.MethodPluginRegister, pluginabi.MethodRequestPatchBodyBefore)
 	}
-	// Crucial requirement 1: C ABI receives the raw request body directly, not a JSON/Base64 envelope,
-	// and without a pre-call bytes.Clone on the host side.
+
 	if !bytes.Equal(clientV8.rawRequests[1], rawInput) {
 		t.Fatalf("raw C ABI request = %s, want exact rawInput %s", clientV8.rawRequests[1], rawInput)
 	}
@@ -1119,7 +1115,6 @@ func TestRPCRequestBodyPatchRawCABIAndSchemaVersionGate(t *testing.T) {
 		t.Fatalf("patched body = %s, want %s", resp.Body, wantPatched)
 	}
 
-	// Crucial requirement 3: When plugin returns empty edits, host reuses original body (resp.Body == nil).
 	afterResp := host.InterceptRequestAfterAuth(context.Background(), pluginapi.RequestInterceptRequest{
 		Model: "gpt-5",
 		Body:  rawInput,
@@ -1128,7 +1123,6 @@ func TestRPCRequestBodyPatchRawCABIAndSchemaVersionGate(t *testing.T) {
 		t.Fatalf("no-op patch returned non-nil Body = %s, want nil to reuse original body", afterResp.Body)
 	}
 
-	// Schema v7 must ignore request_interceptor_patch_body_before.
 	clientV7 := &recordingRawPatchClient{
 		schemaVersion: pluginabi.SchemaVersionRequestInterceptorOmitBody,
 		patchFunc: func(string, []byte) (pluginapi.RequestBodyPatchResponse, error) {

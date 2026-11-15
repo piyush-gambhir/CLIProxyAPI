@@ -12,7 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// countingToolSearchExecutor records native tool search capability checks.
 type countingToolSearchExecutor struct {
 	*executor.ClaudeExecutor
 	calls int

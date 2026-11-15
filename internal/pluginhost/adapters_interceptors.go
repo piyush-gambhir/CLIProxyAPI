@@ -163,8 +163,7 @@ func (h *Host) interceptRequest(ctx context.Context, req pluginapi.RequestInterc
 					}
 				}
 			}
-			// When a plugin opts into raw body patching for this phase without also requesting
-			// metadata-only request interception (omit_body), skip the legacy full-body RPC call.
+
 			if interceptor == nil || !requestInterceptorOmitsBody(record, beforeAuth) {
 				continue
 			}
@@ -245,7 +244,6 @@ func (h *Host) interceptRequest(ctx context.Context, req pluginapi.RequestInterc
 	return current
 }
 
-// CompleteRequest schedules terminal notifications without blocking response delivery.
 func (h *Host) CompleteRequest(ctx context.Context, completion pluginapi.RequestCompletion) {
 	h.CompleteRequestExcept(ctx, completion, "")
 }
@@ -291,7 +289,6 @@ func (h *Host) ObserveWebSocketResponseEventExcept(ctx context.Context, event pl
 	}
 }
 
-// CompleteRequestExcept notifies lifecycle plugins except the plugin that initiated a nested host execution.
 func (h *Host) CompleteRequestExcept(ctx context.Context, completion pluginapi.RequestCompletion, skipPluginID string) {
 	if h == nil {
 		return
@@ -372,8 +369,7 @@ func (h *Host) InterceptStreamChunkExcept(ctx context.Context, req pluginapi.Str
 		nextReq := req
 		nextReq.RequestHeaders = cloneHeader(req.RequestHeaders)
 		nextReq.ResponseHeaders = cloneHeader(current.Headers)
-		// Schema v3+ omits request bodies on payload chunks to avoid re-sending multi-MB
-		// prompts across cgo/JSON for every frame. Legacy plugins still receive them.
+
 		if req.ChunkIndex != pluginapi.StreamChunkHeaderInitIndex && streamChunkOmitsRequestBodies(record.plugin.SchemaVersion) {
 			nextReq.OriginalRequest = nil
 			nextReq.RequestBody = nil
@@ -382,8 +378,7 @@ func (h *Host) InterceptStreamChunkExcept(ctx context.Context, req pluginapi.Str
 			nextReq.RequestBody = bytes.Clone(req.RequestBody)
 		}
 		nextReq.Body = bytes.Clone(current.Body)
-		// Schema v5+ omits HistoryChunks on payload chunks to avoid cloning and re-encoding
-		// recent chunk windows across cgo/JSON for every frame. Legacy plugins still receive them.
+
 		if req.ChunkIndex != pluginapi.StreamChunkHeaderInitIndex && streamChunkOmitsHistory(record.plugin.SchemaVersion) {
 			nextReq.HistoryChunks = nil
 		} else {
@@ -418,9 +413,6 @@ func (h *Host) HasStreamInterceptors() bool {
 	return false
 }
 
-// StreamChunkPayloadIncludesRequestBody reports whether any active stream chunk
-// interceptor still requires OriginalRequest/RequestBody on payload chunks
-// (schema_version < SchemaVersionStreamChunkOmitRequestBody).
 func (h *Host) StreamChunkPayloadIncludesRequestBody() bool {
 	if h == nil {
 		return false
@@ -440,9 +432,6 @@ func streamChunkOmitsRequestBodies(schemaVersion uint32) bool {
 	return schemaVersion >= pluginabi.SchemaVersionStreamChunkOmitRequestBody
 }
 
-// StreamChunkPayloadIncludesHistory reports whether any active stream chunk
-// interceptor still requires HistoryChunks on payload chunks
-// (schema_version < SchemaVersionStreamChunkOmitHistory).
 func (h *Host) StreamChunkPayloadIncludesHistory() bool {
 	if h == nil {
 		return false
@@ -857,7 +846,7 @@ func cloneInterceptorMetadataReflectValue(value reflect.Value, visited map[metad
 		return out
 	case reflect.Struct:
 		out := reflect.New(value.Type()).Elem()
-		// Preserve unexported fields and deep-clone exported fields on a best-effort basis.
+
 		out.Set(value)
 		for i := 0; i < value.NumField(); i++ {
 			field := value.Field(i)

@@ -25,9 +25,6 @@ import (
 
 const seedTestPlaintextSecret = "seed-plaintext-secret"
 
-// seedTestConfigsKeepingPlaintext hold a plaintext secret that cannot be removed before
-// seeding: the file cannot be parsed, or a YAML anchor keeps the plaintext after the
-// referencing key is hashed or dropped as a conflicting legacy field.
 var seedTestConfigsKeepingPlaintext = map[string]string{
 	"unparsable":      "remote-management:\n  secret-key: " + seedTestPlaintextSecret + "\nport: [8317\n",
 	"anchored secret": "defaults: &management\n  secret-key: " + seedTestPlaintextSecret + "\nmanagement: *management\n",
@@ -40,7 +37,6 @@ func seedTestPlaintextConfig(section string) string {
 	return "# operator note\nport: 8317\n" + section + ":\n  secret-key: " + seedTestPlaintextSecret + "\n"
 }
 
-// seedTestSettledConfigs hold no plaintext secret, so seeding must upload them unchanged.
 func seedTestSettledConfigs(t *testing.T) map[string]string {
 	t.Helper()
 	hashed, errHash := bcrypt.GenerateFromPassword([]byte(seedTestPlaintextSecret), bcrypt.MinCost)
@@ -72,9 +68,6 @@ func readSeedTestFile(t *testing.T, path string) []byte {
 	return data
 }
 
-// assertSeededWithHashedSecret checks that a seeded config carries the bcrypt hash of
-// the plaintext secret under section and matches the local file, because later starts
-// overwrite the local file with the remote copy.
 func assertSeededWithHashedSecret(t *testing.T, seeded []byte, configPath, section string) {
 	t.Helper()
 	if bytes.Contains(seeded, []byte(seedTestPlaintextSecret)) {
@@ -94,11 +87,9 @@ func assertSeededWithHashedSecret(t *testing.T, seeded []byte, configPath, secti
 	}
 }
 
-// newSeedTestObjectStore returns an object store whose bucket has no config object and
-// records every config upload.
 func newSeedTestObjectStore(t *testing.T, configPath string) (*ObjectTokenStore, *[][]byte) {
 	t.Helper()
-	// Every request answers 404, so the bucket holds no config.
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
@@ -162,8 +153,6 @@ func TestObjectTokenStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 	}
 }
 
-// Bootstrap must fail rather than seed, and keep the local file as it was: a later
-// start finds the same file and has to refuse it again.
 func TestObjectTokenStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range seedTestConfigsKeepingPlaintext {
 		t.Run(name, func(t *testing.T) {
@@ -186,8 +175,6 @@ func TestObjectTokenStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T)
 	}
 }
 
-// seedTestDatabase is a database/sql driver whose config table is empty; it records
-// every config upsert.
 type seedTestDatabase struct {
 	mu      sync.Mutex
 	upserts []string
@@ -235,7 +222,6 @@ func (c *seedTestConn) ExecContext(_ context.Context, query string, args []drive
 	return driver.RowsAffected(1), nil
 }
 
-// QueryContext serves an empty config table.
 func (*seedTestConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
 	return seedTestRows{}, nil
 }
@@ -309,8 +295,6 @@ func TestPostgresStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 	}
 }
 
-// Bootstrap must fail rather than seed, and keep the local file as it was: a later
-// start finds the same file and has to refuse it again.
 func TestPostgresStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range seedTestConfigsKeepingPlaintext {
 		t.Run(name, func(t *testing.T) {

@@ -1,5 +1,3 @@
-// Package browser provides cross-platform functionality for opening URLs in the default web browser.
-// It abstracts the underlying operating system commands and provides a simple interface.
 package browser
 
 import (
@@ -11,19 +9,9 @@ import (
 	"github.com/skratchdot/open-golang/open"
 )
 
-// OpenURL opens the specified URL in the default web browser.
-// It first attempts to use a platform-agnostic library and falls back to
-// platform-specific commands if that fails.
-//
-// Parameters:
-//   - url: The URL to open.
-//
-// Returns:
-//   - An error if the URL cannot be opened, otherwise nil.
 func OpenURL(url string) error {
 	fmt.Printf("Attempting to open URL in browser: %s\n", url)
 
-	// Try using the open-golang library first
 	err := open.Run(url)
 	if err == nil {
 		log.Debug("Successfully opened URL using open-golang library")
@@ -32,28 +20,19 @@ func OpenURL(url string) error {
 
 	log.Debugf("open-golang failed: %v, trying platform-specific commands", err)
 
-	// Fallback to platform-specific commands
 	return openURLPlatformSpecific(url)
 }
 
-// openURLPlatformSpecific is a helper function that opens a URL using OS-specific commands.
-// This serves as a fallback mechanism for OpenURL.
-//
-// Parameters:
-//   - url: The URL to open.
-//
-// Returns:
-//   - An error if the URL cannot be opened, otherwise nil.
 func openURLPlatformSpecific(url string) error {
 	var cmd *exec.Cmd
 
 	switch runtime.GOOS {
-	case "darwin": // macOS
+	case "darwin":
 		cmd = exec.Command("open", url)
 	case "windows":
 		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 	case "linux":
-		// Try common Linux browsers in order of preference
+
 		browsers := []string{"xdg-open", "x-www-browser", "www-browser", "firefox", "chromium", "google-chrome"}
 		for _, browser := range browsers {
 			if _, err := exec.LookPath(browser); err == nil {
@@ -78,19 +57,13 @@ func openURLPlatformSpecific(url string) error {
 	return nil
 }
 
-// IsAvailable checks if the system has a command available to open a web browser.
-// It verifies the presence of necessary commands for the current operating system.
-//
-// Returns:
-//   - true if a browser can be opened, false otherwise.
 func IsAvailable() bool {
-	// First check if open-golang can work
+
 	testErr := open.Run("about:blank")
 	if testErr == nil {
 		return true
 	}
 
-	// Check platform-specific commands
 	switch runtime.GOOS {
 	case "darwin":
 		_, err := exec.LookPath("open")
@@ -111,11 +84,6 @@ func IsAvailable() bool {
 	}
 }
 
-// GetPlatformInfo returns a map containing details about the current platform's
-// browser opening capabilities, including the OS, architecture, and available commands.
-//
-// Returns:
-//   - A map with platform-specific browser support information.
 func GetPlatformInfo() map[string]interface{} {
 	info := map[string]interface{}{
 		"os":        runtime.GOOS,

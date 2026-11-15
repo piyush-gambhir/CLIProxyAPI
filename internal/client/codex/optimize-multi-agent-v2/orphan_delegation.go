@@ -20,9 +20,6 @@ const (
 	codexCollabSpawnSubagent     = "collab_spawn"
 )
 
-// RewriteCodexOrphanDelegationInput converts orphan Codex delegation outputs into
-// standard user messages when orphan delegation compatibility is enabled and the
-// request carries the X-Openai-Subagent: collab_spawn header.
 func RewriteCodexOrphanDelegationInput(ctx context.Context, headers http.Header, payload []byte, enabled bool) []byte {
 	if !enabled || len(payload) == 0 || !isCodexCollabSpawnSubagent(ctx, headers) {
 		return payload
@@ -34,8 +31,6 @@ func RewriteCodexOrphanDelegationInput(ctx context.Context, headers http.Header,
 	return doc.Bytes()
 }
 
-// RewriteCodexOrphanDelegationInputDoc converts orphan Codex delegation outputs in doc
-// into standard user messages in place.
 func RewriteCodexOrphanDelegationInputDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, enabled bool) bool {
 	if !enabled || doc == nil || doc.Len() == 0 || !isCodexCollabSpawnSubagent(ctx, headers) {
 		return false
@@ -65,7 +60,7 @@ func RewriteCodexOrphanDelegationInputDoc(doc *ojson.Doc, ctx context.Context, h
 
 		callID := item.Get("call_id").String()
 		if strings.TrimSpace(callID) != "" && availableCalls[callID] > 0 {
-			// Paired with a function call in the same request; consume and preserve.
+
 			availableCalls[callID]--
 			continue
 		}
@@ -75,7 +70,6 @@ func RewriteCodexOrphanDelegationInputDoc(doc *ojson.Doc, ctx context.Context, h
 			continue
 		}
 
-		// Orphan delegation output: downgrade to user message preserving exact output.
 		itemPath := fmt.Sprintf("input.%d", itemIndex)
 		fullText := buildCodexOrphanUserMessageText(toolLabel, item.Get("output"))
 		if errSet := doc.SetRawBytes(itemPath, []byte(`{"type":"message","role":"user","content":[{"type":"input_text","text":""}]}`)); errSet != nil {

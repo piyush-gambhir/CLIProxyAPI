@@ -6,9 +6,6 @@ import (
 	"testing"
 )
 
-// testCodexReplayMetaSignature builds a shape-valid synthetic Meta envelope:
-// "Q-PaDgE" pins the observed five-byte header, and 1426 unpadded base64url
-// chars decode to 45 + 1024 bytes. No captured signature is embedded.
 func testCodexReplayMetaSignature() string {
 	return "Q-PaDgE" + strings.Repeat("A", 1419)
 }
@@ -42,7 +39,7 @@ func TestCodexReplaySignatureForTarget(t *testing.T) {
 		{"meta sig on gpt target rejected", "gpt-5.4", metaSig, "", false},
 		{"routed meta on gpt target rejected", "gpt-5.4", routedSig, "", false},
 		{"gpt sig on meta target rejected", "muse-spark-1.3", gptSig, "", false},
-		// An unmapped target defaults to the Codex GPT family.
+
 		{"gpt on unmapped target", "deepseek-v4", gptSig, gptSig, true},
 		{"meta on unmapped target rejected", "deepseek-v4", metaSig, "", false},
 		{"empty signature", "gpt-5.4", "", "", false},

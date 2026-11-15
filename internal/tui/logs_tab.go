@@ -9,7 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// logsTabModel displays real-time log lines from hook/API source.
 type logsTabModel struct {
 	client     *Client
 	hook       *LogHook
@@ -20,7 +19,7 @@ type logsTabModel struct {
 	width      int
 	height     int
 	ready      bool
-	filter     string // "", "debug", "info", "warn", "error"
+	filter     string
 	after      int64
 	lastErr    error
 }
@@ -151,11 +150,11 @@ func (m logsTabModel) Update(msg tea.Msg) (logsTabModel, tea.Cmd) {
 			wasAtBottom := m.viewport.AtBottom()
 			var cmd tea.Cmd
 			m.viewport, cmd = m.viewport.Update(msg)
-			// If user scrolls up, disable auto-scroll
+
 			if !m.viewport.AtBottom() && wasAtBottom {
 				m.autoScroll = false
 			}
-			// If user scrolls to bottom, re-enable auto-scroll
+
 			if m.viewport.AtBottom() {
 				m.autoScroll = true
 			}

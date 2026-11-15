@@ -270,7 +270,6 @@ func TestDetectClaudeCodeRequestRejectsCrossMismatchedHaikuHelperBetaAndBody(t *
 	)
 	legacyStructuredBeta := claudeCodeHelperBetaProfile(true, "structured-outputs-2025-12-15")
 
-	// 1. Title 2.1.280 beta with 2.1.258 structured stream payload must be rejected
 	det1 := DetectClaudeCodeRequest(
 		measuredClaudeCodeHelperHeaders(title280Beta),
 		measuredClaudeCodeStructuredHelperPayload(),
@@ -280,7 +279,6 @@ func TestDetectClaudeCodeRequestRejectsCrossMismatchedHaikuHelperBetaAndBody(t *
 		t.Fatalf("det1 = %#v, want 2.1.280 beta with legacy structured payload rejected", det1)
 	}
 
-	// 2. Legacy structured beta with 2.1.280 title non-stream payload must be rejected
 	det2 := DetectClaudeCodeRequest(
 		measuredClaudeCodeHelperHeaders(legacyStructuredBeta),
 		measuredClaudeCodeTitle280HelperPayload(),
@@ -423,12 +421,6 @@ func TestDetectClaudeCodeRequestRejectsMalformedNativeSignals(t *testing.T) {
 	}
 }
 
-// Recovered from the native metadata builder in 2.1.220, 2.1.221 and 2.1.227:
-//
-//	{...extraMetadata, device_id, account_uuid, session_id, ...parentSessionId && {parent_session_id}}
-//
-// parent_session_id is therefore a legitimate optional trailing key that sub-agent
-// and forked sessions attach, and it must not disqualify a helper request.
 func TestDetectClaudeCodeRequestAcceptsHelperSubagentParentSessionID(t *testing.T) {
 	identity := `{"device_id":"0000000000000000000000000000000000000000000000000000000000000000","account_uuid":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","session_id":"11111111-2222-4333-8444-555555555555","parent_session_id":"99999999-8888-4777-8666-555555555555"}`
 	encoded, _ := json.Marshal(identity)
@@ -459,9 +451,6 @@ func TestDetectClaudeCodeRequestRejectsHelperIdentityWithUnknownKeys(t *testing.
 	}
 }
 
-// The surrounding device-profile pipeline pins OS/Arch to the configured baseline
-// rather than rejecting a foreign platform, so a genuine Windows or Linux helper
-// must still be recognized instead of being cloaked.
 func TestDetectClaudeCodeRequestAcceptsHelperFromNonBaselinePlatform(t *testing.T) {
 	for _, platform := range []struct{ os, arch string }{
 		{"Windows", "x64"},
@@ -525,7 +514,6 @@ func TestNormalizedClaudeBetaHeaderIsDeterministic(t *testing.T) {
 		t.Fatalf("canonical join = %q, want %q", got, want)
 	}
 
-	// Two non-canonical spellings in one map used to be joined in Go map order.
 	nonCanonical := http.Header{
 		"anthropic-beta": {"oauth-2025-04-20"},
 		"ANTHROPIC-BETA": {"interleaved-thinking-2025-05-14"},
@@ -545,10 +533,6 @@ func TestNormalizedClaudeBetaHeaderIsDeterministic(t *testing.T) {
 	}
 }
 
-// A confirmed helper is routed through misc.EnsureHeader, so CPA forwards the
-// helper's own X-Stainless-Timeout and never the operator default. Keying the
-// detector on claude-header-defaults.timeout instead of the measured constant
-// therefore rejected every genuine helper whenever that value was customized.
 func TestMeasuredHelperProfileIgnoresConfiguredStainlessTimeout(t *testing.T) {
 	headers := measuredClaudeCodeHelperHeaders(claudeCodeHelperBetaProfile(true))
 	payload := measuredClaudeCodeMinimalHelperPayload()
@@ -579,8 +563,6 @@ func TestMeasuredHelperProfileIgnoresConfiguredStainlessTimeout(t *testing.T) {
 		})
 	}
 
-	// The measured constant stays the only accepted value, so a caller that does not
-	// send it is still disqualified even when the operator default happens to match.
 	t.Run("foreign timeout stays rejected", func(t *testing.T) {
 		foreign := measuredClaudeCodeHelperHeaders(claudeCodeHelperBetaProfile(true))
 		foreign.Set("X-Stainless-Timeout", "900")

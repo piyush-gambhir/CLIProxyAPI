@@ -17,7 +17,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-// pauseAuthSnapshot suspends a real scan after reading files, before publishing them.
 func pauseAuthSnapshot(t *testing.T, w *Watcher, force bool) func() {
 	t.Helper()
 	originalSnapshot := snapshotCoreAuthsFunc
@@ -65,7 +64,7 @@ func TestRefreshAuthStatePreservesConcurrentFileLifecycle(t *testing.T) {
 			}
 			w.addOrUpdateClient(otherPath)
 			w.authQueue = make(chan AuthUpdate, 10)
-			// The full scan must still publish changes to unrelated files.
+
 			if errWrite := os.WriteFile(otherPath, []byte(`{"type":"codex","note":"scanned"}`), 0o600); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -132,7 +131,7 @@ func TestRefreshAuthStatePreservesConcurrentRoundTrip(t *testing.T) {
 			originalSnapshot := snapshotCoreAuthsFunc
 			t.Cleanup(func() { snapshotCoreAuthsFunc = originalSnapshot })
 			snapshotCoreAuthsFunc = func(cfg *config.Config, authDir string, parser synthesizer.PluginAuthParser) ([]*coreauth.Auth, map[string]struct{}) {
-				// Deliver two events during the scan, ending at the starting content.
+
 				if errWrite := os.WriteFile(path, []byte(`{"type":"codex","proxy_url":"http://intermediate.proxy:8080"}`), 0o600); errWrite != nil {
 					t.Fatal(errWrite)
 				}
@@ -185,7 +184,7 @@ func TestRefreshAuthStatePreservesUnchangedFileObservation(t *testing.T) {
 			}
 			w := &Watcher{authDir: dir, config: &config.Config{AuthDir: dir}, authQueue: make(chan AuthUpdate, 10)}
 			w.addOrUpdateClient(path)
-			// The intermediate content is seen only by the full scan, never by an event.
+
 			if errWrite := os.WriteFile(path, []byte(`{"type":"codex"}`), 0o600); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -237,9 +236,9 @@ func TestRefreshAuthStateAppliesHashCachedFileObservation(t *testing.T) {
 			t.Cleanup(func() { snapshotCoreAuthsFunc = originalSnapshot })
 			snapshotCoreAuthsFunc = func(cfg *config.Config, authDir string, parser synthesizer.PluginAuthParser) ([]*coreauth.Auth, map[string]struct{}) {
 				auths, incomplete := originalSnapshot(cfg, authDir, parser)
-				// reloadClients cached the new hash before publishing its matching auth.
+
 				if phase == "after_scan" {
-					// Suspend the event after observation, before content processing.
+
 					w.observeAuthFile(path)
 				} else {
 					w.handleEvent(fsnotify.Event{Name: path, Op: fsnotify.Write})
@@ -293,7 +292,7 @@ func TestDispatchAuthUpdatesRejectsDelayedScan(t *testing.T) {
 			w := &Watcher{authDir: dir, config: &config.Config{AuthDir: dir}}
 			w.addOrUpdateClient(path)
 			w.authQueue = make(chan AuthUpdate, 10)
-			// Suspend the full-scan pipeline between its state commit and dispatch.
+
 			w.clientsMutex.Lock()
 			delayed := w.prepareAuthUpdatesLocked([]*coreauth.Auth{w.currentAuths["account.json"].Clone()}, true)
 			w.clientsMutex.Unlock()
@@ -368,7 +367,6 @@ func TestRefreshAuthStatePreservesConcurrentProxyUpdate(t *testing.T) {
 
 			finishScan := pauseAuthSnapshot(t, w, false)
 
-			// Match the management fields handler's runtime update and file persistence.
 			patched := registered.Clone()
 			patched.ProxyURL = testCase.newProxy
 			if testCase.newProxy == "" {
@@ -389,7 +387,7 @@ func TestRefreshAuthStatePreservesConcurrentProxyUpdate(t *testing.T) {
 			if got := w.currentAuths[initial.ID].ProxyURL; got != testCase.newProxy {
 				t.Errorf("watcher proxy_url = %q, want %q after concurrent patch", got, testCase.newProxy)
 			}
-			// Consume the final queued snapshot as the service does, without writing it back yet.
+
 			pending, okPending := w.pendingUpdates[initial.ID]
 			if !okPending || pending.Auth == nil {
 				t.Fatal("missing queued auth update")
@@ -451,7 +449,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatal(errRegister)
 		}
 
-		// Step 1: Edit file to B; Watcher queues snapshot B.
 		if errWrite := os.WriteFile(path, []byte(`{"type":"codex","prefix":"pfx-edited"}`), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -461,8 +458,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatalf("expected 1 update for B, got %v", batchB)
 		}
 
-		// Step 2: Before B is consumed by manager.Update, reformat file on disk with
-		// whitespace and reversed key order (B'). Watcher deduplicates B'.
 		if errWrite := os.WriteFile(path, []byte("{\n  \"prefix\": \"pfx-edited\",\n  \"type\": \"codex\"\n}\n"), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -471,7 +466,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatalf("expected reformatted B' to be deduplicated, got pending=%v", w.pendingOrder)
 		}
 
-		// Step 3: Consume B into manager.Update; canonical digest matches B' on disk.
 		if _, errUpdate := manager.Update(ctx, batchB[0].Auth); errUpdate != nil {
 			t.Fatal(errUpdate)
 		}
@@ -506,7 +500,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatal(errRegister)
 		}
 
-		// Step 1: Edit file to B (prefix=pfx-edited, ignored=v1) and pop batchB.
 		if errWrite := os.WriteFile(path, []byte(`{"type":"gemini-cli","prefix":"pfx-edited","ignored":"v1"}`), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -516,8 +509,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatalf("expected 1 update for B, got %v", batchB)
 		}
 
-		// Step 2: Before batchB is consumed, change only the unmapped JSON field (ignored=v2).
-		// Because the file snapshot digest changed, Watcher must emit a follow-up update.
 		if errWrite := os.WriteFile(path, []byte(`{"type":"gemini-cli","prefix":"pfx-edited","ignored":"v2"}`), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -527,7 +518,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatalf("expected follow-up update when file snapshot digest changed, got %v", batchB2)
 		}
 
-		// Step 3: Applying batchB (superseded on disk) followed by batchB2 commits pfx-edited.
 		if _, errUpdate := manager.Update(ctx, batchB[0].Auth); errUpdate != nil {
 			t.Fatal(errUpdate)
 		}
@@ -593,7 +583,7 @@ func TestRefreshAuthStatePreservesUnreadableFile(t *testing.T) {
 				t.Fatal("expected unreadable credential to remain indexed by file path")
 			}
 			if mode == "affected_oauth_provider" {
-				// Provider reloads may re-emit retained credentials, but must not delete them.
+
 				for _, update := range w.pendingUpdates {
 					if update.Action == AuthUpdateActionDelete {
 						t.Fatalf("expected no delete during provider reload, got %+v", update)
@@ -879,7 +869,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 				t.Fatal("expected initial add batch")
 			}
 
-			// Simulate an in-place writer opening with O_WRONLY|O_TRUNC and optionally flushing partial JSON.
 			file, errOpen := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0o600)
 			if errOpen != nil {
 				t.Fatal(errOpen)
@@ -906,7 +895,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 				t.Fatalf("expected no queued deletes during in-place write, got %#v", w.pendingUpdates)
 			}
 
-			// Finish the in-place write with ["b","c"] (dropping "a" and adding "c").
 			if _, errSeek := file.Seek(0, 0); errSeek != nil {
 				_ = file.Close()
 				t.Fatal(errSeek)
@@ -959,8 +947,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 					t.Fatal("expected initial add batch")
 				}
 
-				// reloadClients pass 1 reads complete ["b","c"], then an in-place write truncates
-				// the file right before refreshAuthState runs snapshotCoreAuthsFunc.
 				if errWrite := os.WriteFile(path, []byte(`{"type":"plugin","ids":["b","c"]}`), 0o600); errWrite != nil {
 					t.Fatal(errWrite)
 				}
@@ -976,8 +962,7 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 					auths, incomplete := originalSnapshot(cfg, authDir, parser)
 					switch mode {
 					case "with_early_truncated_write_event":
-						// An early write event for the truncated file increments fileObservations
-						// during the scan but returns early without updating fileAuthsByPath.
+
 						w.handleEvent(fsnotify.Event{Name: path, Op: fsnotify.Write})
 					case "final_write_event_during_scan":
 						if _, errWrite := file.WriteString(`{"type":"plugin","ids":["b","c"]}`); errWrite != nil {

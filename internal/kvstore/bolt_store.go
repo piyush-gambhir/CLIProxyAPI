@@ -55,10 +55,8 @@ func decodeEnvelope(raw []byte, nowUnixNano int64) (payload []byte, expiresAt in
 	return raw[envelopeHeaderSize:], exp, false, nil
 }
 
-// BoltStoreOption configures optional behavior on BoltStore.
 type BoltStoreOption func(*BoltStore)
 
-// WithNowFunc overrides the clock function used for TTL evaluation.
 func WithNowFunc(fn func() time.Time) BoltStoreOption {
 	return func(s *BoltStore) {
 		if fn != nil {
@@ -67,15 +65,12 @@ func WithNowFunc(fn func() time.Time) BoltStoreOption {
 	}
 }
 
-// WithSweepInterval sets the background expired-key sweep interval.
-// A non-positive interval disables the background sweeper goroutine.
 func WithSweepInterval(interval time.Duration) BoltStoreOption {
 	return func(s *BoltStore) {
 		s.sweepInterval = interval
 	}
 }
 
-// WithSweepBatchSize sets the maximum number of expired keys deleted per sweep batch.
 func WithSweepBatchSize(batchSize int) BoltStoreOption {
 	return func(s *BoltStore) {
 		if batchSize > 0 {
@@ -84,7 +79,6 @@ func WithSweepBatchSize(batchSize int) BoltStoreOption {
 	}
 }
 
-// BoltStore implements KVClient backed by a local bbolt database file.
 type BoltStore struct {
 	db                *bbolt.DB
 	path              string
@@ -99,8 +93,6 @@ type BoltStore struct {
 	beforeSweepDelete func(batch [][]byte)
 }
 
-// OpenBoltStore resolves path, creates parent directories, opens the bbolt file,
-// ensures the KV bucket exists, and starts the background expiration sweeper.
 func OpenBoltStore(path string, opts ...BoltStoreOption) (*BoltStore, error) {
 	resolvedPath, errResolve := ResolvePath(path)
 	if errResolve != nil {
@@ -153,7 +145,6 @@ func OpenBoltStore(path string, opts ...BoltStoreOption) (*BoltStore, error) {
 	return store, nil
 }
 
-// Path returns the resolved absolute file path of the underlying bbolt database.
 func (s *BoltStore) Path() string {
 	if s == nil {
 		return ""
@@ -161,8 +152,6 @@ func (s *BoltStore) Path() string {
 	return s.path
 }
 
-// Close stops the background sweeper and closes the underlying bbolt database.
-// Calling Close multiple times is safe and idempotent.
 func (s *BoltStore) Close() error {
 	if s == nil {
 		return nil
@@ -247,7 +236,6 @@ func computeExpiresAtUnixNano(now time.Time, ttl time.Duration) (int64, error) {
 	return expiresAt, nil
 }
 
-// KVGet retrieves the value for key if it exists and has not expired.
 func (s *BoltStore) KVGet(ctx context.Context, key string) ([]byte, bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return nil, false, errCtx
@@ -291,7 +279,6 @@ func (s *BoltStore) KVGet(ctx context.Context, key string) ([]byte, bool, error)
 	return value, found, nil
 }
 
-// KVSet stores key and value with optional TTL and NX/XX conditions.
 func (s *BoltStore) KVSet(ctx context.Context, key string, value []byte, opts KVSetOptions) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return false, errCtx
@@ -364,7 +351,6 @@ func (s *BoltStore) KVSet(ctx context.Context, key string, value []byte, opts KV
 	return written, nil
 }
 
-// KVSetNX stores value only when key does not currently exist (or has expired).
 func (s *BoltStore) KVSetNX(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return false, errCtx
@@ -372,7 +358,6 @@ func (s *BoltStore) KVSetNX(ctx context.Context, key string, value []byte, ttl t
 	return s.KVSet(ctx, key, value, KVSetOptions{NX: true, EX: ttl})
 }
 
-// KVCompareAndSwap atomically updates key to value if its current state matches expectedExists and expected.
 func (s *BoltStore) KVCompareAndSwap(ctx context.Context, key string, expected []byte, expectedExists bool, value []byte, ttl time.Duration) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return false, errCtx
@@ -440,7 +425,6 @@ func (s *BoltStore) KVCompareAndSwap(ctx context.Context, key string, expected [
 	return swapped, nil
 }
 
-// KVDel deletes one or more keys and returns the number of unexpired keys removed.
 func (s *BoltStore) KVDel(ctx context.Context, keys ...string) (int64, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return 0, errCtx
@@ -484,7 +468,6 @@ func (s *BoltStore) KVDel(ctx context.Context, keys ...string) (int64, error) {
 	return deleted, nil
 }
 
-// KVExpire updates the TTL of an existing unexpired key, or immediately deletes it if ttl <= 0.
 func (s *BoltStore) KVExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return false, errCtx
@@ -538,9 +521,6 @@ func (s *BoltStore) KVExpire(ctx context.Context, key string, ttl time.Duration)
 	return updated, nil
 }
 
-// KVTTL returns the remaining time-to-live of key.
-// If key does not exist or has expired, it returns (0, false, nil).
-// If key exists and has no expiration, it returns (0, true, nil).
 func (s *BoltStore) KVTTL(ctx context.Context, key string) (time.Duration, bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return 0, false, errCtx
@@ -583,7 +563,6 @@ func (s *BoltStore) KVTTL(ctx context.Context, key string) (time.Duration, bool,
 	return remaining, found, nil
 }
 
-// KVIncrBy atomically increments the base-10 integer value of key by delta.
 func (s *BoltStore) KVIncrBy(ctx context.Context, key string, delta int64) (int64, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return 0, errCtx
@@ -636,7 +615,6 @@ func (s *BoltStore) KVIncrBy(ctx context.Context, key string, delta int64) (int6
 	return next, nil
 }
 
-// KVMGet retrieves multiple keys in a single read transaction.
 func (s *BoltStore) KVMGet(ctx context.Context, keys ...string) ([][]byte, []bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return nil, nil, errCtx
@@ -686,7 +664,6 @@ func (s *BoltStore) KVMGet(ctx context.Context, keys ...string) ([][]byte, []boo
 	return values, found, nil
 }
 
-// KVMSet writes multiple non-expiring key-value pairs in a single write transaction.
 func (s *BoltStore) KVMSet(ctx context.Context, pairs map[string][]byte) error {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return errCtx

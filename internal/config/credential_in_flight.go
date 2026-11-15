@@ -14,7 +14,6 @@ const (
 	DefaultInFlightMaxStringBytes     = 256
 )
 
-// CredentialInFlightConfig controls in-flight credential observation snapshots.
 type CredentialInFlightConfig struct {
 	SnapshotInterval   string `yaml:"snapshot-interval" json:"snapshot-interval"`
 	StaleAfter         string `yaml:"stale-after" json:"stale-after"`
@@ -27,7 +26,6 @@ type CredentialInFlightConfig struct {
 	StagingRetention   string `yaml:"staging-retention" json:"staging-retention"`
 }
 
-// DefaultCredentialInFlightConfig returns the in-flight observation defaults.
 func DefaultCredentialInFlightConfig() CredentialInFlightConfig {
 	return CredentialInFlightConfig{
 		SnapshotInterval:   "2s",
@@ -42,7 +40,6 @@ func DefaultCredentialInFlightConfig() CredentialInFlightConfig {
 	}
 }
 
-// Durations parses and validates the in-flight observation durations.
 func (c CredentialInFlightConfig) Durations() (time.Duration, time.Duration, time.Duration, error) {
 	snapshotInterval, errSnapshot := time.ParseDuration(c.SnapshotInterval)
 	if errSnapshot != nil || snapshotInterval <= 0 {
@@ -59,7 +56,6 @@ func (c CredentialInFlightConfig) Durations() (time.Duration, time.Duration, tim
 	return snapshotInterval, staleAfter, stagingRetention, nil
 }
 
-// Validate verifies the in-flight observation bounds.
 func (c CredentialInFlightConfig) Validate() error {
 	if _, _, _, errDurations := c.Durations(); errDurations != nil {
 		return errDurations

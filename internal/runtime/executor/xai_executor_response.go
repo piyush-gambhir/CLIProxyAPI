@@ -17,8 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// xAI executes these x_search subtools server-side but exposes their trace as
-// client-style tool calls. Hide the trace so Responses clients do not execute it again.
 type xaiInternalXSearchResponseFilter struct {
 	enabled              bool
 	clientDeclaredTools  map[xaiClientToolKey]struct{}
@@ -85,11 +83,6 @@ func xaiRequestHasNativeXSearchDoc(doc *ojson.Doc) bool {
 	return false
 }
 
-// collectXAIClientDeclaredToolKeys records client-declared function/custom tools
-// using the Responses post-restore identity (short name + optional namespace) and
-// the effective upstream tool type after normalizeXAITool. Client custom tools
-// are normalized to function before being sent to xAI, so keys use function for
-// both declaration kinds. Must run before normalizeXAITools flattens namespace wrappers.
 func collectXAIClientDeclaredToolKeys(body []byte) map[xaiClientToolKey]struct{} {
 	return collectXAIClientDeclaredToolKeysResults(ojson.GetBytesNoCopy(body, "tools"), ojson.GetBytesNoCopy(body, "input"))
 }
@@ -123,7 +116,7 @@ func collectXAIClientDeclaredToolKeysResults(toolsResult, inputResult ojson.Resu
 					if toolName == "" {
 						continue
 					}
-					// normalizeXAITool converts custom → function before upstream send.
+
 					keys[xaiClientToolKey{namespace: namespaceName, name: toolName, toolType: xaiEffectiveDeclaredToolType(nestedType)}] = struct{}{}
 				}
 			case xaiFunctionToolType, xaiCustomToolType:
@@ -131,7 +124,7 @@ func collectXAIClientDeclaredToolKeysResults(toolsResult, inputResult ojson.Resu
 				if toolName == "" {
 					continue
 				}
-				// normalizeXAITool converts custom → function before upstream send.
+
 				keys[xaiClientToolKey{namespace: "", name: toolName, toolType: xaiEffectiveDeclaredToolType(toolType)}] = struct{}{}
 			}
 		}
@@ -147,8 +140,6 @@ func collectXAIClientDeclaredToolKeysResults(toolsResult, inputResult ojson.Resu
 	return keys
 }
 
-// xaiEffectiveDeclaredToolType returns the tool type actually sent upstream
-// after normalizeXAITool. Client custom tools are rewritten to function.
 func xaiEffectiveDeclaredToolType(toolType string) string {
 	if strings.TrimSpace(toolType) == xaiCustomToolType {
 		return xaiFunctionToolType
@@ -165,11 +156,6 @@ func xaiIsInternalXSearchToolName(name string) bool {
 	}
 }
 
-// xaiResponseCallDeclaredType maps a Responses output call type to the effective
-// upstream tool declaration kind used when matching client-declared tools.
-// Client custom tools are normalized to function before upstream send, so only
-// function_call can match a client-declared same-name tool; custom_tool_call
-// remains the internal X Search trace shape.
 func xaiResponseCallDeclaredType(itemType string) string {
 	switch strings.TrimSpace(itemType) {
 	case "function_call":
@@ -181,27 +167,10 @@ func xaiResponseCallDeclaredType(itemType string) string {
 	}
 }
 
-// xaiIsInternalXSearchCallID reports whether call_id matches the evidenced xAI
-// X Search server-side trace prefix (xs_call...), as observed in Responses traffic
-// for native x_search subtools (see issue #4282 / PR #4284 fixtures).
 func xaiIsInternalXSearchCallID(callID string) bool {
 	return strings.HasPrefix(strings.TrimSpace(callID), "xs_call")
 }
 
-// xaiIsInternalXSearchCall reports whether an output item is an xAI server-side
-// X Search subtool trace that should be hidden from Responses clients.
-//
-// Evidence from xAI Responses traffic (issue #4282 / PR #4284):
-//   - native x_search subtools are emitted as custom_tool_call items named
-//     x_user_search / x_semantic_search / x_keyword_search / x_thread_fetch
-//   - those traces commonly use call_id values prefixed with "xs_call"
-//
-// Client tools that share a short name are preserved only when the response call
-// kind matches the effective upstream declaration type. Because normalizeXAITool
-// rewrites client custom → function, a client custom x_keyword_search is keyed as
-// function and therefore preserves function_call while still filtering genuine
-// internal custom_tool_call / xs_call* traces. Namespaced restored client tools
-// are never treated as internal.
 func xaiIsInternalXSearchCall(item ojson.Result, clientDeclaredTools map[xaiClientToolKey]struct{}) bool {
 	itemType := strings.TrimSpace(item.Get("type").String())
 	declaredType := xaiResponseCallDeclaredType(itemType)
@@ -213,17 +182,15 @@ func xaiIsInternalXSearchCall(item ojson.Result, clientDeclaredTools map[xaiClie
 		return false
 	}
 	namespace := strings.TrimSpace(item.Get("namespace").String())
-	// Namespaced calls are restored client tools, never xAI internal X Search traces.
+
 	if namespace != "" {
 		return false
 	}
-	// Evidenced internal call_id prefix always identifies server-side X Search traces,
-	// even when a client tool reuses the same short name.
+
 	if xaiIsInternalXSearchCallID(item.Get("call_id").String()) {
 		return true
 	}
-	// Preserve only client tools whose effective upstream declaration kind matches
-	// this call type (function_call ↔ function after custom normalization).
+
 	if _, declared := clientDeclaredTools[xaiClientToolKey{namespace: namespace, name: name, toolType: declaredType}]; declared {
 		return false
 	}
@@ -593,10 +560,6 @@ func restoreXAINamespaceToolCalls(data []byte, refs map[string]xaiNamespaceToolR
 	return restorer.restore(data)
 }
 
-// restoreXAIClientWebSearchName rewrites the given alias
-// back to the original client tool name "web_search" across event items and
-// completed outputs. Only unnamespaced tool calls are restored so namespaced
-// tools (e.g. acme.clientfn_web_search) are preserved untouched.
 func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 	if alias == "" || !bytes.Contains(data, []byte(alias)) {
 		return data
@@ -607,7 +570,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 	doc := ojson.NewDoc(data)
 	changed := false
 
-	// Check item (e.g. response.output_item.added / response.output_item.done)
 	if strings.TrimSpace(doc.Get("item.namespace").String()) == "" {
 		if strings.TrimSpace(doc.Get("item.name").String()) == alias {
 			if doc.Set("item.name", xaiWebSearchToolType) == nil {
@@ -621,7 +583,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 		}
 	}
 
-	// Check response.output array (e.g. response.completed / response.incomplete)
 	respOutput := doc.Get("response.output")
 	if respOutput.IsArray() {
 		for idx, item := range respOutput.Array() {
@@ -641,7 +602,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 		}
 	}
 
-	// Check top-level output array (non-stream responses translated)
 	topOutput := doc.Get("output")
 	if topOutput.IsArray() {
 		for idx, item := range topOutput.Array() {
@@ -661,7 +621,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 		}
 	}
 
-	// Check top-level name
 	if strings.TrimSpace(doc.Get("namespace").String()) == "" {
 		if strings.TrimSpace(doc.Get("name").String()) == alias {
 			if doc.Set("name", xaiWebSearchToolType) == nil {
@@ -676,9 +635,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 	return doc.Bytes()
 }
 
-// normalizeXAIObjectRootUnionBranchTypes makes untyped root union branches
-// explicitly object-only when the parameter root already permits only objects.
-// This preserves the original schema semantics while satisfying xAI validation.
 func normalizeXAIObjectRootUnionBranchTypes(tool []byte) ([]byte, bool, bool) {
 	doc := ojson.NewDoc(tool)
 	changed, ok := normalizeXAIObjectRootUnionBranchTypesDoc(doc)
@@ -756,8 +712,6 @@ func isXAICodexAppAutomationUpdate(toolName, namespaceName string) bool {
 	return false
 }
 
-// xaiFunctionParametersNeedSimplification reports whether a function tool, or
-// a custom tool normalized to a function, has a schema that xAI cannot accept.
 func xaiFunctionParametersNeedSimplification(tool ojson.Result, namespaceName string) bool {
 	return xaiFunctionParametersNeedSimplificationFields(tool.Get("type").String(), tool.Get("name").String(), tool.Get("parameters"), namespaceName)
 }
@@ -1310,8 +1264,6 @@ func xaiPatchCompletedOutput(eventData []byte, outputItemsByIndex map[int64][]by
 	return patched
 }
 
-// xaiFreeUsageExhaustedCooldown is the free-tier rolling window advertised by
-// cli-chat-proxy ("Usage resets over a rolling 24-hour window").
 const xaiFreeUsageExhaustedCooldown = 24 * time.Hour
 
 const (
@@ -1577,21 +1529,13 @@ func xaiTerminalFailureStatus(eventData []byte, doc *ojson.Doc) int {
 	}
 }
 
-// xaiStatusErr normalizes upstream xAI error bodies for conductor behavior:
-//   - credential invalidation (403 bad-credentials) is remapped to 401 so the
-//     existing OAuth refresh-once-and-retry path runs instead of payment cooldown
-//   - free-tier exhaustion (subscription:free-usage-exhausted) carries a 24h
-//     RetryAfter hint for auth cooldown / account rotation
-//
-// Generic 429s stay without an explicit retry hint so conductor backoff still applies.
 func xaiStatusErr(code int, body []byte) statusErr {
 	err := statusErr{code: code, msg: string(body)}
 	if len(body) == 0 {
 		return err
 	}
 	if code == http.StatusForbidden && isXAIBadCredentialsBody(body) {
-		// Upstream returns 403 for invalidated OAuth access tokens. Map to 401 so
-		// tryRefreshAfterUnauthorized / MarkResult unauthorized handling applies.
+
 		err.code = http.StatusUnauthorized
 		return err
 	}
@@ -1618,10 +1562,6 @@ func xaiStatusErr(code int, body []byte) statusErr {
 	return err
 }
 
-// isXAIBadCredentialsBody reports whether an xAI error body indicates an
-// invalidated/unusable OAuth access token rather than a generic permission or
-// payment failure. HTTP and websocket payloads both use this helper, so nested
-// error.code / error.message shapes are checked as well as flat bodies.
 func isXAIBadCredentialsBody(body []byte) bool {
 	for _, path := range []string{"code", "error.code", "body.error.code"} {
 		if strings.Contains(strings.ToLower(ojson.GetBytesNoCopy(body, path).String()), "bad-credentials") {

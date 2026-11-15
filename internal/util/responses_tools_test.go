@@ -188,7 +188,7 @@ func TestUnwrapResponsesCustomToolInput(t *testing.T) {
 }
 
 func TestBuildGeminiFunctionDeclarations_DisambiguationAndLongNames(t *testing.T) {
-	// Two tools that genuinely collide after sanitization (e.g. "read/file" vs "read_file"), and one > 64 chars
+
 	raw := `{
 		"tools": [
 			{"type": "function", "name": "read/file", "description": "tool with slash"},

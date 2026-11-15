@@ -87,7 +87,6 @@ func TestCleanJSONSchemaForAntigravity_ConstraintsToDescription(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// minItems should be REMOVED and moved to description
 	if strings.Contains(result, `"minItems"`) {
 		t.Errorf("minItems keyword should be removed")
 	}
@@ -95,7 +94,6 @@ func TestCleanJSONSchemaForAntigravity_ConstraintsToDescription(t *testing.T) {
 		t.Errorf("minItems hint missing in description")
 	}
 
-	// minLength should be moved to description
 	if !strings.Contains(result, "minLength: 3") {
 		t.Errorf("minLength hint missing in description")
 	}
@@ -219,8 +217,6 @@ func TestCleanJSONSchemaForAntigravity_RefHandling(t *testing.T) {
 		}
 	}`
 
-	// The local reference is expanded before definitions are removed. Claude VALIDATED mode adds
-	// only its optional-object placeholder; the referenced property definition remains intact.
 	expected := `{
 		"type": "object",
 		"properties": {
@@ -361,7 +357,7 @@ func TestCleanJSONSchemaForAntigravity_AllOfMerging_DotKeys(t *testing.T) {
 }
 
 func TestCleanJSONSchemaForAntigravity_PropertyNameCollision(t *testing.T) {
-	// A tool has an argument named "pattern" - should NOT be treated as a constraint
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -658,19 +654,14 @@ func compareJSON(t *testing.T, expectedJSON, actualJSON string) {
 	}
 }
 
-// ============================================================================
-// Empty Schema Placeholder Tests
-// ============================================================================
-
 func TestCleanJSONSchemaForAntigravity_EmptySchemaPlaceholder(t *testing.T) {
-	// Empty object schema with no properties should get a placeholder
+
 	input := `{
 		"type": "object"
 	}`
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// Should have placeholder property added
 	if !strings.Contains(result, `"reason"`) {
 		t.Errorf("Empty schema should have 'reason' placeholder property, got: %s", result)
 	}
@@ -680,7 +671,7 @@ func TestCleanJSONSchemaForAntigravity_EmptySchemaPlaceholder(t *testing.T) {
 }
 
 func TestCleanJSONSchemaForAntigravity_EmptyPropertiesPlaceholder(t *testing.T) {
-	// Object with empty properties object
+
 	input := `{
 		"type": "object",
 		"properties": {}
@@ -688,14 +679,13 @@ func TestCleanJSONSchemaForAntigravity_EmptyPropertiesPlaceholder(t *testing.T) 
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// Should have placeholder property added
 	if !strings.Contains(result, `"reason"`) {
 		t.Errorf("Empty properties should have 'reason' placeholder, got: %s", result)
 	}
 }
 
 func TestCleanJSONSchemaForAntigravity_NonEmptySchemaUnchanged(t *testing.T) {
-	// Schema with properties should NOT get placeholder
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -706,18 +696,17 @@ func TestCleanJSONSchemaForAntigravity_NonEmptySchemaUnchanged(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// Should NOT have placeholder property
 	if strings.Contains(result, `"reason"`) {
 		t.Errorf("Non-empty schema should NOT have 'reason' placeholder, got: %s", result)
 	}
-	// Original properties should be preserved
+
 	if !strings.Contains(result, `"name"`) {
 		t.Errorf("Original property 'name' should be preserved, got: %s", result)
 	}
 }
 
 func TestCleanJSONSchemaForAntigravity_NestedEmptySchema(t *testing.T) {
-	// Nested empty object in items should also get placeholder
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -732,8 +721,6 @@ func TestCleanJSONSchemaForAntigravity_NestedEmptySchema(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// Nested empty object should also get placeholder
-	// Check that the nested object has a reason property
 	parsed := ojson.Parse(result)
 	nestedProps := parsed.Get("properties.items.items.properties")
 	if !nestedProps.Exists() || !nestedProps.Get("reason").Exists() {
@@ -742,7 +729,7 @@ func TestCleanJSONSchemaForAntigravity_NestedEmptySchema(t *testing.T) {
 }
 
 func TestCleanJSONSchemaForAntigravity_EmptySchemaWithDescription(t *testing.T) {
-	// Empty schema with description should preserve description and add placeholder
+
 	input := `{
 		"type": "object",
 		"description": "An empty object"
@@ -750,7 +737,6 @@ func TestCleanJSONSchemaForAntigravity_EmptySchemaWithDescription(t *testing.T) 
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// Should have both description and placeholder
 	if !strings.Contains(result, `"An empty object"`) {
 		t.Errorf("Description should be preserved, got: %s", result)
 	}
@@ -837,24 +823,20 @@ func TestCleanJSONSchemaForAntigravityResponsePreservesAdditionalPropertiesFalse
 
 	result := ojson.Parse(CleanJSONSchemaForAntigravityResponse(input))
 
-	// Root additionalProperties should be preserved as false
 	rootAP := result.Get("additionalProperties")
 	if !rootAP.Exists() || rootAP.Type != ojson.False {
 		t.Errorf("root additionalProperties = %v, want false; cleaned: %s", rootAP, result.Raw)
 	}
 
-	// Nested additionalProperties should be preserved as false
 	nestedAP := result.Get("properties.nested.additionalProperties")
 	if !nestedAP.Exists() || nestedAP.Type != ojson.False {
 		t.Errorf("nested additionalProperties = %v, want false; cleaned: %s", nestedAP, result.Raw)
 	}
 
-	// Should not have converted additionalProperties into description hints
 	if strings.Contains(result.Raw, "No extra properties allowed") {
 		t.Errorf("expected no description hint for additionalProperties:false, got: %s", result.Raw)
 	}
 
-	// But CleanJSONSchemaForAntigravity (tool path) must still strip it and add hint
 	toolResult := CleanJSONSchemaForAntigravity(input)
 	if strings.Contains(toolResult, `"additionalProperties"`) {
 		t.Errorf("tool schema should not have additionalProperties: %s", toolResult)
@@ -863,7 +845,6 @@ func TestCleanJSONSchemaForAntigravityResponsePreservesAdditionalPropertiesFalse
 		t.Errorf("tool schema should have description hint: %s", toolResult)
 	}
 
-	// Non-false additionalProperties (e.g. true or schema-valued) should still be stripped in response schemas
 	nonFalseInput := `{
 		"type":"object",
 		"properties":{
@@ -912,12 +893,8 @@ func TestCleanJSONSchemaForAntigravityResponsePreservesEnumType(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// Format field handling (ad-hoc patch removal)
-// ============================================================================
-
 func TestCleanJSONSchemaForAntigravity_FormatFieldRemoval(t *testing.T) {
-	// format:"uri" should be removed and added as hint
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -931,22 +908,21 @@ func TestCleanJSONSchemaForAntigravity_FormatFieldRemoval(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// format should be removed
 	if strings.Contains(result, `"format"`) {
 		t.Errorf("format field should be removed, got: %s", result)
 	}
-	// hint should be added to description
+
 	if !strings.Contains(result, "format: uri") {
 		t.Errorf("format hint should be added to description, got: %s", result)
 	}
-	// original description should be preserved
+
 	if !strings.Contains(result, "A URL") {
 		t.Errorf("Original description should be preserved, got: %s", result)
 	}
 }
 
 func TestCleanJSONSchemaForAntigravity_FormatFieldNoDescription(t *testing.T) {
-	// format without description should create description with hint
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -959,18 +935,17 @@ func TestCleanJSONSchemaForAntigravity_FormatFieldNoDescription(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// format should be removed
 	if strings.Contains(result, `"format"`) {
 		t.Errorf("format field should be removed, got: %s", result)
 	}
-	// hint should be added
+
 	if !strings.Contains(result, "format: email") {
 		t.Errorf("format hint should be added, got: %s", result)
 	}
 }
 
 func TestCleanJSONSchemaForAntigravity_MultipleFormats(t *testing.T) {
-	// Multiple format fields should all be handled
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -982,11 +957,10 @@ func TestCleanJSONSchemaForAntigravity_MultipleFormats(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-	// All format fields should be removed
 	if strings.Contains(result, `"format"`) {
 		t.Errorf("All format fields should be removed, got: %s", result)
 	}
-	// All hints should be added
+
 	if !strings.Contains(result, "format: uri") {
 		t.Errorf("uri format hint should be added, got: %s", result)
 	}
@@ -1011,8 +985,6 @@ func TestCleanJSONSchemaForAntigravity_ToolEnumsBecomeHints(t *testing.T) {
 	result := CleanJSONSchemaForAntigravity(input)
 	parsed := ojson.Parse(result)
 
-	// Antigravity ignores function-argument enum but still uses the declared type to choose the
-	// emitted JSON type. Preserve types and convert enum values to advisory hints.
 	for path, wantType := range map[string]string{
 		"properties.priority": "integer",
 		"properties.level":    "number",
@@ -1240,7 +1212,6 @@ func TestRemoveExtensionFields(t *testing.T) {
 	}
 }
 
-// uniqueItems should be stripped and moved to description hint (#2123).
 func TestCleanJSONSchemaForAntigravity_UniqueItemsStripped(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1264,10 +1235,6 @@ func TestCleanJSONSchemaForAntigravity_UniqueItemsStripped(t *testing.T) {
 	}
 }
 
-// TestIsPropertyDefinitionDistinguishesPropertyNamedProperties covers the classification that
-// decides whether a key spelled like a schema keyword is a keyword or an author-chosen name.
-// Matching a trailing ".properties" alone mistook the schema of a property named "properties" for
-// a property map, which disabled cleaning inside it.
 func TestIsPropertyDefinitionDistinguishesPropertyNamedProperties(t *testing.T) {
 	for path, want := range map[string]bool{
 		"":                                    false,
@@ -1276,12 +1243,12 @@ func TestIsPropertyDefinitionDistinguishesPropertyNamedProperties(t *testing.T) 
 		"properties.properties.properties":    true,
 		"properties.records.items.properties": true,
 		"properties.records.items":            false,
-		// Any prefix the caller nests the schema under must not change the answer.
+
 		"schema.properties": true,
 		"request.tools.0.functionDeclarations.0.parameters":                       false,
 		"request.tools.0.functionDeclarations.0.parameters.properties":            true,
 		"request.tools.0.functionDeclarations.0.parameters.properties.properties": false,
-		// $defs and patternProperties are name maps for the same reason as properties.
+
 		"$defs":                          true,
 		"$defs.properties":               false,
 		"properties.$defs":               false,
@@ -1294,18 +1261,15 @@ func TestIsPropertyDefinitionDistinguishesPropertyNamedProperties(t *testing.T) 
 	}
 }
 
-// TestCleanJSONSchemaStripsPropertyNamesUnderPropertyNamedProperties covers the reported failure:
-// the private Gemini backend rejects "propertyNames" with an unknown-field 400, and MCP tool
-// schemas place it inside a property that is itself named "properties".
 func TestCleanJSONSchemaStripsPropertyNamesUnderPropertyNamedProperties(t *testing.T) {
 	shapes := map[string]string{
-		// Nested in an array item, alongside the item's own properties map.
+
 		"arrayItem": `{"type":"object","properties":{"records":{"type":"array","items":{"type":"object",` +
 			`"properties":{"name":{"type":"string"}},"propertyNames":{"type":"string"}}}}}`,
-		// A dynamic map declared by a property named "properties".
+
 		"propertyNamedProperties": `{"type":"object","properties":{"properties":{"type":"object",` +
 			`"propertyNames":{"type":"string"}}}}`,
-		// Both shapes combined, as the reported tool schemas did.
+
 		"combined": `{"type":"object","properties":{"pages":{"type":"array","items":{"type":"object",` +
 			`"properties":{"properties":{"type":"object","propertyNames":{"type":"string"},` +
 			`"additionalProperties":true}},"propertyNames":{"type":"string"}}}}}`,
@@ -1328,8 +1292,6 @@ func TestCleanJSONSchemaStripsPropertyNamesUnderPropertyNamedProperties(t *testi
 	}
 }
 
-// TestCleanJSONSchemaKeepsPropertiesNamedLikeKeywords guards the other half of the rule: a schema
-// may legitimately declare properties named after schema keywords, and those must survive.
 func TestCleanJSONSchemaKeepsPropertiesNamedLikeKeywords(t *testing.T) {
 	input := `{"type":"object","properties":{
 		"propertyNames":{"type":"string"},
@@ -1355,7 +1317,7 @@ func TestCleanJSONSchemaKeepsPropertiesNamedLikeKeywords(t *testing.T) {
 }
 
 func TestCleanJSONSchema_ConditionalKeywords(t *testing.T) {
-	// 1. Root-level if/then/else
+
 	rootInput := `{
 		"type": "object",
 		"properties": { "kind": { "type": "string", "enum": ["buy", "sell"] } },
@@ -1391,7 +1353,6 @@ func TestCleanJSONSchema_ConditionalKeywords(t *testing.T) {
 		}
 	}
 
-	// 2. allOf with if/then
 	allOfInput := `{
 		"type": "object",
 		"properties": { "kind": { "type": "string", "enum": ["buy", "sell"] } },
@@ -1427,7 +1388,6 @@ func TestCleanJSONSchema_ConditionalKeywords(t *testing.T) {
 		}
 	}
 
-	// 3. Nested property with if/then
 	nestedInput := `{
 		"type": "object",
 		"properties": {
@@ -1562,9 +1522,6 @@ func TestSortByDepthUsesSegmentsAndIsStable(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchemaStripsEncryptedMetadata covers Codex client tool definitions where
-// properties carry the Responses-only "encrypted" marker (e.g. "encrypted": true or "encrypted": false).
-// The Gemini backend strictly rejects unknown schema fields with an INVALID_ARGUMENT 400.
 func TestCleanJSONSchemaStripsEncryptedMetadata(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1611,8 +1568,6 @@ func TestCleanJSONSchemaStripsEncryptedMetadata(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchemaKeepsPropertyNamedEncrypted guards the legitimate case where a tool
-// parameter itself is named "encrypted" (e.g. properties.encrypted: {"type": "boolean"}).
 func TestCleanJSONSchemaKeepsPropertyNamedEncrypted(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1641,16 +1596,13 @@ func TestCleanJSONSchemaKeepsPropertyNamedEncrypted(t *testing.T) {
 		if parsed.Get("properties.encrypted.type").String() != "boolean" {
 			t.Errorf("%s: property named 'encrypted' type corrupted: %s", cleaner, got)
 		}
-		// The inner attribute "encrypted": true must be stripped
+
 		if parsed.Get("properties.encrypted.encrypted").Exists() {
 			t.Errorf("%s: inner 'encrypted' attribute survived: %s", cleaner, got)
 		}
 	}
 }
 
-// TestCleanJSONSchema_BarePropertyMapNormalized covers Issue #5178:
-// MCP tools (e.g. Asana) emit bare property maps missing type:object and properties wrappers,
-// plus boolean required: true on child properties.
 func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1675,7 +1627,6 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-		// data must be normalized into an object schema with properties
 		if parsed.Get("properties.data.type").String() != "object" {
 			t.Errorf("%s: properties.data.type = %q, want object; got schema: %s", cleaner, parsed.Get("properties.data.type").String(), got)
 		}
@@ -1688,7 +1639,7 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 		if parsed.Get("properties.data.properties.insert_before.type").String() != "string" {
 			t.Errorf("%s: properties.data.properties.insert_before.type = %q, want string; got schema: %s", cleaner, parsed.Get("properties.data.properties.insert_before.type").String(), got)
 		}
-		// parent required: true must be promoted to data.required array
+
 		var dataReq []string
 		for _, r := range parsed.Get("properties.data.required").Array() {
 			dataReq = append(dataReq, r.String())
@@ -1696,12 +1647,11 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 		if !contains(dataReq, "parent") {
 			t.Errorf("%s: properties.data.required = %v, want 'parent' included; got schema: %s", cleaner, dataReq, got)
 		}
-		// boolean required on parent node must be stripped
+
 		if parsed.Get("properties.data.properties.parent.required").Exists() {
 			t.Errorf("%s: properties.data.properties.parent.required survived; got schema: %s", cleaner, got)
 		}
 
-		// opts must also be normalized into an object schema
 		if parsed.Get("properties.opts.type").String() != "object" {
 			t.Errorf("%s: properties.opts.type = %q, want object; got schema: %s", cleaner, parsed.Get("properties.opts.type").String(), got)
 		}
@@ -1711,7 +1661,6 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_NestedBarePropertyMap tests recursive normalization of multi-level bare property maps.
 func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1741,7 +1690,6 @@ func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 			t.Errorf("%s: properties.data.properties.workspace.type = %q, want string; got schema: %s", cleaner, parsed.Get("properties.data.properties.workspace.type").String(), got)
 		}
 
-		// Nested task should also be normalized to an object
 		if parsed.Get("properties.data.properties.task.type").String() != "object" {
 			t.Errorf("%s: properties.data.properties.task.type = %q, want object; got schema: %s", cleaner, parsed.Get("properties.data.properties.task.type").String(), got)
 		}
@@ -1749,7 +1697,6 @@ func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 			t.Errorf("%s: properties.data.properties.task.properties.name.type = %q, want string; got schema: %s", cleaner, parsed.Get("properties.data.properties.task.properties.name.type").String(), got)
 		}
 
-		// Required promotion at both levels
 		var dataReq []string
 		for _, r := range parsed.Get("properties.data.required").Array() {
 			dataReq = append(dataReq, r.String())
@@ -1768,8 +1715,6 @@ func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_BarePropertyMapWithKeywordNames tests that bare property maps with fields
-// named like schema keywords (title, description, format, type) are correctly normalized.
 func TestCleanJSONSchema_BarePropertyMapWithKeywordNames(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1814,7 +1759,6 @@ func TestCleanJSONSchema_BarePropertyMapWithKeywordNames(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_ArrayItemsBarePropertyMap tests bare property map normalization inside array items.
 func TestCleanJSONSchema_ArrayItemsBarePropertyMap(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1853,8 +1797,6 @@ func TestCleanJSONSchema_ArrayItemsBarePropertyMap(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_ToolArraysMissingItems covers Issue #5292: Gemini and Antigravity
-// reject tool array schemas that do not declare an items schema.
 func TestCleanJSONSchema_ToolArraysMissingItems(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1898,8 +1840,6 @@ func TestCleanJSONSchema_ResponseArrayMissingItemsUnchanged(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_BooleanRequiredPromoted tests that boolean required: true is promoted
-// and boolean required: false is stripped without being added to the required array.
 func TestCleanJSONSchema_BooleanRequiredPromoted(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1941,7 +1881,6 @@ func TestCleanJSONSchema_BooleanRequiredPromoted(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_PreservesLargeNumberPrecision tests that numbers are not corrupted by float64 precision loss.
 func TestCleanJSONSchema_PreservesLargeNumberPrecision(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1957,14 +1896,12 @@ func TestCleanJSONSchema_PreservesLargeNumberPrecision(t *testing.T) {
 	}`
 
 	result := CleanJSONSchemaForAntigravityResponse(input)
-	// minimum is moved to description hint
+
 	if !strings.Contains(result, "9007199254740993") {
 		t.Errorf("large integer precision was lost: %s", result)
 	}
 }
 
-// TestCleanJSONSchema_BarePropertyMapWithRequestAndToolsNames tests that property names like
-// "request", "tools", "headers", "messages" inside bare property maps are correctly normalized.
 func TestCleanJSONSchema_BarePropertyMapWithRequestAndToolsNames(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2017,8 +1954,6 @@ func TestCleanJSONSchema_BarePropertyMapWithRequestAndToolsNames(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_BarePropertyMapWithSiblingDescription tests bare property maps with sibling
-// annotations (e.g. description, title, required) alongside child property definitions.
 func TestCleanJSONSchema_BarePropertyMapWithSiblingDescription(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2061,8 +1996,6 @@ func TestCleanJSONSchema_BarePropertyMapWithSiblingDescription(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_SingleKeySchemaWrapper tests that cleanNestedSchema wrapper {"schema": ...}
-// is unwrapped, normalized, and placeholder is properly placed without root pollution.
 func TestCleanJSONSchema_SingleKeySchemaWrapper(t *testing.T) {
 	inner := `{
 		"type": "object",
@@ -2095,8 +2028,6 @@ func TestCleanJSONSchema_SingleKeySchemaWrapper(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_BarePropertyMapWithExplicitTypeObject tests that nodes declaring
-// type: "object" but omitting properties wrapper are correctly normalized.
 func TestCleanJSONSchema_BarePropertyMapWithExplicitTypeObject(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2136,7 +2067,6 @@ func TestCleanJSONSchema_BarePropertyMapWithExplicitTypeObject(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_BarePropertyMapWithNullable tests bare property maps with nullable: true.
 func TestCleanJSONSchema_BarePropertyMapWithNullable(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2165,8 +2095,6 @@ func TestCleanJSONSchema_BarePropertyMapWithNullable(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_PreservesHTMLCharactersWithoutEscaping tests that < > & in descriptions
-// are not converted into HTML entities (\u003c, \u003e, \u0026).
 func TestCleanJSONSchema_PreservesHTMLCharactersWithoutEscaping(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2187,8 +2115,6 @@ func TestCleanJSONSchema_PreservesHTMLCharactersWithoutEscaping(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_VendorExtensionOnEnumNotWrappedIntoProperties tests that vendor extensions
-// on non-object types (e.g. x-google-enum-descriptions on a string enum) are not wrapped into properties.
 func TestCleanJSONSchema_VendorExtensionOnEnumNotWrappedIntoProperties(t *testing.T) {
 	input := `{
 		"type": "string",
@@ -2216,8 +2142,6 @@ func TestCleanJSONSchema_VendorExtensionOnEnumNotWrappedIntoProperties(t *testin
 	}
 }
 
-// TestCleanJSONSchema_ObjectDefaultNotWrappedIntoProperties tests that object-typed default
-// is not wrapped into properties as an orphan bare property.
 func TestCleanJSONSchema_ObjectDefaultNotWrappedIntoProperties(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2237,15 +2161,12 @@ func TestCleanJSONSchema_ObjectDefaultNotWrappedIntoProperties(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-		// settings must not gain properties.default.properties.theme
 		if parsed.Get("properties.settings.properties.default").Exists() {
 			t.Errorf("%s: default was converted to property: %s", cleaner, got)
 		}
 	}
 }
 
-// TestCleanJSONSchema_MixedPropertiesAndOrphanBareProperty tests that orphan bare property maps
-// alongside an existing properties object are collected into properties.
 func TestCleanJSONSchema_MixedPropertiesAndOrphanBareProperty(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2285,8 +2206,6 @@ func TestCleanJSONSchema_MixedPropertiesAndOrphanBareProperty(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_PreservesAdditionalPropertiesObjectSchema tests that a standalone
-// additionalProperties schema is recognized as a structural keyword and not wrapped as a property.
 func TestCleanJSONSchema_PreservesAdditionalPropertiesObjectSchema(t *testing.T) {
 	input := `{
 		"additionalProperties": {
@@ -2300,16 +2219,13 @@ func TestCleanJSONSchema_PreservesAdditionalPropertiesObjectSchema(t *testing.T)
 	} {
 		got := clean(input)
 		parsed := ojson.Parse(got)
-		// Should not be wrapped as properties.additionalProperties
+
 		if parsed.Get("properties.additionalProperties").Exists() {
 			t.Errorf("%s: additionalProperties was wrapped into properties: %s", cleaner, got)
 		}
 	}
 }
 
-// TestCleanJSONSchemaForAntigravityResponse_AnyOfRequiredOnlyBranches tests issue 5219 #2:
-// anyOf with required-only branches should not overwrite the parent object's type and properties,
-// and should materialize valid typed object branches from parent properties so the union is preserved.
 func TestCleanJSONSchemaForAntigravityResponse_AnyOfRequiredOnlyBranches(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2345,8 +2261,6 @@ func TestCleanJSONSchemaForAntigravityResponse_AnyOfRequiredOnlyBranches(t *test
 	}
 }
 
-// TestCleanJSONSchemaForAntigravityResponse_ContainsKeywordStripped tests issue 5219 #3:
-// contains keyword in array schemas should be stripped and moved to description hint.
 func TestCleanJSONSchemaForAntigravityResponse_ContainsKeywordStripped(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2378,11 +2292,8 @@ func TestCleanJSONSchemaForAntigravityResponse_ContainsKeywordStripped(t *testin
 	}
 }
 
-// TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords covers Issue #5888:
-// Draft-04 schema identifier "id" and Draft 2019-09/2020-12 identifier keywords ($anchor, $vocabulary,
-// $dynamicRef, $dynamicAnchor) should be stripped from schema nodes while preserving properties legitimately named "id".
 func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.T) {
-	// Repro case from Issue #5888: MCP tool property schema containing "id": "ContentType"
+
 	input := `{
 		"id": "http://example.com/root.json",
 		"$anchor": "rootAnchor",
@@ -2415,7 +2326,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-		// Root keywords should be stripped
 		if parsed.Get("id").Exists() {
 			t.Errorf("%s: root 'id' was not removed: %s", cleaner, got)
 		}
@@ -2426,7 +2336,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 			t.Errorf("%s: root '$vocabulary' was not removed: %s", cleaner, got)
 		}
 
-		// Keywords inside property schema should be stripped
 		if parsed.Get("properties.kind.id").Exists() {
 			t.Errorf("%s: 'properties.kind.id' was not removed: %s", cleaner, got)
 		}
@@ -2440,7 +2349,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 			t.Errorf("%s: 'properties.kind.$dynamicRef' was not removed: %s", cleaner, got)
 		}
 
-		// Property named "id" must be preserved
 		if !parsed.Get("properties.id").Exists() {
 			t.Errorf("%s: property named 'id' was incorrectly removed: %s", cleaner, got)
 		}
@@ -2449,7 +2357,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 		}
 	}
 
-	// Real-world MCP repro: definition carrying "id": "ContentType" expanded via $ref
 	refInput := `{
 		"definitions": {
 			"ContentType": {
@@ -2484,7 +2391,7 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 }
 
 func TestCleanJSONSchema_TrueBooleanSubschemas(t *testing.T) {
-	// Issue #3551: Antigravity rejects OpenAI function tools containing `true` JSON Schema subschemas.
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -2506,7 +2413,6 @@ func TestCleanJSONSchema_TrueBooleanSubschemas(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-		// true subschemas under properties must be converted to empty object schemas {}
 		for _, prop := range []string{"screenshot_id", "filename", "file_size", "source_file_checksum"} {
 			val := parsed.Get("properties." + prop)
 			if !val.Exists() {
@@ -2517,7 +2423,6 @@ func TestCleanJSONSchema_TrueBooleanSubschemas(t *testing.T) {
 			}
 		}
 
-		// false subschema must NOT be converted to {} to preserve rejection semantics
 		disabledVal := parsed.Get("properties.disabled_field")
 		if !disabledVal.Exists() {
 			t.Fatalf("%s: expected property 'disabled_field' to exist in %s", cleaner, got)
@@ -2529,7 +2434,7 @@ func TestCleanJSONSchema_TrueBooleanSubschemas(t *testing.T) {
 }
 
 func TestCleanJSONSchema_NestedTrueBooleanSubschemas(t *testing.T) {
-	// Issue #3551: Verify boolean true subschema normalization in nested schema positions.
+
 	input := `{
 		"type": "object",
 		"properties": {
@@ -2571,12 +2476,10 @@ func TestCleanJSONSchema_NestedTrueBooleanSubschemas(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-		// tags.items: true -> {}
 		if val := parsed.Get("properties.tags.items"); val.Exists() && val.Type == ojson.True {
 			t.Errorf("%s: tags.items should not be boolean true: %s", cleaner, got)
 		}
 
-		// nested properties: true -> {}, false preserved
 		if val := parsed.Get("properties.metadata.properties.nested_true"); !val.Exists() || val.Type != ojson.JSON || val.Raw != "{}" {
 			t.Errorf("%s: nested_true should be {}, got %s", cleaner, val.Raw)
 		}
@@ -2584,19 +2487,16 @@ func TestCleanJSONSchema_NestedTrueBooleanSubschemas(t *testing.T) {
 			t.Errorf("%s: nested_false should remain false, got %s", cleaner, val.Raw)
 		}
 
-		// tuple items: true in list should be normalized to {}
 		if val := parsed.Get("properties.tuple.items.0"); val.Exists() && val.Type == ojson.True {
 			t.Errorf("%s: tuple items[0] should not be boolean true: %s", cleaner, got)
 		}
 
-		// union / combination inner property
 		if val := parsed.Get("properties.combination.properties.opt"); val.Exists() {
 			if val.Type == ojson.True {
 				t.Errorf("%s: combination.properties.opt should not be boolean true: %s", cleaner, got)
 			}
 		}
 
-		// large integer preservation
 		if val := parsed.Get("properties.large_int"); !val.Exists() || val.Raw != "9007199254740993" {
 			t.Errorf("%s: large_int corrupted, got %s", cleaner, val.Raw)
 		}
@@ -2604,7 +2504,7 @@ func TestCleanJSONSchema_NestedTrueBooleanSubschemas(t *testing.T) {
 }
 
 func TestCleanJSONSchema_RootAndWrappedTrue(t *testing.T) {
-	// Verify root boolean true normalization to {}
+
 	for cleaner, clean := range map[string]func(string) string{
 		"antigravity":         CleanJSONSchemaForAntigravity,
 		"antigravityTool":     func(s string) string { return CleanJSONSchemaForAntigravityTool(s, false) },
@@ -2616,7 +2516,6 @@ func TestCleanJSONSchema_RootAndWrappedTrue(t *testing.T) {
 			t.Errorf("%s: root true should normalize to {}, got %s", cleaner, got)
 		}
 
-		// Verify wrapped {"schema": true} normalization
 		wrapped := `{"schema": true}`
 		gotWrapped := clean(wrapped)
 		parsed := ojson.Parse(gotWrapped)
@@ -2709,13 +2608,12 @@ func TestCleanJSONSchemaForGeminiJSONSchema_PreservesAdditionalPropertiesAndPatt
 	if got := parsed.Get("properties.items_list.items.description"); got.Exists() && strings.Contains(got.String(), "pattern:") {
 		t.Fatalf("array items pattern should not be converted to description hint. Cleaned: %s", cleaned)
 	}
-	// non_existent should be removed from required because it's not in properties
+
 	required := parsed.Get("required").Array()
 	if len(required) != 2 {
 		t.Fatalf("required length = %d, want 2. Cleaned: %s", len(required), cleaned)
 	}
 
-	// Compare with legacy CleanJSONSchemaForGemini to verify backward compatibility
 	legacyCleaned := CleanJSONSchemaForGemini(input)
 	legacyParsed := ojson.Parse(legacyCleaned)
 	if legacyParsed.Get("additionalProperties").Exists() {
@@ -2759,20 +2657,14 @@ func TestCleanJSONSchemaForGeminiJSONSchema_PreservesSchemaValuedAdditionalPrope
 		t.Fatalf("additionalProperties pattern should not be converted to description hint: %s", cleaned)
 	}
 
-	// Legacy cleaner should strip schema-valued additionalProperties
 	legacyCleaned := CleanJSONSchemaForGemini(input)
 	if ojson.Get(legacyCleaned, "additionalProperties").Exists() {
 		t.Fatalf("legacy CleanJSONSchemaForGemini should strip additionalProperties schema: %s", legacyCleaned)
 	}
 }
 
-// TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011 covers Issue #6011:
-// Gemini rejects tool schemas where a property declares "items" but its type is not "array"
-// (e.g. type is omitted or flattened to a non-array type), returning:
-// "field predicate failed: $type == Type.ARRAY".
 func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
-	// Case 1: property declares "items" but omits "type": "array" (relying on JSON Schema inference)
-	// Reproduces the error path reported in Issue #6011: properties.revision_reasons.items.properties.evidence_reference
+
 	inputMissingType := `{
 		"type": "object",
 		"properties": {
@@ -2817,7 +2709,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-	// Case 2: property declares union type: ["string", "array"] with items
 	inputUnionType := `{
 		"type": "object",
 		"properties": {
@@ -2849,7 +2740,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-	// Case 3: property has explicit non-array type (e.g. "string") with extraneous items
 	inputNonArrayWithItems := `{
 		"type": "object",
 		"properties": {
@@ -2881,7 +2771,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-	// Case 4: property literally named "items" should be preserved and not treated as array items
 	inputPropertyNamedItems := `{
 		"type": "object",
 		"properties": {
@@ -2906,7 +2795,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-	// Case 5: Root array with items missing type
 	inputRootArrayMissingType := `{
 		"items": {
 			"type": "string"
@@ -2926,7 +2814,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-	// Case 6: Cleaning is idempotent across all cleaners
 	for name, clean := range cleaners {
 		t.Run(name+"_idempotent", func(t *testing.T) {
 			cleaned1 := clean(inputMissingType)
@@ -2937,16 +2824,15 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-	// Case 7: Response schema regression check
 	t.Run("antigravity_response_schema", func(t *testing.T) {
-		// Response schema declaring items without type infers array type
+
 		respInput := `{"type":"object","properties":{"names":{"items":{"type":"string"}}}}`
 		cleaned := CleanJSONSchemaForAntigravityResponse(respInput)
 		parsed := ojson.Parse(cleaned)
 		if parsed.Get("properties.names.type").String() != "array" {
 			t.Fatalf("response schema should infer type 'array' when items is defined: %s", cleaned)
 		}
-		// Response array missing items still remains untouched
+
 		respNoItems := `{"type":"object","properties":{"values":{"type":"array"}}}`
 		cleanedNoItems := CleanJSONSchemaForAntigravityResponse(respNoItems)
 		parsedNoItems := ojson.Parse(cleanedNoItems)
@@ -3009,10 +2895,6 @@ func TestSanitizeArrayItems_PreservesItemsForUppercaseArrayType(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_EnforcesObjectTypeForProperties_Issue6394 tests issue 6394:
-// When a property defines nested properties/required (e.g. through a union type like ["string", "object"],
-// merged anyOf branches, or missing type), Gemini requires type to be OBJECT.
-// Properties or required must never be emitted on a non-OBJECT type node.
 func TestCleanJSONSchema_EnforcesObjectTypeForProperties_Issue6394(t *testing.T) {
 	cleaners := map[string]func(string) string{
 		"Gemini":              CleanJSONSchemaForGemini,
@@ -3076,10 +2958,6 @@ func TestCleanJSONSchema_EnforcesObjectTypeForProperties_Issue6394(t *testing.T)
 	})
 }
 
-// TestCleanJSONSchema_RemovesDependentKeywords_Issue6539 covers Issue #6539:
-// JSON Schema keywords dependentRequired, dependentSchemas, and dependencies are rejected by
-// the Gemini/Antigravity backend with 400 INVALID_ARGUMENT ("Unknown name \"dependentRequired\" ... Cannot find field")
-// and must be stripped while preserving legitimate tool properties with those names.
 func TestCleanJSONSchema_RemovesDependentKeywords_Issue6539(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -3172,13 +3050,6 @@ func TestCleanJSONSchema_RemovesDependentKeywords_Issue6539(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662 covers Issue #3662:
-// Multi-branch anyOf/oneOf unions (such as string | image object | audio object) must not be
-// flattened to a single selected branch, which previously caused non-first object branches (e.g. audio)
-// to disappear from the cleaned schema.
-// Multi-branch unions are preserved by every cleaner except the Antigravity Claude
-// tool cleaner, which flattens them for the Claude-side upstream that rejects nested
-// multi-branch unions (Issue 3662 regression follow-up).
 func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -3219,7 +3090,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			got := clean(input)
 			compareJSON(t, input, got)
 
-			// Verify idempotency when cleaned a second time
 			gotSecond := clean(got)
 			compareJSON(t, got, gotSecond)
 		})
@@ -3272,8 +3142,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			t.Fatalf("GeminiJSONSchema missing (nullable) hint: %s", geminiCleaned.Raw)
 		}
 
-		// Nested nullable union in both [null, nestedUnion] and [nestedUnion, null] orders
-		// must unwrap to the nested union with nullable metadata and remain idempotent.
 		for _, nestedNullable := range []string{
 			`{"type":"object","properties":{"item":{"anyOf":[{"type":"null"},{"anyOf":[{"type":"string"},{"type":"integer"}]}]}}}`,
 			`{"type":"object","properties":{"item":{"anyOf":[{"anyOf":[{"type":"string"},{"type":"integer"}]},{"type":"null"}]}}}`,
@@ -3336,7 +3204,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			}
 		}
 
-		// parametersJsonSchema carrier preserves standard JSON Schema oneOf
 		jsonSchemaParsed := ojson.Parse(CleanJSONSchemaForGeminiJSONSchema(oneOfInput))
 		if got := len(jsonSchemaParsed.Get("properties.item.oneOf").Array()); got != 3 {
 			t.Fatalf("[GeminiJSONSchema] oneOf branch count = %d, want 3: %s", got, jsonSchemaParsed.Raw)
@@ -3368,8 +3235,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			})
 		}
 
-		// Mixed union with a required-only branch materializes the required-only branch from parent properties
-		// so that the alternative branch (e.g. text) is preserved in anyOf.
 		mixedRequiredOnlyBranch := `{
 			"type": "object",
 			"properties": {
@@ -3420,7 +3285,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		}`
 		compareJSON(t, expectedMixedRequiredOnly, CleanJSONSchemaForAntigravity(mixedRequiredOnlyBranch))
 
-		// Pure required-only union branches on an object with parent properties are materialized into valid object branches.
 		pureRequiredOnlyUnion := `{
 			"type": "object",
 			"properties": {
@@ -3455,8 +3319,7 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 	})
 
 	t.Run("BooleanUnionBranchesAndSiblingAnyOfOneOf", func(t *testing.T) {
-		// Boolean false subschema branches in anyOf/oneOf are unsatisfiable and must be stripped
-		// instead of leaking raw boolean false into protobuf Schema anyOf.
+
 		falseSingleBranch := `{"type":"object","properties":{"value":{"anyOf":[false,{"type":"string"}]}}}`
 		expectedFalseSingle := `{"type":"object","properties":{"value":{"type":"string"}}}`
 		compareJSON(t, expectedFalseSingle, CleanJSONSchemaForAntigravity(falseSingleBranch))
@@ -3465,13 +3328,10 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		expectedFalseMulti := `{"type":"object","properties":{"value":{"anyOf":[{"type":"string"},{"type":"integer"}]}}}`
 		compareJSON(t, expectedFalseMulti, CleanJSONSchemaForAntigravity(falseMultiBranch))
 
-		// Boolean true subschema branch in anyOf/oneOf is normalized to an unconstrained {} branch and preserved.
 		trueMultiBranch := `{"type":"object","properties":{"value":{"anyOf":[true,{"type":"string"},{"type":"integer"}]}}}`
 		expectedTrueMulti := `{"type":"object","properties":{"value":{"anyOf":[{},{"type":"string"},{"type":"integer"}]}}}`
 		compareJSON(t, expectedTrueMulti, CleanJSONSchemaForAntigravityTool(trueMultiBranch, false))
 
-		// When a node declares both anyOf and oneOf, native Schema carriers keep anyOf without concatenating
-		// oneOf into it and record oneOf as a description hint, while GeminiJSONSchema preserves both.
 		siblingUnions := `{
 			"type": "object",
 			"properties": {
@@ -3510,10 +3370,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			t.Fatalf("[GeminiJSONSchema] expected both anyOf and oneOf to be preserved: %s", jsonSchemaSibling.Raw)
 		}
 
-		// Issue 3662 regression: only the Antigravity Claude tool cleaner flattens the
-		// multi-branch unions that every other cleaner above preserves, because only the
-		// Antigravity Claude backend is known to reject nested multi-branch unions when
-		// it converts function declarations to Claude custom.input_schema.
 		t.Run("AntigravityClaudeToolFlattensNestedUnions", func(t *testing.T) {
 			flattened := ojson.Parse(CleanJSONSchemaForAntigravityClaudeTool(input, false))
 			item := flattened.Get("properties.item")
@@ -3530,21 +3386,13 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 				t.Fatalf("Antigravity Claude flattened item lost the dropped-branch hint: %s", flattened.Raw)
 			}
 
-			// Idempotency matters on the Antigravity path: translators clean the schema
-			// once, then the executor cleans it again before sending it upstream.
 			flattenedTwice := CleanJSONSchemaForAntigravityClaudeTool(flattened.Raw, false)
 			compareJSON(t, flattened.Raw, flattenedTwice)
 
-			// Double-cleaning across the canonical translator -> executor chain must
-			// keep the flattened Claude shape unchanged on the second pass.
 			recleaned := CleanJSONSchemaForAntigravityClaudeTool(CleanJSONSchemaForAntigravity(input), false)
 			compareJSON(t, flattened.Raw, recleaned)
 			compareJSON(t, flattened.Raw, CleanJSONSchemaForAntigravity(flattened.Raw))
 
-			// Nullable multi-branch unions must keep nullability through the whole
-			// translator -> executor chain: the union-preserving first pass strips the
-			// null branch and marks the parent nullable:true, so the flattening second
-			// pass must inherit that marker instead of silently dropping it.
 			nullableUnionInput := `{"type":"object","properties":{"value":{"anyOf":[{"type":"string"},{"type":"integer"},{"type":"null"}]}}}`
 			directFlattened := CleanJSONSchemaForAntigravityClaudeTool(nullableUnionInput, false)
 			directValue := ojson.Parse(directFlattened).Get("properties.value")
@@ -3558,16 +3406,11 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			}
 			compareJSON(t, chainedFlattened, CleanJSONSchemaForAntigravityClaudeTool(chainedFlattened, false))
 
-			// Boolean subschema branches must not leak raw booleans or unions into the
-			// flattened output: true normalizes away, false is unstisfiable and dropped.
 			trueBranch := `{"type":"object","properties":{"value":{"anyOf":[true,{"type":"string"},{"type":"integer"}]}}}`
 			compareJSON(t, `{"type":"object","properties":{"value":{"type":"string","description":"Accepts: string | integer"}}}`, CleanJSONSchemaForAntigravityClaudeTool(trueBranch, false))
 			falseBranch := `{"type":"object","properties":{"value":{"oneOf":[false,{"type":"string"},{"type":"integer"}]}}}`
 			compareJSON(t, `{"type":"object","properties":{"value":{"type":"string","description":"Accepts: string | integer"}}}`, CleanJSONSchemaForAntigravityClaudeTool(falseBranch, false))
 
-			// Sibling anyOf + oneOf on one node: both are flattened and neither raw union
-			// JSON leaks into the description (paths are processed oneOf-first, so the
-			// oneOf branch set wins the single remaining node).
 			siblingClaude := ojson.Parse(CleanJSONSchemaForAntigravityClaudeTool(siblingUnions, false))
 			siblingValue := siblingClaude.Get("properties.value")
 			if siblingValue.Get("anyOf").Exists() || siblingValue.Get("oneOf").Exists() {
@@ -3577,7 +3420,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			compareJSON(t, siblingClaude.Raw, CleanJSONSchemaForAntigravityClaudeTool(siblingClaude.Raw, false))
 		})
 
-		// Null-only unions (anyOf:[null], oneOf:[null], anyOf:[false, null]) must not panic across any cleaner.
 		nullOnlyCleaners := map[string]func(string) string{
 			"Antigravity":           CleanJSONSchemaForAntigravity,
 			"AntigravityTool":       func(s string) string { return CleanJSONSchemaForAntigravityTool(s, false) },
@@ -3604,12 +3446,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 	})
 }
 
-// TestCleanJSONSchema_RemovesDiscriminatorKeyword_Issue6639 covers Issue #6639:
-// OpenAPI/JSON Schema keyword "discriminator" alongside preserved anyOf/oneOf unions
-// (both directly on a property schema and inside array items) or on object schemas
-// is rejected by the Gemini/Antigravity backend with 400 INVALID_ARGUMENT
-// ("Unknown name \"discriminator\" ... Cannot find field") and must be stripped while
-// preserving legitimate tool properties named "discriminator".
 func TestCleanJSONSchema_RemovesDiscriminatorKeyword_Issue6639(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -3710,13 +3546,6 @@ func TestCleanJSONSchema_RemovesDiscriminatorKeyword_Issue6639(t *testing.T) {
 	}
 }
 
-// TestCleanJSONSchema_RemovesContentMediaTypeKeyword_Issue6699 covers Issue #6699:
-// JSON Schema Content Vocabulary annotations ("contentMediaType" and "contentEncoding")
-// inside nested anyOf/oneOf branches, on property schemas, or at the schema root are
-// rejected by the Gemini/Antigravity backend with 400 INVALID_ARGUMENT
-// ("Unknown name \"contentMediaType\" ... Cannot find field") and must be stripped
-// while preserving the anyOf branches and any legitimate property named
-// "contentMediaType" or "contentEncoding".
 func TestCleanJSONSchema_RemovesContentMediaTypeKeyword_Issue6699(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -3795,8 +3624,6 @@ func TestCleanJSONSchema_RemovesContentMediaTypeKeyword_Issue6699(t *testing.T) 
 	}
 }
 
-// TestIssue6732_GeminiCleanersInlineLocalDefs verifies that the Gemini cleaners expand local
-// $defs references before the definition container is stripped, so nested fields survive.
 func TestIssue6732_GeminiCleanersInlineLocalDefs(t *testing.T) {
 	input := `{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"}},"required":["person"],"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}`
 
@@ -3818,8 +3645,6 @@ func TestIssue6732_GeminiCleanersInlineLocalDefs(t *testing.T) {
 	}
 }
 
-// TestIssue6732_GeminiCleanersInlinePropertyReuse verifies that a Zod-style #/properties/...
-// reference is expanded by the Gemini cleaners instead of becoming a description hint.
 func TestIssue6732_GeminiCleanersInlinePropertyReuse(t *testing.T) {
 	input := `{"type":"object","properties":{"billing":{"type":"object","properties":{"zip":{"type":"string"}}},"shipping":{"$ref":"#/properties/billing"}}}`
 
@@ -3835,9 +3660,6 @@ func TestIssue6732_GeminiCleanersInlinePropertyReuse(t *testing.T) {
 	}
 }
 
-// TestIssue6732_GeminiCleanersReuseSameDefinitionTwice verifies that two properties referencing
-// the same definition both keep the referenced fields; bounding expansion must not degrade
-// ordinary reuse of a shared definition to a hint.
 func TestIssue6732_GeminiCleanersReuseSameDefinitionTwice(t *testing.T) {
 	input := `{"type":"object","properties":{"billing":{"$ref":"#/$defs/Address"},"shipping":{"$ref":"#/$defs/Address"}},"$defs":{"Address":{"type":"object","properties":{"zip":{"type":"string"}}}}}`
 
@@ -3855,9 +3677,6 @@ func TestIssue6732_GeminiCleanersReuseSameDefinitionTwice(t *testing.T) {
 	}
 }
 
-// TestIssue6732_WrappedSchemaResolvesAgainstInnerRoot verifies that a schema wrapped in the
-// single-key {"schema": ...} carrier used by the Antigravity executor resolves local refs
-// against the inner schema rather than the carrier.
 func TestIssue6732_WrappedSchemaResolvesAgainstInnerRoot(t *testing.T) {
 	inner := `{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"}},"required":["person"],"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}`
 	wrapped := `{"schema":` + inner + `}`
@@ -3875,8 +3694,6 @@ func TestIssue6732_WrappedSchemaResolvesAgainstInnerRoot(t *testing.T) {
 	}
 }
 
-// TestIssue6732_DefaultLiteralPreservedOnJSONSchemaRoute verifies that the parametersJsonSchema
-// route forwards default values verbatim even when they contain schema-looking keys.
 func TestIssue6732_DefaultLiteralPreservedOnJSONSchemaRoute(t *testing.T) {
 	input := `{"type":"object","properties":{"report":{"type":"object","default":{"title":"Report","format":"pdf","id":7,"x-owner":"ops"}}}}`
 
@@ -3890,8 +3707,6 @@ func TestIssue6732_DefaultLiteralPreservedOnJSONSchemaRoute(t *testing.T) {
 	}
 }
 
-// TestIssue6732_ExampleLiteralsPreserved verifies that example/examples values keep
-// schema-looking keys on the parametersJsonSchema route.
 func TestIssue6732_ExampleLiteralsPreserved(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"type":"string","example":{"title":"Hi","x-owner":"ops","id":3},"examples":[{"title":"Hi2","x-owner":"ops","id":4}]}}}`
 
@@ -3907,8 +3722,6 @@ func TestIssue6732_ExampleLiteralsPreserved(t *testing.T) {
 	}
 }
 
-// TestIssue6732_InlineLocalRefsLeavesLiteralRefs verifies that the inliner does not resolve
-// {"$ref": ...} objects that appear as client data inside a default value.
 func TestIssue6732_InlineLocalRefsLeavesLiteralRefs(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"type":"object","default":{"$ref":"#/$defs/Person"}}},"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}}}}}`
 
@@ -3925,9 +3738,6 @@ func TestIssue6732_InlineLocalRefsLeavesLiteralRefs(t *testing.T) {
 	}
 }
 
-// TestIssue6732_PropertiesNamedDefaultAndTypeRemainSchemas verifies that properties literally
-// named "default" and "type" keep their schema semantics: their own keywords are still cleaned
-// and their own $ref is still inlined.
 func TestIssue6732_PropertiesNamedDefaultAndTypeRemainSchemas(t *testing.T) {
 	input := `{"type":"object","properties":{"default":{"$ref":"#/$defs/Person"},"type":{"type":"string","title":"Kind"}},"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}}}}}`
 
@@ -3941,9 +3751,6 @@ func TestIssue6732_PropertiesNamedDefaultAndTypeRemainSchemas(t *testing.T) {
 	}
 }
 
-// TestIssue6732_ExpansionBudgetBoundsSharedDefs verifies that inlining a schema whose shared
-// definitions fan out exponentially stays bounded instead of expanding without limit, while the
-// affordable outer levels are still expanded.
 func TestIssue6732_ExpansionBudgetBoundsSharedDefs(t *testing.T) {
 	input := geminiSchemaDiamondInput()
 	got := CleanJSONSchemaForGeminiJSONSchema(input)
@@ -3962,9 +3769,6 @@ func TestIssue6732_ExpansionBudgetBoundsSharedDefs(t *testing.T) {
 	}
 }
 
-// TestIssue6732_UnusedDefinitionsDoNotConsumeExpansionBudget verifies that definitions the
-// cleaners are about to delete anyway neither consume the expansion budget nor make the kept
-// fields depend on map iteration order.
 func TestIssue6732_UnusedDefinitionsDoNotConsumeExpansionBudget(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"}},"required":["person"],"$defs":{"leaf0":{"type":"string","description":"leaf leaf leaf leaf leaf leaf leaf leaf leaf leaf"},"Person":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}`)
@@ -3994,8 +3798,6 @@ func TestIssue6732_UnusedDefinitionsDoNotConsumeExpansionBudget(t *testing.T) {
 	}
 }
 
-// TestIssue6732_BudgetFallbackDoesNotCopyLargeDescriptions verifies that references degraded by
-// the expansion budget do not each copy a large target description, which would defeat the bound.
 func TestIssue6732_BudgetFallbackDoesNotCopyLargeDescriptions(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{`)
@@ -4023,9 +3825,6 @@ func TestIssue6732_BudgetFallbackDoesNotCopyLargeDescriptions(t *testing.T) {
 	}
 }
 
-// TestIssue6732_NestedUnusedDefinitionsGraphDoesNotConsumeBudget verifies that a self-contained
-// reference graph inside a nested definitions container (which cleaning deletes at every level)
-// neither spends the expansion budget nor starves kept fields.
 func TestIssue6732_NestedUnusedDefinitionsGraphDoesNotConsumeBudget(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"},"a":{"type":"object","$defs":{"Leaf":{"type":"string","description":"` + strings.Repeat("x", 1024) + `"}`)
@@ -4044,8 +3843,6 @@ func TestIssue6732_NestedUnusedDefinitionsGraphDoesNotConsumeBudget(t *testing.T
 	}
 }
 
-// TestIssue6732_RefSiblingNameMapReferencesStillExpand verifies that references inside a $ref
-// node's own name-map siblings expand when the reference target itself expands.
 func TestIssue6732_RefSiblingNameMapReferencesStillExpand(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"$ref":"#/$defs/Base","properties":{"x":{"$ref":"#/$defs/S"}}}},"$defs":{"Base":{"type":"object"},"S":{"type":"string"}}}`
 
@@ -4056,10 +3853,6 @@ func TestIssue6732_RefSiblingNameMapReferencesStillExpand(t *testing.T) {
 	}
 }
 
-// TestIssue6732_CleanInliningStripsDefinitionsFromIntermediate verifies that the cleaning
-// inliner's intermediate output does not serialize definition containers (root or carried inside
-// expanded targets), so repeated references to a target holding a huge unused definitions block
-// cannot multiply that block in the intermediate JSON.
 func TestIssue6732_CleanInliningStripsDefinitionsFromIntermediate(t *testing.T) {
 	person := `{"type":"object","properties":{"name":{"type":"string"}},"$defs":{"Unused":{"type":"string","description":"` + strings.Repeat("x", 280*1024) + `"}}}`
 	input := `{"type":"object","properties":{"p0":{"$ref":"#/$defs/Person"},"p1":{"$ref":"#/$defs/Person"}},"$defs":{"Person":` + person + `}}`
@@ -4080,9 +3873,6 @@ func TestIssue6732_CleanInliningStripsDefinitionsFromIntermediate(t *testing.T) 
 	}
 }
 
-// TestIssue6732_ArrayRefWithExplicitTypeKeepsTargetItems verifies that the placeholder items
-// Phase 0 adds to a typed but unresolved $ref node does not clobber the items of the referenced
-// definition during inlining.
 func TestIssue6732_ArrayRefWithExplicitTypeKeepsTargetItems(t *testing.T) {
 	input := `{"type":"object","properties":{"rows":{"type":"array","$ref":"#/$defs/Rows"}},"$defs":{"Rows":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"}}}}}}`
 
@@ -4093,9 +3883,6 @@ func TestIssue6732_ArrayRefWithExplicitTypeKeepsTargetItems(t *testing.T) {
 	}
 }
 
-// TestIssue6732_BudgetFallbackStillResolvesSiblings verifies that when a reference target is too
-// large to expand, sibling subschemas on the same node are still resolved instead of being copied
-// verbatim with their own references left dangling.
 func TestIssue6732_BudgetFallbackStillResolvesSiblings(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"$ref":"#/$defs/Big","properties":{"x":{"$ref":"#/$defs/S"}}}},"$defs":{"Big":{"type":"object","description":"` + strings.Repeat("x", 280*1024) + `"},"S":{"type":"string"}}}`
 
@@ -4109,9 +3896,6 @@ func TestIssue6732_BudgetFallbackStillResolvesSiblings(t *testing.T) {
 	}
 }
 
-// TestIssue6732_InlineLocalRefsDefinitionNamesKeepSchemaSemantics verifies that definitions whose
-// names look like schema keywords are treated as schemas by the public inliner: a definition named
-// "properties" keeps its literal default intact, and a definition named "default" still expands.
 func TestIssue6732_InlineLocalRefsDefinitionNamesKeepSchemaSemantics(t *testing.T) {
 	input := `{"$defs":{"S":{"type":"string"},"properties":{"type":"object","default":{"$ref":"#/$defs/S"}},"default":{"type":"object","properties":{"x":{"$ref":"#/$defs/S"}}}}}`
 
@@ -4125,8 +3909,6 @@ func TestIssue6732_InlineLocalRefsDefinitionNamesKeepSchemaSemantics(t *testing.
 	}
 }
 
-// TestIssue6732_TargetNestedDefinitionsExemptFromBudget verifies that unused definitions nested
-// inside a referenced target (which cleaning deletes) do not inflate the target's budget charge.
 func TestIssue6732_TargetNestedDefinitionsExemptFromBudget(t *testing.T) {
 	person := `{"type":"object","properties":{"name":{"type":"string"}},"$defs":{"Unused":{"type":"string","description":"` + strings.Repeat("x", 280*1024) + `"}}}`
 	cases := map[string]string{
@@ -4149,9 +3931,6 @@ func TestIssue6732_TargetNestedDefinitionsExemptFromBudget(t *testing.T) {
 	}
 }
 
-// TestIssue6732_ArrayRefWithoutTargetItemsGetsPlaceholder verifies that a typed array whose
-// referenced definition carries no items still ends up with the placeholder items Phase 0 would
-// have added, and that cleaning twice is stable.
 func TestIssue6732_ArrayRefWithoutTargetItemsGetsPlaceholder(t *testing.T) {
 	input := `{"type":"object","properties":{"rows":{"type":"array","$ref":"#/$defs/Common"}},"$defs":{"Common":{"description":"Rows"}}}`
 
@@ -4165,9 +3944,6 @@ func TestIssue6732_ArrayRefWithoutTargetItemsGetsPlaceholder(t *testing.T) {
 	}
 }
 
-// TestIssue6732_SmallTargetFanOutStaysBounded verifies that thousands of references to a small
-// target with a near-limit description cannot multiply the description without bound through a
-// mix of expansions and fallback copies.
 func TestIssue6732_SmallTargetFanOutStaysBounded(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{`)
@@ -4185,8 +3961,6 @@ func TestIssue6732_SmallTargetFanOutStaysBounded(t *testing.T) {
 	}
 }
 
-// TestIssue6732_EscapedDescriptionFanOutStaysBounded verifies that budget accounting covers
-// HTML-escaped string growth during JSON encoding.
 func TestIssue6732_EscapedDescriptionFanOutStaysBounded(t *testing.T) {
 	input := `{"type":"object","properties":{"p0":{"$ref":"#/$defs/Big"},"p1":{"$ref":"#/$defs/Big"},"p2":{"$ref":"#/$defs/Big"},"p3":{"$ref":"#/$defs/Big"},"p4":{"$ref":"#/$defs/Big"},"p5":{"$ref":"#/$defs/Big"},"p6":{"$ref":"#/$defs/Big"},"p7":{"$ref":"#/$defs/Big"}},"$defs":{"Big":{"type":"object","description":"` + strings.Repeat("<", 32*1024) + `","properties":{"name":{"type":"string"}}}}}`
 
@@ -4196,9 +3970,6 @@ func TestIssue6732_EscapedDescriptionFanOutStaysBounded(t *testing.T) {
 	}
 }
 
-// TestIssue6732_DependenciesNameMapKeepsSchemaSemantics verifies that the Draft-07 dependencies
-// container behaves as a name map: a dependency keyed "default" holds a schema whose references
-// still expand in the public inliner.
 func TestIssue6732_DependenciesNameMapKeepsSchemaSemantics(t *testing.T) {
 	input := `{"type":"object","dependencies":{"default":{"properties":{"x":{"$ref":"#/definitions/S"}}}},"definitions":{"S":{"type":"string"}}}`
 
@@ -4212,9 +3983,6 @@ func TestIssue6732_DependenciesNameMapKeepsSchemaSemantics(t *testing.T) {
 	}
 }
 
-// TestIssue6732_OmittedFallbackDescriptionNotCharged verifies that a target description the
-// fallback omits (because it exceeds the copy limit) is not charged to the expansion budget, so
-// a following small reference still expands.
 func TestIssue6732_OmittedFallbackDescriptionNotCharged(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"$ref":"#/$defs/A"},"b":{"$ref":"#/$defs/B"}},"$defs":{"A":{"type":"string","description":"` + strings.Repeat("x", 262142) + `"},"B":{"type":"object","properties":{"name":{"type":"string"}}}}}`
 
@@ -4225,9 +3993,6 @@ func TestIssue6732_OmittedFallbackDescriptionNotCharged(t *testing.T) {
 	}
 }
 
-// TestIssue6732_SynthesizedTypeDoesNotOverrideRefTarget verifies that the type Phase 0 would
-// infer from a ref node's sibling items does not clobber the referenced definition's object
-// type, and that cleaning the result again is stable.
 func TestIssue6732_SynthesizedTypeDoesNotOverrideRefTarget(t *testing.T) {
 	input := `{"$ref":"#/$defs/O","items":{"type":"integer"},"$defs":{"O":{"type":"object","properties":{"x":{"type":"string"}}}}}`
 
@@ -4247,8 +4012,6 @@ func TestIssue6732_SynthesizedTypeDoesNotOverrideRefTarget(t *testing.T) {
 	}
 }
 
-// TestIssue6732_PropertyNamedRefRemainsProperty verifies that a property literally named "$ref"
-// is treated as a property, not as a reference keyword, by the cleaner.
 func TestIssue6732_PropertyNamedRefRemainsProperty(t *testing.T) {
 	input := `{"type":"object","properties":{"$ref":{"type":"string"}}}`
 
@@ -4262,8 +4025,6 @@ func TestIssue6732_PropertyNamedRefRemainsProperty(t *testing.T) {
 	}
 }
 
-// TestIssue6732_PropertyNamedConstRemainsProperty verifies that a property literally named
-// "const" holding a schema object is not converted into an enum constraint on its parent.
 func TestIssue6732_PropertyNamedConstRemainsProperty(t *testing.T) {
 	input := `{"type":"object","properties":{"const":{"type":"string"}}}`
 
@@ -4277,9 +4038,6 @@ func TestIssue6732_PropertyNamedConstRemainsProperty(t *testing.T) {
 	}
 }
 
-// geminiSchemaDiamondInput builds a schema referencing D12, where each Di is an object with two
-// properties referencing Di-1 and D0 references a leaf definition twice. Fully expanding it
-// produces 2^13 leaf copies.
 func geminiSchemaDiamondInput() string {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{"leaf":{"$ref":"#/$defs/D12"}},"$defs":{"leaf0":{"type":"string","description":"leaf leaf leaf leaf leaf leaf leaf leaf leaf leaf"}`)
@@ -4294,11 +4052,6 @@ func geminiSchemaDiamondInput() string {
 	return sb.String()
 }
 
-// TestCleanJSONSchema_RemovesReadOnlyWriteOnlyKeywords_Issue6778 covers Issue #6778:
-// JSON Schema annotation keywords "readOnly" and "writeOnly" (common in Google Discovery-derived
-// MCP tools such as Firestore) are rejected by the Gemini/Antigravity backend with 400
-// INVALID_ARGUMENT ("Unknown name \"readOnly\" ... Cannot find field") and must be stripped
-// while preserving legitimate tool properties named "readOnly" or "writeOnly".
 func TestCleanJSONSchema_RemovesReadOnlyWriteOnlyKeywords_Issue6778(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -4411,9 +4164,6 @@ func TestCleanJSONSchema_RemovesReadOnlyWriteOnlyKeywords_Issue6778(t *testing.T
 	}
 }
 
-// TestIssue6950_ArrayItemsFromAllOfPreserved verifies that array schemas whose items come from
-// allOf branches (directly, through a $ref, or alongside a base array $ref/branch) retain their
-// real items schema instead of having it replaced by Phase 0's {"type":"string"} placeholder.
 func TestIssue6950_ArrayItemsFromAllOfPreserved(t *testing.T) {
 	cleaners := map[string]struct {
 		clean             func(string) string

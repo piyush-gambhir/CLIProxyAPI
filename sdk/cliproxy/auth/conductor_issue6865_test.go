@@ -453,7 +453,6 @@ func TestIssue6865_RequestScoped401_ForceCooldown_CoolsWithoutRejectingOrRefresh
 			t.Fatalf("Register error = %v", errReg)
 		}
 
-		// Stale CredentialVersion result with ErrorCodeForceCooldown must not reject token.
 		m.MarkResult(context.Background(), Result{
 			AuthID:            auth.ID,
 			Provider:          "codex",
@@ -467,7 +466,6 @@ func TestIssue6865_RequestScoped401_ForceCooldown_CoolsWithoutRejectingOrRefresh
 			t.Fatalf("RejectedAccessToken after stale MarkResult = %q, want empty", got.RejectedAccessToken)
 		}
 
-		// Current result with ErrorCodeForceCooldown cools model for 30m without rejecting token.
 		m.MarkResult(context.Background(), Result{
 			AuthID:            auth.ID,
 			Provider:          "codex",

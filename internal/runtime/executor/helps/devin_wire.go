@@ -26,47 +26,40 @@ import (
 )
 
 const (
-	// ConnectFlagData marks an uncompressed Connect-proto data frame.
 	ConnectFlagData byte = 0x00
-	// ConnectFlagCompressed marks a gzipped Connect-proto frame.
+
 	ConnectFlagCompressed byte = 0x01
-	// ConnectFlagEndStream marks the terminal Connect-proto trailer frame.
+
 	ConnectFlagEndStream byte = 0x02
 
-	// DevinDefaultBaseURL is the default upstream Codeium/Devin endpoint.
 	DevinDefaultBaseURL = "https://server.codeium.com"
-	// DevinChatPath is the Connect-RPC endpoint for chat completions.
+
 	DevinChatPath = "/exa.api_server_pb.ApiServerService/GetChatMessage"
 
-	// DevinDefaultClientName is the client identifier declared in metadata.
 	DevinDefaultClientName = "chisel"
-	// DevinDefaultClientVersion is the client version declared in metadata.
+
 	DevinDefaultClientVersion = "3000.10.21"
-	// DevinFingerprintHexLen is the mandatory 732-hex-character length for metadata #31.
+
 	DevinFingerprintHexLen = 732
 
-	// DevinDefaultMaxTokens is the fallback max completion tokens.
 	DevinDefaultMaxTokens = 128000
 
 	maxConnectFrameSize      = 16 * 1024 * 1024
 	maxDecompressedFrameSize = 64 * 1024 * 1024
 )
 
-// DevinTool represents a tool definition in GetChatMessageRequest.
 type DevinTool struct {
 	Name        string
 	Description string
 	Parameters  []byte
 }
 
-// DevinToolCall represents a tool call in a ChatMessagePrompt.
 type DevinToolCall struct {
 	ID        string
 	Name      string
 	Arguments string
 }
 
-// DevinToolCallDelta represents a streaming tool call chunk from response Field 6.
 type DevinToolCallDelta struct {
 	ID               string
 	Name             string
@@ -76,29 +69,26 @@ type DevinToolCallDelta struct {
 	IsCustomToolCall bool
 }
 
-// DevinImage represents an image attachment in a DevinPrompt (Prompt #10).
 type DevinImage struct {
 	Base64Data string
 	MimeType   string
 }
 
-// DevinPrompt represents a single turn in the request history (repeated Field 3).
 type DevinPrompt struct {
 	MessageID          string
-	Source             int // 1=user, 2=assistant, 4=tool
+	Source             int
 	Content            string
 	Images             []DevinImage
 	ToolCalls          []DevinToolCall
-	ToolCallID         string // For source=4 (tool result)
-	OriginalToolCallID string // Retained when downgraded from source=4 to source=1
-	IsOrphanedTool     bool   // Explicit flag marking downgraded tool results
-	DroppedPart        string // Type of a user media part Devin cannot send; never put on the wire
+	ToolCallID         string
+	OriginalToolCallID string
+	IsOrphanedTool     bool
+	DroppedPart        string
 	Thinking           string
 	Signature          []byte
 	SignatureType      string
 }
 
-// DevinUsage captures token accounting from response Field 7.
 type DevinUsage struct {
 	PromptTokens     int64             `json:"prompt_tokens"`
 	CompletionTokens int64             `json:"completion_tokens"`
@@ -110,13 +100,12 @@ type DevinUsage struct {
 	Headers          map[string]string `json:"headers,omitempty"`
 }
 
-// DevinFrameResult represents decoded content from a single Connect-proto frame.
 type DevinFrameResult struct {
 	OutputID                string
 	Timestamp               uint64
 	ContentText             string
 	DeltaTokens             uint64
-	StopReason              uint64 // 2/4=stop, 10=tool_calls
+	StopReason              uint64
 	ToolCallDeltas          []DevinToolCallDelta
 	ThinkingText            string
 	DeltaSignature          []byte
@@ -128,9 +117,6 @@ type DevinFrameResult struct {
 	UnknownFieldNumbers     []int
 }
 
-// GenerateDevinDeviceFingerprint generates a 732-character hex device fingerprint.
-// When seed is empty, it generates a cryptographically random 732-character hex string per request (matching native devin-cli).
-// When seed is provided, it derives a deterministic 732-character hex fingerprint.
 func GenerateDevinDeviceFingerprint(seed string) string {
 	if seed == "" {
 		var b [DevinFingerprintHexLen / 2]byte
@@ -146,12 +132,10 @@ func GenerateDevinDeviceFingerprint(seed string) string {
 		sb.WriteString(hex.EncodeToString(h[:]))
 		counter++
 	}
-	// Truncate to exact 732 chars (11 full 64-char sha256 hex blocks + 28 chars of the 12th block) to match Devin CLI.
+
 	return sb.String()[:DevinFingerprintHexLen]
 }
 
-// GenerateDevinSentryTrace generates a Sentry distributed tracing header in the format:
-// "<32-hex-trace-id>-<16-hex-span-id>-1"
 func GenerateDevinSentryTrace() string {
 	var b [24]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -168,10 +152,6 @@ const defaultMaxSessionTurnCounters = 5000
 
 var sessionTurnLRU = cache.NewBoundedLRU[string, *atomic.Uint64](defaultMaxSessionTurnCounters, nil)
 
-// NextDevinSessionTurnIndex returns the next 0-based request ordinal for a session (Field 15.2).
-// In native devin-cli, the counter is process-scoped per session:
-// First request in a session returns 0 (which is omitted on the wire).
-// Subsequent requests return 1, 2, 3... monotonically.
 func NextDevinSessionTurnIndex(sessionID string) int {
 	cleanID := strings.TrimSpace(sessionID)
 	if cleanID == "" {
@@ -184,18 +164,14 @@ func NextDevinSessionTurnIndex(sessionID string) int {
 	return int(counter.Add(1) - 1)
 }
 
-// ResetDevinSessionTurnIndex clears the session counter (used for testing or explicit session reset).
 func ResetDevinSessionTurnIndex(sessionID string) {
 	sessionTurnLRU.Delete(strings.TrimSpace(sessionID))
 }
 
-// WrapConnectEnvelope wraps raw payload bytes into a standard 5-byte Connect envelope:
-// [1 byte flag: 0x00] + [4 byte big-endian length] + [payload].
 func WrapConnectEnvelope(protoBytes []byte) []byte {
 	return WrapConnectEnvelopeWithFlag(ConnectFlagData, protoBytes)
 }
 
-// WrapConnectEnvelopeWithFlag wraps payload bytes with an explicit Connect flag.
 func WrapConnectEnvelopeWithFlag(flag byte, protoBytes []byte) []byte {
 	header := make([]byte, 5, 5+len(protoBytes))
 	header[0] = flag
@@ -203,7 +179,6 @@ func WrapConnectEnvelopeWithFlag(flag byte, protoBytes []byte) []byte {
 	return append(header, protoBytes...)
 }
 
-// ReadConnectFrame reads a single framed message from a Connect-proto stream.
 func ReadConnectFrame(r io.Reader) (flag byte, payload []byte, err error) {
 	header := make([]byte, 5)
 	if _, err := io.ReadFull(r, header); err != nil {
@@ -250,7 +225,6 @@ func ReadConnectFrame(r io.Reader) (flag byte, payload []byte, err error) {
 	return flag, payload, nil
 }
 
-// BuildDevinClientMetadataBytes constructs the serialized bytes for Field 1 (ClientMetadata).
 func BuildDevinClientMetadataBytes(sessionToken, deviceSeed, osName string) []byte {
 	if osName == "" {
 		osName = runtime.GOOS
@@ -284,7 +258,6 @@ func BuildDevinClientMetadataBytes(sessionToken, deviceSeed, osName string) []by
 	return f1Bytes
 }
 
-// BuildDevinGetChatMessageRequest encodes an entire GetChatMessageRequest protobuf payload.
 func BuildDevinGetChatMessageRequest(
 	sessionToken string,
 	deviceSeed string,
@@ -315,12 +288,10 @@ func BuildDevinGetChatMessageRequest(
 	}
 	reqBytes := make([]byte, 0, estimatedSize)
 
-	// 1. ClientMetadata (Field 1)
 	f1Bytes := BuildDevinClientMetadataBytes(sessionToken, deviceSeed, osName)
 	reqBytes = protowire.AppendTag(reqBytes, 1, protowire.BytesType)
 	reqBytes = protowire.AppendBytes(reqBytes, f1Bytes)
 
-	// 2. System prompt (Field 2)
 	if systemPrompt != "" {
 		sanitized := SanitizeDevinSystemPrompt(systemPrompt, matcher)
 		if sanitized != "" {
@@ -329,7 +300,6 @@ func BuildDevinGetChatMessageRequest(
 		}
 	}
 
-	// 3. Repeated History Prompts (Field 3)
 	for _, p := range prompts {
 		var pBytes []byte
 
@@ -342,7 +312,7 @@ func BuildDevinGetChatMessageRequest(
 
 		source := p.Source
 		if source <= 0 {
-			source = 1 // default to user
+			source = 1
 		}
 		pBytes = protowire.AppendTag(pBytes, 2, protowire.VarintType)
 		pBytes = protowire.AppendVarint(pBytes, uint64(source))
@@ -413,11 +383,9 @@ func BuildDevinGetChatMessageRequest(
 		reqBytes = protowire.AppendBytes(reqBytes, pBytes)
 	}
 
-	// 4. Fixed flags (Field 7: Varint 5)
 	reqBytes = protowire.AppendTag(reqBytes, 7, protowire.VarintType)
 	reqBytes = protowire.AppendVarint(reqBytes, 5)
 
-	// 5. Completion config (Field 8)
 	var f8Bytes []byte
 	f8Bytes = protowire.AppendTag(f8Bytes, 1, protowire.VarintType)
 	f8Bytes = protowire.AppendVarint(f8Bytes, 1)
@@ -444,7 +412,6 @@ func BuildDevinGetChatMessageRequest(
 	reqBytes = protowire.AppendTag(reqBytes, 8, protowire.BytesType)
 	reqBytes = protowire.AppendBytes(reqBytes, f8Bytes)
 
-	// 6. Repeated Tools (Field 10)
 	for _, tool := range tools {
 		if tool.Name == "" || translatorcommon.IsDevinCodexAppAutomationUpdate("", tool.Name) {
 			continue
@@ -455,9 +422,7 @@ func BuildDevinGetChatMessageRequest(
 			tBytes = protowire.AppendString(tBytes, tool.Name)
 		}
 		desc := tool.Description
-		// Claude Code subagent tool descriptions hardcode snake_case "task_id", but Devin's
-		// upstream tool execution environment strictly expects camelCase "taskId". Normalizing
-		// the prompt description prevents the model from generating incompatible parameter names.
+
 		if strings.Contains(desc, "Takes a task_id parameter identifying the task") {
 			desc = strings.ReplaceAll(desc, "Takes a task_id parameter identifying the task", "Takes a taskId parameter identifying the task")
 		}
@@ -474,12 +439,6 @@ func BuildDevinGetChatMessageRequest(
 		reqBytes = protowire.AppendBytes(reqBytes, tBytes)
 	}
 
-	// 7. Thread session metadata (Field 15)
-	// In native devin-cli:
-	// Field 1: sessionID (UUID string)
-	// Field 2: turnIndex (per-session request ordinal, omitted when 0)
-	// Field 3: 4 (varint)
-	// Field 4: 14 (emitted conditionally on user-turn boundaries)
 	turnIndex := NextDevinSessionTurnIndex(sessionID)
 
 	var f15Bytes []byte
@@ -494,7 +453,6 @@ func BuildDevinGetChatMessageRequest(
 	f15Bytes = protowire.AppendTag(f15Bytes, 3, protowire.VarintType)
 	f15Bytes = protowire.AppendVarint(f15Bytes, 4)
 
-	// In native devin-cli, Field 15.4=14 is emitted on user-turn boundaries
 	if len(prompts) > 0 && prompts[len(prompts)-1].Source == 1 {
 		if turnIndex == 0 || len(prompts) < 2 || prompts[len(prompts)-2].Source != 1 {
 			f15Bytes = protowire.AppendTag(f15Bytes, 4, protowire.VarintType)
@@ -505,22 +463,18 @@ func BuildDevinGetChatMessageRequest(
 	reqBytes = protowire.AppendTag(reqBytes, 15, protowire.BytesType)
 	reqBytes = protowire.AppendBytes(reqBytes, f15Bytes)
 
-	// 8. Cascade ID (Field 16: session-stable prompt cache key)
 	reqBytes = protowire.AppendTag(reqBytes, 16, protowire.BytesType)
 	reqBytes = protowire.AppendString(reqBytes, cascadeID)
 
-	// 9. Fixed flag (Field 20: Varint 1)
 	reqBytes = protowire.AppendTag(reqBytes, 20, protowire.VarintType)
 	reqBytes = protowire.AppendVarint(reqBytes, 1)
 
-	// 10. Model UID (Field 21)
 	reqBytes = protowire.AppendTag(reqBytes, 21, protowire.BytesType)
 	reqBytes = protowire.AppendString(reqBytes, chatModelUID)
 
 	return reqBytes
 }
 
-// ParseDevinFrame extracts deltas, tool calls, thinking, signatures, and usage from a single response frame.
 func ParseDevinFrame(payload []byte) (DevinFrameResult, error) {
 	var res DevinFrameResult
 	var textParts []string
@@ -616,8 +570,6 @@ func ParseDevinFrame(payload []byte) (DevinFrameResult, error) {
 	return res, nil
 }
 
-// SanitizeDevinSystemPrompt strips Claude Code attribution and CLI identity headers
-// (referencing Antigravity conventions), and applies configured sensitive-word replacements and obfuscation.
 func SanitizeDevinSystemPrompt(prompt string, matcher *SensitiveWordMatcher) string {
 	if prompt == "" {
 		return ""
@@ -731,9 +683,6 @@ func parseDevinTimestamp(data []byte) uint64 {
 	return secs
 }
 
-// parseDevinHeaderField parses a repeated submessage in Field 7 (subfield 8) representing upstream response headers:
-// Tag 1 (string): Header name (e.g. "x-request-id", "Request-Id", "openai-processing-ms")
-// Tag 2 (string): Header value (e.g. "req_011Cf1JivhJrXDq9ycq7cEtH", "chatcmpl-...")
 func parseDevinHeaderField(data []byte) (string, string) {
 	var key, val string
 	pos := 0
@@ -785,15 +734,15 @@ func parseDevinUsageField(data []byte) *DevinUsage {
 			}
 			pos += vn
 			switch num {
-			case 2: // Prompt tokens (uncached input from turn message)
+			case 2:
 				u.PromptTokens += int64(v)
-			case 3: // Output tokens
+			case 3:
 				u.CompletionTokens = int64(v)
-			case 4: // Cache write tokens
+			case 4:
 				u.CacheWriteTokens += int64(v)
-			case 5: // Cache read tokens
+			case 5:
 				u.CachedTokens = int64(v)
-			case 6: // Status code
+			case 6:
 				u.StatusCode = v
 			}
 		case protowire.BytesType:
@@ -842,15 +791,12 @@ func parseDevinUsageField(data []byte) *DevinUsage {
 	return u
 }
 
-// ParseDevinResponseDimensionGroups parses Field 28 (ResponseDimensionGroups) entries to extract Token Usage metrics:
-// input_tokens, output_tokens, cached_input_tokens.
-// Accepts one or more group payloads (each corresponding to a Field 28 value), or an outer envelope containing Tag 28.
 func ParseDevinResponseDimensionGroups(groups ...[]byte) (promptTokens, completionTokens, cachedTokens int64, found bool) {
 	for _, gBytes := range groups {
 		if len(gBytes) == 0 {
 			continue
 		}
-		// If outer envelope carries Tag 28, unwrap it to get inner group bytes.
+
 		if num, typ, n := protowire.ConsumeTag(gBytes); n > 0 && num == 28 && typ == protowire.BytesType {
 			if inner, bn := protowire.ConsumeBytes(gBytes[n:]); bn > 0 {
 				gBytes = inner
@@ -965,7 +911,6 @@ func ParseDevinResponseDimensionGroups(groups ...[]byte) (promptTokens, completi
 	return promptTokens, completionTokens, cachedTokens, found
 }
 
-// ParseDevinTrailerError inspects Connect-RPC EOS trailer frames and maps error status codes.
 func ParseDevinTrailerError(payload []byte) (statusCode int, err error) {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("{}")) {
@@ -1025,12 +970,10 @@ func ParseDevinTrailerError(payload []byte) (statusCode int, err error) {
 	return httpCode, fmt.Errorf("devin upstream error (%s): %s", trailer.Error.Code, trailer.Error.Message)
 }
 
-// UTF8SplitBuffer buffers incomplete UTF-8 byte sequences across chunk boundaries.
 type UTF8SplitBuffer struct {
 	remainder []byte
 }
 
-// Feed consumes a byte chunk, prepending any pending remainder, and returns complete UTF-8 strings.
 func (b *UTF8SplitBuffer) Feed(chunk []byte) string {
 	combined := append(b.remainder, chunk...)
 	b.remainder = nil
@@ -1059,7 +1002,6 @@ func (b *UTF8SplitBuffer) Feed(chunk []byte) string {
 	return string(validBytes)
 }
 
-// DevinUpstreamRequestLog represents the human-readable JSON representation of GetChatMessageRequest for request logs.
 type DevinUpstreamRequestLog struct {
 	Model        string               `json:"model"`
 	SessionID    string               `json:"session_id,omitempty"`
@@ -1071,7 +1013,6 @@ type DevinUpstreamRequestLog struct {
 	Tools        []DevinToolLogItem   `json:"tools,omitempty"`
 }
 
-// DevinPromptLogItem represents a single prompt item in the request log.
 type DevinPromptLogItem struct {
 	ID            string              `json:"id,omitempty"`
 	Source        int                 `json:"source"`
@@ -1085,13 +1026,11 @@ type DevinPromptLogItem struct {
 	Images        []DevinImageLogItem `json:"images,omitempty"`
 }
 
-// DevinImageLogItem represents an image attached to a prompt in the request log.
 type DevinImageLogItem struct {
 	MimeType string `json:"mime_type"`
 	DataLen  int    `json:"data_len"`
 }
 
-// DevinToolLogItem represents a tool declared in the request log.
 type DevinToolLogItem struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
@@ -1120,8 +1059,6 @@ func isPrintableASCII(b []byte) bool {
 	return true
 }
 
-// BuildDevinUpstreamLogBody formats the intermediate interactions and the decoded Devin request
-// into a clear, aligned log body without synthetic wrapping.
 func BuildDevinUpstreamLogBody(
 	interactionsPayload []byte,
 	isInteractionsSource bool,
@@ -1219,7 +1156,6 @@ func BuildDevinUpstreamLogBody(
 	return buf.Bytes()
 }
 
-// DevinUpstreamResponseLog represents the decoded response frames from Devin Connect-RPC.
 type DevinUpstreamResponseLog struct {
 	Status                string                      `json:"status,omitempty"`
 	FramesCount           int                         `json:"frames_count"`
@@ -1233,8 +1169,6 @@ type DevinUpstreamResponseLog struct {
 	ApplyPatchDiagnostics *DevinApplyPatchDiagnostics `json:"-"`
 }
 
-// BuildDevinUpstreamResponseLogBody formats the decoded Devin response and the intermediate
-// interactions into a clear, aligned log body.
 func BuildDevinUpstreamResponseLogBody(respLog *DevinUpstreamResponseLog, interactionsJSON []byte) []byte {
 	var buf bytes.Buffer
 	if respLog != nil {

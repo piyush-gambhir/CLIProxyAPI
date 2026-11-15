@@ -126,7 +126,7 @@ func TestPostgresRefreshJournalSurvivesMirrorReplacement(t *testing.T) {
 		journals = append(journals, &PostgresStore{db: db, cfg: PostgresStoreConfig{Schema: "isolated", AuthTable: "auths"}, authDir: t.TempDir()})
 	}
 	exerciseSharedRefreshJournal(t, journals)
-	// A new client with a newly-created mirror still sees the database claim.
+
 	prior := journals[0].(*PostgresStore)
 	rebuilt := &PostgresStore{db: prior.db, cfg: prior.cfg, authDir: t.TempDir()}
 	claimed, errClaim := rebuilt.RefreshClaim(context.Background(), strings.Repeat("b", 64))

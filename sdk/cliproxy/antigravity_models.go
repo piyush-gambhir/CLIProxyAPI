@@ -48,9 +48,6 @@ type antigravityCapabilityCacheEntry struct {
 	pending           bool
 }
 
-// Keep attempt history beyond nextRetry; deleting it at retry time would turn
-// exponential backoff back into a fixed interval. Inactive histories expire with
-// the same retention horizon as inactive successful catalogs.
 type antigravityFailureState struct {
 	failures    uint8
 	lastFailure time.Time
@@ -61,10 +58,10 @@ func nextAntigravityFailure(previous antigravityFailureState, now time.Time, ran
 	if now.Sub(previous.lastFailure) > 2*antigravityCapabilityCacheTTL {
 		previous.failures = 0
 	}
-	// Five failures reach the capped window: 2, 4, 8, 16, 30 minutes.
+
 	failures := min(previous.failures, 4) + 1
 	window := min(2*antigravityCapabilityRetryBase<<(failures-1), antigravityCapabilityRetryMax)
-	// Equal jitter retains a minimum delay, including at the cap (15-30 minutes).
+
 	half := window / 2
 	delay := half + time.Duration(randomInt64N(int64(half)+1))
 	return antigravityFailureState{failures: failures, lastFailure: now, nextRetry: now.Add(delay)}
@@ -83,7 +80,7 @@ var (
 
 type antigravityModelCapabilityHints struct {
 	WebSearchModelIDs map[string]struct{}
-	// Nil means unknown; an empty non-nil set is an authoritative empty catalog.
+
 	ModelIDs map[string]struct{}
 	revision uint64
 }
@@ -92,8 +89,6 @@ func (h antigravityModelCapabilityHints) clone() antigravityModelCapabilityHints
 	return antigravityModelCapabilityHints{WebSearchModelIDs: maps.Clone(h.WebSearchModelIDs), ModelIDs: maps.Clone(h.ModelIDs), revision: h.revision}
 }
 
-// antigravityCapabilityKey isolates catalogs by account, project, route and client
-// fingerprint. Token rotation alone does not invalidate a successful catalog.
 func (s *Service) antigravityCapabilityKey(auth *coreauth.Auth) string {
 	if auth == nil {
 		return ""
@@ -238,8 +233,6 @@ func (s *Service) fetchAntigravityModelCapabilityHintsForAuth(ctx context.Contex
 	return hints
 }
 
-// Return the key captured with the HTTP User-Agent so publication cannot label a
-// result with a version resolved before or after the actual probe snapshot.
 func (s *Service) fetchAntigravityModelCapabilityHints(ctx context.Context, auth *coreauth.Auth) (string, antigravityModelCapabilityHints) {
 	if auth == nil || auth.Metadata == nil || s.antigravityHomeEnabled() {
 		return "", antigravityModelCapabilityHints{}
@@ -275,8 +268,7 @@ func (s *Service) fetchAntigravityModelCapabilityHints(ctx context.Context, auth
 	if hints, cached := lookup(); cached {
 		return cacheKey, hints
 	}
-	// The initiating caller owns the shared HTTP operation. Followers may cancel
-	// their own wait without canceling that operation or blocking a refresh worker.
+
 	resultCh := antigravityCapabilityGroup.DoChan(failureKey, func() (any, error) {
 		if hints, cached := lookup(); cached {
 			return hints, nil
@@ -333,8 +325,7 @@ func (s *Service) fetchAntigravityModelCapabilityHints(ctx context.Context, auth
 			delete(antigravityAuthFailureCache, failureKey)
 			return hints, nil
 		}
-		// Missing models (including legacy capability-only responses) are not a
-		// successful catalog. Preserve last success and increase the jittered backoff.
+
 		antigravityAuthFailureCache[failureKey] = nextAntigravityFailure(antigravityAuthFailureCache[failureKey], now, rand.Int64N)
 		retained := current.hints.clone()
 		if status == antigravityProbeStatusSuccess && len(hints.WebSearchModelIDs) > 0 {
@@ -462,7 +453,6 @@ func normalizeAntigravityFetchedModelID(modelID string) string {
 	return sdkauth.NormalizeAntigravityModelID(modelID)
 }
 
-// WaitAntigravityProbes waits for any in-flight asynchronous Antigravity capability probes to complete.
 func (s *Service) WaitAntigravityProbes() {
 	if s == nil {
 		return
@@ -470,8 +460,6 @@ func (s *Service) WaitAntigravityProbes() {
 	s.antigravityProbeWg.Wait()
 }
 
-// Native Antigravity reconciliation belongs to fenced registry publication,
-// whether from cache or a network refresh. Cache availability alone is not enough.
 func (s *Service) reconcileRegisteredModelStates(ctx context.Context, auth *coreauth.Auth) {
 	if auth == nil || s.coreManager == nil {
 		return
@@ -537,8 +525,6 @@ func (s *Service) probeAndRegisterAntigravityModels(ctx context.Context, auth *c
 	return expectedKey, hints
 }
 
-// Request results change Generation, not these registration inputs. Compare the
-// actual model settings so exclusions and account aliases cannot be replayed stale.
 func antigravityAuthModelSettingsEqual(a, b *coreauth.Auth) bool {
 	return a != nil && b != nil && a.Provider == b.Provider && a.Prefix == b.Prefix &&
 		a.RegistrationEpoch == b.RegistrationEpoch && a.Disabled == b.Disabled &&
@@ -561,12 +547,10 @@ func (s *Service) applyAntigravityModelHints(ctx context.Context, auth *coreauth
 	}
 	var updated bool
 	if hints.ModelIDs != nil {
-		// Keep the config snapshot stable through publication. Registry CAS must
-		// remain strict: an epoch from another publisher may use newer auth settings.
+
 		s.cfgMu.RLock()
 		models := s.antigravityModelsForHintsWithConfig(auth, hints, s.cfg)
-		// Fence the cache-to-registry publication as well as the network result.
-		// A newer successful catalog must never be replaced by an older caller.
+
 		antigravityCapabilityMu.Lock()
 		entry := antigravityCapabilityCache[expectedKey]
 		if entry.hints.revision != hints.revision {
@@ -585,7 +569,7 @@ func (s *Service) applyAntigravityModelHints(ctx context.Context, auth *coreauth
 		antigravityCapabilityMu.Unlock()
 		s.cfgMu.RUnlock()
 	} else {
-		// Older capability-only responses cannot revoke model entitlements.
+
 		aliasMap := s.buildAntigravityReverseAliasMap(auth)
 		updated = GlobalModelRegistry().ApplyClientModelCapabilities(auth.ID, expectedRegEpoch, func(id string, info *ModelInfo) {
 			if _, ok := hints.WebSearchModelIDs[resolveAntigravityUpstreamModelID(id, auth.Prefix, aliasMap)]; ok {
@@ -599,9 +583,6 @@ func (s *Service) applyAntigravityModelHints(ctx context.Context, auth *coreauth
 	}
 }
 
-// refreshAntigravityModels schedules account refreshes without waiting for the batch.
-// One unfinished request must not block other accounts' retry or expiry deadlines.
-// Network concurrency remains bounded by antigravityProbeSlots.
 func (s *Service) refreshAntigravityModels(ctx context.Context) {
 	if s == nil || s.coreManager == nil || s.antigravityHomeEnabled() {
 		return
@@ -609,8 +590,7 @@ func (s *Service) refreshAntigravityModels(ctx context.Context) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	// A version change also invalidates connected probes. Cancel them before
-	// queuing successors so a stalled old request cannot hold its account worker.
+
 	s.cancelStaleAntigravityProbes("")
 	for _, auth := range s.coreManager.List() {
 		if ctx.Err() != nil {
@@ -641,9 +621,6 @@ func (s *Service) scheduleAntigravityModelRefresh(ctx context.Context, auth *cor
 	s.queueAntigravityModelRefresh(ctx, auth, "antigravity")
 }
 
-// nextAntigravityModelRefreshDelay preserves retry jitter in actual scheduling,
-// rather than rounding every account's deadline up to the same minute tick.
-// The upper bound still discovers accounts/config changes that bypass a wakeup.
 func (s *Service) nextAntigravityModelRefreshDelay() time.Duration {
 	now := antigravityNowFunc()
 	next := now.Add(antigravityRefreshScanInterval)
@@ -681,7 +658,7 @@ func (s *Service) runAntigravityModelRefresh(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-wake:
-			// Wakeups may advance a timer, never postpone an already due retry.
+
 			delay = s.nextAntigravityModelRefreshDelay()
 			earlier := antigravityNowFunc().Add(delay)
 			if earlier.Before(deadline) {

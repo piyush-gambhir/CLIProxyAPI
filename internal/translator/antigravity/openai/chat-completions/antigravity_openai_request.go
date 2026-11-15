@@ -1,5 +1,3 @@
-// Package openai provides request translation functionality for OpenAI to Antigravity API compatibility.
-// It converts OpenAI Chat Completions requests into Antigravity compatible JSON using gjson/sjson only.
 package chat_completions
 
 import (
@@ -17,42 +15,26 @@ import (
 
 const antigravityFunctionThoughtSignature = "skip_thought_signature_validator"
 
-// ConvertOpenAIRequestToAntigravity converts an OpenAI Chat Completions request (raw JSON)
-// into a complete Antigravity request JSON. All JSON construction uses sjson and lookups use ojson.
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request
-//   - rawJSON: The raw JSON request data from the OpenAI API
-//   - stream: A boolean indicating if the request is for a streaming response (unused in current implementation)
-//
-// Returns:
-//   - []byte: The transformed request data in Antigravity API format
 func ConvertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToAntigravity(modelName, inputRawJSON, stream)
 
 }
 
-// convertOpenAIRequestToAntigravity also reports a file part Antigravity cannot
-// receive when it leaves a user turn with nothing to send.
 func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	rawJSON := inputRawJSON
 	var drops translatorcommon.UserTurnDrops
 	functionNameMap := util.SanitizedFunctionNameMap(rawJSON)
-	// Base envelope (no default thinkingConfig)
+
 	outDoc := ojson.NewDoc([]byte(`{"project":"","request":{"contents":[]},"model":"gemini-2.5-pro"}`))
 
-	// Model
 	_ = outDoc.Set("model", modelName)
 
-	// Let user-provided generationConfig pass through
 	if genConfig := ojson.GetBytesNoCopy(rawJSON, "generationConfig"); genConfig.Exists() {
 		_ = outDoc.SetRaw("request.generationConfig", genConfig.Raw)
 	} else if genConfig := ojson.GetBytesNoCopy(rawJSON, "generation_config"); genConfig.Exists() {
 		_ = outDoc.SetRaw("request.generationConfig", genConfig.Raw)
 	}
 
-	// Apply thinking configuration: convert OpenAI reasoning_effort to Antigravity thinkingConfig.
-	// Inline translation-only mapping; capability checks happen later in ApplyThinking.
 	re := ojson.GetBytesNoCopy(rawJSON, "reasoning_effort")
 	if re.Exists() {
 		effort := strings.ToLower(strings.TrimSpace(re.String()))
@@ -67,7 +49,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 	}
 	normalizeAntigravityOpenAIThinkingConfigDoc(outDoc)
 
-	// Temperature/top_p/top_k/max_tokens/max_completion_tokens
 	if tr := ojson.GetBytesNoCopy(rawJSON, "temperature"); tr.Exists() && tr.Type == ojson.Number {
 		_ = outDoc.Set("request.generationConfig.temperature", tr.Num)
 	}
@@ -83,7 +64,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		_ = outDoc.Set("request.generationConfig.maxOutputTokens", mct.Num)
 	}
 
-	// Map OpenAI response_format to Antigravity structured output settings.
 	if responseFormat := ojson.GetBytesNoCopy(rawJSON, "response_format"); responseFormat.Exists() {
 		switch responseFormatType := strings.ToLower(strings.TrimSpace(responseFormat.Get("type").String())); responseFormatType {
 		case "json_object", "json_schema":
@@ -99,15 +79,12 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 	}
 
-	// Candidate count (OpenAI 'n' parameter)
 	if n := ojson.GetBytesNoCopy(rawJSON, "n"); n.Exists() && n.Type == ojson.Number {
 		if val := n.Int(); val > 1 {
 			_ = outDoc.Set("request.generationConfig.candidateCount", val)
 		}
 	}
 
-	// Map OpenAI modalities -> Antigravity request.generationConfig.responseModalities
-	// e.g. "modalities": ["image", "text"] -> ["IMAGE", "TEXT"]
 	if mods := ojson.GetBytesNoCopy(rawJSON, "modalities"); mods.Exists() && mods.IsArray() {
 		var responseMods []string
 		for _, m := range mods.Array() {
@@ -123,8 +100,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 	}
 
-	// OpenRouter-style image_config support
-	// If the input uses top-level image_config.aspect_ratio, map it into request.generationConfig.imageConfig.aspectRatio.
 	if imgCfg := ojson.GetBytesNoCopy(rawJSON, "image_config"); imgCfg.Exists() && imgCfg.IsObject() {
 		if ar := imgCfg.Get("aspect_ratio"); ar.Exists() && ar.Type == ojson.String {
 			_ = outDoc.Set("request.generationConfig.imageConfig.aspectRatio", ar.Str)
@@ -134,7 +109,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 	}
 
-	// messages -> systemInstruction + contents
 	messages := ojson.GetBytesNoCopy(rawJSON, "messages")
 	if messages.IsArray() {
 		arr := messages.Array()
@@ -148,7 +122,7 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 			content := m.Get("content")
 
 			if (role == "system" || role == "developer") && len(arr) > 1 && !hasEncounteredConversation {
-				// system -> request.systemInstruction as a user message style
+
 				if content.Type == ojson.String {
 					systemParts = append(systemParts, antigravityOpenAITextPart(content.String()))
 				} else if content.IsObject() && content.Get("type").String() == "text" {
@@ -174,7 +148,7 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 								partItems = append(partItems, antigravityOpenAITextPart(antigravityDemotedSystemText(text, isDemotedSystem)))
 							}
 						case "image_url":
-							// Only a base64 data URL can be inlined; a remote URL has no equivalent here.
+
 							if mimeType, data, ok := translatorcommon.NormalizeOpenAIFileData("", "", item.Get("image_url.url").String()); ok {
 								partItems = append(partItems, antigravityOpenAIInlineDataPart(mimeType, data, false))
 							} else {
@@ -206,7 +180,7 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 						}
 					}
 				}
-				// Whitespace-only text is forwarded but never keeps an emptied turn alive.
+
 				drops.EndTurn(translatorcommon.CountSendableGeminiParts(partItems))
 				if len(partItems) > 0 {
 					contentItems = append(contentItems, antigravityOpenAIContent("user", partItems))
@@ -291,7 +265,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 						contentItems = append(contentItems, antigravityOpenAIContent("model", partItems))
 					}
 
-					// Collect tool responses scoped to this assistant turn.
 					turnToolResponses := map[string]string{}
 					for j := i + 1; j < len(arr); j++ {
 						nextRole := arr[j].Get("role").String()
@@ -315,8 +288,7 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 						if response == "" {
 							response = "{}"
 						}
-						// Keep it as a string instead of parsing it into JSON.
-						// Parsing it as JSON, similar to reading a JSON file with readFile, may trigger an upstream 400 error.
+
 						_ = partDoc.Set("functionResponse.response.result", response)
 						responseParts = append(responseParts, partDoc.Bytes())
 					}
@@ -334,7 +306,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		translatorcommon.SetRawArrayItemsDoc(outDoc, "request.contents", contentItems)
 	}
 
-	// tools -> request.tools[].functionDeclarations + request.tools[].googleSearch/codeExecution/urlContext passthrough
 	tools := ojson.GetBytesNoCopy(rawJSON, "tools")
 	toolResults := tools.Array()
 	if tools.IsArray() && len(toolResults) > 0 {
@@ -636,9 +607,6 @@ func setAntigravityOpenAIRawIfDifferentDoc(outDoc *ojson.Doc, path string, value
 	return outDoc.SetRaw(path, value.Raw) == nil
 }
 
-// antigravityDemotedSystemText wraps a demoted mid-session system or developer
-// message in the <system-reminder> envelope so non-Claude upstream models treat it
-// as a directive rather than user speech.
 func antigravityDemotedSystemText(text string, isDemoted bool) string {
 	if !isDemoted || strings.TrimSpace(text) == "" {
 		return text

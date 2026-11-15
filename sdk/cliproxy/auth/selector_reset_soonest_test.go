@@ -12,8 +12,6 @@ import (
 
 var resetSoonestBase = time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 
-// newResetSoonestFixture builds a selector bound to an isolated store and a
-// fixed clock, so no test depends on the process-wide store or on wall time.
 func newResetSoonestFixture(guard float64) (*ResetSoonestSelector, *quota.Store) {
 	store := quota.NewStore(func() time.Time { return resetSoonestBase })
 	selector := &ResetSoonestSelector{
@@ -24,7 +22,6 @@ func newResetSoonestFixture(guard float64) (*ResetSoonestSelector, *quota.Store)
 	return selector, store
 }
 
-// seedLongWindow records a long-window reading for one credential.
 func seedLongWindow(store *quota.Store, authID, provider, windowID string, usedPercent float64, resetIn time.Duration) {
 	store.Observe(quota.Identity{AuthID: authID, Provider: provider, FileName: authID + ".json"},
 		map[string]quota.Window{
@@ -40,7 +37,7 @@ func TestResetSoonestSelectorPicksTheMostUrgentCredential(t *testing.T) {
 		{ID: "plenty-left", Provider: "claude", FileName: "plenty-left.json"},
 		{ID: "expiring", Provider: "claude", FileName: "expiring.json"},
 	}
-	// 90 percent left but four days away versus 40 percent left in three hours.
+
 	seedLongWindow(store, "plenty-left", "claude", quota.WindowSevenDay, 10, 4*24*time.Hour)
 	seedLongWindow(store, "expiring", "claude", quota.WindowSevenDay, 60, 3*time.Hour)
 
@@ -60,8 +57,7 @@ func TestResetSoonestSelectorRespectsThePriorityTier(t *testing.T) {
 	t.Parallel()
 
 	selector, store := newResetSoonestFixture(0)
-	// The low-priority credential is far more urgent, but priority is the manual
-	// override: only the highest available tier is offered to the strategy.
+
 	auths := []*Auth{
 		{ID: "high-tier", Provider: "claude", FileName: "high-tier.json", Attributes: map[string]string{"priority": "10"}},
 		{ID: "low-tier-urgent", Provider: "claude", FileName: "low-tier-urgent.json", Attributes: map[string]string{"priority": "1"}},
@@ -77,7 +73,6 @@ func TestResetSoonestSelectorRespectsThePriorityTier(t *testing.T) {
 		t.Fatalf("picked %q, want high-tier: priority must outrank urgency", auth.ID)
 	}
 
-	// Once the high tier is blocked the low tier becomes reachable.
 	auths[0].Disabled = true
 	auth, err = selector.Pick(context.Background(), "claude", "claude-opus-5", cliproxyexecutor.Options{}, auths)
 	if err != nil {
@@ -150,7 +145,7 @@ func TestResetSoonestSelectorPrefersAKnownReadingOverAnUnknownOne(t *testing.T) 
 		{ID: "unknown", Provider: "claude", FileName: "unknown.json"},
 		{ID: "nearly-spent", Provider: "claude", FileName: "nearly-spent.json"},
 	}
-	// Even a credential with 1 percent left outranks one with no reading at all.
+
 	seedLongWindow(store, "nearly-spent", "claude", quota.WindowSevenDay, 99, 7*24*time.Hour)
 
 	auth, err := selector.Pick(context.Background(), "claude", "claude-opus-5", cliproxyexecutor.Options{}, auths)
@@ -196,8 +191,6 @@ func TestResetSoonestSelectorFallsBackWhenEveryReadingLooksUnusable(t *testing.T
 		}, resetSoonestBase)
 	}
 
-	// Availability filtering already judged these credentials serviceable, so a
-	// reading that says otherwise must not empty the pool and fail the request.
 	auth, err := selector.Pick(context.Background(), "claude", "claude-opus-5", cliproxyexecutor.Options{}, auths)
 	if err != nil {
 		t.Fatalf("Pick() error = %v", err)
@@ -215,7 +208,7 @@ func TestResetSoonestSelectorUsesTheFableWindowForFableRequests(t *testing.T) {
 		{ID: "fable-spent", Provider: "claude", FileName: "fable-spent.json"},
 		{ID: "fable-fresh", Provider: "claude", FileName: "fable-fresh.json"},
 	}
-	// Identical weekly windows; only the Fable window differs.
+
 	store.Observe(quota.Identity{AuthID: "fable-spent", Provider: "claude", FileName: "fable-spent.json"}, map[string]quota.Window{
 		quota.WindowSevenDay: {UsedPercent: 50, ResetAt: resetSoonestBase.Add(48 * time.Hour), Known: true},
 		quota.WindowFable:    {UsedPercent: 95, ResetAt: resetSoonestBase.Add(48 * time.Hour), Known: true},
@@ -225,8 +218,6 @@ func TestResetSoonestSelectorUsesTheFableWindowForFableRequests(t *testing.T) {
 		quota.WindowFable:    {UsedPercent: 10, ResetAt: resetSoonestBase.Add(48 * time.Hour), Known: true},
 	}, resetSoonestBase)
 
-	// For a Fable request the nearly spent Fable window ranks lower, so the fresh
-	// credential wins. On a non-Fable model the two tie and the ID breaks it.
 	fableAuth, err := selector.Pick(context.Background(), "claude", "claude-fable-5-1", cliproxyexecutor.Options{}, auths)
 	if err != nil {
 		t.Fatalf("Pick() error = %v", err)
@@ -247,8 +238,7 @@ func TestResetSoonestSelectorIngestsHeaderSignals(t *testing.T) {
 	t.Parallel()
 
 	selector, store := newResetSoonestFixture(0)
-	// No seeded readings: the only source is the passive header snapshot upstream
-	// already keeps on each credential.
+
 	auths := []*Auth{
 		{ID: "calm", Provider: "claude", FileName: "calm.json", Quota: QuotaState{
 			ObservedAt: resetSoonestBase,
@@ -304,7 +294,6 @@ func TestIngestAuthQuotaRecordsAndClearsAHardLimit(t *testing.T) {
 		t.Fatalf("five hour = %+v, want hard limited", window)
 	}
 
-	// Leaving cooldown clears it.
 	auth.Quota.Exceeded = false
 	IngestAuthQuota(store, []*Auth{auth}, resetSoonestBase)
 	reading, _ = store.Lookup("a")
@@ -364,8 +353,6 @@ func TestSessionAffinityKeepsABoundSessionOnItsCredential(t *testing.T) {
 		t.Fatalf("first pick = %q, want first-choice", bound.ID)
 	}
 
-	// The other credential becomes far more urgent. An established binding
-	// outranks the strategy, so the thread stays put for its prompt cache.
 	seedLongWindowAt(store, "second-choice", quota.WindowSevenDay, 60, 30*time.Minute)
 	again, err := selector.Pick(context.Background(), "claude", "claude-opus-5", opts(), auths)
 	if err != nil {
@@ -375,8 +362,6 @@ func TestSessionAffinityKeepsABoundSessionOnItsCredential(t *testing.T) {
 		t.Fatalf("second pick = %q, want first-choice: affinity must hold the binding", again.ID)
 	}
 
-	// When the bound credential becomes unusable the wrapper re-picks through the
-	// strategy, which now chooses the more urgent one.
 	auths[0].Disabled = true
 	rebound, err := selector.Pick(context.Background(), "claude", "claude-opus-5", opts(), auths)
 	if err != nil {
@@ -387,8 +372,6 @@ func TestSessionAffinityKeepsABoundSessionOnItsCredential(t *testing.T) {
 	}
 }
 
-// seedLongWindowAt overwrites a long-window reading with a newer learned time so
-// the store accepts it.
 func seedLongWindowAt(store *quota.Store, authID, windowID string, usedPercent float64, resetIn time.Duration) {
 	learnedAt := resetSoonestBase.Add(time.Second)
 	store.Observe(quota.Identity{AuthID: authID, Provider: "claude", FileName: authID + ".json"},

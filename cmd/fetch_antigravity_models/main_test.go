@@ -69,8 +69,6 @@ func TestFetchModelsRetryPerEndpoint(t *testing.T) {
 		},
 	}
 
-	// Case 1: First endpoint fails on attempt 1, succeeds on attempt 2.
-	// It should succeed without calling endpoint 2, and endpoint 1 should have been called 2 times.
 	models := fetchModelsFromBaseURLs(context.Background(), auth, []string{server1.URL, server2.URL}, server1.Client())
 	if len(models) != 1 || models[0].ID != "gemini-3.6-flash" {
 		t.Fatalf("expected 1 model (gemini-3.6-flash), got: %#v", models)
@@ -113,7 +111,6 @@ func TestFetchModelsFallbackAfterTwoAttempts(t *testing.T) {
 		},
 	}
 
-	// Case 2: First endpoint fails all 2 attempts, then falls back to endpoint 2.
 	models := fetchModelsFromBaseURLs(context.Background(), auth, []string{server1.URL, server2.URL}, server1.Client())
 	if len(models) != 1 || models[0].ID != "gemini-2.5-flash" {
 		t.Fatalf("expected 1 model (gemini-2.5-flash), got: %#v", models)

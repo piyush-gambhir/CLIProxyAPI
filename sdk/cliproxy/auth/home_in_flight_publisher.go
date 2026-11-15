@@ -14,13 +14,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// HomeInFlightTransport publishes in-flight observation frames for one Home lifetime.
 type HomeInFlightTransport interface {
 	HeartbeatOK() bool
 	LPushInFlightSnapshot(context.Context, []byte) error
 }
 
-// HomeInFlightPublisherConfig bounds in-flight observation frames.
 type HomeInFlightPublisherConfig struct {
 	SnapshotInterval   time.Duration
 	MaxPartBytes       int
@@ -44,7 +42,6 @@ func homeInFlightStatus(accounted bool) home.InFlightAccountedStatus {
 	return home.InFlightUnaccounted
 }
 
-// HomeInFlightPublisherConfigFromConfig converts validated runtime config into publisher bounds.
 func HomeInFlightPublisherConfigFromConfig(cfg internalconfig.CredentialInFlightConfig) (HomeInFlightPublisherConfig, error) {
 	snapshotInterval, _, _, errDurations := cfg.Durations()
 	if errDurations != nil {
@@ -64,7 +61,6 @@ func HomeInFlightPublisherConfigFromConfig(cfg internalconfig.CredentialInFlight
 	}, nil
 }
 
-// ApplyHomeInFlightPublisherConfig stores an immutable validated publisher config snapshot.
 func (m *Manager) ApplyHomeInFlightPublisherConfig(cfg HomeInFlightPublisherConfig) {
 	if m == nil || !validHomeInFlightPublisherConfig(cfg) {
 		return
@@ -73,7 +69,6 @@ func (m *Manager) ApplyHomeInFlightPublisherConfig(cfg HomeInFlightPublisherConf
 	m.homeInFlightPublisherConfig.Store(&snapshot)
 }
 
-// HomeInFlightPublisherConfig returns the current immutable publisher config snapshot.
 func (m *Manager) HomeInFlightPublisherConfig() HomeInFlightPublisherConfig {
 	if m == nil {
 		return HomeInFlightPublisherConfig{}
@@ -101,7 +96,6 @@ func validHomeInFlightPublisherBounds(cfg HomeInFlightPublisherConfig) bool {
 		cfg.MaxAggregateGroups > 0 && cfg.MaxDetails >= 0 && cfg.MaxStringBytes > 0
 }
 
-// StartHomeInFlightPublisher publishes periodic snapshots for the supplied lifetime registry.
 func (m *Manager) StartHomeInFlightPublisher(ctx context.Context, transport HomeInFlightTransport, registry *executionregistry.Registry) {
 	if m == nil || transport == nil || registry == nil {
 		return

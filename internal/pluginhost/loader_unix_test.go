@@ -81,10 +81,6 @@ func TestUnixPluginReloadAfterShutdownUsesReplacedFile(t *testing.T) {
 
 	client.Shutdown()
 
-	// The Go runtime of a loaded plugin stays resident in the host process
-	// even after the logical shutdown: unloading a Go c-shared image is not
-	// safe, so the handle and host callback state must be retained while the
-	// callback instance is closed for further work.
 	if first.handle == nil || first.handle != firstHandle {
 		t.Fatalf("handle after Shutdown() = %v, want retained handle %v (library must stay mapped)", first.handle, firstHandle)
 	}
@@ -101,9 +97,6 @@ func TestUnixPluginReloadAfterShutdownUsesReplacedFile(t *testing.T) {
 		t.Fatal("callback instance not closed by Shutdown(); stale runtime could still perform work")
 	}
 
-	// Replace the plugin binary under the same path (update) and load again
-	// without restarting the process. It must map the new image, not reuse
-	// the previously loaded one.
 	buildReloadTestPlugin(t, 2, pluginPath)
 	file.Version = "2"
 	secondClient, errOpenSecond := dynamicLibraryLoader{}.Open(file, host)
@@ -128,9 +121,6 @@ func TestUnixPluginReloadAfterShutdownUsesReplacedFile(t *testing.T) {
 
 	secondClient.Shutdown()
 
-	// Reopening without a content change must reuse the already resident
-	// image instead of mapping a second copy of the same runtime, and the
-	// shutdown above must have reached that image exactly once.
 	thirdClient, errOpenThird := dynamicLibraryLoader{}.Open(file, host)
 	if errOpenThird != nil {
 		t.Fatalf("Open() third error = %v", errOpenThird)
@@ -262,9 +252,6 @@ func TestUnixPluginOpenFailureKeepsImageUsableOnRetry(t *testing.T) {
 		t.Fatal("Open() with failing plugin init succeeded, want error")
 	}
 
-	// The failed load must not unload the image: retrying the same file
-	// must fail the same way instead of crashing or spinning, and loading
-	// a fixed build under the same path must succeed afterwards.
 	if _, errOpen := loader.Open(file, host); errOpen == nil {
 		t.Fatal("Open() retry with failing plugin init succeeded, want error")
 	}
@@ -301,8 +288,6 @@ func TestUnixPluginLoaderIsolatesSigillOnDlopen(t *testing.T) {
 		t.Fatalf("Open() error = %v, want preflight SIGILL diagnostic", errOpen)
 	}
 
-	// Retrying the same crashing plugin binary must fail cleanly without
-	// crashing the host process.
 	_, errRetry := loader.Open(file, host)
 	if errRetry == nil {
 		t.Fatal("Open() retry with SIGILL plugin succeeded, want error")
@@ -311,8 +296,6 @@ func TestUnixPluginLoaderIsolatesSigillOnDlopen(t *testing.T) {
 		t.Fatalf("Open() retry error = %v, want cached preflight SIGILL diagnostic", errRetry)
 	}
 
-	// Applying host config with the crashing plugin enabled must isolate
-	// the failure and keep the host process alive.
 	host.ApplyConfig(context.Background(), &config.Config{
 		Plugins: config.PluginsConfig{
 			Enabled: true,
@@ -324,8 +307,6 @@ func TestUnixPluginLoaderIsolatesSigillOnDlopen(t *testing.T) {
 		t.Fatal("PluginLoaded(broken) = true, want false after preflight SIGILL failure")
 	}
 
-	// Replacing the broken binary with a valid build under the same path
-	// must succeed without needing to restart the host process.
 	buildReloadTestPlugin(t, 1, pluginPath)
 	file.Version = "1"
 	client, errFixed := loader.Open(file, host)
@@ -366,7 +347,6 @@ func TestUnixPluginLoaderDoesNotCacheTransientProbeStartFailure(t *testing.T) {
 		t.Fatal("Open() with transient probe executable failure succeeded, want error")
 	}
 
-	// Also verify a spawn failure (non-existent executable) is not cached.
 	pluginProbeExecutable = func() (string, error) {
 		return filepath.Join(dir, "nonexistent-probe-binary"), nil
 	}
@@ -374,8 +354,6 @@ func TestUnixPluginLoaderDoesNotCacheTransientProbeStartFailure(t *testing.T) {
 		t.Fatal("Open() with missing probe binary succeeded, want error")
 	}
 
-	// Once the transient failure resolves, the same plugin binary must load
-	// without needing a content change or process restart.
 	pluginProbeExecutable = origProbeExec
 	client, errOpen := loader.Open(file, host)
 	if errOpen != nil {

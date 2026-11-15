@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// antigravityInstructionSteps are developer and system steps in the shapes an
-// Interactions client can send. Each one carries the text "note".
 var antigravityInstructionSteps = map[string]string{
 	"developer user_input":     `{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}`,
 	"system user_input":        `{"type":"user_input","role":"system","content":[{"type":"text","text":"note"}]}`,
@@ -17,7 +15,6 @@ var antigravityInstructionSteps = map[string]string{
 	"developer wrapper":        `{"role":"developer","steps":[{"type":"user_input","content":[{"type":"text","text":"note"}]}]}`,
 }
 
-// antigravityEmptiedStep is a user step whose only part Antigravity cannot carry.
 const antigravityEmptiedStep = `{"type":"user_input","content":[{"type":"document","uri":"gs://b/a.pdf"}]}`
 
 func TestInteractionsToAntigravityDeveloperOrSystemStepDoesNotHideAnEmptiedUserTurn(t *testing.T) {

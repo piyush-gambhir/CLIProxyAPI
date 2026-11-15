@@ -6,18 +6,8 @@ import (
 	"time"
 )
 
-// unixEpochFloor separates a unix second count from a relative second offset:
-// every plausible absolute reset is far above this bound.
 const unixEpochFloor = 1_000_000_000
 
-// SignalWindows turns the passive header snapshot upstream already keeps in
-// Auth.Quota.Signals into canonical window readings.
-//
-// The snapshot is a flat map of header name to value, lower-cased by the
-// collector. Upstream only allowlists prefixes (anthropic-ratelimit-unified-*,
-// x-codex-*), never an exhaustive header list, so this parser matches the same
-// way: it groups keys by the window segment and reads the suffix. A spelling
-// this parser does not recognise is ignored rather than guessed at.
 func SignalWindows(provider string, signals map[string]string, observedAt time.Time) map[string]Window {
 	if len(signals) == 0 {
 		return nil
@@ -32,7 +22,6 @@ func SignalWindows(provider string, signals map[string]string, observedAt time.T
 	}
 }
 
-// SignalPlan reads the plan slug out of a header snapshot when one is present.
 func SignalPlan(provider string, signals map[string]string) string {
 	if len(signals) == 0 {
 		return ""
@@ -47,12 +36,6 @@ func SignalPlan(provider string, signals map[string]string) string {
 	return ""
 }
 
-// claudeSignalWindows reads anthropic-ratelimit-unified-<window>-<field>.
-//
-// Observed field spellings are "-remaining" plus "-limit" (a pair that yields a
-// used percentage), "-utilization" (a 0..1 fraction), "-used-percent" / "-percent" (a direct
-// percentage), "-reset" / "-reset-at" (a unix second count or an RFC3339 time)
-// and "-status" (whose "rate_limited" value marks a hard limit).
 func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[string]Window {
 	const prefix = "anthropic-ratelimit-unified-"
 	type accumulator struct {
@@ -85,7 +68,7 @@ func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[st
 		value := strings.TrimSpace(rawValue)
 		switch field {
 		case "utilization":
-			// Anthropic reports utilization as a fraction: "0.74" means 74% used.
+
 			if parsed, ok := parseFloat(value); ok {
 				entry.used, entry.hasUsed = parsed*100, true
 			}
@@ -128,8 +111,7 @@ func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[st
 			window.UsedPercent = clampPercent((entry.limit - entry.remaining) / entry.limit * 100)
 			window.Known = true
 		case entry.limited:
-			// A status header with no numbers still tells the selector to skip
-			// this credential, so keep the reading as a hard limit marker.
+
 			window.UsedPercent, window.Known = 100, true
 		default:
 			continue
@@ -142,9 +124,6 @@ func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[st
 	return out
 }
 
-// codexSignalWindows reads x-codex-<slot>-<field>. The primary slot is the
-// 5-hour window and the secondary slot the weekly one, which the reported
-// window-minutes confirms when present.
 func codexSignalWindows(signals map[string]string, observedAt time.Time) map[string]Window {
 	type accumulator struct {
 		used     float64
@@ -226,8 +205,6 @@ func codexSignalWindows(signals map[string]string, observedAt time.Time) map[str
 	return out
 }
 
-// splitWindowField splits "7d-remaining" into "7d" and "remaining". A single
-// segment is treated as a field on the account-wide window.
 func splitWindowField(rest string) (window, field string) {
 	rest = strings.Trim(rest, "-")
 	if rest == "" {
@@ -240,7 +217,6 @@ func splitWindowField(rest string) (window, field string) {
 	return rest[:index], rest[index+1:]
 }
 
-// canonicalClaudeWindow maps an observed window segment onto a canonical id.
 func canonicalClaudeWindow(window string) string {
 	switch strings.ToLower(strings.TrimSpace(window)) {
 	case "5h", "5hour", "5-hour", "five-hour", "five_hour", "session":
@@ -254,8 +230,6 @@ func canonicalClaudeWindow(window string) string {
 	}
 }
 
-// canonicalCodexWindow maps a Codex slot onto a canonical id. The reported
-// window length wins when it is present, because Codex reuses the slot names.
 func canonicalCodexWindow(slot string, minutes int) string {
 	if minutes > 0 {
 		if minutes <= 360 {
@@ -285,9 +259,6 @@ func parseFloat(value string) (float64, bool) {
 	return parsed, true
 }
 
-// parseTimestamp accepts an RFC3339 time or a unix second count. A value small
-// enough to be a relative second offset is treated as one, which is how the
-// Anthropic reset header behaves on some responses.
 func parseTimestamp(value string, observedAt time.Time) (time.Time, bool) {
 	value = strings.TrimSpace(value)
 	if value == "" {

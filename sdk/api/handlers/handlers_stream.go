@@ -16,15 +16,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-// ExecuteStreamWithAuthManager executes a streaming request via the core auth manager.
-// This path is the only supported execution route.
-// The returned http.Header carries upstream response headers captured before streaming begins.
 func (h *BaseAPIHandler) ExecuteStreamWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) (<-chan []byte, http.Header, <-chan *interfaces.ErrorMessage) {
 	return h.executeStreamWithAuthManager(ctx, handlerType, modelName, rawJSON, alt, false)
 }
 
-// HasAlternativeExecutionTarget reports whether an alternative credential other
-// than excludedAuthID can serve a replayed request for modelName.
 func (h *BaseAPIHandler) HasAlternativeExecutionTarget(ctx context.Context, handlerType, modelName string, rawJSON []byte, excludedAuthID string) bool {
 	if h == nil || h.AuthManager == nil {
 		return false
@@ -73,7 +68,6 @@ func (h *BaseAPIHandler) HasAlternativeExecutionTarget(ctx context.Context, hand
 	return h.AuthManager.HasAlternativeTargetForModel(ctx, providers, normalizedModel, opts, excludedAuthID)
 }
 
-// ExecuteImageStreamWithAuthManager executes a streaming OpenAI-compatible image endpoint request.
 func (h *BaseAPIHandler) ExecuteImageStreamWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) (<-chan []byte, http.Header, <-chan *interfaces.ErrorMessage) {
 	return h.executeStreamWithAuthManager(ctx, handlerType, modelName, rawJSON, alt, true)
 }
@@ -148,9 +142,7 @@ func (h *BaseAPIHandler) streamWithPluginExecutor(ctx context.Context, entryProt
 	streamInterceptorsActive := streamInterceptorsEnabled(interceptorHost)
 	rawStreamHeaders := cloneHeader(streamResult.Headers)
 	baseStreamHeaders := cloneHeader(streamResult.Headers)
-	// Request headers and request bodies are stream-invariant. Keep a private snapshot
-	// and clone into each interceptor call so plugins cannot mutate shared storage.
-	// Schema v3+ payload chunks omit these bodies (host also strips per plugin).
+
 	var streamRequestHeaders http.Header
 	var streamOriginalRequest []byte
 	var streamRequestBody []byte
@@ -272,12 +264,11 @@ func (h *BaseAPIHandler) streamWithPluginExecutor(ctx context.Context, entryProt
 					ChunkIndex:      chunkIndex,
 					Metadata:        opts.Metadata,
 				}
-				// Re-evaluate each chunk so mid-stream plugin reloads stay correct.
-				// Schema v5+ omits history here.
+
 				if streamChunkPayloadIncludesHistory(interceptorHost) {
 					chunkReq.HistoryChunks = cloneByteSlices(historyChunks)
 				}
-				// Schema v3+ omits bodies here (one header-init clone only).
+
 				if streamChunkPayloadIncludesRequestBody(interceptorHost) {
 					chunkReq.OriginalRequest = cloneBytes(streamOriginalRequest)
 					chunkReq.RequestBody = cloneBytes(streamRequestBody)
@@ -335,7 +326,7 @@ func (h *BaseAPIHandler) executeStreamWithAuthManager(ctx context.Context, handl
 
 func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context, entryProtocol, exitProtocol, modelName string, rawJSON []byte, alt string, allowImageModel bool, execOptions modelExecutionOptions) (<-chan []byte, http.Header, <-chan *interfaces.ErrorMessage) {
 	originalRequestedModel := modelName
-	// Speech-only models are reachable solely through the speech entry protocol.
+
 	execOptions.AllowSpeechModel = isModelExecutionSpeechProtocol(entryProtocol)
 	routeDecision, preparedRoute := preparedModelRouteFromContext(ctx, execOptions.SkipRouterPluginID)
 	if !preparedRoute {
@@ -436,8 +427,7 @@ func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context
 	passthroughHeadersEnabled := executionPassthroughHeaders(h.CurrentConfig(), execOptions.InternalSource)
 	interceptorHost := h.interceptorHost()
 	streamInterceptorsActive := streamInterceptorsEnabled(interceptorHost)
-	// Resolve bootstrap retries and header initialization before returning so the
-	// returned header snapshot is never modified by the stream goroutine.
+
 	rawStreamHeaders := cloneHeader(streamResult.Headers)
 	baseStreamHeaders := cloneHeader(streamResult.Headers)
 	chunks := streamResult.Chunks
@@ -449,9 +439,7 @@ func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context
 	streamClosedBeforeRead := false
 	streamCanceledBeforeRead := false
 	streamHeaderInitialized := false
-	// Request headers/bodies are stream-invariant after after-auth capture. Keep a private
-	// snapshot and clone into each interceptor call so plugins cannot mutate shared storage.
-	// Schema v3+ payload chunks omit these bodies (host also strips per plugin).
+
 	var streamRequestHeaders http.Header
 	var streamOriginalRequest []byte
 	var streamRequestBody []byte
@@ -504,12 +492,11 @@ func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context
 				ChunkIndex:      *chunkIndex,
 				Metadata:        opts.Metadata,
 			}
-			// Re-evaluate each chunk so mid-stream plugin reloads stay correct.
-			// Schema v5+ omits history here.
+
 			if streamChunkPayloadIncludesHistory(interceptorHost) {
 				chunkReq.HistoryChunks = cloneByteSlices(historyChunks)
 			}
-			// Schema v3+ omits bodies here (one header-init clone only).
+
 			if streamChunkPayloadIncludesRequestBody(interceptorHost) {
 				chunkReq.OriginalRequest = cloneBytes(streamOriginalRequest)
 				chunkReq.RequestBody = cloneBytes(streamRequestBody)
@@ -901,8 +888,6 @@ func validateSSEDataJSON(chunk []byte) error {
 	return state.Finish()
 }
 
-// streamDeliveryCompletion reconciles execution cleanup with the HTTP outcome.
-// Call only after closing output channels: the consumer may need EOF to finish.
 func streamDeliveryCompletion(ctx context.Context, outcome pluginapi.RequestCompletionOutcome, status int, err error) (pluginapi.RequestCompletionOutcome, int, error) {
 	if ctx == nil {
 		return outcome, status, err

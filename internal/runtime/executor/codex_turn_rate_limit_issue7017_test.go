@@ -9,10 +9,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Issue 7017: the Codex upstream rejects per-turn admission with a 429
-// turn_rate_limit_exceeded rate_limit_error ("Codex is at capacity") and a
-// Retry-After header. It is a transient capacity rejection, not quota
-// exhaustion, and must be classified and hinted accordingly.
 const issue7017TurnRateLimitBody = `{"error":{"type":"rate_limit_error","code":"turn_rate_limit_exceeded","message":"Codex is at capacity, please try again later"}}`
 
 func issue7017AssertTransient(t *testing.T, err error, wantHint *time.Duration) {

@@ -1305,13 +1305,13 @@ func TestSplitResponsesQualifiedFunctionCallFromRequest_FirstDeclarationWins(t *
 		wantName      string
 		wantNamespace string
 	}{
-		// The flat tool is the one that survives merging, so it must stay flat.
+
 		{"flat declared first", flatFirst, "editor__apply_patch", "editor__apply_patch", ""},
-		// The namespace child survives here, so the call splits back into it.
+
 		{"namespace declared first", namespaceFirst, "editor__apply_patch", "apply_patch", "editor"},
-		// No collision: unchanged behaviour.
+
 		{"namespace only", namespaceOnly, "mcp__github__get_me", "get_me", "mcp__github"},
-		// Unknown name falls through untouched.
+
 		{"unknown name", flatFirst, "something_else", "something_else", ""},
 	}
 
@@ -1327,7 +1327,7 @@ func TestSplitResponsesQualifiedFunctionCallFromRequest_FirstDeclarationWins(t *
 }
 
 func TestSplitResponsesQualifiedFunctionCallFromRequest_MatchesMergedToolIdentity(t *testing.T) {
-	// Whatever survives the merge must be what reverse translation reports.
+
 	raw := []byte(`{
 		"tools": [
 			{"type":"function","name":"editor__apply_patch","parameters":{"type":"object"}},
@@ -1351,11 +1351,7 @@ func TestSplitResponsesQualifiedFunctionCallFromRequest_MatchesMergedToolIdentit
 }
 
 func TestResponsesCustomToolNames_FollowsMergedDeclaration(t *testing.T) {
-	// Declarations delivered through the two channels may differ in type: a
-	// top-level function and an "additional_tools" custom tool can flatten to
-	// the same Chat Completions name. Only the winner may decide whether the
-	// tool is freeform, otherwise a plain function call comes back as a
-	// custom_tool_call with unwrapped arguments.
+
 	functionFirst := []byte(`{
 		"input": [
 			{"type":"additional_tools","tools":[{"type":"custom","name":"exec","description":"copy"}]}
@@ -1388,7 +1384,7 @@ func TestResponsesCustomToolNames_FollowsMergedDeclaration(t *testing.T) {
 			if len(merged) != 1 {
 				t.Fatalf("merged tool count = %d, want 1", len(merged))
 			}
-			// Freeform tools are the ones converted to the single-string shape.
+
 			mergedIsCustom := ojson.GetBytesNoCopy(merged[0], "function.parameters.properties.input").Exists()
 			if mergedIsCustom != tt.wantCustom {
 				t.Fatalf("merged tool custom = %v, want %v", mergedIsCustom, tt.wantCustom)
@@ -1410,8 +1406,7 @@ func TestResponsesCustomToolNames_FollowsMergedDeclaration(t *testing.T) {
 }
 
 func TestResponsesCustomToolNames_OnlyReportsMergedTools(t *testing.T) {
-	// Nested namespaces are not converted, so their children never reach the
-	// upstream request and must not be classified as freeform tools either.
+
 	raw := []byte(`{
 		"tools": [
 			{"type":"namespace","name":"outer","tools":[
@@ -1491,13 +1486,11 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_FunctionCallOutput
 				t.Fatalf("expected 2 messages (assistant, tool), got %d; output=%s", len(messages), string(out))
 			}
 
-			// Assistant message has tool_calls with id call_123
 			toolCallID := messages[0].Get("tool_calls.0.id").String()
 			if toolCallID != "call_123" {
 				t.Fatalf("tool_calls.0.id = %q, want call_123", toolCallID)
 			}
 
-			// Tool message has tool_call_id matching call_123
 			toolMessage := messages[1]
 			if toolMessage.Get("role").String() != "tool" {
 				t.Fatalf("expected role tool, got %s", toolMessage.Raw)
@@ -1513,10 +1506,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_FunctionCallOutput
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedMissingAndExplicitParallelOutputs(t *testing.T) {
-	// Call A, Call B.
-	// Output 1 has NO ID (result B).
-	// Output 2 explicitly has call_id: call_a (result A).
-	// Call A must NOT be stolen by Output 1; Output 1 must get Call B.
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4-flash",
 		"input": [
@@ -1547,8 +1537,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedMissingAndExp
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DefersMessageUntilMissingIDToolOutput(t *testing.T) {
-	// Call A -> intervening user message -> Output with missing call_id
-	// The user message must be deferred until AFTER the tool output!
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4-flash",
 		"input": [
@@ -1564,18 +1553,17 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DefersMessageUntil
 		t.Fatalf("expected 3 messages (assistant, tool, user), got %d; output=%s", len(messages), string(out))
 	}
 
-	// Message 0: assistant with tool_call
 	if got := messages[0].Get("role").String(); got != "assistant" {
 		t.Fatalf("messages[0].role = %q, want assistant", got)
 	}
-	// Message 1: tool response for call_a (strictly adjacent to assistant tool_calls!)
+
 	if got := messages[1].Get("role").String(); got != "tool" {
 		t.Fatalf("messages[1].role = %q, want tool (user message was not deferred!)", got)
 	}
 	if got := messages[1].Get("tool_call_id").String(); got != "call_a" {
 		t.Fatalf("messages[1].tool_call_id = %q, want call_a", got)
 	}
-	// Message 2: deferred user message
+
 	if got := messages[2].Get("role").String(); got != "user" {
 		t.Fatalf("messages[2].role = %q, want user", got)
 	}
@@ -1585,11 +1573,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DefersMessageUntil
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedMissingAndExplicitParallelOutputsAcrossUserMessage(t *testing.T) {
-	// Call A, Call B.
-	// Output 1 has NO ID (result B).
-	// Intervening user message.
-	// Output 2 explicitly has call_id: call_a (result A).
-	// Call A must NOT be stolen by Output 1; Output 1 must get Call B.
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4-flash",
 		"input": [
@@ -1738,9 +1722,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CapsLongNamespaceT
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DisambiguatesTruncationCollisions(t *testing.T) {
-	// Two distinct namespace tools whose qualified names both truncate to the
-	// same 64-char tail must survive as two usable chat tools, not be merged
-	// or silently dropped by the first-wins deduplication.
+
 	filler := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	raw := []byte(`{
 		"input": [
@@ -1776,8 +1758,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DisambiguatesTrunc
 		}
 	}
 
-	// A replayed call to the renamed declaration must resolve to the renamed
-	// chat name so the assistant history matches the tools array.
 	merged := []byte(`{
 		"input": [
 			{"type":"custom_tool_call","namespace":"mcp__server_two__` + filler + `","name":"_same_tail_tool_name","call_id":"call_1","input":"x"},
@@ -1809,10 +1789,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DisambiguatesTrunc
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoesNotDisplaceShortOriginal(t *testing.T) {
-	// A long namespace declaration whose capped tail equals a later flat
-	// declaration's original name must take the suffix itself: the flat tool's
-	// original name is what replayed calls and tool_choice carry, so
-	// displacing it would dispatch those calls to the wrong tool.
+
 	longNamespace := "mcp__a__" + strings.Repeat("b", 60)
 	longChild := "child_tool"
 	qualified := longNamespace + "__" + longChild
@@ -1851,9 +1828,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoe
 		}
 	}
 
-	// Replayed calls and tool_choice for the flat tool carry its original
-	// name; they must resolve to the flat declaration, not to the long
-	// declaration that caps onto it.
 	replay := []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"` + flatName + `","arguments":"{}"},
@@ -1879,10 +1853,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoe
 		t.Fatalf("tool_choice for the flat tool resolved to %q, want %q; output=%s", got, flatName, forcedOut)
 	}
 
-	// A replayed call carrying the long declaration's fully-qualified
-	// uncapped name (history from an older build or a foreign client that
-	// flattened the name itself) must resolve to the suffixed chat name,
-	// not to the capped tail that now belongs to the flat tool.
 	longReplay := []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_2","name":"` + qualified + `","arguments":"{}"},
@@ -1901,10 +1871,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoe
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_AmbiguousLongLocalNameStaysUnresolved(t *testing.T) {
-	// Two namespace declarations sharing the same >64-byte local name, with a
-	// replayed call that omits the namespace: resolution is ambiguous, and the
-	// capped fallback must not land on either declaration's alias, or the call
-	// would silently invoke that namespace's tool.
+
 	longLocal := "shared_" + strings.Repeat("x", 60)
 	toolsJSON := `[
 		{
@@ -1950,19 +1917,13 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_AmbiguousLongLocal
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDisplaceNamespacedLocalName(t *testing.T) {
-	// A long declaration's capped alias must not occupy the (<=64-char) local
-	// name of a namespaced declaration whose qualified identity exceeds the
-	// cap: replayed calls and tool_choice that omit the namespace carry the
-	// bare local name, and local-name recovery must resolve them to the
-	// namespaced tool instead of to the earlier long declaration's alias.
-	localName := "l" + strings.Repeat("m", 63) // 64 chars
+
+	localName := "l" + strings.Repeat("m", 63)
 	longFlatName := strings.Repeat("n", 11) + localName
 	if len(longFlatName) <= 64 || capResponsesChatToolName(longFlatName) != localName {
 		t.Fatalf("fixture drift: cap(%q) = %q, want %q", longFlatName, capResponsesChatToolName(longFlatName), localName)
 	}
-	// mcp__beta__localName is 75 chars, so the namespaced declaration is long
-	// too, and its 11-char prefix is exactly what the cap drops: its alias is
-	// localName itself unless the reservation keeps the flat tool off it.
+
 	toolsJSON := `[
 		{"type":"function","name":"` + longFlatName + `","parameters":{"type":"object"}},
 		{
@@ -1990,8 +1951,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDi
 		}
 	}
 
-	// A replayed call omitting the namespace carries the bare local name and
-	// must resolve to the namespaced declaration's alias, not the long one.
 	replay := []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"` + localName + `","arguments":"{}"},
@@ -2008,7 +1967,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDi
 		}
 	}
 
-	// tool_choice carrying the bare local name must resolve the same way.
 	forcedOut, _ := ConvertOpenAIResponsesRequestToOpenAIChatCompletions("z-ai/glm-5.3-free", []byte(`{
 		"input": [{"role":"user","content":"hi"}],
 		"tools": `+toolsJSON+`,
@@ -2020,15 +1978,8 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDi
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsNeverEmitted(t *testing.T) {
-	// Two namespaces declaring the same 64-byte local name: both qualified
-	// identities exceed the cap and their tails are exactly that bare local
-	// name, so the name is ambiguous for any namespace-less call yet also the
-	// natural capped alias of both declarations. Reserving it for the first
-	// declaration alone would make it emit the ambiguous name verbatim, where
-	// the exact-emitted-alias match attributes every namespace-less call and
-	// tool_choice to that namespace. The name must be burned instead, leaving
-	// both declarations on distinct aliases.
-	sharedLocal := "s" + strings.Repeat("t", 63) // exactly 64 chars
+
+	sharedLocal := "s" + strings.Repeat("t", 63)
 	for _, namespace := range []string{"mcp__alpha", "mcp__beta"} {
 		if got := capResponsesChatToolName(rawResponsesNamespaceQualifiedName(namespace, sharedLocal)); got != sharedLocal {
 			t.Fatalf("fixture drift: %s alias = %q, want the ambiguous bare name %q", namespace, got, sharedLocal)
@@ -2072,7 +2023,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsN
 	alphaAlias := emitted[0].Get("function.name").String()
 	betaAlias := emitted[1].Get("function.name").String()
 
-	// Each namespace still reaches its own declaration.
 	for _, tc := range []struct {
 		namespace string
 		want      string
@@ -2098,8 +2048,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsN
 		}
 	}
 
-	// A namespace-less replayed call or tool_choice carrying the ambiguous
-	// bare name must stay unresolved rather than pick a winner.
 	bareOut, _ := ConvertOpenAIResponsesRequestToOpenAIChatCompletions("z-ai/glm-5.3-free", []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"`+sharedLocal+`","arguments":"{}"},
@@ -2138,12 +2086,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsN
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityOutranksForeignLocalName(t *testing.T) {
-	// A replayed call or tool_choice carrying a fully-qualified uncapped name
-	// can match two things: the declaration whose qualified identity it is (A),
-	// and a different namespace's child that literally uses that whole
-	// qualified string as its own name (B). Local-name recovery runs on a bare
-	// name and is a guess about the namespace, so it must not outrank the
-	// identity match, or the call gets dispatched to B's tool.
+
 	longChild := "read_" + strings.Repeat("f", 60)
 	qualified := rawResponsesNamespaceQualifiedName("alpha_ns", longChild)
 	if len(qualified) <= responsesChatToolNameLimit {
@@ -2186,7 +2129,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityO
 		}
 	}
 
-	// Bare qualified name: provenance points at the alpha declaration.
 	bareOut, _ := ConvertOpenAIResponsesRequestToOpenAIChatCompletions("z-ai/glm-5.3-free", []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"`+qualified+`","arguments":"{}"},
@@ -2211,7 +2153,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityO
 		t.Fatalf("tool_choice bare qualified name resolved to %q, want %q; output=%s", got, alphaAlias, bareForced)
 	}
 
-	// Both namespaces stay individually reachable when the namespace is present.
 	for _, tc := range []struct {
 		namespace string
 		name      string
@@ -2240,9 +2181,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityO
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_IncompleteToolCallsDoNotDeferMessages(t *testing.T) {
-	// If assistant issues function_call(a) and function_call(b), but only function_call_output(a)
-	// arrives, the history is incomplete. Intervening messages (e.g. user reminder) must NOT
-	// be deferred; original order must be preserved.
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2261,10 +2200,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_IncompleteToolCall
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Incomplete history must stay untouched:
-	// messages[0]: assistant (tool_calls [call_a, call_b])
-	// messages[1]: user ("reminder before results")
-	// messages[2]: tool (tool_call_id: call_a)
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages, got %d: %s", len(messages), out)
 	}
@@ -2274,9 +2209,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_IncompleteToolCall
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CompleteToolCallsDoPairMessages(t *testing.T) {
-	// If assistant issues function_call(a) and function_call(b), and both function_call_output(a)
-	// and function_call_output(b) arrive, with an intervening user reminder, the tool outputs
-	// must be paired immediately following the assistant tool_calls message.
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2296,11 +2229,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CompleteToolCallsD
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Expected:
-	// messages[0]: assistant (tool_calls [call_a, call_b])
-	// messages[1]: tool
-	// messages[2]: tool
-	// messages[3]: user ("reminder during execution")
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
 	}
@@ -2317,7 +2245,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CompleteToolCallsD
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedEmptyIDDoesNotReorder(t *testing.T) {
-	// Mixed empty call_id and valid call_a: incomplete/ambiguous history must remain untouched
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2336,7 +2264,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedEmptyIDDoesNo
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Must stay in natural input order: assistant -> user -> tool
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages, got %d: %s", len(messages), out)
 	}
@@ -2346,7 +2273,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedEmptyIDDoesNo
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCallIDDoesNotReorder(t *testing.T) {
-	// Duplicate call_id: ambiguous history must remain untouched
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2365,7 +2292,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCallIDDoe
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Must stay in natural input order: assistant -> user -> tool
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages, got %d: %s", len(messages), out)
 	}
@@ -2375,7 +2301,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCallIDDoe
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateOutputCallIDDoesNotReorder(t *testing.T) {
-	// Duplicate function_call_output for the same call_id: ambiguous results must not be prematurely reordered
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2394,7 +2320,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateOutputCal
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Must stay in natural input order: assistant -> user ("reminder before results") -> tool/user
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
 	}
@@ -2407,7 +2332,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateOutputCal
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCustomOutputCallIDDoesNotReorder(t *testing.T) {
-	// Duplicate custom_tool_call_output for the same call_id: ambiguous results must not be prematurely reordered
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2426,7 +2351,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCustomOut
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Must stay in natural input order: assistant -> user ("reminder before custom results") -> tool/user
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
 	}
@@ -2439,8 +2363,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCustomOut
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWithoutIDDoNotGuessOrReorder(t *testing.T) {
-	// If assistant issues function_call(a) and function_call(b), and multiple outputs arrive
-	// without call_ids, the assignment is a non-unique guess. The history must stay untouched!
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2460,8 +2383,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Must stay in natural input order: assistant -> user ("reminder before results") -> user ("output X") -> user ("output Y")
-	// Crucially, outputs X and Y must NOT be given guessed tool_call_id "a" or "b" and must NOT be fabricated as tool messages.
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
 	}
@@ -2474,7 +2395,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 	if messages[2].Get("content").String() != "output X" || messages[3].Get("content").String() != "output Y" {
 		t.Fatalf("expected outputs X and Y as standalone user messages, got msg2=%s msg3=%s", messages[2].Raw, messages[3].Raw)
 	}
-	// Verify no tool messages were created with guessed call IDs
+
 	for _, m := range messages {
 		if m.Get("role").String() == "tool" {
 			t.Fatalf("unexpected tool message created via guessing: %s", m.Raw)
@@ -2483,12 +2404,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWithoutIDAndOrphanOutputDoNotGuessOrReorder(t *testing.T) {
-	// Call A, Call B.
-	// User reminder.
-	// Output 1 has NO ID (X).
-	// Output 2 has NO ID (Y).
-	// Output 3 has orphan explicit ID (Z).
-	// The presence of orphan_id must NOT cause X/Y to be guessed and reordered before the reminder!
+
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2509,8 +2425,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 		roles = append(roles, m.Get("role").String())
 	}
 
-	// Must stay in natural input order: assistant -> user ("reminder before results") -> user (X) -> user (Y) -> user (Z)
-	// Outputs X and Y must NOT be guessed as tool calls "a" and "b" and must NOT be moved before reminder!
 	if len(messages) != 5 {
 		t.Fatalf("expected 5 messages, got %d: %s", len(messages), out)
 	}
@@ -2520,7 +2434,7 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 	if messages[1].Get("content").String() != "reminder before results" {
 		t.Fatalf("expected message[1] to be reminder, got: %s", messages[1].Raw)
 	}
-	// Verify no tool messages were created with guessed call IDs
+
 	for _, m := range messages {
 		if m.Get("role").String() == "tool" {
 			t.Fatalf("unexpected tool message created via guessing: %s", m.Raw)

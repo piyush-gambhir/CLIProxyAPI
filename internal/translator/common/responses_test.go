@@ -152,11 +152,10 @@ func TestNormalizeResponsesToolCallOutputs(t *testing.T) {
 			t.Fatalf("expected 4 items, got %d", len(normalized))
 		}
 
-		// First output had no ID, but call_a is reserved by second output, so first output gets call_b
 		if got := normalized[2].Get("call_id").String(); got != "call_b" {
 			t.Fatalf("normalized[2].call_id = %q, want call_b", got)
 		}
-		// Second output had explicit tool_call_id call_a, so its call_id is set to call_a
+
 		if got := normalized[3].Get("call_id").String(); got != "call_a" {
 			t.Fatalf("normalized[3].call_id = %q, want call_a", got)
 		}
@@ -176,12 +175,10 @@ func TestNormalizeResponsesToolCallOutputs(t *testing.T) {
 			t.Fatalf("expected 5 items, got %d", len(normalized))
 		}
 
-		// First output (index 2) had no ID, but call_a is reserved across the intervening message by index 4,
-		// so index 2 must get call_b
 		if got := normalized[2].Get("call_id").String(); got != "call_b" {
 			t.Fatalf("normalized[2].call_id = %q, want call_b", got)
 		}
-		// Last output (index 4) has explicit call_a
+
 		if got := normalized[4].Get("call_id").String(); got != "call_a" {
 			t.Fatalf("normalized[4].call_id = %q, want call_a", got)
 		}

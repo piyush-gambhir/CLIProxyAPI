@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// TestMain runs the package with upstream.claude.tool-search on, as the
-// tool_search tests expect; tests covering the off state switch it per test.
 func TestMain(m *testing.M) {
 	SetClientToolSearchEnabled(true)
 	os.Exit(m.Run())

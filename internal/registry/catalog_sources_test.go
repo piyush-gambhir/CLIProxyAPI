@@ -337,7 +337,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 		t.Fatal("expected ModelRefreshCallback to be invoked")
 	}
 
-	// Verify --local-model (embeddedCatalogSource) and Home (disabled) policy boundaries skip remote fetches.
 	SetLocalModelCatalogs(true)
 	UpdateModelCatalogSources(CatalogSources{}, true)
 	generalBefore := generalHits.Load()
@@ -354,7 +353,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 		t.Fatal("RefreshModelCatalogs performed remote fetch for disabled or embedded catalogs")
 	}
 
-	// Verify generation fencing on refreshOnDemand when source switches concurrently.
 	started, release := make(chan struct{}), make(chan struct{})
 	published := make(chan string, 2)
 	u := &catalogUpdater{
@@ -397,7 +395,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 	default:
 	}
 
-	// Verify same-source out-of-order completion does not overwrite a newer on-demand refresh.
 	var fetchOrder atomic.Int32
 	slowStarted, releaseSlow, slowDone := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	currentPublished := ""
@@ -434,7 +431,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 		t.Fatalf("slow periodic refresh overwrote fresh on-demand catalog: got %q", currentPublished)
 	}
 
-	// Verify credential notification fires immediately when one catalog publishes even if another is still fetching.
 	for _, ch := range []chan struct{}{generalPublished, codexPublished, devinPublished} {
 		for len(ch) > 0 {
 			<-ch
@@ -502,7 +498,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 		t.Fatalf("RefreshModelCatalogs failed: %v", errAll)
 	}
 
-	// Verify default source fallback reports the actual candidate URL that succeeded.
 	brokenPrimary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))

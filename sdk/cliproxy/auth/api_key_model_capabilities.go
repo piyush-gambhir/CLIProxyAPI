@@ -53,8 +53,6 @@ func (m *Manager) loadAPIKeyModelRouting() *apiKeyModelRoutingSnapshot {
 	return snapshot
 }
 
-// ResolvedAPIKeyModelInfo returns the exact configured model definition bound to
-// this API-key execution attempt.
 func ResolvedAPIKeyModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo, bool) {
 	modelInfo, ok := req.Metadata[resolvedAPIKeyModelInfoMetadataKey].(*registry.ModelInfo)
 	if !ok || modelInfo == nil {
@@ -63,7 +61,6 @@ func ResolvedAPIKeyModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo,
 	return modelInfo, true
 }
 
-// ResolvedModelInfo returns the authoritative model capabilities bound to this execution attempt.
 func ResolvedModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo, bool) {
 	if modelInfo, ok := req.Metadata[resolvedHomeModelInfoMetadataKey].(*registry.ModelInfo); ok && modelInfo != nil {
 		return modelInfo, true
@@ -74,16 +71,11 @@ func ResolvedModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo, bool)
 	return ResolvedAPIKeyModelInfo(req)
 }
 
-// ResolvedHomeModelOptions returns the credential model options selected for this attempt.
-// A present but unmatched or empty models list yields zero-value options.
 func ResolvedHomeModelOptions(req cliproxyexecutor.Request) (internalconfig.OpenAICompatibilityModel, bool) {
 	options, ok := req.Metadata[resolvedHomeModelOptionsMetadataKey].(internalconfig.OpenAICompatibilityModel)
 	return options, ok
 }
 
-// CodexAPIKeyModelIsCompat reports whether the selected codex-api-key model has
-// is-compat enabled. When true, Codex MultiAgentV2 agent_message items are converted
-// into portable Responses message/user input for third-party Responses-compatible endpoints.
 func CodexAPIKeyModelIsCompat(cfg *internalconfig.Config, auth *Auth, model string) bool {
 	if cfg == nil || auth == nil || !strings.EqualFold(strings.TrimSpace(auth.Provider), "codex") {
 		return false
@@ -125,8 +117,6 @@ func CodexAPIKeyModelIsCompat(cfg *internalconfig.Config, auth *Auth, model stri
 	return false
 }
 
-// homeAPIKeyModelOptions reads the selected credential's model configuration.
-// A present models list is authoritative, including empty lists and false defaults.
 func homeAPIKeyModelOptions(auth *Auth, model, routeModel string) (internalconfig.OpenAICompatibilityModel, bool) {
 	var empty internalconfig.OpenAICompatibilityModel
 	if auth == nil {
@@ -170,7 +160,7 @@ func homeAPIKeyModelOptions(auth *Auth, model, routeModel string) (internalconfi
 			}
 		}
 	}
-	// Prefer upstream names over aliases and exact suffixes over base fallbacks.
+
 	for _, useAlias := range []bool{false, true} {
 		for _, candidate := range []string{requested, baseModel} {
 			if candidate == "" {
@@ -498,7 +488,6 @@ func addConfiguredModelCapability(out map[string][]apiKeyModelCapabilityRoute, n
 	return modelInfo
 }
 
-// isVertexOpenAPIConfigModel recognizes partner models without depending on executors.
 func isVertexOpenAPIConfigModel(model string) bool {
 	base := strings.TrimSpace(thinking.ParseSuffix(model).ModelName)
 	if strings.HasPrefix(strings.ToLower(base), "publishers/") {

@@ -139,17 +139,14 @@ func TestPersistedAntigravityCapabilityHintsRoundTrip(t *testing.T) {
 		t.Errorf("got %d web search models, want 1", len(parsed.WebSearchModelIDs))
 	}
 
-	// Mismatched project
 	if _, okMismatch := ParsePersistedAntigravityCapabilityHints(metadata, "other-project", expectedEndpoint); okMismatch {
 		t.Error("expected mismatch for different project")
 	}
 
-	// Mismatched endpoint
 	if _, okMismatch := ParsePersistedAntigravityCapabilityHints(metadata, project, "https://other.com"); okMismatch {
 		t.Error("expected mismatch for different endpoint")
 	}
 
-	// Nil ModelIDs (unknown catalog) must not serialize as authoritative empty catalog
 	if gotNil := BuildPersistedAntigravityCapabilityHints(project, expectedEndpoint, AntigravityModelCapabilityHints{}); gotNil != nil {
 		t.Errorf("expected nil persisted hints for unknown catalog, got %v", gotNil)
 	}

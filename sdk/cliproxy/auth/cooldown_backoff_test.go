@@ -58,7 +58,6 @@ func TestMarkResultQuotaBackoffEscalatesOncePerWindow(t *testing.T) {
 		t.Fatalf("expected open cooldown window after first failure, got %v", firstState.Quota.NextRecoverAt)
 	}
 
-	// A second in-flight failure lands while the first window is still open.
 	manager.MarkResult(context.Background(), quotaResult(auth.ID, "gpt-5"))
 	second, ok := manager.GetByID(auth.ID)
 	if !ok || second == nil || second.ModelStates["gpt-5"] == nil {
@@ -126,7 +125,6 @@ func TestApplyAuthFailureStateQuotaBackoffOncePerWindow(t *testing.T) {
 		t.Fatalf("expected first window to close at %v, got %v", now.Add(time.Second), firstRecover)
 	}
 
-	// In-window failure keeps the current window and level.
 	applyAuthFailureState(auth, quotaErr, nil, now.Add(100*time.Millisecond), false)
 	if auth.Quota.BackoffLevel != 1 {
 		t.Fatalf("expected BackoffLevel to stay 1 for in-window failure, got %d", auth.Quota.BackoffLevel)
@@ -135,7 +133,6 @@ func TestApplyAuthFailureStateQuotaBackoffOncePerWindow(t *testing.T) {
 		t.Fatalf("expected NextRecoverAt to stay %v for in-window failure, got %v", firstRecover, auth.Quota.NextRecoverAt)
 	}
 
-	// A failure after the window expired escalates to the next level.
 	applyAuthFailureState(auth, quotaErr, nil, now.Add(2*time.Second), false)
 	if auth.Quota.BackoffLevel != 2 {
 		t.Fatalf("expected BackoffLevel 2 after post-window failure, got %d", auth.Quota.BackoffLevel)
@@ -144,7 +141,6 @@ func TestApplyAuthFailureStateQuotaBackoffOncePerWindow(t *testing.T) {
 		t.Fatalf("expected second window to close at %v, got %v", now.Add(4*time.Second), auth.Quota.NextRecoverAt)
 	}
 
-	// A provider supplied retry hint always takes effect, even in-window.
 	retryAfter := 10 * time.Second
 	applyAuthFailureState(auth, quotaErr, &retryAfter, now.Add(3*time.Second), false)
 	if auth.Quota.BackoffLevel != 2 {
@@ -291,7 +287,6 @@ func TestJitteredCooldownWaitBounds(t *testing.T) {
 		}
 	}
 
-	// maxWait is a hard ceiling: zero headroom disables jitter entirely.
 	for i := 0; i < 50; i++ {
 		if got := jitteredCooldownWait(30*time.Second, 30*time.Second); got != 30*time.Second {
 			t.Fatalf("expected wait at maxWait to stay unjittered, got %v", got)

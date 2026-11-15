@@ -50,8 +50,6 @@ func TestNormalizeThinkingSupportDerivesSpecialLevelFlags(t *testing.T) {
 	}
 }
 
-// A claude-api-key model entry with its own thinking levels must keep the catalog
-// way of turning thinking off: claude-sonnet-5-5 rejects "disabled".
 func TestResolveModelInfoConfiguredThinkingKeepsCatalogDisableType(t *testing.T) {
 	configured := &registry.ThinkingSupport{Levels: []string{"low", "medium", "high", "none"}}
 	info := ResolveModelInfo("claude-sonnet-5-5", "claude", configured)

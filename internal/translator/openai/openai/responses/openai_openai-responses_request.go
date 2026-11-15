@@ -8,37 +8,15 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertOpenAIResponsesRequestToOpenAIChatCompletions converts OpenAI responses format to OpenAI chat completions format.
-// It transforms the OpenAI responses API format (with instructions and input array) into the standard
-// OpenAI chat completions format (with messages array and system content).
-//
-// The conversion handles:
-// 1. Model name and streaming configuration
-// 2. Instructions to system message conversion
-// 3. Input array to messages array transformation
-// 4. Tool definitions and tool choice conversion
-// 5. Function calls and function results handling
-// 6. Generation parameters mapping (max_tokens, reasoning, etc.)
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request
-//   - rawJSON: The raw JSON request data in OpenAI responses format
-//   - stream: A boolean indicating if the request is for a streaming response
-//
-// Returns:
-//   - []byte: The transformed request data in OpenAI chat completions format
 func ConvertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName, inputRawJSON, stream)
 
 }
 
-// convertOpenAIResponsesRequestToOpenAIChatCompletions also reports a file or
-// audio part Chat Completions cannot receive when it leaves a user turn with
-// nothing to send.
 func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	rawJSON := inputRawJSON
 	var drops translatorcommon.UserTurnDrops
-	// Base OpenAI chat completions template with default values
+
 	outDoc := ojson.NewDocString(`{"model":"","messages":[],"stream":false}`)
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
@@ -49,20 +27,16 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 		messages = append(messages, message)
 	}
 
-	// Set model name
 	_ = outDoc.Set("model", modelName)
 
-	// Set stream configuration
 	_ = outDoc.Set("stream", stream)
 
-	// Map Responses text format to Chat Completions response format.
 	if textFormat := root.Get("text.format"); textFormat.Exists() {
 		if responseFormat := convertResponsesTextFormatToChatResponseFormat(textFormat); len(responseFormat) > 0 {
 			_ = outDoc.SetRawBytes("response_format", responseFormat)
 		}
 	}
 
-	// Map generation parameters from responses format to chat completions format
 	if maxTokens := root.Get("max_output_tokens"); maxTokens.Exists() {
 		if maxTokens.Raw != "" {
 			_ = outDoc.SetRaw("max_tokens", maxTokens.Raw)
@@ -71,7 +45,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 		}
 	}
 
-	// Convert instructions to system message
 	if instructions := root.Get("instructions"); instructions.Exists() {
 		systemMessage := []byte(`{"role":"system","content":""}`)
 		systemMessage, _ = ojson.SetBytes(systemMessage, "content", instructions.String())
@@ -80,7 +53,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 
 	duplicateOutputIDs := make(map[string]struct{})
 
-	// Convert input array to messages
 	if input := root.Get("input"); input.Exists() && input.IsArray() {
 		rawInputArray := toolIndex.toolSearchHistory(toolIndex.shellHistory(input.Array()))
 		explicitOutputCounts := make(map[string]int)
@@ -251,11 +223,9 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 
 			switch itemType {
 			case "message", "":
-				// Handle regular message conversion
+
 				role := item.Get("role").String()
-				// Chat Completions supports developer messages. Preserve their role and
-				// position so mid-session instructions retain their original authority.
-				// Only real user turns participate in unsupported-content refusal.
+
 				isUserTurn := role == "user"
 				mergeableAssistantIndex = -1
 				if role != "assistant" {
@@ -267,7 +237,7 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 
 				if content := item.Get("content"); content.Exists() && content.IsArray() {
 					var contentItems [][]byte
-					// Counts the parts this turn really sends; an empty text part does not.
+
 					turnSendable := 0
 					content.ForEach(func(_, contentItem ojson.Result) bool {
 						contentType := contentItem.Get("type").String()
@@ -295,8 +265,7 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 							if processing := contentItem.Get("processing"); processing.Exists() {
 								_ = contentPartDoc.SetRaw("video_url.processing", processing.Raw)
 							}
-							// Preserve malformed video parts for upstream validation instead of
-							// silently turning a video request into a text-only request.
+
 							contentItems = append(contentItems, contentPartDoc.Bytes())
 							turnSendable++
 						case "input_image":
@@ -313,7 +282,7 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 								contentItems = append(contentItems, contentPart)
 								turnSendable++
 							} else if isUserTurn {
-								// Chat Completions takes a file id or inline bytes only.
+
 								drops.Drop(contentType)
 							}
 						case "input_audio":
@@ -362,7 +331,7 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 				if isUsableResponsesReasoning(rc) {
 					latestReasoningContent = rc
 				}
-				// Buffer consecutive function calls and emit them as one assistant message.
+
 				toolCallDoc := ojson.NewDocString(`{"id":"","type":"function","function":{"name":"","arguments":""}}`)
 
 				if callId := translatorcommon.ExtractResponsesCallID(item); callId != "" {
@@ -397,9 +366,7 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 					}
 				}
 				if _, awaiting := awaitingToolOutputs[callID]; !awaiting {
-					// Orphan outputs (empty call_id or no matching assistant
-					// tool_calls, e.g. Codex send_message_to_thread cards) must
-					// not become tool messages. Emit as user text instead.
+
 					appendStandaloneResponsesToolOutputAsUser(item.Get("output"), setFunctionCallOutputContentDoc, appendRegularMessage)
 				} else {
 					toolMessageDoc := ojson.NewDocString(`{"role":"tool","tool_call_id":"","content":""}`)
@@ -417,9 +384,7 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 				if isUsableResponsesReasoning(rc) {
 					latestReasoningContent = rc
 				}
-				// Codex freeform tool call replay: wrap the raw input so it
-				// matches the {"input": string} function shape used when
-				// converting custom tool definitions.
+
 				toolCallDoc := ojson.NewDocString(`{"id":"","type":"function","function":{"name":"","arguments":""}}`)
 				_ = toolCallDoc.Set("id", translatorcommon.ExtractResponsesCallID(item))
 				functionName := item.Get("name").String()
@@ -480,10 +445,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 		_ = outDoc.SetRawBytes("messages", translatorcommon.JoinRawArray(messages))
 	}
 
-	// Convert tools from responses format to chat completions format.
-	// Codex Desktop (Responses Lite) delivers tool definitions through an
-	// "additional_tools" input item instead of the top-level "tools" field,
-	// so merge both sources.
 	var chatCompletionsTools []interface{}
 	for _, chatTool := range toolIndex.chatTools() {
 		chatCompletionsTools = append(chatCompletionsTools, util.ParseGJSONBytesNoCopy(chatTool).Value())
@@ -508,9 +469,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 	return outDoc.Bytes(), drops.Err()
 }
 
-// responsesInputFileToChatPart maps a Responses input_file part onto a Chat
-// Completions file part. It reports false when the part carries neither a file
-// id nor inline bytes, because Chat Completions has no field for a bare url.
 func responsesInputFileToChatPart(contentItem ojson.Result) ([]byte, bool) {
 	fileID := contentItem.Get("file_id").String()
 	fileData := contentItem.Get("file_data").String()
@@ -530,8 +488,6 @@ func responsesInputFileToChatPart(contentItem ojson.Result) ([]byte, bool) {
 	return partDoc.Bytes(), true
 }
 
-// responsesInputAudioToChatPart maps a Responses input_audio part onto a Chat
-// Completions input_audio part. It reports false when the part has no bytes.
 func responsesInputAudioToChatPart(contentItem ojson.Result) ([]byte, bool) {
 	audio := contentItem.Get("input_audio")
 	data := audio.Get("data").String()
@@ -778,7 +734,7 @@ func normalizeChatImageDetail(detailValue ojson.Result) (string, bool) {
 	case "auto", "low", "high":
 		return normalizedDetail, true
 	case "original":
-		// Chat Completions does not support Codex's original detail value.
+
 		return "high", true
 	default:
 		return "", true

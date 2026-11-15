@@ -244,7 +244,7 @@ func TestIssue6332MiddlewareFlushError(t *testing.T) {
 			router.POST("/v1/responses", func(c *gin.Context) {
 				logging.SetGinCPATraceID(c, "test-auth")
 				c.Header("Content-Type", "text/event-stream")
-				// Flush before the first write must still commit Gin status and trace headers.
+
 				if errFlush := flushResponsesSSE(c.Writer); !errors.Is(errFlush, io.ErrClosedPipe) {
 					t.Errorf("middleware flush error = %v, want closed pipe", errFlush)
 				}
@@ -368,7 +368,7 @@ func TestIssue6332ReasoningReplayTwoTurns(t *testing.T) {
 			if !functionCall.Exists() {
 				t.Fatalf("no completed tool call: %s", downstream)
 			}
-			// Deliberately omit encrypted reasoning: restoration must come from the session ledger.
+
 			secondDoc := ojson.NewDocString(first)
 			_ = secondDoc.Set("input.-1", map[string]any{"type": "function_call", "call_id": functionCall.Get("call_id").String(), "name": "lookup", "arguments": `{"key":"value"}`})
 			_ = secondDoc.Set("input.-1", map[string]any{"type": "function_call_output", "call_id": functionCall.Get("call_id").String(), "output": "found"})
@@ -433,7 +433,7 @@ func TestIssue6332NativeGeminiCompletedWithoutEOF(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("completion not delivered")
 	}
-	// The unsupported executor must retain its EOF lifecycle, not be cancelled by completion.
+
 	select {
 	case <-done:
 		t.Error("native Gemini cancelled before EOF without client cancellation")
@@ -468,7 +468,7 @@ func (h *issue6332ReentrantHost) InterceptStreamChunk(ctx context.Context, req p
 	if !strings.Contains(string(req.Body), "response.completed") || req.Metadata["source"] == "plugin_host_model_callback" {
 		return pluginapi.StreamChunkInterceptResponse{}
 	}
-	// Bound the regression failure while keeping the outer acknowledgment pending.
+
 	nested, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	request := handlers.ModelExecutionRequest{EntryProtocol: "openai-response", ExitProtocol: "openai-response", Model: req.Model, Stream: h.stream, Body: req.RequestBody}

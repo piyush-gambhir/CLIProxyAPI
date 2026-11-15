@@ -27,7 +27,7 @@ func antigravitySupportsNativeResponsesWebSearch(model string, modelInfo *regist
 	if model == "" {
 		return false
 	}
-	// Read the catalog veto and probe result from the same Antigravity record.
+
 	for _, localInfo := range registry.GetGlobalRegistry().GetAvailableModelsByProvider("antigravity") {
 		if localInfo == nil {
 			continue
@@ -124,8 +124,6 @@ func ensureAntigravityResponsesWebSearchSystemInstructionDoc(doc *ojson.Doc, pay
 	_ = doc.SetRawBytes("request.systemInstruction.parts", translatorcommon.JoinRawArray(parts))
 }
 
-// ConvertOpenAIResponsesRequestToAntigravity translates an OpenAI Responses request
-// to the Antigravity schema using locally registered Antigravity capabilities.
 func ConvertOpenAIResponsesRequestToAntigravity(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	req := ConvertOpenAIResponsesRequestEnvelopeToAntigravity(context.Background(), sdktranslator.RequestEnvelope{
 		Model:  modelName,
@@ -135,8 +133,6 @@ func ConvertOpenAIResponsesRequestToAntigravity(modelName string, inputRawJSON [
 	return req.Body, nil
 }
 
-// ConvertOpenAIResponsesRequestEnvelopeToAntigravity translates an OpenAI Responses
-// request and consumes request-scoped model capabilities from the envelope.
 func ConvertOpenAIResponsesRequestEnvelopeToAntigravity(_ context.Context, req sdktranslator.RequestEnvelope) sdktranslator.RequestEnvelope {
 	if shouldBuildAntigravityResponsesWebSearchRequest(req.Model, req.Body, req.ModelInfo) {
 		req.Body, req.Err = buildAntigravityResponsesWebSearchRequest(req.Model, req.Body, req.Stream)
@@ -152,10 +148,6 @@ func ConvertOpenAIResponsesRequestEnvelopeToAntigravity(_ context.Context, req s
 	return req
 }
 
-// stripAntigravityResponsesGoogleSearch removes any native googleSearch tool block
-// from the request payload when falling back to a normal chat request, because
-// Antigravity only supports native search in dedicated web_search request envelopes
-// and rejects requests with mixed googleSearch and function declarations.
 func stripAntigravityResponsesGoogleSearch(payload []byte) []byte {
 	var doc *ojson.Doc
 	for _, path := range []string{"tools", "request.tools"} {
@@ -189,9 +181,6 @@ func stripAntigravityResponsesGoogleSearch(payload []byte) []byte {
 	return stripAntigravityServerSideToolInvocations(payload)
 }
 
-// stripAntigravityServerSideToolInvocations removes includeServerSideToolInvocations
-// injected by the shared Gemini Responses translator because Antigravity does not
-// support the includeServerSideToolInvocations parameter.
 func stripAntigravityServerSideToolInvocations(payload []byte) []byte {
 	var doc *ojson.Doc
 	for _, toolConfigPath := range []string{"toolConfig", "request.toolConfig"} {
@@ -213,9 +202,6 @@ func stripAntigravityServerSideToolInvocations(payload []byte) []byte {
 	return payload
 }
 
-// OpenAI Responses separates reasoning effort from reasoning summary visibility.
-// Antigravity needs includeThoughts to emit thought parts, so effort alone would
-// otherwise spend thinking tokens without returning a visible summary.
 func enableAntigravityResponsesThinkingSummary(inputRawJSON, translated []byte) []byte {
 	effort := ojson.GetBytesNoCopy(inputRawJSON, "reasoning.effort")
 	if effort.Type != ojson.String {
@@ -227,8 +213,7 @@ func enableAntigravityResponsesThinkingSummary(inputRawJSON, translated []byte) 
 	}
 	summaryConfig := thinking.ExtractSummaryConfig(inputRawJSON, "openai-response")
 	if summaryConfig.Mode == thinking.SummaryUnspecified {
-		// When effort is set but summary visibility is omitted, enable summaries
-		// by default so Antigravity emits visible thought parts (#5508).
+
 		summaryConfig = thinking.SummaryConfig{
 			Mode:   thinking.SummaryEnabled,
 			Detail: "auto",

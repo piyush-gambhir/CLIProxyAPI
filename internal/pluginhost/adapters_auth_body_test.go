@@ -18,8 +18,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-// authenticateWithBody runs a plugin access provider on a request and returns what the plugin saw.
-// maxBody is the configured server.max-request-body-bytes (0 = unset).
 func authenticateWithBody(ctx context.Context, t *testing.T, method, path string, body []byte, encoding string, maxBody int64) (pluginapi.FrontendAuthRequest, int, *http.Request, *sdkaccess.AuthError) {
 	t.Helper()
 	var seen pluginapi.FrontendAuthRequest
@@ -57,8 +55,6 @@ func zstdCompress(t *testing.T, raw []byte) []byte {
 	return encoder.EncodeAll(raw, nil)
 }
 
-// pi and the Codex CLI send zstd bodies on POST /v1/responses; the plugin gets the decoded JSON in
-// DecodedBody, Body and Headers stay as sent, and the handler still gets the raw bytes.
 func TestAccessAdapterDecodesZstdBodyForPlugin(t *testing.T) {
 	plain := []byte(`{"model":"gpt-5","input":"hi"}`)
 	compressed := zstdCompress(t, plain)
@@ -79,8 +75,6 @@ func TestAccessAdapterDecodesZstdBodyForPlugin(t *testing.T) {
 	}
 }
 
-// Nothing is decoded where the handler does not decode: GET (websocket upgrade) on a decoding path,
-// routes whose handler reads raw bytes, and plain JSON labeled zstd.
 func TestAccessAdapterLeavesDecodedBodyNilWhereHandlerDoesNotDecode(t *testing.T) {
 	compressed := zstdCompress(t, []byte(`{"model":"gpt-5"}`))
 	plainJSON := []byte(`{"model":"gpt-5"}`)
@@ -101,10 +95,8 @@ func TestAccessAdapterLeavesDecodedBodyNilWhereHandlerDoesNotDecode(t *testing.T
 	}
 }
 
-// Decoding runs before authentication: a declared window past 8 MiB, or a decoded body past
-// min(configured limit, 64 MiB), is refused with 413 without asking the plugin.
 func TestAccessAdapterRefusesOversizedDecodes(t *testing.T) {
-	// `printf '{"model":"gpt-5"}' | zstd --long=24` style frame declaring a 16 MiB window.
+
 	window16MiB, errDecodeHex := hex.DecodeString("28b52ffd0470b900007b226d6f64656c223a226770742d362e312d736f6c227d2a82afeb")
 	if errDecodeHex != nil {
 		t.Fatal(errDecodeHex)
@@ -113,7 +105,7 @@ func TestAccessAdapterRefusesOversizedDecodes(t *testing.T) {
 		name, path string
 		body       []byte
 		maxBody    int64
-		wantLen    int // 0: want 413
+		wantLen    int
 	}{
 		{"window past 8 MiB", "/v1/responses", window16MiB, 0, 0},
 		{"body past 64 MiB, no limit configured", "/v1/responses", zstdCompress(t, make([]byte, 64<<20+1)), 0, 0},
@@ -134,8 +126,6 @@ func TestAccessAdapterRefusesOversizedDecodes(t *testing.T) {
 	}
 }
 
-// With image generation disabled the image handlers answer 404 before reading the body, so the
-// adapter does not decode it either.
 func TestAccessAdapterSkipsDisabledImageRoutes(t *testing.T) {
 	compressed := zstdCompress(t, []byte(`{"model":"gpt-image-1","prompt":"x"}`))
 	host := New()
@@ -159,8 +149,6 @@ func TestAccessAdapterSkipsDisabledImageRoutes(t *testing.T) {
 	}
 }
 
-// At most two content codings are decoded before authentication; a longer list costs no decoding
-// and leaves DecodedBody nil.
 func TestAccessAdapterDecodesAtMostTwoCodings(t *testing.T) {
 	plain := []byte(`{"model":"gpt-5"}`)
 	twice := zstdCompress(t, zstdCompress(t, plain))
@@ -175,7 +163,6 @@ func TestAccessAdapterDecodesAtMostTwoCodings(t *testing.T) {
 	}
 }
 
-// DecodedBody crosses the RPC boundary as JSON; a plugin built against the old request type ignores it.
 func TestFrontendAuthRequestDecodedBodyOverRPC(t *testing.T) {
 	client := &capturePluginClient{}
 	adapter := rpcFrontendAuthProvider{rpcPluginAdapter: &rpcPluginAdapter{client: client}}
@@ -345,7 +332,6 @@ func TestAccessAdapterFrontendAuthOmitBodySkipsReadingAndDecodingBody(t *testing
 				t.Fatalf("bytes read after downstream ReadAll = %d, want %d", counter.readBytes, len(compressed))
 			}
 
-			// A failing body reader must not cause Authenticate to fail when omitBody is active.
 			failReq, errNewReq := http.NewRequest(http.MethodPost, "http://example.test/v1/responses", failingReadCloser{})
 			if errNewReq != nil {
 				t.Fatalf("NewRequest() error = %v", errNewReq)

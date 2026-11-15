@@ -202,9 +202,7 @@ func TestExecuteStreamRPCWithMockTavily(t *testing.T) {
 		Route:         string(backendTavily),
 		TavilyAPIKeys: []string{"k"},
 	})
-	// Override client by patching: executeStream uses loadedConfig keys + real URL.
-	// Test runTavilyClaudeStreamWithClient directly instead; for execute() we need config + mock URL.
-	// Use executor path with injected client via runTavilyClaudeStreamWithClient already covered.
+
 	_ = server
 	claudeBody := []byte(`{"messages":[{"role":"user","content":"Perform a web search for the query: q"}],"tools":[{"type":"web_search_20250305","name":"web_search"}]}`)
 	client := newTavilyClientWithOptions([]string{"k"}, server.Client(), server.URL)

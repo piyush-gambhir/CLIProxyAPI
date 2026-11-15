@@ -13,7 +13,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// NormalizeApplyPatchResponsesRequest opts a non-Codex executor into the patch contract.
 func NormalizeApplyPatchResponsesRequest(body []byte, original ...[]byte) ([]byte, error) {
 	if !ojson.ValidBytes(body) {
 		return body, errors.New("invalid Responses request JSON")
@@ -25,7 +24,6 @@ func NormalizeApplyPatchResponsesRequest(body []byte, original ...[]byte) ([]byt
 	return doc.Bytes(), nil
 }
 
-// NormalizeApplyPatchResponsesRequestDoc opts a non-Codex executor into the patch contract in place on doc.
 func NormalizeApplyPatchResponsesRequestDoc(doc *ojson.Doc, original ...[]byte) error {
 	if doc == nil || doc.Len() == 0 {
 		return errors.New("invalid Responses request JSON")
@@ -150,8 +148,6 @@ func NormalizeApplyPatchResponsesRequestDoc(doc *ojson.Doc, original ...[]byte) 
 	return nil
 }
 
-// ApplyPatchResponsesState is owned explicitly by a non-native executor, never inferred
-// from the wire format or a configured function schema. Supporting state stays request-local.
 type ApplyPatchResponsesState struct {
 	Bridge                 *translatorcommon.ApplyPatchResponsesBridge
 	tools                  map[string]util.ResponsesToolDescriptor
@@ -178,7 +174,6 @@ type patchDispatcherCall struct {
 	arguments string
 }
 
-// preferChatFunctionPatchTools preserves the Chat request converter's existing winner rule.
 func preferChatFunctionPatchTools(original, declarations []byte) []byte {
 	if len(declarations) == 0 {
 		return declarations
@@ -239,10 +234,8 @@ func NewApplyPatchResponsesState(source sdktranslator.Format, original, declarat
 	return s
 }
 
-// Active reports whether this explicitly non-native state owns a winning patch declaration.
 func (s *ApplyPatchResponsesState) Active() bool { return s.active }
 
-// AddDispatcher marks only xAI folded namespaces that contain a winning custom patch.
 func (s *ApplyPatchResponsesState) AddDispatcher(name, namespace string) {
 	for _, d := range s.tools {
 		if d.Namespace == namespace && applypatch.IsCustomTool(d.Tool) {
@@ -295,8 +288,6 @@ func (s *ApplyPatchResponsesState) newDispatcherCandidate(root ojson.Result) *pa
 	return call
 }
 
-// RememberDispatcherEvent retains upstream evidence before namespace restoration.
-// A wrapper alone never proves dispatcher provenance: only a declared dispatcher name does.
 func (s *ApplyPatchResponsesState) RememberDispatcherEvent(event []byte) {
 	if s.failed || s.closed || s.transportDone || len(s.dispatchers) == 0 {
 		return
@@ -305,8 +296,6 @@ func (s *ApplyPatchResponsesState) RememberDispatcherEvent(event []byte) {
 	s.RememberDispatcherArguments(event)
 }
 
-// RememberDispatcherArguments keeps full snapshots on every matched candidate, including
-// unnamed calls. The common bridge retains all identity/type contradictions until acquisition.
 func (s *ApplyPatchResponsesState) RememberDispatcherArguments(event []byte) {
 	if s.failed || s.closed || s.transportDone || len(s.dispatchers) == 0 || ojson.GetBytesNoCopy(event, "type").String() != "response.function_call_arguments.done" {
 		return
@@ -391,7 +380,7 @@ func (s *ApplyPatchResponsesState) expandDispatcher(event, original []byte) ([][
 	}
 	if call.namespace == "" {
 		if name != "" {
-			// A late ordinary name releases untouched arguments, even if they look like a wrapper.
+
 			call.ordinary = true
 			events := call.events
 			call.events, call.originals = nil, nil
@@ -427,7 +416,7 @@ func (s *ApplyPatchResponsesState) expandDispatcher(event, original []byte) ([][
 			wrappers = append(wrappers, arguments)
 		}
 	}
-	// For callers without a pre-restoration copy, retain the original full-source contract.
+
 	if len(wrappers) == 0 {
 		for _, pending := range call.events {
 			if args := ojson.GetBytesNoCopy(pending, "arguments"); ojson.Get(args.String(), "name").String() != "" {
@@ -497,8 +486,6 @@ func (s *ApplyPatchResponsesState) expandDispatcher(event, original []byte) ([][
 		}
 	}
 
-	// Retain completed aliases and source evidence until the response actually closes.
-	// Repeated snapshots validate only the new event, never replay completed progress.
 	start := 0
 	if call.completed {
 		start = len(call.events) - 1
@@ -524,7 +511,7 @@ func (s *ApplyPatchResponsesState) expandDispatcher(event, original []byte) ([][
 		switch p.Get("type").String() {
 		case "response.function_call_arguments.delta":
 			if patch {
-				// A dispatcher envelope is not incremental child input.
+
 				continue
 			}
 		case "response.output_item.added", "response.output_item.done":
@@ -545,7 +532,7 @@ func (s *ApplyPatchResponsesState) expandDispatcher(event, original []byte) ([][
 			if p.Get(pendingPath+"namespace").String() == "" {
 				_ = pendingDoc.Set(pendingPath+"namespace", call.namespace)
 			}
-			// Only actual upstream wrappers are unwrapped, not restored child contents.
+
 			args := originalRoot.Get(pendingPath + "arguments")
 			if patch && args.Exists() && args.Type != ojson.String {
 				return nil, errors.New("apply_patch dispatcher arguments snapshot must be a string")
@@ -615,7 +602,7 @@ func (s *ApplyPatchResponsesState) Transform(event []byte) ([][]byte, error) {
 			doneDoc := ojson.NewDocString(`{"type":"response.output_item.done"}`)
 			_ = doneDoc.SetRaw("item", item.Raw)
 			done := doneDoc.Bytes()
-			// Explicit IDs take priority over array position in a sparse terminal snapshot.
+
 			call := s.dispatcher(util.ParseGJSONBytesNoCopy(done))
 			if call == nil && item.Get("id").String() == "" && item.Get("call_id").String() == "" {
 				_ = doneDoc.Set("output_index", i)
@@ -630,7 +617,7 @@ func (s *ApplyPatchResponsesState) Transform(event []byte) ([][]byte, error) {
 				}
 				done = doneDoc.Bytes()
 				originalDone := done
-				// Filtering may shift array positions, but restoration preserves both IDs.
+
 				matches := func(candidate ojson.Result) bool {
 					return candidate.Get("id").String() == item.Get("id").String() && candidate.Get("call_id").String() == item.Get("call_id").String()
 				}
@@ -667,7 +654,7 @@ func (s *ApplyPatchResponsesState) Transform(event []byte) ([][]byte, error) {
 		if s.unfinishedDispatcher() {
 			return s.fail(errors.New("incomplete apply_patch namespace dispatcher received from upstream"))
 		}
-		// Unproven candidates remain ordinary; let common resolve or flush their evidence.
+
 		for _, call := range s.records {
 			if call.namespace == "" && !call.ordinary {
 				preceding = append(preceding, call.events...)
@@ -728,8 +715,6 @@ func (s *ApplyPatchResponsesState) isCustomPatchEvent(event []byte) bool {
 	return false
 }
 
-// HasPatchActivity reports whether upstream emitted any custom apply_patch call
-// or unfinished patch namespace dispatcher before closing the response.
 func (s *ApplyPatchResponsesState) HasPatchActivity() bool {
 	if s == nil || !s.active {
 		return false
@@ -740,8 +725,6 @@ func (s *ApplyPatchResponsesState) HasPatchActivity() bool {
 	return s.Bridge != nil && s.Bridge.Finish() != nil
 }
 
-// Finish validates source response closure independently of completed tool input.
-// Common Finish remains argument-only because it also runs inside terminal conversion.
 func (s *ApplyPatchResponsesState) Finish() error {
 	if errFinish := s.Bridge.Finish(); errFinish != nil {
 		return errFinish
@@ -755,8 +738,6 @@ func (s *ApplyPatchResponsesState) Finish() error {
 	return errors.New("incomplete apply_patch source response received from upstream")
 }
 
-// Stream preserves SSE framing and updates event-name lines to match converted JSON.
-// A premature [DONE] is checked before publishing any success marker.
 func (s *ApplyPatchResponsesState) Stream(line []byte) ([][]byte, error) {
 	if !s.active {
 		return [][]byte{line}, nil
@@ -778,7 +759,7 @@ func (s *ApplyPatchResponsesState) Stream(line []byte) ([][]byte, error) {
 		if errFinish := s.Finish(); errFinish != nil {
 			events, errTransform = s.fail(errFinish)
 		} else {
-			// JSON completion and transport completion are separate boundaries.
+
 			s.transportDone = true
 			s.byDispatcherKey, s.records, s.upstream = nil, nil, nil
 			s.eventLine = nil
@@ -805,7 +786,7 @@ func (s *ApplyPatchResponsesState) Stream(line []byte) ([][]byte, error) {
 			}
 		}
 		data := append([]byte("data: "), event...)
-		// Each expanded event must be a complete SSE frame, even if the source had only one.
+
 		data = append(data, '\n', '\n')
 		out = append(out, data)
 	}
@@ -813,7 +794,6 @@ func (s *ApplyPatchResponsesState) Stream(line []byte) ([][]byte, error) {
 	return out, errTransform
 }
 
-// FinishStream emits the local failure once on EOF without a validated completion.
 func (s *ApplyPatchResponsesState) FinishStream() ([][]byte, error) {
 	if s.failed || s.transportDone {
 		return nil, nil

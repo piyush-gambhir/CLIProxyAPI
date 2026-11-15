@@ -18,11 +18,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// TestGeminiMissingTerminalUpstreamRepro is the regression test for issue #7005:
-// an HTTP 200 Gemini stream that ends by clean EOF without finishReason must stay
-// a failure, but it must not cool the credential/model pair or replay the already
-// submitted generation on another credential. A genuine HTTP 502 keeps existing
-// failover and cooldown behavior.
 func TestGeminiMissingTerminalUpstreamRepro(t *testing.T) {
 	const model = "gemini-3.1-pro-preview"
 	const partial = `data: {"candidates":[{"content":{"role":"model","parts":[{"text":"partial answer"}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":3,"totalTokenCount":13}}` + "\n\n"

@@ -16,8 +16,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-// Service-level repro on dev: a file snapshot applied through handleAuthUpdates (the
-// production path) after a 429 on the same auth keeps the cooldown.
 func TestHandleAuthUpdatesFileSnapshotKeepsCooldown(t *testing.T) {
 	for _, model := range []string{"claude-sonnet-4-6", ""} {
 		name := model
@@ -50,7 +48,7 @@ func TestHandleAuthUpdatesFileSnapshotKeepsCooldown(t *testing.T) {
 			ctx := coreauth.WithSkipPersist(context.Background())
 			service.handleAuthUpdates(ctx, []watcher.AuthUpdate{{Action: watcher.AuthUpdateActionAdd, ID: id, Auth: read()}})
 			if model != "" {
-				// Establish a healthy per-model state before the 429 so a pre-429 clone has non-empty ModelStates.
+
 				manager.MarkResult(ctx, coreauth.Result{AuthID: id, Provider: "claude", Model: model, Success: true})
 			}
 			pre429Clone, _ := manager.GetByID(id)
@@ -120,7 +118,6 @@ func TestHandleAuthUpdatesDiscardedSnapshotTriggersWatcherReread(t *testing.T) {
 	service.handleAuthUpdates(ctx, []watcher.AuthUpdate{{Action: watcher.AuthUpdateActionAdd, ID: id, Auth: synthesize(initial)}})
 	snapshot := synthesize(edit)
 
-	// Truncate the file in place so the digest fence discards snapshot during handleAuthUpdates.
 	file, errOpen := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0o600)
 	if errOpen != nil {
 		t.Fatal(errOpen)

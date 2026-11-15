@@ -8,12 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// geminiSanitizeOptions scopes Gemini replay policy to the upstream endpoint.
 type geminiSanitizeOptions struct {
 	rejectBareTink bool
 }
 
-// GeminiReplaySignatureOrBypass returns a Gemini-replayable thoughtSignature.
 func GeminiReplaySignatureOrBypass(rawSignature string, blockKind SignatureBlockKind) string {
 	return geminiReplaySignatureOrBypass(rawSignature, blockKind, geminiSanitizeOptions{})
 }
@@ -42,32 +40,22 @@ func geminiSanitizeDecision(rawSignature string, blockKind SignatureBlockKind, o
 	return decision
 }
 
-// SanitizeGeminiRequestThoughtSignatures applies Gemini replay policy to a
-// Gemini-shaped request.
 func SanitizeGeminiRequestThoughtSignatures(payload []byte, contentsPath string) []byte {
 	return sanitizeGeminiRequestThoughtSignatures(payload, contentsPath, geminiSanitizeOptions{})
 }
 
-// SanitizeGeminiRequestThoughtSignaturesDoc applies Gemini replay policy onto doc in place.
 func SanitizeGeminiRequestThoughtSignaturesDoc(doc *ojson.Doc, contentsPath string) {
 	_ = sanitizeGeminiRequestThoughtSignaturesDoc(doc, contentsPath, geminiSanitizeOptions{})
 }
 
-// SanitizeNonVertexGeminiRequestThoughtSignatures applies the same policy for
-// Gemini endpoints other than Vertex AI (Antigravity, AI Studio, Gemini API).
 func SanitizeNonVertexGeminiRequestThoughtSignatures(payload []byte, contentsPath string) []byte {
 	return sanitizeGeminiRequestThoughtSignatures(payload, contentsPath, geminiSanitizeOptions{rejectBareTink: true})
 }
 
-// SanitizeNonVertexGeminiRequestThoughtSignaturesDoc applies non-Vertex Gemini
-// signature sanitization onto doc in place.
 func SanitizeNonVertexGeminiRequestThoughtSignaturesDoc(doc *ojson.Doc, contentsPath string) {
 	_ = sanitizeGeminiRequestThoughtSignaturesDoc(doc, contentsPath, geminiSanitizeOptions{rejectBareTink: true})
 }
 
-// SanitizeGeminiSystemInstruction removes empty part objects ({}) from
-// systemInstruction.parts (and system_instruction.parts) at the same envelope
-// level as contentsPath.
 func SanitizeGeminiSystemInstruction(payload []byte, contentsPath string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -79,8 +67,6 @@ func SanitizeGeminiSystemInstruction(payload []byte, contentsPath string) []byte
 	return doc.Bytes()
 }
 
-// SanitizeGeminiSystemInstructionDoc removes empty part objects ({}) from
-// systemInstruction.parts (and system_instruction.parts) on doc in place.
 func SanitizeGeminiSystemInstructionDoc(doc *ojson.Doc, contentsPath string) {
 	_ = sanitizeGeminiSystemInstructionDoc(doc, contentsPath)
 }

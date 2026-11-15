@@ -60,7 +60,7 @@ func TestListPluginStoreSkipsUninstalledReleases(t *testing.T) {
 	h := &Handler{
 		cfg: &config.Config{Plugins: config.PluginsConfig{
 			Dir: t.TempDir(),
-			// Configuration alone does not mean the plugin is installed.
+
 			Configs: map[string]config.PluginInstanceConfig{"plugin-0": pluginConfigFromYAML(t, "enabled: true\n")},
 		}},
 		pluginStoreHTTPClient: httpClient,
@@ -150,7 +150,6 @@ func TestPluginReleaseCacheRetainsSuccessAndUsesCompletionTime(t *testing.T) {
 	check("2.0.0", 4)
 }
 
-// Done reports that a caller reached a cancelable wait, without relying on sleeps.
 type pluginReleaseWaitContext struct {
 	context.Context
 	waiting chan struct{}

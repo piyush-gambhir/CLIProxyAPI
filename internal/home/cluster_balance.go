@@ -15,7 +15,6 @@ import (
 
 const redisChannelRebalance = "rebalance"
 
-// ErrRebalanceRequested asks the supervisor to reconnect without draining safe active executions.
 var ErrRebalanceRequested = errors.New("home cluster rebalance requested")
 
 type rebalanceInstruction struct {
@@ -43,7 +42,6 @@ func (c *Client) canExecuteRebalanceLocked() bool {
 		recoveryState(c.recoveryState.Load()) == recoveryStateStable && !c.balance.moving
 }
 
-// rebalanceCommand owns a cancellable transport independent of issued dispatches.
 func (c *Client) rebalanceCommand(ctx context.Context, address string, args ...any) (string, error) {
 	if errContext := ctx.Err(); errContext != nil {
 		return "", errContext
@@ -99,7 +97,7 @@ func (c *Client) syncClusterBalance(ctx context.Context) error {
 		if errEnable != nil {
 			message := strings.ToLower(errEnable.Error())
 			if isHomeCommandUnsupported(errEnable) || strings.Contains(message, "unsupported subcommand") || strings.Contains(message, "rebalance unsupported") {
-				// Legacy Home has no capability code; only an explicit unsupported reply disables balancing.
+
 				c.mu.Lock()
 				c.balance.unsupported = true
 				c.mu.Unlock()
@@ -152,8 +150,6 @@ func (c *Client) syncClusterBalance(ctx context.Context) error {
 	return nil
 }
 
-// executeClusterRebalance claims an exact persisted plan before touching any transport.
-// This lifetime keeps its original address; only the supervisor's replacement uses the target.
 func (c *Client) executeClusterRebalance(ctx context.Context, payload []byte) error {
 	var request rebalanceInstruction
 	if errJSON := json.Unmarshal(payload, &request); errJSON != nil {
@@ -197,7 +193,7 @@ func (c *Client) executeClusterRebalance(ctx context.Context, payload []byte) er
 		if !recovered {
 			return errPing
 		}
-		// No switch occurred. An acknowledged failure and a healthy source safely end this plan, not the subscription.
+
 		log.Warnf("Home rebalance preflight failed; failure reported, keeping source: plan=%q target=%q error=%v", request.ID, clusterNodeAddress(request.Target), errPing)
 		return nil
 	}
@@ -240,7 +236,6 @@ func (c *Client) failClusterRebalance() {
 	c.switchToNodeLocked(c.balance.origin)
 }
 
-// chooseClusterNodeLocked only chooses bootstrap/fault-recovery targets, never active migrations.
 func (c *Client) chooseClusterNodeLocked(nodes []clusterNode, excludeCurrent bool, draw float64) (clusterNode, bool) {
 	var choices []clusterNode
 	for _, node := range nodes {

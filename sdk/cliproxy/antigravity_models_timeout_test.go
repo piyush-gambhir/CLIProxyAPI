@@ -58,8 +58,6 @@ func TestAntigravityCapabilityProbe_UsesFirstConfiguredEndpoint(t *testing.T) {
 	}
 }
 
-// TestAntigravityModelRegistration_AsyncNonBlocking verifies that registerModelsForAuth
-// returns immediately without exposing unverified models and does not block on the probe.
 func TestAntigravityModelRegistration_AsyncNonBlocking(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		select {
@@ -107,9 +105,6 @@ func TestAntigravityModelRegistration_AsyncNonBlocking(t *testing.T) {
 	}
 }
 
-// TestAntigravityAsyncProbe_DiscardsStaleProbeWhenAuthReRegistered verifies that if an auth
-// is re-registered with a new generation/epoch while an async probe is in flight, the stale
-// probe result is discarded and does not overwrite the newer registration.
 func TestAntigravityAsyncProbe_DiscardsStaleProbeWhenAuthReRegistered(t *testing.T) {
 	probeStarted := make(chan struct{})
 	releaseProbe := make(chan struct{})
@@ -145,40 +140,32 @@ func TestAntigravityAsyncProbe_DiscardsStaleProbeWhenAuthReRegistered(t *testing
 		GlobalModelRegistry().UnregisterClient(auth.ID)
 	})
 
-	// Initial registration
 	_, err := manager.Register(context.Background(), auth)
 	if err != nil {
 		t.Fatalf("Register error: %v", err)
 	}
 	svc.registerModelsForAuth(context.Background(), auth)
 
-	// Wait for probe to start
 	<-probeStarted
 
-	// Re-register with a different custom model list (simulating auth/config update)
 	newModels := []*ModelInfo{
 		{ID: "custom-updated-model"},
 	}
 	GlobalModelRegistry().RegisterClient(auth.ID, "antigravity", newModels)
 
-	// Bump generation on manager auth to simulate concurrent update
 	managerAuth, _ := manager.GetByID(auth.ID)
 	managerAuth.Generation += 5
 	_, _ = manager.Update(context.Background(), managerAuth)
 
-	// Now release the probe
 	close(releaseProbe)
 	svc.WaitAntigravityProbes()
 
-	// Verify the updated model was NOT overwritten by the stale probe
 	currentModels := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	if len(currentModels) != 1 || currentModels[0].ID != "custom-updated-model" {
 		t.Fatalf("expected custom-updated-model to be preserved, got %v", currentModels)
 	}
 }
 
-// TestAntigravityAsyncProbe_PreservesPluginModels verifies that when an auth has plugin-provided
-// models in addition to native models, the async probe update preserves all plugin models.
 func TestAntigravityAsyncProbe_PreservesPluginModels(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -204,18 +191,15 @@ func TestAntigravityAsyncProbe_PreservesPluginModels(t *testing.T) {
 		GlobalModelRegistry().UnregisterClient(auth.ID)
 	})
 
-	// Register baseline models + a plugin model
 	models := registryGetAntigravityModels()
 	models = append(models, &ModelInfo{
 		ID: "plugin-custom-model",
 	})
 	GlobalModelRegistry().RegisterClient(auth.ID, "antigravity", models)
 
-	// Trigger async probe
 	svc.asyncProbeAntigravityCapabilities(context.Background(), auth, "antigravity")
 	svc.WaitAntigravityProbes()
 
-	// Check that plugin model is still present, and native model has web search capability
 	updated := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	foundPlugin := false
 	foundSearch := false
@@ -235,9 +219,6 @@ func TestAntigravityAsyncProbe_PreservesPluginModels(t *testing.T) {
 	}
 }
 
-// TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels verifies that when
-// models have OAuth aliases and prefixes applied, the async capability probe correctly maps
-// them back to their upstream model identifiers and applies the probed capabilities.
 func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -273,7 +254,6 @@ func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *
 		GlobalModelRegistry().UnregisterClient(auth.ID)
 	})
 
-	// Pre-registered models with alias containing slash and prefix
 	models := []*ModelInfo{
 		{ID: "my-prefix/aliased-flash"},
 		{ID: "aliased-flash"},
@@ -283,7 +263,6 @@ func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *
 	}
 	GlobalModelRegistry().RegisterClient(auth.ID, "antigravity", models)
 
-	// Run async probe
 	svc.asyncProbeAntigravityCapabilities(context.Background(), auth, "antigravity")
 	svc.WaitAntigravityProbes()
 
@@ -321,9 +300,6 @@ func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *
 	}
 }
 
-// TestAntigravityAsyncProbe_UnregisteredClientNotResurrected verifies that if an auth
-// is unregistered while a capability probe is in flight, the probe does not resurrect
-// the client in the model registry.
 func TestAntigravityAsyncProbe_UnregisteredClientNotResurrected(t *testing.T) {
 	probeStarted := make(chan struct{})
 	releaseProbe := make(chan struct{})
@@ -365,26 +341,20 @@ func TestAntigravityAsyncProbe_UnregisteredClientNotResurrected(t *testing.T) {
 	}
 	svc.registerModelsForAuth(context.Background(), auth)
 
-	// Wait for probe to start
 	<-probeStarted
 
-	// Unregister client and remove auth
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	manager.Remove(context.Background(), auth.ID)
 
-	// Release probe
 	close(releaseProbe)
 	svc.WaitAntigravityProbes()
 
-	// Verify client is NOT in registry
 	models := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	if len(models) != 0 {
 		t.Fatalf("expected client to remain unregistered, but found models: %v", models)
 	}
 }
 
-// TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe verifies that request completions
-// (which increment Auth.Generation via MarkResult) do not cause in-flight capability probe results to be discarded.
 func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 	probeStarted := make(chan struct{})
 	releaseProbe := make(chan struct{})
@@ -426,21 +396,17 @@ func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 	}
 	svc.registerModelsForAuth(context.Background(), auth)
 
-	// Wait for probe to start
 	<-probeStarted
 
-	// Simulate requests completing while probe is in flight (bumping Generation on the manager Auth)
 	for i := 0; i < 5; i++ {
 		current, _ := manager.GetByID(auth.ID)
 		current.Generation++
 		_, _ = manager.Update(context.Background(), current)
 	}
 
-	// Release probe
 	close(releaseProbe)
 	svc.WaitAntigravityProbes()
 
-	// Verify capability was applied despite Generation increments
 	models := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	foundCapable := false
 	for _, m := range models {
@@ -454,8 +420,6 @@ func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 	}
 }
 
-// TestAntigravityAsyncProbe_ConcurrentConfigUpdateRace verifies that concurrent config updates
-// modifying s.cfg under cfgMu do not trigger data races with in-flight async capability probes.
 func TestAntigravityAsyncProbe_ConcurrentConfigUpdateRace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -515,10 +479,6 @@ func registryGetAntigravityModels() []*ModelInfo {
 	}
 }
 
-// TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy verifies that on cold start,
-// Service loads Antigravity credentials with their per-account ProxyURL immediately,
-// pre-registers executors for loaded credentials, and the auto-refresh loop executes
-// immediately using the auth's proxy without waiting for model registration.
 func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) {
 	var refreshReceivedProxy atomic.Value
 	var refreshCalls atomic.Int32
@@ -535,7 +495,6 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 	configPath := filepath.Join(configDir, "config.yaml")
 	_ = os.WriteFile(configPath, []byte("port: 0\n"), 0o600)
 
-	// Write an expired Antigravity auth file with a specific proxy_url
 	authJSON := []byte(`{
 		"type": "antigravity",
 		"proxy_url": "http://127.0.0.1:9876",
@@ -563,7 +522,6 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 1. Cold start load: ProxyURL is loaded into runtime immediately
 	if errLoad := svc.coreManager.Load(ctx); errLoad != nil {
 		t.Fatalf("Load error: %v", errLoad)
 	}
@@ -576,20 +534,16 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 		t.Fatalf("expected ProxyURL http://127.0.0.1:9876, got %q", loadedAuth.ProxyURL)
 	}
 
-	// 2. Pre-register executors (same sequence as Service.Run)
 	svc.registerAvailableExecutors(ctx, executorRegistrationOptions{
 		includeBaseline: true,
 		auths:           svc.coreManager.List(),
 	})
 
-	// Re-register mock so we capture the refresh call
 	svc.coreManager.RegisterExecutor(mockExecutor)
 
-	// 3. Start auto-refresh and verify executor receives refresh with proxy_url
 	svc.coreManager.StartAutoRefresh(ctx, 10*time.Millisecond)
 	defer svc.coreManager.StopAutoRefresh()
 
-	// Poll until refresh is called (should be immediate since expired)
 	for start := time.Now(); refreshCalls.Load() == 0 && time.Since(start) < 2*time.Second; {
 		time.Sleep(10 * time.Millisecond)
 	}

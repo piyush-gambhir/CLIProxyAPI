@@ -45,7 +45,6 @@ type geminiFunctionCallEvidence struct {
 	PatchCall    *translatorcommon.ApplyPatchCallState
 }
 
-// Gemini usage frames are cumulative snapshots, not additive deltas.
 type geminiResponsesUsage struct {
 	Present    bool
 	Prompt     int64
@@ -112,14 +111,12 @@ type geminiToResponsesState struct {
 	FinishReason string
 	Usage        geminiResponsesUsage
 
-	// message aggregation
 	MsgOpened    bool
 	MsgClosed    bool
 	MsgIndex     int
 	CurrentMsgID string
 	ItemTextBuf  strings.Builder
 
-	// reasoning aggregation
 	ReasoningOpened           bool
 	ReasoningIndex            int
 	ReasoningItemID           string
@@ -137,7 +134,6 @@ type geminiToResponsesState struct {
 	LastSemanticKind          string
 	HiddenTextSignatures      map[string][]string
 
-	// function call aggregation (keyed by output_index)
 	NextIndex              int
 	FuncArgsBuf            map[int]*strings.Builder
 	FuncInputBuf           map[int]string
@@ -157,7 +153,6 @@ type geminiToResponsesState struct {
 	ActiveStreamingPatch   *translatorcommon.ApplyPatchCallState
 	HasFailedStreamingFunc bool
 
-	// web search aggregation
 	WebSearchStreamMode          bool
 	WebSearchOpened              bool
 	WebSearchDone                bool
@@ -187,10 +182,8 @@ type geminiStreamBufferedPart struct {
 	Text      string
 }
 
-// responseIDCounter provides a process-wide unique counter for synthesized response identifiers.
 var responseIDCounter uint64
 
-// funcCallIDCounter provides a process-wide unique counter for function call identifiers.
 var funcCallIDCounter uint64
 
 func pickRequestJSON(originalRequestRawJSON, requestRawJSON []byte) []byte {
@@ -217,7 +210,7 @@ func unwrapRequestRoot(root ojson.Result) ojson.Result {
 func unwrapGeminiResponseRoot(root ojson.Result) ojson.Result {
 	resp := root.Get("response")
 	if resp.Exists() {
-		// Vertex-style Gemini responses wrap the actual payload in a "response" object.
+
 		if resp.Get("candidates").Exists() || resp.Get("responseId").Exists() || resp.Get("usageMetadata").Exists() || resp.Get("cpaUsageMetadata").Exists() {
 			return resp
 		}
@@ -349,7 +342,6 @@ func determineWebSearchStreamMode(modelName, requestModelName string, originalRe
 	return false
 }
 
-// ConvertGeminiResponseToOpenAIResponses converts Gemini SSE chunks into OpenAI Responses SSE events.
 func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		reqJSON := bytes.Clone(pickRequestJSON(originalRequestRawJSON, requestRawJSON))
@@ -523,9 +515,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		st.ReasoningPendingDeltas = nil
 	}
 
-	// Helper to finalize reasoning summary events in correct order.
-	// It emits response.reasoning_summary_text.done followed by
-	// response.reasoning_summary_part.done exactly once.
 	finalizeReasoning := func() {
 		openReasoning()
 		if !st.ReasoningOpened || st.ReasoningClosed {
@@ -679,10 +668,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		}
 	}
 
-	// Helper to finalize the assistant message in correct order.
-	// It emits response.output_text.annotation.added for any new citations,
-	// then response.output_text.done, response.content_part.done,
-	// and response.output_item.done exactly once.
 	finalizeMessage := func() {
 		finalizeWebSearch()
 		if len(st.WebSearchBufferedDeltas) > 0 {
@@ -813,8 +798,7 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			}
 			finalizeReasoning()
 			finalizeMessage()
-			// LastSemanticKind also includes thought text. Never bind a later
-			// thought signature to a visible message from before that thought.
+
 			if !st.MsgOpened || (st.ReasoningOpened && st.ReasoningIndex > st.MsgIndex) {
 				emitDetachedReasoning(signature, geminiResponsesCarrierPrevious, geminiResponsesCarrierText)
 				return
@@ -823,14 +807,13 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				st.HiddenTextSignatures = make(map[string][]string)
 			}
 			signatures := append(st.HiddenTextSignatures[st.CurrentMsgID], signature)
-			// Keep failed writes in the prefix so a later successful write cannot
-			// move a newer signature ahead of an earlier fallback carrier.
+
 			st.HiddenTextSignatures[st.CurrentMsgID] = signatures
 			if cacheGeminiResponsesTextSignatures(modelName, st.CurrentMsgID, st.ItemTextBuf.String(), signatures) {
 				st.SeenReasoningSignatures[signature] = true
 				return
 			}
-			// Preserve replay continuity if the cache cannot accept the signature.
+
 			emitDetachedReasoning(signature, geminiResponsesCarrierPrevious, geminiResponsesCarrierText)
 		case geminiResponsesCarrierFunction:
 			emitDetachedReasoning(signature, geminiResponsesCarrierPrevious, geminiResponsesCarrierFunction)
@@ -839,7 +822,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		}
 	}
 
-	// Initialize per-response fields and emit created/in_progress once
 	if !st.Started {
 		st.ResponseID = strings.Clone(root.Get("responseId").String())
 		if st.ResponseID == "" {
@@ -887,7 +869,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		st.WebSearchStreamMode = determineWebSearchStreamMode(modelName, requestModelName, originalRequestRawJSON, requestRawJSON, reqJSON)
 	}
 
-	// Handle groundingMetadata for web search
 	if gm := ExtractGroundingMetadata(root); gm.Exists() {
 		if st.RawGroundingMetadata.Exists() {
 			st.RawGroundingMetadata = MergeGroundingMetadata(st.RawGroundingMetadata, gm)
@@ -905,9 +886,7 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		if sources := ExtractGroundingSources(mergedGM); len(sources) > 0 {
 			st.WebSearchSources = sources
 		}
-		// Function calls, thoughts, or signature boundaries may finalize the search
-		// item before later grounding frames arrive. Keep the cached completed item
-		// aligned with the latest queries and sources so response.completed is complete.
+
 		if st.WebSearchDone {
 			st.WebSearchDoneItem = BuildResponsesWebSearchCallItem(st.WebSearchItemID, st.WebSearchQuery, st.WebSearchQueries, st.WebSearchSources)
 		}
@@ -919,7 +898,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		emitLateCitations()
 	}
 
-	// Handle parts (text/thought/functionCall)
 	if parts := root.Get("candidates.0.content.parts"); parts.Exists() && parts.IsArray() {
 		parts.ForEach(func(partIdxInChunk, part ojson.Result) bool {
 			explicitPartIndex := -1
@@ -1063,7 +1041,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				}
 			}
 
-			// Reasoning text
 			if isThought {
 				if len(st.WebSearchBufferedDeltas) > 0 {
 					finalizeMessage()
@@ -1121,15 +1098,12 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				return true
 			}
 
-			// Assistant visible text
 			if t := part.Get("text"); t.Exists() && t.String() != "" {
 				if signature == "" && st.PendingReasoningSignature != "" && ((st.MsgOpened && !st.MsgClosed) || len(st.WebSearchBufferedDeltas) > 0) {
 					emitTrailingDetachedReasoning(st.PendingReasoningSignature)
 					st.PendingReasoningSignature = ""
 				}
-				// Responses output items are sequential: finish reasoning before
-				// opening the visible message. A signature that arrives later is
-				// cached with the message and recombined on replay.
+
 				finalizeReasoning()
 
 				if st.MsgClosed {
@@ -1139,9 +1113,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					st.CurrentMsgRuneOffset = 0
 				}
 
-				// In web search stream mode, buffer deltas until web_search_call is finalized
-				// (stream end / a later output item) so the completed search item includes
-				// incremental sources and strictly precedes the message.
 				if st.WebSearchStreamMode && !st.WebSearchDone {
 					textStr := strings.Clone(t.String())
 					st.LastSemanticKind = geminiResponsesCarrierText
@@ -1201,10 +1172,8 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				return true
 			}
 
-			// Function call
 			if fc := part.Get("functionCall"); fc.Exists() {
-				// Before emitting function-call outputs, finalize reasoning, web search, and the message (if open).
-				// Responses streaming requires message done events before the next output_item.added.
+
 				finalizeReasoning()
 				finalizeWebSearch()
 				if len(st.WebSearchBufferedDeltas) > 0 {
@@ -1444,7 +1413,7 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 
 				idx := st.NextIndex
 				st.NextIndex++
-				// Ensure buffers
+
 				if st.FuncArgsBuf[idx] == nil {
 					st.FuncArgsBuf[idx] = &strings.Builder{}
 				}
@@ -1510,7 +1479,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					}
 					st.FuncInputBuf[idx] = strings.Clone(inputStr)
 
-					// Emit item.added for custom tool call
 					itemDoc := ojson.NewDocString(`{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"","type":"custom_tool_call","status":"in_progress","input":"","call_id":"","name":""}}`)
 					_ = itemDoc.Set("sequence_number", nextSeq())
 					_ = itemDoc.Set("output_index", idx)
@@ -1519,11 +1487,10 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					translatorcommon.SetResponsesToolCallIdentityDoc(itemDoc, name, namespace, "item")
 					out = append(out, emitEvent("response.output_item.added", itemDoc.Bytes()))
 
-					// Gemini delivers complete arguments; this delta is not an early preview.
 					if patchCall != nil && inputStr != "" {
 						out = append(out, emitEvent("response.custom_tool_call_input.delta", translatorcommon.ApplyPatchInputDelta(patchCall, inputStr, nextSeq())))
 					}
-					// Emit custom tool call input.done
+
 					if !st.FuncDone[idx] {
 						var inputDone []byte
 						if patchCall != nil {
@@ -1550,7 +1517,7 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 						st.FuncDone[idx] = true
 					}
 				} else {
-					// Emit item.added for function call
+
 					itemDoc := ojson.NewDocString(`{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"","type":"function_call","status":"in_progress","arguments":"","call_id":"","name":""}}`)
 					_ = itemDoc.Set("sequence_number", nextSeq())
 					_ = itemDoc.Set("output_index", idx)
@@ -1559,8 +1526,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					translatorcommon.SetResponsesToolCallIdentityDoc(itemDoc, name, namespace, "item")
 					out = append(out, emitEvent("response.output_item.added", itemDoc.Bytes()))
 
-					// Emit arguments delta (full args in one chunk).
-					// When Gemini omits args, emit "{}" to keep Responses streaming event order consistent.
 					if argsJSON != "" {
 						adDoc := ojson.NewDocString(`{"type":"response.function_call_arguments.delta","sequence_number":0,"item_id":"","output_index":0,"delta":""}`)
 						_ = adDoc.Set("sequence_number", nextSeq())
@@ -1570,7 +1535,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 						out = append(out, emitEvent("response.function_call_arguments.delta", adDoc.Bytes()))
 					}
 
-					// Gemini emits the full function call payload at once, so we can finalize it immediately.
 					if !st.FuncDone[idx] {
 						fcDoneDoc := ojson.NewDocString(`{"type":"response.function_call_arguments.done","sequence_number":0,"item_id":"","output_index":0,"arguments":""}`)
 						_ = fcDoneDoc.Set("sequence_number", nextSeq())
@@ -1603,7 +1567,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		return out
 	}
 
-	// Preserve the first source finish, including across a usage-only tail or [DONE].
 	if fr := root.Get("candidates.0.finishReason").String(); fr != "" && st.FinishReason == "" {
 		st.FinishReason = strings.Clone(fr)
 	}
@@ -1622,15 +1585,13 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			emitTrailingDetachedReasoning(st.PendingReasoningSignature)
 			st.PendingReasoningSignature = ""
 		}
-		// Finalize web search with the complete incremental sources, then reasoning,
-		// then the message so web_search_call precedes later output items.
+
 		finalizeWebSearch()
 		finalizeReasoning()
 		finalizeMessage()
 
-		// Close function calls
 		if len(st.FuncArgsBuf) > 0 {
-			// sort indices (small N); avoid extra imports
+
 			idxs := make([]int, 0, len(st.FuncArgsBuf))
 			for idx := range st.FuncArgsBuf {
 				idxs = append(idxs, idx)
@@ -1698,9 +1659,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			}
 		}
 
-		// Reasoning already finalized above if present
-
-		// Build the terminal response with aggregated outputs and request echo fields
 		completedDoc := ojson.NewDocString(`{"type":"response.completed","sequence_number":0,"response":{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null}}`)
 		_ = completedDoc.Set("type", eventType)
 		_ = completedDoc.Set("response.status", status)
@@ -1777,7 +1735,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 
 		emitLateCitations()
 
-		// Compose outputs in output_index order.
 		outputs := make([][]byte, 0, st.NextIndex)
 		for idx := 0; idx < st.NextIndex; idx++ {
 			if st.WebSearchDone && idx == st.WebSearchIndex {
@@ -1858,7 +1815,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 	return out
 }
 
-// ConvertGeminiResponseToOpenAIResponsesNonStream aggregates Gemini response JSON into a single OpenAI Responses JSON object.
 func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	root = unwrapGeminiResponseRoot(root)
@@ -1866,7 +1822,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	sanitizedNameMap := util.SanitizedToolNameMap(originalRequestRawJSON)
 	toolIdentityMap := util.ResponsesToolReverseIdentityMap(reqJSON)
 
-	// Base response scaffold
 	respDoc := ojson.NewDocString(`{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null,"incomplete_details":null}`)
 	_, status, incompleteDetails := geminiResponsesTerminalState(root.Get("candidates.0.finishReason").String())
 	_ = respDoc.Set("status", status)
@@ -1874,18 +1829,16 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 		_ = respDoc.SetRawBytes("incomplete_details", incompleteDetails)
 	}
 
-	// id: prefer provider responseId, otherwise synthesize
 	id := root.Get("responseId").String()
 	if id == "" {
 		id = fmt.Sprintf("resp_%x_%d", time.Now().UnixNano(), atomic.AddUint64(&responseIDCounter, 1))
 	}
-	// Normalize to response-style id (prefix resp_ if missing)
+
 	if !strings.HasPrefix(id, "resp_") {
 		id = fmt.Sprintf("resp_%s", id)
 	}
 	_ = respDoc.Set("id", id)
 
-	// created_at: map from createTime if available
 	createdAt := time.Now().Unix()
 	if v := root.Get("createTime"); v.Exists() {
 		if t, errParseCreateTime := time.Parse(time.RFC3339Nano, v.String()); errParseCreateTime == nil {
@@ -1894,7 +1847,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	}
 	_ = respDoc.Set("created_at", createdAt)
 
-	// Echo request fields when present; fallback model from response modelVersion
 	if len(reqJSON) > 0 {
 		req := unwrapRequestRoot(util.ParseGJSONBytesNoCopy(reqJSON))
 		if v := req.Get("instructions"); v.Exists() {
@@ -1963,7 +1915,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 		_ = respDoc.Set("model", v.String())
 	}
 
-	// Build outputs from candidates[0].content.parts
 	var reasoningText strings.Builder
 	var reasoningEncrypted string
 	var reasoningDirection string
@@ -2257,7 +2208,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	flushReasoningOutput()
 	flushMessageOutput()
 
-	// Web search handling from groundingMetadata
 	groundingMetadata := ExtractGroundingMetadata(root)
 	hasGrounding := HasValidWebGrounding(groundingMetadata)
 	var wsItem []byte
@@ -2371,8 +2321,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	return respDoc.Bytes()
 }
 
-// Full snapshots are evidence, never source prefixes. Stable IDs and explicit
-// part indexes identify repeated snapshots without merging distinct unkeyed calls.
 func geminiRecordFunctionEvidence(st *geminiToResponsesState, fc ojson.Result, partIndex int, validJSON bool) *geminiFunctionCallEvidence {
 	if st.FunctionEvidence == nil {
 		st.FunctionEvidence = make(map[string]*geminiFunctionCallEvidence)
@@ -2384,7 +2332,7 @@ func geminiRecordFunctionEvidence(st *geminiToResponsesState, fc ojson.Result, p
 	if id := fc.Get("id").String(); id != "" {
 		keys = append(keys, "id:"+id)
 	}
-	// Never guess which later named call owns an unkeyed nameless snapshot.
+
 	if len(keys) == 0 && fc.Get("name").String() == "" {
 		keys = append(keys, fmt.Sprintf("unknown:%d", len(st.FunctionEvidence)))
 	}
@@ -2404,10 +2352,10 @@ func geminiRecordFunctionEvidence(st *geminiToResponsesState, fc ojson.Result, p
 	if conflict {
 		errIdentity := fmt.Errorf("conflicting apply_patch call indexes")
 		if patchRelated {
-			// Reject before rebinding either established call's aliases or provenance.
+
 			return &geminiFunctionCallEvidence{ApplyPatch: true, Err: errIdentity}
 		}
-		// Ordinary-only cross-key reuse keeps the legacy first-match behavior.
+
 		evidence.Err = errIdentity
 	}
 	if evidence == nil {
@@ -2485,12 +2433,11 @@ func geminiPendingIdentityError(st *geminiToResponsesState) error {
 	return nil
 }
 
-// FinalizeToolInput rejects a patch-enabled stream lacking its source terminator.
 func (st *geminiToResponsesState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.Completed {
 		return nil
 	}
-	// A validated source finish remains valid while Responses waits for usage.
+
 	if st.FinishReason != "" {
 		if errIdentity := geminiPendingIdentityError(st); errIdentity == nil {
 			return nil

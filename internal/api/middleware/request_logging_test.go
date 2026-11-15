@@ -489,7 +489,7 @@ func TestRequestLoggingMiddleware_ClientCancellationExclusion(t *testing.T) {
 		router := gin.New()
 		router.Use(RequestLoggingMiddleware(logger))
 		router.POST("/v1/responses", func(c *gin.Context) {
-			// Simulate client closing connection mid-flight
+
 			ctx, cancel := context.WithCancel(c.Request.Context())
 			cancel()
 			c.Request = c.Request.WithContext(ctx)
@@ -645,7 +645,6 @@ func TestCaptureRequestInfo_HeadersDeepCopy(t *testing.T) {
 		t.Fatalf("captureRequestInfo failed: %v", err)
 	}
 
-	// Mutate the original request header slice in place
 	c.Request.Header["X-Audit"][0] = "mutated-value"
 
 	if got := info.Headers["X-Audit"][0]; got != "original-value" {
@@ -713,7 +712,6 @@ func TestRequestLoggingMiddleware_PreservesFullUUIDForLoggerAndTruncatesFilename
 		t.Fatalf("status = %d, want 200", resp.Code)
 	}
 
-	// 1. Verify logger received full UUIDv7
 	if spy.lastLogRequestID == "" {
 		t.Fatalf("expected non-empty request ID passed to logger")
 	}
@@ -725,7 +723,6 @@ func TestRequestLoggingMiddleware_PreservesFullUUIDForLoggerAndTruncatesFilename
 		t.Fatalf("request ID version = %d, want 7", parsed.Version())
 	}
 
-	// 2. Verify on-disk log filename uses the trailing 8 chars, not full UUID
 	entries, errRead := os.ReadDir(logsDir)
 	if errRead != nil {
 		t.Fatalf("ReadDir logsDir failed: %v", errRead)
@@ -808,8 +805,6 @@ func TestRequestLoggingMiddleware_FinalizesStreamingWriterOnHandlerPanic(t *test
 		t.Fatal("expected streaming log writer to be closed when handler panics")
 	}
 
-	// Verify that a non-streaming handler panicking before writing a status is
-	// finalized as 500 so error-only request logging persists the error log.
 	logsDir := t.TempDir()
 	errorOnlyLogger := logging.NewFileRequestLogger(false, logsDir, "", 10)
 	errorRouter := gin.New()
@@ -834,7 +829,6 @@ func TestRequestLoggingMiddleware_FinalizesStreamingWriterOnHandlerPanic(t *test
 		t.Fatalf("expected 1 error log file on pre-status panic, got %+v", entries)
 	}
 
-	// http.ErrAbortHandler must not stamp a synthetic 500 error log in error-only mode.
 	abortLogsDir := t.TempDir()
 	abortLogger := logging.NewFileRequestLogger(false, abortLogsDir, "", 10)
 	abortRouter := gin.New()
@@ -857,8 +851,6 @@ func TestRequestLoggingMiddleware_FinalizesStreamingWriterOnHandlerPanic(t *test
 	}
 }
 
-// streamingZstdBomb is a small zstd body (a stream frame with a 1 MiB window, as zstd makes from a pipe) that expands to
-// size bytes of zeros.
 func streamingZstdBomb(t *testing.T, size int) []byte {
 	t.Helper()
 	var out bytes.Buffer
@@ -897,9 +889,6 @@ func captureOf(t *testing.T, body []byte, limit int64) (captured, restored []byt
 	return info.Body, restored
 }
 
-// A small zstd body that expands past the capture bound is decoded to at most the bound when no max-request-body-bytes is
-// configured (the capture runs before authentication), or to the configured limit when that is smaller; the request body is
-// restored for the handler either way. 40 MiB is enough to pass the 32 MiB bound without a heavy fixture.
 func TestCaptureRequestInfoBoundsZstdExpansionWithoutAConfiguredLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	bomb := streamingZstdBomb(t, 40<<20)
@@ -921,11 +910,9 @@ func TestCaptureRequestInfoBoundsZstdExpansionWithoutAConfiguredLimit(t *testing
 	}
 }
 
-// The classic bomb (one segment frame that declares its whole content as its window, 49 KB for 512 MiB) is not decoded at all: its
-// window is past the bound, so the raw bytes are logged and nothing large is allocated.
 func TestCaptureRequestInfoDoesNotDecodeASingleSegmentBomb(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	// Newer encoders use a smaller window by default; retain the oversized single-segment fixture.
+
 	encoder, errNewWriter := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression), zstd.WithSingleSegment(true))
 	if errNewWriter != nil {
 		t.Fatal(errNewWriter)
@@ -954,9 +941,8 @@ func TestCaptureRequestInfoDoesNotDecodeASingleSegmentBomb(t *testing.T) {
 	}
 }
 
-// A frame that declares a window past the bound is not decoded: the raw bytes are logged and nothing large is allocated.
 func TestDecodeCapturedZstdRefusesAnOversizedWindow(t *testing.T) {
-	// `printf '{"model":"gpt-5"}' | zstd --long=24`-style frame declaring a 16 MiB window.
+
 	raw, errDecode := hex.DecodeString("28b52ffd0470b900007b226d6f64656c223a226770742d362e312d736f6c227d2a82afeb")
 	if errDecode != nil {
 		t.Fatal(errDecode)
@@ -981,8 +967,7 @@ func TestResponseWriterLogOnErrorOnlyZeroBufferUntilActionableError(t *testing.T
 	wrapper.logOnErrorOnly = true
 	wrapper.ginContext = c
 
-	// Normal 200 OK writes (even 4 MiB) must not allocate/buffer any bytes when request-log is disabled.
-	largePayload := bytes.Repeat([]byte("a"), 4<<20) // 4 MiB
+	largePayload := bytes.Repeat([]byte("a"), 4<<20)
 	if _, err := wrapper.Write(largePayload); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
@@ -990,7 +975,6 @@ func TestResponseWriterLogOnErrorOnlyZeroBufferUntilActionableError(t *testing.T
 		t.Fatalf("wrapper.body.Len() for 200 OK = %d, want 0", wrapper.body.Len())
 	}
 
-	// Once an actionable mid-stream error is recorded, subsequent error frame writes are buffered.
 	c.Set("API_RESPONSE_ERROR", []*interfaces.ErrorMessage{
 		{
 			StatusCode: http.StatusBadRequest,

@@ -17,15 +17,10 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// ClaudeAgentSessionUUID maps the downstream agent conversation to one stable UUID,
-// preserving native Claude Code session signals.
 func ClaudeAgentSessionUUID(headers http.Header, originalPayload, translatedPayload []byte, metadataSets ...map[string]any) string {
 	return claudeAgentSessionUUID(headers, originalPayload, translatedPayload, metadataSets...)
 }
 
-// ClaudeAgentSessionUUIDForRequest preserves Claude-specific session signals only
-// for a confirmed native caller. Other callers use protocol session fields,
-// execution metadata, or the stable derived conversation root.
 func ClaudeAgentSessionUUIDForRequest(headers http.Header, originalPayload, translatedPayload []byte, confirmedClaudeCode bool, metadataSets ...map[string]any) string {
 	if !confirmedClaudeCode {
 		headers = headers.Clone()
@@ -42,12 +37,10 @@ func ClaudeAgentSessionUUIDForRequest(headers http.Header, originalPayload, tran
 
 type claudeExecutionMetadataKey struct{}
 
-// WithClaudeExecutionMetadata attaches whether the request had an explicit execution session metadata to ctx.
 func WithClaudeExecutionMetadata(ctx context.Context, present bool) context.Context {
 	return context.WithValue(ctx, claudeExecutionMetadataKey{}, present)
 }
 
-// ClaudeExecutionMetadataFromContext retrieves whether execution metadata was present from ctx.
 func ClaudeExecutionMetadataFromContext(ctx context.Context) bool {
 	if v, ok := ctx.Value(claudeExecutionMetadataKey{}).(bool); ok {
 		return v
@@ -55,8 +48,6 @@ func ClaudeExecutionMetadataFromContext(ctx context.Context) bool {
 	return false
 }
 
-// ClaudeRequestHasExecutionMetadata reports whether the request explicitly carried
-// an internal execution session metadata key.
 func ClaudeRequestHasExecutionMetadata(metadataSets ...map[string]any) bool {
 	for _, metadata := range metadataSets {
 		if val, ok := metadata[cliproxyexecutor.ExecutionSessionMetadataKey].(string); ok && strings.TrimSpace(val) != "" {
@@ -126,8 +117,6 @@ var currentClaudeCredentialDevicePoolKVClient = func() (claudeCredentialDevicePo
 	return client, homeMode, errClient
 }
 
-// EnsureClaudeCredentialDevicePoolRequired initializes a credential pool locally,
-// or coordinates it through Home KV when the selected auth is a remote dispatch clone.
 func EnsureClaudeCredentialDevicePoolRequired(ctx context.Context, auth *cliproxyauth.Auth) ([]string, error) {
 	if auth == nil {
 		return nil, fmt.Errorf("ensure Claude credential device pool: auth is nil")
@@ -213,7 +202,6 @@ func EnsureClaudeCredentialDevicePoolRequired(ctx context.Context, auth *cliprox
 	return deviceIDs, nil
 }
 
-// ClaudeCredentialAccountUUID returns the selected upstream credential's account UUID.
 func ClaudeCredentialAccountUUID(auth *cliproxyauth.Auth) string {
 	if auth == nil {
 		return ""
@@ -738,7 +726,6 @@ func validateClaudeDocMetadataRoot(doc *ojson.Doc) error {
 	return nil
 }
 
-// ApplyClaudeCredentialMetadata rewrites the identity exception shared by native and cloaked OAuth requests.
 func ApplyClaudeCredentialMetadata(payload []byte, auth *cliproxyauth.Auth, sessionID string) ([]byte, string, error) {
 	doc := ojson.NewDoc(payload)
 	deviceID, errApply := ApplyClaudeCredentialMetadataDoc(doc, auth, sessionID)
@@ -748,7 +735,6 @@ func ApplyClaudeCredentialMetadata(payload []byte, auth *cliproxyauth.Auth, sess
 	return doc.Bytes(), deviceID, nil
 }
 
-// ApplyClaudeCredentialMetadataDoc rewrites the identity exception in place on doc.
 func ApplyClaudeCredentialMetadataDoc(doc *ojson.Doc, auth *cliproxyauth.Auth, sessionID string) (string, error) {
 	if doc == nil {
 		return "", fmt.Errorf("apply Claude credential metadata: doc is nil")

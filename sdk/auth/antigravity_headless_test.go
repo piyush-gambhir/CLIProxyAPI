@@ -27,7 +27,6 @@ func TestAntigravityConstantsAndURLBuilder(t *testing.T) {
 		t.Fatalf("expected default callback URI %q, got %q", expectedDefaultURI, got)
 	}
 
-	// Test with custom redirect URI
 	customURI := "https://admin.example.com/oauth/antigravity/callback"
 	authURL := auth.BuildAntigravityAuthURL("state-123", customURI)
 	parsed, err := url.Parse(authURL)
@@ -54,7 +53,6 @@ func TestAntigravityConstantsAndURLBuilder(t *testing.T) {
 		t.Fatalf("scope should include cloud-platform: %s", q.Get("scope"))
 	}
 
-	// Test with empty redirect URI (should fallback to default)
 	authURLDefault := auth.BuildAntigravityAuthURL("state-456", "")
 	parsedDefault, err := url.Parse(authURLDefault)
 	if err != nil {
@@ -233,7 +231,7 @@ func TestCompleteAntigravityOAuth(t *testing.T) {
 }
 
 func TestExchangeAntigravityCodeDefaultRedirectAndErrors(t *testing.T) {
-	// Verify default redirect URI fallback during exchange
+
 	var capturedBody string
 	client := &http.Client{
 		Transport: mockRoundTripper(func(req *http.Request) (*http.Response, error) {
@@ -257,7 +255,6 @@ func TestExchangeAntigravityCodeDefaultRedirectAndErrors(t *testing.T) {
 		t.Fatalf("expected default redirect %q in body: %s", expectedRedirect, capturedBody)
 	}
 
-	// Verify upstream error response
 	errorClient := &http.Client{
 		Transport: mockRoundTripper(func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
@@ -272,7 +269,6 @@ func TestExchangeAntigravityCodeDefaultRedirectAndErrors(t *testing.T) {
 		t.Fatal("expected error on upstream 400 response")
 	}
 
-	// Verify context cancellation
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 	contextAwareClient := &http.Client{
@@ -294,13 +290,12 @@ func TestExchangeAntigravityCodeDefaultRedirectAndErrors(t *testing.T) {
 }
 
 func TestFetchAntigravityUserInfoErrors(t *testing.T) {
-	// Empty token check
+
 	_, err := auth.FetchAntigravityUserInfo(context.Background(), "", nil)
 	if err == nil {
 		t.Fatal("expected error with empty access token")
 	}
 
-	// Upstream error check
 	errorClient := &http.Client{
 		Transport: mockRoundTripper(func(req *http.Request) (*http.Response, error) {
 			return &http.Response{

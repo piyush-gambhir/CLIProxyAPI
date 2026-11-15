@@ -13,9 +13,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// The dev golden was produced by running renderToolSearchGolden against the
-// translator at origin/dev d739485df, before Codex tool_search support. With
-// upstream.claude.tool-search off the translator must reproduce it exactly.
 type toolSearchGoldenCase struct {
 	Name    string          `json:"name"`
 	Request json.RawMessage `json:"request"`
@@ -35,8 +32,6 @@ type toolSearchGoldenOutput struct {
 
 var toolSearchGoldenCreatedAt = regexp.MustCompile(`"created_at":\d+`)
 
-// renderToolSearchGolden runs one fixture through the request translator and
-// both response translators, masking the wall-clock created_at field.
 func renderToolSearchGolden(fixtures toolSearchGoldenFixtures, c toolSearchGoldenCase) toolSearchGoldenOutput {
 	normalize := func(raw []byte) string {
 		return toolSearchGoldenCreatedAt.ReplaceAllString(string(raw), `"created_at":0`)
@@ -99,8 +94,6 @@ func TestToolSearchDisabledMatchesDevGolden(t *testing.T) {
 	}
 }
 
-// With the switch on, the same fixtures must take the tool_search paths, so
-// the golden comparison above cannot pass by accident.
 func TestToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	setClientToolSearchEnabledForTest(t, true)
 	fixtures, golden := loadToolSearchGolden(t)
@@ -116,9 +109,6 @@ func TestToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	t.Fatal("codex_session fixture missing")
 }
 
-// A value pinned in the request context wins over the process switch for the
-// request translation and for both response translators, so a config reload
-// while a request runs cannot mix the two behaviors.
 func TestToolSearchPinnedContextWinsOverSwitch(t *testing.T) {
 	fixtures, golden := loadToolSearchGolden(t)
 	var session toolSearchGoldenCase
@@ -181,7 +171,6 @@ func TestToolSearchPinnedContextWinsOverSwitch(t *testing.T) {
 	}
 }
 
-// sseData returns the JSON payload of one translated SSE event.
 func sseData(event []byte) []byte {
 	for _, line := range strings.Split(string(event), "\n") {
 		if strings.HasPrefix(line, "data: ") {
@@ -191,8 +180,6 @@ func sseData(event []byte) []byte {
 	return nil
 }
 
-// The compatibility entry point used for API-key compat models follows the
-// pinned value too.
 func TestToolSearchCompatContextFollowsPin(t *testing.T) {
 	request := codexToolSearchRequest(codexUserTurn, codexSearchCall1, codexSearchOutput1)
 	for _, tc := range []struct {

@@ -5,10 +5,8 @@ import (
 	"strings"
 )
 
-// AttributeFilePriority marks priority values inherited from a physical auth file.
 const AttributeFilePriority = "file_priority"
 
-// ApplyAuthPriorityMetadata copies a valid file priority into an auth's metadata and routing attributes.
 func ApplyAuthPriorityMetadata(auth *Auth, metadata map[string]any) {
 	if auth == nil {
 		return

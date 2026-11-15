@@ -8,10 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// TestMergeResponsesWebsocketInputDropsReplayedContentTokenCount guards issue #7146:
-// items replayed from cached upstream output must not carry the output-only
-// internal_chat_message_metadata_passthrough.content_token_count field into the
-// next upstream request, while client-sent items stay untouched.
 func TestMergeResponsesWebsocketInputDropsReplayedContentTokenCount(t *testing.T) {
 	lastRequest := []byte(`{"model":"test-model","stream":true,"input":[{"type":"message","id":"msg-1"}]}`)
 	lastResponseOutput := []byte(`[
@@ -25,7 +21,7 @@ func TestMergeResponsesWebsocketInputDropsReplayedContentTokenCount(t *testing.T
 		{"type":"message","id":"assistant-8","role":"assistant","internal_chat_message_metadata_passthrough":{"content_token_count":12},"tag":"first","tag":"second","content":[{"type":"output_text","text":"dup non-passthrough"}]},
 		{"type":"function_call","id":"fc-1","call_id":"call-1","name":"lookup","arguments":"{}","internal_chat_message_metadata_passthrough":{"turn_id":"turn-1","content_token_count":5}}
 	]`)
-	// The client-sent append item carries the field as well: client state is never rewritten.
+
 	raw := []byte(`{"type":"response.create","input":[{"type":"function_call_output","call_id":"call-1","id":"tool-out-1","internal_chat_message_metadata_passthrough":{"content_token_count":99}}]}`)
 
 	normalized, _, errMsg := normalizeResponsesWebsocketRequest(raw, lastRequest, lastResponseOutput)
@@ -120,9 +116,6 @@ func TestMergeResponsesWebsocketInputDropsReplayedContentTokenCount(t *testing.T
 	}
 }
 
-// TestResponsesWebsocketToolCacheSanitizesTransactionalLifecycle locks the
-// recordResponse -> commit -> default cache -> repair path of issue #7146,
-// including a large argument payload and item-level payload events.
 func TestResponsesWebsocketToolCacheSanitizesTransactionalLifecycle(t *testing.T) {
 	sessionKey := "session-7146-transaction"
 	defer defaultWebsocketToolOutputCache.deleteSession(sessionKey)
@@ -147,10 +140,6 @@ func TestResponsesWebsocketToolCacheSanitizesTransactionalLifecycle(t *testing.T
 	}
 }
 
-// TestResponsesWebsocketToolCachePreservesClientItems keeps the client-data
-// boundary of issue #7146: only tool calls recorded from upstream response
-// payloads are sanitized, while client tool results round-trip unchanged
-// through the repair cache.
 func TestResponsesWebsocketToolCachePreservesClientItems(t *testing.T) {
 	outputCache := newWebsocketToolOutputCache(time.Minute, 10)
 	callCache := newWebsocketToolOutputCache(time.Minute, 10)
@@ -172,9 +161,6 @@ func TestResponsesWebsocketToolCachePreservesClientItems(t *testing.T) {
 	}
 }
 
-// TestResponsesWebsocketToolCachePreservesTransactionalClientItems verifies
-// the same client boundary through prepareResponsesWebsocketFallbackTurn and
-// commit into the default caches.
 func TestResponsesWebsocketToolCachePreservesTransactionalClientItems(t *testing.T) {
 	const sessionKey = "session-7146-transaction-client"
 	defer defaultWebsocketToolOutputCache.deleteSession(sessionKey)
@@ -190,8 +176,6 @@ func TestResponsesWebsocketToolCachePreservesTransactionalClientItems(t *testing
 	}
 }
 
-// TestResponsesWebsocketReplaySanitizedItemLeavesInvalidJSONUnchanged ensures
-// malformed upstream items are never truncated by the cleanup.
 func TestResponsesWebsocketReplaySanitizedItemLeavesInvalidJSONUnchanged(t *testing.T) {
 	invalidInputs := []string{
 		`{"internal_chat_message_metadata_passthrough":{"content_token_count":1},"content":`,
@@ -210,9 +194,6 @@ func TestResponsesWebsocketReplaySanitizedItemLeavesInvalidJSONUnchanged(t *test
 	}
 }
 
-// TestResponsesWebsocketToolCacheStripsContentTokenCount covers the second replay
-// carrier of issue #7146: tool calls recorded from upstream payloads into the
-// repair cache must be sanitized before being re-inserted into a later request.
 func TestResponsesWebsocketToolCacheStripsContentTokenCount(t *testing.T) {
 	outputCache := newWebsocketToolOutputCache(time.Minute, 10)
 	callCache := newWebsocketToolOutputCache(time.Minute, 10)

@@ -8,7 +8,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// SummaryMode represents whether the client explicitly requested reasoning summaries.
 type SummaryMode int
 
 const (
@@ -17,23 +16,14 @@ const (
 	SummaryEnabled
 )
 
-// SummaryConfig is the provider-neutral reasoning-summary visibility intent.
-// Detail preserves protocols that distinguish auto, concise, and detailed summaries.
 type SummaryConfig struct {
 	Mode   SummaryMode
 	Detail string
 }
 
-// ExtractSummaryConfig reads protocol-specific summary visibility intent.
-//
-// OpenAI Chat is the one protocol where effort implies summaries: chat
-// completions has no summary field of its own, and clients that send
-// reasoning_effort have always received reasoning summaries here, so treating a
-// non-none effort as an explicit request preserves that contract. Every other
-// protocol carries a dedicated summary field, so effort alone means nothing.
 func ExtractSummaryConfig(body []byte, format string) SummaryConfig {
 	normalized := strings.ToLower(strings.TrimSpace(format))
-	// Check the format first so unsupported targets skip whole-body validation.
+
 	if !summaryFormatSupported(normalized) || len(body) == 0 || !ojson.ValidBytes(body) {
 		return SummaryConfig{}
 	}
@@ -42,7 +32,6 @@ func ExtractSummaryConfig(body []byte, format string) SummaryConfig {
 	}, normalized)
 }
 
-// ExtractSummaryConfigDoc reads protocol-specific summary visibility intent from doc.
 func ExtractSummaryConfigDoc(doc *ojson.Doc, format string) SummaryConfig {
 	return extractSummaryConfigDoc(doc, true, format)
 }
@@ -79,7 +68,7 @@ func extractSummaryConfigFromGetter(get func(string) ojson.Result, normalized st
 			return config
 		}
 	case "claude":
-		// Anthropic only accepts display alongside active adaptive/manual thinking.
+
 		if !claudeThinkingAcceptsDisplayFromGetter(get) {
 			return SummaryConfig{}
 		}
@@ -113,9 +102,7 @@ func extractSummaryConfigFromGetter(get func(string) ojson.Result, normalized st
 				return config
 			}
 		}
-		// Existing Interactions translators accept the OpenAI-style top-level
-		// compatibility object. Keep the official generation_config selector
-		// authoritative when both are present.
+
 		if config, ok := interactionsSummaryConfigFromGetter(get, "reasoning.summary"); ok {
 			return config
 		}
@@ -132,10 +119,6 @@ func extractSummaryConfigFromGetter(get func(string) ojson.Result, normalized st
 	return SummaryConfig{}
 }
 
-// ExtractExplicitSummaryConfig reads only explicit visibility controls from a
-// provider payload. Unlike ExtractSummaryConfig, OpenAI Chat reasoning_effort
-// is not treated as a summary proxy. This lets executor post-processing tell
-// whether a request normalizer retained or removed the translated target field.
 func ExtractExplicitSummaryConfig(body []byte, format string) SummaryConfig {
 	normalized := strings.ToLower(strings.TrimSpace(format))
 	if normalized != "openai" {
@@ -150,7 +133,6 @@ func ExtractExplicitSummaryConfig(body []byte, format string) SummaryConfig {
 	return config
 }
 
-// ExtractExplicitSummaryConfigDoc reads only explicit visibility controls from doc.
 func ExtractExplicitSummaryConfigDoc(doc *ojson.Doc, format string) SummaryConfig {
 	normalized := strings.ToLower(strings.TrimSpace(format))
 	if normalized != "openai" {
@@ -163,9 +145,6 @@ func ExtractExplicitSummaryConfigDoc(doc *ojson.Doc, format string) SummaryConfi
 	return config
 }
 
-// ExtractTranslatedSummaryConfig reads source visibility intent using the
-// source/target protocol pair. OpenAI Chat reasoning_effort controls depth,
-// not Claude display visibility, so it is ignored only for Chat-to-Claude.
 func ExtractTranslatedSummaryConfig(body []byte, sourceFormat, targetFormat string) SummaryConfig {
 	source := strings.ToLower(strings.TrimSpace(sourceFormat))
 	target := strings.ToLower(strings.TrimSpace(targetFormat))
@@ -175,9 +154,6 @@ func ExtractTranslatedSummaryConfig(body []byte, sourceFormat, targetFormat stri
 	return ExtractSummaryConfig(body, source)
 }
 
-// ApplyTranslatedSummaryToClaude copies an explicit source visibility choice
-// onto a Claude body. Chat reasoning_effort is not a visibility field, so it
-// stays unspecified and the Claude cloak can apply its default display.
 func ApplyTranslatedSummaryToClaude(out, source []byte, sourceFormat, model string) []byte {
 	config := ExtractTranslatedSummaryConfig(source, sourceFormat, "claude")
 	if config.Mode == SummaryUnspecified {
@@ -186,25 +162,18 @@ func ApplyTranslatedSummaryToClaude(out, source []byte, sourceFormat, model stri
 	return ApplySummaryConfigForModel(out, "claude", model, config)
 }
 
-// ApplySummaryConfig writes canonical summary intent in the target protocol.
 func ApplySummaryConfig(body []byte, format string, config SummaryConfig) []byte {
 	return ApplySummaryConfigForModel(body, format, "", config)
 }
 
-// ApplySummaryConfigForModel writes canonical summary intent in the target
-// protocol and uses target model capabilities when a valid target request must
-// activate thinking before it can request summaries.
 func ApplySummaryConfigForModel(body []byte, format, model string, config SummaryConfig) []byte {
 	return applySummaryConfigForModel(body, format, model, nil, config)
 }
 
-// ApplySummaryConfigForModelDoc writes canonical summary intent onto doc in place.
 func ApplySummaryConfigForModelDoc(doc *ojson.Doc, format, model string, config SummaryConfig) {
 	_ = applySummaryConfigForProviderDoc(doc, true, format, model, "", nil, config)
 }
 
-// CanRepresentSummaryConfigForModelDoc reports whether ApplySummaryConfigForModelDoc
-// would produce an explicit summary control on doc, without mutating or serializing doc.
 func CanRepresentSummaryConfigForModelDoc(doc *ojson.Doc, format, model string, config SummaryConfig) bool {
 	normalized := strings.ToLower(strings.TrimSpace(format))
 	if doc == nil || doc.Len() == 0 || config.Mode == SummaryUnspecified || !summaryFormatSupported(normalized) {
@@ -281,14 +250,10 @@ func extractExplicitSummaryNonBoolOpenAIFromGetter(get func(string) ojson.Result
 	return false
 }
 
-// applySummaryConfigForModel uses the resolved model definition when execution
-// selected a configured API-key model whose capability is not globally visible.
 func applySummaryConfigForModel(body []byte, format, model string, modelInfo *registry.ModelInfo, config SummaryConfig) []byte {
 	return applySummaryConfigForProvider(body, format, model, "", modelInfo, config)
 }
 
-// applySummaryConfigForProvider uses the execution provider identity for Chat
-// dialects whose visibility controls are not part of the OpenAI wire format.
 func applySummaryConfigForProvider(body []byte, format, model, provider string, modelInfo *registry.ModelInfo, config SummaryConfig) []byte {
 	normalized := strings.ToLower(strings.TrimSpace(format))
 	if config.Mode == SummaryUnspecified || !summaryFormatSupported(normalized) || len(body) == 0 || !ojson.ValidBytes(body) {
@@ -358,8 +323,7 @@ func applySummaryConfigForProviderDoc(doc *ojson.Doc, docValid bool, format, mod
 			}
 		}
 	case "interactions":
-		// Google Interactions only accepts auto or none. OpenAI's concise and
-		// detailed selectors therefore collapse to the supported enabled value.
+
 		value := "none"
 		if enabled {
 			value = "auto"
@@ -380,8 +344,7 @@ func applySummaryConfigForProviderDoc(doc *ojson.Doc, docValid bool, format, mod
 			}
 			break
 		}
-		// Omitting the field is the documented way to disable summaries; an
-		// explicit null is not accepted by every Responses-compatible backend.
+
 		if doc.Get("reasoning.summary").Exists() && util.DeleteJSONDocIfExists(doc, "reasoning.summary") == nil {
 			modified = true
 		}
@@ -397,8 +360,6 @@ func applySummaryConfigForProviderDoc(doc *ojson.Doc, docValid bool, format, mod
 	return modified
 }
 
-// summaryFormatSupported reports whether a protocol carries summary visibility
-// intent that this package can read or write.
 func summaryFormatSupported(format string) bool {
 	switch format {
 	case "openai", "openai-response", "codex", "claude", "gemini", "antigravity", "interactions":

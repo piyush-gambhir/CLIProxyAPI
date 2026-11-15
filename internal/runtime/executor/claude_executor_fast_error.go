@@ -13,10 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// claudeFastRequestError marks a Fast request failure as request-scoped. Fast
-// errors must stop at the caller: they do not justify retrying another
-// credential or changing the selected credential's availability, unless the failure
-// is a genuine credential-level rate limit.
 type claudeFastRequestError struct {
 	cause      error
 	status     int
@@ -84,9 +80,6 @@ func (e *claudeFastRequestError) RetryAfter() *time.Duration {
 	return e.retryAfter
 }
 
-// claudeFastDirectResponseError carries an upstream HTTP error response through
-// the auth manager and protocol handlers without retrying or rebuilding its
-// status and JSON body.
 type claudeFastDirectResponseError struct {
 	response         *cliproxyexecutor.RequestTerminatedError
 	retryAfter       *time.Duration
@@ -147,8 +140,7 @@ func newClaudeFastDirectResponseError(resp *http.Response, body []byte) error {
 		return nil
 	}
 	headers := resp.Header.Clone()
-	// body has already been decoded. Do not forward stale representation or
-	// length headers that describe the compressed upstream bytes.
+
 	headers.Del("Content-Encoding")
 	headers.Del("Content-Length")
 

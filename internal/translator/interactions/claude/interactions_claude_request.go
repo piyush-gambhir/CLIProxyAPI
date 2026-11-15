@@ -14,15 +14,12 @@ func ConvertClaudeRequestToInteractions(modelName string, inputRawJSON []byte, s
 
 }
 
-// ConvertClaudeRequestToInteractionsWithCompat preserves empty assistant
-// thinking blocks for configured compatibility endpoints.
 func ConvertClaudeRequestToInteractionsWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertClaudeRequestToInteractions(modelName, inputRawJSON, stream, true)
 }
 
 func convertClaudeRequestToInteractions(modelName string, inputRawJSON []byte, stream, preserveEmptyThinkingBlocks bool) ([]byte, error) {
-	// The internal commentary marker must be restored as assistant text before
-	// any thinking handling, so it is never dropped or mapped to thought.
+
 	restoredRawJSON, _ := sigcompat.RestoreCodexCommentaryMarkers(inputRawJSON)
 	root := util.ParseGJSONBytesNoCopy(restoredRawJSON)
 	outDoc := ojson.NewDocString(`{"model":"","input":[]}`)
@@ -190,8 +187,7 @@ func appendClaudeMessageToInteractions(items *[][]byte, pendingToolUseIDs *[]str
 	if !content.IsArray() {
 		return 0
 	}
-	// Counts only what this turn itself sends, not system reminders flushed beside it.
-	// Whitespace-only text is forwarded but never keeps an emptied turn alive.
+
 	sendable := 0
 	stepContent := make([][]byte, 0, 4)
 	flushContent := func() {

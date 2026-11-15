@@ -11,11 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DefaultCodexLiveMediaMaxSessions is the default in-process media session limit.
 const DefaultCodexLiveMediaMaxSessions = 32
 
-// UnmarshalYAML supports the deprecated allow-private-remote-ips setting while
-// preserving the default behavior of allowing private downstream candidates.
 func (c *CodexLiveMediaRelayConfig) UnmarshalYAML(value *yaml.Node) error {
 	type plain CodexLiveMediaRelayConfig
 	var decoded plain
@@ -54,7 +51,6 @@ func (c *CodexLiveMediaRelayConfig) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// EffectiveMaxSessions returns the configured media session limit.
 func (c CodexLiveMediaRelayConfig) EffectiveMaxSessions() int {
 	if c.MaxSessions > 0 {
 		return c.MaxSessions
@@ -62,7 +58,6 @@ func (c CodexLiveMediaRelayConfig) EffectiveMaxSessions() int {
 	return DefaultCodexLiveMediaMaxSessions
 }
 
-// Validate verifies the Codex Live media relay configuration.
 func (c CodexLiveMediaRelayConfig) Validate() error {
 	if !c.Enabled {
 		return nil

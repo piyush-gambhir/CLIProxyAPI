@@ -10,8 +10,6 @@ type claudeCodeUserAgent struct {
 	requestFields    []string
 }
 
-// parseClaudeCodeUserAgent separates client identity from opaque request fields.
-// Parsing a valid UA does not establish native-client eligibility.
 func parseClaudeCodeUserAgent(userAgent string) (claudeCodeUserAgent, bool) {
 	for _, char := range userAgent {
 		if (char < ' ' && char != '\t') || char == '\x7f' {
@@ -70,7 +68,7 @@ func parseClaudeCodeUserAgent(userAgent string) (claudeCodeUserAgent, bool) {
 		}
 	}
 	if len(parsed.requestFields) > 0 {
-		// Request fields must never become a credential's stored device identity.
+
 		parsed.profileUserAgent = prefix + "(" + strings.Join(stableFields, ",") + ")"
 	}
 	return parsed, true
@@ -80,7 +78,7 @@ func validClaudeCodeUserAgentFieldName(name string) bool {
 	if name == "" {
 		return false
 	}
-	// Extension names use HTTP token syntax; values remain opaque.
+
 	for _, char := range name {
 		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') ||
 			strings.ContainsRune("!#$%&'*+-.^_`|~", char) {

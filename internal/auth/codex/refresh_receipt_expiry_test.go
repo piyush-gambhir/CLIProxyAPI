@@ -32,7 +32,7 @@ func TestExpiredSameGrantReceiptRequiresRecovery(t *testing.T) {
 	if errRead != nil {
 		t.Fatal(errRead)
 	}
-	// Advance receipt age deterministically without a wall-clock sleep.
+
 	doc := ojson.NewDoc(receipt)
 	if errSet := doc.Set("value.expired", "2000-01-01T00:00:00Z"); errSet != nil {
 		t.Fatal(errSet)

@@ -11,13 +11,10 @@ import (
 
 type antigravityUseCreditsContextKey struct{}
 
-// WithAntigravityCredits returns a child context that signals the executor to
-// inject enabledCreditTypes into the request payload.
 func WithAntigravityCredits(ctx context.Context) context.Context {
 	return context.WithValue(ctx, antigravityUseCreditsContextKey{}, true)
 }
 
-// AntigravityCreditsRequested reports whether the context carries the credits flag.
 func AntigravityCreditsRequested(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -26,11 +23,8 @@ func AntigravityCreditsRequested(ctx context.Context) bool {
 	return v
 }
 
-// AntigravityCreditsHintRefreshInterval defines how long a cached AI credits hint
-// remains fresh before it should be re-validated.
 const AntigravityCreditsHintRefreshInterval = 10 * time.Minute
 
-// AntigravityCreditsHint stores the latest known AI credits state for one auth.
 type AntigravityCreditsHint struct {
 	Known           bool
 	Available       bool
@@ -40,15 +34,12 @@ type AntigravityCreditsHint struct {
 	UpdatedAt       time.Time
 }
 
-// IsAntigravityCreditsHintFresh reports whether a known credits hint is still
-// within AntigravityCreditsHintRefreshInterval of now.
 func IsAntigravityCreditsHintFresh(hint AntigravityCreditsHint, now time.Time) bool {
 	return hint.Known && !hint.UpdatedAt.IsZero() && now.Sub(hint.UpdatedAt) < AntigravityCreditsHintRefreshInterval
 }
 
 var antigravityCreditsHintByAuth sync.Map
 
-// SetAntigravityCreditsHint updates the latest known AI credits state for an auth.
 func SetAntigravityCreditsHint(authID string, hint AntigravityCreditsHint) {
 	authID = strings.TrimSpace(authID)
 	if authID == "" {
@@ -64,7 +55,6 @@ func SetAntigravityCreditsHint(authID string, hint AntigravityCreditsHint) {
 	antigravityCreditsHintByAuth.Store(authID, hint)
 }
 
-// GetAntigravityCreditsHint returns the latest known AI credits state for an auth.
 func GetAntigravityCreditsHint(authID string) (AntigravityCreditsHint, bool) {
 	hint, ok, err := GetAntigravityCreditsHintRequired(context.Background(), authID)
 	if err == nil {
@@ -73,7 +63,6 @@ func GetAntigravityCreditsHint(authID string) (AntigravityCreditsHint, bool) {
 	return AntigravityCreditsHint{}, false
 }
 
-// GetAntigravityCreditsHintRequired returns the latest known AI credits state for request-time paths.
 func GetAntigravityCreditsHintRequired(ctx context.Context, authID string) (AntigravityCreditsHint, bool, error) {
 	authID = strings.TrimSpace(authID)
 	if authID == "" {
@@ -96,7 +85,6 @@ func GetAntigravityCreditsHintRequired(ctx context.Context, authID string) (Anti
 	return hint, true, nil
 }
 
-// HasKnownAntigravityCreditsHint reports whether credits state has been discovered for an auth.
 func HasKnownAntigravityCreditsHint(authID string) bool {
 	hint, ok := GetAntigravityCreditsHint(authID)
 	return ok && hint.Known

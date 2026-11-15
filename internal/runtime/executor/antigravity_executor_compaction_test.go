@@ -31,7 +31,6 @@ func TestAntigravityCompactionTriggerStreamGemini(t *testing.T) {
 			}
 		}
 
-		// When summary is requested with user turn at the end:
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Summary of previous conversation"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}}`))
 	}))
@@ -268,7 +267,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		},
 	}
 
-	// 1. Trigger compaction to get capsule
 	compactPayload := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -294,7 +292,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		t.Fatalf("empty capsule: %s", string(compactResp.Payload))
 	}
 
-	// 2. Next turn: send compaction capsule in input
 	nextPayload := []byte(fmt.Sprintf(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -318,7 +315,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		t.Fatal("empty response on next turn")
 	}
 
-	// Verify that the capsule was expanded to developer context in upstream contents or system instruction
 	foundContext := false
 	for _, content := range gotContents {
 		for _, part := range content.Get("parts").Array() {
@@ -337,7 +333,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		t.Fatalf("expected context summary in upstream request, got body: %s", string(gotBody))
 	}
 
-	// 3. Foreign or corrupted capsule rejection
 	corruptedPayload := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -388,7 +383,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 		},
 	}
 
-	// 1. Initial compaction
 	compactPayload1 := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -409,7 +403,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 	}
 	capsule1 := ojson.GetBytes(resp1.Payload, "output.0.encrypted_content").String()
 
-	// 2. Second compaction triggered when input contains: old capsule + new conversation + compaction_trigger
 	compactPayload2 := []byte(fmt.Sprintf(`{
 		"model": "gemini-3.7-flash",
 		"stream": true,
@@ -438,7 +431,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 		}
 	}
 
-	// Verify that the second summary request to upstream retained the context from capsule1
 	if len(summaryRequestBodies) < 2 {
 		t.Fatalf("expected at least 2 summary requests, got %d", len(summaryRequestBodies))
 	}
@@ -447,7 +439,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 		t.Fatalf("second summary request to upstream did not preserve first compaction summary: %s", secondReqBody)
 	}
 
-	// 3. Verify corrupted capsule accompanied by compaction_trigger is NOT silently ignored
 	corruptedWithTrigger := []byte(`{
 		"model": "gemini-3.7-flash",
 		"stream": true,

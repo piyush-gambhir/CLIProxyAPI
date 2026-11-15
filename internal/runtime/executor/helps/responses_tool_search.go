@@ -13,8 +13,6 @@ const (
 	responsesToolSearchOutputType = "tool_search_output"
 )
 
-// ResponsesHasToolSearch reports whether a Responses payload carries a client
-// tool_search declaration or tool_search history items.
 func ResponsesHasToolSearch(payload []byte) bool {
 	if hasClientToolSearchDeclaration(ojson.GetBytesNoCopy(payload, "tools")) {
 		return true
@@ -32,11 +30,6 @@ func ResponsesHasToolSearch(payload []byte) bool {
 	return found
 }
 
-// StripResponsesToolSearch removes client tool_search declarations and every
-// tool_search_call/tool_search_output input item, so the Claude translator
-// produces the same output it did before tool_search support. Hosted
-// declarations are left for the translator. An unchanged payload is returned
-// as is.
 func StripResponsesToolSearch(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -48,8 +41,6 @@ func StripResponsesToolSearch(payload []byte) []byte {
 	return doc.Bytes()
 }
 
-// StripResponsesToolSearchDoc removes client tool_search declarations and every
-// tool_search_call/tool_search_output input item in place on doc.
 func StripResponsesToolSearchDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -107,8 +98,6 @@ func hasClientToolSearchDeclaration(tools ojson.Result) bool {
 	return found
 }
 
-// withoutClientToolSearch rebuilds a tools array without client tool_search
-// declarations and reports whether anything was removed.
 func withoutClientToolSearch(tools ojson.Result) ([]byte, bool) {
 	if !tools.IsArray() {
 		return nil, false

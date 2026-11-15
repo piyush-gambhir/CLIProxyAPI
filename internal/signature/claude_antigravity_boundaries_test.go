@@ -118,7 +118,7 @@ func TestAntigravityCAQSRejectsDuplicateSubmessages(t *testing.T) {
 func assertAntigravityCAQSDuplicateRejected(t *testing.T, raw []byte) {
 	t.Helper()
 	inner := base64.StdEncoding.EncodeToString(raw)
-	// Keep legacy native CAIS/CAQS parsing behavior outside the new Q gate.
+
 	if _, errInspect := InspectClaudeCAISSignature(inner); errInspect != nil {
 		t.Fatalf("native parser behavior changed: %v", errInspect)
 	}

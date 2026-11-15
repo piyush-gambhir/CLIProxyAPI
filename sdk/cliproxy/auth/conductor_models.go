@@ -185,9 +185,6 @@ func (m *Manager) executionModelCandidates(auth *Auth, routeModel string) []stri
 	return []string{resolved}
 }
 
-// ResolveExecutionModel returns the credential-aware upstream model used by
-// normal execution. It strips auth prefixes, applies configured aliases, and
-// prefers Home-dispatched upstream models when present.
 func (m *Manager) ResolveExecutionModel(auth *Auth, routeModel string) string {
 	routeModel = strings.TrimSpace(routeModel)
 	if m == nil {
@@ -279,10 +276,7 @@ func (m *Manager) clientModelProjectionForAuth(auth *Auth, routeModel string, no
 
 	var authFallbackUntil time.Time
 	if len(auth.ModelStates) == 0 {
-		// With no per-model states, scheduling falls back to the credential-wide
-		// cooldown (isAuthBlockedForModel); the projection must agree with it.
-		// When states exist, unmatched models stay schedulable by design, so the
-		// credential-wide fields must not suspend them here either.
+
 		if blocked, _, retryAfter := availabilityBlock(auth.Unavailable, auth.Quota.Exceeded, auth.NextRetryAfter, auth.Quota.NextRecoverAt, now); blocked {
 			isSuspended = true
 			if retryAfter.IsZero() {
@@ -649,7 +643,6 @@ func (m *Manager) rebuildAPIKeyModelAliasFromRuntimeConfig() {
 	m.rebuildAPIKeyModelAliasLocked(cfg)
 }
 
-// RefreshAPIKeyModelAlias rebuilds the API-key model alias table from the current runtime config.
 func (m *Manager) RefreshAPIKeyModelAlias() {
 	m.rebuildAPIKeyModelAliasFromRuntimeConfig()
 }
@@ -707,7 +700,7 @@ func (m *Manager) rebuildAPIKeyModelAliasLocked(cfg *internalconfig.Config) {
 				compileAPIKeyModelAliasForModels(byAlias, entry.Models)
 			}
 		default:
-			// OpenAI-compat uses config selection from auth.Attributes.
+
 			providerKey := ""
 			compatName := ""
 			if auth.Attributes != nil {
@@ -758,10 +751,10 @@ func compileAPIKeyModelAliasForModels[T interface {
 		if alias == "" || name == "" {
 			continue
 		}
-		// Exact suffix routes are retained alongside first-entry base fallbacks.
+
 		add(alias, name)
 		add(thinking.ParseSuffix(alias).ModelName, name)
-		// Direct upstream requests use the same exact-first lookup behavior.
+
 		add(name, name)
 		add(thinking.ParseSuffix(name).ModelName, name)
 	}
@@ -800,12 +793,10 @@ func (m *Manager) applyAPIKeyModelAliasWithRouting(routing *apiKeyModelRoutingSn
 		return requestedModel
 	}
 
-	// Fast path: lookup per-auth mapping table (keyed by auth.ID).
 	if resolved := lookupAPIKeyUpstreamModel(routing, auth.ID, requestedModel); resolved != "" {
 		return resolved
 	}
 
-	// Slow path: scan the same config snapshot used to compile the alias table.
 	cfg := routing.config
 	if cfg == nil {
 		cfg = &internalconfig.Config{}
@@ -832,14 +823,12 @@ func (m *Manager) applyAPIKeyModelAliasWithRouting(routing *apiKeyModelRoutingSn
 		upstreamModel = resolveUpstreamModelForOpenAICompatAPIKey(cfg, auth, requestedModel)
 	}
 
-	// Return upstream model if found, otherwise return requested model.
 	if upstreamModel != "" {
 		return upstreamModel
 	}
 	return requestedModel
 }
 
-// APIKeyConfigEntry is a generic interface for API key configurations.
 type APIKeyConfigEntry interface {
 	GetAPIKey() string
 	GetBaseURL() string

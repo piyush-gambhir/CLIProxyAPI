@@ -66,8 +66,7 @@ func TestCodexExecutorCountTokensPreservesToolNumberSchemas(t *testing.T) {
 				if errCount != nil {
 					t.Fatalf("CountTokens() error = %v", errCount)
 				}
-				// Token counts alone can miss a schema rewrite: number and integer
-				// may have the same token length. Inspect the translated schema too.
+
 				if got := ojson.GetBytes(hooks.body, "tools.0.parameters.properties.yield_time_ms.type").String(); got != "number" {
 					t.Fatalf("yield_time_ms.type = %q, want number; body=%s", got, hooks.body)
 				}

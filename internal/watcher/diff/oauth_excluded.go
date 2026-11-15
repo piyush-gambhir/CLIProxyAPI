@@ -11,7 +11,6 @@ type ExcludedModelsSummary struct {
 	count int
 }
 
-// SummarizeExcludedModels normalizes and hashes an excluded-model list.
 func SummarizeExcludedModels(list []string) ExcludedModelsSummary {
 	if len(list) == 0 {
 		return ExcludedModelsSummary{}
@@ -34,7 +33,6 @@ func SummarizeExcludedModels(list []string) ExcludedModelsSummary {
 	}
 }
 
-// SummarizeOAuthExcludedModels summarizes OAuth excluded models per provider.
 func SummarizeOAuthExcludedModels(entries map[string][]string) map[string]ExcludedModelsSummary {
 	if len(entries) == 0 {
 		return nil
@@ -50,7 +48,6 @@ func SummarizeOAuthExcludedModels(entries map[string][]string) map[string]Exclud
 	return out
 }
 
-// DiffOAuthExcludedModelChanges compares OAuth excluded models maps.
 func DiffOAuthExcludedModelChanges(oldMap, newMap map[string][]string) ([]string, []string) {
 	oldSummary := SummarizeOAuthExcludedModels(oldMap)
 	newSummary := SummarizeOAuthExcludedModels(newMap)

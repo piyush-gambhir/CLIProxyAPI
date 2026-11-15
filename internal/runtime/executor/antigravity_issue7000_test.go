@@ -99,7 +99,7 @@ func TestIssue7000AntigravityClaudeStructuredOutputUsesPromptAndAutoTools(t *tes
 					}
 					foundSchema := false
 					prompt := systemText.String()
-					// Decode embedded JSON without depending on instruction wording or schema key order.
+
 					for offset, char := range prompt {
 						if char != '{' {
 							continue

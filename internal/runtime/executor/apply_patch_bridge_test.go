@@ -52,7 +52,6 @@ func applyPatchTestPayloads(chunk []byte) [][]byte {
 	return payloads
 }
 
-// applyPatchTestFrames separates real parameter fragments from terminal snapshots.
 func applyPatchTestFrames(protocol, name string) (string, string) {
 	args := applyPatchTestPartial + applyPatchTestRemainder
 	switch protocol {
@@ -122,7 +121,7 @@ func applyPatchTestDeclaration(t *testing.T, protocol string, body []byte) {
 	if tool.Get(parameters+".properties.input.type").String() != "string" || tool.Get(parameters+".required.0").String() != "input" {
 		t.Fatalf("wrong standard input schema: %s", tool.Raw)
 	}
-	// Antigravity's existing schema sanitizer replaces additionalProperties with a description.
+
 	if protocol == "antigravity" {
 		if !strings.Contains(tool.Get(parameters+".description").String(), "No extra properties allowed") {
 			t.Fatalf("sanitized schema lost the strict contract: %s", tool.Raw)
@@ -159,7 +158,6 @@ func applyPatchTestWireField(data []byte, target protowire.Number) []byte {
 	return nil
 }
 
-// Use a real downstream socket, not ResponseRecorder, to prove flush reaches a client.
 func newApplyPatchTestGateway(t *testing.T, exec cliproxyauth.ProviderExecutor, auth *cliproxyauth.Auth) *httptest.Server {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -184,8 +182,6 @@ func newApplyPatchTestGateway(t *testing.T, exec cliproxyauth.ProviderExecutor, 
 	return server
 }
 
-// The server cannot send the suffix or terminal frame until the client acknowledges
-// a complete decoded line. Snapshot paths instead acknowledge unrelated text.
 func TestApplyPatchBridgeLiveHTTPPreviewMatrix(t *testing.T) {
 	for _, tc := range []struct {
 		provider, protocol string
@@ -242,7 +238,7 @@ func TestApplyPatchBridgeLiveHTTPPreviewMatrix(t *testing.T) {
 				auth.Metadata = map[string]any{"access_token": "test", "expires_in": 3600, "timestamp": "2099-01-01T00:00:00Z", "project_id": "test"}
 			}
 			gateway := newApplyPatchTestGateway(t, exec, auth)
-			// Catalog claims must be backed by the executor used by the POST below.
+
 			for _, version := range []string{"0.137.0", "0.153.4", "cpa"} {
 				applyPatchTestCatalog(t, gateway, version)
 			}
@@ -494,8 +490,6 @@ func TestApplyPatchBridgeOrdinaryFunctionControl(t *testing.T) {
 	}
 }
 
-// Kimi selects its reused Chat and Claude executors for these ordinary clients.
-// Custom Responses clients select Kimi's Responses branch, covered by the HTTP matrix.
 func TestApplyPatchBridgeKimiReusedClientControls(t *testing.T) {
 	for _, source := range []sdktranslator.Format{sdktranslator.FormatOpenAI, sdktranslator.FormatClaude} {
 		t.Run(source.String(), func(t *testing.T) {
@@ -689,7 +683,7 @@ func TestApplyPatchBridgeOrdinaryFunctionStreamControl(t *testing.T) {
 }
 
 func TestApplyPatchBridgeInvalidStreamArguments(t *testing.T) {
-	// Valid decoded prefixes can precede EOF failure; raw envelope fields must not leak.
+
 	for _, args := range []string{`{"input":7}`, `{}`, `{"input":null}`, `{"input":"x","input":"y"}`, `{"input":"x","extra":"RAW_SECRET"}`, `{"input":"unfinished"`, `{"input":"x"} trailing`} {
 		t.Run(args, func(t *testing.T) {
 			reply := strings.ReplaceAll(task6ProviderFixture("custom-compat", "stream", "apply_patch"), fmt.Sprintf("%q", `{"input":7,"secret":"RAW_SECRET"}`), fmt.Sprintf("%q", args))

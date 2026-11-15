@@ -102,9 +102,6 @@ func (e *MetaExecutor) prepareResponsesRequest(ctx context.Context, auth *clipro
 	}, nil
 }
 
-// syncMetaPromptCacheRetentionDoc preserves an explicit non-empty string
-// prompt_cache_retention supplied by the caller without injecting a default,
-// and removes null, blank, or non-string values before user payload rules run.
 func syncMetaPromptCacheRetentionDoc(doc *ojson.Doc, source []byte) bool {
 	if doc == nil {
 		return false
@@ -404,10 +401,6 @@ func (e *MetaExecutor) recordMetaRequest(ctx context.Context, auth *cliproxyauth
 	})
 }
 
-// applyMetaClientIdentity stamps the headers Muse Code 1.4.14 sends on
-// /v1/responses. Tool-bearing subscription requests also need the canonical
-// tool namespace. Session ids are a fresh UUID-7 per request so
-// proxy traffic does not reuse one Muse session across unrelated clients.
 func applyMetaClientIdentity(req *http.Request) {
 	if req == nil {
 		return

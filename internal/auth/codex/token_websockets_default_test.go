@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-// readSavedToken saves a storage to a temp file and returns the written JSON.
 func readSavedToken(t *testing.T, ts *CodexTokenStorage) map[string]any {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "codex-test.json")
@@ -25,8 +24,6 @@ func readSavedToken(t *testing.T, ts *CodexTokenStorage) map[string]any {
 	return saved
 }
 
-// TestSaveTokenDefaultsWebsocketsOnWhenAbsent covers a fresh Codex login: the
-// credential opts into the Responses over WebSocket transport by default.
 func TestSaveTokenDefaultsWebsocketsOnWhenAbsent(t *testing.T) {
 	t.Parallel()
 
@@ -41,8 +38,6 @@ func TestSaveTokenDefaultsWebsocketsOnWhenAbsent(t *testing.T) {
 	}
 }
 
-// TestSaveTokenKeepsAnExplicitWebsocketsChoice checks both explicit values
-// survive, so an operator who turned the transport off is not overridden.
 func TestSaveTokenKeepsAnExplicitWebsocketsChoice(t *testing.T) {
 	t.Parallel()
 
@@ -56,8 +51,6 @@ func TestSaveTokenKeepsAnExplicitWebsocketsChoice(t *testing.T) {
 	}
 }
 
-// TestSaveTokenPreservesOtherMetadata checks the default does not disturb the
-// rest of the injected metadata.
 func TestSaveTokenPreservesOtherMetadata(t *testing.T) {
 	t.Parallel()
 

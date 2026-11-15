@@ -33,12 +33,12 @@ func TestAntigravityFailureBackoffWindowsAndCap(t *testing.T) {
 				}
 				now = state.nextRetry
 			}
-			// An expired retry deadline alone must not reset consecutive failures.
+
 			state = nextAntigravityFailure(state, state.nextRetry.Add(time.Minute), sample.random)
 			if state.failures != 5 {
 				t.Fatal("expired retry deadline discarded failure history")
 			}
-			// Truly inactive account/token histories can start over after retention.
+
 			state = nextAntigravityFailure(state, state.lastFailure.Add(2*antigravityCapabilityCacheTTL+time.Nanosecond), sample.random)
 			if state.failures != 1 {
 				t.Fatal("inactive failure history did not reset")
@@ -97,7 +97,7 @@ func TestAntigravityFailureBackoffIntegration(t *testing.T) {
 			t.Fatalf("attempt %d: %+v delay=%s", i+1, state, delay)
 		}
 		now = state.nextRetry.Add(-time.Nanosecond)
-		// Both periodic and direct registration fetches respect the same deadline.
+
 		svc.refreshAntigravityModels(t.Context())
 		svc.WaitAntigravityProbes()
 		svc.fetchAntigravityModelCapabilityHintsForAuth(t.Context(), auth)
@@ -128,7 +128,7 @@ func TestAntigravityFailureBackoffIntegration(t *testing.T) {
 	if len(GlobalModelRegistry().GetModelsForClient(auth.ID)) != 1 {
 		t.Fatal("failed refresh discarded last successful catalog")
 	}
-	// A new token must not inherit the old token's authorization/backoff state.
+
 	rotated := auth.Clone()
 	rotated.Metadata["access_token"] = "rotated"
 	rotated, _ = manager.Update(t.Context(), rotated)

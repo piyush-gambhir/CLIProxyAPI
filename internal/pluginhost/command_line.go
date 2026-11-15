@@ -22,7 +22,6 @@ type commandLineFlagRecord struct {
 	set      bool
 }
 
-// RegisterCommandLineFlags exposes plugin-declared flags on the provided FlagSet.
 func (h *Host) RegisterCommandLineFlags(ctx context.Context, flagSet *flag.FlagSet) {
 	if h == nil || flagSet == nil {
 		return
@@ -224,7 +223,6 @@ func (v *commandLineFlagValue) IsBoolFlag() bool {
 	return v != nil && v.kind == "bool"
 }
 
-// HasTriggeredCommandLineFlags reports whether any plugin-owned flag was provided.
 func (h *Host) HasTriggeredCommandLineFlags() bool {
 	if h == nil {
 		return false
@@ -234,7 +232,6 @@ func (h *Host) HasTriggeredCommandLineFlags() bool {
 	return len(h.commandLineHits) > 0
 }
 
-// ExecuteCommandLine runs all enabled plugins whose command-line flags were provided.
 func (h *Host) ExecuteCommandLine(ctx context.Context, program string, args []string, configPath string, flagSet *flag.FlagSet) (int, bool) {
 	if h == nil {
 		return 0, false

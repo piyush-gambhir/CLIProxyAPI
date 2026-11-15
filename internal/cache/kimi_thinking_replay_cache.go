@@ -17,22 +17,16 @@ import (
 )
 
 const (
-	// KimiThinkingReplayCacheTTL limits how long signed assistant content stays replayable.
 	KimiThinkingReplayCacheTTL = 1 * time.Hour
 
-	// KimiThinkingReplayCacheMaxEntries bounds process memory used for replay continuity.
 	KimiThinkingReplayCacheMaxEntries = 10240
 
-	// KimiThinkingReplayCacheEvictBatchSize leaves headroom after reaching capacity.
 	KimiThinkingReplayCacheEvictBatchSize = 128
 
-	// KimiThinkingReplayCacheMaxBytesPerEntry bounds one complete assistant content array.
 	KimiThinkingReplayCacheMaxBytesPerEntry = 8 << 20
 
-	// KimiThinkingReplayCacheMaxBlocksPerEntry prevents pathological content arrays.
 	KimiThinkingReplayCacheMaxBlocksPerEntry = 512
 
-	// KimiThinkingReplayCacheMaxTotalBytes bounds aggregate in-process replay content.
 	KimiThinkingReplayCacheMaxTotalBytes = 256 << 20
 
 	kimiThinkingReplayCacheMaxSerializedBytes = KimiThinkingReplayCacheMaxBytesPerEntry + 1024
@@ -45,7 +39,6 @@ type kimiThinkingReplayEntry struct {
 	Deleted    bool
 }
 
-// KimiThinkingReplaySnapshot identifies the exact replay generation read for one request.
 type KimiThinkingReplaySnapshot struct {
 	raw        []byte
 	generation string
@@ -77,7 +70,6 @@ var currentKimiThinkingReplayKVClient = func() (kimiThinkingReplayKVClient, bool
 	return homekv.CurrentKVClient()
 }
 
-// CacheKimiThinkingReplayBestEffort stores one complete signed assistant content array.
 func CacheKimiThinkingReplayBestEffort(ctx context.Context, modelFamily, sessionKey string, content []byte) bool {
 	key := kimiThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" || !validKimiThinkingReplayContent(content) {
@@ -110,13 +102,11 @@ func CacheKimiThinkingReplayBestEffort(ctx context.Context, modelFamily, session
 	return true
 }
 
-// GetKimiThinkingReplayRequired retrieves complete assistant content for request-time replay.
 func GetKimiThinkingReplayRequired(ctx context.Context, modelFamily, sessionKey string) ([]byte, bool, error) {
 	content, _, found, errGet := GetKimiThinkingReplayWithSnapshotRequired(ctx, modelFamily, sessionKey)
 	return content, found, errGet
 }
 
-// GetKimiThinkingReplayWithSnapshotRequired retrieves replay content and the exact cache state read.
 func GetKimiThinkingReplayWithSnapshotRequired(ctx context.Context, modelFamily, sessionKey string) ([]byte, KimiThinkingReplaySnapshot, bool, error) {
 	key := kimiThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" {
@@ -171,7 +161,6 @@ func GetKimiThinkingReplayWithSnapshotRequired(ctx context.Context, modelFamily,
 	return append([]byte(nil), entry.Content...), snapshot, true, nil
 }
 
-// ReplaceKimiThinkingReplayIfUnchanged stores completed content only if the request snapshot is current.
 func ReplaceKimiThinkingReplayIfUnchanged(ctx context.Context, modelFamily, sessionKey string, snapshot KimiThinkingReplaySnapshot, content []byte) (bool, error) {
 	key := kimiThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" || !validKimiThinkingReplayContent(content) {
@@ -211,7 +200,6 @@ func ReplaceKimiThinkingReplayIfUnchanged(ctx context.Context, modelFamily, sess
 	return true, nil
 }
 
-// DeleteKimiThinkingReplayIfUnchanged clears replay state only if the request snapshot is current.
 func DeleteKimiThinkingReplayIfUnchanged(ctx context.Context, modelFamily, sessionKey string, snapshot KimiThinkingReplaySnapshot) (bool, error) {
 	key := kimiThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" {
@@ -247,7 +235,6 @@ func DeleteKimiThinkingReplayIfUnchanged(ctx context.Context, modelFamily, sessi
 	return true, nil
 }
 
-// DeleteKimiThinkingReplayRequired removes stale replay state unconditionally.
 func DeleteKimiThinkingReplayRequired(ctx context.Context, modelFamily, sessionKey string) error {
 	key := kimiThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" {
@@ -273,7 +260,6 @@ func DeleteKimiThinkingReplayRequired(ctx context.Context, modelFamily, sessionK
 	return nil
 }
 
-// ClearKimiThinkingReplayCache clears all in-process Kimi replay state.
 func ClearKimiThinkingReplayCache() {
 	kimiThinkingReplayMu.Lock()
 	kimiThinkingReplayEntries = make(map[string]kimiThinkingReplayEntry)

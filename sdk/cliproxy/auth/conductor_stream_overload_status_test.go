@@ -8,9 +8,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// When every credential is exhausted by overload rejections the caller must receive a real
-// error carrying 503, not a committed 200 stream. This is what lets the downstream client and
-// any upstream proxy see the true capacity signal.
 func TestExecuteStream_AllCredentialsOverloaded_ReturnsStatusError(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -23,8 +20,7 @@ func TestExecuteStream_AllCredentialsOverloaded_ReturnsStatusError(t *testing.T)
 	m.RegisterExecutor(&customStreamMockExecutor{
 		identifier: "codex",
 		streamFn: func(_ context.Context, _ *Auth, _ cliproxyexecutor.Request, _ cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
-			// Mirrors the buffering-enabled codex executor: the rejection is returned
-			// synchronously, before any downstream chunk is committed.
+
 			return nil, overloadStatusError()
 		},
 	})
@@ -44,8 +40,6 @@ func TestExecuteStream_AllCredentialsOverloaded_ReturnsStatusError(t *testing.T)
 	}
 }
 
-// Contrast: the unbuffered path commits response.created first, so the rejection can only be
-// relayed inside an already-successful stream. The caller gets no error at all.
 func TestExecuteStream_UnbufferedOverload_StaysCommittedStream(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -88,10 +82,6 @@ func TestExecuteStream_UnbufferedOverload_StaysCommittedStream(t *testing.T) {
 	}
 }
 
-// Critical distinction: if an executor surfaces the rejection as the *first* stream chunk instead
-// of returning it synchronously, the conductor downgrades it to a committed stream carrying the
-// error (streamErrorResult), and the caller again observes no error. Returning synchronously is
-// therefore required to preserve the 503 status semantics.
 func TestExecuteStream_ErrorAsFirstChunk_IsDowngradedToCommittedStream(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)

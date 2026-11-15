@@ -49,22 +49,17 @@ type rpcStreamEmitRequest struct {
 	StreamID string `json:"stream_id"`
 	Payload  []byte `json:"payload,omitempty"`
 	Error    string `json:"error,omitempty"`
-	// ErrorDetail optionally carries the structured plugin error (status, code,
-	// retry-after). It takes precedence over Error when present.
+
 	ErrorDetail *pluginabi.Error `json:"error_detail,omitempty"`
 }
 
 type rpcStreamCloseRequest struct {
 	StreamID string `json:"stream_id"`
 	Error    string `json:"error,omitempty"`
-	// ErrorDetail optionally carries the structured plugin error (status, code,
-	// retry-after). It takes precedence over Error when present.
+
 	ErrorDetail *pluginabi.Error `json:"error_detail,omitempty"`
 }
 
-// rpcStreamError builds the error reported to the client for a plugin stream
-// failure. A structured detail keeps the HTTP status and retry metadata that a
-// plain message cannot carry.
 func rpcStreamError(message string, detail *pluginabi.Error) error {
 	if detail != nil {
 		text := strings.TrimSpace(detail.Message)
@@ -234,7 +229,7 @@ func (b *streamBridge) open(ctx context.Context) (string, <-chan pluginapi.Execu
 		stream.abortStream()
 	}
 	if ctx != nil && ctx.Done() != nil {
-		// Abort streams canceled before ExecuteStream can install cleanupWhenStreamDone.
+
 		go func() {
 			<-ctx.Done()
 			cleanup()

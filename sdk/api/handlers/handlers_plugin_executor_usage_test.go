@@ -286,7 +286,6 @@ func TestHandlerPluginExecutorPublishesUsageStreamClaude(t *testing.T) {
 
 	originalModel := "claude-3-5-sonnet"
 
-	// Claude streams split usage between message_start (input, cache) and message_delta (output, thinking)
 	chunks := make(chan coreexecutor.StreamChunk, 4)
 	chunks <- coreexecutor.StreamChunk{Payload: []byte("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":100,\"cache_read_input_tokens\":50,\"cache_creation_input_tokens\":20,\"output_tokens\":1}}}\n\n")}
 	chunks <- coreexecutor.StreamChunk{Payload: []byte("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n")}
@@ -559,9 +558,7 @@ func TestHandlerPluginExecutorPublishesStreamCancellation(t *testing.T) {
 	handler.SetModelRouterHost(mockHost)
 
 	dataChan, _, _ := handler.ExecuteStreamWithAuthManager(ctx, "openai", originalModel, []byte(fmt.Sprintf(`{"model":%q,"stream":true}`, originalModel)), "")
-	// Receive the first chunk, then cancel. The chunk channel stays open until the stream
-	// goroutine has exited: closed early, it races ctx.Done() in nextStreamChunk's select and the
-	// stream can end as a normal completion (about 1 in 1000 runs under -race).
+
 	<-dataChan
 	cancel()
 	for range dataChan {
@@ -599,7 +596,6 @@ func TestHandlerPluginExecutorSkipsUsageForNestedExecution(t *testing.T) {
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, nil)
 	handler.SetModelRouterHost(mockHost)
 
-	// ExecuteModel triggers execution with InternalSource = true (host.model.execute callback)
 	resp, errMsg := handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol: "openai",
 		ExitProtocol:  "openai",
@@ -657,9 +653,9 @@ func TestHandlerPluginExecutorSkipsOuterUsageWhenPluginCallsHostModelExecute(t *
 		}
 		return pluginapi.ModelRouteResponse{}, false
 	}
-	// When the plugin executor executes, it simulates calling back into the host via ExecuteModel
+
 	mockHost.execFunc = func(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (coreexecutor.Response, error) {
-		// Plugin calls back into host.model.execute using the provided ctx
+
 		innerResp, errInner := handler.ExecuteModel(ctx, ModelExecutionRequest{
 			EntryProtocol: "openai",
 			ExitProtocol:  "openai",
@@ -669,7 +665,7 @@ func TestHandlerPluginExecutorSkipsOuterUsageWhenPluginCallsHostModelExecute(t *
 		if errInner != nil {
 			return coreexecutor.Response{}, errInner.Error
 		}
-		// Return response payload back to outer caller
+
 		return coreexecutor.Response{Payload: innerResp.Body}, nil
 	}
 
@@ -683,7 +679,6 @@ func TestHandlerPluginExecutorSkipsOuterUsageWhenPluginCallsHostModelExecute(t *
 		t.Fatal("empty response body")
 	}
 
-	// Since inner ExecuteModel was executed, the outer plugin executor must NOT publish a duplicate record for targetPluginID
 	plugin.assertNoRecord(t)
 }
 
@@ -746,7 +741,6 @@ func TestHandlerPluginExecutorSkipsOuterFailureWhenPluginCallsHostModelExecute(t
 		t.Fatal("expected failure")
 	}
 
-	// Since inner ExecuteModel was executed, the outer plugin executor must NOT publish a duplicate failure record
 	plugin.assertNoRecord(t)
 }
 

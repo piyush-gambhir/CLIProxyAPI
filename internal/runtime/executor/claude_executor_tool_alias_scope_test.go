@@ -7,10 +7,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// API key credentials are scoped per request with ForAPIKey, which copies the
-// executor by value (see executorForAuth in sdk/cliproxy/auth). Thread
-// continuation aliases saved by one request must be visible to the next one,
-// so every scoped copy has to share one alias store.
 func TestClaudeOAuthToolAliasStoreIsSharedAcrossForAPIKeyCopies(t *testing.T) {
 	createBody := []byte(`{"thread":{"type":"create"}}`)
 	continuationBody := []byte(`{"thread":{"type":"continue","previous_message_id":"msg-shared"}}`)

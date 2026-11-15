@@ -663,19 +663,18 @@ func TestXAIWebsocketsExecuteStreamDoesNotRestoreNamespacedClientfnWebSearch(t *
 	if len(outputItemsDone) != 2 {
 		t.Fatalf("outputItemsDone length = %d, want 2", len(outputItemsDone))
 	}
-	// Namespaced tool preserved
+
 	if got := outputItemsDone[0].Get("item.name").String(); got != "clientfn_web_search" {
 		t.Fatalf("namespaced item name = %q, want clientfn_web_search", got)
 	}
 	if got := outputItemsDone[0].Get("item.namespace").String(); got != "acme" {
 		t.Fatalf("namespaced item namespace = %q, want acme", got)
 	}
-	// Unnamespaced tool restored
+
 	if got := outputItemsDone[1].Get("item.name").String(); got != "web_search" {
 		t.Fatalf("unnamespaced item name = %q, want web_search", got)
 	}
 
-	// Completed output
 	if got := completed.Get("response.output.0.name").String(); got != "clientfn_web_search" {
 		t.Fatalf("completed 0 name = %q, want clientfn_web_search", got)
 	}
@@ -701,7 +700,7 @@ func TestXAIWebsocketsExecuteStreamPreservesClientSameNameToolsWithXSearch(t *te
 			t.Errorf("read upstream websocket message: %v", errRead)
 			return
 		}
-		// Collision case: internal X Search and client tools both named x_keyword_search.
+
 		events := [][]byte{
 			[]byte(`{"type":"response.output_item.done","output_index":0,"item":{"id":"ctc_1","type":"custom_tool_call","call_id":"xs_call-1","name":"x_keyword_search","input":"{}","status":"completed"}}`),
 			[]byte(`{"type":"response.output_item.done","output_index":1,"item":{"id":"fc_ns","type":"function_call","call_id":"call_ns","name":"acme__x_keyword_search","arguments":"{}","status":"completed"}}`),
@@ -814,9 +813,6 @@ func TestXAIWebsocketsExecuteStreamPreservesClientSameNameToolsWithXSearch(t *te
 	}
 }
 
-// TestXAIWebsocketsExecuteStreamPreservesNormalizedCustomSameNameToolWithXSearch exercises
-// the real request path for WebSocket: client custom tools normalize to upstream function,
-// so the mock asserts the outgoing function tool and feeds back a function_call response.
 func TestXAIWebsocketsExecuteStreamPreservesNormalizedCustomSameNameToolWithXSearch(t *testing.T) {
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
 	capturedPayload := make(chan []byte, 1)
@@ -834,7 +830,7 @@ func TestXAIWebsocketsExecuteStreamPreservesNormalizedCustomSameNameToolWithXSea
 			return
 		}
 		capturedPayload <- bytes.Clone(payload)
-		// Internal X Search trace + legitimate client function_call for the normalized custom tool.
+
 		events := [][]byte{
 			[]byte(`{"type":"response.output_item.done","output_index":0,"item":{"id":"ctc_1","type":"custom_tool_call","call_id":"xs_call-1","name":"x_keyword_search","input":"{}","status":"completed"}}`),
 			[]byte(`{"type":"response.output_item.done","output_index":1,"item":{"id":"fc_custom","type":"function_call","call_id":"call_custom","name":"x_keyword_search","arguments":"{}","status":"completed"}}`),
@@ -937,7 +933,7 @@ func TestXAIWebsocketsExecuteStreamPreservesNormalizedCustomSameNameToolWithXSea
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for upstream websocket request body")
 	}
-	// response.create keeps tools at the top level of the websocket payload.
+
 	tools := ojson.GetBytes(gotBody, "tools")
 	var foundNormalizedFunction bool
 	var foundRawCustom bool
@@ -2027,7 +2023,6 @@ func TestXAIWebsocketsCompactionTriggerFreshSessionFallback(t *testing.T) {
 		Metadata: map[string]any{"access_token": "xai-token"},
 	}
 
-	// 1. Fresh session with payload input containing history + compaction_trigger (and a previous_response_id that should be dropped)
 	optsInput := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FormatOpenAIResponse,
 		ResponseFormat: sdktranslator.FormatOpenAIResponse,
@@ -2067,7 +2062,6 @@ func TestXAIWebsocketsCompactionTriggerFreshSessionFallback(t *testing.T) {
 		t.Fatal("timed out waiting for compact HTTP payload")
 	}
 
-	// 2. Fresh session with previous_response_id and trigger-only input
 	optsPrev := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FormatOpenAIResponse,
 		ResponseFormat: sdktranslator.FormatOpenAIResponse,
@@ -2100,7 +2094,6 @@ func TestXAIWebsocketsCompactionTriggerFreshSessionFallback(t *testing.T) {
 		t.Fatal("timed out waiting for compact HTTP payload")
 	}
 
-	// 3. Fresh session with only compaction_trigger (no messages, no previous_response_id) returns 400
 	optsEmpty := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FormatOpenAIResponse,
 		ResponseFormat: sdktranslator.FormatOpenAIResponse,
@@ -2201,7 +2194,6 @@ func TestXAIWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 	sess := &codexWebsocketSession{sessionID: "test-xai-keepalive"}
 	configureXAIWebsocketConn(sess, clientConn)
 
-	// Start client read loop so it processes control frames.
 	go func() {
 		for {
 			if _, _, errRead := clientConn.ReadMessage(); errRead != nil {
@@ -2210,17 +2202,14 @@ func TestXAIWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 		}
 	}()
 
-	// Simulate an active application message write holding writeMu.
 	sess.writeMu.Lock()
 	defer sess.writeMu.Unlock()
 
-	// Upstream sends a keepalive ping while writeMu is held.
 	errPing := serverConn.WriteControl(websocket.PingMessage, []byte("xai-keepalive-ping"), time.Now().Add(time.Second))
 	if errPing != nil {
 		t.Fatalf("failed to send ping: %v", errPing)
 	}
 
-	// Pong must be received promptly without being starved by writeMu.
 	select {
 	case got := <-pongReceived:
 		if got != "xai-keepalive-ping" {
@@ -2240,8 +2229,7 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 	var pongDeliveredOnce sync.Once
 
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
-		// A failed write is retried on a new connection, which runs the hook
-		// and the handler again; a second close would panic the package run.
+
 		inWriteHookOnce.Do(func() { close(inWriteHook) })
 		select {
 		case <-pongDeliveredDuringWrite:
@@ -2298,9 +2286,6 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-		// The held client write is released together with the pong. Closing the
-		// socket before that payload arrives fails the write with "use of closed
-		// network connection", so answer only once the request is in.
 		select {
 		case <-payloadReceived:
 		case <-time.After(2 * time.Second):
@@ -2355,8 +2340,7 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 	var pongDeliveredOnce sync.Once
 
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
-		// A failed write is retried on a new connection, which runs the hook
-		// and the handler again; a second close would panic the package run.
+
 		inWriteHookOnce.Do(func() { close(inWriteHook) })
 		select {
 		case <-pongDeliveredDuringWrite:
@@ -2413,9 +2397,6 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 			return
 		}
 
-		// The held client write is released together with the pong. Closing the
-		// socket before that payload arrives fails the write with "use of closed
-		// network connection", so answer only once the request is in.
 		select {
 		case <-payloadReceived:
 		case <-time.After(2 * time.Second):
@@ -2497,7 +2478,7 @@ func TestXAIWebsocketApplyPatchTransport(t *testing.T) {
 					if !snapshotOnly {
 						events = append(events, fmt.Sprintf(`{"type":"response.function_call_arguments.delta","output_index":0,"item_id":"a","delta":%q}`, args))
 					} else {
-						// Call identity may first arrive with the omitted-arguments item completion.
+
 						added = fmt.Sprintf(`{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"a","name":%q,"arguments":""}}`, name)
 						events[0] = added
 						done = fmt.Sprintf(`{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"a","call_id":"c","name":%q}}`, name)

@@ -25,9 +25,6 @@ var (
 
 var metaRefreshGroup singleflight.Group
 
-// Captured from Muse Code 1.4.14-R7309.1 (build dec7d7497fecdad135ec5835a8161dbc92e55b58)
-// on linux-x86_64. Header parity alone does not satisfy subscription-key
-// attestation for tool-bearing requests; see helps.EnsureMetaMuseToolNamespace.
 const (
 	metaClientVersion = "1.4.14"
 	metaClientBuild   = "dec7d7497fecdad135ec5835a8161dbc92e55b58"
@@ -49,22 +46,18 @@ func metaUserAgent() string {
 	return fmt.Sprintf("muse-build/%s (non-interactive; %s-%s; build %s)", metaClientVersion, goos, arch, metaClientBuild)
 }
 
-// MetaExecutor implements the cliproxyauth.ProviderExecutor for Meta Muse models (api.meta.ai).
 type MetaExecutor struct {
 	cfg *config.Config
 }
 
-// NewMetaExecutor constructs a new Meta executor.
 func NewMetaExecutor(cfg *config.Config) *MetaExecutor {
 	return &MetaExecutor{cfg: cfg}
 }
 
-// Identifier returns the provider identifier "meta".
 func (e *MetaExecutor) Identifier() string {
 	return "meta"
 }
 
-// PrepareRequest injects Meta credentials into the outgoing HTTP request.
 func (e *MetaExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -85,7 +78,6 @@ func (e *MetaExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth
 	return nil
 }
 
-// HttpRequest injects Meta credentials into the request and executes it.
 func (e *MetaExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("meta executor: request is nil")
@@ -105,7 +97,6 @@ func (e *MetaExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth,
 	return httpClient.Do(httpReq)
 }
 
-// Refresh mints an API key from a DCA token if needed.
 func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("meta executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
@@ -180,8 +171,6 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	auth.Attributes["api_key"] = minted.APIKey
 	auth.Attributes["access_token"] = minted.APIKey
 
-	// Auth.Clone does not clone Storage. Keep the candidate isolated from live
-	// login storage; file-loaded records already persist through Metadata.
 	if existing, ok := auth.Storage.(*metaauth.MetaTokenStorage); ok && existing != nil {
 		storage := *existing
 		storage.APIKey = minted.APIKey
@@ -199,13 +188,12 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 		}
 		auth.Storage = &storage
 	}
-	// Only the manager may accept and persist the candidate.
+
 	auth.LastRefreshedAt = time.Now()
 
 	return auth, nil
 }
 
-// ShouldPrepareRequestAuth reports true when a Meta auth has a DCA token but no usable API key.
 func (e *MetaExecutor) ShouldPrepareRequestAuth(auth *cliproxyauth.Auth) bool {
 	if auth == nil || cliproxyauth.IsConfigAPIKeyAuth(auth) {
 		return false
@@ -214,8 +202,6 @@ func (e *MetaExecutor) ShouldPrepareRequestAuth(auth *cliproxyauth.Auth) bool {
 	return token == "" && extractDCAToken(auth) != ""
 }
 
-// PrepareRequestAuth exchanges the DCA token for an API key before request execution,
-// allowing the conductor to atomically install and persist the credential in the manager.
 func (e *MetaExecutor) PrepareRequestAuth(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if auth == nil || !e.ShouldPrepareRequestAuth(auth) {
 		return auth, nil
@@ -406,5 +392,4 @@ func isMetaSubscriptionQuota(statusCode int, body []byte) bool {
 	return false
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
 func (e *MetaExecutor) SupportsApplyPatch() bool { return e != nil }

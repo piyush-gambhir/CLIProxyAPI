@@ -87,7 +87,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-	// Pure thinking chunk with 0 output tokens and NO finishReason (reproducing real upstream Antigravity logs)
 	chunk1 := []byte(`data: {"response":{"candidates":[{"content":{"parts":[{"thought":true,"text":"Thinking..."}],"role":"model"}}],"usageMetadata":{"promptTokenCount":100,"totalTokenCount":150,"thoughtsTokenCount":50},"modelVersion":"gemini-3.7-flash","responseId":"resp-123"}}`)
 	results1 := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, chunk1, &param)
 	if len(results1) != 1 {
@@ -97,7 +96,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 		t.Fatalf("chunk1 should not have finishReason yet, got %q", fr)
 	}
 
-	// Upstream finishes cleanly with [DONE]
 	doneResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(doneResults) != 1 {
 		t.Fatalf("expected synthetic terminal chunk on [DONE], got %d results", len(doneResults))
@@ -106,15 +104,14 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 	if fr := ojson.GetBytesNoCopy(synthetic, "candidates.0.finishReason").String(); fr != "STOP" {
 		t.Fatalf("synthetic chunk finishReason = %q, want STOP", fr)
 	}
-	// Upstream terminal chunks always carry a model-role candidate with an empty
-	// text part, so the synthetic chunk mirrors that shape for client compatibility.
+
 	if role := ojson.GetBytesNoCopy(synthetic, "candidates.0.content.role").String(); role != "model" {
 		t.Fatalf("synthetic chunk content role = %q, want model", role)
 	}
 	if parts := ojson.GetBytesNoCopy(synthetic, "candidates.0.content.parts"); parts.String() != `[{"text":""}]` {
 		t.Fatalf("synthetic chunk parts = %s, want [{\"text\":\"\"}]", parts.Raw)
 	}
-	// The last real chunk carries usage, so the synthetic terminal chunk must keep it.
+
 	if got := ojson.GetBytesNoCopy(synthetic, "usageMetadata.promptTokenCount").Int(); got != 100 {
 		t.Fatalf("synthetic chunk promptTokenCount = %d, want 100", got)
 	}
@@ -128,7 +125,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 		t.Fatalf("synthetic chunk responseId = %q, want resp-123", rid)
 	}
 
-	// Repeated [DONE] should not emit another chunk
 	dupResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(dupResults) != 0 {
 		t.Fatalf("duplicate [DONE] should yield 0 results, got %d", len(dupResults))
@@ -139,7 +135,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotDuplicateFinishReasonWh
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-	// Chunk with explicit STOP finishReason
 	chunk1 := []byte(`data: {"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"},"finishReason":"STOP"}],"modelVersion":"gemini-3.7-flash"}}`)
 	results1 := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, chunk1, &param)
 	if len(results1) != 1 {
@@ -149,7 +144,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotDuplicateFinishReasonWh
 		t.Fatalf("chunk1 finishReason = %q, want STOP", fr)
 	}
 
-	// [DONE] should not emit a second chunk
 	doneResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(doneResults) != 0 {
 		t.Fatalf("expected 0 results on [DONE] when finishReason already observed, got %d", len(doneResults))
@@ -160,10 +154,6 @@ func TestConvertAntigravityResponseToGeminiStream_CarriesFilteredUsageIntoSynthe
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-	// Real streams reach the translator after FilterSSEUsageMetadata, which renames
-	// non-terminal usage to cpaUsageMetadata because finishReason is missing. The
-	// filtered payload is inlined here so this package keeps no dependency on the
-	// executor helpers; the executor tests cover the real filter end to end.
 	filtered := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"}}],"modelVersion":"gemini-3.7-flash","responseId":"resp-filtered","cpaUsageMetadata":{"promptTokenCount":42,"candidatesTokenCount":7,"totalTokenCount":49}}}`)
 	results := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, filtered, &param)
 	if len(results) != 1 {
@@ -192,8 +182,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotFinalizeEmptyUpstreamSt
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-	// A 200 response whose body carried no response chunk must not be reported as
-	// a successful empty completion.
 	doneResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(doneResults) != 0 {
 		t.Fatalf("empty stream must not synthesize a terminal chunk, got %d results: %s", len(doneResults), doneResults[0])
@@ -204,8 +192,6 @@ func TestConvertAntigravityResponseToGeminiStream_ResponseFreeEventDoesNotStartS
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-	// A JSON keepalive or malformed envelope carries no candidates and no usage,
-	// so it must not make an otherwise empty stream look complete.
 	for _, chunk := range [][]byte{
 		[]byte(`{}`),
 		[]byte(`{"response":{}}`),

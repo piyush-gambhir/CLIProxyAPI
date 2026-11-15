@@ -464,7 +464,6 @@ func TestFileTokenStoreSaveReadModifyWritePreservesSIWC(t *testing.T) {
 	store := NewFileTokenStore()
 	store.SetBaseDir(baseDir)
 
-	// Save an Auth whose in-memory Metadata only updated outer tokens and forgot siwc/use_siwc
 	authOuter := &cliproxyauth.Auth{
 		ID:       fileName,
 		FileName: fileName,
@@ -491,7 +490,6 @@ func TestFileTokenStoreSaveReadModifyWritePreservesSIWC(t *testing.T) {
 		t.Fatalf("in-memory Metadata should be synced with disk siwc, got %#v", authOuter.Metadata["siwc"])
 	}
 
-	// Now save an Auth that updates only siwc.access_token and siwc.refresh_token
 	authSIWC := &cliproxyauth.Auth{
 		ID:       fileName,
 		FileName: fileName,
@@ -529,7 +527,6 @@ func TestFileTokenStoreSaveAllowsDeletingNonCredentialMetadata(t *testing.T) {
 	store := NewFileTokenStore()
 	store.SetBaseDir(baseDir)
 
-	// Operator clears proxy_url from Metadata and saves
 	auth := &cliproxyauth.Auth{
 		ID:       fileName,
 		FileName: fileName,

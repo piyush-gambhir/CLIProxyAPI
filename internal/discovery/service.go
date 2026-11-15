@@ -13,8 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ResolveDiscoveryStateDir returns an absolute state directory for discovery metadata,
-// avoiding writing relative paths into the current working directory.
 func ResolveDiscoveryStateDir() string {
 	if writable := util.WritablePath(); writable != "" {
 		return filepath.Join(writable, "discovery")
@@ -28,8 +26,6 @@ func ResolveDiscoveryStateDir() string {
 	return ""
 }
 
-// validateServiceType checks whether st conforms to RFC 6763 / RFC 6335 service type format.
-// CPA only exposes a TCP listener, so advertised types must end with ._tcp.
 func validateServiceType(st string) error {
 	st = strings.TrimSpace(st)
 	if st == "" {
@@ -63,14 +59,12 @@ func validateServiceType(st string) error {
 	return nil
 }
 
-// sanitizeSubtype validates and normalizes a subtype label according to RFC 6763 §7.1.
-// Returns a valid label prefixed with '_' (e.g. "_responses") or empty string if invalid.
 func sanitizeSubtype(sub string) string {
 	sub = strings.TrimSpace(sub)
 	if sub == "" {
 		return ""
 	}
-	// Reject malformed attempts to pass full domain structures
+
 	if strings.Contains(sub, "._sub") || strings.Contains(sub, ".") {
 		return ""
 	}
@@ -81,7 +75,7 @@ func sanitizeSubtype(sub string) string {
 	if len(label) == 0 || len(label) > 62 {
 		return ""
 	}
-	// RFC 6335 / RFC 6763: alphanumeric and hyphen, cannot start or end with hyphen, no internal underscores
+
 	if label[0] == '-' || label[len(label)-1] == '-' {
 		return ""
 	}
@@ -93,8 +87,6 @@ func sanitizeSubtype(sub string) string {
 	return sub
 }
 
-// normalizeBrowseQuery accepts the RFC 6763 subtype owner form as well as the
-// comma form historically accepted by zeroconf. It returns lowercase DNS names.
 func normalizeBrowseQuery(service, domain string) (string, string, error) {
 	domain = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
 	if domain == "" {
@@ -148,8 +140,6 @@ func truncateRunesTo(s string, maxBytes int) string {
 	return s
 }
 
-// sanitizeInstanceName limits name to 63 bytes without breaking UTF-8 rune boundaries
-// and removes ASCII control characters.
 func sanitizeInstanceName(name string) string {
 	var b strings.Builder
 	for _, r := range name {
@@ -188,7 +178,6 @@ func interfaceHasIP(iface net.Interface, target net.IP) bool {
 	return false
 }
 
-// BuildServiceSpec creates a ServiceSpec from configuration, port, and TLS setting.
 func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpec, error) {
 	if cfg == nil {
 		return ServiceSpec{}, fmt.Errorf("discovery: config is nil")
@@ -198,17 +187,14 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 	}
 	discCfg := cfg.Discovery
 
-	// 1. Resolve State Dir for persistent instance ID
 	stateDir := ResolveDiscoveryStateDir()
 	instanceID := GetOrGenerateInstanceID(stateDir)
 
-	// 2. Format instance name (CPA-<ShortID> or <custom>-<ShortID>) within DNS label limits
 	instanceName := FormatInstanceName(discCfg.ServiceName, instanceID)
 	if instanceName == "" {
 		instanceName = DefaultInstancePrefix + instanceID
 	}
 
-	// 3. Service type validation (RFC 6763 / RFC 6335)
 	serviceType := strings.TrimSpace(discCfg.ServiceType)
 	if serviceType == "" {
 		serviceType = DefaultServiceType
@@ -216,7 +202,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 		return ServiceSpec{}, fmt.Errorf("discovery: invalid service-type: %w", errST)
 	}
 
-	// 4. Subtypes sanitization
 	var subtypes []string
 	rawSubtypes := discCfg.Subtypes
 	if len(rawSubtypes) == 0 {
@@ -237,7 +222,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 		subtypes = []string{SubtypeChatCompletions}
 	}
 
-	// 5. Interface filtering (Scheme C)
 	ifaces, err := FilterInterfaces(discCfg.Interfaces.Include, discCfg.Interfaces.Exclude)
 	if err != nil {
 		log.Warnf("discovery: failed to filter interfaces: %v", err)
@@ -285,7 +269,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 		return ServiceSpec{}, fmt.Errorf("discovery: no advertised address matches bind host %q", bindHost)
 	}
 
-	// 6. Build TXT records; protocols mirror the advertised subtypes.
 	txtOpts := DefaultTXTOptions()
 	txtOpts.InstanceID = instanceID
 	txtOpts.TLS = tlsEnabled
@@ -311,8 +294,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 	}, nil
 }
 
-// protocolsFromSubtypes derives TXT protocol tokens from advertised subtype labels
-// so the protocols attribute and DNS-SD subtypes stay consistent.
 func protocolsFromSubtypes(subtypes []string) []string {
 	protocols := make([]string, 0, len(subtypes))
 	for _, subtype := range subtypes {

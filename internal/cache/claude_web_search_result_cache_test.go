@@ -116,7 +116,7 @@ func TestClaudeWebSearchResultCacheExpiresAndSlides(t *testing.T) {
 	if _, ok := GetClaudeWebSearchResult("s", "srvtoolu_1", ttl); !ok {
 		t.Fatal("entry expired before its TTL")
 	}
-	// The read above extended the lifetime.
+
 	now = now.Add(ttl - time.Minute)
 	if _, ok := GetClaudeWebSearchResult("s", "srvtoolu_1", ttl); !ok {
 		t.Fatal("read did not extend the entry lifetime")
@@ -136,7 +136,7 @@ func TestClaudeWebSearchResultCacheEnforcesEntryLimitWithoutByteCap(t *testing.T
 
 	const limit = 4
 	longSession := strings.Repeat("s", 4096)
-	// Large payloads must not be rejected by a byte limit; only the entry limit applies.
+
 	largeContent := bytes.Repeat([]byte("a"), 5<<20)
 	CacheClaudeWebSearchResult("s", "large", largeContent, time.Hour, limit)
 	if got, ok := GetClaudeWebSearchResult("s", "large"); !ok || len(got) != len(largeContent) {
@@ -174,7 +174,7 @@ func TestClaudeWebSearchResultCachePurgesExpiredBeforeEvictingLiveEntries(t *tes
 
 	CacheClaudeWebSearchResult("s", "short", []byte(`[1]`), 5*time.Minute, 2)
 	CacheClaudeWebSearchResult("s", "long", []byte(`[2]`), 30*time.Minute, 2)
-	// Touch "short" so "long" is the LRU tail, then advance past "short"'s TTL.
+
 	_, _ = GetClaudeWebSearchResult("s", "short", 5*time.Minute)
 	now = now.Add(10 * time.Minute)
 
@@ -242,7 +242,6 @@ func TestClaudeWebSearchResultCacheHomeWriteReadAndSlidingExpire(t *testing.T) {
 		t.Fatalf("caller mutation altered Home KV fake state: %q", client.values[kvKey])
 	}
 
-	// Expire error should not discard a successfully fetched result.
 	client.expireErr = errors.New("expire failed")
 	gotAfterExpireErr, okAfterExpireErr, errAfterExpireErr := GetClaudeWebSearchResultRequired(context.Background(), "session-home", "srvtoolu_1")
 	if errAfterExpireErr != nil || !okAfterExpireErr || !bytes.Equal(gotAfterExpireErr, content) {

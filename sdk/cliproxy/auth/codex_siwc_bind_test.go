@@ -102,8 +102,7 @@ func TestBindCodexSIWCFailureDoesNotPublish(t *testing.T) {
 	for _, failure := range []string{"missing", "invalid", "type", "outer", "account", "outside", "write"} {
 		t.Run(failure, func(t *testing.T) {
 			name := "auth.json"
-			// The credential and lock names fit NAME_MAX; atomic-write temporary
-			// names do not. This fails writes deterministically even when run as root.
+
 			if failure == "write" {
 				name = strings.Repeat("a", 244) + ".json"
 			}
@@ -184,8 +183,7 @@ func TestBindCodexSIWCFencesInflightRefreshAndWatcher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// An earlier refresh finishes after explicit binding. Its independent outer
-	// partition may commit, but it must not restore the previous SIWC identity.
+
 	got, err := m.UpdateRefreshedAuth(context.Background(), base, refreshed)
 	if err != nil {
 		t.Fatal(err)
@@ -206,7 +204,6 @@ func TestBindCodexSIWCFencesInflightRefreshAndWatcher(t *testing.T) {
 	}
 }
 
-// bindingFileStore exercises the production scoped refresh persistence path.
 type bindingFileStore struct{ path string }
 
 func (s *bindingFileStore) List(context.Context) ([]*Auth, error) { return nil, nil }
@@ -280,9 +277,7 @@ func TestBindCodexSIWCRejectsNonFileSources(t *testing.T) {
 func TestBindCodexSIWCTildeAndAttributeOverride(t *testing.T) {
 	m, base, path, _ := setupSIWCBinding(t, "auth.json")
 	homeDir := filepath.Dir(path)
-	// os.UserHomeDir reads HOME on Unix but %USERPROFILE% on Windows, and
-	// the runtime resolves "~" through it; pin both so the injection below
-	// lands on the same directory on every platform.
+
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir)
 	if userHomeDir, errUserHomeDir := os.UserHomeDir(); errUserHomeDir != nil || filepath.Clean(userHomeDir) != filepath.Clean(homeDir) {

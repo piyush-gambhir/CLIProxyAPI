@@ -1,12 +1,5 @@
-// Package claude provides authentication and token management functionality
-// for Anthropic's Claude AI services. It handles OAuth2 token storage, serialization,
-// and retrieval for maintaining authenticated sessions with the Claude API.
 package claude
 
-// LoginSuccessHtml is the HTML template displayed to users after successful OAuth authentication.
-// This template provides a user-friendly success page with options to close the window
-// or navigate to the Claude platform. It includes automatic window closing functionality
-// and keyboard accessibility features.
 const LoginSuccessHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -208,9 +201,6 @@ const LoginSuccessHtml = `<!DOCTYPE html>
 </body>
 </html>`
 
-// SetupNoticeHtml is the HTML template for the setup notice section.
-// This template is embedded within the success page to inform users about
-// additional setup steps required to complete their Claude account configuration.
 const SetupNoticeHtml = `
         <div class="setup-notice">
             <h3>Additional Setup Required</h3>

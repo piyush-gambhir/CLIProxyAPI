@@ -1,4 +1,3 @@
-// Command validate_codex_models validates a Codex client model catalog file.
 package main
 
 import (

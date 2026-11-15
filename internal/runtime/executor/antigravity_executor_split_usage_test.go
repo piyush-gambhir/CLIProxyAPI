@@ -35,20 +35,12 @@ type antigravityUsageNoop struct{}
 
 func (antigravityUsageNoop) HandleUsage(context.Context, usage.Record) {}
 
-// antigravitySplitTerminalSSE reproduces the only upstream shape that makes
-// FilterSSEUsageMetadata forward real usageMetadata on a chunk without
-// finishReason: a chunk carrying finishReason but no usage, whose traceId is
-// then matched by a usage-only tail chunk. The tail chunk is terminal, so the
-// stream must end with exactly one finish_reason that carries the usage.
 const antigravitySplitTerminalSSE = `data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"first"}]},"finishReason":"STOP"}],"modelVersion":"gemini-3.7-flash","responseId":"resp-split"},"traceId":"trace-split"}
 
 data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":""}]}}],"usageMetadata":{"promptTokenCount":11,"candidatesTokenCount":22,"totalTokenCount":33},"modelVersion":"gemini-3.7-flash","responseId":"resp-split"},"traceId":"trace-split"}
 
 `
 
-// TestAntigravityStreamFinalizesSplitTerminalUsageOnce covers a terminal
-// finishReason and its usage arriving in separate chunks: the stream must carry
-// exactly one finish_reason, on the last chunk, together with the token counts.
 func TestAntigravityStreamFinalizesSplitTerminalUsageOnce(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -117,8 +109,6 @@ func TestAntigravityStreamFinalizesSplitTerminalUsageOnce(t *testing.T) {
 	}
 }
 
-// TestAntigravityStreamReportsSplitTerminalUsage checks that a usage-only tail
-// is recorded. EnsurePublished must not emit an empty detail first.
 func TestAntigravityStreamReportsSplitTerminalUsage(t *testing.T) {
 	const authID = "antigravity-split-usage"
 	capture := &antigravityUsageCapture{authID: authID, records: make(chan usage.Record, 4)}

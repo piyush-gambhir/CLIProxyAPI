@@ -11,11 +11,6 @@ import (
 	"testing"
 )
 
-// kimiSignatureCorpusPath locates the harvested Kimi signature corpus. The
-// corpus lives with the collection skill that produced it and is not tracked in
-// this repository, matching how the Grok and Gemini native corpora are handled:
-// tests that need real traffic skip when it is absent rather than committing
-// captured payloads.
 func kimiSignatureCorpusPath() (string, bool) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
@@ -29,8 +24,6 @@ func kimiSignatureCorpusPath() (string, bool) {
 	return path, true
 }
 
-// masterSignatureCatalogPath locates the cross-provider signature catalog from
-// the same collection skill.
 func masterSignatureCatalogPath() (string, bool) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
@@ -76,11 +69,6 @@ func loadKimiCorpus(t *testing.T) []string {
 	return out
 }
 
-// synthesizeKimiSignature builds a signature-shaped payload of the requested
-// decoded size from a seeded PRNG. Kimi identification rests entirely on raw
-// length plus the payload being high-entropy unpadded base64, and none of that
-// requires captured traffic, so the contract tests below run everywhere instead
-// of depending on a local corpus.
 func synthesizeKimiSignature(t *testing.T, decodedLen int, seed int64) string {
 	t.Helper()
 	buf := make([]byte, decodedLen)
@@ -91,11 +79,6 @@ func synthesizeKimiSignature(t *testing.T, decodedLen int, seed int64) string {
 	return base64.RawStdEncoding.EncodeToString(buf)
 }
 
-// TestKimiThinkingSignatureLengths_MatchDecodedSizes pins the arithmetic that
-// makes the two constants reachable at all: unpadded base64 of 9709 and 3255
-// bytes is exactly 12946 and 4340 characters. A future edit that changes one
-// constant without the other would otherwise produce a length no real payload
-// can have.
 func TestKimiThinkingSignatureLengths_MatchDecodedSizes(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -144,9 +127,6 @@ func TestInspectKimiThinkingSignature_ReportsMode(t *testing.T) {
 	}
 }
 
-// TestInspectKimiThinkingSignature_RejectsNeighbouringLengths is the core
-// negative test for a size-only probe: one character in either direction must
-// fall out of the family.
 func TestInspectKimiThinkingSignature_RejectsNeighbouringLengths(t *testing.T) {
 	for _, decodedLen := range []int{9709, 3255} {
 		native := synthesizeKimiSignature(t, decodedLen, 3)
@@ -189,9 +169,6 @@ func TestInspectKimiThinkingSignature_RejectsMalformedInput(t *testing.T) {
 	}
 }
 
-// TestInspectKimiThinkingSignature_RejectsLowEntropyFiller pins the one attack a
-// length check alone cannot survive: a caller that knows the constant and pads
-// to it with structured bytes.
 func TestInspectKimiThinkingSignature_RejectsLowEntropyFiller(t *testing.T) {
 	for _, length := range []int{KimiThinkingSignatureStreamingLen, KimiThinkingSignatureNonStreamingLen} {
 		if IsValidKimiThinkingSignature(strings.Repeat("A", length)) {
@@ -200,21 +177,12 @@ func TestInspectKimiThinkingSignature_RejectsLowEntropyFiller(t *testing.T) {
 	}
 }
 
-// TestInspectKimiThinkingSignature_RejectsSelfDescribingEnvelope guards the
-// exported entry point. DetectSignatureProviderForBlock already runs the
-// envelope probes first, but callers can reach this validator directly, so a
-// foreign envelope must not be accepted here on length alone.
 func TestInspectKimiThinkingSignature_RejectsSelfDescribingEnvelope(t *testing.T) {
 	if IsValidKimiThinkingSignature(observedFable5Sample) {
 		t.Errorf("Claude CAIS sample accepted as Kimi signature")
 	}
 }
 
-// TestDetectSignatureProvider_KimiRunsAfterEnvelopeProbes pins the ordering
-// invariant. Kimi's base64 is uniformly distributed, so roughly 6% of real
-// signatures start with one of the "CERg" envelope characters; those must still
-// resolve to Kimi after the envelope probes decline, and a real envelope must
-// never be captured by the size probe.
 func TestDetectSignatureProvider_KimiRunsAfterEnvelopeProbes(t *testing.T) {
 	if got := DetectSignatureProvider(observedFable5Sample); got != SignatureProviderClaude {
 		t.Fatalf("DetectSignatureProvider = %q, want %q for a Claude CAIS sample", got, SignatureProviderClaude)
@@ -269,10 +237,6 @@ func TestSignatureProviderFromModelName_Kimi(t *testing.T) {
 	}
 }
 
-// TestDecideSignatureCompatibility_KimiDropsSignatureNotBlock encodes the
-// measured upstream behaviour: Kimi returns 200 for a mutated, truncated,
-// non-base64 or entirely absent thinking signature, so a foreign signature costs
-// the field rather than the reasoning text.
 func TestDecideSignatureCompatibility_KimiDropsSignatureNotBlock(t *testing.T) {
 	decision := DecideSignatureCompatibility(SignatureProviderKimi, observedFable5Sample, SignatureBlockKindClaudeThinking)
 	if decision.Compatible {
@@ -297,8 +261,6 @@ func TestDecideSignatureCompatibility_KimiPreservesNativeSignature(t *testing.T)
 	}
 }
 
-// TestInspectKimiThinkingSignature_NativeCorpus validates the synthesized
-// contract above against real harvested traffic when the corpus is available.
 func TestInspectKimiThinkingSignature_NativeCorpus(t *testing.T) {
 	modes := map[KimiThinkingSignatureMode]int{}
 	for _, sig := range loadKimiCorpus(t) {
@@ -316,9 +278,6 @@ func TestInspectKimiThinkingSignature_NativeCorpus(t *testing.T) {
 	}
 }
 
-// TestDetectSignatureProvider_KimiProbeDoesNotDisturbCatalog replays the whole
-// cross-provider catalog to prove the size probe changed nothing for the
-// self-describing families and never claims a Grok payload.
 func TestDetectSignatureProvider_KimiProbeDoesNotDisturbCatalog(t *testing.T) {
 	path, ok := masterSignatureCatalogPath()
 	if !ok {
@@ -359,9 +318,7 @@ func TestDetectSignatureProvider_KimiProbeDoesNotDisturbCatalog(t *testing.T) {
 			t.Errorf("%d %s signatures captured by the Kimi size probe", captured, claimed)
 		}
 	}
-	// xAI stays in the residual class by contract: its ciphertext carries no
-	// envelope and no fixed length, so any positive claim would also capture
-	// unrelated opaque payloads.
+
 	for detected, count := range matrix["grok"] {
 		if detected != SignatureProviderUnknown {
 			t.Errorf("%d grok signatures classified as %q, want %q", count, detected, SignatureProviderUnknown)

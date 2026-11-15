@@ -252,7 +252,7 @@ func TestMergeRefreshedAuth(t *testing.T) {
 		}
 		updated := &Auth{
 			ID:       "auth6",
-			ProxyURL: "http://proxy.old:8080", // executor didn't touch ProxyURL, it inherited from base
+			ProxyURL: "http://proxy.old:8080",
 			Metadata: map[string]any{
 				"access_token": "tok-new",
 				"proxy_url":    "http://proxy.old:8080",
@@ -433,8 +433,7 @@ func TestMergeRefreshedAuth(t *testing.T) {
 }
 
 func TestMergeExistingAuthMetadataMetaDoesNotRestoreOldKey(t *testing.T) {
-	// A new device login can succeed while API key minting fails.
-	// Its DCA credential must not inherit the previous login's API key.
+
 	auth := &Auth{Provider: "meta", Metadata: map[string]any{"access_token": "dca:new", "dca_token": "dca:new"}}
 	MergeExistingAuthMetadata(auth, map[string]any{"api_key": "LLM|old", "dca_expired": "old expiry", "dca_expires_at": 42, "priority": 3})
 	for _, key := range []string{"api_key", "dca_expired", "dca_expires_at"} {
@@ -448,7 +447,7 @@ func TestMergeExistingAuthMetadataMetaDoesNotRestoreOldKey(t *testing.T) {
 }
 
 func TestMergeRefreshedAndExistingAuthMetadataPreservesSIWC(t *testing.T) {
-	// 1. MergeExistingAuthMetadata must preserve siwc and use_siwc when re-logging into Codex
+
 	target := &Auth{
 		Provider: "codex",
 		Metadata: map[string]any{
@@ -480,7 +479,6 @@ func TestMergeRefreshedAndExistingAuthMetadataPreservesSIWC(t *testing.T) {
 		t.Fatalf("siwc not preserved: %#v", target.Metadata["siwc"])
 	}
 
-	// 2. MergeRefreshedAuth and CredentialsChanged when only SIWC is refreshed
 	base := &Auth{
 		ID:       "codex-1",
 		Provider: "codex",
@@ -525,8 +523,7 @@ func TestMergeRefreshedAndExistingAuthMetadataPreservesSIWC(t *testing.T) {
 }
 
 func TestMergeExistingAuthMetadataPortalAttributionDeterministic(t *testing.T) {
-	// When target initially has neither oauth_provider nor portal, both fields from existingMap
-	// must be preserved deterministically regardless of map iteration order.
+
 	for i := 0; i < 20; i++ {
 		target := &Auth{
 			Provider: "zcode",
@@ -541,7 +538,6 @@ func TestMergeExistingAuthMetadataPortalAttributionDeterministic(t *testing.T) {
 		}
 	}
 
-	// When target explicitly defines a new oauth_provider, stale portal from existingMap is skipped.
 	reloginTarget := &Auth{
 		Provider: "zcode",
 		Metadata: map[string]any{"oauth_provider": "zcode-zai", "access_token": "new-tok"},

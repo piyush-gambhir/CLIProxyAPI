@@ -141,8 +141,6 @@ func TestClaudeIssue7389CountTokensDoesNotSendRejectedPropertyNames(t *testing.T
 	claudeIssue7389AssertUpstream(t, upstreamBody)
 }
 
-// User payload rules are the final semantic barrier: values they configure
-// must reach upstream exactly as configured.
 func TestClaudeIssue7389PayloadRulesRunAfterSchemaFallback(t *testing.T) {
 	for _, stream := range []bool{false, true} {
 		t.Run(fmt.Sprintf("stream=%t", stream), func(t *testing.T) {
@@ -185,8 +183,6 @@ func TestClaudeIssue7389PayloadRulesRunAfterSchemaFallback(t *testing.T) {
 	}
 }
 
-// claudeIssue7389Tool returns the upstream declaration whose description
-// starts with prefix, whatever name aliasing the request path applied.
 func claudeIssue7389Tool(body []byte, prefix string) ojson.Result {
 	var found ojson.Result
 	ojson.GetBytes(body, "tools").ForEach(func(_, tool ojson.Result) bool {
@@ -199,7 +195,6 @@ func claudeIssue7389Tool(body []byte, prefix string) ojson.Result {
 	return found
 }
 
-// claudeIssue7389AssertPropertyKeys checks every properties map in a schema.
 func claudeIssue7389AssertPropertyKeys(t *testing.T, node ojson.Result, propertyMap bool) {
 	t.Helper()
 	if node.Type != ojson.JSON {
@@ -295,7 +290,6 @@ func claudeIssue7389SSEResponse(toolName string) string {
 	return b.String()
 }
 
-// claudeIssue7389ClientArguments extracts the final tool arguments the client sees.
 func claudeIssue7389ClientArguments(t *testing.T, format sdktranslator.Format, stream bool, output []byte) []byte {
 	t.Helper()
 	switch {

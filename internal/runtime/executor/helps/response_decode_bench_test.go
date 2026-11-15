@@ -14,7 +14,6 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// benchZstdSSE returns a zstd-encoded body of about size bytes of Responses-style SSE deltas.
 func benchZstdSSE(b *testing.B, size int) []byte {
 	b.Helper()
 	r := rand.New(rand.NewSource(1))
@@ -38,7 +37,6 @@ func benchZstdSSE(b *testing.B, size int) []byte {
 
 var benchZstdHeader = http.Header{"Content-Encoding": {"zstd"}}
 
-// BenchmarkDecodeResponseBodyZstd decodes whole zstd upstream responses concurrently.
 func BenchmarkDecodeResponseBodyZstd(b *testing.B) {
 	for _, size := range []int{64 << 10, 2 << 20} {
 		wire := benchZstdSSE(b, size)
@@ -61,8 +59,6 @@ func BenchmarkDecodeResponseBodyZstd(b *testing.B) {
 	}
 }
 
-// BenchmarkDecodeResponseBodyOpenStreams holds 256 zstd responses open after their first read,
-// like streams waiting on the model, and reports the heap held per open stream.
 func BenchmarkDecodeResponseBodyOpenStreams(b *testing.B) {
 	const streams = 256
 	wire := benchZstdSSE(b, 256<<10)
@@ -93,8 +89,6 @@ func BenchmarkDecodeResponseBodyOpenStreams(b *testing.B) {
 	b.ReportMetric(heap/float64(b.N), "heap-KiB/stream")
 }
 
-// BenchmarkDecodeResponseBodyUnlabeledFirstByte measures how long DecodeResponseBody blocks
-// for a response without Content-Encoding whose first byte arrives 20 ms after the headers.
 func BenchmarkDecodeResponseBodyUnlabeledFirstByte(b *testing.B) {
 	var blocked time.Duration
 	for i := 0; i < b.N; i++ {

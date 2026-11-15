@@ -20,17 +20,12 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// An unknown interrupt while a websocket response is running belongs to the
-// live upstream socket: it must be rejected outright, never fall back to a
-// local cancellation that fabricates an incomplete event and kills the
-// running turn. Only a turn with no active websocket (HTTP fallback) may be
-// interrupted locally.
 func TestResponsesUnknownInterruptDoesNotCancelWebsocketTurn(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	var connections atomic.Int32
 	release := make(chan struct{})
 	var releaseOnce atomic.Bool
-	// Always unblock the upstream goroutine, even on assertion failure.
+
 	defer func() {
 		if releaseOnce.CompareAndSwap(false, true) {
 			close(release)
@@ -60,9 +55,9 @@ func TestResponsesUnknownInterruptDoesNotCancelWebsocketTurn(t *testing.T) {
 			t.Errorf("created: %v", errWrite)
 			return
 		}
-		// Keep r1 running until the test checked the unknown interrupt.
+
 		<-release
-		// The only frame allowed next is the valid r1 interrupt.
+
 		_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		_, interrupt, errInterrupt := conn.ReadMessage()
 		if errInterrupt != nil {
@@ -136,12 +131,9 @@ func TestResponsesUnknownInterruptDoesNotCancelWebsocketTurn(t *testing.T) {
 	send(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[]}`, model))
 	expect("response.created", "r1")
 
-	// Unknown target on a live websocket turn: reject, do not cancel r1.
 	send(`{"type":"response.interrupt","response_id":"unknown"}`)
 	expect("error", "")
 
-	// r1 must still be alive: a valid interrupt now forwards upstream and
-	// the upstream terminal event comes back on the same socket.
 	if releaseOnce.CompareAndSwap(false, true) {
 		close(release)
 	}

@@ -229,7 +229,6 @@ func TestOrderedRequestConnBypassesNonHTTPHandshakeBytes(t *testing.T) {
 		return []string{"User-Agent", "Host"}
 	})
 
-	// Simulate SOCKS5 handshake bytes before HTTP request
 	socksGreeting := []byte{0x05, 0x01, 0x00}
 	if n, errWrite := conn.Write(socksGreeting); errWrite != nil || n != len(socksGreeting) {
 		t.Fatalf("write socks greeting: %d, %v", n, errWrite)
@@ -238,7 +237,6 @@ func TestOrderedRequestConnBypassesNonHTTPHandshakeBytes(t *testing.T) {
 		t.Fatalf("socks bytes not passed through immediately: got %v", underlying.Bytes())
 	}
 
-	// Now send the HTTP request
 	httpRequest := []byte("GET / HTTP/1.1\r\nHost: target.com\r\nUser-Agent: curl/8.0\r\n\r\n")
 	if n, errWrite := conn.Write(httpRequest); errWrite != nil || n != len(httpRequest) {
 		t.Fatalf("write http request: %d, %v", n, errWrite)
@@ -259,7 +257,6 @@ func TestOrderedRequestConnSupportsCustomAndLowercaseHTTPMethods(t *testing.T) {
 		return []string{"Man", "Host"}
 	})
 
-	// Test M-SEARCH (UPnP/SSDP method with hyphen)
 	input := []byte("M-SEARCH * HTTP/1.1\r\nHost: 239.255.255.250:1900\r\nMan: \"ssdp:discover\"\r\n\r\n")
 	if _, errWrite := conn.Write(input); errWrite != nil {
 		t.Fatalf("write error: %v", errWrite)
@@ -284,7 +281,6 @@ func TestOrderedRequestConnSupportsLongAndChunkedHTTPMethods(t *testing.T) {
 	requestText := longMethod + " /resource HTTP/1.1\r\nHost: example.com\r\nx-a: 1\r\nx-b: 2\r\n\r\n"
 	input := []byte(requestText)
 
-	// Write in small chunks to test fragmented method recognition
 	for i := 0; i < len(input); i += 10 {
 		end := i + 10
 		if end > len(input) {

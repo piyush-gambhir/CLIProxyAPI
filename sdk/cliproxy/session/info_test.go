@@ -12,7 +12,6 @@ import (
 func TestExtractSessionInfoAllClients(t *testing.T) {
 	t.Parallel()
 
-	// 1. Claude Code with Subagent
 	claudeHeaders := http.Header{
 		"X-Claude-Code-Session-Id": []string{"claude-root-123"},
 		"X-Claude-Code-Agent-Id":   []string{"subagent-checker"},
@@ -34,7 +33,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("AgentName = %q", info.AgentName)
 	}
 
-	// 2. Codex CLI with parent thread
 	codexHeaders := http.Header{
 		"Session-Id":               []string{"codex-child-555"},
 		"x-codex-parent-thread-id": []string{"codex-parent-111"},
@@ -47,7 +45,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("Codex session ids mismatch: %+v", info)
 	}
 
-	// 2b. Codex CLI fork with X-Codex-Turn-Metadata
 	codexForkHeaders := http.Header{
 		"Session-Id": []string{"codex-fork-666"},
 		"X-Codex-Turn-Metadata": []string{
@@ -65,7 +62,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("expected IsFork=true for Codex fork: %+v", info)
 	}
 
-	// 2c. Codex CLI Multi-Agent v2 (collab_spawn)
 	codexSubagentHeaders := http.Header{
 		"Session-Id":        []string{"codex-root-001"},
 		"Thread-Id":         []string{"codex-sub-thread-002"},
@@ -85,7 +81,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("Codex Multi-Agent metadata mismatch: AgentName=%q, IsSubagent=%v", info.AgentName, info.IsSubagent)
 	}
 
-	// 3. Pi Slot Session
 	piHeaders := http.Header{
 		"X-Slot-Session-Id": []string{"pi-slot-777"},
 	}
@@ -94,7 +89,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("Pi slot mismatch: %+v", info)
 	}
 
-	// 4. OpenCode Session Affinity & Parent
 	opencodeHeaders := http.Header{
 		"X-Session-Affinity":        []string{"oc-child-999"},
 		"X-Parent-Session-Affinity": []string{"oc-parent-333"},
@@ -104,14 +98,12 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("OpenCode mismatch: %+v", info)
 	}
 
-	// 4b. Body-only fork in thread_id
 	bodyForkPayload := []byte(`{"thread_id":"child-thread-01","forked_from_thread_id":"parent-thread-00"}`)
 	info, ok = ExtractSessionInfo(nil, bodyForkPayload, nil)
 	if !ok || info.SessionID != "thread:child-thread-01" || info.ParentSessionID != "thread:parent-thread-00" || !info.IsFork || info.IsSubagent {
 		t.Errorf("body-only fork mismatch: %+v", info)
 	}
 
-	// 4c. Codex fork with both Session-Id and Thread-Id
 	codexForkBothHeaders := http.Header{
 		"Session-Id": []string{"parent-thread-00"},
 		"Thread-Id":  []string{"child-thread-01"},
@@ -124,14 +116,12 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("Codex fork with both sid and tid mismatch: %+v", info)
 	}
 
-	// 4d. Nested metadata forked_from_thread_id in body
 	nestedForkPayload := []byte(`{"thread_id":"child-t-99","metadata":{"forked_from_thread_id":"parent-t-88"}}`)
 	info, ok = ExtractSessionInfo(nil, nestedForkPayload, nil)
 	if !ok || info.SessionID != "thread:child-t-99" || info.ParentSessionID != "thread:parent-t-88" || !info.IsFork {
 		t.Errorf("nested body-only fork mismatch: %+v", info)
 	}
 
-	// 4e. Codex fork with Session-Id in header and thread_id + metadata.forked_from_thread_id in body
 	codexHeaderBodyForkHeaders := http.Header{"Session-Id": []string{"parent-sess-uuid"}}
 	codexHeaderBodyForkPayload := []byte(`{"thread_id":"child-thread-uuid","metadata":{"forked_from_thread_id":"parent-sess-uuid"}}`)
 	info, ok = ExtractSessionInfo(codexHeaderBodyForkHeaders, codexHeaderBodyForkPayload, nil)
@@ -139,7 +129,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("Codex fork with Session-Id header and body thread_id mismatch: %+v", info)
 	}
 
-	// 5. Antigravity X-Http-Session-Id
 	agyHeaders := http.Header{
 		"X-Http-Session-Id": []string{"agy-sess-888"},
 	}
@@ -148,7 +137,6 @@ func TestExtractSessionInfoAllClients(t *testing.T) {
 		t.Errorf("Antigravity mismatch: %+v", info)
 	}
 
-	// 6. Payload with metadata.agent_id and parent_session_id
 	payload := []byte(`{
 		"session_id": "payload-child-10",
 		"parent_session_id": "payload-parent-01",
@@ -231,7 +219,6 @@ func TestExtractSessionInfoRejectsControlCharacters(t *testing.T) {
 func TestExtractSessionInfoClaudeNestedParent(t *testing.T) {
 	t.Parallel()
 
-	// Nested metadata.user_id containing session_id and parent_session_id
 	payload := []byte(`{
 		"metadata": {
 			"user_id": "{\"session_id\":\"child-session-123\",\"parent_session_id\":\"parent-session-456\",\"agent_id\":\"subagent-worker\"}"
@@ -248,7 +235,6 @@ func TestExtractSessionInfoClaudeNestedParent(t *testing.T) {
 		t.Fatalf("expected parent claude:parent-session-456, got %q", info.ParentSessionID)
 	}
 
-	// Explicit header + payload body parent_session_id
 	headerPayload := []byte(`{"parent_session_id":"parent-session-789"}`)
 	headers := http.Header{}
 	headers.Set("X-Claude-Code-Session-Id", "header-child-123")
@@ -267,7 +253,6 @@ func TestExtractSessionInfoClaudeNestedParent(t *testing.T) {
 func TestExtractSessionInfoGeminiAndAntigravityHierarchy(t *testing.T) {
 	t.Parallel()
 
-	// Gemini cachedContent with parent_session_id
 	geminiPayload := []byte(`{"cachedContent":"cache-child-1","parent_session_id":"cache-parent-1"}`)
 	info, ok := ExtractSessionInfo(nil, geminiPayload, nil)
 	if !ok {
@@ -283,7 +268,6 @@ func TestExtractSessionInfoGeminiAndAntigravityHierarchy(t *testing.T) {
 		t.Fatalf("expected subagent, got %q", info.AgentName)
 	}
 
-	// Antigravity headers with parent
 	headers := http.Header{}
 	headers.Set("X-Http-Session-Id", "agy-child-2")
 	headers.Set("X-Parent-Session-ID", "agy-parent-2")
@@ -327,7 +311,6 @@ func TestExtractSessionInfoNestedAntigravityRequest(t *testing.T) {
 func TestExtractSessionInfoThreadAndConversation(t *testing.T) {
 	t.Parallel()
 
-	// 1. Thread Header
 	threadHeaders := http.Header{
 		"X-Thread-Id": []string{"thread-abc-123"},
 	}
@@ -336,7 +319,6 @@ func TestExtractSessionInfoThreadAndConversation(t *testing.T) {
 		t.Fatalf("thread header failed: %+v", info)
 	}
 
-	// 2. Conversation Header
 	convHeaders := http.Header{
 		"X-Conversation-Id": []string{"conv-xyz-789"},
 	}
@@ -345,7 +327,6 @@ func TestExtractSessionInfoThreadAndConversation(t *testing.T) {
 		t.Fatalf("conversation header failed: %+v", info)
 	}
 
-	// 3. Payload Thread with parent
 	threadPayload := []byte(`{
 		"thread_id": "thread-child-1",
 		"parent_thread_id": "thread-parent-1"
@@ -355,7 +336,6 @@ func TestExtractSessionInfoThreadAndConversation(t *testing.T) {
 		t.Fatalf("thread payload failed: %+v", info)
 	}
 
-	// 4. Payload Conversation with parent
 	convPayload := []byte(`{
 		"conversation_id": "conv-child-2",
 		"parent_conversation_id": "conv-parent-2"
@@ -451,35 +431,30 @@ func TestExtractSessionInfoClaudePayloadOutranksGenericHeader(t *testing.T) {
 func TestExtractSessionInfoPromptCacheKeyAndClientReqAndMetadata(t *testing.T) {
 	t.Parallel()
 
-	// 1. prompt_cache_key with conversation alias (not a parent-child edge)
 	payloadPCK := []byte(`{"prompt_cache_key":"prompt-key-123","conversation":{"id":"conv-456"}}`)
 	info, ok := ExtractSessionInfo(nil, payloadPCK, nil)
 	if !ok || info.SessionID != "pck:prompt-key-123" || info.ParentSessionID != "" {
 		t.Fatalf("pck extraction failed (should not treat conv alias as parent): %+v", info)
 	}
 
-	// 1b. prompt_cache_key with explicit parentCandidate
 	payloadPCKWithParent := []byte(`{"prompt_cache_key":"prompt-key-123","conversation":{"id":"conv-456"},"parent_session_id":"pck-parent-789"}`)
 	infoWithParent, okWithParent := ExtractSessionInfo(nil, payloadPCKWithParent, nil)
 	if !okWithParent || infoWithParent.SessionID != "pck:prompt-key-123" || infoWithParent.ParentSessionID != "pck:pck-parent-789" {
 		t.Fatalf("pck with parent candidate extraction failed: %+v", infoWithParent)
 	}
 
-	// 2. plain metadata.user_id
 	payloadUser := []byte(`{"metadata":{"user_id":"user-999"}}`)
 	info, ok = ExtractSessionInfo(nil, payloadUser, nil)
 	if !ok || info.SessionID != "user:user-999" {
 		t.Fatalf("user_id extraction failed: %+v", info)
 	}
 
-	// 3. X-Client-Request-Id
 	headersReqID := http.Header{"X-Client-Request-Id": []string{"client-req-001"}}
 	info, ok = ExtractSessionInfo(headersReqID, nil, nil)
 	if !ok || info.SessionID != "clientreq:client-req-001" {
 		t.Fatalf("clientreq extraction failed: %+v", info)
 	}
 
-	// 4. ExecutionSessionMetadataKey
 	meta := map[string]any{
 		"execution_session_id": "exec-777",
 	}
@@ -547,7 +522,6 @@ func TestExtractSessionInfoClaudeMetadataUserIDWithAgentHeader(t *testing.T) {
 func TestExtractSessionInfoNestedSubagentIDAndUserID(t *testing.T) {
 	t.Parallel()
 
-	// 1. Nested request with subagent_id
 	payloadSub := []byte(`{
 		"request": {
 			"sessionId": "main-sess-999",
@@ -570,7 +544,6 @@ func TestExtractSessionInfoNestedSubagentIDAndUserID(t *testing.T) {
 		t.Fatalf("AgentName = %q, want worker-sub-999", info.AgentName)
 	}
 
-	// 2. Nested request with plain user_id
 	payloadUser := []byte(`{
 		"request": {
 			"metadata": {
@@ -586,7 +559,6 @@ func TestExtractSessionInfoNestedSubagentIDAndUserID(t *testing.T) {
 		t.Fatalf("SessionID = %q, want user:nested-user-123", infoUser.SessionID)
 	}
 
-	// 3. Nested request with promptCacheKey
 	payloadPCK := []byte(`{
 		"request": {
 			"promptCacheKey": "nested-pck-456"
@@ -600,7 +572,6 @@ func TestExtractSessionInfoNestedSubagentIDAndUserID(t *testing.T) {
 		t.Fatalf("SessionID = %q, want pck:nested-pck-456", infoPCK.SessionID)
 	}
 
-	// 4. Nested promptCacheKey when top-level prompt_cache_key is empty string
 	payloadPCKShadow := []byte(`{
 		"prompt_cache_key": "",
 		"request": {
@@ -619,14 +590,12 @@ func TestExtractSessionInfoNestedSubagentIDAndUserID(t *testing.T) {
 func TestBoundSessionIdentitySafetyAndUniqueness(t *testing.T) {
 	t.Parallel()
 
-	// Short ID remains unchanged
 	shortID := "session:normal-length-session"
 	if got := BoundSessionIdentity(shortID); got != shortID {
 		t.Fatalf("shortID = %q, want %q", got, shortID)
 	}
 
-	// Long ID with Chinese UTF-8 characters exceeding 256 bytes
-	longChinese := strings.Repeat("会话测试超长标识符", 20) // ~18 bytes * 20 = 360 bytes
+	longChinese := strings.Repeat("会话测试超长标识符", 20)
 	bounded1 := BoundSessionIdentity(longChinese)
 	if len(bounded1) > 256 {
 		t.Fatalf("bounded length = %d, want <= 256", len(bounded1))
@@ -635,7 +604,6 @@ func TestBoundSessionIdentitySafetyAndUniqueness(t *testing.T) {
 		t.Fatalf("bounded string is not valid UTF-8: %q", bounded1)
 	}
 
-	// Uniqueness: two long strings differing only at the end must produce distinct bounded IDs
 	longA := strings.Repeat("a", 250) + "-worker-1"
 	longB := strings.Repeat("a", 250) + "-worker-2"
 	boundedA := BoundSessionIdentity(longA)
@@ -651,7 +619,6 @@ func TestBoundSessionIdentitySafetyAndUniqueness(t *testing.T) {
 func TestExtractSessionInfoEnhancedHarnesses(t *testing.T) {
 	t.Parallel()
 
-	// 1. Roo Code / Cline task headers
 	rooHeaders := http.Header{}
 	rooHeaders.Set("X-Task-ID", "task-child-001")
 	rooHeaders.Set("X-Parent-Task-ID", "task-parent-001")
@@ -660,14 +627,12 @@ func TestExtractSessionInfoEnhancedHarnesses(t *testing.T) {
 		t.Fatalf("Roo Code headers extraction failed: %+v", info)
 	}
 
-	// 2. Roo Code / Cline payload
 	rooPayload := []byte(`{"taskId":"task-child-002","parentTaskId":"task-parent-002"}`)
 	info, ok = ExtractSessionInfo(nil, rooPayload, nil)
 	if !ok || info.SessionID != "task:task-child-002" || info.ParentSessionID != "task:task-parent-002" || info.ClientType != "task" || info.AgentName != "subagent" {
 		t.Fatalf("Roo Code payload extraction failed: %+v", info)
 	}
 
-	// 3. OpenCode parent_id / parentID in payload
 	opencodePayload := []byte(`{"session_id":"opencode-child-100","parent_id":"opencode-parent-100"}`)
 	info, ok = ExtractSessionInfo(nil, opencodePayload, nil)
 	if !ok || info.SessionID != "session:opencode-child-100" || info.ParentSessionID != "session:opencode-parent-100" || info.AgentName != "subagent" {
@@ -680,7 +645,6 @@ func TestExtractSessionInfoEnhancedHarnesses(t *testing.T) {
 		t.Fatalf("OpenCode parentID extraction failed: %+v", info)
 	}
 
-	// 4. OpenClaw forkSource.sessionId & previousSessionId
 	openclawPayload1 := []byte(`{"sessionId":"claw-child-1","forkSource":{"sessionId":"claw-parent-1"}}`)
 	info, ok = ExtractSessionInfo(nil, openclawPayload1, nil)
 	if !ok || info.SessionID != "session:claw-child-1" || info.ParentSessionID != "session:claw-parent-1" || !info.IsFork {
@@ -693,21 +657,18 @@ func TestExtractSessionInfoEnhancedHarnesses(t *testing.T) {
 		t.Fatalf("OpenClaw previousSessionId extraction failed: %+v", info)
 	}
 
-	// 5. Hermes Agent child_session_id & parent_subagent_id
 	hermesPayload := []byte(`{"child_session_id":"hermes-child-1","parent_subagent_id":"hermes-parent-1"}`)
 	info, ok = ExtractSessionInfo(nil, hermesPayload, nil)
 	if !ok || info.SessionID != "session:hermes-child-1" || info.ParentSessionID != "session:hermes-parent-1" {
 		t.Fatalf("Hermes Agent extraction failed: %+v", info)
 	}
 
-	// 6. OpenHands action_id & parent_action_id
 	openhandsPayload := []byte(`{"action_id":"openhands-action-1","parent_action_id":"openhands-parent-action"}`)
 	info, ok = ExtractSessionInfo(nil, openhandsPayload, nil)
 	if !ok || info.SessionID != "task:openhands-action-1" || info.ParentSessionID != "task:openhands-parent-action" || info.ClientType != "task" {
 		t.Fatalf("OpenHands action extraction failed: %+v", info)
 	}
 
-	// 7. Pi Coding Agent slot parent & parent_session payload
 	piSlotHeaders := http.Header{}
 	piSlotHeaders.Set("X-Slot-Session-Id", "slot-child-001")
 	piSlotHeaders.Set("X-Parent-Slot-Session-Id", "slot-parent-001")
@@ -722,7 +683,6 @@ func TestExtractSessionInfoEnhancedHarnesses(t *testing.T) {
 		t.Fatalf("Pi parent_session extraction failed: %+v", info)
 	}
 
-	// 8. Claude Code Body metadata.parent_agent_id
 	claudeBody := []byte(`{
 		"metadata": {
 			"user_id": "user_123_acc__session_01a06a06-e830-7da9-a866-98470a94389c",
@@ -737,7 +697,6 @@ func TestExtractSessionInfoEnhancedHarnesses(t *testing.T) {
 		t.Fatalf("Claude metadata parent_agent_id extraction failed: %+v", info)
 	}
 
-	// 9. Generic universal parent headers
 	genericHeaders := http.Header{}
 	genericHeaders.Set("X-Session-ID", "gen-child-001")
 	genericHeaders.Set("X-Parent-ID", "gen-parent-001")

@@ -17,21 +17,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// AntigravityAuthenticator implements OAuth login for the antigravity provider.
 type AntigravityAuthenticator struct{}
 
-// NewAntigravityAuthenticator constructs a new authenticator instance.
 func NewAntigravityAuthenticator() Authenticator { return &AntigravityAuthenticator{} }
 
-// Provider returns the provider key for antigravity.
 func (AntigravityAuthenticator) Provider() string { return "antigravity" }
 
-// RefreshLead instructs the manager to refresh 30 minutes before expiry.
 func (AntigravityAuthenticator) RefreshLead() *time.Duration {
 	return new(30 * time.Minute)
 }
 
-// Login launches a local OAuth flow to obtain antigravity tokens and persists them.
 func (AntigravityAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("cliproxy auth: configuration is required")
@@ -172,7 +167,6 @@ waitForCallback:
 		return nil, fmt.Errorf("antigravity: empty email returned from user info")
 	}
 
-	// Fetch project ID via loadCodeAssist.
 	projectID := ""
 	if accessToken != "" {
 		fetchedProjectID, errProject := authSvc.FetchProjectID(ctx, accessToken)
@@ -243,17 +237,14 @@ func startAntigravityCallbackServer(port int) (*http.Server, int, <-chan callbac
 	return srv, port, resultCh, nil
 }
 
-// FetchAntigravityProjectID exposes project discovery for external callers.
 func FetchAntigravityProjectID(ctx context.Context, accessToken string, httpClient *http.Client) (string, error) {
 	cfg := &config.Config{}
 	authSvc := antigravity.NewAntigravityAuth(cfg, httpClient)
 	return authSvc.FetchProjectID(ctx, accessToken)
 }
 
-// AntigravityDefaultCallbackPort is the default local port used for Antigravity OAuth loopback callbacks.
 const AntigravityDefaultCallbackPort = antigravity.CallbackPort
 
-// AntigravityTokenResponse captures the tokens returned by Antigravity OAuth exchange.
 type AntigravityTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -261,36 +252,27 @@ type AntigravityTokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-// AntigravityDefaultCallbackURI returns the default loopback redirect URI for Antigravity OAuth.
 func AntigravityDefaultCallbackURI() string {
 	return fmt.Sprintf("http://localhost:%d/oauth-callback", AntigravityDefaultCallbackPort)
 }
 
-// AntigravityUserAgent returns the canonical User-Agent string used by the Antigravity Hub family.
 func AntigravityUserAgent() string {
 	return misc.AntigravityUserAgent()
 }
 
-// StartAntigravityVersionUpdater starts background refresh for the Antigravity Hub version.
-// Pass a process-lifetime ctx; it runs only once and is not auto-started by SDK packages.
 func StartAntigravityVersionUpdater(ctx context.Context) {
 	misc.StartAntigravityVersionUpdater(ctx)
 }
 
-// AntigravityRequestUserAgent returns the User-Agent for Antigravity runtime requests,
-// falling back to AntigravityUserAgent when userAgent is empty.
 func AntigravityRequestUserAgent(userAgent string) string {
 	return misc.AntigravityRequestUserAgent(userAgent)
 }
 
-// BuildAntigravityAuthURL generates the OAuth authorization URL for Antigravity.
-// If redirectURI is empty, the default loopback callback URI is used.
 func BuildAntigravityAuthURL(state, redirectURI string) string {
 	authSvc := antigravity.NewAntigravityAuth(nil, nil)
 	return authSvc.BuildAuthURL(state, redirectURI)
 }
 
-// ExchangeAntigravityCode exchanges an authorization code for access and refresh tokens.
 func ExchangeAntigravityCode(ctx context.Context, code, redirectURI string, httpClient *http.Client) (*AntigravityTokenResponse, error) {
 	if strings.TrimSpace(redirectURI) == "" {
 		redirectURI = AntigravityDefaultCallbackURI()
@@ -311,13 +293,11 @@ func ExchangeAntigravityCode(ctx context.Context, code, redirectURI string, http
 	}, nil
 }
 
-// FetchAntigravityUserInfo retrieves the user email address using the given access token.
 func FetchAntigravityUserInfo(ctx context.Context, accessToken string, httpClient *http.Client) (string, error) {
 	authSvc := antigravity.NewAntigravityAuth(nil, httpClient)
 	return authSvc.FetchUserInfo(ctx, accessToken)
 }
 
-// BuildAntigravityAuth constructs an in-memory *coreauth.Auth object from token credentials and metadata.
 func BuildAntigravityAuth(tokenResp *AntigravityTokenResponse, email, projectID string) *coreauth.Auth {
 	if tokenResp == nil {
 		return nil
@@ -355,8 +335,6 @@ func BuildAntigravityAuth(tokenResp *AntigravityTokenResponse, email, projectID 
 	}
 }
 
-// CompleteAntigravityOAuth performs code exchange, user identity retrieval, and GCP project discovery
-// using an injected HTTP client, returning an assembled *coreauth.Auth without touching the filesystem.
 func CompleteAntigravityOAuth(ctx context.Context, code, redirectURI string, httpClient *http.Client) (*coreauth.Auth, error) {
 	tokenResp, errExchange := ExchangeAntigravityCode(ctx, code, redirectURI, httpClient)
 	if errExchange != nil {

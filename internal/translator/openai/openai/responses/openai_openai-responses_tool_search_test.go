@@ -8,8 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// Synthetic Codex request: one eager tool, the client tool_search declaration,
-// and one completed search round that returned a namespaced tool.
 const chatToolSearchTestRequest = `{
   "model": "chat-test",
   "stream": true,

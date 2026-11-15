@@ -8,7 +8,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// SetResponsesToolCallIdentityDoc writes a resolved Responses tool name and namespace into doc.
 func SetResponsesToolCallIdentityDoc(doc *ojson.Doc, name, namespace, itemPath string) {
 	if doc == nil {
 		return
@@ -27,16 +26,12 @@ func SetResponsesToolCallIdentityDoc(doc *ojson.Doc, name, namespace, itemPath s
 	}
 }
 
-// SetResponsesToolCallIdentity writes a resolved Responses tool name and namespace.
 func SetResponsesToolCallIdentity(item []byte, name, namespace, itemPath string) []byte {
 	doc := ojson.NewDoc(item)
 	SetResponsesToolCallIdentityDoc(doc, name, namespace, itemPath)
 	return doc.Bytes()
 }
 
-// ExtractResponsesCallID extracts the tool call ID from a Responses API item,
-// prioritizing dedicated tool call references over generic item IDs:
-// call_id -> tool_call_id -> callId -> id (excluding fco_ output item IDs)
 func ExtractResponsesCallID(node ojson.Result) string {
 	if callID := strings.TrimSpace(node.Get("call_id").String()); callID != "" {
 		return callID
@@ -54,14 +49,6 @@ func ExtractResponsesCallID(node ojson.Result) string {
 	return id
 }
 
-// NormalizeResponsesToolCallOutputs scans a slice of Responses input items,
-// pairs function_call_output / custom_tool_call_output with preceding pending tool calls,
-// and assigns missing call_ids to tool outputs using a multi-pass matching strategy:
-// 1. Exact explicit call ID match (reserving calls for outputs that explicitly reference them across the entire conversation).
-// 2. Function name match for outputs that omit a call ID (skipping pending calls reserved by future explicit outputs).
-// 3. FIFO queue fallback for remaining outputs that omit a call ID (skipping pending calls reserved by future explicit outputs).
-// Outputs that already carry an explicit call ID that does not match any pending call
-// are never rewritten or stolen.
 func NormalizeResponsesToolCallOutputs(items []ojson.Result) []ojson.Result {
 	if len(items) == 0 {
 		return items
@@ -112,7 +99,6 @@ func NormalizeResponsesToolCallOutputs(items []ojson.Result) []ojson.Result {
 					matchedForPending[idx] = -1
 				}
 
-				// Pass 1: exact explicit call ID match
 				for pendingIdx, pendingID := range pendingCallIDs {
 					for outIdx, out := range outputs {
 						if !used[outIdx] && ExtractResponsesCallID(out) == pendingID {
@@ -124,7 +110,6 @@ func NormalizeResponsesToolCallOutputs(items []ojson.Result) []ojson.Result {
 					}
 				}
 
-				// Pass 2: match by function name for outputs with no explicit call ID (skipping pending IDs reserved by future explicit outputs)
 				for pendingIdx, pendingID := range pendingCallIDs {
 					if matchedForPending[pendingIdx] >= 0 || explicitOutputCounts[pendingID] > 0 {
 						continue
@@ -144,7 +129,6 @@ func NormalizeResponsesToolCallOutputs(items []ojson.Result) []ojson.Result {
 					}
 				}
 
-				// Pass 3: FIFO fallback for outputs with no explicit call ID (skipping pending IDs reserved by future explicit outputs)
 				for pendingIdx := range pendingCallIDs {
 					pendingID := pendingCallIDs[pendingIdx]
 					if matchedForPending[pendingIdx] >= 0 || explicitOutputCounts[pendingID] > 0 {
@@ -163,7 +147,6 @@ func NormalizeResponsesToolCallOutputs(items []ojson.Result) []ojson.Result {
 					}
 				}
 
-				// Apply matched call_ids to outputs
 				var remainingPending []string
 				for pendingIdx, pendingID := range pendingCallIDs {
 					outIdx := matchedForPending[pendingIdx]
@@ -189,11 +172,6 @@ func NormalizeResponsesToolCallOutputs(items []ojson.Result) []ojson.Result {
 	return normalized
 }
 
-// SanitizeOrphanResponsesToolOutputsDoc rewrites standalone function_call_output
-// and custom_tool_call_output items that carry no call_id into user message
-// items. Codex Desktop Companion Page context is injected as function_call_output
-// items without call_id, which strict Responses upstreams reject with HTTP 400
-// ("responses function_call_output call_id is required").
 func SanitizeOrphanResponsesToolOutputsDoc(doc *ojson.Doc) bool {
 	if doc == nil {
 		return false
@@ -203,10 +181,6 @@ func SanitizeOrphanResponsesToolOutputsDoc(doc *ojson.Doc) bool {
 	})
 }
 
-// SanitizeOrphanResponsesToolOutputsInputDoc pairs tool outputs missing call_id
-// with preceding unmatched tool calls when possible, and rewrites remaining
-// standalone function_call_output and custom_tool_call_output items without
-// call_id into user message items in-place on the document returned by ensureDoc.
 func SanitizeOrphanResponsesToolOutputsInputDoc(inputResult ojson.Result, ensureDoc func() *ojson.Doc) bool {
 	if !inputResult.IsArray() || ensureDoc == nil {
 		return false

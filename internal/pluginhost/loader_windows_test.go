@@ -71,8 +71,6 @@ func TestWindowsClosedClientKeepsResidentHostState(t *testing.T) {
 		t.Fatalf("plugin shutdown calls = %d, want %d", gotShutdowns, shutdownsBefore+1)
 	}
 
-	// A late callback from the resident plugin runtime dereferences the
-	// pinned context, finds no registration, and fails safely.
 	methodBytes, errMethod := syscall.BytePtrFromString("host.log")
 	if errMethod != nil {
 		t.Fatalf("BytePtrFromString() error = %v", errMethod)

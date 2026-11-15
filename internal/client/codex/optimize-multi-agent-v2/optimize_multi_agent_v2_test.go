@@ -604,7 +604,6 @@ func TestRewriteCodexMultiAgentV2Input_StripsAuthorAndRecipient_Issue6136(t *tes
 		cfg := &config.Config{SDKConfig: config.SDKConfig{Client: config.ClientConfig{Codex: config.CodexClientConfig{OptimizeMultiAgentV2: true}}}}
 		got := RewriteCodexMultiAgentV2Input(context.Background(), headers, payload, cfg, true)
 
-		// Item 0: agent_message -> message/user
 		if messageType := ojson.GetBytesNoCopy(got, "input.0.type").String(); messageType != "message" {
 			t.Fatalf("input.0.type = %q, want message", messageType)
 		}
@@ -621,7 +620,6 @@ func TestRewriteCodexMultiAgentV2Input_StripsAuthorAndRecipient_Issue6136(t *tes
 			t.Fatalf("input.0.internal_chat_message_metadata_passthrough was not stripped; got=%s", passthrough.String())
 		}
 
-		// Item 1: regular message with non-standard fields -> cleaned
 		if messageType := ojson.GetBytesNoCopy(got, "input.1.type").String(); messageType != "message" {
 			t.Fatalf("input.1.type = %q, want message", messageType)
 		}
@@ -638,7 +636,6 @@ func TestRewriteCodexMultiAgentV2Input_StripsAuthorAndRecipient_Issue6136(t *tes
 			t.Fatalf("input.1.internal_chat_message_metadata_passthrough was not stripped; got=%s", passthrough.String())
 		}
 
-		// Item 2: clean message remains intact
 		if content := ojson.GetBytesNoCopy(got, "input.2.content").String(); content != "clean assistant message" {
 			t.Fatalf("input.2.content = %q", content)
 		}
@@ -684,11 +681,10 @@ func TestRewriteCodexMultiAgentV2Input_CompatModeWithoutOptimize_Issue6233(t *te
 
 	t.Run("compat mode converts agent_message to message/user and normalizes content even when optimize is false", func(t *testing.T) {
 		headers := http.Header{"User-Agent": []string{"Codex Desktop/0.158.0-alpha.2.1"}}
-		// Compatibility mode still works when client multi-agent optimization is disabled.
+
 		cfg := &config.Config{SDKConfig: config.SDKConfig{Client: config.ClientConfig{Codex: config.CodexClientConfig{OptimizeMultiAgentV2: false}}}}
 		got := RewriteCodexMultiAgentV2Input(context.Background(), headers, payload, cfg, true)
 
-		// Item 0: must be converted to message with role user
 		messageType := ojson.GetBytesNoCopy(got, "input.0.type").String()
 		if messageType != "message" {
 			t.Fatalf("input.0.type = %q, want message (must not stay agent_message without author)", messageType)
@@ -698,7 +694,6 @@ func TestRewriteCodexMultiAgentV2Input_CompatModeWithoutOptimize_Issue6233(t *te
 			t.Fatalf("input.0.role = %q, want user", role)
 		}
 
-		// Encrypted content must be normalized to input_text
 		contentType := ojson.GetBytesNoCopy(got, "input.0.content.1.type").String()
 		if contentType != "input_text" {
 			t.Fatalf("input.0.content.1.type = %q, want input_text", contentType)
@@ -708,7 +703,6 @@ func TestRewriteCodexMultiAgentV2Input_CompatModeWithoutOptimize_Issue6233(t *te
 			t.Fatalf("input.0.content.1.text = %q, want test task payload", contentText)
 		}
 
-		// Non-standard metadata must be stripped
 		if author := ojson.GetBytesNoCopy(got, "input.0.author"); author.Exists() {
 			t.Fatalf("input.0.author was not stripped; got=%s", author.String())
 		}
@@ -1069,7 +1063,6 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 	clientID1 := "cache-invalidation-client-1"
 	clientID2 := "cache-invalidation-client-2"
 
-	// 1. Initial registration
 	modelRegistry.RegisterClient(clientID1, "openai", []*registry.ModelInfo{
 		{
 			ID:          "test-spawn-model-alpha",
@@ -1093,13 +1086,11 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 		t.Fatalf("expected initial reasoning efforts low, medium, got: %s", formatted1)
 	}
 
-	// 2. Cache hit returns identical content
 	formattedHit := formatCodexSpawnAgentModelsForRequest(context.Background(), nil, false)
 	if formattedHit != formatted1 {
 		t.Fatalf("cache hit expected identical output, got %s vs %s", formattedHit, formatted1)
 	}
 
-	// 3. Registering second model invalidates cache
 	modelRegistry.RegisterClient(clientID2, "openai", []*registry.ModelInfo{
 		{
 			ID:          "test-spawn-model-beta",
@@ -1113,7 +1104,6 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 		t.Fatalf("expected cache invalidation to include test-spawn-model-beta, got: %s", formatted2)
 	}
 
-	// 4. Modifying model thinking levels invalidates cache
 	modelRegistry.RegisterClient(clientID1, "openai", []*registry.ModelInfo{
 		{
 			ID:          "test-spawn-model-alpha",
@@ -1130,7 +1120,6 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 		t.Fatalf("expected updated thinking levels to reflect in markdown, got: %s", formatted3)
 	}
 
-	// 5. Unregistering client invalidates cache
 	modelRegistry.UnregisterClient(clientID2)
 	formatted4 := formatCodexSpawnAgentModelsForRequest(context.Background(), nil, false)
 	if strings.Contains(formatted4, "test-spawn-model-beta") {

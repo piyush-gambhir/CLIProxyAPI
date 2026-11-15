@@ -20,8 +20,6 @@ func interactionsToGeminiEnvelope(input string) sdktranslator.RequestEnvelope {
 	})
 }
 
-// interactionsFinalTurnToGemini translates two history turns followed by a final
-// user step holding the given content parts.
 func interactionsFinalTurnToGemini(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToGeminiEnvelope(`{"model":"m","input":[` + interactionsGeminiHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }

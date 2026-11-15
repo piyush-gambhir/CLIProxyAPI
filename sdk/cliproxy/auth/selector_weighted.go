@@ -12,16 +12,10 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// weightedAccountingPoolKey carries the manager-validated pre-pin pool. It affects
-// accounting only; the selector still receives pin-filtered selection candidates.
 type weightedAccountingPoolKey struct{}
 
-// weightedTransportProviderKey preserves single-provider transport preference on
-// the mixed entrypoint without changing its weighted accounting namespace.
 type weightedTransportProviderKey struct{}
 
-// weightedReservation separates speculative credit from committed, clamped credit.
-// Releasing one request must never undo accounting committed by another request.
 type weightedReservation struct {
 	selector        *WeightedRoundRobinSelector
 	state           *weightedPoolState
@@ -36,8 +30,6 @@ type weightedReservation struct {
 	finished        bool
 }
 
-// pickWithAffinityReservation normalizes weighted candidates and defers accounting
-// until the local binding completes. Other fallback selectors keep their behavior.
 func (s *SessionAffinitySelector) pickWithAffinityReservation(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth, bound *Auth, reservation **weightedReservation) (*Auth, error) {
 	weighted, ok := s.fallback.(*WeightedRoundRobinSelector)
 	if !ok {
@@ -51,8 +43,6 @@ func (s *SessionAffinitySelector) pickWithAffinityReservation(ctx context.Contex
 	return picked, errPick
 }
 
-// reserveForRequest shares candidate normalization and pinned accounting between
-// bare weighted routing and session affinity, which owns deferred confirmation.
 func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth, bound *Auth) (*Auth, *weightedReservation, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -80,7 +70,7 @@ func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, prov
 		transportProvider = singleProvider
 	}
 	if providerPrefersWebsocketTransport(transportProvider) {
-		// Reuse the transport filter for every provider preferred by the scheduler.
+
 		transportProvider = "codex"
 	}
 	var available []*Auth
@@ -102,8 +92,7 @@ func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, prov
 		}
 	} else {
 		authID = bound.ID
-		// A binding may bypass priority or transport preference, but its traffic
-		// must only charge peers that compete with it, never another priority tier.
+
 		priority := authPriority(bound)
 		for _, auth := range auths {
 			if authPriority(auth) == priority {
@@ -112,7 +101,7 @@ func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, prov
 		}
 		preferred := preferCodexWebsocketAuths(ctx, transportProvider, available)
 		if len(preferred) < len(available) && !authWebsocketsEnabled(bound) {
-			// Keep an HTTP-bound session outside the preferred WebSocket pool.
+
 			nonWebsocket := available[:0]
 			for _, auth := range available {
 				if !authWebsocketsEnabled(auth) {
@@ -141,8 +130,6 @@ func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, prov
 	return picked, pending, nil
 }
 
-// weightedPoolMember stores each ID once, with parallel accounting values in a
-// single allocation. Members are sorted by ID; reservations retain only an index.
 type weightedPoolMember struct {
 	id       string
 	weight   int64
@@ -197,23 +184,18 @@ func memberOlderOrEqual(member weightedPoolMember, maxEpoch, maxGen uint64) bool
 	return member.regGen <= maxGen
 }
 
-// weightedPoolState is separate from the scheduler's transient-subset accumulator:
-// each selector pool has fixed membership and shares its weights across reservations.
 type weightedPoolState struct {
 	route           string
 	members         []weightedPoolMember
 	inFlight        uint64
 	generation      uint64
-	next            *weightedPoolState // Exact-identity collision chain for the digest key.
-	dynamic         bool               // Shared bucket-scoped accumulator for pools > maxExactWeightedPoolMembers.
-	peak            int                // Largest candidate count observed on a dynamic pool.
-	nextMemberEpoch uint64             // Monotonic member identity counter isolating removed/re-added IDs.
-	lastActiveIDs   []string           // Most recent active candidate IDs for post-drain compaction.
+	next            *weightedPoolState
+	dynamic         bool
+	peak            int
+	nextMemberEpoch uint64
+	lastActiveIDs   []string
 }
 
-// maxExactWeightedPoolMembers is the candidate-set size above which exact-membership
-// pools switch to a shared bucket-scoped dynamic accumulator so transient retry
-// exclusions and cooldowns cannot collapse smooth WRR onto the lowest Auth.IDs.
 const maxExactWeightedPoolMembers = maxSmoothWeightedStateEntries
 
 func inferredWeightedPoolPriority(available []*Auth) int {
@@ -241,8 +223,6 @@ func sortedWeightedIDs(weights map[string]int64) []string {
 	return ids
 }
 
-// weightedPoolStateKey isolates competing sets without retaining concatenated IDs.
-// Weights stay out of the key so configuration changes invalidate reservations.
 func weightedPoolStateKey(route string, weights map[string]int64) [32]byte {
 	return weightedPoolDigest(route, sortedWeightedIDs(weights))
 }
@@ -262,8 +242,6 @@ func weightedPoolDigest(route string, ids []string) [32]byte {
 	return sha256.Sum256(identity)
 }
 
-// matches verifies the full identity even on a digest hit. Hash collisions must
-// never combine the quota or configured weights of unrelated candidate pools.
 func (s *weightedPoolState) matches(route string, ids []string) bool {
 	if s.route != route || len(s.members) != len(ids) {
 		return false
@@ -330,8 +308,6 @@ func (s *weightedPoolState) prepareWithVersions(weights []int64, versions []weig
 	}
 }
 
-// reserve selects and reserves credit atomically. A non-empty authID preserves a
-// sticky binding; otherwise committed and pending credits both guide selection.
 func (s *WeightedRoundRobinSelector) reserve(route string, available []*Auth, authID string) (*Auth, *weightedReservation) {
 	return s.reserveScoped(route, inferredWeightedPoolPriority(available), "", available, authID)
 }
@@ -346,9 +322,6 @@ func (s *WeightedRoundRobinSelector) reserveScoped(route string, priority int, t
 	return s.reservePoolScoped(route, priority, transportClass, available, weights, ids, authID)
 }
 
-// reservePool consumes a normalized pool. Scheduler ready views already supply
-// ID-sorted candidates and cached weights, avoiding sorting and cloning auths.
-// ids must be sorted, with one positive weight per ID in the parallel slice.
 func (s *WeightedRoundRobinSelector) reservePool(route string, available []*Auth, weights []int64, ids []string, authID string) (*Auth, *weightedReservation) {
 	return s.reservePoolScoped(route, inferredWeightedPoolPriority(available), "", available, weights, ids, authID)
 }
@@ -418,8 +391,7 @@ func (s *WeightedRoundRobinSelector) reservePoolScoped(route string, priority in
 	if picked == nil {
 		return nil, nil
 	}
-	// Bound traffic beyond the compensation window still keeps its credential,
-	// but must not create speculative credit that can starve concurrent picks.
+
 	if authID != "" && !state.boundChargeFits(pickedMember, total) {
 		return picked, nil
 	}
@@ -732,15 +704,10 @@ func (s *weightedPoolState) chargeDynamic(ids []string, epochs []uint64, selecte
 	}
 }
 
-// ForgetAuth removes permanently deregistered credentials from weighted pool state.
-// Transient exclusions (retry tried sets and cooldowns) must never call ForgetAuth.
 func (s *WeightedRoundRobinSelector) ForgetAuth(authID string) {
 	s.ForgetAuthUpTo(authID, ^uint64(0), ^uint64(0))
 }
 
-// ForgetAuthUpTo removes weighted pool entries for authID whose observed
-// (RegistrationEpoch, Generation) is no newer than (maxEpoch, maxGen), so a delayed
-// removal or disablement cannot evict a newly re-registered or re-enabled credential.
 func (s *WeightedRoundRobinSelector) ForgetAuthUpTo(authID string, maxEpoch, maxGen uint64) {
 	if s == nil || authID == "" {
 		return
@@ -791,7 +758,6 @@ func (s *WeightedRoundRobinSelector) ForgetAuthUpTo(authID string, maxEpoch, max
 	}
 }
 
-// finish confirms or releases a reservation exactly once under the selector lock.
 func (r *weightedReservation) finish(committed bool) {
 	if r == nil {
 		return
@@ -823,13 +789,11 @@ func (r *weightedReservation) finish(committed bool) {
 	if committed {
 		r.state.charge(r.member, r.bound)
 	} else if r.state.inFlight == 0 {
-		// A final rollback can remove the offset to already committed credit.
+
 		r.state.boundCredits(r.total)
 	}
 }
 
-// adjustPending must be called with the selector mutex held. Pending deltas are
-// not clamped, so releasing them cannot lose credit at the compensation bound.
 func (s *weightedPoolState) adjustPending(selected int, total int64, release bool) {
 	for i := range s.members {
 		member := &s.members[i]
@@ -844,12 +808,8 @@ func (s *weightedPoolState) adjustPending(selected int, total int64, release boo
 	}
 }
 
-// maxSmoothWeightedCreditRounds bounds compensation after a long sticky session.
 const maxSmoothWeightedCreditRounds int64 = 32
 
-// boundChargeFits admits the whole sticky delta or none. Both reservation and
-// commit include outstanding deltas: committed credit alone can transiently
-// exceed the cap while successful reservations settle in a different order.
 func (s *weightedPoolState) boundChargeFits(selected int, totalWeight int64) bool {
 	limit := int64(math.MaxInt64)
 	if totalWeight <= math.MaxInt64/maxSmoothWeightedCreditRounds {
@@ -875,8 +835,7 @@ func (s *weightedPoolState) charge(selected int, bound bool) {
 		totalWeight = saturatingAddInt64(totalWeight, member.weight)
 	}
 	if !bound || s.boundChargeFits(selected, totalWeight) {
-		// At the cap, forced traffic cannot erase a small peer's earnings.
-		// Pending repayments still count until they actually roll back.
+
 		for i := range s.members {
 			member := &s.members[i]
 			member.current = saturatingAddInt64(member.current, member.weight)
@@ -889,9 +848,6 @@ func (s *weightedPoolState) charge(selected int, bound bool) {
 	}
 }
 
-// boundCredits runs only once the pool settles. Net pending deltas can be zero
-// even with live reservations, so the in-flight count, not len(pending), decides
-// when clipping cannot irreversibly discard another reservation's offset.
 func (s *weightedPoolState) boundCredits(totalWeight int64) {
 	limit := int64(math.MaxInt64)
 	if totalWeight <= math.MaxInt64/maxSmoothWeightedCreditRounds {
@@ -902,9 +858,7 @@ func (s *weightedPoolState) boundCredits(totalWeight int64) {
 		minCredit = min(minCredit, member.current)
 		maxCredit = max(maxCredit, member.current)
 	}
-	// A common offset keeps leading credits distinct at the compensation bound.
-	// Independent clamps can repeatedly tie the leaders and starve the later
-	// candidate in deterministic selection order.
+
 	minOffset := saturatingAddInt64(maxCredit, -limit)
 	maxOffset := saturatingAddInt64(minCredit, limit)
 	var offset int64
@@ -913,8 +867,7 @@ func (s *weightedPoolState) boundCredits(totalWeight int64) {
 	} else if maxOffset < 0 {
 		offset = maxOffset
 	}
-	// If the full spread cannot fit, cap only the trailing debt after rebasing
-	// the leader to the upper bound. Do not flatten leading candidates' credits.
+
 	for i := range s.members {
 		member := &s.members[i]
 		member.current = max(-limit, saturatingAddInt64(member.current, -offset))

@@ -641,10 +641,7 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputPreservesInputI
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_StandaloneToolOutputBecomesUserText(t *testing.T) {
-	// Codex create_thread seeds a new thread with a function_call_output whose
-	// call_id never appears as a function_call in the same input. Claude
-	// rejects tool_result blocks without a matching tool_use, so it must
-	// degrade to text.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -685,9 +682,7 @@ func TestConvertOpenAIResponsesRequestToClaude_StandaloneToolOutputBecomesUserTe
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForDanglingToolUse(t *testing.T) {
-	// A session that died mid-tool leaves a function_call with no output.
-	// Anthropic requires a tool_result at the start of the next user message,
-	// so one is synthesized.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -747,8 +742,7 @@ func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForTrailingToolU
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_MovesToolResultsAheadOfInjectedText(t *testing.T) {
-	// A heartbeat seed can land between a tool call and its output. Anthropic
-	// requires tool_result blocks to lead the user message.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -785,9 +779,7 @@ func TestConvertOpenAIResponsesRequestToClaude_MovesToolResultsAheadOfInjectedTe
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForTrailingToolUseOnPrefillRejectingModel(t *testing.T) {
-	// Models that reject assistant prefill (fable/opus-5/sonnet-4-6) used to
-	// drop the trailing tool_use before repair could answer it, losing the
-	// call history entirely. The synthesized tool_result must survive instead.
+
 	raw := []byte(`{
 		"model":"claude-fable-5-1",
 		"input":[
@@ -817,10 +809,7 @@ func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForTrailingToolU
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t *testing.T) {
-	// An output can pass the emittedToolUses gate but still land after an
-	// intervening assistant message, where its tool_result no longer answers
-	// the immediately preceding tool_use. The repair must fold it into text
-	// and synthesize the missing answer for the real dangling call.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -835,12 +824,10 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t
 	out, _ := ConvertOpenAIResponsesRequestToClaude("claude-test", raw, false)
 	root := util.ParseGJSONBytesNoCopy(out)
 
-	// messages: user | assistant(tool_use call_a) | user | assistant(text) | user
 	if got := root.Get("messages.#").Int(); got != 5 {
 		t.Fatalf("message count = %d, want 5. Output: %s", got, string(out))
 	}
-	// The user message right after the dangling tool_use must lead with a
-	// synthesized error tool_result for call_a.
+
 	if got := root.Get("messages.2.content.0.type").String(); got != "tool_result" {
 		t.Fatalf("messages.2.content.0.type = %q, want tool_result. Output: %s", got, string(out))
 	}
@@ -850,8 +837,7 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t
 	if !root.Get("messages.2.content.0.is_error").Bool() {
 		t.Fatalf("synthesized tool_result should be is_error. Output: %s", string(out))
 	}
-	// The late real output must not remain a tool_result after the interlude
-	// assistant message; it folds into plain text.
+
 	last := root.Get("messages.4")
 	if got := last.Get("role").String(); got != "user" {
 		t.Fatalf("messages.4.role = %q, want user. Output: %s", got, string(out))
@@ -868,10 +854,7 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_EmptyStandaloneToolOutputKeepsMarker(t *testing.T) {
-	// A standalone output with empty content must still produce a non-empty
-	// user message; Anthropic rejects empty content arrays too. Both the
-	// string form and the structured array form with an empty text part
-	// collapse to the marker text.
+
 	for _, output := range []string{`""`, `[{"type":"input_text","text":""}]`} {
 		raw := []byte(`{
 			"model":"claude-test",
@@ -906,9 +889,7 @@ func TestConvertOpenAIResponsesRequestToClaude_EmptyStandaloneToolOutputKeepsMar
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_SanitizedIDCollisionKeepsOrphanAsText(t *testing.T) {
-	// "call.custom:1" and "call_custom_1" sanitize to the same Claude id, but
-	// they are distinct calls. The unpaired raw id must degrade to text while
-	// the real pairing stays a tool_result.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -941,9 +922,7 @@ func TestConvertOpenAIResponsesRequestToClaude_SanitizedIDCollisionKeepsOrphanAs
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_EmptyLateOrphanToolResultKeepsNonEmptyUserMessage(t *testing.T) {
-	// An empty late orphan output folds to nothing; the user message must
-	// still carry a marker instead of degenerating to content:[] which
-	// Anthropic also rejects.
+
 	raw := []byte(`{
 		"model":"claude-fable-5-1",
 		"input":[
@@ -981,8 +960,7 @@ func TestConvertOpenAIResponsesRequestToClaude_EmptyLateOrphanToolResultKeepsNon
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultArrayOfEmptyTextKeepsMarker(t *testing.T) {
-	// A late orphan result whose content is an array of empty text blocks
-	// must not emit empty text blocks; the whole result folds to the marker.
+
 	raw := []byte(`{
 		"model":"claude-fable-5-1",
 		"input":[
@@ -1016,8 +994,7 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultArrayOfEmptyT
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_StandaloneToolOutputDropsEmptyTextInMixedArray(t *testing.T) {
-	// A standalone output whose array mixes an empty text part with a real
-	// one must not carry the empty block into the user message.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -1749,9 +1726,7 @@ func TestConvertOpenAIResponsesRequestToClaude_SystemItemCacheControlAppliesToLa
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testing.T) {
-	// Tests that duplicate outputs are deduplicated to the final payload,
-	// emitted at the first occurrence position (before subsequent assistant turns),
-	// and that non-empty/empty IDs behave properly.
+
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -1818,12 +1793,10 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 		t.Fatalf("expected at least 5 messages, got %d. Output: %s", len(messages), string(out))
 	}
 
-	// Message 0: user message
 	if got := messages[0].Get("role").String(); got != "user" {
 		t.Fatalf("messages[0].role = %q, want user", got)
 	}
 
-	// Message 1: assistant tool_use toolu_dup
 	if got := messages[1].Get("content.0.type").String(); got != "tool_use" {
 		t.Fatalf("messages[1].content.0.type = %q, want tool_use", got)
 	}
@@ -1831,7 +1804,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 		t.Fatalf("messages[1].content.0.id = %q, want toolu_dup", got)
 	}
 
-	// Message 2: user tool_result for toolu_dup with final payload, BEFORE assistant message 3
 	if got := messages[2].Get("role").String(); got != "user" {
 		t.Fatalf("messages[2].role = %q, want user", got)
 	}
@@ -1845,7 +1817,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 		t.Fatalf("messages[2].content.0.content = %q, want 'final result'", got)
 	}
 
-	// Message 3: assistant intermediate text + tool_use for toolu_parallel
 	if got := messages[3].Get("role").String(); got != "assistant" {
 		t.Fatalf("messages[3].role = %q, want assistant", got)
 	}
@@ -1856,10 +1827,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 		t.Fatalf("messages[3].content.1.id = %q, want toolu_parallel", got)
 	}
 
-	// Message 4: toolu_parallel is a real tool_result and must lead the user
-	// message. call_custom_dup never had a matching tool_use, so its
-	// deduplicated final payload is emitted as user text (Claude rejects orphan
-	// tool_result blocks); the empty id output is also plain text.
 	msg4Blocks := messages[4].Get("content").Array()
 	if len(msg4Blocks) != 3 {
 		t.Fatalf("expected 3 blocks in message 4, got %d. Output: %s", len(msg4Blocks), string(out))
@@ -2555,7 +2522,6 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputAlternateIDsAnd
 				t.Fatalf("expected 3 messages (user, assistant, user), got %d; output=%s", len(messages), string(out))
 			}
 
-			// Assistant message has tool_use with id call_123
 			toolUse := messages[1].Get("content.0")
 			if toolUse.Get("type").String() != "tool_use" {
 				t.Fatalf("expected tool_use, got %s", toolUse.Raw)
@@ -2564,7 +2530,6 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputAlternateIDsAnd
 				t.Fatalf("tool_use.id = %q, want call_123", gotID)
 			}
 
-			// User message has tool_result with tool_use_id matching tool_use.id
 			toolResult := messages[2].Get("content.0")
 			if toolResult.Get("type").String() != "tool_result" {
 				t.Fatalf("expected tool_result, got %s", toolResult.Raw)
@@ -2580,10 +2545,7 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputAlternateIDsAnd
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_MixedMissingAndExplicitParallelOutputs(t *testing.T) {
-	// Call A, Call B.
-	// Output 1 has NO ID (result B).
-	// Output 2 explicitly has call_id: call_a (result A).
-	// Call A must NOT be stolen by Output 1; Output 1 must get Call B.
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-6",
 		"input": [
@@ -2620,11 +2582,7 @@ func TestConvertOpenAIResponsesRequestToClaude_MixedMissingAndExplicitParallelOu
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_MixedMissingAndExplicitParallelOutputsAcrossUserMessage(t *testing.T) {
-	// Call A, Call B.
-	// Output 1 has NO ID (result B).
-	// Intervening user message.
-	// Output 2 explicitly has call_id: call_a (result A).
-	// Call A must NOT be stolen by Output 1; Output 1 must get Call B.
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-6",
 		"input": [
@@ -2695,7 +2653,6 @@ func TestConvertOpenAIResponsesRequestToClaude_StringInput(t *testing.T) {
 		t.Fatalf("expected user message content %q, got %q", "hi", text)
 	}
 
-	// Also verify string input with instructions produces both system and user message.
 	withInstructions := []byte(`{
 		"model": "claude-sonnet-4-6",
 		"instructions": "Be concise.",
@@ -2716,7 +2673,6 @@ func TestConvertOpenAIResponsesRequestToClaude_StringInput(t *testing.T) {
 		t.Fatalf("unexpected user message in output: %s", string(outWithInstr))
 	}
 
-	// Also verify string input with quotes, newlines, and unicode.
 	complexInput := []byte(`{
 		"model": "claude-sonnet-4-6",
 		"input": "line 1\n\"line 2\"\n你好，世界 🌍",
@@ -2776,7 +2732,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LongToolNamesUniqueAndReversible(
 			name1, child1, ns1, "acme_inventory_service_get_item_metrics", "mcp__example_apps__acme_inventory_service")
 	}
 
-	// Verify non-stream response restores the original tool name and namespace
 	claudeResp := []byte(strings.Join([]string{
 		`data: {"type":"message_start","message":{"id":"msg_test_123","usage":{"input_tokens":10,"output_tokens":5}}}`,
 		fmt.Sprintf(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_test_0","name":%q,"input":{}}}`, name0),
@@ -2796,7 +2751,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LongToolNamesUniqueAndReversible(
 		t.Fatalf("output.0.namespace = %q, want mcp__example_apps__acme_inventory_service", outputItem.Get("namespace").String())
 	}
 
-	// Verify stream response restores the original tool name and namespace
 	streamChunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_stream_123","usage":{"input_tokens":10,"output_tokens":5}}}`),
 		[]byte(fmt.Sprintf(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_test_1","name":%q,"input":{}}}`, name1)),
@@ -2901,16 +2855,13 @@ func TestConvertOpenAIResponsesRequestToClaude_LongToolChoiceAndHistory(t *testi
 
 	out, _ := ConvertOpenAIResponsesRequestToClaude("claude-sonnet-5-5", reqJSON, false)
 
-	// Tool definition name for prices
 	declaredPricesName := ojson.GetBytesNoCopy(out, "tools.0.name").String()
 
-	// tool_choice should have the exact same Claude name as the declared tool
 	toolChoiceName := ojson.GetBytesNoCopy(out, "tool_choice.name").String()
 	if toolChoiceName != declaredPricesName {
 		t.Fatalf("tool_choice.name = %q, want %q", toolChoiceName, declaredPricesName)
 	}
 
-	// In messages history, the assistant tool_use block should have the exact same Claude name
 	messages := ojson.GetBytesNoCopy(out, "messages").Array()
 	var foundHistoryToolUseName string
 	for _, msg := range messages {

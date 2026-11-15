@@ -36,9 +36,6 @@ func TestCompatibilityRequestPair(t *testing.T) {
 	}
 }
 
-// TestTranslateRequestPairWithAPIKeyModelCompatibilityCountsTranslations counts
-// translator calls. Claude and Gemini Execute share this helper, and byte equality
-// stays green when the same deterministic translator runs twice.
 func TestTranslateRequestPairWithAPIKeyModelCompatibilityCountsTranslations(t *testing.T) {
 	from := sdktranslator.Format("api-key-compat-count-from")
 	to := sdktranslator.Format("api-key-compat-count-to")

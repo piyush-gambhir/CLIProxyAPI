@@ -90,8 +90,6 @@ func TestWrapStreamResultDoesNotReadReusedGinContext(t *testing.T) {
 		t.Fatalf("expected bootstrap chunk, got ok=%v chunk=%+v", ok, firstChunk)
 	}
 
-	// Simulate Gin reusing gin.Context for a subsequent Codex client request
-	// concurrently with stream completion after the first handler returns.
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {

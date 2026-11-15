@@ -6,16 +6,12 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// IsGeminiTokenEvent reports whether a Google Gemini / Antigravity streaming chunk carries
-// substantive output token content (such as text parts, thought traces, or function calls).
-// It filters out metadata-only chunks (e.g. standalone usageMetadata) and empty parts.
 func IsGeminiTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
 
-	// Strip "data:" SSE prefix if present
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
 		if bytes.HasPrefix(payload, []byte("data: ")) {
@@ -27,7 +23,6 @@ func IsGeminiTokenEvent(payload []byte) bool {
 		}
 	}
 
-	// Terminal error fallback
 	if ojson.GetBytesNoCopy(payload, "error.message").Exists() || ojson.GetBytesNoCopy(payload, "error").Exists() || ojson.GetBytesNoCopy(payload, "response.error").Exists() {
 		return true
 	}
@@ -42,7 +37,7 @@ func IsGeminiTokenEvent(payload []byte) bool {
 	}
 
 	for _, candidate := range candidates {
-		// Inspect content parts
+
 		parts := candidate.Get("content.parts").Array()
 		for _, part := range parts {
 			if len(part.Get("text").String()) > 0 {
@@ -62,7 +57,6 @@ func IsGeminiTokenEvent(payload []byte) bool {
 			}
 		}
 
-		// Terminal finishReason fallback (e.g., STOP, MAX_TOKENS, SAFETY)
 		if len(candidate.Get("finishReason").String()) > 0 {
 			return true
 		}
@@ -71,9 +65,6 @@ func IsGeminiTokenEvent(payload []byte) bool {
 	return false
 }
 
-// ObserveGeminiTokenEvent inspects a Google Gemini / Antigravity streaming chunk and records TTFT
-// if the frame represents the first meaningful token event. It records first-packet arrival time
-// as fallback and returns immediately with zero allocations once effective token TTFT is set.
 func ObserveGeminiTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {
 		reporter.ObserveResponseModel(payload)

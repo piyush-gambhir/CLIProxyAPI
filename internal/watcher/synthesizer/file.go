@@ -20,16 +20,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// FileSynthesizer generates Auth entries from OAuth JSON files.
-// It handles file-based authentication.
 type FileSynthesizer struct{}
 
-// NewFileSynthesizer creates a new FileSynthesizer instance.
 func NewFileSynthesizer() *FileSynthesizer {
 	return &FileSynthesizer{}
 }
 
-// Synthesize generates Auth entries from auth files in the auth directory.
 func (s *FileSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, error) {
 	out := make([]*coreauth.Auth, 0, 16)
 	if ctx == nil || ctx.AuthDir == "" {
@@ -38,7 +34,7 @@ func (s *FileSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, e
 
 	entries, err := os.ReadDir(ctx.AuthDir)
 	if err != nil {
-		// A missing directory holds no auths; any other read failure keeps the loaded ones.
+
 		if !errors.Is(err, fs.ErrNotExist) {
 			ctx.RecordIncompleteFile(ctx.AuthDir)
 		}
@@ -78,8 +74,6 @@ func (s *FileSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, e
 	return out, nil
 }
 
-// SynthesizeAuthFile generates Auth entries for one auth JSON file payload.
-// It shares exactly the same mapping behavior as FileSynthesizer.Synthesize.
 func SynthesizeAuthFile(ctx *SynthesisContext, fullPath string, data []byte) ([]*coreauth.Auth, error) {
 	return synthesizeFileAuths(ctx, fullPath, data)
 }
@@ -100,8 +94,7 @@ func synthesizeFileAuths(ctx *SynthesisContext, fullPath string, data []byte) ([
 	if errWeight := coreauth.ValidateAuthWeight(&coreauth.Auth{Metadata: metadata}); errWeight != nil {
 		return nil, fmt.Errorf("invalid weight in %s: %w", filepath.Base(fullPath), errWeight)
 	}
-	// Invalid per-account rules must not drop an existing credential: keep the valid
-	// entries and warn. Write entry points (upload and PATCH) reject them before persisting.
+
 	perAccountExcluded, errExcluded := ExtractExcludedModelsFromMetadata(metadata)
 	if errExcluded != nil {
 		log.WithError(errExcluded).Warnf("ignoring invalid excluded models in auth file %s", filepath.Base(fullPath))
@@ -216,7 +209,7 @@ func synthesizeFileAuths(ctx *SynthesisContext, fullPath string, data []byte) ([
 	if email, _ := metadata["email"].(string); email != "" {
 		label = email
 	}
-	// Use relative path under authDir as ID to stay consistent with the file-based token store.
+
 	id := fullPath
 	if strings.TrimSpace(ctx.AuthDir) != "" {
 		if rel, errRel := filepath.Rel(ctx.AuthDir, fullPath); errRel == nil && rel != "" {
@@ -267,12 +260,12 @@ func synthesizeFileAuths(ctx *SynthesisContext, fullPath string, data []byte) ([
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	// Read priority from auth file.
+
 	coreauth.ApplyAuthPriorityMetadata(a, metadata)
 	if errWeight := coreauth.ApplyAuthWeightMetadata(a, metadata); errWeight != nil {
 		return nil, fmt.Errorf("invalid auth weight in %s: %w", filepath.Base(fullPath), errWeight)
 	}
-	// Read note from auth file.
+
 	if rawNote, ok := metadata["note"]; ok {
 		if note, isStr := rawNote.(string); isStr {
 			if trimmed := strings.TrimSpace(note); trimmed != "" {
@@ -286,7 +279,7 @@ func synthesizeFileAuths(ctx *SynthesisContext, fullPath string, data []byte) ([
 	applyVertexOpenAPISettingsAttribute(a, metadata)
 	ApplyAuthExcludedModelsMeta(a, perAccountExcluded, "oauth")
 	applyFingerprintProfileAttribute(a, metadata)
-	// For Kimi auth files, preserve domain and base_url attributes.
+
 	if provider == "kimi" || provider == "kimi-ai" || provider == "kimi.ai" || provider == "kimi.com" {
 		if bu, ok := metadata["base_url"].(string); ok && strings.TrimSpace(bu) != "" {
 			a.Attributes["base_url"] = strings.TrimSpace(bu)
@@ -304,7 +297,7 @@ func synthesizeFileAuths(ctx *SynthesisContext, fullPath string, data []byte) ([
 			a.Attributes["base_url"] = kimiauth.ResolveKimiAPIBaseURL(resolvedDomain)
 		}
 	}
-	// For codex auth files, extract plan_type from metadata or JWT id_token.
+
 	if provider == "codex" {
 		if ptRaw, ok := metadata["plan_type"].(string); ok && strings.TrimSpace(ptRaw) != "" {
 			a.Attributes["plan_type"] = strings.TrimSpace(ptRaw)
@@ -351,9 +344,6 @@ func compactPluginAuths(auths []*coreauth.Auth) []*coreauth.Auth {
 	return out
 }
 
-// extractOAuthModelAliasesFromMetadata reads per-account model aliases from OAuth JSON metadata.
-// "model_aliases" is canonical; "model-aliases" remains a legacy alias.
-// Entries under "models" that specify both "name" and "alias" are also accepted.
 func extractOAuthModelAliasesFromMetadata(metadata map[string]any) []config.OAuthModelAlias {
 	if metadata == nil {
 		return nil
@@ -516,12 +506,6 @@ func applyOpenAPIModelsAttribute(auth *coreauth.Auth, metadata map[string]any) {
 	auth.Attributes["openapi_models"] = strings.Join(names, ",")
 }
 
-// ExtractExcludedModelsFromMetadata reads per-account excluded models from the OAuth JSON metadata.
-// "excluded_models" is canonical; "excluded-models" remains a legacy alias. The value must be a
-// string array; a single string is also accepted for older hand-written files and is split on
-// commas, because model IDs never contain commas. Any other type, or a non-string array element,
-// is an error. For non-string elements the valid string entries are still returned with the
-// error, so lenient readers can keep the usable rules while strict writers reject the value.
 func ExtractExcludedModelsFromMetadata(metadata map[string]any) ([]string, error) {
 	if metadata == nil {
 		return nil, nil

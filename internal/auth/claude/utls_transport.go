@@ -29,9 +29,6 @@ var claudeOAuthRefreshHeaderOrder = []string{
 	"Connection",
 }
 
-// claudeOAuthInspectHeaderOrder is the order the native client emits for the
-// authenticated Axios GET lookups on the OAuth control plane, covering both the
-// account profile and the claude_cli roles companion request.
 var claudeOAuthInspectHeaderOrder = []string{
 	"Accept",
 	"Content-Type",
@@ -43,8 +40,6 @@ var claudeOAuthInspectHeaderOrder = []string{
 	"Connection",
 }
 
-// claudeOAuthInspectTargets are the authenticated control-plane GET paths that
-// use claudeOAuthInspectHeaderOrder.
 var claudeOAuthInspectTargets = []string{
 	"/api/oauth/profile",
 	"/api/oauth/claude_cli/roles",
@@ -61,23 +56,10 @@ func claudeOAuthRequestHeaderOrder(method, requestTarget string) []string {
 	return claudeOAuthRefreshHeaderOrder
 }
 
-// claudeOAuthSessionCacheCapacity bounds one proxy's TLS session cache. The
-// OAuth control plane only talks to platform.claude.com and api.anthropic.com,
-// so a small cache covers every reachable server.
 const (
 	claudeOAuthSessionCacheCapacity      = 8
 	claudeOAuthProxySessionCacheCapacity = 64
 )
-
-// claudeOAuthSessionCaches keys one session cache per effective proxy URL.
-//
-// ClaudeAuth is constructed per operation (every refresh and every executor
-// profile check builds a new one), so a cache owned by the round tripper would
-// always start empty and never resume. Keying on the proxy instead matches the
-// inference plane, where the whole round tripper is cached per proxy, and keeps
-// resumption from crossing proxy boundaries. TLS sessions are scoped to a
-// server rather than a credential, and connections are already pooled per proxy
-// on the inference plane, so this adds no new cross-credential linkage.
 
 var claudeOAuthSessionCaches = internalcache.NewBoundedLRU[string, tls.ClientSessionCache](
 	claudeOAuthProxySessionCacheCapacity,
@@ -90,13 +72,6 @@ func claudeOAuthSessionCache(proxyURL string) tls.ClientSessionCache {
 	})
 }
 
-// newClaudeOAuthTLSConfig builds the uTLS config for one control-plane dial.
-//
-// OmitEmptyPsk keeps the pre_shared_key extension silent until a session is
-// actually cached, so the first ClientHello is byte-identical to the captured
-// native handshake. PreferSkipResumptionOnNilExtension is defense in depth: for
-// HelloCustom specs uTLS panics when it wants to resume but the spec lacks the
-// matching extension, and this degrades that into a skipped resumption.
 func newClaudeOAuthTLSConfig(host string, sessionCache tls.ClientSessionCache) *tls.Config {
 	return &tls.Config{
 		ServerName:                         host,
@@ -106,10 +81,6 @@ func newClaudeOAuthTLSConfig(host string, sessionCache tls.ClientSessionCache) *
 	}
 }
 
-// claudeOAuthTLSClientHelloSpec reproduces the compact Node/OpenSSL profile
-// Claude Code 2.1.220 uses for Axios OAuth control-plane requests. Unlike the
-// inference profile, it advertises no ALPN extension and therefore uses
-// HTTP/1.1 without negotiating a protocol.
 func claudeOAuthTLSClientHelloSpec() *tls.ClientHelloSpec {
 	return &tls.ClientHelloSpec{
 		TLSVersMin:         tls.VersionTLS12,
@@ -155,21 +126,15 @@ func claudeOAuthTLSClientHelloSpec() *tls.ClientHelloSpec {
 			&tls.KeyShareExtension{KeyShares: []tls.KeyShare{{Group: tls.X25519}}},
 			&tls.PSKKeyExchangeModesExtension{Modes: []uint8{tls.PskModeDHE}},
 			&tls.SupportedVersionsExtension{Versions: []uint16{tls.VersionTLS13, tls.VersionTLS12}},
-			// pre_shared_key MUST be the final extension (RFC 8446 4.2.11). It
-			// contributes zero bytes until a cached session exists.
+
 			&tls.UtlsPreSharedKeyExtension{},
 		},
 	}
 }
 
-// utlsRoundTripper uses Claude Code's OAuth control-plane TLS and HTTP/1.1
-// profile while retaining net/http proxy, cancellation, response parsing and
-// connection lifecycle semantics.
 type utlsRoundTripper struct {
 	dialer proxy.Dialer
-	// sessionCache is shared by every transport built for the same proxy, so
-	// short-lived ClaudeAuth instances can still resume, while resumption never
-	// crosses proxy boundaries.
+
 	sessionCache tls.ClientSessionCache
 	transport    *http.Transport
 }

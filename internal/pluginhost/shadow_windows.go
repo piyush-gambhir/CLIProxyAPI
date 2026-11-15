@@ -75,9 +75,7 @@ func removeShadowPluginDir(dir string) {
 }
 
 func shadowPluginProcessAlive(pid int) bool {
-	// Only an invalid parameter proves the process id no longer exists;
-	// any other error keeps the directory so a live process never loses
-	// its resident plugin images.
+
 	handle, errOpen := windows.OpenProcess(windows.SYNCHRONIZE, false, uint32(pid))
 	if errOpen != nil {
 		return !errors.Is(errOpen, windows.ERROR_INVALID_PARAMETER)

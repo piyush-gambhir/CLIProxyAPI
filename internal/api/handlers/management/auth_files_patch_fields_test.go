@@ -1123,7 +1123,7 @@ func TestPatchAuthFileFields_KeepsCommitLandedDuringPatch(t *testing.T) {
 			if errRegister != nil {
 				t.Fatalf("Register() error = %v", errRegister)
 			}
-			// Stage replacement credential in store for Load().
+
 			_, _ = store.memoryAuthStore.Save(context.Background(), &coreauth.Auth{
 				ID:       "cred.json",
 				FileName: "cred.json",

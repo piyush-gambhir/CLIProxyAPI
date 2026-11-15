@@ -66,15 +66,13 @@ type UsageReporter struct {
 	once                 sync.Once
 
 	responseModelMu sync.RWMutex
-	// responseModel holds the latest model name reported by the upstream response.
+
 	responseModel string
-	// responseModelFinal marks that a terminal event already reported the served
-	// model, so later frames skip parsing entirely.
+
 	responseModelFinal atomic.Bool
 
 	upstreamModelMu sync.RWMutex
-	// upstreamModel holds the canonical upstream model expected to be served when
-	// it differs from the requested model (e.g. local Kimi model mappings).
+
 	upstreamModel string
 }
 
@@ -161,7 +159,6 @@ func NewUsageReporter(ctx context.Context, provider, model string, auth *cliprox
 	return reporter
 }
 
-// SetStream records whether the request was executed in streaming mode.
 func (r *UsageReporter) SetStream(stream bool) {
 	if r == nil {
 		return
@@ -169,8 +166,6 @@ func (r *UsageReporter) SetStream(stream bool) {
 	r.stream = stream
 }
 
-// SetSessionHierarchy sets the explicit session and parent session identifiers.
-// Callers should invoke this method before Publish or EnsurePublished on the request thread.
 func (r *UsageReporter) SetSessionHierarchy(sessionID, parentSessionID string) {
 	if r == nil {
 		return
@@ -200,7 +195,6 @@ func isHierarchyParent(primary, parent string) bool {
 	return false
 }
 
-// UpdateAccessTokenFingerprint records the token version actually used upstream.
 func (r *UsageReporter) UpdateAccessTokenFingerprint(auth *cliproxyauth.Auth) {
 	if r == nil {
 		return
@@ -235,8 +229,6 @@ func (r *UsageReporter) accessTokenFingerprint() string {
 	return r.accessTokenHash
 }
 
-// ObserveResponseModel stores the model reported by an upstream response or event and
-// ignores payloads without one; the substitution warning is emitted at publish time.
 func (r *UsageReporter) ObserveResponseModel(payload []byte) {
 	if r == nil || r.responseModelFinal.Load() {
 		return
@@ -260,7 +252,6 @@ func (r *UsageReporter) ObserveResponseModel(payload []byte) {
 	}
 }
 
-// SetResponseModel sets the reported model directly if valid and not already marked final.
 func (r *UsageReporter) SetResponseModel(model string) {
 	if r == nil || r.responseModelFinal.Load() {
 		return
@@ -274,10 +265,6 @@ func (r *UsageReporter) SetResponseModel(model string) {
 	r.responseModelMu.Unlock()
 }
 
-// SetUpstreamModel records the upstream model expected to be served when it differs
-// from the requested model (e.g. due to provider-specific mapping or canonicalization).
-// Model substitution detection compares the response against this upstream model,
-// while usage accounting preserves the client's requested model.
 func (r *UsageReporter) SetUpstreamModel(model string) {
 	if r == nil {
 		return
@@ -287,7 +274,6 @@ func (r *UsageReporter) SetUpstreamModel(model string) {
 	r.upstreamModelMu.Unlock()
 }
 
-// UpstreamModel returns the expected upstream model, or an empty string if not explicitly set.
 func (r *UsageReporter) UpstreamModel() string {
 	if r == nil {
 		return ""
@@ -297,13 +283,10 @@ func (r *UsageReporter) UpstreamModel() string {
 	return r.upstreamModel
 }
 
-// IsResponseModelFinal reports whether the response model was already finalized by a terminal event.
 func (r *UsageReporter) IsResponseModelFinal() bool {
 	return r != nil && r.responseModelFinal.Load()
 }
 
-// warnModelSubstitution warns about a silent upstream model swap, and labels the
-// credential by index only, never by account.
 func (r *UsageReporter) warnModelSubstitution(ctx context.Context) {
 	if r == nil {
 		return
@@ -326,7 +309,6 @@ func (r *UsageReporter) warnModelSubstitution(ctx context.Context) {
 	LogWithRequestID(ctx).Warnf("%s executor: upstream served model %q for requested model %q (auth_index=%s)", providerName, served, r.model, r.authIndexForLog())
 }
 
-// authIndexForLog labels the credential without exposing its file name or account.
 func (r *UsageReporter) authIndexForLog() string {
 	if r == nil {
 		return "nil"
@@ -337,7 +319,6 @@ func (r *UsageReporter) authIndexForLog() string {
 	return "nil"
 }
 
-// ResponseModel returns the latest model reported by the upstream response.
 func (r *UsageReporter) ResponseModel() string {
 	if r == nil {
 		return ""
@@ -370,8 +351,6 @@ func (r *UsageReporter) PublishAdditionalModel(ctx context.Context, model string
 	r.publishRecord(ctx, record)
 }
 
-// SetTranslatedRequestMetadata captures usage-relevant values from the final
-// outbound payload after translation and payload defaults or overrides.
 func (r *UsageReporter) SetTranslatedRequestMetadata(payload []byte, format string) {
 	if r == nil {
 		return
@@ -380,8 +359,6 @@ func (r *UsageReporter) SetTranslatedRequestMetadata(payload []byte, format stri
 	r.effectiveServiceTier = extractEffectiveServiceTier(payload)
 }
 
-// SetTranslatedReasoningEffort is retained for existing executor call sites.
-// It captures all post-translation request metadata used by usage records.
 func (r *UsageReporter) SetTranslatedReasoningEffort(payload []byte, format string) {
 	r.SetTranslatedRequestMetadata(payload, format)
 }
@@ -404,11 +381,6 @@ func (r *UsageReporter) TrackHTTPClient(client *http.Client) *http.Client {
 	return r.trackHTTPClient(client, false)
 }
 
-// TrackHTTPClientRoundTripOnly records the TTFT start time upon sending the request
-// and captures first-packet arrival fallback on initial body reads, while keeping
-// effective TTFT unset. This allows protocol-aware streaming executors (like Codex SSE)
-// to mark effective TTFT explicitly upon receiving substantive token events, while
-// preserving first-packet fallback metrics for non-2xx error bodies or keepalive streams.
 func (r *UsageReporter) TrackHTTPClientRoundTripOnly(client *http.Client) *http.Client {
 	return r.trackHTTPClient(client, true)
 }
@@ -485,15 +457,10 @@ func (r *UsageReporter) IsFirstPacketSet() bool {
 	return r.firstPacketSet
 }
 
-// RecordFirstPacket records the arrival time of the first packet/chunk from upstream as a fallback.
 func (r *UsageReporter) RecordFirstPacket() {
 	r.ObserveTokenEvent(false)
 }
 
-// ObserveTokenEvent records the first packet fallback time on the first frame,
-// and if isToken is true, records the effective TTFT. It uses a fast-path
-// read check to return immediately with zero write lock contention once TTFT is set
-// or when subsequent non-token metadata frames arrive after the first packet.
 func (r *UsageReporter) ObserveTokenEvent(isToken bool) {
 	if r == nil {
 		return
@@ -564,8 +531,7 @@ func (r *UsageReporter) buildAdditionalModelRecord(model string, detail usage.De
 	rec := r.buildRecordForModel(model, detail, false, usage.Failure{})
 	rec.RequestID = uuid.NewString()
 	if rec.HomeSelection != nil {
-		// Split billing details do not represent another scheduled request.
-		// Mark them separately without changing the primary usage metadata.
+
 		selection := *rec.HomeSelection
 		selection.Additional = true
 		rec.HomeSelection = &selection
@@ -615,10 +581,6 @@ func hasNonZeroTokenUsage(detail usage.Detail) bool {
 		detail.TokenBreakdown.TotalTokens != 0
 }
 
-// ensurePublished guarantees that a usage record is emitted exactly once.
-// It is safe to call multiple times; only the first call wins due to once.Do.
-// This is used to ensure request counting even when upstream responses do not
-// include any usage fields (tokens), especially for streaming paths.
 func (r *UsageReporter) EnsurePublished(ctx context.Context) {
 	if r == nil {
 		return
@@ -628,8 +590,6 @@ func (r *UsageReporter) EnsurePublished(ctx context.Context) {
 	})
 }
 
-// publishAttemptRecord emits the record for one upstream attempt and the
-// observability warnings that belong to the attempt rather than to a single event.
 func (r *UsageReporter) publishAttemptRecord(ctx context.Context, record usage.Record) {
 	r.publishRecord(ctx, record)
 	r.warnModelSubstitution(ctx)
@@ -643,7 +603,6 @@ func (r *UsageReporter) publishRecord(ctx context.Context, record usage.Record) 
 	usage.PublishRecord(ctx, record)
 }
 
-// RequestID returns the execution instance request ID for this reporter.
 func (r *UsageReporter) RequestID() string {
 	if r == nil {
 		return ""
@@ -651,7 +610,6 @@ func (r *UsageReporter) RequestID() string {
 	return r.requestID
 }
 
-// TraceID returns the parent inbound request ID for this reporter.
 func (r *UsageReporter) TraceID() string {
 	if r == nil {
 		return ""
@@ -659,7 +617,6 @@ func (r *UsageReporter) TraceID() string {
 	return r.traceID
 }
 
-// SelectionID returns the scheduler selection ID for this reporter.
 func (r *UsageReporter) SelectionID() string {
 	if r == nil {
 		return ""
@@ -667,7 +624,6 @@ func (r *UsageReporter) SelectionID() string {
 	return r.selectionID
 }
 
-// IsNativeKey reports whether the client API key was authenticated by CPA's native config provider.
 func (r *UsageReporter) IsNativeKey() bool {
 	if r == nil {
 		return false
@@ -675,7 +631,6 @@ func (r *UsageReporter) IsNativeKey() bool {
 	return r.isNativeKey
 }
 
-// AccessProvider identifies the client request authentication provider.
 func (r *UsageReporter) AccessProvider() string {
 	if r == nil {
 		return ""
@@ -698,8 +653,7 @@ func (r *UsageReporter) buildRecordForModel(model string, detail usage.Detail, f
 	if r == nil {
 		return usage.Record{Model: model, Detail: detail, Failed: failed, Fail: fail, Generate: usage.GenerateFlag(true)}
 	}
-	// Additional-model records describe a side model (image generation tool usage) that
-	// the upstream response model never refers to, so they must stay empty.
+
 	responseModel := ""
 	if model == r.model {
 		responseModel = r.ResponseModel()
@@ -889,7 +843,6 @@ func APIKeyFromContext(ctx context.Context) string {
 	return usage.APIKeyFromContext(ctx)
 }
 
-// AccessProviderFromContext extracts the client authentication provider identifier from the context.
 func AccessProviderFromContext(ctx context.Context) string {
 	if provider := usage.AccessProviderFromContext(ctx); provider != "" {
 		return provider
@@ -963,7 +916,6 @@ func resolveUsageAuthType(auth *cliproxyauth.Auth) string {
 	return auth.AuthKind()
 }
 
-// StreamUsageBuffer keeps the latest usage detail observed in a stream.
 type StreamUsageBuffer struct {
 	detail                       usage.Detail
 	ok                           bool
@@ -1036,7 +988,6 @@ func hasGeminiCandidateArtifactMarker(payload []byte) bool {
 		bytes.Contains(payload, geminiPredictionsMarker)
 }
 
-// Observe records detail when ok is true, allowing the final stream usage to win.
 func (b *StreamUsageBuffer) Observe(detail usage.Detail, ok bool) {
 	if b == nil || !ok {
 		return
@@ -1067,7 +1018,7 @@ func (b *StreamUsageBuffer) rememberGeminiCandidateArtifacts(detail *usage.Detai
 		return
 	}
 	if detail.ToolUsageDetails != nil {
-		// Content parts are incremental executions; grounding metadata is a snapshot.
+
 		previous := b.geminiToolDetails
 		b.geminiToolDetails = mergeToolUsageDetails(previous, detail.ToolUsageDetails)
 		if previous != nil {
@@ -1120,8 +1071,6 @@ func (b *StreamUsageBuffer) applyGeminiStreamObservations() {
 	}
 }
 
-// SetRequestPayload records request-side image/media configuration on the stream buffer
-// so it can be attached as RequestedImageDetails if the stream produces images.
 func (b *StreamUsageBuffer) SetRequestPayload(requestPayload []byte, contentType ...string) {
 	if b == nil || len(requestPayload) == 0 {
 		return
@@ -1129,12 +1078,10 @@ func (b *StreamUsageBuffer) SetRequestPayload(requestPayload []byte, contentType
 	b.requestedImageDetails = ParseRequestImageDetails(requestPayload, contentType...)
 }
 
-// ObserveGeminiStream records and merges usage and candidate tool/media artifacts from a Gemini SSE line.
 func (b *StreamUsageBuffer) ObserveGeminiStream(line []byte) {
 	b.observeGeminiFamilyStream(line, false)
 }
 
-// ObserveAntigravityStream records and merges usage and candidate tool/media artifacts from an Antigravity SSE line.
 func (b *StreamUsageBuffer) ObserveAntigravityStream(line []byte) {
 	b.observeGeminiFamilyStream(line, true)
 }
@@ -1202,7 +1149,7 @@ func (b *StreamUsageBuffer) observeGeminiFamilyStream(line []byte, allowResponse
 	if b.ok {
 		update := detail
 		mergeStreamStructuredFields(&detail, b.detail, update)
-		// Explicit zero modality counts are authoritative, not absent fields.
+
 		for _, pair := range []struct {
 			dst **int64
 			src *int64
@@ -1227,8 +1174,6 @@ func (b *StreamUsageBuffer) observeGeminiFamilyStream(line []byte, allowResponse
 	b.Observe(detail, true)
 }
 
-// ObserveOpenAIStream records response-tier state and the latest usage from an
-// OpenAI-style stream while avoiding JSON parsing for irrelevant chunks.
 func (b *StreamUsageBuffer) ObserveOpenAIStream(line []byte) {
 	if b == nil {
 		return
@@ -1276,7 +1221,7 @@ func (b *StreamUsageBuffer) ObserveOpenAIStream(line []byte) {
 			b.openAIExplicitImageCount = true
 		}
 		if usageOK && b.ok {
-			// Metadata-only frames do not replace the last token snapshot.
+
 			if !hasOpenAIStyleUsageTokenFields(usageNode) {
 				detail.InputTokens = b.detail.InputTokens
 				detail.OutputTokens = b.detail.OutputTokens
@@ -1380,7 +1325,6 @@ func (b *StreamUsageBuffer) applyOpenAIStreamObservations() {
 	}
 }
 
-// ObserveClaudeStream records and merges usage from a Claude SSE line.
 func (b *StreamUsageBuffer) ObserveClaudeStream(line []byte) {
 	if b == nil {
 		return
@@ -1403,8 +1347,6 @@ func (b *StreamUsageBuffer) ObserveClaudeStream(line []byte) {
 	}
 }
 
-// ObserveClaudeSSEEvent extracts joined multi-line SSE data payloads from rawEvent
-// and records any model or usage details when a frame was split across lines.
 func (b *StreamUsageBuffer) ObserveClaudeSSEEvent(rawEvent []byte) {
 	if b == nil || len(rawEvent) == 0 {
 		return
@@ -1510,7 +1452,6 @@ func (b *StreamUsageBuffer) applyClaudeStreamToolObservations() {
 	b.ok = true
 }
 
-// Publish emits the latest observed usage detail, if any.
 func (b *StreamUsageBuffer) Publish(ctx context.Context, reporter *UsageReporter) bool {
 	if b == nil || !b.ok || reporter == nil {
 		return false
@@ -1522,7 +1463,6 @@ func (b *StreamUsageBuffer) Publish(ctx context.Context, reporter *UsageReporter
 	return true
 }
 
-// PublishFailure emits the latest observed usage detail together with failure details.
 func (b *StreamUsageBuffer) PublishFailure(ctx context.Context, reporter *UsageReporter, errs ...error) bool {
 	if b == nil || reporter == nil {
 		return false
@@ -1534,7 +1474,6 @@ func (b *StreamUsageBuffer) PublishFailure(ctx context.Context, reporter *UsageR
 	return true
 }
 
-// Detail returns the latest observed usage detail.
 func (b *StreamUsageBuffer) Detail() (usage.Detail, bool) {
 	if b == nil || !b.ok {
 		return usage.Detail{}, false
@@ -1542,7 +1481,6 @@ func (b *StreamUsageBuffer) Detail() (usage.Detail, bool) {
 	return b.detail, true
 }
 
-// ResponseModel returns the latest model observed in the stream buffer.
 func (b *StreamUsageBuffer) ResponseModel() string {
 	if b == nil {
 		return ""
@@ -1550,9 +1488,6 @@ func (b *StreamUsageBuffer) ResponseModel() string {
 	return b.responseModel
 }
 
-// ObserveResponsesStream collects response.output_item.done items across a
-// Responses SSE/WebSocket stream and parses terminal response.usage payloads
-// with those collected items so tool usage is preserved when response.output is empty.
 func (b *StreamUsageBuffer) ObserveResponsesStream(line []byte) bool {
 	if b == nil {
 		return false
@@ -1637,9 +1572,7 @@ func ParseCodexUsageWithOutputItems(data []byte, itemsByIndex map[int64][]byte, 
 	} else if len(itemsByIndex) > 0 || len(fallback) > 0 {
 		applyResponsesCollectedOutputItemsUsage(&detail, itemsByIndex, fallback)
 	}
-	// When response.tool_usage.image_gen is present, CodexExecutor publishes a dedicated
-	// additional usage record for the image model (e.g. gpt-image-2) carrying ImageCount
-	// and ImageDetails; clear them on the orchestrator model record to avoid double-counting.
+
 	if hasOpenAIStyleUsageTokenFields(root.Get("response.tool_usage.image_gen")) {
 		detail.ImageCount = nil
 		detail.ImageDetails = nil
@@ -1793,8 +1726,6 @@ func applyOpenAIChatToolCallsUsage(detail *usage.Detail, root ojson.Result) {
 	}
 }
 
-// parseOpenAIStyleUsageWithCache keeps structured-only usage and cache metadata
-// consistent across Chat, Responses, and streaming entry points.
 func parseOpenAIStyleUsageWithCache(root, usageNode ojson.Result) (usage.Detail, bool) {
 	var detail usage.Detail
 	hasTokens := hasOpenAIStyleUsageTokenFields(usageNode)
@@ -1972,7 +1903,7 @@ func parseOpenAIStyleUsageNode(usageNode ojson.Result) usage.Detail {
 			return true
 		})
 	}
-	// Match original precedence: prompt_tokens_details first for cached_tokens, input_tokens_details first for structured fields & cache_creation_tokens.
+
 	if promptDetails.Exists() {
 		if c := promptDetails.Get("cached_tokens"); c.Exists() {
 			detail.CachedTokens = c.Int()
@@ -2294,8 +2225,7 @@ func applyResponsesOutputItemSliceUsage(detail *usage.Detail, items []ojson.Resu
 			detail.WebSearchRequests = usage.Int64Ptr(webSearchCalls)
 		}
 	} else if imageSearchCalls > 0 && detail.ToolUsageDetails.WebSearchCalls != nil && *detail.ToolUsageDetails.WebSearchCalls == 0 {
-		// xAI Image Search (id prefix "is_") is billed at the standard Web Search rate
-		// even when server_side_tool_usage_details.web_search_calls reports 0.
+
 		detail.ToolUsageDetails.WebSearchCalls = usage.Int64Ptr(imageSearchCalls)
 		detail.WebSearchRequests = usage.Int64Ptr(imageSearchCalls)
 	}
@@ -2349,8 +2279,6 @@ func isEmptyImageDetails(d *usage.ImageDetails) bool {
 	return d.Size == "" && d.Resolution == "" && d.ImageSize == "" && d.AspectRatio == "" && d.Quality == "" && d.Background == "" && d.OutputFormat == "" && d.ResponseFormat == "" && d.MimeType == "" && d.InputFidelity == ""
 }
 
-// ParseRequestImageDetails extracts requested image/video parameters strictly from a request payload,
-// preserving each upstream protocol's native field names.
 func ParseRequestImageDetails(requestPayload []byte, contentType ...string) *usage.ImageDetails {
 	if len(contentType) > 0 {
 		mediaType, params, errParse := mime.ParseMediaType(contentType[0])
@@ -2409,8 +2337,6 @@ func ParseRequestImageDetails(requestPayload []byte, contentType ...string) *usa
 	return out
 }
 
-// parseMultipartImageDetails reads only small scalar attributes. File parts and
-// unrelated fields are drained without allocating another copy or temporary files.
 func parseMultipartImageDetails(payload []byte, boundary string) *usage.ImageDetails {
 	if boundary == "" {
 		return nil
@@ -2455,8 +2381,6 @@ func parseMultipartImageDetails(payload []byte, boundary string) *usage.ImageDet
 	return out
 }
 
-// ParseOpenAIImageUsage extracts token usage, generated image count, and separate
-// request vs upstream response image parameters from an OpenAI or xAI image request/response.
 func ParseOpenAIImageUsage(requestPayload, responsePayload []byte, contentType ...string) usage.Detail {
 	var detail usage.Detail
 	detail.RequestedImageDetails = ParseRequestImageDetails(requestPayload, contentType...)
@@ -2609,19 +2533,15 @@ func ParseOpenAIImageUsage(requestPayload, responsePayload []byte, contentType .
 	return detail
 }
 
-// ParseXAIImageUsage extracts token usage, generated image count, and image parameters
-// from an xAI image generation/edit request and response.
 func ParseXAIImageUsage(requestPayload, responsePayload []byte) usage.Detail {
 	return ParseOpenAIImageUsage(requestPayload, responsePayload)
 }
 
-// ParseXAIVideoUsage extracts token usage and video parameters from an xAI video response.
 func ParseXAIVideoUsage(requestPayload, responsePayload []byte) usage.Detail {
 	detail := ParseOpenAIUsage(responsePayload)
 	root := util.ParseGJSONBytesNoCopy(responsePayload)
 	reqRoot := util.ParseGJSONBytesNoCopy(requestPayload)
-	// Only attach video media attributes when a completed video output or usage is present,
-	// not on an initial async job creation response that only returns {"request_id":"..."}.
+
 	hasCompletedVideo := root.Get("usage").Exists() || root.Get("video").Exists() || root.Get("data").Exists() || root.Get("url").Exists() || strings.EqualFold(strings.TrimSpace(root.Get("status").String()), "completed")
 	if !hasCompletedVideo {
 		return detail
@@ -2766,8 +2686,7 @@ func parseClaudeUsageNode(usageNode ojson.Result) usage.Detail {
 	cacheReadTokens := usageNode.Get("cache_read_input_tokens").Int()
 	cacheCreationTokens := usageNode.Get("cache_creation_input_tokens").Int()
 	rawOutputTokens := usageNode.Get("output_tokens").Int()
-	// Anthropic reports thinking as a subset of output_tokens. Prefer the official
-	// nested field, then fall back to legacy aliases used by some gateways.
+
 	reasoningNode := firstExistingUsageNode(
 		usageNode,
 		"output_tokens_details.thinking_tokens",
@@ -2782,9 +2701,7 @@ func parseClaudeUsageNode(usageNode ojson.Result) usage.Detail {
 	if reasoningTokens > 0 && reasoningTokens <= rawOutputTokens {
 		nonReasoningOutput = rawOutputTokens - reasoningTokens
 	} else if reasoningTokens > rawOutputTokens {
-		// Keep Detail.OutputTokens authoritative for keeper subset checks and
-		// avoid inventing extra non-reasoning output when the upstream payload
-		// is inconsistent.
+
 		nonReasoningOutput = 0
 	}
 	detail := usage.Detail{
@@ -2795,18 +2712,14 @@ func parseClaudeUsageNode(usageNode ojson.Result) usage.Detail {
 		CacheReadTokens:     cacheReadTokens,
 		CacheCreationTokens: cacheCreationTokens,
 	}
-	// Anthropic reports the speed a response was served and billed at in
-	// usage.speed ("fast" or "standard"): fast mode costs more, and a
-	// fast request on a model without it runs, and is billed, at standard.
-	// Carried as the response tier so usage sinks can price it.
+
 	if speed := cloneTrimmedString(usageNode.Get("speed").String()); speed != "" {
 		detail.ResponseServiceTier = speed
 	}
 	if detail.CachedTokens == 0 {
 		detail.CachedTokens = detail.CacheCreationTokens
 	}
-	// raw output_tokens already includes thinking; cache fields are independent
-	// from input_tokens in the Messages API.
+
 	detail.TotalTokens = detail.InputTokens + rawOutputTokens + detail.CacheReadTokens + detail.CacheCreationTokens
 	detail.TokenBreakdown = usage.NewIndependentTokenBreakdown(
 		detail.InputTokens,
@@ -3657,8 +3570,6 @@ func applyGeminiNodesArtifactsWithCounter(detail *usage.Detail, candidates, pred
 	}
 }
 
-// ApplyGeminiRequestImageConfig populates detail.RequestedImageDetails from a Gemini or Vertex
-// request payload without overwriting upstream-returned detail.ImageDetails.
 func ApplyGeminiRequestImageConfig(detail *usage.Detail, requestPayload []byte) {
 	if detail == nil || detail.ImageCount == nil || *detail.ImageCount <= 0 {
 		return
@@ -3991,9 +3902,6 @@ func rememberStopWithoutUsage(traceID string) {
 	time.AfterFunc(10*time.Minute, func() { stopChunkWithoutUsage.Delete(traceID) })
 }
 
-// FilterSSEUsageMetadata removes usageMetadata from SSE events that are not
-// terminal (finishReason != "stop"). Stop chunks are left untouched. This
-// function is shared between aistudio and antigravity executors.
 func FilterSSEUsageMetadata(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -4045,7 +3953,7 @@ func FilterSSEUsageMetadata(payload []byte) []byte {
 	}
 	if !modified {
 		if !foundData {
-			// Handle payloads that are raw JSON without SSE data: prefix.
+
 			trimmed := bytes.TrimSpace(payload)
 			cleaned, changed := StripUsageMetadataFromJSON(trimmed)
 			if !changed {
@@ -4058,10 +3966,6 @@ func FilterSSEUsageMetadata(payload []byte) []byte {
 	return bytes.Join(lines, []byte("\n"))
 }
 
-// StripUsageMetadataFromJSON drops usageMetadata unless finishReason is present (terminal).
-// It handles both formats:
-// - Aistudio: candidates.0.finishReason
-// - Antigravity: response.candidates.0.finishReason
 func StripUsageMetadataFromJSON(rawJSON []byte) ([]byte, bool) {
 	jsonBytes := bytes.TrimSpace(rawJSON)
 	if len(jsonBytes) == 0 || !bytes.Contains(jsonBytes, geminiUsageMetaMarker) || !ojson.ValidBytes(jsonBytes) {
@@ -4108,8 +4012,6 @@ func StripUsageMetadataFromJSON(rawJSON []byte) ([]byte, bool) {
 		return rawJSON, false
 	}
 
-	// Fast single-allocation key rename when only one usageMetadata exists
-	// (avoids 2 full-buffer sjson copies on multi-MB 4K image chunks).
 	if topUsage.Exists() != respUsage.Exists() {
 		key := topUsageKey
 		if respUsage.Exists() {
@@ -4117,7 +4019,7 @@ func StripUsageMetadataFromJSON(rawJSON []byte) ([]byte, bool) {
 		}
 		if key.Raw == string(geminiUsageMetaMarker) && key.Index > 0 &&
 			key.Index+len(key.Raw) <= len(jsonBytes) {
-			keyPos := key.Index + 1 // Right after the selected key's opening quote.
+			keyPos := key.Index + 1
 			out := make([]byte, 0, len(jsonBytes)+3)
 			out = append(out, jsonBytes[:keyPos]...)
 			out = append(out, "cpaUsageMetadata"...)

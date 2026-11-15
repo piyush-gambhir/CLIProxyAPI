@@ -10,12 +10,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/httpwire"
 )
 
-// CPATraceIDHeader is the downstream response header used to correlate requests with selected credentials.
 const CPATraceIDHeader = "X-CPA-TRACE-ID"
 
 const ginCPATraceStateKey = "__cpa_trace_state__"
 
-// FormatCPATraceID builds a CPA trace ID from the selection time, auth index, and request ID.
 func FormatCPATraceID(selectedAt time.Time, authIndex, requestID string) string {
 	authIndex = strings.TrimSpace(authIndex)
 	requestID = strings.TrimSpace(requestID)
@@ -63,7 +61,6 @@ func ginCPATraceState(c *gin.Context) *cpaTraceState {
 	return state
 }
 
-// GinCPATraceIDCallback returns a callback that is safe to invoke after the Gin context is released.
 func GinCPATraceIDCallback(c *gin.Context) func(string) {
 	state := ginCPATraceState(c)
 	if state == nil {
@@ -84,14 +81,12 @@ func GinCPATraceIDCallback(c *gin.Context) func(string) {
 	}
 }
 
-// SetGinCPATraceID stores the trace ID until the downstream response headers are committed.
 func SetGinCPATraceID(c *gin.Context, authIndex string) {
 	if callback := GinCPATraceIDCallback(c); callback != nil {
 		callback(authIndex)
 	}
 }
 
-// GetGinCPATraceID returns the trace ID stored for the current request.
 func GetGinCPATraceID(c *gin.Context) string {
 	if c == nil {
 		return ""
@@ -104,7 +99,6 @@ func GetGinCPATraceID(c *gin.Context) string {
 	return state.get()
 }
 
-// CPATraceIDMiddleware injects a stored trace ID immediately before response headers are committed.
 func CPATraceIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		state := ginCPATraceState(c)
@@ -149,7 +143,6 @@ func (w *cpaTraceResponseWriter) Flush() {
 	_ = w.FlushError()
 }
 
-// FlushError preserves trace headers while forwarding transport errors.
 func (w *cpaTraceResponseWriter) FlushError() error {
 	w.applyTraceHeader()
 	return httpwire.FlushResponse(w.ResponseWriter)

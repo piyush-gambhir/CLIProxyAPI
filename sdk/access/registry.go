@@ -7,13 +7,11 @@ import (
 	"sync"
 )
 
-// Provider validates credentials for incoming requests.
 type Provider interface {
 	Identifier() string
 	Authenticate(ctx context.Context, r *http.Request) (*Result, *AuthError)
 }
 
-// Result conveys authentication outcome.
 type Result struct {
 	Provider  string
 	Principal string
@@ -27,7 +25,6 @@ var (
 	exclusiveProvider string
 )
 
-// RegisterProvider registers a pre-built provider instance for a given type identifier.
 func RegisterProvider(typ string, provider Provider) {
 	normalizedType := strings.TrimSpace(typ)
 	if normalizedType == "" || provider == nil {
@@ -42,7 +39,6 @@ func RegisterProvider(typ string, provider Provider) {
 	registryMu.Unlock()
 }
 
-// UnregisterProvider removes a provider by type identifier.
 func UnregisterProvider(typ string) {
 	normalizedType := strings.TrimSpace(typ)
 	if normalizedType == "" {
@@ -64,7 +60,6 @@ func UnregisterProvider(typ string) {
 	registryMu.Unlock()
 }
 
-// SetExclusiveProvider restricts RegisteredProviders to a single provider key when present.
 func SetExclusiveProvider(typ string) {
 	normalizedType := strings.TrimSpace(typ)
 	registryMu.Lock()
@@ -72,14 +67,12 @@ func SetExclusiveProvider(typ string) {
 	registryMu.Unlock()
 }
 
-// ClearExclusiveProvider removes any active provider restriction.
 func ClearExclusiveProvider() {
 	registryMu.Lock()
 	exclusiveProvider = ""
 	registryMu.Unlock()
 }
 
-// RegisteredProviders returns the global provider instances in registration order.
 func RegisteredProviders() []Provider {
 	registryMu.RLock()
 	if len(order) == 0 {

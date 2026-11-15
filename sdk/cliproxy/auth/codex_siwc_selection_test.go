@@ -100,7 +100,6 @@ func TestManagerExecuteOpenAIImageSelectsOuterTrackWhenSIWCExpiredOrRejected(t *
 		t.Fatalf("Register error: %v", err)
 	}
 
-	// 1. Default (non-Codex, non-image) request must see this auth as blocked because SIWC is expired/rejected.
 	_, errNonImage := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{
 		Model:   "gpt-5.4",
 		Payload: []byte(`{"model":"gpt-5.4","input":"hi"}`),
@@ -112,7 +111,6 @@ func TestManagerExecuteOpenAIImageSelectsOuterTrackWhenSIWCExpiredOrRejected(t *
 		t.Fatal("expected non-Codex non-image request to fail when SIWC token is expired/rejected")
 	}
 
-	// 2. OpenAI image request with non-Codex UA must succeed because it uses the outer credential track.
 	_, errImage := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{
 		Model:   "gpt-image-2.6",
 		Payload: []byte(`{"model":"gpt-image-2.6","prompt":"a cat"}`),
@@ -147,7 +145,6 @@ func TestManagerExecuteOpenAIImageBlocksWhenOuterExpiredEvenIfSIWCValid(t *testi
 		},
 	})
 
-	// Auth 1: outer token is expired, SIWC token is valid.
 	authOuterExpired := &Auth{
 		ID:       "codex-1-outer-expired",
 		Provider: "codex",
@@ -163,7 +160,7 @@ func TestManagerExecuteOpenAIImageBlocksWhenOuterExpiredEvenIfSIWCValid(t *testi
 			},
 		},
 	}
-	// Auth 2: outer token is valid, SIWC token is valid.
+
 	authOuterValid := &Auth{
 		ID:       "codex-2-outer-valid",
 		Provider: "codex",
@@ -189,7 +186,6 @@ func TestManagerExecuteOpenAIImageBlocksWhenOuterExpiredEvenIfSIWCValid(t *testi
 		t.Fatalf("Register authOuterValid error: %v", err)
 	}
 
-	// Image request must skip authOuterExpired and pick authOuterValid.
 	_, errImage := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{
 		Model:   "gpt-image-2.6",
 		Payload: []byte(`{"model":"gpt-image-2.6","prompt":"a cat"}`),

@@ -137,7 +137,7 @@ func registerRPCPlugin(ctx context.Context, host *Host, id string, client plugin
 	adapter := &rpcPluginAdapter{id: id, host: host, client: client, instance: pluginCallbackInstance(client)}
 	schemaVersion := resp.SchemaVersion
 	if schemaVersion == 0 {
-		// Missing schema_version is treated as the original contract.
+
 		schemaVersion = 1
 	}
 	plugin := pluginapi.Plugin{
@@ -414,7 +414,7 @@ func sanitizePluginMetadataValue(value any) (any, bool) {
 		}
 		return out, true
 	default:
-		// RPC metadata crosses a JSON envelope, so unsupported Go values are normalized to JSON-compatible shapes.
+
 		raw, errMarshal := json.Marshal(value)
 		if errMarshal != nil {
 			return nil, false

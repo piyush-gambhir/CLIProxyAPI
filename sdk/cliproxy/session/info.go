@@ -1,4 +1,3 @@
-// Package session derives stable conversation identities and extracts hierarchical session relationships.
 package session
 
 import (
@@ -13,7 +12,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// SessionInfo encapsulates incoming request details needed for session affinity and upstream reporting.
 type SessionInfo struct {
 	SessionID       string         `json:"session_id"`
 	ParentSessionID string         `json:"parent_session_id,omitempty"`
@@ -30,11 +28,8 @@ type SessionInfo struct {
 	Metadata        map[string]any `json:"metadata,omitempty"`
 }
 
-// SessionTreeInfo is an alias for SessionInfo for backward compatibility.
 type SessionTreeInfo = SessionInfo
 
-// sessionObject indexes top-level fields once so missing session keys do not
-// rescan large message arrays for every candidate path.
 type sessionObject struct {
 	result     ojson.Result
 	fields     map[string]ojson.Result
@@ -79,20 +74,6 @@ func (object sessionObject) Get(path string) ojson.Result {
 	return value
 }
 
-// ExtractSessionInfo extracts session hierarchy and client identification from request attributes.
-// Priority matches selector.go:
-//  1. X-Claude-Code-Session-Id
-//  2. Claude Code metadata.user_id session
-//  3. Session-Id / Session_id (Codex and compatible clients)
-//  4. X-Http-Session-Id (Antigravity CLI)
-//  5. X-Session-ID / X-Session-Affinity / X-Slot-Session-Id
-//  6. X-Conversation-Id / X-Thread-Id / X-Client-Request-Id
-//  7. Gemini cachedContent
-//  8. OpenAI thread_id
-//  9. session_id / sessionId
-//  10. prompt_cache_key (pck:), conversation.id (conv:), metadata.user_id (user:)
-//  11. conversation_id / chat_id
-//  12. execution_session_id metadata
 func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string]any) (SessionInfo, bool) {
 	var info SessionInfo
 	if metadata != nil {
@@ -115,25 +96,25 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			reqRoot = newSessionObject(req)
 		}
 		for _, p := range []string{
-			// Standard session / thread parent keys
+
 			"parent_session_id", "parentSessionId", "parentSessionID",
 			"parent_thread_id", "parentThreadId", "parentThreadID",
 			"forked_from_thread_id", "forked_from_id",
 			"parent_conversation_id", "parentConversationId", "parentConversationID",
-			// OpenCode / generic parent ID keys
+
 			"parent_id", "parentId", "parentID",
-			// Roo Code / Cline task delegation keys
+
 			"parent_task_id", "parentTaskId", "parentTaskID",
-			// OpenHands action tree keys
+
 			"parent_action_id", "parentActionId", "parentActionID",
-			// Pi session keys
+
 			"parent_session", "parentSession",
-			// Hermes subagent keys
+
 			"parent_subagent_id", "parentSubagentId",
-			// OpenClaw fork sources
+
 			"forkSource.sessionId", "fork_source.session_id",
 			"previousSessionId", "previous_session_id",
-			// Metadata nested keys
+
 			"metadata.parent_session_id", "metadata.parentSessionId", "metadata.parentSessionID",
 			"metadata.parent_thread_id", "metadata.parentThreadId",
 			"metadata.forked_from_thread_id", "metadata.forked_from_id",
@@ -144,7 +125,7 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			"metadata.parent_session", "metadata.parentSession",
 			"metadata.parent_agent_id", "metadata.parentAgentId",
 			"metadata.forkSource.sessionId", "metadata.previousSessionId",
-			// Extra body nested keys
+
 			"extra_body.parent_session_id", "extra_body.parentSessionId", "extra_body.parentSessionID",
 			"extra_body.parent_thread_id", "extra_body.parentThreadId",
 			"extra_body.forked_from_thread_id", "extra_body.forked_from_id",
@@ -170,7 +151,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 	}
 
-	// 1. Anthropic / Claude Code Headers
 	if sid := sessionHeaderValue(headers, "X-Claude-Code-Session-Id"); sid != "" {
 		info.ClientType = "claude"
 		agentID := sessionHeaderValue(headers, "X-Claude-Code-Agent-Id")
@@ -222,7 +202,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		return finalizeSessionInfo(info)
 	}
 
-	// 2. Claude Code metadata.user_id in payload (outranks generic headers)
 	if len(payload) > 0 {
 		if sid, parentSID, agentID := ClaudeMetadataIdentities(payload); sid != "" {
 			info.ClientType = "claude"
@@ -281,7 +260,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 	}
 
-	// 3. OpenAI / Codex CLI Headers
 	sid := sessionHeaderValue(headers, "Session-Id")
 	if sid == "" {
 		sid = sessionHeaderValue(headers, "Session_id")
@@ -374,7 +352,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			subagentSignal = true
 		}
 
-		// 1. Fork detection
 		if forkedFrom != "" {
 			forkSessionID := tid
 			if forkSessionID == "" {
@@ -391,7 +368,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 
-		// 2. Subagent detection (Multi-Agent v2)
 		if subagentSignal || (tid != "" && sid != "" && tid != sid) || (parentThread != "" && parentThread != tid && parentThread != sid) {
 			childSessionID := tid
 			if childSessionID == "" {
@@ -426,7 +402,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 
-		// 3. Normal interactive session
 		sessionID := sid
 		if sessionID == "" {
 			sessionID = tid
@@ -446,7 +421,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		return finalizeSessionInfo(info)
 	}
 
-	// 4. Antigravity CLI (agy) Headers
 	if sid := sessionHeaderValue(headers, "X-Http-Session-Id"); sid != "" {
 		info.ClientType = "agy"
 		info.SessionID = "agy:" + sid
@@ -472,7 +446,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		return finalizeSessionInfo(info)
 	}
 
-	// 5. OpenCode / Pi Slot / Task / Generic Headers
 	if sid := sessionHeaderValue(headers, "X-Session-ID"); sid != "" {
 		info.ClientType = "generic"
 		info.SessionID = "header:" + sid
@@ -643,9 +616,8 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		return finalizeSessionInfo(info)
 	}
 
-	// 6. Payload inspection
 	if len(payload) > 0 && root.Exists() {
-		// Gemini context caching
+
 		for _, cachePath := range []string{"cachedContent", "cached_content"} {
 			cacheID := normalizedSessionCandidate(root.Get(cachePath).String())
 			if cacheID == "" && hasNestedReq {
@@ -664,7 +636,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			}
 		}
 
-		// OpenAI thread in payload
 		for _, threadPath := range []string{"thread_id", "threadId", "metadata.thread_id"} {
 			tid := normalizedSessionCandidate(root.Get(threadPath).String())
 			if tid == "" && hasNestedReq {
@@ -690,7 +661,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			}
 		}
 
-		// Generic session in payload
 		agentID := normalizedSessionCandidate(root.Get("metadata.agent_id").String())
 		if agentID == "" {
 			agentID = normalizedSessionCandidate(root.Get("metadata.subagent_id").String())
@@ -748,7 +718,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			}
 		}
 
-		// Task / Action in payload (Roo Code, Cline, OpenHands)
 		for _, path := range []string{
 			"task_id", "taskId", "taskID",
 			"action_id", "actionId", "actionID",
@@ -780,7 +749,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			}
 		}
 
-		// Prompt cache key & Conversation object
 		var conversationID string
 		conversation := root.Get("conversation")
 		if !conversation.Exists() && hasNestedReq {
@@ -826,7 +794,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 
-		// Plain metadata.user_id
 		userID := normalizedSessionCandidate(root.Get("metadata.user_id").String())
 		if userID == "" && hasNestedReq {
 			userID = normalizedSessionCandidate(reqRoot.Get("metadata.user_id").String())
@@ -838,7 +805,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 
-		// Legacy conversation string paths
 		for _, convPath := range []string{"conversation_id", "conversationId", "chat_id", "chatId", "metadata.conversation_id", "extra_body.conversation_id"} {
 			cid := normalizedSessionCandidate(root.Get(convPath).String())
 			if cid == "" && hasNestedReq {
@@ -858,7 +824,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 	}
 
-	// 7. ExecutionSessionMetadataKey
 	if executionID, ok := metadata[cliproxyexecutor.ExecutionSessionMetadataKey].(string); ok {
 		if executionID = normalizedSessionCandidate(executionID); executionID != "" {
 			info.ClientType = "generic"
@@ -868,7 +833,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 	}
 
-	// 8. LCPAffinitySessionIDMetadataKey
 	if lcpID, ok := metadata[cliproxyexecutor.LCPAffinitySessionIDMetadataKey].(string); ok {
 		if lcpID = normalizedSessionCandidate(lcpID); lcpID != "" {
 			info.ClientType = "lcp"
@@ -924,15 +888,13 @@ func isBodyForkCandidate(root, reqRoot sessionObject, hasNestedReq bool) bool {
 	return false
 }
 
-// BoundSessionIdentity bounds an identifier to <= 256 bytes safely,
-// preserving uniqueness via SHA256 and guarding against splitting multibyte UTF-8 characters.
 func BoundSessionIdentity(id string) string {
 	if len(id) <= 256 {
 		return id
 	}
 	sum := sha256.Sum256([]byte(id))
-	hashHex := hex.EncodeToString(sum[:]) // 64 bytes
-	prefixLen := 255 - 1 - len(hashHex)   // 190 bytes
+	hashHex := hex.EncodeToString(sum[:])
+	prefixLen := 255 - 1 - len(hashHex)
 	if prefixLen > len(id) {
 		prefixLen = len(id)
 	}
@@ -962,14 +924,13 @@ func finalizeSessionInfo(info SessionInfo) (SessionInfo, bool) {
 		info.ClientType = strings.Clone(info.ClientType)
 	}
 	info.NodeKind = strings.Clone(info.NodeKind)
-	// Self-referential loop protection
+
 	if info.ParentSessionID == info.SessionID {
 		info.ParentSessionID = ""
 	}
 	return info, true
 }
 
-// ExtractTreeInfo is an alias for ExtractSessionInfo for backward compatibility.
 func ExtractTreeInfo(headers http.Header, payload []byte, metadata map[string]any) (SessionInfo, bool) {
 	return ExtractSessionInfo(headers, payload, metadata)
 }

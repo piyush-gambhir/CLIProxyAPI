@@ -17,30 +17,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DevinAuthenticator implements OAuth and headless authentication for Devin / Cognition.
 type DevinAuthenticator struct {
 	CallbackPort int
 	AuthService  *devinauth.DevinAuthService
 }
 
-// NewDevinAuthenticator constructs a new Devin authenticator instance.
 func NewDevinAuthenticator() *DevinAuthenticator {
 	return &DevinAuthenticator{
-		CallbackPort: 0, // Bind to any available ephemeral port by default
+		CallbackPort: 0,
 	}
 }
 
-// Provider returns the unique provider identifier for Devin.
 func (a *DevinAuthenticator) Provider() string {
 	return "devin"
 }
 
-// RefreshLead returns nil since Devin OAuth tokens are permanent session tokens.
 func (a *DevinAuthenticator) RefreshLead() *time.Duration {
 	return nil
 }
 
-// Login executes the interactive browser-based or headless manual authentication flow for Devin.
 func (a *DevinAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("cliproxy auth: configuration is required")
@@ -265,8 +260,6 @@ waitForResult:
 
 var errDevinUnrecognizedPaste = errors.New("unrecognized devin authorization code or token format")
 
-// parseDevinManualPaste classifies a pasted authorization code, callback URL, or session token.
-// Empty input returns empty values with a nil error; callers decide whether to abort or keep waiting.
 func parseDevinManualPaste(input, expectedState string) (authCode, rawToken string, err error) {
 	trimmed := strings.TrimSpace(input)
 	trimmed = strings.Trim(trimmed, "\"'")
@@ -275,7 +268,6 @@ func parseDevinManualPaste(input, expectedState string) (authCode, rawToken stri
 		return "", "", nil
 	}
 
-	// Direct manual session token paste (supports Devin --force-manual-token-flow).
 	if strings.HasPrefix(trimmed, "devin-session-token$") || strings.HasPrefix(trimmed, "eyJ") {
 		return "", trimmed, nil
 	}
@@ -288,8 +280,7 @@ func parseDevinManualPaste(input, expectedState string) (authCode, rawToken stri
 			return "", "", fmt.Errorf("devin oauth error: %s", errMsg)
 		}
 		if parsed.Code != "" {
-			// If state is present in the pasted URL, it must match. PKCE still protects
-			// a code pasted without state.
+
 			if expectedState != "" && parsed.State != "" && parsed.State != expectedState {
 				return "", "", fmt.Errorf("devin oauth state mismatch (possible CSRF)")
 			}

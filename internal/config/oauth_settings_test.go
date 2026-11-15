@@ -74,8 +74,8 @@ func TestSanitizeOAuthSettings(t *testing.T) {
 		OAuthSettings: map[string][]config.OAuthModelSetting{
 			" CODEX ": {
 				{Name: "  gpt-6-sol  ", MaxContextLength: 524288},
-				{Name: "gpt-6-sol", MaxContextLength: 999999}, // duplicate name, same alias -> later entry wins!
-				{Name: "   ", MaxContextLength: 12345},        // empty name
+				{Name: "gpt-6-sol", MaxContextLength: 999999},
+				{Name: "   ", MaxContextLength: 12345},
 				{Name: "deepseek-v4-flash", MaxContextLength: 1048576},
 			},
 			"  ": {
@@ -187,7 +187,6 @@ oauth:
 		t.Fatalf("unexpected loaded settings: %#v", cfg.OAuthSettings)
 	}
 
-	// Update setting
 	cfg.OAuthSettings["codex"][0].MaxContextLength = 1048576
 
 	if errSave := config.SaveConfigPreserveComments(configPath, cfg); errSave != nil {
@@ -214,19 +213,16 @@ func TestResolveOAuthModelSetting_Priority(t *testing.T) {
 		{Name: "upstream", Alias: "public", MaxContextLength: 1048576},
 	}
 
-	// Model with ID "upstream" (no alias) should match the general "upstream" rule
 	sUpstream := config.ResolveOAuthModelSetting(settings, "upstream", "upstream", "")
 	if sUpstream == nil || sUpstream.MaxContextLength != 524288 {
 		t.Fatalf("upstream model resolved to %+v, want 524288", sUpstream)
 	}
 
-	// Model with ID "public" and MetadataModelID "upstream" should match the more specific alias rule
 	sPublic := config.ResolveOAuthModelSetting(settings, "public", "upstream", "")
 	if sPublic == nil || sPublic.MaxContextLength != 1048576 {
 		t.Fatalf("public model resolved to %+v, want 1048576", sPublic)
 	}
 
-	// Unknown model should return nil
 	if got := config.ResolveOAuthModelSetting(settings, "unknown", "", ""); got != nil {
 		t.Fatalf("unknown model resolved to %+v, want nil", got)
 	}

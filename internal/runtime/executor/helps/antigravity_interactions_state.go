@@ -17,8 +17,6 @@ import (
 
 var antigravityInteractionsSessions = cache.NewInteractionsSessionCache()
 
-// AntigravityInteractionsState tracks a single request, including streamed steps.
-// The cache namespace is computed before continuation rewriting and payload rules.
 type AntigravityInteractionsState struct {
 	key         string
 	id          string
@@ -35,8 +33,6 @@ func interactionsDigest(value any) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// PrepareAntigravityInteractions restores only a matching tool-result suffix.
-// Explicit continuation always wins, including an explicitly empty field.
 func PrepareAntigravityInteractions(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, model string, body []byte) (*AntigravityInteractionsState, []byte) {
 	doc := ojson.NewDoc(body)
 	state, mutated := prepareAntigravityInteractionsDoc(auth, req, opts, model, doc)
@@ -46,7 +42,6 @@ func PrepareAntigravityInteractions(auth *cliproxyauth.Auth, req cliproxyexecuto
 	return state, doc.Bytes()
 }
 
-// PrepareAntigravityInteractionsDoc restores only a matching tool-result suffix in place on doc.
 func PrepareAntigravityInteractionsDoc(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, model string, doc *ojson.Doc) *AntigravityInteractionsState {
 	state, _ := prepareAntigravityInteractionsDoc(auth, req, opts, model, doc)
 	return state
@@ -83,8 +78,7 @@ func prepareAntigravityInteractionsDoc(auth *cliproxyauth.Auth, req cliproxyexec
 		if lastUser < 0 {
 			return state, false
 		}
-		// Decode JSON objects before hashing, so whitespace and key order do not
-		// split a conversation. Tool rounds after the last user are excluded.
+
 		prefix := make([]json.RawMessage, 0, lastUser+1)
 		for _, step := range input[:lastUser+1] {
 			prefix = append(prefix, json.RawMessage(step.Raw))
@@ -131,8 +125,6 @@ func prepareAntigravityInteractionsDoc(auth *cliproxyauth.Auth, req cliproxyexec
 	return state, true
 }
 
-// Observe records only completed requires_action interactions, never failed or
-// truncated streams. Stream events may carry steps outside the final snapshot.
 func (s *AntigravityInteractionsState) Observe(payload []byte) {
 	if s == nil || s.key == "" {
 		return

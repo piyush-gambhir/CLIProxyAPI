@@ -13,21 +13,15 @@ type CodexCache struct {
 	Expire time.Time
 }
 
-// codexCacheMap stores prompt cache IDs keyed by model+user_id.
-// Protected by codexCacheMu. Entries expire after 1 hour.
 var (
 	codexCacheMap = make(map[string]CodexCache)
 	codexCacheMu  sync.RWMutex
 )
 
-// codexCacheCleanupInterval controls how often expired entries are purged.
 const codexCacheCleanupInterval = 15 * time.Minute
 
-// codexCacheCleanupOnce ensures the background cleanup goroutine starts only once.
 var codexCacheCleanupOnce sync.Once
 
-// startCodexCacheCleanup launches a background goroutine that periodically
-// removes expired entries from codexCacheMap to prevent memory leaks.
 func startCodexCacheCleanup() {
 	go func() {
 		ticker := time.NewTicker(codexCacheCleanupInterval)
@@ -38,7 +32,6 @@ func startCodexCacheCleanup() {
 	}()
 }
 
-// purgeExpiredCodexCache removes entries that have expired.
 func purgeExpiredCodexCache() {
 	now := time.Now()
 	codexCacheMu.Lock()
@@ -50,7 +43,6 @@ func purgeExpiredCodexCache() {
 	}
 }
 
-// GetCodexCache retrieves a cached entry, returning ok=false if not found or expired.
 func GetCodexCache(key string) (CodexCache, bool) {
 	cache, ok, err := GetCodexCacheRequired(context.Background(), key)
 	if err == nil {
@@ -59,7 +51,6 @@ func GetCodexCache(key string) (CodexCache, bool) {
 	return CodexCache{}, false
 }
 
-// GetCodexCacheRequired retrieves a cached entry for request-time paths.
 func GetCodexCacheRequired(ctx context.Context, key string) (CodexCache, bool, error) {
 	var homeCache CodexCache
 	homeMode, found, errGet := homekv.KVGetJSONRequired(ctx, key, &homeCache)
@@ -84,12 +75,10 @@ func GetCodexCacheRequired(ctx context.Context, key string) (CodexCache, bool, e
 	return cache, true, nil
 }
 
-// SetCodexCache stores a cache entry.
 func SetCodexCache(key string, cache CodexCache) {
 	SetCodexCacheBestEffort(context.Background(), key, cache)
 }
 
-// SetCodexCacheRequired stores a cache entry for request-time paths.
 func SetCodexCacheRequired(ctx context.Context, key string, cache CodexCache) error {
 	ttl := time.Until(cache.Expire)
 	if ttl <= 0 {
@@ -106,7 +95,6 @@ func SetCodexCacheRequired(ctx context.Context, key string, cache CodexCache) er
 	return nil
 }
 
-// SetCodexCacheBestEffort stores a cache entry without failing completed responses.
 func SetCodexCacheBestEffort(ctx context.Context, key string, cache CodexCache) bool {
 	ttl := time.Until(cache.Expire)
 	if ttl <= 0 {
@@ -122,7 +110,6 @@ func SetCodexCacheBestEffort(ctx context.Context, key string, cache CodexCache) 
 	return true
 }
 
-// CodexPromptCacheKey builds the Home KV key for a model/user prompt cache.
 func CodexPromptCacheKey(modelName string, userScope string) string {
 	return "cpa:codex:prompt-cache:" + homekv.HashKeyPart(modelName) + ":" + homekv.HashKeyPart(userScope)
 }

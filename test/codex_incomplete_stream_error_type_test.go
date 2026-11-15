@@ -19,14 +19,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// TestCodexIncompleteStreamIsNotTypedAsInvalidRequest drives the real /v1/responses
-// handler against an upstream that stops mid function-call arguments without ever
-// sending response.completed, which is the failure Codex clients see in the wild.
-//
-// The emitted terminal frame must not claim the client's request was invalid. The
-// stream was cut in transit, so the request may be replayed, and every downstream
-// consumer keys retry off the OpenAI error taxonomy: "invalid_request_error" means
-// "do not retry", which turns a recoverable transport fault into a hard failure.
 func TestCodexIncompleteStreamIsNotTypedAsInvalidRequest(t *testing.T) {
 	const model = "gpt-5.4"
 	events := []string{
@@ -47,7 +39,7 @@ func TestCodexIncompleteStreamIsNotTypedAsInvalidRequest(t *testing.T) {
 				flusher.Flush()
 			}
 		}
-		// Return without response.completed: the upstream body simply ends.
+
 	}))
 	defer server.Close()
 
@@ -89,8 +81,6 @@ func TestCodexIncompleteStreamIsNotTypedAsInvalidRequest(t *testing.T) {
 	}
 }
 
-// terminalStreamErrorDetail returns the error object of the last "error" or
-// "response.failed" frame in an SSE body.
 func terminalStreamErrorDetail(t *testing.T, body string) map[string]any {
 	t.Helper()
 	var detail map[string]any

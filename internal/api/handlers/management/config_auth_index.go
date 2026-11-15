@@ -68,7 +68,7 @@ func liveAuthIndexFromManager(manager *coreauth.Manager) map[string]string {
 	if manager == nil {
 		return out
 	}
-	// authManager.List() returns clones, so EnsureIndex only affects these copies.
+
 	for _, auth := range manager.List() {
 		if auth == nil {
 			continue

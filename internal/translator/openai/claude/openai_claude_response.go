@@ -1,8 +1,3 @@
-// Package claude provides response translation functionality for OpenAI to Anthropic API.
-// This package handles the conversion of OpenAI Chat Completions API responses into Anthropic API-compatible
-// JSON format, transforming streaming events and non-streaming responses into the format
-// expected by Anthropic API clients. It supports both streaming and non-streaming modes,
-// handling text content, tool calls, and usage metadata appropriately.
 package claude
 
 import (
@@ -22,92 +17,70 @@ var (
 	dataTag = []byte("data:")
 )
 
-// ConvertOpenAIResponseToAnthropicParams holds parameters for response conversion
 type ConvertOpenAIResponseToAnthropicParams struct {
 	MessageID   string
 	Model       string
 	CreatedAt   int64
 	ToolNameMap map[string]string
-	// SawToolCall is true once at least one tool_use content_block_start has
-	// been emitted on the wire. Using raw upstream tool_calls presence here
-	// can produce stop_reason=tool_use with zero announced tool blocks.
+
 	SawToolCall bool
-	// Content accumulator for streaming
+
 	ContentAccumulator strings.Builder
-	// Tool calls accumulator for streaming
+
 	ToolCallsAccumulator map[int]*ToolCallAccumulator
-	// Track if text content block has been started
+
 	TextContentBlockStarted bool
-	// Track if thinking content block has been started
+
 	ThinkingContentBlockStarted bool
-	// Track finish reason for later use
+
 	FinishReason string
-	// Track if content blocks have been stopped
+
 	ContentBlocksStopped bool
-	// Track if message_delta has been sent
+
 	MessageDeltaSent bool
-	// Track if message_start has been sent
+
 	MessageStarted bool
-	// Track if message_stop has been sent
+
 	MessageStopSent bool
-	// Tool call content block index mapping
+
 	ToolCallBlockIndexes map[int]int
-	// OmittedToolCallIndexes maps a chunk-local tool_calls array position to the
-	// active accumulator key when the upstream omits tool_calls[].index.
+
 	OmittedToolCallIndexes map[int]int
-	// Index assigned to text content block
+
 	TextContentBlockIndex int
-	// Index assigned to thinking content block
+
 	ThinkingContentBlockIndex int
-	// Next available content block index
+
 	NextContentBlockIndex int
-	// Currently open tool call index (-1 if none)
+
 	OpenToolCallIndex int
-	// Queue of interleaved text or thinking chunks arriving while a tool call is open
+
 	InterleavedContentChunks []InterleavedContentChunk
-	// Usage metrics cached from streaming chunks
+
 	UsageInputTokens      int64
 	UsageOutputTokens     int64
 	UsageCachedTokens     int64
 	UsageCacheWriteTokens int64
-	// ToolNameMapResolved tracks whether ToolNameMap has been resolved from
-	// the original request once per stream.
+
 	ToolNameMapResolved bool
-	// StreamResolved and StreamRequested cache whether the original request
-	// asked for streaming, resolved once per stream so large request bodies
-	// are not re-parsed on every chunk.
+
 	StreamResolved  bool
 	StreamRequested bool
 }
 
-// InterleavedContentChunk stores a buffered chunk of text or thinking arriving while a tool call is open
 type InterleavedContentChunk struct {
-	Type string // "text" or "thinking"
+	Type string
 	Text string
 }
 
-// ToolCallAccumulator holds the state for accumulating tool call data
 type ToolCallAccumulator struct {
 	ID        string
 	Name      string
 	Arguments strings.Builder
-	// StartEmitted tracks whether content_block_start has already been sent
-	// for this tool index.
+
 	StartEmitted bool
 }
 
-// ConvertOpenAIResponseToClaude converts OpenAI streaming response format to Anthropic API format.
-// This function processes OpenAI streaming chunks and transforms them into Anthropic-compatible JSON responses.
-// It handles text content, tool calls, and usage metadata, outputting responses that match the Anthropic API format.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the OpenAI API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - [][]byte: A slice of byte chunks, each containing an Anthropic-compatible JSON response.
 func ConvertOpenAIResponseToClaude(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &ConvertOpenAIResponseToAnthropicParams{
@@ -149,7 +122,6 @@ func ConvertOpenAIResponseToClaude(_ context.Context, _ string, originalRequestR
 		state.ToolNameMapResolved = true
 	}
 
-	// Check if this is the [DONE] marker
 	if bytes.Equal(bytes.TrimSpace(rawJSON), []byte("[DONE]")) {
 		return convertOpenAIDoneToAnthropic(state)
 	}
@@ -217,12 +189,10 @@ func terminalOpenAIFinishReason(param *ConvertOpenAIResponseToAnthropicParams) s
 	return "stop"
 }
 
-// convertOpenAIStreamingChunkToAnthropic converts OpenAI streaming chunk to Anthropic streaming events
 func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAIResponseToAnthropicParams) [][]byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	var results [][]byte
 
-	// Initialize parameters if needed
 	if param.MessageID == "" {
 		param.MessageID = strings.Clone(root.Get("id").String())
 	}
@@ -233,26 +203,21 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 		param.CreatedAt = root.Get("created").Int()
 	}
 
-	// Emit message_start on the very first chunk, regardless of whether it has a role field.
-	// Some providers (like Copilot) may send tool_calls in the first chunk without a role field.
 	if delta := root.Get("choices.0.delta"); delta.Exists() {
 		if !param.MessageStarted {
-			// Send message_start event
+
 			messageStartDoc := ojson.NewDocString(`{"type":"message_start","message":{"id":"","type":"message","role":"assistant","model":"","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}`)
 			_ = messageStartDoc.Set("message.id", param.MessageID)
 			_ = messageStartDoc.Set("message.model", param.Model)
 			results = append(results, translatorcommon.AppendSSEEventBytes(nil, "message_start", messageStartDoc.Bytes(), 2))
 			param.MessageStarted = true
 
-			// Don't send content_block_start for text here - wait for actual content
 		}
 
-		// Handle reasoning content delta
 		for _, reasoningText := range collectOpenAIObjectReasoningTexts(delta) {
 			emitStreamingThinkingDelta(param, reasoningText, &results)
 		}
 
-		// Handle content delta
 		if content := delta.Get("content"); content.Exists() {
 			if content.IsArray() {
 				content.ForEach(func(_, part ojson.Result) bool {
@@ -275,7 +240,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 			}
 		}
 
-		// Handle tool calls
 		if toolCalls := delta.Get("tool_calls"); toolCalls.Exists() && toolCalls.IsArray() {
 			if param.ToolCallsAccumulator == nil {
 				param.ToolCallsAccumulator = make(map[int]*ToolCallAccumulator)
@@ -311,33 +275,24 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 					}
 				}
 
-				// Initialize accumulator if needed
 				if _, exists := param.ToolCallsAccumulator[index]; !exists {
 					param.ToolCallsAccumulator[index] = &ToolCallAccumulator{}
 				}
 
 				accumulator := param.ToolCallsAccumulator[index]
 
-				// Handle tool call ID. Only accept JSON-string, non-empty
-				// values so malformed upstream fields do not overwrite a
-				// valid ID or coerce into a content_block.id.
 				if incomingID != "" && !accumulator.StartEmitted {
 					accumulator.ID = strings.Clone(incomingID)
 				}
 
-				// Handle function name and arguments
 				if function := toolCall.Get("function"); function.Exists() {
-					// Only record the name until content_block_start has been
-					// emitted. Some upstreams send "name": "" or repeat the
-					// field across chunks; reassigning after start could drift
-					// from what was already announced.
+
 					if !accumulator.StartEmitted {
 						if name := function.Get("name"); name.Exists() && name.Type == ojson.String && name.String() != "" {
 							accumulator.Name = strings.Clone(util.MapToolName(param.ToolNameMap, name.String()))
 						}
 					}
 
-					// Handle function arguments
 					if args := function.Get("arguments"); args.Exists() {
 						argsText := args.String()
 						if argsText != "" {
@@ -346,11 +301,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 					}
 				}
 
-				// Re-check on every chunk, not only chunks with a function
-				// object. Some upstreams split function.name and id across
-				// separate deltas.
-				// Anthropic requires strictly sequential content blocks.
-				// Only emit mid-stream start if no other tool call block is currently open.
 				if !accumulator.StartEmitted && accumulator.Name != "" && accumulator.ID != "" && !param.ContentBlocksStopped {
 					if param.OpenToolCallIndex == -1 {
 						emitToolUseStart(param, index, accumulator, &results)
@@ -362,7 +312,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 		}
 	}
 
-	// Handle finish_reason (but don't send message_delta/message_stop yet)
 	if finishReason := root.Get("choices.0.finish_reason"); finishReason.Exists() && finishReason.String() != "" {
 		reason := finishReason.String()
 		switch {
@@ -384,21 +333,14 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 
 		finalizeOpenAIAnthropicContentBlocks(param, &results)
 
-		// Don't send message_delta here - wait for usage info or [DONE]
 	}
 
-	// Cache usage information whenever present
 	usage := root.Get("usage")
 	hasUsage := usage.Exists() && usage.Type != ojson.Null
 	if hasUsage {
 		param.UsageInputTokens, param.UsageOutputTokens, param.UsageCachedTokens, param.UsageCacheWriteTokens = extractOpenAIUsage(usage)
 	}
 
-	// Emit message_delta and message_stop only when generation is finished:
-	// - Upstream sent a trailing usage-only chunk (choices array is empty or absent) after content/tools started, or
-	// - Upstream sent [DONE] (handled in convertOpenAIDoneToAnthropic).
-	// Content chunks with finish_reason and preliminary usage must not emit message_delta early,
-	// because authoritative token counts (such as cached_tokens) can arrive in the trailing usage-only chunk.
 	isTrailingUsageChunk := hasUsage && !root.Get("choices.0").Exists() &&
 		(param.FinishReason != "" || param.SawToolCall || param.TextContentBlockStarted || param.ThinkingContentBlockStarted || param.ContentAccumulator.Len() > 0 || len(param.InterleavedContentChunks) > 0)
 
@@ -411,7 +353,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 	return results
 }
 
-// convertOpenAIDoneToAnthropic handles the [DONE] marker and sends final events
 func convertOpenAIDoneToAnthropic(param *ConvertOpenAIResponseToAnthropicParams) [][]byte {
 	var results [][]byte
 
@@ -426,7 +367,6 @@ func convertOpenAIDoneToAnthropic(param *ConvertOpenAIResponseToAnthropicParams)
 	return results
 }
 
-// convertOpenAINonStreamingToAnthropic converts OpenAI non-streaming response to Anthropic format
 func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
@@ -434,9 +374,8 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 	_ = outDoc.Set("id", root.Get("id").String())
 	_ = outDoc.Set("model", root.Get("model").String())
 
-	// Process message content and tool calls
 	if choices := root.Get("choices"); choices.Exists() && choices.IsArray() && len(choices.Array()) > 0 {
-		choice := choices.Array()[0] // Take first choice
+		choice := choices.Array()[0]
 		var contentBlocks [][]byte
 
 		for _, reasoningText := range collectOpenAIObjectReasoningTexts(choice.Get("message")) {
@@ -451,7 +390,6 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 		hasToolCall := false
 		appendOpenAINonStreamingMessageContent(choice.Get("message.content"), nil, &contentBlocks, &hasToolCall)
 
-		// Handle tool calls
 		if toolCalls := choice.Get("message.tool_calls"); toolCalls.Exists() && toolCalls.IsArray() {
 			toolCalls.ForEach(func(_, toolCall ojson.Result) bool {
 				hasToolCall = true
@@ -480,13 +418,11 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 			translatorcommon.SetRawArrayItemsDoc(outDoc, "content", contentBlocks)
 		}
 
-		// Set stop reason
 		if finishReason := choice.Get("finish_reason"); finishReason.Exists() || hasToolCall {
 			_ = outDoc.Set("stop_reason", mapOpenAINonStreamFinishReasonToAnthropic(finishReason.String(), hasToolCall))
 		}
 	}
 
-	// Set usage information
 	if usage := root.Get("usage"); usage.Exists() {
 		inputTokens, outputTokens, cachedTokens, cacheWriteTokens := extractOpenAIUsage(usage)
 		_ = outDoc.Set("usage.input_tokens", inputTokens)
@@ -502,7 +438,6 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 	return [][]byte{outDoc.Bytes()}
 }
 
-// mapOpenAIFinishReasonToAnthropic maps OpenAI finish reasons to Anthropic equivalents
 func mapOpenAIFinishReasonToAnthropic(openAIReason string) string {
 	switch openAIReason {
 	case "stop":
@@ -512,8 +447,8 @@ func mapOpenAIFinishReasonToAnthropic(openAIReason string) string {
 	case "tool_calls":
 		return "tool_use"
 	case "content_filter":
-		return "end_turn" // Anthropic doesn't have direct equivalent
-	case "function_call": // Legacy OpenAI
+		return "end_turn"
+	case "function_call":
 		return "tool_use"
 	default:
 		return "end_turn"
@@ -563,7 +498,7 @@ func emitStreamingThinkingDelta(param *ConvertOpenAIResponseToAnthropicParams, r
 	if reasoningText == "" {
 		return
 	}
-	// Anthropic rejects whitespace-only thinking blocks, so whitespace may only extend an open one.
+
 	if param.OpenToolCallIndex != -1 {
 		if n := len(param.InterleavedContentChunks); n > 0 && param.InterleavedContentChunks[n-1].Type == "thinking" {
 			param.InterleavedContentChunks[n-1].Text += reasoningText
@@ -601,8 +536,7 @@ func emitStreamingTextDelta(param *ConvertOpenAIResponseToAnthropicParams, text 
 		return
 	}
 	if param.OpenToolCallIndex != -1 {
-		// Tool call content block is currently active on the wire.
-		// Buffer this text so content blocks remain strictly sequential.
+
 		if n := len(param.InterleavedContentChunks); n > 0 && param.InterleavedContentChunks[n-1].Type == "text" {
 			param.InterleavedContentChunks[n-1].Text += text
 		} else {
@@ -614,7 +548,7 @@ func emitStreamingTextDelta(param *ConvertOpenAIResponseToAnthropicParams, text 
 		param.ContentAccumulator.WriteString(text)
 		return
 	}
-	// Send content_block_start for text if not already sent
+
 	if !param.TextContentBlockStarted {
 		stopThinkingContentBlock(param, results)
 		if param.TextContentBlockIndex == -1 {
@@ -632,7 +566,6 @@ func emitStreamingTextDelta(param *ConvertOpenAIResponseToAnthropicParams, text 
 	_ = contentDeltaDoc.Set("delta.text", text)
 	*results = append(*results, translatorcommon.AppendSSEEventBytes(nil, "content_block_delta", contentDeltaDoc.Bytes(), 2))
 
-	// Accumulate content
 	param.ContentAccumulator.WriteString(text)
 }
 
@@ -798,12 +731,6 @@ func emitToolUseStart(param *ConvertOpenAIResponseToAnthropicParams, openAIToolI
 	param.OpenToolCallIndex = openAIToolIndex
 }
 
-// emitBelatedToolUseStart finalizes a tool_use block that never received a
-// mid-stream start. Some OpenAI-compatible providers leave function.name empty
-// for the whole stream; dropping those calls loses tool_use for Claude Code and
-// can trigger retry loops. When name is still empty but the call has an id
-// and/or arguments, synthesize tool_<index> instead of silently discarding it.
-// Returns false when the accumulator has no usable tool-call signal.
 func emitBelatedToolUseStart(param *ConvertOpenAIResponseToAnthropicParams, openAIToolIndex int, accumulator *ToolCallAccumulator, results *[][]byte) bool {
 	if accumulator == nil {
 		return false
@@ -833,7 +760,6 @@ func finalizeSingleToolCall(param *ConvertOpenAIResponseToAnthropicParams, openA
 	}
 	blockIndex := param.toolContentBlockIndex(openAIToolIndex)
 
-	// Send complete input_json_delta with all accumulated arguments
 	if accumulator.Arguments.Len() > 0 {
 		inputDeltaDoc := ojson.NewDocString(`{"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":""}}`)
 		_ = inputDeltaDoc.Set("index", blockIndex)
@@ -943,16 +869,6 @@ func toolCallAccumulatorIndexes(accumulators map[int]*ToolCallAccumulator) []int
 	return indexes
 }
 
-// ConvertOpenAIResponseToClaudeNonStream converts a non-streaming OpenAI response to a non-streaming Anthropic response.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the OpenAI API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - []byte: An Anthropic-compatible JSON response.
 func ConvertOpenAIResponseToClaudeNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	_ = requestRawJSON
 

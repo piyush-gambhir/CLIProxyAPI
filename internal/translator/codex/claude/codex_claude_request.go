@@ -1,8 +1,3 @@
-// Package claude provides request translation functionality for Claude Code API compatibility.
-// It handles parsing and transforming Claude Code API requests into the internal client format,
-// extracting model information, system instructions, message contents, and tool declarations.
-// The package also performs JSON data cleaning and transformation to ensure compatibility
-// between Claude Code API format and the internal client's expected format.
 package claude
 
 import (
@@ -23,32 +18,11 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertClaudeRequestToCodex parses and transforms a Claude Code API request into the internal client format.
-// It extracts the model name, system instruction, message contents, and tool declarations
-// from the raw JSON request and returns them in the format expected by the internal client.
-// The function performs the following transformations:
-// 1. Sets up a template with the model name and empty instructions field
-// 2. Processes system messages and converts them to developer input content
-// 3. Transforms message contents (text, image, document, tool_use, tool_result) to appropriate formats
-// 4. Converts tools declarations to the expected format
-// 5. Adds additional configuration parameters for the Codex API
-// 6. Maps Claude thinking configuration to Codex reasoning settings
-// 7. Maps Claude output_config format to Codex text format
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request
-//   - rawJSON: The raw JSON request data from the Claude Code API
-//   - stream: A boolean indicating if the request is for a streaming response (unused in current implementation)
-//
-// Returns:
-//   - []byte: The transformed request data in internal client format
 func ConvertClaudeRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return ConvertClaudeRequestToCodexContext(context.Background(), modelName, inputRawJSON, stream)
 
 }
 
-// ConvertClaudeRequestToCodexWithCompat preserves assistant thinking blocks with
-// empty or unknown-format signatures for configured compatibility endpoints.
 func ConvertClaudeRequestToCodexWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return ConvertClaudeRequestToCodexWithCompatContext(context.Background(), modelName, inputRawJSON, stream)
 }
@@ -98,7 +72,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-	// Process system messages and convert them to input content format.
 	systemsResult := rootResult.Get("system")
 	if systemsResult.Exists() {
 		contentItems := make([][]byte, 0, 2)
@@ -132,7 +105,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-	// Process messages and transform their contents to appropriate formats.
 	messagesResult := rootResult.Get("messages")
 	if messagesResult.IsArray() {
 		messageResults := messagesResult.Array()
@@ -174,8 +146,7 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 			}
 			pendingToolUseIDs = nil
 			contentItems := make([][]byte, 0, 4)
-			// Counts only what this turn itself sends, not system reminders flushed beside it.
-			// Empty text is forwarded but does not count: it can hide an emptied attachment.
+
 			turnSendable := 0
 			bufferedSendable := 0
 			var turnDiscoveredTools [][]byte
@@ -271,10 +242,7 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 				if text == "" {
 					return
 				}
-				// A relayed commentary block becomes its own assistant message item
-				// carrying phase "commentary", mirroring the Codex output item it
-				// came from. The internal marker is consumed here and never
-				// forwarded upstream.
+
 				flushMessage()
 				content := []byte(`{"type":"output_text","text":""}`)
 				content, _ = ojson.SetBytes(content, "text", text)
@@ -529,7 +497,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-	// Convert tools declarations to the expected format for the Codex API.
 	hasWebSearchTool := false
 	var toolItems [][]byte
 	if toolsResult.IsArray() || hasAdditionalTools {
@@ -545,7 +512,7 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		toolItems = make([][]byte, 0, len(toolResults))
 		for i := 0; i < len(toolResults); i++ {
 			toolResult := toolResults[i]
-			// Special handling: map Claude web search tool to Codex web_search
+
 			if isClaudeWebSearchToolType(toolResult.Get("type").String()) {
 				hasWebSearchTool = true
 				toolItems = append(toolItems, convertClaudeWebSearchToolToCodex(toolResult))
@@ -561,16 +528,13 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-	// Default to parallel tool calls unless tool_choice explicitly disables them.
 	parallelToolCalls := true
 	if disableParallelToolUse := rootResult.Get("tool_choice.disable_parallel_tool_use"); disableParallelToolUse.Exists() {
 		parallelToolCalls = !disableParallelToolUse.Bool()
 	}
 
-	// Add additional configuration parameters for the Codex API.
 	_ = templateDoc.Set("parallel_tool_calls", parallelToolCalls)
 
-	// Convert Claude thinking budgets and effort to reasoning.effort.
 	reasoningEffort := "medium"
 	effort := ""
 	if v := rootResult.Get("output_config.effort"); v.Exists() && v.Type == ojson.String {
@@ -586,8 +550,7 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 				}
 			}
 		case "adaptive", "auto":
-			// Adaptive thinking can carry an explicit effort in output_config.effort (Claude 4.6).
-			// Pass through directly; ApplyThinking handles clamping to target model's levels.
+
 			if effort != "" {
 				reasoningEffort = effort
 			} else {
@@ -602,9 +565,7 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		reasoningEffort = effort
 	}
 	_ = templateDoc.Set("reasoning.effort", reasoningEffort)
-	// OpenAI documents reasoning summaries as explicit opt-in output. Leave
-	// reasoning.summary to the source request's canonical summary intent instead
-	// of coupling it to reasoning effort.
+
 	serviceTier := normalizeCodexServiceTier(rootResult.Get("service_tier"))
 	if speed := rootResult.Get("speed"); speed.Type == ojson.String && speed.String() == "fast" {
 		serviceTier = "priority"
@@ -620,7 +581,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 	}
 	_ = templateDoc.Set("include", includeFields)
 
-	// Map Claude output_config.format to Codex Responses text.format.
 	if format := rootResult.Get("output_config.format"); format.IsObject() && format.Get("type").String() == "json_schema" && format.Get("schema").IsObject() {
 		name := "cli_proxy_structured_output"
 		if n := format.Get("name").String(); n != "" {
@@ -630,9 +590,7 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		if s := format.Get("strict"); s.Exists() && s.Type == ojson.False {
 			strict = false
 		}
-		// OpenAI strict mode requires every declared property to be listed
-		// in required. Downgrade instead of emitting an unsatisfiable
-		// strict schema that strict backends reject with HTTP 400.
+
 		if strict && codexSchemaMissesRequired(format.Get("schema")) {
 			strict = false
 		}
@@ -664,8 +622,6 @@ func normalizeCodexServiceTier(result ojson.Result) string {
 	}
 }
 
-// shortenCodexCallIDIfNeeded keeps Claude tool IDs within the OpenAI Responses
-// API call_id limit while preserving a stable, low-collision mapping.
 func shortenCodexCallIDIfNeeded(id string) string {
 	const limit = 64
 	if len(id) <= limit {
@@ -756,12 +712,8 @@ func convertClaudeWebSearchToolToCodex(tool ojson.Result) []byte {
 	return outDoc.Bytes()
 }
 
-// gatewayToolNamePattern matches gateway tool ids of the form
-// `[mcp_]<server words>-<hex id...>_<tool>`, e.g.
-// `mcp_github-12345678-9abc-def0-1234-56789abcdef0-12345678_add-issue-comment`.
 var gatewayToolNamePattern = regexp.MustCompile(`^(?:mcp_)?([a-z][a-z0-9-]*?)-[0-9a-f]{6,}(?:-[0-9a-f]+)*_(.+)$`)
 
-// shortenNameIfNeeded applies a simple shortening rule for a single name.
 func shortenNameIfNeeded(name string) string {
 	const limit = 64
 	if len(name) <= limit {
@@ -775,9 +727,7 @@ func shortenNameIfNeeded(name string) string {
 			if len(cand) <= limit {
 				return cand
 			}
-			// Plain truncation keeps only the shared server prefix, so every tool of a
-			// long-named server collapses to the same 64 characters and the model cannot
-			// tell them apart. Keep the server's words and the tool's own name instead.
+
 			if m := gatewayToolNamePattern.FindStringSubmatch(rest); m != nil {
 				if readable := "mcp__" + m[1] + "_" + m[2]; len(readable) <= limit {
 					return readable
@@ -789,7 +739,6 @@ func shortenNameIfNeeded(name string) string {
 	return name[:limit]
 }
 
-// buildShortNameMap ensures uniqueness of shortened names within a request.
 func buildShortNameMap(names []string) map[string]string {
 	const limit = 64
 	used := map[string]struct{}{}
@@ -837,7 +786,7 @@ func convertClaudeFunctionToolToCodex(toolResult ojson.Result, toolNameMap map[s
 	if toolResult.Get("type").Type != ojson.String || toolResult.Get("type").String() != "function" {
 		_ = toolDoc.Set("type", "function")
 	}
-	// Apply shortened name if needed
+
 	if v := toolResult.Get("name"); v.Exists() {
 		originalName := v.String()
 		name := originalName
@@ -887,8 +836,6 @@ func ensureClaudeDeclaredToolsIndexed(toolsResult ojson.Result, declaredToolsByN
 	}
 }
 
-// convertClaudeSystemAdditionalTools converts mid-conversation tool_addition blocks
-// inside a role=system message into a Responses additional_tools input item.
 func convertClaudeSystemAdditionalTools(content, toolsResult ojson.Result, declaredToolsByName *map[string]ojson.Result, declaredToolsIndexed *bool, toolNameMap map[string]string, emittedToolNames map[string]struct{}) ([]byte, bool) {
 	if !content.IsArray() {
 		return nil, false
@@ -1107,7 +1054,6 @@ func claudePayloadMayContainToolAddition(rawJSON []byte) bool {
 		bytes.Contains(rawJSON, []byte(`\U`))
 }
 
-// buildReverseMapFromClaudeOriginalToShort builds original->short map, used to map tool_use names to short.
 func buildReverseMapFromClaudeOriginalToShort(original []byte) map[string]string {
 	mayHaveToolAddition := claudePayloadMayContainToolAddition(original)
 	if !mayHaveToolAddition {
@@ -1132,9 +1078,6 @@ func buildReverseMapFromClaudeOriginalToShort(original []byte) map[string]string
 	return buildReverseMapFromClaudeOriginalToShortFromResult(util.ParseGJSONBytesNoCopy(original), true)
 }
 
-// normalizeToolParameters ensures object schemas contain at least an empty properties map,
-// strips dialect keywords ($schema, $id), and drops regex patterns containing unsupported
-// Unicode property escapes (\p{...} / \P{...}) that cause upstream schema validation failures.
 func normalizeToolParameters(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" || raw == "null" || !ojson.Valid(raw) {
@@ -1193,7 +1136,6 @@ func stripDialectKeywordsFromSchema(v any) {
 			delete(schema, "pattern")
 		}
 
-		// Inspect regex keys under patternProperties
 		if patternProps, ok := schema["patternProperties"].(map[string]any); ok {
 			for patternKey, subSchema := range patternProps {
 				if util.HasUnsupportedUnicodePropertyEscape(patternKey) {
@@ -1234,17 +1176,11 @@ func stripDialectKeywordsFromSchema(v any) {
 	}
 }
 
-// codexSchemaMapKeywords and codexSchemaValueKeywords reference the unified JSON Schema keywords
-// declared in internal/util.
 var (
 	codexSchemaMapKeywords   = util.SchemaMapKeywords
 	codexSchemaValueKeywords = util.SchemaValueKeywords
 )
 
-// codexSchemaMissesRequired reports whether a JSON Schema has any declared
-// property missing from its sibling required list (recursively). OpenAI
-// strict mode rejects such schemas with HTTP 400, so callers downgrade
-// text.format.strict instead of emitting an unsatisfiable schema.
 func codexSchemaMissesRequired(schema ojson.Result) bool {
 	if !schema.IsObject() {
 		if schema.IsArray() {
@@ -1302,11 +1238,6 @@ func codexSchemaMissesRequired(schema ojson.Result) bool {
 	return false
 }
 
-// claudeDocumentDataURL turns an inline PDF into a Codex input_file URL. Anything
-// else, a file id included, is not representable and is reported by the caller.
-// claudeImageInputPart maps a Claude image source onto a Responses input_image
-// part. Base64 bytes become a data URL, an http(s) url passes through and a file
-// id is carried as file_id. It reports false for a source with none of them.
 func claudeImageInputPart(source ojson.Result) ([]byte, bool) {
 	if !source.Exists() {
 		return nil, false

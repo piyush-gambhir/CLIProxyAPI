@@ -10,12 +10,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// A single Auth is shared by every in-flight request that selects the credential,
-// so any request path reaching into Auth.Metadata directly races the others. An
-// earlier fix locked only the device pool helpers and left the account-profile
-// path unguarded, which these tests would have caught: they drive the exported
-// entry points rather than the helper that was known to be broken.
-
 func newSharedClaudeOAuthAuth(id string) *cliproxyauth.Auth {
 	return &cliproxyauth.Auth{
 		ID:         id,
@@ -43,7 +37,7 @@ func TestClaudeExecutorPrepareRequestAuthIsRaceFreeOnSharedCredential(t *testing
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			// ShouldPrepareRequestAuth reads the same map the writers below mutate.
+
 			if executor.ShouldPrepareRequestAuth(auth) {
 				if _, err := executor.PrepareRequestAuth(ctx, auth); err != nil {
 					t.Errorf("PrepareRequestAuth() error = %v", err)
@@ -63,9 +57,6 @@ func TestClaudeExecutorPrepareRequestAuthIsRaceFreeOnSharedCredential(t *testing
 	}
 }
 
-// TestClaudeExecutorSharedCredentialMetadataMixedAccess drives the request-path
-// readers against the profile writer at the same time, which is the shape that
-// produced the reported data races.
 func TestClaudeExecutorSharedCredentialMetadataReadersUseOneLock(t *testing.T) {
 	auth := &cliproxyauth.Auth{ID: "claude-race-all-readers", Metadata: map[string]any{
 		"access_token":          "sk-ant-oat-race-probe",

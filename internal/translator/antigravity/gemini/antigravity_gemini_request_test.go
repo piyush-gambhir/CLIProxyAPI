@@ -11,7 +11,7 @@ import (
 )
 
 func TestConvertGeminiRequestToAntigravity_ReplacesClientSignatureOnFunctionCall(t *testing.T) {
-	// Client signatures on Gemini function calls are not portable to Antigravity.
+
 	validSignature := "abc123validSignature1234567890123456789012345678901234567890"
 	inputJSON := []byte(fmt.Sprintf(`{
 		"model": "gemini-3-pro-preview",
@@ -223,7 +223,7 @@ func TestConvertGeminiRequestToAntigravity_ClaudeModelStripsUnneededFunctionCall
 }
 
 func TestConvertGeminiRequestToAntigravity_AddSkipSentinelToFunctionCall(t *testing.T) {
-	// functionCall without signature should get skip_thought_signature_validator
+
 	inputJSON := []byte(`{
 		"model": "gemini-3-pro-preview",
 		"contents": [
@@ -239,7 +239,6 @@ func TestConvertGeminiRequestToAntigravity_AddSkipSentinelToFunctionCall(t *test
 	output, _ := ConvertGeminiRequestToAntigravity("gemini-3-pro-preview", inputJSON, false)
 	outputStr := string(output)
 
-	// Check that skip_thought_signature_validator is added to functionCall
 	sig := ojson.Get(outputStr, "request.contents.0.parts.0.thoughtSignature").String()
 	expectedSig := "skip_thought_signature_validator"
 	if sig != expectedSig {
@@ -297,10 +296,7 @@ func TestConvertGeminiRequestToAntigravity_ParallelFunctionCallsOnlyFirstGetsSen
 }
 
 func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
-	// When functionResponse contains a "parts" field with inlineData (from Claude
-	// translator's image embedding), fixCLIToolResponse should preserve it as-is.
-	// parseFunctionResponseRaw returns response.Raw for valid JSON objects,
-	// so extra fields like "parts" survive the pipeline.
+
 	input := `{
 		"model": "claude-opus-4-6-thinking",
 		"request": {
@@ -337,7 +333,6 @@ func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 		t.Fatalf("fixCLIToolResponse failed: %v", err)
 	}
 
-	// Find the function response content (role=function)
 	contents := ojson.GetBytesNoCopy(result, "request.contents").Array()
 	var funcContent ojson.Result
 	for _, c := range contents {
@@ -350,13 +345,11 @@ func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 		t.Fatal("function role content should exist in output")
 	}
 
-	// The functionResponse should be preserved with its parts field
 	funcResp := funcContent.Get("parts.0.functionResponse")
 	if !funcResp.Exists() {
 		t.Fatal("functionResponse should exist in output")
 	}
 
-	// Verify the parts field with inlineData is preserved
 	inlineParts := funcResp.Get("parts").Array()
 	if len(inlineParts) != 1 {
 		t.Fatalf("Expected 1 inlineData part in functionResponse.parts, got %d", len(inlineParts))
@@ -368,14 +361,13 @@ func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 		t.Errorf("Expected data 'iVBOR', got '%s'", inlineParts[0].Get("inlineData.data").String())
 	}
 
-	// Verify response.result is also preserved
 	if funcResp.Get("response.result").String() != "Screenshot taken" {
 		t.Errorf("Expected response.result 'Screenshot taken', got '%s'", funcResp.Get("response.result").String())
 	}
 }
 
 func TestFixCLIToolResponse_BackfillsEmptyFunctionResponseName(t *testing.T) {
-	// Empty functionResponse names are backfilled from the corresponding functionCall.
+
 	input := `{
 		"model": "gemini-3-pro-preview",
 		"request": {
@@ -420,7 +412,7 @@ func TestFixCLIToolResponse_BackfillsEmptyFunctionResponseName(t *testing.T) {
 }
 
 func TestFixCLIToolResponse_BackfillsMultipleEmptyNames(t *testing.T) {
-	// Parallel function calls: both responses have empty names.
+
 	input := `{
 		"model": "gemini-3-pro-preview",
 		"request": {
@@ -476,7 +468,7 @@ func TestFixCLIToolResponse_BackfillsMultipleEmptyNames(t *testing.T) {
 }
 
 func TestFixCLIToolResponse_PreservesExistingName(t *testing.T) {
-	// When functionResponse already has a valid name, it should be preserved.
+
 	input := `{
 		"model": "gemini-3-pro-preview",
 		"request": {
@@ -521,7 +513,7 @@ func TestFixCLIToolResponse_PreservesExistingName(t *testing.T) {
 }
 
 func TestFixCLIToolResponse_MoreResponsesThanCalls(t *testing.T) {
-	// If there are more function responses than calls, unmatched extras are discarded by grouping.
+
 	input := `{
 		"model": "gemini-3-pro-preview",
 		"request": {
@@ -560,7 +552,6 @@ func TestFixCLIToolResponse_MoreResponsesThanCalls(t *testing.T) {
 		t.Fatal("function role content should exist in output")
 	}
 
-	// First response should be backfilled from the call
 	name0 := funcContent.Get("parts.0.functionResponse.name").String()
 	if name0 != "Bash" {
 		t.Errorf("Expected first response name 'Bash', got '%s'", name0)
@@ -628,7 +619,7 @@ func TestFixCLIToolResponse_MoreResponsesThanCallsDoesNotCorruptNextTurn(t *test
 }
 
 func TestFixCLIToolResponse_MultipleGroupsFIFO(t *testing.T) {
-	// Two sequential function call groups should be matched FIFO.
+
 	input := `{
 		"model": "gemini-3-pro-preview",
 		"request": {
@@ -841,7 +832,7 @@ func TestSanitizeAntigravityClaudeGeminiRequestSignatures_StripsFunctionCallSign
 }
 
 func TestSanitizeAntigravityClaudeGeminiRequestSignatures_StrictTypeChecks(t *testing.T) {
-	// Non-boolean thought (e.g. "true" as string) and non-string text (e.g. 123) should not be treated as valid thinking block
+
 	inputJSON := []byte(`{
 		"project": "",
 		"model": "claude-sonnet-4-6",
@@ -955,7 +946,7 @@ func TestSanitizeAntigravityClaudeGeminiRequestSignatures_StripsDuplicateSignatu
 }
 
 func TestSanitizeAntigravityClaudeGeminiRequestSignatures_StringValueNotTreatedAsKey(t *testing.T) {
-	// A part where "thoughtSignature" is a tool name (string value), not a key, should not trigger signature sanitization
+
 	inputJSON := []byte(`{
 		"project": "",
 		"model": "claude-sonnet-4-6",
@@ -979,14 +970,14 @@ func TestSanitizeAntigravityClaudeGeminiRequestSignatures_StringValueNotTreatedA
 	}`)
 
 	output := SanitizeAntigravityClaudeGeminiRequestSignatures("claude-sonnet-4-6", inputJSON)
-	// Output should preserve the exact input string because no signature keys exist
+
 	if string(output) != string(inputJSON) {
 		t.Fatalf("expected unchanged output for non-key values, got %s", string(output))
 	}
 }
 
 func TestSanitizeAntigravityClaudeGeminiRequestSignatures_LargeNumberDoesNotHaltKeyScan(t *testing.T) {
-	// A part with numbers outside float64 range should not break token scanning
+
 	inputJSON := []byte(`{
 		"project": "",
 		"model": "claude-sonnet-4-6",
@@ -1228,7 +1219,7 @@ func TestNormalizeRoles_InvalidRoleWithFunctionResponseNormalizesToUser(t *testi
 		]
 	}`)
 	out, _ := ConvertGeminiRequestToAntigravity("gemini-3-flash", inputJSON, false)
-	// Role functionResponse should NEVER be normalized to model
+
 	for _, content := range ojson.GetBytesNoCopy(out, "request.contents").Array() {
 		if content.Get("parts.0.functionResponse").Exists() {
 			if got := content.Get("role").String(); got != "user" && got != "function" {

@@ -317,8 +317,6 @@ func TestResponsesWebsocketWriterCloseDoesNotWaitForActiveDataWriter(t *testing.
 		}
 		writer := newResponsesWebsocketWriter(conn)
 
-		// Holding writeMu models a data writer blocked inside WriteMessage. The
-		// upstream-close path must hard-close the socket instead of waiting for it.
 		writer.writeMu.Lock()
 		closeDone := make(chan error, 1)
 		go func() {
@@ -726,7 +724,7 @@ type websocketCanonicalRollbackExecutor struct {
 	mu       sync.Mutex
 	payloads [][]byte
 	calls    int
-	// failErr overrides the default second-call failure when set.
+
 	failErr error
 }
 
@@ -2763,10 +2761,6 @@ func TestShouldExposeResponsesUpstreamError(t *testing.T) {
 	}
 }
 
-// TestResponsesUpstreamErrorBodyDrivesExposure pins that the error body, not the
-// attached status, decides whether a request-shape failure is exposed. Codex
-// reports the same cyber_policy rejection as 400 on the stream error path and as
-// 502 through the websocket disconnect channel.
 func TestResponsesUpstreamErrorBodyDrivesExposure(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -2790,9 +2784,7 @@ func TestResponsesUpstreamErrorBodyDrivesExposure(t *testing.T) {
 			body:   `{"error":{"type":"invalid_request_error","code":"context_length_exceeded","message":"too long"}}`,
 			want:   true,
 		},
-		// Credential and transport failures stay silent: the client just
-		// reconnects, and a fresh socket already implies a full context resend.
-		// Terminal 429 / quota / model-cooldown errors are exposed once failover ends.
+
 		{name: "unauthorized", status: http.StatusUnauthorized, body: "invalid token"},
 		{name: "payment required", status: http.StatusPaymentRequired, body: "insufficient credits"},
 		{name: "forbidden", status: http.StatusForbidden, body: "forbidden"},
@@ -3221,8 +3213,7 @@ func TestResponsesWebsocketHidesNonClientUpstreamDisconnectErrors(t *testing.T) 
 			if errRead == nil {
 				t.Fatalf("non-client upstream error was exposed: %s", payload)
 			}
-			// Nothing may be written downstream: no error frame and no close frame
-			// carrying proxy-internal detail, so the client just reconnects.
+
 			var closeErr *websocket.CloseError
 			if errors.As(errRead, &closeErr) && closeErr.Code != websocket.CloseAbnormalClosure {
 				t.Fatalf("non-client upstream error produced a close frame: %#v", closeErr)
@@ -3231,10 +3222,6 @@ func TestResponsesWebsocketHidesNonClientUpstreamDisconnectErrors(t *testing.T) 
 	}
 }
 
-// TestResponsesWebsocketExposesCyberPolicyRegardlessOfStatus pins the other
-// production shape from main.log: the identical cyber_policy rejection arrives
-// with status 400 on the stream path and 502 through the disconnect channel. Both
-// must reach the client, because no credential rotation can satisfy the request.
 func TestResponsesWebsocketExposesCyberPolicyRegardlessOfStatus(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -4081,16 +4068,8 @@ func TestResponsesWebsocketClosesAfterNonRetryableClientError(t *testing.T) {
 	}
 }
 
-// itemNotPersistedUpstreamMessage is the verbatim upstream 404 text raised when a
-// turn references a response item the upstream never stored because `store` was
-// false. It arrives as plain text, not as a JSON error body.
 const itemNotPersistedUpstreamMessage = "Item with id 'rs_0b5f3eb6f51f175c0169ca74e4a85881998539920821603a74' not found. Items are not persisted when `store` is set to false. Try again with `store` set to true, or remove this item from your input."
 
-// TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect pins the
-// store=false item miss end to end. The client must be told (it has to drop the
-// stale reference; retrying the same input can never succeed), and the
-// conversation must survive: after reconnecting with the full input the turn
-// succeeds, and no stale per-socket transcript leaks into the new connection.
 func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -4135,7 +4114,6 @@ func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *test
 		t.Fatalf("first response = %s, err=%v", firstResponse, errRead)
 	}
 
-	// The turn references a reasoning item the upstream no longer holds.
 	staleRequest := `{"type":"response.create","previous_response_id":"resp-1","input":[{"type":"reasoning","id":"rs_0b5f3eb6f51f175c0169ca74e4a85881998539920821603a74"},{"type":"message","id":"msg-2"}]}`
 	if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(staleRequest)); errWrite != nil {
 		t.Fatalf("write stale request: %v", errWrite)
@@ -4157,7 +4135,6 @@ func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *test
 		t.Fatalf("received frame after terminal error: %s", extra)
 	}
 
-	// The client rebuilds the conversation on a new socket with the full input.
 	reconn, _, errDial := websocket.DefaultDialer.Dial(wsURL, sessionHeader)
 	if errDial != nil {
 		t.Fatalf("reconnect websocket: %v", errDial)
@@ -4180,7 +4157,7 @@ func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *test
 	if len(payloads) != 3 {
 		t.Fatalf("upstream payload count = %d, want 3", len(payloads))
 	}
-	// The rebuilt turn must carry the full input and none of the failed turn's state.
+
 	rebuilt := payloads[2]
 	if got := ojson.GetBytesNoCopy(rebuilt, "previous_response_id").String(); got != "" {
 		t.Fatalf("rebuilt upstream request still pinned previous_response_id=%q: %s", got, rebuilt)
@@ -4592,8 +4569,7 @@ func TestResponsesWebsocketPrewarmPreservesCompactedFollowup(t *testing.T) {
 				if ojson.GetBytesNoCopy(result, "type").String() != "error" {
 					t.Fatalf("expected first failure: %s", result)
 				}
-				// Terminal upstream errors close the connection. Codex reconnects
-				// and establishes a new warm-up before retrying the full request.
+
 				_ = conn.Close()
 				var errReconnect error
 				conn, _, errReconnect = websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/v1/responses/ws", http.Header{"Session_id": []string{auth.ID}})
@@ -4793,7 +4769,6 @@ func TestResponsesWebsocketMidConnectionPrewarmHandledLocallyForSSEUpstream(t *t
 		}
 	}()
 
-	// Frame 1: normal generation that completes upstream
 	errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","input":[{"type":"message","id":"msg-initial"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 1 websocket message: %v", errWrite)
@@ -4810,7 +4785,6 @@ func TestResponsesWebsocketMidConnectionPrewarmHandledLocallyForSSEUpstream(t *t
 		t.Fatalf("stream calls after frame 1 = %d, want 1", executor.streamCalls)
 	}
 
-	// Frame 2: mid-connection prewarm (generate: false, self-contained, no previous_response_id)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","generate":false,"input":[{"type":"message","id":"msg-prewarm"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 2 prewarm message: %v", errWrite)
@@ -4848,7 +4822,6 @@ func TestResponsesWebsocketMidConnectionPrewarmHandledLocallyForSSEUpstream(t *t
 		t.Fatalf("frame 2 prewarm total tokens = %d, want 0", ojson.GetBytesNoCopy(completedPayload, "response.usage.total_tokens").Int())
 	}
 
-	// Frame 3: follow-up referencing the mid-connection prewarm response id
 	thirdRequest := fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","id":"msg-followup"}]}`, prewarmResponseID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(thirdRequest))
 	if errWrite != nil {
@@ -4935,7 +4908,6 @@ func TestResponsesWebsocketMidConnectionPrewarmEmptyInputFollowupForSSEUpstream(
 		}
 	}()
 
-	// Frame 1: normal minimal generation
 	errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","input":[{"type":"message","id":"msg-initial"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 1 message: %v", errWrite)
@@ -4945,7 +4917,6 @@ func TestResponsesWebsocketMidConnectionPrewarmEmptyInputFollowupForSSEUpstream(
 		t.Fatalf("read frame 1 response: %v", errReadMessage)
 	}
 
-	// Frame 2: mid-connection prewarm with self-contained input
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","generate":false,"input":[{"type":"message","id":"msg-prewarm"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 2 prewarm message: %v", errWrite)
@@ -4963,7 +4934,6 @@ func TestResponsesWebsocketMidConnectionPrewarmEmptyInputFollowupForSSEUpstream(
 		t.Fatalf("frame 2 prewarm output not empty: %s", completedPayload)
 	}
 
-	// Frame 3: continuation with previous_response_id and empty input (matching official probe)
 	thirdRequest := fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[]}`, prewarmID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(thirdRequest))
 	if errWrite != nil {
@@ -5018,7 +4988,6 @@ func TestResponsesWebsocketMidConnectionIncrementalPrewarmHandledLocallyForSSEUp
 		}
 	}()
 
-	// Frame 1: normal generation that completes upstream
 	errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","input":[{"type":"message","id":"msg-initial"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 1 websocket message: %v", errWrite)
@@ -5036,7 +5005,6 @@ func TestResponsesWebsocketMidConnectionIncrementalPrewarmHandledLocallyForSSEUp
 		t.Fatalf("stream calls after frame 1 = %d, want 1", executor.streamCalls)
 	}
 
-	// Frame 2: incremental mid-connection prewarm (generate: false, with previous_response_id)
 	frame2Msg := fmt.Sprintf(`{"type":"response.create","model":"test-model","previous_response_id":%q,"generate":false,"input":[{"type":"message","id":"msg-prewarm-incremental"}]}`, frame1ResponseID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(frame2Msg))
 	if errWrite != nil {
@@ -5075,7 +5043,6 @@ func TestResponsesWebsocketMidConnectionIncrementalPrewarmHandledLocallyForSSEUp
 		t.Fatalf("frame 2 prewarm total tokens = %d, want 0", ojson.GetBytesNoCopy(completedPayload, "response.usage.total_tokens").Int())
 	}
 
-	// Frame 3: follow-up referencing the prewarm response id
 	thirdRequest := fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","id":"msg-followup"}]}`, prewarmResponseID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(thirdRequest))
 	if errWrite != nil {
@@ -5296,10 +5263,6 @@ func TestResponsesWebsocketRetainsObservedCompactionAcrossSubsequentTurns(t *tes
 	}
 	defer conn.Close()
 
-	// 1. Initial turn
-	// 2. Compaction trigger
-	// 3. First replacement input (observed compaction output in response 2)
-	// 4. Second replacement turn carrying compaction transcript (response 3 was a normal assistant message)
 	requests := []string{
 		`{"type":"response.create","model":"test-model","input":[{"type":"message","role":"user","id":"old-user"}]}`,
 		`{"type":"response.create","input":[{"type":"compaction_trigger"}]}`,
@@ -5315,8 +5278,6 @@ func TestResponsesWebsocketRetainsObservedCompactionAcrossSubsequentTurns(t *tes
 		}
 	}
 
-	// Turn 4 must still bypass stale merge and keep exactly cmp-1 and turn-4-user,
-	// without old-user or old-assistant reappearing even after turn 3's normal assistant output.
 	inputTurn4 := ojson.GetBytesNoCopy(executor.payloads[3], "input").Array()
 	wantIDsTurn4 := []string{"cmp-1", "turn-4-user"}
 	if len(inputTurn4) != len(wantIDsTurn4) {
@@ -5486,8 +5447,6 @@ func TestResponsesWebsocketPluginSwitchDoesNotInheritObservedCompaction(t *testi
 	}
 	defer conn.Close()
 
-	// Request 1 targets plugin-a and receives a compaction
-	// Request 2 targets plugin-b; because route target changed, observed capability on plugin-a must not leak
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_plugin_id":"plugin-a","input":[{"type":"message","role":"user","id":"old-user"}]}`,
 		`{"type":"response.create","route_plugin_id":"plugin-b","input":[{"type":"compaction","id":"cmp-a","encrypted_content":"opaque"},{"type":"message","role":"user","id":"new-user"}]}`,
@@ -5508,7 +5467,7 @@ func TestResponsesWebsocketPluginSwitchDoesNotInheritObservedCompaction(t *testi
 	}
 	secondPayload := pluginHost.payloads[1]
 	input := ojson.GetBytesNoCopy(secondPayload, "input").Array()
-	// Target changed, so bypass is disabled and history is merged: old-user, cmp-a (from lastResponseOutput), new-user
+
 	wantIDs := []string{"old-user", "cmp-a", "new-user"}
 	if len(input) != len(wantIDs) {
 		t.Fatalf("switched plugin input len = %d, want %d (merged fallback): %s", len(input), len(wantIDs), secondPayload)
@@ -5563,7 +5522,7 @@ func TestResponsesWebsocketProviderRoutePinsCompactionAuth(t *testing.T) {
 		}
 	}
 	registry.GetGlobalRegistry().RegisterClient(dummyAuth.ID, dummyAuth.Provider, []*registry.ModelInfo{{ID: model}})
-	// auth1 and auth2 ONLY support target-model (not source model), proving resolution targets target-model
+
 	registry.GetGlobalRegistry().RegisterClient(auth1.ID, auth1.Provider, []*registry.ModelInfo{{ID: "target-model"}})
 	registry.GetGlobalRegistry().RegisterClient(auth2.ID, auth2.Provider, []*registry.ModelInfo{{ID: "target-model"}})
 	t.Cleanup(func() {
@@ -5661,11 +5620,6 @@ func TestResponsesWebsocketSuccessiveCompactionsInSameSession(t *testing.T) {
 	}
 	defer conn.Close()
 
-	// 1. Initial turn
-	// 2. First compaction trigger -> returns cmp-1
-	// 3. First replay -> returns mid-assistant
-	// 4. Second compaction trigger -> returns cmp-2
-	// 5. Second replay with cmp-2
 	requests := []string{
 		`{"type":"response.create","model":"test-model","input":[{"type":"message","role":"user","id":"turn-1-user"}]}`,
 		`{"type":"response.create","input":[{"type":"compaction_trigger"}]}`,
@@ -5741,8 +5695,6 @@ func TestResponsesWebsocketUsesObservedCompactionResponseForHomeRuntimeAuth(t *t
 	manager.SetConfig(&internalconfig.Config{Home: internalconfig.HomeConfig{Enabled: true}})
 	manager.PublishHomeDispatch(dispatcher, executionregistry.New(), 1)
 	manager.RegisterExecutor(executor)
-	// Home runtime credentials are not registered in the local client registry.
-	// The test verifies that observed compaction replay succeeds based solely on Home execution session auth.
 
 	base := handlers.NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, manager)
 	h := NewOpenAIResponsesAPIHandler(base)
@@ -5853,8 +5805,6 @@ func TestResponsesWebsocketProviderRouteSwitchDoesNotInheritCompaction(t *testin
 	}
 	defer conn.Close()
 
-	// 1. Route to provider prov-a; outputs compaction cmp-a-1
-	// 2. Route to provider prov-b with compaction replay payload; target switched, so capability must NOT leak!
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_provider":"prov-a","route_target_model":"target-model-a","input":[{"type":"message","role":"user","id":"old-user"}]}`,
 		`{"type":"response.create","route_provider":"prov-b","route_target_model":"target-model-b","input":[{"type":"compaction","id":"cmp-a-1","encrypted_content":"opaque"},{"type":"message","role":"user","id":"new-user"}]}`,
@@ -5873,7 +5823,7 @@ func TestResponsesWebsocketProviderRouteSwitchDoesNotInheritCompaction(t *testin
 	}
 	payloadB := executorB.payloads[0]
 	inputB := ojson.GetBytesNoCopy(payloadB, "input").Array()
-	// Target changed, so bypass is disabled and history is merged: old-user, cmp-a-1 (from lastResponseOutput), new-user
+
 	wantIDs := []string{"old-user", "cmp-a-1", "new-user"}
 	if len(inputB) != len(wantIDs) {
 		t.Fatalf("switched provider input len = %d, want %d (merged fallback): %s", len(inputB), len(wantIDs), payloadB)
@@ -5938,9 +5888,6 @@ func TestResponsesWebsocketProviderRouteSwitchBackDoesNotInheritStaleCompaction(
 	}
 	defer conn.Close()
 
-	// 1. prov-a produces compaction cmp-a-1
-	// 2. prov-b executes normal response resp-b-out (invalidating prov-a's compaction)
-	// 3. Switch back to prov-a with compact replay; because state was cleared on turn 2, stale merge must occur!
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_provider":"prov-a","route_target_model":"target-model-a","input":[{"type":"message","role":"user","id":"turn-1-user"}]}`,
 		`{"type":"response.create","route_provider":"prov-b","route_target_model":"target-model-b","input":[{"type":"message","role":"user","id":"turn-2-user"}]}`,
@@ -5960,7 +5907,7 @@ func TestResponsesWebsocketProviderRouteSwitchBackDoesNotInheritStaleCompaction(
 	}
 	payloadA2 := executorA.payloads[1]
 	inputA2 := ojson.GetBytesNoCopy(payloadA2, "input").Array()
-	// Stale compaction was cleared during turn 2, so history was merged back in!
+
 	if len(inputA2) <= 2 {
 		t.Fatalf("expected merged fallback input on turn 3 switchback, got %d items: %s", len(inputA2), payloadA2)
 	}
@@ -6021,9 +5968,6 @@ func TestResponsesWebsocketProviderRouteIgnoresResidualPinnedAuth(t *testing.T) 
 	}
 	defer conn.Close()
 
-	// 1. Unrouted request pins unroutedAuth
-	// 2. Routed request (route_to_custom: true) executes on routedAuth with model, outputs compaction
-	// 3. Compact replay request (route_to_custom: true); residual unroutedAuth pin must not block routedAuth replay bypass!
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","input":[{"type":"message","role":"user","id":"unrouted-user"}]}`,
 		`{"type":"response.create","model":"` + model + `","route_to_custom":true,"input":[{"type":"compaction_trigger"}]}`,
@@ -6097,8 +6041,6 @@ func TestResponsesWebsocketPluginToProviderOverrideSwitch(t *testing.T) {
 	}
 	defer conn.Close()
 
-	// 1. Route to plugin executor; returns compaction
-	// 2. Route to provider override; target kind changed from plugin to provider, capability must NOT leak!
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_to_plugin":true,"input":[{"type":"message","role":"user","id":"old-user"}]}`,
 		`{"type":"response.create","route_to_provider":true,"input":[{"type":"compaction","id":"cmp-plugin-1","encrypted_content":"opaque"},{"type":"message","role":"user","id":"new-user"}]}`,
@@ -6117,7 +6059,7 @@ func TestResponsesWebsocketPluginToProviderOverrideSwitch(t *testing.T) {
 	}
 	secondPayload := provExecutor.payloads[0]
 	input := ojson.GetBytesNoCopy(secondPayload, "input").Array()
-	// Target kind changed from plugin to provider, so bypass is disabled and history is merged: old-user, cmp-plugin-1, new-user
+
 	wantIDs := []string{"old-user", "cmp-plugin-1", "new-user"}
 	if len(input) != len(wantIDs) {
 		t.Fatalf("switched target kind input len = %d, want %d (merged fallback): %s", len(input), len(wantIDs), secondPayload)
@@ -7018,12 +6960,7 @@ func TestDedupeResponsesWebsocketInputItemsByIDAfterRepair(t *testing.T) {
 }
 
 func TestDedupeResponsesWebsocketInputItemsByIDKeepsReferencedToolCall(t *testing.T) {
-	// Two function_call items share the same id but carry different call_ids
-	// (e.g. the upstream reused the item id across a re-sent/repaired call).
-	// Only the first call_id has a matching function_call_output. Deduping by
-	// id must keep the referenced call so the output is not orphaned, which
-	// previously triggered an upstream 400 "No tool call found for function
-	// call output with call_id ...".
+
 	payload := []byte(`{"input":[{"type":"function_call","id":"fc-1","call_id":"call-1","name":"exec_command"},{"type":"function_call","id":"fc-1","call_id":"call-2","name":"exec_command"},{"type":"function_call_output","id":"fco-1","call_id":"call-1"}]}`)
 
 	deduped := dedupeResponsesWebsocketInputItemsByID(payload)
@@ -7211,8 +7148,6 @@ func TestResponsesWebsocketCompactionResetsTurnStateOnTranscriptReplacement(t *t
 		t.Fatalf("compact status = %d, want %d", compactResp.StatusCode, http.StatusOK)
 	}
 
-	// Simulate a post-compaction client turn that replaces local history with a compacted transcript.
-	// The websocket handler must treat this as a state reset, not append it to stale pre-compaction state.
 	postCompact := `{"type":"response.create","input":[{"type":"function_call","id":"fc-compact","call_id":"call-1","name":"tool"},{"type":"message","id":"msg-2"}]}`
 	if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(postCompact)); errWrite != nil {
 		t.Fatalf("write post-compact websocket message: %v", errWrite)
@@ -7269,7 +7204,7 @@ func TestInputContainsFullTranscriptDetectsCompactionItem(t *testing.T) {
 }
 
 func TestInputContainsFullTranscriptFalseForIncremental(t *testing.T) {
-	// Normal incremental turns: user messages or function_call_output only.
+
 	for _, raw := range []string{
 		`[{"type":"function_call_output","call_id":"call-1","output":"result"}]`,
 		`[{"type":"message","role":"user","content":"next question"}]`,
@@ -7293,8 +7228,6 @@ func TestNormalizeSubsequentRequestCompactSkipsMerge(t *testing.T) {
 		{"type":"function_call","id":"fc-2","call_id":"call-stale","name":"read","arguments":"{}"}
 	]`)
 
-	// Remote compact response: user messages + compaction item, NO assistant message.
-	// This is the primary compact scenario from Codex CLI.
 	raw := []byte(`{"type":"response.create","input":[
 		{"type":"message","role":"user","id":"msg-1c","content":"compacted user msg"},
 		{"type":"compaction","encrypted_content":"conversation summary"}
@@ -7445,7 +7378,7 @@ func TestNormalizeSubsequentRequestDropsConsumedCompactionTrigger(t *testing.T) 
 }
 
 func TestNormalizeSubsequentRequestIncrementalInputStillMerges(t *testing.T) {
-	// Normal incremental flow: user sends function_call_output (no assistant message).
+
 	lastRequest := []byte(`{"model":"gpt-5.4","stream":true,"input":[
 		{"type":"message","role":"user","id":"msg-1","content":"hello"}
 	]}`)
@@ -7464,7 +7397,6 @@ func TestNormalizeSubsequentRequestIncrementalInputStillMerges(t *testing.T) {
 
 	input := ojson.GetBytesNoCopy(normalized, "input").Array()
 
-	// Should be merged: msg-1 + msg-2 + fc-1 + fco-1 = 4 items
 	if len(input) != 4 {
 		t.Fatalf("input len = %d, want 4 (merged)", len(input))
 	}
@@ -7478,8 +7410,7 @@ func TestNormalizeSubsequentRequestIncrementalInputStillMerges(t *testing.T) {
 }
 
 func TestNormalizeSubsequentRequestAssistantInputTriggersTranscriptReplacement(t *testing.T) {
-	// After dev's shouldReplaceWebsocketTranscript, assistant messages in input
-	// trigger transcript replacement (no merge with prior state).
+
 	lastRequest := []byte(`{"model":"gpt-5.4","stream":true,"input":[
 		{"type":"message","role":"user","id":"msg-1","content":"hello"}
 	]}`)
@@ -7613,13 +7544,12 @@ waitForBootstrapPing:
 }
 
 func TestResponsesWebsocketWriterWritePing(t *testing.T) {
-	// Nil writer check
+
 	var nilWriter *responsesWebsocketWriter
 	if err := nilWriter.writePing(); err == nil {
 		t.Fatal("expected error on nil writer.writePing(), got nil")
 	}
 
-	// Active connection and closed writer checks
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := responsesWebsocketUpgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -7628,7 +7558,7 @@ func TestResponsesWebsocketWriterWritePing(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 
 		writer := newResponsesWebsocketWriter(conn)
-		// A background Ping must skip rather than block behind an active data write.
+
 		writer.writeMu.Lock()
 		pingDone := make(chan error, 1)
 		go func() { pingDone <- writer.writePing() }()
@@ -7796,7 +7726,6 @@ func TestResponsesWebsocketWriterCloseInterruptsBlockedPing(t *testing.T) {
 				serverConnCh <- conn
 			}()
 
-			// Drain the HTTP 101 Switching Protocols response on the client side of the pipe.
 			buf := make([]byte, 512)
 			if _, errRead := clientRaw.Read(buf); errRead != nil {
 				t.Fatalf("read upgrade response: %v", errRead)
@@ -8101,8 +8030,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("turn 1 type = %q, want response.completed (%s)", got, msg1)
 	}
 
-	// Deny the inherited model ("test-model") and send continuation turns with empty/whitespace model:
-	// per-turn auth must resolve the inherited model and reject both turns.
 	provider.deniedModel = "test-model"
 	for _, rawContinuation := range []string{
 		`{"type":"response.create","model":"","input":[{"type":"message","role":"user","content":"empty model"}]}`,
@@ -8127,7 +8054,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("fresh handshake after revoke: err=%v resp=%v, want 403", errDial, resp)
 	}
 
-	// Revoked key on already open socket must fail with 403 error event and not execute.
 	msg2 := sendTurn(turn1Payload)
 	if got := ojson.GetBytesNoCopy(msg2, "type").String(); got != "error" {
 		t.Fatalf("turn 2 after revoke type = %q, want error (%s)", got, msg2)
@@ -8142,7 +8068,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("executor payloads after revoked turn = %d, want 1", got)
 	}
 
-	// Un-revoke key, then send a turn for a model denied with 429: must return 429 error event and keep socket open.
 	provider.revoked.Store(false)
 	msg3 := sendTurn(`{"type":"response.create","model":"quota-blocked-model","input":[{"type":"message","role":"user","content":"blocked"}]}`)
 	if got := ojson.GetBytesNoCopy(msg3, "type").String(); got != "error" {
@@ -8158,7 +8083,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("executor payloads after model-denied turn = %d, want 1", got)
 	}
 
-	// Subsequent turn on the same open socket with allowed model succeeds.
 	msg4 := sendTurn(`{"type":"response.create","model":"test-model","input":[{"type":"message","role":"user","content":"allowed again"}]}`)
 	if got := ojson.GetBytesNoCopy(msg4, "type").String(); got != "response.completed" {
 		t.Fatalf("turn 4 type = %q, want response.completed (%s)", got, msg4)
@@ -8167,7 +8091,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("executor payloads after allowed turn = %d, want 2", got)
 	}
 
-	// Verify per-turn request shape seen by Authenticate (index 1 is turn 1, after handshake at index 0).
 	provider.mu.Lock()
 	defer provider.mu.Unlock()
 	if len(provider.seenRequests) < 2 {
@@ -8194,9 +8117,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 	}
 }
 
-// The stream producers buffer a terminal error, then close errs and data. forwardResponsesWebsocket
-// must report that error, not "stream closed before response.completed", whichever channel its
-// select reads first; otherwise a pinned-auth failure loses its replay close.
 func TestForwardResponsesWebsocketPrefersBufferedErrorOverClosedData(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := NewOpenAIResponsesAPIHandler(handlers.NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, nil))

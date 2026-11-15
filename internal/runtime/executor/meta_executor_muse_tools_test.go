@@ -15,8 +15,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Model the tool-bearing rejection observed on the live Meta endpoint. Testing
-// both public formats catches Hermes chat translation as well as Responses.
 func TestMetaExecutor_MuseToolsReachUpstream(t *testing.T) {
 	for _, format := range []string{"openai", "codex"} {
 		for _, stream := range []bool{false, true} {

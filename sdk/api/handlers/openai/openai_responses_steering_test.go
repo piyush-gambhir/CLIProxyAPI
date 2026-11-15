@@ -19,9 +19,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// TestResponsesSteerRejectedWhenDisabled verifies that when codex.response-steering is
-// false (default), response.steer is rejected as an unsupported request type and is
-// never rewritten or converted into response.create.
 func TestResponsesSteerRejectedWhenDisabled(t *testing.T) {
 	raw := []byte(`{"type":"response.steer","previous_response_id":"resp-1","input":"Keep the scope small."}`)
 	lastRequest := []byte(`{"model":"gpt-6-astra","stream":true,"input":[]}`)
@@ -35,9 +32,6 @@ func TestResponsesSteerRejectedWhenDisabled(t *testing.T) {
 	}
 }
 
-// TestResponsesSteerInFlightWebSocket verifies that when codex.response-steering is true,
-// an in-flight response.steer frame sent while generation is running is forwarded directly
-// to the same upstream connection without waiting or converting to response.create.
 func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 	upstreamReceivedSteer := make(chan struct{})
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +43,6 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 		defer func() { _ = c.Close() }()
 		_ = c.SetReadDeadline(time.Now().Add(5 * time.Second))
 
-		// Read create
 		_, p, err := c.ReadMessage()
 		if err != nil {
 			t.Errorf("read create: %v", err)
@@ -60,10 +53,8 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 			return
 		}
 
-		// Emit response.created
 		_ = c.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r1"}}`))
 
-		// Read next frame: in-flight response.steer
 		_, steerPayload, err := c.ReadMessage()
 		if err != nil {
 			t.Errorf("read steer: %v", err)
@@ -117,7 +108,6 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Read response.created
 	_, p, err := c.ReadMessage()
 	if err != nil {
 		t.Fatalf("read response.created: %v", err)
@@ -126,7 +116,6 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 		t.Fatalf("expected response.created, got %s", p)
 	}
 
-	// Send in-flight response.steer while response is running
 	steer := `{"type":"response.steer","previous_response_id":"r1","input":"Focus on networking"}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(steer)); err != nil {
 		t.Fatal(err)

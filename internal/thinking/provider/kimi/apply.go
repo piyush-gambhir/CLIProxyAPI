@@ -1,4 +1,3 @@
-// Package kimi implements thinking configuration for Kimi (Moonshot AI) models.
 package kimi
 
 import (
@@ -10,12 +9,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// Applier implements thinking.ProviderApplier for Kimi models.
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
 
-// NewApplier creates a new Kimi thinking applier.
 func NewApplier() *Applier {
 	return &Applier{}
 }
@@ -28,7 +25,6 @@ func init() {
 	thinking.RegisterProvider("kimi.com", applier)
 }
 
-// Apply applies thinking configuration to Kimi request body.
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	if !thinking.IsUserDefinedModel(modelInfo) && modelInfo.Thinking == nil {
 		return body, nil
@@ -53,7 +49,6 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	return doc.Bytes(), nil
 }
 
-// ApplyDoc applies thinking configuration onto doc in place.
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {
 		return nil

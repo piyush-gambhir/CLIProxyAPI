@@ -14,18 +14,6 @@ const (
 	maxCodexAdditionalRateLimits  = 8
 )
 
-// ParseCodexQuotaEventHeaders converts one Codex websocket quota event into the
-// same bounded header representation used by HTTP usage observations. Codex
-// sends additional_rate_limits as an object on the websocket path, while the
-// /wham/usage probe exposes the equivalent data as an array; both forms are
-// normalized into namespaced X-Codex headers here.
-//
-// The websocket payload identifies each additional limit only by limit name
-// ("GPT-5.3-Codex-Spark"), while HTTP responses namespace the same limit by a
-// short name (x-codex-bengalfox-*). The two forms therefore cannot produce
-// identical header names; the X-Codex-Additional- prefix marks the websocket
-// origin, and the snapshot-replacement semantics in QuotaState keep the two
-// spellings from accumulating side by side.
 func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 	if len(payload) == 0 {
 		return nil
@@ -45,8 +33,7 @@ func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 
 	baseRateLimits := firstCodexQuotaResult(root, "rate_limits", "rateLimit")
 	if addCodexQuotaRateLimitHeaders(headers, "X-Codex-", baseRateLimits) {
-		// The main rate-limit object has no user-facing name in the websocket
-		// payload, so its fields retain the HTTP response header names.
+
 		hasQuotaData = true
 	}
 
@@ -74,9 +61,7 @@ func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 			}
 			prefix := codexQuotaAdditionalHeaderKey + identifier + "-"
 			if addCodexQuotaRateLimitHeaders(headers, prefix, rateInfo) {
-				// The limit name is upstream-controlled and lands in the
-				// plain-text request log, so reject control characters here the
-				// same way the plan type is validated below.
+
 				if validCodexQuotaEventText(limitName) {
 					headers.Set(prefix+"Limit-Name", strings.Clone(limitName))
 				}
@@ -102,8 +87,7 @@ func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 	if !hasQuotaData {
 		return nil
 	}
-	// A malformed active-limit name only invalidates that one header; the
-	// window percentages collected above stay valid and must not be discarded.
+
 	activeLimit := firstCodexQuotaResultString(root, "metered_limit_name", "meteredLimitName", "limit_name", "limitName")
 	if validCodexQuotaEventIdentifier(activeLimit) {
 		headers.Set("X-Codex-Active-Limit", activeLimit)
@@ -120,11 +104,6 @@ const (
 	codexQuotaEventRateLimits
 )
 
-// codexQuotaEventKind performs an allocation-free discriminator check for the
-// common non-quota websocket event path. Codex frames carry the top-level
-// type field within their opening bytes (after sequence_number at most), so
-// only a bounded prefix is scanned instead of the whole frame; full JSON
-// parsing is reserved for quota and error events.
 func codexQuotaEventKind(payload []byte) int {
 	const scanLimit = 256
 	end := len(payload)

@@ -17,9 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// testVertexBareTinkSignature mirrors the Vertex AI serve-path shape: a TINK
-// prefix byte, a four-byte key id and filler ciphertext, with no protobuf
-// wrapper. Synthetic only; no provider payload is embedded.
 func testVertexBareTinkSignature() string {
 	payload := []byte{0x01, 0x8f, 0x3d, 0x6b, 0x5f}
 	for len(payload) < 405 {

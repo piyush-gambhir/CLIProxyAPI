@@ -25,7 +25,7 @@ func TestRegisterExecutorsPreservesNativeCatalogPriority(t *testing.T) {
 			if tc.nativeExecutor {
 				manager.RegisterExecutor(native)
 			}
-			// The existing credential has not yet registered the new catalog model.
+
 			modelRegistry.RegisterClient("native-auth", "native-provider", []*registry.ModelInfo{{ID: "native-base"}})
 			pluginModels := []pluginapi.ModelInfo{{ID: "shared-model"}}
 			if tc.extraPluginModel {
@@ -109,7 +109,6 @@ func TestRegisterExecutorsPreservesNativeCatalogPriority(t *testing.T) {
 				}
 			}
 
-			// Removing the catalog releases ownership on the next arbitration pass.
 			setHostSnapshotForTest(host, true, competitor)
 			host.RegisterModels(t.Context(), modelRegistry)
 			host.RegisterExecutors(manager, modelRegistry)

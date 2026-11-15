@@ -56,8 +56,6 @@ func TestMarkResult_429SubSecondRetryAfter_EnforcesMinimumCooldownFloor(t *testi
 		t.Fatal("expected NextRetryAfter to be set")
 	}
 
-	// Sub-second RetryAfter (e.g. 708ms) must be clamped to at least minQuotaCooldownFloor (10s)
-	// to prevent instant unblocking and multi-round retry storms across credentials.
 	minExpected := now.Add(10 * time.Second)
 	if state.NextRetryAfter.Before(minExpected) {
 		t.Fatalf("expected NextRetryAfter >= %v (at least 10s cooldown floor), got %v (diff %v)",
@@ -189,8 +187,6 @@ func TestManager_Execute_429SubSecondRetryAfter_PreventsRetryStorm(t *testing.T)
 		t.Fatalf("execute status = %d, want %d", statusCodeFromError(errExecute), http.StatusTooManyRequests)
 	}
 
-	// Each account should be attempted once within round 0.
-	// It should NOT enter a tight loop retrying rounds because cooldown (>= 10s) exceeds maxWait (5s).
 	calls := executor.ExecuteCalls()
 	if len(calls) != 2 {
 		t.Fatalf("execute calls = %d, want exactly 2 (initial round only, no retry storm)", len(calls))
@@ -228,16 +224,11 @@ func TestClosestCooldownWaitWithAttempted_ExpiredCooldownDoesNotTriggerZeroWaitF
 
 	eligibility := authSelectionEligibilityForRequest(context.Background(), cliproxyexecutor.Options{})
 
-	// Case 1: auth was NOT attempted in the failed round (untried credential).
-	// Because its cooldown is expired, it should be immediately available (wait = 0, found = true).
 	waitUntried, foundUntried := manager.closestCooldownWaitWithAttempted([]string{"google"}, model, 0, eligibility, "", 5, http.StatusTooManyRequests, nil)
 	if !foundUntried || waitUntried != 0 {
 		t.Fatalf("untried credential: wait = %v, found = %t; want (0, true)", waitUntried, foundUntried)
 	}
 
-	// Case 2: auth WAS attempted in the failed round that returned 429.
-	// Even though its individual cooldown has expired, it must NOT trigger an immediate zero-wait retry round.
-	// It must enforce a cooldown floor of at least minQuotaCooldownFloor (10s).
 	attempted := map[string]struct{}{auth.ID: {}}
 	waitAttempted, foundAttempted := manager.closestCooldownWaitWithAttempted([]string{"google"}, model, 0, eligibility, "", 5, http.StatusTooManyRequests, attempted)
 	if !foundAttempted {
@@ -264,9 +255,6 @@ func (e *slowPoolSimulatedExecutor) Execute(_ context.Context, auth *Auth, _ cli
 	e.calls = append(e.calls, auth.ID)
 	e.mu.Unlock()
 
-	// When auth-slow-2 executes, auth-slow-1 has already failed and been marked.
-	// We mutate auth-slow-1 directly in manager.auths to simulate that the pool iteration
-	// was slow enough that auth-slow-1's cooldown expired in the past before round 0 finished.
 	if auth.ID == e.authIDs[1] && e.m != nil {
 		e.m.mu.Lock()
 		if a1 := e.m.auths[e.authIDs[0]]; a1 != nil && a1.ModelStates[e.model] != nil {
@@ -336,7 +324,6 @@ func TestManager_Execute_SlowPoolExpiredCooldown_PreventsRetryStorm(t *testing.T
 		t.Fatalf("execute status = %d, want %d", statusCodeFromError(errExecute), http.StatusTooManyRequests)
 	}
 
-	// Confirm that auth-slow-1's cooldown genuinely expired in the past before round 0 completed.
 	updatedA1, ok := manager.GetByID(authIDs[0])
 	if !ok || updatedA1 == nil || updatedA1.ModelStates[model] == nil {
 		t.Fatal("expected auth-slow-1 state to exist")
@@ -345,10 +332,6 @@ func TestManager_Execute_SlowPoolExpiredCooldown_PreventsRetryStorm(t *testing.T
 		t.Fatalf("expected auth-slow-1 NextRetryAfter to be expired in past, got %v", updatedA1.ModelStates[model].NextRetryAfter)
 	}
 
-	// Even though auth-slow-1's cooldown expired before round 0 finished,
-	// because both auths were attempted in round 0 and failed with 429,
-	// they require a minimum cooldown floor (>= 10s) which exceeds maxWait (5s).
-	// Exactly 2 calls (round 0 only) should occur. No retry storm!
 	executor.mu.Lock()
 	callCount := len(executor.calls)
 	executor.mu.Unlock()
@@ -390,8 +373,6 @@ func TestManager_ShouldRetryAfterError_429EnforcesCooldownWaitEvenWithLargeMaxWa
 	err429 := &Error{HTTPStatus: http.StatusTooManyRequests, Message: "RESOURCE_EXHAUSTED"}
 	attempted := map[string]struct{}{auth.ID: {}}
 
-	// With maxWait = 30s (which allows waiting up to 30s):
-	// Because auth was attempted and failed with 429, it must return wait >= 10s (NOT wait = 0).
 	wait, shouldRetry := manager.shouldRetryAfterErrorWithAttempted(context.Background(), opts, err429, 0, []string{"google"}, model, 30*time.Second, -1, 5, attempted)
 	if !shouldRetry {
 		t.Fatal("expected shouldRetry = true when maxWait (30s) >= cooldown floor (10s)")
@@ -436,13 +417,11 @@ func TestClosestCooldownWaitWithAttempted_RespectsManagerAndProviderCoolingOverr
 	attempted := map[string]struct{}{auth.ID: {}}
 	eligibility := authSelectionEligibilityForRequest(context.Background(), cliproxyexecutor.Options{})
 
-	// 1. Without provider override (cooling enabled): attempted auth after 429 enforces wait >= 10s.
 	wait, found := manager.closestCooldownWaitWithAttempted([]string{"openai-compatibility"}, model, 0, eligibility, "", 5, http.StatusTooManyRequests, attempted)
 	if !found || wait < minQuotaCooldownFloor {
 		t.Fatalf("cooling enabled: wait = %v, want >= %v", wait, minQuotaCooldownFloor)
 	}
 
-	// 2. With provider override setting disable_cooling = true:
 	disableCooling := true
 	manager.SetConfig(&internalconfig.Config{
 		OpenAICompatibility: []internalconfig.OpenAICompatibility{{
@@ -451,7 +430,6 @@ func TestClosestCooldownWaitWithAttempted_RespectsManagerAndProviderCoolingOverr
 		}},
 	})
 
-	// Now cooling is disabled via provider override: attempted auth should allow immediate retry (wait = 0, found = true).
 	waitDisabled, foundDisabled := manager.closestCooldownWaitWithAttempted([]string{"openai-compatibility"}, model, 0, eligibility, "", 5, http.StatusTooManyRequests, attempted)
 	if !foundDisabled || waitDisabled != 0 {
 		t.Fatalf("provider cooling disabled: wait = %v, found = %t; want (0, true)", waitDisabled, foundDisabled)

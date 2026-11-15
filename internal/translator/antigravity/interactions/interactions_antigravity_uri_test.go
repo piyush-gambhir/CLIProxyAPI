@@ -20,8 +20,6 @@ func interactionsToAntigravityEnvelope(input string) sdktranslator.RequestEnvelo
 	})
 }
 
-// interactionsFinalTurnToAntigravity translates two history turns followed by a
-// final user step holding the given content parts.
 func interactionsFinalTurnToAntigravity(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToAntigravityEnvelope(`{"model":"m","input":[` + interactionsAntigravityHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }
@@ -40,8 +38,6 @@ func requireInteractionsToAntigravityRefusal(t *testing.T, envelope sdktranslato
 	}
 }
 
-// TestInteractionsToAntigravityKeepsTheMediaGeminiToInteractionsWrites feeds the
-// part shape that the Gemini to Interactions translation emits for a fileData part.
 func TestInteractionsToAntigravityKeepsTheMediaGeminiToInteractionsWrites(t *testing.T) {
 	envelope := interactionsFinalTurnToAntigravity(`{"type":"image","uri":"gs://b/a.png","mime_type":"image/png"}`)
 	if envelope.Err != nil {

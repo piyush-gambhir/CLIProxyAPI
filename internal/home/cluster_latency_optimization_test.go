@@ -46,7 +46,7 @@ func TestRedisOptionsSnapshotPreservesTLSAndTimeouts(t *testing.T) {
 			if options.TLSConfig != nil || options.Dialer != nil {
 				t.Fatal("snapshot loaded certificates or installed a client-bound dialer")
 			}
-			// Mutating live settings after the snapshot must not affect certificate loading or timeouts.
+
 			client.mu.Lock()
 			client.homeCfg.TLS = config.HomeTLSConfig{Enable: true, ClientCert: "missing", ClientKey: "missing"}
 			client.cmdOptions.DialTimeout, client.cmdOptions.ReadTimeout, client.cmdOptions.WriteTimeout = 9*time.Second, 9*time.Second, 9*time.Second
@@ -84,7 +84,7 @@ func TestRedisOptionsSnapshotDoesNotLoadCertificateFiles(t *testing.T) {
 	client.mu.Lock()
 	options, tlsSettings := client.redisOptionsSnapshotLocked("candidate.example:8327")
 	client.mu.Unlock()
-	// The files do not exist at snapshot time; IO must be deferred until after releasing the lock.
+
 	if errWrite := os.WriteFile(certPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Certificate[0]}), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -229,7 +229,7 @@ func TestClusterLatencyReportsRandomizeOnlyInitialDelay(t *testing.T) {
 						t.Fatalf("sampler ended before four reports: %v", errRun)
 					}
 				}
-				// Let the final RPC complete before stopping; fake time avoids wall-clock sleeps.
+
 				timer := time.NewTimer(rpcDelay + time.Millisecond)
 				<-timer.C
 				synctest.Wait()

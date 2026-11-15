@@ -10,7 +10,6 @@ func isResponsesFormat(format string) bool {
 	return format == "codex" || format == "openai-response"
 }
 
-// extractConfigurationUpdateConfig returns the last nonempty Responses effort update.
 func extractConfigurationUpdateConfig(body []byte) ThinkingConfig {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return ThinkingConfig{}
@@ -54,16 +53,6 @@ func extractConfigurationUpdateConfigFromInput(input ojson.Result) ThinkingConfi
 	}
 }
 
-// CollapseConfigurationUpdates removes every configuration_update input item.
-// Unless keepTopLevelEffort is true, the last nonempty update effort is also
-// promoted into the top-level reasoning.effort. Targets that reject
-// configuration_update items entirely (for example Sign in with ChatGPT
-// subscriptions) use it to degrade to the classic request-level effort,
-// accepting the resulting prompt-cache loss. Keep the top-level effort when
-// an explicit model thinking suffix already resolved the operator's override
-// into it. A body without array input or without any configuration_update
-// item is returned unchanged, and the top-level effort is only touched when
-// an update carries a usable effort.
 func CollapseConfigurationUpdates(body []byte, keepTopLevelEffort ...bool) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body
@@ -75,8 +64,6 @@ func CollapseConfigurationUpdates(body []byte, keepTopLevelEffort ...bool) []byt
 	return doc.Bytes()
 }
 
-// CollapseConfigurationUpdatesDoc removes every configuration_update input item
-// on doc and optionally promotes the last nonempty update effort to reasoning.effort.
 func CollapseConfigurationUpdatesDoc(doc *ojson.Doc, keepTopLevelEffort ...bool) {
 	_ = collapseConfigurationUpdatesDoc(doc, true, keepTopLevelEffort...)
 }
@@ -98,18 +85,14 @@ func collapseConfigurationUpdatesDoc(doc *ojson.Doc, docValid bool, keepTopLevel
 	return modified
 }
 
-// StripConfigurationUpdates removes configuration_update input items without changing reasoning.
 func StripConfigurationUpdates(body []byte) []byte {
 	return stripConfigurationUpdates(body)
 }
 
-// StripConfigurationUpdatesDoc removes configuration_update input items on doc.
 func StripConfigurationUpdatesDoc(doc *ojson.Doc) {
 	_ = stripConfigurationUpdatesDoc(doc, true)
 }
 
-// stripConfigurationUpdates removes unsupported Responses input items without
-// modifying other input items or introducing an input field.
 func stripConfigurationUpdates(body []byte) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body
@@ -146,7 +129,6 @@ func stripConfigurationUpdatesDoc(doc *ojson.Doc, docValid bool) bool {
 	return doc.SetRaw("input", "["+strings.Join(kept, ",")+"]") == nil
 }
 
-// stripResponsesEffort leaves summary and unrelated reasoning fields intact.
 func stripResponsesEffort(body []byte) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body

@@ -50,9 +50,7 @@ func (h *Host) RegisterExecutors(manager executorManager, modelRegistry modelPro
 			continue
 		}
 		appendModelsForProvider(providerModels, registration.provider, registration.models)
-		// Reserve native catalog models before plugin arbitration, independently of
-		// credential publication or exclusions. This preserves native priority without
-		// publishing availability, which remains credential-bound.
+
 		if h.providerHasNativeExecutor(manager, registration.provider) {
 			for _, model := range registration.models {
 				if model != nil {
@@ -435,7 +433,6 @@ func (h *Host) HasExecutorCandidateProvider(provider string) bool {
 	return false
 }
 
-// OwnsExecutor reports whether executor is an adapter managed by this host.
 func (h *Host) OwnsExecutor(executor coreauth.ProviderExecutor) bool {
 	return h.ownsExecutor(executor)
 }
@@ -572,9 +569,7 @@ func (a *executorAdapter) prepareExecutorCall(req coreexecutor.Request, opts cor
 			return preparedExecutorCall{}, errThinking
 		}
 	}
-	// User payload rules are the last host-side mutation before the plugin sees
-	// the request, matching on the suffix-free model like the built-in executors
-	// and using the canonical client format as source protocol.
+
 	if a.host != nil {
 		if cfg := a.host.currentRuntimeConfig(); cfg != nil {
 			finalizeOpts := opts
@@ -715,11 +710,6 @@ func (h *Host) hasResponseTranslator() bool {
 	return false
 }
 
-// hasResponseTranslationHooks reports whether any active plugin can rewrite a
-// streaming response through the translator registry hooks (before/after
-// normalizers or a response translator). When none exists, a same-format
-// stream without a registered native translator is forwarded unchanged instead
-// of entering TranslateStream only to fall back to the original payload.
 func (h *Host) hasResponseTranslationHooks() bool {
 	if h == nil {
 		return false
@@ -773,22 +763,7 @@ func (a *executorAdapter) translateExecutorResponse(ctx context.Context, prepare
 }
 
 func (a *executorAdapter) translateExecutorStreamChunks(ctx context.Context, prepared preparedExecutorCall, in <-chan pluginapi.ExecutorStreamChunk) <-chan pluginapi.ExecutorStreamChunk {
-	// Same-format streams still go through stream translation when a registered
-	// same-format translator exists: it normalizes SSE framing (for example
-	// stripping the "data:" prefix and dropping "[DONE]" for chat-completions),
-	// matching what the built-in executors produce. Returning the channel
-	// unchanged for those formats let framed plugin chunks reach handlers that
-	// add their own "data:" prefix, emitting a doubled "data: data:" prefix.
-	// That case first passes through an SSE deframer so input may be split or
-	// coalesced at arbitrary byte boundaries; see deframeExecutorSSEChunks.
-	//
-	// Other same-format streams must not enter TranslateStream unconditionally:
-	// its plugin hooks (response before/after normalizers and, without a native
-	// translator, the plugin response translator) run even when no native
-	// translator exists, so the payload would no longer be forwarded verbatim.
-	// When no such hook capability is installed, those streams keep the
-	// previous untouched behavior; when one is installed, or for every
-	// cross-format stream, translation runs as before.
+
 	if prepared.requestedFormat == "" {
 		return in
 	}
@@ -796,8 +771,7 @@ func (a *executorAdapter) translateExecutorStreamChunks(ctx context.Context, pre
 		return nil
 	}
 	sameFormat := prepared.outputFormat == prepared.requestedFormat
-	// Responses always enters translation so its usage-details normalization
-	// in translateExecutorStreamPayload keeps running for same-format streams.
+
 	if sameFormat && prepared.requestedFormat != sdktranslator.FormatOpenAIResponse && !sdktranslator.HasStreamResponseTransformer(prepared.outputFormat, prepared.requestedFormat) && !a.host.hasResponseTranslationHooks() {
 		return in
 	}
@@ -860,9 +834,7 @@ func executorStreamTranslationFellBack(prepared preparedExecutorCall, payload []
 	if len(frames) != 1 || !bytes.Equal(frames[0], payload) {
 		return false
 	}
-	// A plugin executor only reaches this path after host-side response translation
-	// has been selected. An unchanged single frame is the SDK registry fallback,
-	// not a valid translated frame to send to the client.
+
 	return executorNativeStreamResponseTranslatorExists(prepared.outputFormat, prepared.requestedFormat)
 }
 
@@ -1227,8 +1199,7 @@ func (a *executorAdapter) CountTokens(ctx context.Context, auth *coreauth.Auth, 
 	var payload []byte
 	translatedTokenCount := false
 	if prepared.outputFormat != prepared.requestedFormat {
-		// A token-count reply is not a model response; translating it as one
-		// wraps the count in a full completion message.
+
 		if count, okCount := pluginExecutorTokenCount(prepared.outputFormat, pluginResp.Payload); okCount {
 			if sdktranslator.HasTokenCountTransformer(prepared.outputFormat, prepared.requestedFormat) {
 				translated := sdktranslator.TranslateTokenCount(ctx, prepared.outputFormat, prepared.requestedFormat, count, pluginResp.Payload)
@@ -1253,7 +1224,7 @@ func pluginExecutorTokenCount(format sdktranslator.Format, payload []byte) (int6
 			return 0, false
 		}
 	}
-	// response.usage.input_tokens is the native Codex count shape.
+
 	paths := []string{"usage.prompt_tokens", "input_tokens", "response.usage.input_tokens", "totalTokens", "total_tokens"}
 	if format == sdktranslator.FormatGemini {
 		paths = []string{"totalTokens", "usageMetadata.promptTokenCount", "input_tokens", "total_tokens"}

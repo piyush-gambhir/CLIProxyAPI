@@ -52,7 +52,6 @@ const (
 
 const pluginSyncUnsupportedErrorType = "plugin_sync_unsupported"
 
-// DispatchError classifies whether Home may have processed an auth dispatch request.
 type DispatchError struct {
 	Err       error
 	Ambiguous bool
@@ -72,7 +71,6 @@ func (e *DispatchError) Unwrap() error {
 	return e.Err
 }
 
-// NewAmbiguousDispatchError marks a post-send transport failure as requiring a client abort.
 func NewAmbiguousDispatchError(err error) error {
 	if err == nil {
 		return nil
@@ -80,7 +78,6 @@ func NewAmbiguousDispatchError(err error) error {
 	return &DispatchError{Err: err, Ambiguous: true}
 }
 
-// IsAmbiguousDispatchError reports whether Home may have processed the dispatch request.
 func IsAmbiguousDispatchError(err error) bool {
 	var dispatchErr *DispatchError
 	return errors.As(err, &dispatchErr) && dispatchErr.Ambiguous
@@ -97,13 +94,10 @@ var (
 	ErrModelsNotFound        = errors.New("home models not found")
 	ErrPluginSyncUnsupported = errors.New("home plugin sync is unsupported")
 	ErrDispatchFenced        = errors.New("home auth dispatch is fenced")
-	// ErrCompareAndSwapUnsupported reports that this Home predates the CAS command.
+
 	ErrCompareAndSwapUnsupported = kvstore.ErrCompareAndSwapUnsupported
 )
 
-// isHomeCommandUnsupported reports whether Home rejected a command it does not
-// implement. It mirrors isHomeAppLogUnsupported in internal/logging; the two are
-// kept separate so the packages stay decoupled.
 func isHomeCommandUnsupported(err error) bool {
 	for err != nil {
 		message := strings.ToLower(strings.TrimSpace(err.Error()))
@@ -115,7 +109,6 @@ func isHomeCommandUnsupported(err error) bool {
 	return false
 }
 
-// IsMembershipTakeoverUnavailableError reports whether Home cannot preserve the previous membership state.
 func IsMembershipTakeoverUnavailableError(err error) bool {
 	if err == nil {
 		return false
@@ -124,7 +117,6 @@ func IsMembershipTakeoverUnavailableError(err error) bool {
 	return message == "membership_takeover_unavailable" || message == "err membership_takeover_unavailable"
 }
 
-// IsLegacyMembershipProtocolError reports whether Home rejected the secure subscription argument count.
 func IsLegacyMembershipProtocolError(err error) bool {
 	if err == nil {
 		return false
@@ -187,19 +179,14 @@ type Client struct {
 	lifecycle   config.CredentialConcurrencyConfig
 	limiter     atomic.Pointer[config.CredentialConcurrencyConfig]
 	managed     bool
-	// releaseReady belongs to this acknowledged membership and is never copied to a replacement.
+
 	releaseReady bool
 
 	heartbeatOK       atomic.Bool
 	dispatchFenced    atomic.Bool
 	releaseFenced     atomic.Bool
 	ambiguousDispatch atomic.Bool
-	// casUnsupported latches when Home does not implement the CAS command.
-	// It is deliberately NOT carried across NewLifetime: CAS support is a
-	// property of the Home deployment, so re-probing once per client lifetime
-	// lets a Home upgrade take effect on the next reconnect instead of
-	// requiring a CPA restart. The probe costs one round trip that returns an
-	// error without performing any write.
+
 	casUnsupported       atomic.Bool
 	testOperationTimeout time.Duration
 	recoveryState        atomic.Uint32
@@ -220,7 +207,6 @@ func New(homeCfg config.HomeConfig) *Client {
 	}
 }
 
-// NewLifetime creates a fresh client while preserving cluster failover state.
 func (c *Client) NewLifetime() *Client {
 	if c == nil {
 		return nil
@@ -253,7 +239,6 @@ func (c *Client) NewLifetime() *Client {
 	return next
 }
 
-// MembershipInstanceID returns the process-scoped Home membership identity.
 func (c *Client) MembershipInstanceID() string {
 	if c == nil {
 		return ""
@@ -263,7 +248,6 @@ func (c *Client) MembershipInstanceID() string {
 	return c.instanceID
 }
 
-// LegacyMembership reports whether this subscriber has downgraded to the legacy protocol.
 func (c *Client) LegacyMembership() bool {
 	if c == nil {
 		return false
@@ -273,7 +257,6 @@ func (c *Client) LegacyMembership() bool {
 	return c.legacyMembership
 }
 
-// EnableLegacyMembership permanently downgrades this subscriber lifetime chain.
 func (c *Client) EnableLegacyMembership() {
 	if c == nil {
 		return
@@ -303,14 +286,12 @@ func (c *Client) HeartbeatOK() bool {
 	return c.heartbeatOK.Load()
 }
 
-// FenceDispatch stops new credential acquisitions while preserving transports and final concurrency releases.
 func (c *Client) FenceDispatch() {
 	if c != nil {
 		c.dispatchFenced.Store(true)
 	}
 }
 
-// Close permanently ends this client's dispatch and release lifetime.
 func (c *Client) Close() {
 	if c == nil {
 		return
@@ -333,7 +314,6 @@ func (c *Client) Close() {
 	}
 }
 
-// closeBootstrapPools replaces private bootstrap pools without ending the client lifetime.
 func (c *Client) closeBootstrapPools() {
 	if c == nil {
 		return
@@ -346,7 +326,6 @@ func (c *Client) closeBootstrapPools() {
 	closeDetachedClients(commandClient, subscriptionClient, connections)
 }
 
-// AbortAmbiguousDispatch fences this client after an auth dispatch response is ambiguous.
 func (c *Client) AbortAmbiguousDispatch() {
 	if c == nil {
 		return
@@ -380,12 +359,10 @@ func (c *Client) AbortAmbiguousDispatch() {
 	}
 }
 
-// AmbiguousDispatch reports whether this lifetime observed an issued dispatch with an unknown delivery result.
 func (c *Client) AmbiguousDispatch() bool {
 	return c != nil && c.ambiguousDispatch.Load()
 }
 
-// SuppressTakeover forces the next subscriber lifetime through normal membership recovery.
 func (c *Client) SuppressTakeover() {
 	if c == nil {
 		return
@@ -459,7 +436,6 @@ func (c *Client) waitForClientsClosed() {
 	}
 }
 
-// SetManagedLifetime defers client shutdown to the Service lifetime owner.
 func (c *Client) SetManagedLifetime(managed bool) {
 	if c == nil {
 		return
@@ -549,7 +525,6 @@ func (c *Client) redisOptionsLocked(addr string) (*redis.Options, error) {
 	return options, nil
 }
 
-// redisOptionsSnapshotLocked copies only values; certificate IO can run after releasing c.mu.
 func (c *Client) redisOptionsSnapshotLocked(addr string) (*redis.Options, config.HomeTLSConfig) {
 	tlsSettings := c.homeCfg.TLS
 	serverName := strings.TrimSpace(tlsSettings.ServerName)
@@ -844,8 +819,7 @@ func (c *Client) refreshClusterNodes(ctx context.Context) (bool, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.clusterNodes = nodes
-	// Discovery alone does not establish recovery or reset reconnect failures.
-	// Keep planned handoffs pinned here; repeated failures may still trigger failover.
+
 	if c.balance.moving || c.balance.returning || c.heartbeatOK.Load() {
 		return false, nil
 	}
@@ -1090,16 +1064,6 @@ func (c *Client) KVSetNX(ctx context.Context, key string, value []byte, ttl time
 	return c.KVSet(ctx, key, value, opts)
 }
 
-// KVCompareAndSwap atomically replaces a value only when its current state matches the expected state.
-//
-// It uses Home's dedicated CAS command:
-//
-//	CAS <key> <expected-exists 0|1> <expected-value> <new-value> [PX <ttl-ms>]
-//
-// Omitting PX stores the value without a TTL. Home replies integer 1 when the
-// swap happened and integer 0 when the state did not match. Deployments that
-// predate CAS reject the command, which latches ErrCompareAndSwapUnsupported for
-// this client lifetime so later calls skip the round trip.
 func (c *Client) KVCompareAndSwap(ctx context.Context, key string, expected []byte, expectedExists bool, value []byte, ttl time.Duration) (bool, error) {
 	if c == nil {
 		return false, ErrNotConnected
@@ -1289,9 +1253,7 @@ func newAuthDispatchRequest(requestedModel string, sessionID string, parentSessi
 	}
 	var excludedAuthIDsCopy *[]string
 	if excludedAuthIDs != nil {
-		// Keep count at one so older Home servers that ignore excluded_auth_ids do
-		// not apply their legacy count-based retry cap before CPA can rotate
-		// credentials. New Home servers apply retry_round eligibility remotely.
+
 		count = 1
 		values := append([]string{}, (*excludedAuthIDs)...)
 		excludedAuthIDsCopy = &values
@@ -1328,36 +1290,26 @@ func (c *Client) RPopAuth(ctx context.Context, requestedModel string, sessionID 
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, "", nil, nil, "")
 }
 
-// RPopAuthWithPolicy requests a Home credential constrained by the supplied fixed policy.
 func (c *Client) RPopAuthWithPolicy(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, credentialPolicy string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, credentialPolicy, nil, nil, "")
 }
 
-// RPopAuthWithConstraints requests a credential using the current retry-round
-// exclusions and optional pinned credential constraint.
 func (c *Client) RPopAuthWithConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, "", nil, &excludedAuthIDs, pinnedAuthID)
 }
 
-// RPopAuthWithPolicyAndConstraints combines a fixed credential policy with the
-// current retry-round exclusions and optional pinned credential constraint.
 func (c *Client) RPopAuthWithPolicyAndConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, credentialPolicy string, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, credentialPolicy, nil, &excludedAuthIDs, pinnedAuthID)
 }
 
-// RPopAuthWithRetryRoundConstraints requests a credential with the retry round,
-// current-round exclusions, and optional pinned credential constraint.
 func (c *Client) RPopAuthWithRetryRoundConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, retryRound int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, "", &retryRound, &excludedAuthIDs, pinnedAuthID)
 }
 
-// RPopAuthWithPolicyAndRetryRoundConstraints combines a credential policy with
-// the retry round, current-round exclusions, and optional pin.
 func (c *Client) RPopAuthWithPolicyAndRetryRoundConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, credentialPolicy string, retryRound int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, credentialPolicy, &retryRound, &excludedAuthIDs, pinnedAuthID)
 }
 
-// RPopAuthWithSessionHierarchy requests a Home credential with both session ID and parent session ID for hierarchical soft affinity.
 func (c *Client) RPopAuthWithSessionHierarchy(ctx context.Context, requestedModel string, sessionID string, parentSessionID string, headers http.Header, count int, credentialPolicy string, retryRound *int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	var excludedPtr *[]string
 	if len(excludedAuthIDs) > 0 {
@@ -1479,7 +1431,6 @@ func (c *Client) LPushUsage(ctx context.Context, payload []byte) error {
 	return cmd.LPush(ctx, redisKeyUsage, payload).Err()
 }
 
-// LPushInFlightSnapshot publishes a bounded in-flight observation frame.
 func (c *Client) LPushInFlightSnapshot(ctx context.Context, payload []byte) error {
 	cmd, errClient := c.commandClient()
 	if errClient != nil {
@@ -1488,7 +1439,6 @@ func (c *Client) LPushInFlightSnapshot(ctx context.Context, payload []byte) erro
 	return cmd.LPush(ctx, redisKeyInFlightSnapshot, payload).Err()
 }
 
-// PushConcurrencyRelease sends one cumulative concurrency release frame through an independent client.
 func (c *Client) PushConcurrencyRelease(ctx context.Context, frame ConcurrencyReleaseFrame) error {
 	if frame.CredentialID == "" || frame.Model == "" || frame.ReleaseSeq <= 0 {
 		return fmt.Errorf("invalid concurrency release frame")
@@ -1518,8 +1468,7 @@ func (c *Client) concurrencyReleaseClient() (*redis.Client, error) {
 		return nil, ErrDispatchFenced
 	}
 	state := recoveryState(c.recoveryState.Load())
-	// Preparing takeover does not move membership. The acknowledged source owns final releases
-	// until Close; an unacknowledged replacement or a switched address does not inherit that right.
+
 	ownsSource := state == recoveryStateTakeoverEligible && c.releaseReady
 	if state != recoveryStateStable && !ownsSource {
 		return nil, ErrNotConnected
@@ -1573,7 +1522,7 @@ func (c *Client) RPushPluginStatus(ctx context.Context, payload []byte) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	// Plugin cancellation owns only this command's transport, never dispatch or release connections.
+
 	baseDialer := options.Dialer
 	if baseDialer == nil {
 		baseDialer = pluginSyncDialer(options)
@@ -1861,7 +1810,6 @@ func (c *Client) SetLifecycleConfig(cfg config.CredentialConcurrencyConfig) erro
 	return nil
 }
 
-// LimiterConfig returns the latest immutable, validated Home limiter configuration.
 func (c *Client) LimiterConfig() config.CredentialConcurrencyConfig {
 	if c == nil {
 		return config.CredentialConcurrencyConfig{}.WithDefaults()
@@ -1964,8 +1912,6 @@ func (c *Client) handleSubscriptionPayload(ctx context.Context, channel string, 
 	}
 }
 
-// RunConfigSubscriberLifetime runs one GET, SUBSCRIBE, and receive lifetime.
-// Reconnection is owned by the service so each replacement can install a new client lifetime.
 func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func([]byte) error, onReady func()) error {
 	if c == nil || !c.Enabled() {
 		return ErrDisabled
@@ -2019,7 +1965,7 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 		return c.endConfigSubscriberLifetimeWithSubscription(errACK, pubsub, "failed ACK")
 	}
 	heartbeatStarted := time.Now()
-	// A protocol-one ACK means Home already committed this membership. Preserve it if the command probe fails.
+
 	if len(args) > 1 {
 		c.markMembershipTakeoverEligible()
 	}
@@ -2032,7 +1978,7 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 	}
 	c.resetReconnectFailures()
 	c.heartbeatOK.Store(true)
-	// Reception must keep monitoring silence while the consumer performs migration RPCs.
+
 	receiveCtx, cancelReceive := context.WithCancelCause(ctx)
 	events := make(chan any, 16)
 	receiveDone := make(chan struct{})
@@ -2050,7 +1996,7 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 				}
 				c.releaseFenced.Store(true)
 			}
-			// Graceful cancellation stops new work but keeps final releases available until Close.
+
 			c.dispatchFenced.Store(true)
 		}
 		c.heartbeatOK.Store(false)
@@ -2071,8 +2017,7 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 			_, timeout := c.subscriptionParameters()
 			event, errReceive := receiveSubscriptionEvent(receiveCtx, pubsub, sampler, lastHeartbeat.Add(timeout))
 			if errReceive == nil {
-				// Only a persisted heartbeat PONG renews liveness. Config, cluster traffic,
-				// and RTT echoes cannot extend the deadline while the consumer is busy.
+
 				if pong, ok := event.(*redis.Pong); ok && pong != nil && pong.Payload == "" {
 					lastHeartbeat = time.Now()
 				}
@@ -2082,7 +2027,7 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 				case <-receiveCtx.Done():
 					errReceive = context.Cause(receiveCtx)
 				default:
-					// Bounded backpressure fails the lifetime rather than dropping control messages.
+
 					errReceive = fmt.Errorf("Home subscription consumer backlog exceeded")
 				}
 			}
@@ -2103,7 +2048,7 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 			err = cause
 		}
 		if ctx.Err() == nil {
-			// Processing failures must preserve the committed membership before cleanup clears heartbeatOK.
+
 			if len(args) > 1 {
 				c.markMembershipTakeoverEligible()
 			}
@@ -2160,7 +2105,6 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 	}
 }
 
-// receiveSubscriptionEvent preserves the absolute heartbeat deadline across ordinary messages.
 func receiveSubscriptionEvent(ctx context.Context, pubsub *redis.PubSub, sampler *clusterRTTSampler, deadline time.Time) (any, error) {
 	for {
 		remaining := time.Until(deadline)
@@ -2178,7 +2122,7 @@ func receiveSubscriptionEvent(ctx context.Context, pubsub *redis.PubSub, sampler
 			return nil, fmt.Errorf("unexpected Home subscription ACK after initialization")
 		}
 		if pong, ok := event.(*redis.Pong); ok && pong != nil && strings.HasPrefix(pong.Payload, "home-rtt/") {
-			// Timestamp before consumer callbacks, and also exclude stale or duplicate telemetry from liveness.
+
 			sampler.pong(pong.Payload, time.Now())
 			continue
 		}
@@ -2228,7 +2172,6 @@ func (c *Client) endConfigSubscriberLifetimeWithSubscription(err error, subscrip
 	return err
 }
 
-// StartConfigSubscriber is retained for callers that do not need the lifetime error.
 func (c *Client) StartConfigSubscriber(ctx context.Context, onConfig func([]byte) error) {
 	if errRun := c.RunConfigSubscriberLifetime(ctx, onConfig, nil); errRun != nil && !errors.Is(errRun, context.Canceled) {
 		log.Warnf("Home config subscription lifetime ended: %v", errRun)

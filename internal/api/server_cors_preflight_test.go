@@ -7,12 +7,6 @@ import (
 	"testing"
 )
 
-// TestCORSPreflightExplicitlyAllowsAuthorization covers issue #6999: the
-// Fetch standard classifies Authorization as a CORS non-wildcard
-// request-header name, so "Access-Control-Allow-Headers: *" does not cover
-// it when a browser enforces the strict rule. The preflight response must
-// name Authorization (and the other request headers the API accepts)
-// explicitly, otherwise strict-mode browsers block the actual request.
 func TestCORSPreflightExplicitlyAllowsAuthorization(t *testing.T) {
 	server := newTestServer(t)
 
@@ -82,10 +76,6 @@ func TestCORSPreflightExplicitlyAllowsAuthorization(t *testing.T) {
 	}
 }
 
-// TestCORSPreflightEchoesRequestedAllowHeaders verifies that a preflight for
-// arbitrary custom headers a client may send (SDK telemetry, session, and
-// tracing headers) is answered with those headers explicitly allowed,
-// instead of relying on the wildcard that strict non-wildcard rules reject.
 func TestCORSPreflightEchoesRequestedAllowHeaders(t *testing.T) {
 	server := newTestServer(t)
 

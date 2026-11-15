@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-// Compare full requests and SSE transcripts with the baseline (self-terminating SSE frames, issue #6161).
 func TestResponsesCompatibilityDigest(t *testing.T) {
 	requests := [][]byte{
 		responsesPerfRequest(0), responsesPerfRequest(10), responsesPerfRequest(100),

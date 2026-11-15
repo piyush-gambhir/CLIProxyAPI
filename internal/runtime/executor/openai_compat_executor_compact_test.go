@@ -1285,10 +1285,7 @@ func TestOpenAICompatExecutorResponsesStreamHandlesAdditionalErrorShapes(t *test
 }
 
 func TestOpenAICompatExecutorStreamDropsChunksAfterDone(t *testing.T) {
-	// Some OpenAI-compatible upstreams (e.g. OpenCode zen) append non-spec
-	// metadata after data: [DONE]. Those trailing events must not be forwarded,
-	// otherwise clients that treat every pre-[DONE] data line as a chat chunk
-	// fail to deserialize (e.g. missing required "id").
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)

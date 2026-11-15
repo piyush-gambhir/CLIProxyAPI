@@ -34,8 +34,6 @@ func ConvertInteractionsRequestToGemini(modelName string, inputRawJSON []byte, s
 
 }
 
-// convertInteractionsRequestToGemini also reports a user turn that was left empty
-// because its only attachment has no Gemini equivalent.
 func convertInteractionsRequestToGemini(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	outDoc := ojson.NewDocString(`{"model":"","contents":[]}`)
@@ -59,8 +57,6 @@ func ConvertGeminiRequestToInteractions(modelName string, inputRawJSON []byte, s
 
 }
 
-// convertGeminiRequestToInteractions also reports a user turn that was left empty
-// because its only part could not be carried over to Interactions.
 func convertGeminiRequestToInteractions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	var drops translatorcommon.UserTurnDrops
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
@@ -80,7 +76,7 @@ func convertGeminiRequestToInteractions(modelName string, inputRawJSON []byte, s
 		if role == "model" {
 			stepType = "model_output"
 		}
-		// Counts what this turn sends; empty text is not sendable.
+
 		sendable := 0
 		content.Get("parts").ForEach(func(_, part ojson.Result) bool {
 			if fc := part.Get("functionCall"); fc.Exists() {
@@ -342,7 +338,6 @@ func geminiPartToInteractionsContent(part ojson.Result) []byte {
 	return nil
 }
 
-// geminiPartFileData returns the fileData object of a Gemini part in either spelling.
 func geminiPartFileData(part ojson.Result) ojson.Result {
 	if fileData := part.Get("fileData"); fileData.Exists() {
 		return fileData
@@ -352,7 +347,7 @@ func geminiPartFileData(part ojson.Result) ojson.Result {
 
 func ConvertGeminiResponseToInteractionsStream(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	_ = ctx
-	// Vertex stream paths pass SSE lines, while the Gemini executor passes bare payloads.
+
 	rawJSON = bytes.TrimSpace(rawJSON)
 	if after, ok := bytes.CutPrefix(rawJSON, []byte("data:")); ok {
 		rawJSON = bytes.TrimSpace(after)
@@ -405,10 +400,7 @@ func ConvertGeminiResponseToInteractionsStream(ctx context.Context, modelName st
 			st.UsageAfterSeen = true
 		}
 	}
-	// Complete only on usage observed at or after the finish frame. Usage
-	// cached from earlier content frames is a fallback for the explicit
-	// [DONE] terminator, not a completion trigger: a later frame may still
-	// carry the final usage.
+
 	if st.UsageAfterSeen && st.Finished && !st.Completed {
 		out = appendInteractionsCompleted(out, st, modelName, st.PendingUsage)
 		out = appendInteractionsDone(out, st)
@@ -416,9 +408,6 @@ func ConvertGeminiResponseToInteractionsStream(ctx context.Context, modelName st
 	return out
 }
 
-// restoreInteractionsGeminiUsageMetadata renames cpaUsageMetadata back to
-// usageMetadata. Executors rename non-terminal usage before translation, so
-// the filtered spelling must be restored for usage detection and output.
 func restoreInteractionsGeminiUsageMetadata(root ojson.Result) ojson.Result {
 	if !root.Get("usageMetadata").Exists() && !root.Get("usage_metadata").Exists() {
 		if cpaUsage := root.Get("cpaUsageMetadata"); cpaUsage.Exists() {
@@ -884,16 +873,12 @@ type geminiInteractionsInputContext struct {
 	inModelTurn      bool
 	lastStepType     string
 	pendingSignature string
-	// run follows the consecutive user content so that an attachment Gemini cannot
-	// carry is refused only when its whole user turn is left with nothing to send.
+
 	run translatorcommon.UserRun
-	// instruction is set while the step being added is developer or system content.
+
 	instruction bool
 }
 
-// userRun returns the tracker for content added with role. Model content and
-// developer or system content close the open user turn and have no tracker, so
-// they can never keep an emptied user turn alive.
 func (ctx *geminiInteractionsInputContext) userRun(role string) *translatorcommon.UserRun {
 	if role == "user" && !ctx.instruction {
 		return &ctx.run
@@ -902,7 +887,6 @@ func (ctx *geminiInteractionsInputContext) userRun(role string) *translatorcommo
 	return nil
 }
 
-// appendText adds a text content; blank text does not keep a user turn alive.
 func (ctx *geminiInteractionsInputContext) appendText(role, text string) {
 	appendGeminiTextContent(&ctx.items, role, text)
 	run := ctx.userRun(role)
@@ -1057,7 +1041,7 @@ func appendInteractionsStepToGemini(ctx *geminiInteractionsInputContext, item oj
 			ctx.inModelTurn = false
 		}
 		part := buildGeminiFunctionResultPart(item)
-		// A tool result is content the model reads, so it keeps the surrounding user turn.
+
 		ctx.run.Add()
 		if ctx.lastStepType == "function_result" && len(ctx.items) > 0 && ojson.GetBytesNoCopy(ctx.items[len(ctx.items)-1], "role").String() == "user" {
 			ctx.items[len(ctx.items)-1] = appendGeminiUserContentPart(ctx.items[len(ctx.items)-1], part)
@@ -1308,8 +1292,6 @@ func interactionsNativeGeminiPart(part ojson.Result) []byte {
 	return nil
 }
 
-// appendInteractionsContentPart adds one content part. run is nil for model
-// content; for user content it records what is sent and what cannot be.
 func appendInteractionsContentPart(items *[][]byte, role string, part ojson.Result, run *translatorcommon.UserRun) {
 	partJSON := interactionsContentPartToGeminiPart(part, false)
 	if len(partJSON) == 0 {
@@ -1351,7 +1333,7 @@ func interactionsContentPartToGeminiPart(part ojson.Result, thought bool) []byte
 				return geminiInlineDataPartJSON(ojson.Parse(fmt.Sprintf(`{"mime_type":%q,"data":%q}`, mimeType, data)))
 			}
 		}
-		// uri is the Interactions spelling of file_uri.
+
 		if fileURI := firstNonEmptyString(part.Get("file_uri").String(), part.Get("fileUri").String(), part.Get("uri").String()); fileURI != "" {
 			mimeType := part.Get("mime_type").String()
 			if mimeType == "" {
@@ -1461,9 +1443,6 @@ func geminiInlineDataToInteractionsContent(mimeType, data string) []byte {
 	return itemDoc.Bytes()
 }
 
-// geminiFileDataToInteractionsContent maps a Gemini fileData part onto an
-// Interactions media part that references the file by uri. It returns nil when
-// the part names no uri, which leaves nothing to send.
 func geminiFileDataToInteractionsContent(fileData ojson.Result) []byte {
 	fileURI := strings.TrimSpace(fileData.Get("fileUri").String())
 	if fileURI == "" {
@@ -1485,7 +1464,6 @@ func geminiFileDataToInteractionsContent(fileData ojson.Result) []byte {
 	return itemDoc.Bytes()
 }
 
-// geminiInteractionsMediaType picks the Interactions content type for a MIME type.
 func geminiInteractionsMediaType(mimeType string) string {
 	lower := strings.ToLower(mimeType)
 	switch {

@@ -129,7 +129,7 @@ func TestHostRoutingResetCooldownLeavesTokenFilesAlone(t *testing.T) {
 	if _, errRegister := manager.Register(context.Background(), auth); errRegister != nil {
 		t.Fatalf("register auth: %v", errRegister)
 	}
-	// Reset recorded save calls from registration
+
 	store.saveCalls = 0
 
 	request, errMarshal := json.Marshal(pluginapi.HostRoutingResetCooldownRequest{AuthIndex: auth.Index})
@@ -148,12 +148,10 @@ func TestHostRoutingResetCooldownLeavesTokenFilesAlone(t *testing.T) {
 		t.Fatalf("auth_index = %q, want %q", resp.AuthIndex, auth.Index)
 	}
 
-	// Verify token store Save was NOT called (token files left alone)
 	if store.saveCalls != 0 {
 		t.Fatalf("token store Save was called %d times during cooldown reset, want 0", store.saveCalls)
 	}
 
-	// Verify cooldown was still reset in memory
 	updated, ok := manager.GetByID(auth.ID)
 	if !ok || updated == nil {
 		t.Fatalf("auth %s missing after reset", auth.ID)

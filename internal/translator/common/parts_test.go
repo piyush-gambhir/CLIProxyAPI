@@ -9,10 +9,10 @@ import (
 
 func TestUserTurnDropsRefusesAnEmptiedTurnEvenWhenOtherTurnsRemain(t *testing.T) {
 	var drops UserTurnDrops
-	drops.EndTurn(1) // an earlier normal turn
+	drops.EndTurn(1)
 	drops.Drop("container_upload")
-	drops.EndTurn(0) // the turn the attachment emptied
-	drops.EndTurn(3) // a later normal turn must not clear the refusal
+	drops.EndTurn(0)
+	drops.EndTurn(3)
 
 	var unsupported *UnsupportedPartError
 	err := drops.Err()
@@ -85,11 +85,11 @@ func TestIsHTTPURL(t *testing.T) {
 func TestUserRunRefusesATurnEmptiedByADroppedPart(t *testing.T) {
 	var run UserRun
 	run.Add()
-	run.End() // an earlier normal turn
+	run.End()
 	run.Drop("image")
-	run.End() // the turn the attachment emptied
+	run.End()
 	run.Add()
-	run.End() // a later normal turn must not clear the refusal
+	run.End()
 	if got, want := run.Err().Error(), "unsupported content part: image"; got != want {
 		t.Fatalf("error text = %q, want %q", got, want)
 	}

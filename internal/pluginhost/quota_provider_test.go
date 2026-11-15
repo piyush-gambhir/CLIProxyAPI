@@ -320,7 +320,6 @@ func TestQuotaProvider_VersionReloadInvalidatesCache(t *testing.T) {
 		t.Fatal("expected host not to recognize provider-v2 before upgrade")
 	}
 
-	// Reload with version 2.0.0 supporting provider-v2 instead
 	providerV2 := &testQuotaProvider{
 		identifier: "dynamic-quota",
 		describeFn: func(ctx context.Context, req pluginapi.QuotaDescribeRequest) (pluginapi.QuotaDescribeResponse, error) {
@@ -393,9 +392,8 @@ func TestQuotaProvider_ContextCancellation(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
+	cancel()
 
-	// Searching for unknown provider with canceled context should terminate promptly without error
 	if host.HasQuotaProviderContext(ctx, "non-existent-provider") {
 		t.Fatal("expected false for canceled context search")
 	}
@@ -433,16 +431,13 @@ func TestQuotaProvider_InterleavedReloadDiscardStaleCache(t *testing.T) {
 		},
 	})
 
-	// Run Describe in goroutine
 	go func() {
 		defer close(goroutineDone)
 		_ = host.HasQuotaProvider("stale-provider")
 	}()
 
-	// Wait for describe to start
 	<-describeStarted
 
-	// Trigger reload of same plugin with version 1.0.0 supporting "fresh-provider", incrementing generation
 	providerV2 := &testQuotaProvider{
 		identifier: "interleaved-provider",
 		describeFn: func(ctx context.Context, req pluginapi.QuotaDescribeRequest) (pluginapi.QuotaDescribeResponse, error) {
@@ -462,12 +457,10 @@ func TestQuotaProvider_InterleavedReloadDiscardStaleCache(t *testing.T) {
 		},
 	})
 
-	// Allow the old DescribeQuota call to finally return
 	close(allowDescribeFinish)
-	// Wait for old goroutine to fully finish
+
 	<-goroutineDone
 
-	// Verify that the stale-provider is NOT cached on host because generation changed
 	if host.HasQuotaProvider("stale-provider") {
 		t.Fatal("stale-provider should not be cached after generation change")
 	}
@@ -485,7 +478,7 @@ func TestRegisterRPCPlugin_ContextCancellation(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // pre-canceled context
+	cancel()
 
 	host := New()
 	_, err := registerRPCPlugin(ctx, host, "cancel-register-plugin", lookup, pluginabi.MethodPluginRegister, nil)
@@ -551,9 +544,9 @@ func TestQuotaProviderPluginIDsMatchesQuotaProviderRecordPrecedence(t *testing.T
 	}
 	host := newHostWithRecords(
 		capabilityRecord{id: "a-multi", plugin: pluginapi.Plugin{Capabilities: pluginapi.Capabilities{QuotaProvider: multi}}},
-		// Same-pass collision: the earlier record wins "foo" over z-foo.
+
 		capabilityRecord{id: "b-foo", plugin: pluginapi.Plugin{Capabilities: pluginapi.Capabilities{QuotaProvider: &testQuotaProvider{identifier: "foo"}}}},
-		// AuthProvider alias is a first-pass match and beats a-multi's SupportedProviders for "bar".
+
 		capabilityRecord{id: "m-bar-auth", plugin: pluginapi.Plugin{Capabilities: pluginapi.Capabilities{
 			QuotaProvider: &testQuotaProvider{identifier: "m-quota"},
 			AuthProvider:  fakeAuthProvider{identifier: " Bar "},

@@ -63,7 +63,7 @@ func TestExtractExcludedModelsFromMetadata(t *testing.T) {
 		if errExtract == nil {
 			t.Fatalf("ExtractExcludedModelsFromMetadata(%#v) = %v, want error", tc.value, got)
 		}
-		// Valid string entries are still returned for lenient readers.
+
 		if !reflect.DeepEqual(got, tc.want) {
 			t.Fatalf("ExtractExcludedModelsFromMetadata(%#v) = %#v, want %#v", tc.value, got, tc.want)
 		}
@@ -75,7 +75,6 @@ func TestSynthesizeAuthFileKeepsCredentialWithInvalidExcludedModels(t *testing.T
 	ctx := &SynthesisContext{Config: &config.Config{}, AuthDir: authDir, Now: time.Date(2026, time.October, 10, 12, 0, 0, 0, time.UTC)}
 	badPath := filepath.Join(authDir, "bad.json")
 
-	// Existing credentials must keep loading; only the invalid rules are ignored.
 	for _, tc := range []struct {
 		raw  string
 		want string
@@ -103,7 +102,6 @@ func TestSynthesizeAuthFileKeepsCredentialWithInvalidExcludedModels(t *testing.T
 		t.Fatalf("plugin auths = %+v, want one auth keeping the valid rule", pluginAuths)
 	}
 
-	// A directory scan keeps both credentials.
 	if errWrite := os.WriteFile(badPath, []byte(`{"type":"claude","email":"bad@example.test","excluded_models":123}`), 0o600); errWrite != nil {
 		t.Fatalf("write bad auth file: %v", errWrite)
 	}
@@ -139,10 +137,10 @@ func TestSynthesizeAuthFileKeepsPluginExcludedModelsWithoutFileRules(t *testing.
 		raw      string
 		wantRule string
 	}{
-		// Without file rules, the plugin-provided attributes stay as returned by the parser.
+
 		{raw: `{"type":"acme"}`, wantRule: "plugin-model"},
 		{raw: `{"type":"acme","excluded_models":[]}`, wantRule: "plugin-model"},
-		// File rules replace the plugin-provided list.
+
 		{raw: `{"type":"acme","excluded_models":["File-Model"]}`, wantRule: "file-model"},
 	} {
 		auths := mustSynthesizeAuthFile(t, ctx, path, tc.raw)

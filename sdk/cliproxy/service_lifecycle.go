@@ -22,15 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Run starts the service and blocks until the context is cancelled or the server stops.
-// It initializes all components including authentication, file watching, HTTP server,
-// and starts processing requests. The method blocks until the context is cancelled.
-//
-// Parameters:
-//   - ctx: The context for controlling the service lifecycle
-//
-// Returns:
-//   - error: An error if the service fails to start or run
 func (s *Service) Run(ctx context.Context) error {
 	if s == nil {
 		return fmt.Errorf("cliproxy: service is nil")
@@ -124,18 +115,15 @@ func (s *Service) Run(ctx context.Context) error {
 		}
 	}
 
-	// legacy clients removed; no caches to refresh
-
 	s.ensureWebsocketGateway()
 	if homeEnabled {
 		s.registerAvailableExecutors(ctx, executorRegistrationOptions{
 			includeBaseline: true,
 		})
-		// Home mode does not expose in-process Redis RESP usage output; usage is forwarded to home instead.
+
 		redisqueue.SetEnabled(true)
 	}
 
-	// handlers no longer depend on legacy clients; pass nil slice initially
 	s.server = api.NewServer(cfg, s.coreManager, s.accessManager, s.configPath, s.serverOptions...)
 	s.syncPluginRuntimeConfig(ctx)
 	if homeEnabled {
@@ -248,15 +236,6 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 }
 
-// Shutdown stops background workers and immediately closes the HTTP server.
-// It ensures all resources are properly cleaned up and connections are closed.
-// The shutdown is idempotent and can be called multiple times safely.
-//
-// Parameters:
-//   - ctx: The context for controlling the shutdown timeout
-//
-// Returns:
-//   - error: An error if shutdown fails
 func (s *Service) Shutdown(ctx context.Context) error {
 	if s == nil {
 		return nil
@@ -320,8 +299,6 @@ func (s *Service) Shutdown(ctx context.Context) error {
 		}
 		s.homeLifecycleMu.Unlock()
 
-		// legacy refresh loop removed; only stopping core auth manager below
-
 		s.cfgMu.RLock()
 		watcherCancel := s.watcherCancel
 		s.cfgMu.RUnlock()
@@ -363,8 +340,6 @@ func (s *Service) Shutdown(ctx context.Context) error {
 				shutdownErr = errShutdownDiscovery
 			}
 		}
-
-		// no legacy clients to persist
 
 		if s.server != nil {
 			if errStop := s.server.Stop(ctx); errStop != nil {
@@ -429,7 +404,6 @@ func (s *Service) ensureAuthDir() error {
 	return nil
 }
 
-// startModelCatalogUpdaters applies the same catalog policy for SDK and CLI users.
 func (s *Service) startModelCatalogUpdaters(ctx context.Context) {
 	s.cfgMu.RLock()
 	cfg := s.cfg

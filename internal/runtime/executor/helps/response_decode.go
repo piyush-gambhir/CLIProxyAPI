@@ -34,8 +34,6 @@ func (c *compositeReadCloser) Close() error {
 	return firstErr
 }
 
-// peekableBody wraps a bufio.Reader around the original ReadCloser so that
-// magic bytes can be inspected without consuming them from the stream.
 type peekableBody struct {
 	*bufio.Reader
 	closer io.Closer
@@ -45,22 +43,13 @@ func (p *peekableBody) Close() error {
 	return p.closer.Close()
 }
 
-// DecodeResponseBody decodes declared encodings in reverse order, or sniffs gzip/zstd without a header.
-// Closing the returned body also closes all decoders and the original body, including on setup errors.
 func DecodeResponseBody(body io.ReadCloser, header http.Header) (io.ReadCloser, error) {
 	contentEncoding := strings.Join(header.Values("Content-Encoding"), ",")
 	if body == nil {
 		return nil, fmt.Errorf("response body is nil")
 	}
 	if contentEncoding == "" {
-		// No Content-Encoding header.  Attempt best-effort magic-byte detection to
-		// handle misbehaving upstreams that compress without setting the header.
-		// Only gzip (1f 8b) and zstd (28 b5 2f fd) have reliable magic sequences;
-		// br and deflate have none and are left as-is.
-		// The bufio wrapper preserves unread bytes so callers always see the full
-		// stream regardless of whether decompression was applied.
-		// Detection waits for the first Read: a streaming upstream may send headers long
-		// before its first byte, and peeking here would block the caller until then.
+
 		return &sniffedResponseBody{body: &peekableBody{Reader: bufio.NewReader(body), closer: body}}, nil
 	}
 	encodings := strings.Split(contentEncoding, ",")
@@ -147,16 +136,10 @@ func isZlibHeader(header []byte) bool {
 	return cmf&0x0f == 8 && cmf>>4 <= 7 && (uint16(cmf)<<8|uint16(flg))%31 == 0
 }
 
-// newResponseZstdReader decodes one response synchronously. The default decoder hands blocks to up
-// to four asynchronous block decoders, which costs allocations and handoff latency and gains
-// nothing on bodies that are read as they arrive.
 func newResponseZstdReader(reader io.Reader) (*zstd.Decoder, error) {
 	return zstd.NewReader(reader, zstd.WithDecoderConcurrency(1))
 }
 
-// sniffedResponseBody decodes a body that arrived without Content-Encoding but starts with
-// gzip or zstd magic bytes. Detection runs on the first Read and waits for more than one byte
-// only when the first byte can start a gzip or zstd frame.
 type sniffedResponseBody struct {
 	body    *peekableBody
 	once    sync.Once

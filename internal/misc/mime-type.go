@@ -1,12 +1,5 @@
-// Package misc provides miscellaneous utility functions and embedded data for the CLI Proxy API.
-// This package contains general-purpose helpers and embedded resources that do not fit into
-// more specific domain packages. It includes a comprehensive MIME type mapping for file operations.
 package misc
 
-// MimeTypes is a comprehensive map of file extensions to their corresponding MIME types.
-// This map is used to determine the Content-Type header for file uploads and other
-// operations where the MIME type needs to be identified from a file extension.
-// The list is extensive to cover a wide range of common and uncommon file formats.
 var MimeTypes = map[string]string{
 	"ez":          "application/andrew-inset",
 	"aw":          "application/applixware",

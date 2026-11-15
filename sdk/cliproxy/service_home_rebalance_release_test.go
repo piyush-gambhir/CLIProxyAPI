@@ -129,7 +129,7 @@ func TestServiceRebalanceReleaseOwnershipAcrossCancellation(t *testing.T) {
 				case "shutdown":
 					cancel()
 				case "replacement":
-					// Cancel synchronously at the pending wait, then run the normal replacement entrypoint.
+
 					oldSupervisor.cancel()
 					source.mu.Lock()
 					source.target = ""

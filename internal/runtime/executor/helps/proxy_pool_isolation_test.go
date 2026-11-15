@@ -16,13 +16,8 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// These tests share the process-wide pool and must not run in parallel.
-
 func enabledPoolConfig() *config.Config { return testConfig() }
 
-// TestProxyPoolIsolatesCredentials pins requirement 2: two keys must never share a
-// pool, because a shared TCP/TLS connection would correlate distinct identities
-// upstream and would let a rotated key keep using an old socket.
 func TestProxyPoolIsolatesCredentials(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -50,12 +45,11 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 			t.Fatalf("proxy %q: the same credential must reuse its pool", proxyURL)
 		}
 	}
-	// Two unauthenticated proxies on the same key must also keep separate pools.
+
 	if pooledProxyTransport("http://127.0.0.1:8080", cfg, first) == pooledProxyTransport("http://127.0.0.1:8081", cfg, first) {
 		t.Fatal("different unauthenticated proxies shared one pool")
 	}
 
-	// API-key credentials without an ID fall back to a digested key scope.
 	keyOne := poolAuth("", poolEnabled())
 	keyOne.Attributes = map[string]string{cliproxyauth.AttributeAPIKey: "sk-one"}
 	keyTwo := poolAuth("", poolEnabled())
@@ -69,7 +63,7 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 	if proxyPoolScope(keyOne) != proxyPoolScope(&cliproxyauth.Auth{Attributes: map[string]string{cliproxyauth.AttributeAPIKey: "sk-one"}}) {
 		t.Fatal("identical credentials must map to one scope")
 	}
-	// A human readable label is not an identity.
+
 	if proxyPoolScope(&cliproxyauth.Auth{Label: "same"}) != proxyPoolScope(&cliproxyauth.Auth{Label: "same"}) {
 		t.Fatal("label-only auths must share the anonymous scope")
 	}
@@ -77,7 +71,6 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 		t.Fatalf("label must not become a scope, got %q", got)
 	}
 
-	// Rotating an API key in-place under a stable Auth.ID must switch pools.
 	rotatedBefore := poolAuth("stable-id", poolEnabled())
 	rotatedBefore.Attributes = map[string]string{cliproxyauth.AttributeAPIKey: "sk-old"}
 	rotatedAfter := poolAuth("stable-id", poolEnabled())
@@ -87,8 +80,6 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 	}
 }
 
-// TestProxyPoolBoundsIdleSocketsPerCredential covers requirement 4: one credential
-// must not be able to hoard idle sockets, no matter how many hosts it talks to.
 func TestProxyPoolBoundsIdleSocketsPerCredential(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -107,9 +98,6 @@ func TestProxyPoolBoundsIdleSocketsPerCredential(t *testing.T) {
 	}
 }
 
-// TestProxyPoolCapacityBoundsManyCredentials covers requirement 4 for the large
-// deployment: 100000 keys must not mean 100000 pools. The cache stays at its
-// capacity and every credential still gets a usable transport.
 func TestProxyPoolCapacityBoundsManyCredentials(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -124,7 +112,7 @@ func TestProxyPoolCapacityBoundsManyCredentials(t *testing.T) {
 	if got := proxyTransportCache.Len(); got != proxyPoolCapacity {
 		t.Fatalf("cache holds %d pools, want %d", got, proxyPoolCapacity)
 	}
-	// A hot credential keeps its pool while cold ones churn through it.
+
 	hot := poolOptInAuth("hot")
 	hotTransport := pooledProxyTransport("direct", cfg, hot)
 	for i := 0; i < 16; i++ {
@@ -138,10 +126,6 @@ func TestProxyPoolCapacityBoundsManyCredentials(t *testing.T) {
 	}
 }
 
-// TestEvictedTransportDoesNotRebuildIdlePool verifies that if a caller obtains a
-// pooled transport and is descheduled until after that entry is evicted from the
-// LRU cache, a subsequent RoundTrip on the stale transport still completes but
-// closes the socket immediately instead of parking an untracked idle connection.
 func TestEvictedTransportDoesNotRebuildIdlePool(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -166,7 +150,6 @@ func TestEvictedTransportDoesNotRebuildIdlePool(t *testing.T) {
 	staleAuth.ProxyURL = "direct"
 	staleClient := NewProxyAwareHTTPClient(context.Background(), cfg, staleAuth, 0)
 
-	// Evict staleAuth's transport before staleClient performs its first RoundTrip.
 	for i := 0; i < proxyPoolCapacity+8; i++ {
 		other := poolOptInAuth("evict-filler-" + strconv.Itoa(i))
 		if tr := pooledProxyTransport("direct", cfg, other); tr == nil {
@@ -185,14 +168,9 @@ func TestEvictedTransportDoesNotRebuildIdlePool(t *testing.T) {
 		t.Fatalf("close body: %v", errClose)
 	}
 
-	// Because the transport was already evicted, tryPutIdleConn must reject parking
-	// the socket and close it immediately when the response finishes.
 	<-closedCh
 }
 
-// TestProxyPoolDropsUnexpectedlyClosedConnection covers requirement 3: when the
-// peer disappears mid-life, the pooled connection must be discarded instead of
-// being reused, and the following request must succeed on a fresh connection.
 func TestProxyPoolDropsUnexpectedlyClosedConnection(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -235,8 +213,7 @@ func TestProxyPoolDropsUnexpectedlyClosedConnection(t *testing.T) {
 	if got := opened.Load(); got != 1 {
 		t.Fatalf("connections after first request = %d, want 1", got)
 	}
-	// Kill the pooled socket from the server side, the way a crashed upstream or a
-	// NAT timeout would surface.
+
 	mu.Lock()
 	for _, conn := range live {
 		_ = conn.Close()

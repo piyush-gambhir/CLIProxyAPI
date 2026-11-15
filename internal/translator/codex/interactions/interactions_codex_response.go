@@ -29,8 +29,7 @@ type codexToInteractionsStreamState struct {
 	StreamedSummaryItems map[string]bool
 	FunctionCallName     string
 	FunctionCallID       string
-	// SeenReasoningSignatures dedupes repeated reasoning output_item.done
-	// events so one signature is emitted as a thought_signature delta once.
+
 	SeenReasoningSignatures map[[32]byte]bool
 }
 
@@ -435,9 +434,7 @@ func appendCodexReasoningItemToInteractionsStream(out [][]byte, st *codexToInter
 		_ = signatureDeltaDoc.Set("delta.signature", sig)
 		out = append(out, translatorcommon.SSEEventData("step.delta", signatureDeltaDoc.Bytes()))
 	}
-	// Completing a reasoning item resets the current item's summary flag so a
-	// subsequent done-only reasoning item is not suppressed by an earlier
-	// item's streamed deltas.
+
 	st.HasThoughtSummary = false
 	return out
 }

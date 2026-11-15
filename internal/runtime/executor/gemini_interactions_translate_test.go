@@ -66,9 +66,6 @@ func TestTranslateGeminiInteractionsRequestPairReusesSameSlice(t *testing.T) {
 	}
 }
 
-// TestTranslateGeminiInteractionsRequestPairTranslatesSameSliceOnce counts translator
-// calls. Byte equality stays green if the reuse branch is deleted and the same
-// deterministic translator runs twice.
 func TestTranslateGeminiInteractionsRequestPairTranslatesSameSliceOnce(t *testing.T) {
 	from := sdktranslator.Format("gemini-interactions-translate-count")
 	to := sdktranslator.FormatInteractions
@@ -137,7 +134,7 @@ func TestTranslateGeminiInteractionsRequestPairTranslatesDistinctInputs(t *testi
 	const model = "gemini-3.1-flash-lite"
 	payload := []byte(`{"model":"gemini-3.1-flash-lite","messages":[{"role":"user","content":"working"}]}`)
 	originalReq := []byte(`{"model":"gemini-3.1-flash-lite","messages":[{"role":"user","content":"baseline"}]}`)
-	// Same bytes in another array must still be translated separately.
+
 	detached := bytes.Clone(payload)
 
 	for _, original := range [][]byte{originalReq, detached} {

@@ -47,60 +47,6 @@ type apiCallResponse struct {
 	Body       string              `json:"body"`
 }
 
-// APICall makes a generic HTTP request on behalf of the management API caller.
-// It is protected by the management middleware.
-//
-// Endpoint:
-//
-//	POST /v0/management/api-call
-//
-// Authentication:
-//
-//	Same as other management APIs (requires a management key and remote-management rules).
-//	You can provide the key via:
-//	- Authorization: Bearer <key>
-//	- X-Management-Key: <key>
-//
-// Request JSON:
-//   - auth_index / authIndex / AuthIndex (optional):
-//     The credential "auth_index" from GET /v0/management/auth-files (or other endpoints returning it).
-//     If omitted, credential-specific proxy selection is skipped.
-//     If "$TOKEN$" is present and the credential or token cannot be resolved, the request fails with HTTP 400.
-//   - method (required): HTTP method, e.g. GET, POST, PUT, PATCH, DELETE.
-//   - url (required): Absolute URL including scheme and host, e.g. "https://api.example.com/v1/ping".
-//   - proxy_url (optional): Proxy used for this request. Supports HTTP, HTTPS, SOCKS5, SOCKS5H,
-//     and "direct"/"none" to explicitly bypass proxies. When set, credential and global proxies are ignored.
-//   - header (optional): Request headers map.
-//     Supports magic variable "$TOKEN$" which is replaced using the selected credential:
-//     1) metadata.access_token
-//     2) attributes.api_key
-//     3) metadata.token / metadata.id_token / metadata.cookie
-//     Example: {"Authorization":"Bearer $TOKEN$"}.
-//     Note: if you need to override the HTTP Host header, set header["Host"].
-//   - data (optional): Raw request body as string (useful for POST/PUT/PATCH).
-//
-// Proxy selection (highest priority first):
-//  1. Request proxy_url (when set, lower-priority proxy settings are ignored)
-//  2. Selected credential proxy_url
-//  3. Global config proxy-url
-//  4. Direct connect (environment proxies are not used)
-//
-// Response JSON (returned with HTTP 200 when the APICall itself succeeds):
-//   - status_code: Upstream HTTP status code.
-//   - header: Upstream response headers.
-//   - body: Upstream response body as string.
-//
-// Example:
-//
-//	curl -sS -X POST "http://127.0.0.1:8317/v0/management/api-call" \
-//	  -H "Authorization: Bearer <MANAGEMENT_KEY>" \
-//	  -H "Content-Type: application/json" \
-//	  -d '{"auth_index":"<AUTH_INDEX>","method":"GET","url":"https://api.example.com/v1/ping","header":{"Authorization":"Bearer $TOKEN$"}}'
-//
-//	curl -sS -X POST "http://127.0.0.1:8317/v0/management/api-call" \
-//	  -H "Authorization: Bearer 831227" \
-//	  -H "Content-Type: application/json" \
-//	  -d '{"auth_index":"<AUTH_INDEX>","method":"POST","url":"https://api.example.com/v1/fetchAvailableModels","header":{"Authorization":"Bearer $TOKEN$","Content-Type":"application/json","User-Agent":"cliproxyapi"},"data":"{}"}'
 func (h *Handler) APICall(c *gin.Context) {
 	var body apiCallRequest
 	if errBindJSON := c.ShouldBindJSON(&body); errBindJSON != nil {
@@ -649,8 +595,6 @@ func metaTokenFromAuth(auth *coreauth.Auth) string {
 	return ""
 }
 
-// metaManagementPreparer applies the tool's proxy override only to acquisition.
-// The saved credential retains its configured proxy.
 type metaManagementPreparer struct {
 	executor *executor.MetaExecutor
 	proxyURL string
@@ -701,7 +645,7 @@ func (h *Handler) resolveMetaToken(ctx context.Context, auth *coreauth.Auth, req
 }
 
 func antigravityTokenNeedsRefresh(metadata map[string]any) bool {
-	// Refresh a bit early to avoid requests racing token expiry.
+
 	const skew = 30 * time.Second
 
 	if metadata == nil {

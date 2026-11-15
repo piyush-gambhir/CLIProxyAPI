@@ -12,10 +12,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Review round 3 regressions: explicit-zero hints must retry immediately,
-// and the Home non-stream request-scoped stop path must keep the trusted
-// Retry-After.
-
 type issue7017SequenceExecutor struct {
 	mu    sync.Mutex
 	calls int

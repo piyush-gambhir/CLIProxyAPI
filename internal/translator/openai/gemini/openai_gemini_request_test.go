@@ -299,8 +299,7 @@ func TestConvertGeminiRequestToOpenAI_SameNameCallsInSameMessageDistinct(t *test
 }
 
 func TestConvertGeminiRequestToOpenAI_InterleavedPerNameFIFOMatching(t *testing.T) {
-	// Interleaved calls: toolA, toolB, toolA, toolB
-	// Responses returned grouped by tool: toolB, toolA, toolB, toolA
+
 	inputJSON := []byte(`{
 		"contents": [
 			{
@@ -330,11 +329,6 @@ func TestConvertGeminiRequestToOpenAI_InterleavedPerNameFIFOMatching(t *testing.
 	callA2 := ojson.GetBytesNoCopy(out, "messages.0.tool_calls.2.id").String()
 	callB2 := ojson.GetBytesNoCopy(out, "messages.0.tool_calls.3.id").String()
 
-	// Responses:
-	// messages[1] = tool_b (step 1) -> should match callB1
-	// messages[2] = tool_a (step 1) -> should match callA1
-	// messages[3] = tool_b (step 2) -> should match callB2
-	// messages[4] = tool_a (step 2) -> should match callA2
 	if got := ojson.GetBytesNoCopy(out, "messages.1.tool_call_id").String(); got != callB1 {
 		t.Fatalf("first response (tool_b) = %q, want callB1 %q", got, callB1)
 	}
@@ -403,9 +397,7 @@ func TestConvertGeminiRequestToOpenAI_ExplicitCallInheritedByImplicitResponse(t 
 }
 
 func TestConvertGeminiRequestToOpenAI_OutOrderExplicitResponseDoesNotDuplicateID(t *testing.T) {
-	// Calls: foo (id=call_1), foo (id=call_2), foo (id=call_3)
-	// Responses: 1st response has explicit id=call_2, 2nd and 3rd are implicit.
-	// Expected responses order: call_2, call_1, call_3.
+
 	inputJSON := []byte(`{
 		"contents": [
 			{

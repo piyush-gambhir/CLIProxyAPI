@@ -25,8 +25,6 @@ func interactionsToClaudeEnvelope(input string) sdktranslator.RequestEnvelope {
 	})
 }
 
-// interactionsFinalTurnToClaude translates two history turns followed by a final
-// user step holding the given content parts.
 func interactionsFinalTurnToClaude(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToClaudeEnvelope(`{"model":"m","input":[` + interactionsHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }

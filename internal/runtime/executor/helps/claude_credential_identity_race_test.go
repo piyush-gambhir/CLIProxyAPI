@@ -8,11 +8,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// TestApplyClaudeCredentialMetadataConcurrentSharedAuth pins the invariant that a
-// single *Auth shared by concurrent requests is safe to use. Before the device
-// pool accessors were introduced these paths initialized and wrote auth.Metadata
-// outside claudeDevicePoolMu, which aborts the process with "concurrent map
-// writes" rather than failing a request. Run with -race.
 func TestApplyClaudeCredentialMetadataConcurrentSharedAuth(t *testing.T) {
 	auth := &cliproxyauth.Auth{
 		ID:       "shared-credential",
@@ -35,7 +30,7 @@ func TestApplyClaudeCredentialMetadataConcurrentSharedAuth(t *testing.T) {
 				errs <- err
 				return
 			}
-			// Concurrent readers of the same map must be safe too.
+
 			_ = ClaudeCredentialAccountUUID(auth)
 		}(i)
 	}
@@ -52,8 +47,6 @@ func TestApplyClaudeCredentialMetadataConcurrentSharedAuth(t *testing.T) {
 	}
 }
 
-// TestEnsureClaudeCredentialDevicePoolConcurrentSharedAuth covers the local
-// (non Home KV) branch of the pool bootstrap on a shared credential.
 func TestEnsureClaudeCredentialDevicePoolConcurrentSharedAuth(t *testing.T) {
 	auth := &cliproxyauth.Auth{ID: "shared-credential"}
 
@@ -89,8 +82,6 @@ func TestEnsureClaudeCredentialDevicePoolConcurrentSharedAuth(t *testing.T) {
 		t.Fatalf("EnsureClaudeCredentialDevicePoolRequired on shared auth: %v", err)
 	}
 
-	// Every caller must agree on the pool; a racing bootstrap would hand out
-	// different device IDs to different requests on the same credential.
 	seen := make(map[string]struct{})
 	for deviceID := range results {
 		seen[deviceID] = struct{}{}

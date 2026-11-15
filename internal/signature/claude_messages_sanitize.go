@@ -13,35 +13,16 @@ type ClaudeMessagesSignatureSanitizeOptions struct {
 	DropEmptyMessages             bool
 	DropToolSignatures            bool
 	DropEmptyThinkingPlaceholders bool
-	// PreserveEmptyThinkingBlocks preserves compatibility-mode thinking blocks
-	// together with their original signatures, including opaque signatures.
+
 	PreserveEmptyThinkingBlocks bool
 }
 
-// CodexCommentarySignatureMarker is the CLIProxyAPI-internal marker carried in
-// the signature field of the Claude thinking block that relays a Codex
-// commentary message. It is not a provider signature and must never be
-// forwarded to any upstream: consumers either restore the block as assistant
-// commentary text (Claude-to-Codex request translation) or rewrite it as a
-// plain text block (this sanitizer).
 const CodexCommentarySignatureMarker = "cpa:commentary:v1"
 
-// IsCodexCommentarySignatureMarker reports whether rawSignature is exactly the
-// internal commentary marker, ignoring surrounding whitespace. The marker is a
-// plain, forgeable literal rather than a credential; it only distinguishes
-// CPA-relayed commentary from real reasoning history.
 func IsCodexCommentarySignatureMarker(rawSignature string) bool {
 	return strings.TrimSpace(rawSignature) == CodexCommentarySignatureMarker
 }
 
-// RestoreCodexCommentaryMarkers rewrites every assistant thinking block that
-// carries the internal commentary marker as a plain assistant text block and
-// reports how many blocks were restored. It is deliberately independent of
-// provider signature compatibility policy: the marker must never reach any
-// upstream, including Claude-compatible endpoints whose model name maps to a
-// non-Claude family and therefore skips full signature sanitization. Blocks
-// with empty thinking text are dropped because they carry no history. When no
-// marker is present the payload is returned unchanged.
 func RestoreCodexCommentaryMarkers(payload []byte) ([]byte, int) {
 	messages := ojson.GetBytesNoCopy(payload, "messages")
 	if !messages.IsArray() {
@@ -55,8 +36,6 @@ func RestoreCodexCommentaryMarkers(payload []byte) ([]byte, int) {
 	return doc.Bytes(), restored
 }
 
-// RestoreCodexCommentaryMarkersDoc rewrites every assistant thinking block that
-// carries the internal commentary marker on doc in place.
 func RestoreCodexCommentaryMarkersDoc(doc *ojson.Doc) int {
 	if doc == nil {
 		return 0
@@ -116,9 +95,6 @@ type SignatureSanitizeReport struct {
 	Decisions          []SignatureCompatibilityDecision
 }
 
-// SanitizeClaudeMessagesSignaturesForModel removes or preserves Claude
-// /v1/messages signed history according to the provider family implied by
-// targetModel.
 func SanitizeClaudeMessagesSignaturesForModel(payload []byte, targetModel string) ([]byte, SignatureSanitizeReport) {
 	return SanitizeClaudeMessagesSignaturesForTarget(payload, ClaudeMessagesSignatureSanitizeOptions{
 		TargetProvider:    SignatureProviderFromModelName(targetModel),
@@ -127,11 +103,6 @@ func SanitizeClaudeMessagesSignaturesForModel(payload []byte, targetModel string
 	})
 }
 
-// SanitizeClaudeMessagesForClaudeUpstream prepares a Claude /v1/messages body
-// for Claude-compatible upstreams. Valid Claude signatures are normalized to
-// provider-native E-form, valid Claude CAIS signatures are kept,
-// incompatible thinking blocks are dropped, and tool_use blocks keep only their
-// tool-call payload.
 func SanitizeClaudeMessagesForClaudeUpstream(payload []byte, targetModel string, preserveEmptyThinkingBlocks ...bool) ([]byte, SignatureSanitizeReport) {
 	preserveEmpty := len(preserveEmptyThinkingBlocks) > 0 && preserveEmptyThinkingBlocks[0]
 	return SanitizeClaudeMessagesSignaturesForTarget(payload, ClaudeMessagesSignatureSanitizeOptions{
@@ -144,11 +115,6 @@ func SanitizeClaudeMessagesForClaudeUpstream(payload []byte, targetModel string,
 	})
 }
 
-// SanitizeClaudeMessagesSignaturesForTarget applies provider-aware signature
-// compatibility rules to Claude /v1/messages history. Compatible thinking
-// signatures are preserved. Incompatible thinking blocks are removed so a user
-// can continue a conversation after switching between Claude, GPT/Codex,
-// and Gemini models.
 func SanitizeClaudeMessagesSignaturesForTarget(payload []byte, opts ClaudeMessagesSignatureSanitizeOptions) ([]byte, SignatureSanitizeReport) {
 	targetProvider := normalizeSignatureTargetProvider(opts.TargetProvider)
 	if targetProvider == SignatureProviderUnknown && opts.TargetModel != "" {
@@ -210,9 +176,7 @@ func SanitizeClaudeMessagesSignaturesForTarget(payload []byte, opts ClaudeMessag
 
 			rawSignature := part.Get("signature").String()
 			if IsCodexCommentarySignatureMarker(rawSignature) {
-				// The internal commentary marker is not a provider signature:
-				// restore its text as a plain assistant text block so neither
-				// the marker nor a fake signature reaches the upstream.
+
 				if text := part.Get("thinking").String(); text != "" {
 					_ = doc.Set(partPath+".type", "text")
 					_ = doc.Delete(partPath + ".thinking")

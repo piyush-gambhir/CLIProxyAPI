@@ -61,7 +61,6 @@ func resolveAntigravityGroundingURL(ctx context.Context, cfg *config.Config, aut
 	return location
 }
 
-// ResolveAntigravityGroundingURLs replaces Vertex Search redirect URLs in grounding chunks with their target URLs.
 func ResolveAntigravityGroundingURLs(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -73,7 +72,6 @@ func ResolveAntigravityGroundingURLs(ctx context.Context, cfg *config.Config, au
 	return doc.Bytes()
 }
 
-// ResolveAntigravityGroundingURLsDoc replaces Vertex Search redirect URLs in grounding chunks in place on doc.
 func ResolveAntigravityGroundingURLsDoc(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false

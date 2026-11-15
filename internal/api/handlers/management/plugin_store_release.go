@@ -29,8 +29,6 @@ type pluginReleaseLookup struct {
 	canceled bool
 }
 
-// pluginReleaseCache shares both in-flight lookups and the concurrency budget
-// across all catalog requests handled by this management server.
 type pluginReleaseCache struct {
 	mu       sync.Mutex
 	entries  map[string]pluginReleaseCacheEntry
@@ -57,7 +55,6 @@ func pluginReleaseKey(client pluginstore.Client, plugin pluginstore.Plugin) stri
 	return key
 }
 
-// cached returns the last successful result without causing network activity.
 func (cache *pluginReleaseCache) cached(client pluginstore.Client, plugin pluginstore.Plugin) string {
 	key := pluginReleaseKey(client, plugin)
 	cache.mu.Lock()
@@ -65,7 +62,6 @@ func (cache *pluginReleaseCache) cached(client pluginstore.Client, plugin plugin
 	return cache.entries[key].version
 }
 
-// latestPluginVersions preserves catalog order, including skipped placeholders.
 func (h *Handler) latestPluginVersions(ctx context.Context, client pluginstore.Client, plugins []pluginstore.Plugin, force bool) []string {
 	versions := make([]string, len(plugins))
 	var wg sync.WaitGroup
@@ -111,8 +107,7 @@ func (h *Handler) latestPluginVersion(ctx context.Context, client pluginstore.Cl
 			select {
 			case <-pending.done:
 				if pending.canceled && ctx.Err() == nil {
-					// A live waiter takes ownership after a canceled leader. All
-					// other waiters coalesce behind the replacement lookup.
+
 					continue
 				}
 				return pending.version
@@ -133,8 +128,6 @@ func (h *Handler) latestPluginVersion(ctx context.Context, client pluginstore.Cl
 		break
 	}
 
-	// Every listing uses the same slots. Canceled waiters do not consume a slot
-	// or install a negative cache entry.
 	select {
 	case cache.slots <- struct{}{}:
 		if ctx.Err() == nil {
@@ -144,7 +137,7 @@ func (h *Handler) latestPluginVersion(ctx context.Context, client pluginstore.Cl
 				version, errRelease = pluginstore.ReleaseVersion(release)
 			}
 			if ctx.Err() == nil {
-				// Start the TTL when the lookup finishes, not when it was queued.
+
 				now := cache.now()
 				entry.checkedAt = now
 				var rateLimit *pluginstore.RateLimitError

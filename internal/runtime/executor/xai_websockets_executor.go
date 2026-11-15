@@ -1,5 +1,3 @@
-// Package executor provides runtime execution capabilities for various AI service providers.
-// This file implements an xAI executor that uses the Responses API WebSocket transport.
 package executor
 
 import (
@@ -26,7 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// XAIWebsocketsExecutor executes xAI Responses requests using a WebSocket transport.
 type XAIWebsocketsExecutor struct {
 	*XAIExecutor
 
@@ -482,9 +479,6 @@ func (e *XAIWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *cliprox
 		return e.executeCompactionTriggerFromWebsocketContext(ctx, auth, req, opts, idMapper)
 	}
 
-	// Keep websocket on the official API base URL (or an explicit non-default
-	// base_url). Do not reuse xaiChatBaseURL: cli-chat-proxy only accepts HTTP
-	// POST and returns 405 for websocket upgrades.
 	token, baseURL := xaiCreds(auth)
 	if baseURL == "" {
 		baseURL = xaiauth.DefaultAPIBaseURL
@@ -730,7 +724,6 @@ func (e *XAIWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *cliprox
 		var streamUsage helps.StreamUsageBuffer
 		defer streamUsage.Publish(ctx, reporter)
 
-		// Validation ends the upstream attempt before downstream delivery or session reuse.
 		invalidatePatchAttempt := func() {
 			terminateReason = "invalid_tool_arguments"
 			terminateErr = statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
@@ -1108,8 +1101,7 @@ func parseXAIWebsocketError(payload []byte) (error, bool) {
 	if wsErr, ok := parseCodexWebsocketError(payload); ok {
 		if statusError, okStatus := wsErr.(statusErrWithHeaders); okStatus {
 			xaiError := xaiStatusErr(statusError.code, payload)
-			// Apply normalized status (e.g. 403 bad-credentials -> 401) and any
-			// provider-specific retry hint while preserving websocket headers.
+
 			statusError.code = xaiError.code
 			if xaiError.retryAfter != nil {
 				statusError.retryAfter = xaiError.retryAfter
@@ -1193,7 +1185,7 @@ func (e *XAIWebsocketsExecutor) dialXAIWebsocket(ctx context.Context, auth *clip
 		enabled := e.cfg == nil || e.cfg.Codex.WebsocketCompressionEnabled()
 		conn.EnableWriteCompression(enabled)
 		if enabled {
-			// Match Codex's stable flate level and shared compression escape hatch.
+
 			if errSetCompressionLevel := conn.SetCompressionLevel(flate.DefaultCompression); errSetCompressionLevel != nil {
 				log.Errorf("set xAI websocket compression level: %v", errSetCompressionLevel)
 			}
@@ -1319,8 +1311,7 @@ func configureXAIWebsocketConn(sess *codexWebsocketSession, conn *websocket.Conn
 		log.Debugf("xai websockets: upstream ping received session=%s session_object=%s ping_bytes=%d", sessionID, sessionKind, len(appData))
 		log.Debugf("xai websockets: upstream pong write started session=%s session_object=%s", sessionID, sessionKind)
 		start := time.Now()
-		// Gorilla websocket allows concurrent WriteControl with WriteMessage.
-		// Avoid writeMu here so keepalive pongs are not starved by long payload writes.
+
 		errPong := conn.WriteControl(websocket.PongMessage, []byte(appData), time.Time{})
 		if errPong != nil {
 			log.Warnf("xai websockets: upstream pong write failed session=%s session_object=%s duration=%v err=%v", sessionID, sessionKind, time.Since(start), errPong)
@@ -1788,8 +1779,6 @@ func logXAIWebsocketDisconnectedWithLastEvent(sess *codexWebsocketSession, sessi
 	log.Infof("xai websockets: upstream disconnected session=%s auth=%s url=%s session_object=%s reason=%s is_terminal=false", sessionStr, strings.TrimSpace(authID), strings.TrimSpace(wsURL), sessionKind, strings.TrimSpace(reason))
 }
 
-// CloseXAIWebsocketSessionsForAuthID closes all active xAI upstream websocket sessions
-// associated with the supplied auth ID.
 func CloseXAIWebsocketSessionsForAuthID(authID string, reason string) {
 	closeXAIWebsocketSessionsInStoreForAuthID(globalXAIWebsocketSessionStore, globalXAIWebsocketIDStates, authID, reason)
 }
@@ -1851,9 +1840,6 @@ func closeXAIWebsocketSessionsInStoreForAuthID(store *codexWebsocketSessionStore
 	}
 }
 
-// XAIAutoExecutor routes xAI stream requests to the websocket transport only
-// when the downstream transport is websocket and the selected auth enables
-// websockets. Non-stream requests keep using the HTTP implementation.
 type XAIAutoExecutor struct {
 	httpExec *XAIExecutor
 	wsExec   *XAIWebsocketsExecutor
@@ -1868,7 +1854,6 @@ func NewXAIAutoExecutor(cfg *config.Config) *XAIAutoExecutor {
 
 func (e *XAIAutoExecutor) Identifier() string { return "xai" }
 
-// UsesConfig reports whether the executor was created for cfg.
 func (e *XAIAutoExecutor) UsesConfig(cfg *config.Config) bool {
 	return e != nil && e.httpExec != nil && e.httpExec.cfg == cfg
 }
@@ -1981,7 +1966,6 @@ func xaiWebsocketsEnabled(auth *cliproxyauth.Auth) bool {
 	return false
 }
 
-// SupportsApplyPatch requires both selectable transports to support the tool.
 func (e *XAIAutoExecutor) SupportsApplyPatch() bool {
 	return e != nil && e.httpExec != nil && e.wsExec != nil && e.httpExec.SupportsApplyPatch() && e.wsExec.SupportsApplyPatch()
 }

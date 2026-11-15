@@ -169,7 +169,6 @@ func TestConfigureLogOutput_V8MigrationMirror(t *testing.T) {
 		t.Fatalf("expected console mirror to capture migration warning under file logging, got: %s", consoleBuf.String())
 	}
 
-	// Switch back to stdout logging
 	cfg.LoggingToFile = false
 	consoleBuf.Reset()
 	if err := ConfigureLogOutput(cfg); err != nil {
@@ -180,7 +179,6 @@ func TestConfigureLogOutput_V8MigrationMirror(t *testing.T) {
 		t.Fatalf("NormalizeConfigLayout() error = %v", err)
 	}
 
-	// Under stdout logging, console mirror is false (it goes to stdout directly)
 	if consoleBuf.Len() != 0 {
 		t.Fatalf("expected console mirror to be disabled under stdout logging, got: %s", consoleBuf.String())
 	}
@@ -251,7 +249,6 @@ func TestConfigureLogOutput_ConcurrentMigration(t *testing.T) {
 func TestLogFormatterFormatsShortRequestID(t *testing.T) {
 	formatter := &LogFormatter{}
 
-	// Test case 1: UUID v7 full string truncated to trailing 8 chars in console log
 	entryUUID := log.NewEntry(log.New())
 	entryUUID.Time = time.Date(2026, 9, 28, 12, 0, 0, 0, time.Local)
 	entryUUID.Level = log.InfoLevel
@@ -270,7 +267,6 @@ func TestLogFormatterFormatsShortRequestID(t *testing.T) {
 		t.Fatalf("formatted line %q should not contain full UUID", lineUUID)
 	}
 
-	// Test case 2: legacy or short 8-char request ID preserved
 	entryShort := log.NewEntry(log.New())
 	entryShort.Time = time.Date(2026, 9, 28, 12, 0, 0, 0, time.Local)
 	entryShort.Level = log.InfoLevel
@@ -286,7 +282,6 @@ func TestLogFormatterFormatsShortRequestID(t *testing.T) {
 		t.Fatalf("formatted line %q does not contain expected request ID [00000042]", lineShort)
 	}
 
-	// Test case 3: omitted request ID formats placeholder
 	entryEmpty := log.NewEntry(log.New())
 	entryEmpty.Time = time.Date(2026, 9, 28, 12, 0, 0, 0, time.Local)
 	entryEmpty.Level = log.InfoLevel

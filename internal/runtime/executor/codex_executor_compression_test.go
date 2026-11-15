@@ -193,7 +193,7 @@ func TestCodexExecutor_CompressedUpstreamResponseDecoded(t *testing.T) {
 				defer server.Close()
 				executor := NewCodexExecutor(&config.Config{})
 				auth := codexTestAuth(server.URL)
-				// Force negotiation even before cacheHelper supports it, keeping RED deterministic.
+
 				auth.Attributes["header:Accept-Encoding"] = "gzip, deflate, br, zstd"
 				req, opts := codexTestRequest()
 				var headers http.Header
@@ -284,7 +284,7 @@ func TestCodexExecutor_CompressionRejectedFallback(t *testing.T) {
 				if errURL != nil {
 					t.Fatal(errURL)
 				}
-				// Keep the real ChatGPT URL through the gate, redirecting only at transport time.
+
 				transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 					mapped := req.Clone(req.Context())
 					mapped.URL.Scheme, mapped.URL.Host = localURL.Scheme, localURL.Host

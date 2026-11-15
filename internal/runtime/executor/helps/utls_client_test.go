@@ -291,8 +291,6 @@ func TestClaudeCodeTLSClientHelloSpecMatches220Capture(t *testing.T) {
 func TestClaudeCodeTLSResumptionIsWireSafe(t *testing.T) {
 	t.Parallel()
 
-	// RFC 8446 4.2.11 requires pre_shared_key to be the final extension, after
-	// the padding extension.
 	spec := claudeCodeTLSClientHelloSpec()
 	last := spec.Extensions[len(spec.Extensions)-1]
 	if _, ok := last.(*tls.UtlsPreSharedKeyExtension); !ok {
@@ -302,8 +300,6 @@ func TestClaudeCodeTLSResumptionIsWireSafe(t *testing.T) {
 		t.Fatalf("extension before pre_shared_key = %T, want *tls.UtlsPaddingExtension", spec.Extensions[len(spec.Extensions)-2])
 	}
 
-	// Without OmitEmptyPsk uTLS refuses to marshal an empty PSK, and without
-	// PreferSkipResumptionOnNilExtension a HelloCustom resumption attempt panics.
 	cfg := newClaudeCodeTLSConfig("api.anthropic.com", tls.NewLRUClientSessionCache(claudeCodeSessionCacheCapacity))
 	if cfg.ClientSessionCache == nil {
 		t.Fatal("ClientSessionCache = nil, want a session cache so resumption is possible")
@@ -492,8 +488,7 @@ func captureClaudeCodeClientHello(t *testing.T) []byte {
 			t.Errorf("close server pipe: %v", errClose)
 		}
 	})
-	// Use the production config so the captured bytes reflect the real dial path,
-	// including the resumption settings.
+
 	cfg := newClaudeCodeTLSConfig("api.anthropic.com", tls.NewLRUClientSessionCache(claudeCodeSessionCacheCapacity))
 	tlsConn := tls.UClient(clientConn, cfg, tls.HelloCustom)
 	if errPreset := tlsConn.ApplyPreset(claudeCodeTLSClientHelloSpec()); errPreset != nil {
@@ -635,7 +630,7 @@ func summarizeClaudeCodeClientHelloSpec(t *testing.T, spec *tls.ClientHelloSpec)
 		pointStrings = append(pointStrings, strconv.Itoa(int(point)))
 	}
 	summary.JA3 = fmt.Sprintf("771,%s,%s,%s,%s", strings.Join(cipherStrings, "-"), strings.Join(extensionStrings, "-"), strings.Join(groupStrings, "-"), strings.Join(pointStrings, "-"))
-	digest := md5.Sum([]byte(summary.JA3)) // #nosec G401 -- JA3 requires MD5.
+	digest := md5.Sum([]byte(summary.JA3))
 	summary.JA3MD5 = hex.EncodeToString(digest[:])
 	return summary
 }

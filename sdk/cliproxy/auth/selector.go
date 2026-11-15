@@ -26,33 +26,22 @@ import (
 	cliproxysession "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/session"
 )
 
-// RoundRobinSelector provides a simple provider scoped round-robin selection strategy.
-//
-// Rotation continues from the identity of the previous pick rather than from a numeric
-// index. Candidate slices shrink whenever a retry excludes already tried credentials or a
-// credential enters cooldown, and indexing a monotonic counter into a shrinking slice
-// silently re-seats the rotation, which starves some credentials and hammers others.
 type RoundRobinSelector struct {
 	mu         sync.Mutex
 	lastPicked map[string]string
 	maxKeys    int
 }
 
-// WeightedRoundRobinSelector provides smooth weighted round-robin selection.
 type WeightedRoundRobinSelector struct {
 	mu         sync.Mutex
 	states     map[[32]byte]*weightedPoolState
 	stateCount int
 	maxKeys    int
-	// largeStates holds one shared dynamic accumulator per (route, priority, transport)
-	// bucket once a pool exceeds maxExactWeightedPoolMembers, preserving rotation credits
-	// across transient retry exclusions and cooldowns.
+
 	largeStates map[string]*weightedPoolState
 	largeOrder  []string
 }
 
-// UnwrapWeightedRoundRobinSelector extracts the underlying *WeightedRoundRobinSelector
-// from a bare selector or a SessionAffinitySelector wrapper.
 func UnwrapWeightedRoundRobinSelector(selector Selector) *WeightedRoundRobinSelector {
 	if weighted, ok := selector.(*WeightedRoundRobinSelector); ok {
 		return weighted
@@ -89,9 +78,6 @@ func weightedSelectorStateModel(ctx context.Context, availabilityModel string) s
 	return availabilityModel
 }
 
-// FillFirstSelector selects the first available credential (deterministic ordering).
-// This "burns" one account before moving to the next, which can help stagger
-// rolling-window subscription caps (e.g. chat message limits).
 type FillFirstSelector struct{}
 
 type blockReason int
@@ -112,7 +98,6 @@ type modelCooldownError struct {
 	claudeSignals  map[string]string
 }
 
-// NewModelCooldownError creates an error representing model-level cooldown.
 func NewModelCooldownError(model, provider string, resetIn time.Duration) error {
 	return newModelCooldownErrorWithCause(model, provider, resetIn, nil)
 }
@@ -220,7 +205,6 @@ var (
 	sanitizerWindowsUNCPathPattern         = regexp.MustCompile(`\\\\[^\r\n:,;'"<>]+\\[^\r\n:,;'"<>]+`)
 )
 
-// ExtractUpstreamErrorSummary extracts and sanitizes a concise error summary from upstream error strings.
 func ExtractUpstreamErrorSummary(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -283,7 +267,6 @@ func sanitizeUpstreamErrorSummaryNoTruncate(s string) string {
 	s = sanitizerWindowsPathPattern.ReplaceAllString(s, "[REDACTED_PATH]")
 	s = sanitizerWindowsUNCPathPattern.ReplaceAllString(s, "[REDACTED_PATH]")
 
-	// Handle connector-separated paths like "copy /tmp/a TO /tmp/b: denied"
 	if loc := sanitizerPathConnectorPattern.FindStringSubmatchIndex(s); loc != nil {
 		firstPart := s[:loc[0]]
 		connRaw := s[loc[0] : loc[1]-1]
@@ -291,7 +274,6 @@ func sanitizeUpstreamErrorSummaryNoTruncate(s string) string {
 		return sanitizeUpstreamErrorSummaryNoTruncate(firstPart) + connRaw + sanitizeUpstreamErrorSummaryNoTruncate(secondPart)
 	}
 
-	// Handle path before colon error delimiter, finding the first known error or first colon
 	var colonIdx = -1
 	knownErrorPrefixes := []string{
 		"permission denied", "no such file", "file not found", "access denied",
@@ -368,7 +350,6 @@ func sanitizeUpstreamErrorSummaryNoTruncate(s string) string {
 	return s
 }
 
-// SanitizeUpstreamErrorSummary removes sensitive credentials, tokens, and paths, and bounds length.
 func SanitizeUpstreamErrorSummary(s string) string {
 	s = sanitizeUpstreamErrorSummaryNoTruncate(s)
 	runes := []rune(s)
@@ -396,7 +377,6 @@ func (e *modelCooldownError) resetSeconds() int64 {
 	return seconds
 }
 
-// SafeResponseHeaders exposes only the locally trusted cooldown headers.
 func (e *modelCooldownError) SafeResponseHeaders() http.Header {
 	headers := make(http.Header)
 	headers.Set("Content-Type", "application/json")
@@ -956,10 +936,7 @@ func getSelectorAvailableAuthsAcrossPriorities(ctx context.Context, auths []*Aut
 func getSelectorAvailableAuthsWithPriorityMode(ctx context.Context, auths []*Auth, provider, model string, now time.Time, allPriorities bool) ([]*Auth, error) {
 	if ctx != nil {
 		if validated, _ := ctx.Value(prevalidatedAuthCandidatesKey{}).(bool); validated && len(auths) > 0 {
-			// The manager already resolved each credential's upstream model and supplied
-			// ID-sorted candidates. Rechecking the alias or an empty model would apply
-			// unrelated cooldowns. Affinity bindings may span all priority tiers, but
-			// fallback selection must still use the highest available tier.
+
 			if !allPriorities {
 				return highestPriorityAuths(auths), nil
 			}
@@ -1004,11 +981,6 @@ func getAvailableAuthsWithPriorityModeForRequest(ctx context.Context, auths []*A
 	return availableAuthsFromPriorityBuckets(availableByPriority, allPriorities), nil
 }
 
-// availableAuthsFromPriorityBuckets flattens availability buckets into a stable, ID-sorted slice.
-// When allPriorities is false only the highest available priority tier is returned.
-// When allPriorities is true every tier is merged, so the result carries no priority ordering:
-// use it for membership checks or feed it to highestPriorityAuths, never as a priority-ordered
-// selection order.
 func availableAuthsFromPriorityBuckets(availableByPriority map[int][]*Auth, allPriorities bool) []*Auth {
 	var candidates []*Auth
 	if allPriorities {
@@ -1039,9 +1011,6 @@ func availableAuthsFromPriorityBuckets(availableByPriority map[int][]*Auth, allP
 	return candidates
 }
 
-// highestPriorityAuths narrows an availability slice to its highest priority tier while
-// preserving the input order. The input slice is returned unchanged when every candidate
-// already shares the highest priority, so the common single-tier case allocates nothing.
 func highestPriorityAuths(auths []*Auth) []*Auth {
 	if len(auths) <= 1 {
 		return auths
@@ -1070,7 +1039,6 @@ func highestPriorityAuths(auths []*Auth) []*Auth {
 	return highest
 }
 
-// Pick selects the next available auth for the provider in a round-robin manner.
 func (s *RoundRobinSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	_ = opts
 	now := time.Now()
@@ -1096,10 +1064,6 @@ func (s *RoundRobinSelector) Pick(ctx context.Context, provider, model string, o
 	return picked, nil
 }
 
-// successorIndex returns the index of the first candidate ordered after lastID, wrapping to
-// the start of the ring. Candidates arrive sorted by ID, so this resumes the rotation at the
-// credential that follows the previous pick even when candidates were filtered out in
-// between. An empty lastID starts at the head.
 func successorIndex(available []*Auth, lastID string) int {
 	if lastID == "" {
 		return 0
@@ -1111,8 +1075,6 @@ func successorIndex(available []*Auth, lastID string) int {
 	return index
 }
 
-// ensureRotationKey ensures the rotation map has capacity for the given key.
-// Must be called with s.mu held.
 func (s *RoundRobinSelector) ensureRotationKey(key string, limit int) {
 	if _, ok := s.lastPicked[key]; !ok && len(s.lastPicked) >= limit {
 		s.lastPicked = make(map[string]string)
@@ -1129,7 +1091,6 @@ func positiveWeightAuths(auths []*Auth) []*Auth {
 	return weightedCandidates
 }
 
-// Pick selects the next available auth using smooth weighted round-robin.
 func (s *WeightedRoundRobinSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	picked, reservation, errPick := s.reserveForRequest(ctx, provider, model, opts, auths, nil)
 	if errPick != nil {
@@ -1139,17 +1100,8 @@ func (s *WeightedRoundRobinSelector) Pick(ctx context.Context, provider, model s
 	return picked, nil
 }
 
-// maxSmoothWeightedStateEntries is the floor bound on a single accumulator map so
-// permanently removed credentials cannot leak entries on small pools. Larger pools scale
-// their prune bound with the historical peak size (2*peak) so transient retry exclusions
-// and cooldowns never wipe accumulated credits.
 const maxSmoothWeightedStateEntries = 1024
 
-// prepare syncs the configured weights into the state without discarding accumulated
-// credits. Credits are reset only when a credential's configured weight actually changes,
-// never when the candidate set shrinks temporarily (retry exclusions, cooldowns, session
-// affinity), because discarding credits there would collapse selection onto the first
-// candidate in slice order.
 func (s *smoothWeightedState) prepare(weights map[string]int64) {
 	if len(weights) > s.peak {
 		s.peak = len(weights)
@@ -1173,8 +1125,6 @@ func (s *smoothWeightedState) pruneLimit() int {
 	return maxSmoothWeightedStateEntries
 }
 
-// pruneStale drops entries for credentials outside the current candidate set, but only
-// once a map exceeds the scaled safety bound, so transient exclusions keep their credits.
 func (s *smoothWeightedState) pruneStale(weights map[string]int64) {
 	limit := s.pruneLimit()
 	if len(s.current) <= limit && len(s.weights) <= limit {
@@ -1192,9 +1142,6 @@ func (s *smoothWeightedState) pruneStale(weights map[string]int64) {
 	}
 }
 
-// weightsConfigChanged reports whether any credential present in both vectors has a
-// different configured weight. Credentials that are merely missing from one side are
-// ignored, since a candidate subset is not a configuration change.
 func weightsConfigChanged(left, right map[string]int64) bool {
 	if len(left) == 0 {
 		return false
@@ -1230,7 +1177,6 @@ func saturatingAddInt64(value, delta int64) int64 {
 	return value + delta
 }
 
-// Pick selects the first available auth for the provider in a deterministic manner.
 func (s *FillFirstSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	_ = opts
 	now := time.Now()
@@ -1242,7 +1188,6 @@ func (s *FillFirstSelector) Pick(ctx context.Context, provider, model string, op
 	return available[0], nil
 }
 
-// IsAuthAvailableForModel reports whether auth is eligible for selection on model at now.
 func IsAuthAvailableForModel(auth *Auth, model string, now time.Time) bool {
 	blocked, _, _ := isAuthBlockedForModel(auth, model, now)
 	return !blocked
@@ -1346,10 +1291,7 @@ func isAuthBlockedForModelForRequest(ctx context.Context, auth *Auth, model stri
 		return availabilityBlock(unavailable, auth.Quota.Exceeded, auth.NextRetryAfter, auth.Quota.NextRecoverAt, now)
 	}
 	quotaExceeded := auth.Quota.Exceeded
-	// When model is empty and the credential has individual model states, auth.Quota.Exceeded
-	// is an aggregate of single-model quota cooldowns (reason "quota"). As long as the credential
-	// itself is not unavailable (not all models failed) and not under a credential-wide quota,
-	// do not treat individual model cooldowns as blocking the entire credential.
+
 	if len(auth.ModelStates) > 0 && auth.Quota.Reason != "credential_quota" && !unavailable {
 		quotaExceeded = false
 	}
@@ -1380,9 +1322,6 @@ func availabilityBlock(unavailable, quotaExceeded bool, nextRetryAfter, nextReco
 	return true, blockReasonOther, time.Time{}
 }
 
-// SessionAffinitySelector wraps another selector with session-sticky behavior.
-// It extracts session ID from multiple sources and maintains session-to-auth
-// mappings with automatic failover when the bound auth becomes unavailable.
 type SessionAffinitySelector struct {
 	fallback          Selector
 	cache             *SessionCache
@@ -1393,13 +1332,10 @@ type SessionAffinitySelector struct {
 }
 
 const (
-	// SessionAffinityRebindOnAny rebinds the session on any credential-attributed failure (default).
 	SessionAffinityRebindOnAny = "any"
-	// SessionAffinityRebindOnQuota preserves the existing session binding across transient failures
-	// and only rebinds on quota, auth, model-support, or permanent unavailability.
+
 	SessionAffinityRebindOnQuota = "quota"
-	// SessionAffinityRebindOnNever preserves the existing session binding across all failures
-	// and refuses to fail over a bound session to another credential.
+
 	SessionAffinityRebindOnNever = "never"
 )
 
@@ -1545,7 +1481,6 @@ func (s *SessionAffinitySelector) unavailableBoundAuthError(ctx context.Context,
 	}
 }
 
-// SessionAffinityConfig configures the session affinity selector.
 type SessionAffinityConfig struct {
 	Fallback         Selector
 	TTL              time.Duration
@@ -1553,7 +1488,6 @@ type SessionAffinityConfig struct {
 	RebindOn         string
 }
 
-// NewSessionAffinitySelector creates a new session-aware selector.
 func NewSessionAffinitySelector(fallback Selector) *SessionAffinitySelector {
 	return NewSessionAffinitySelectorWithConfig(SessionAffinityConfig{
 		Fallback: fallback,
@@ -1561,7 +1495,6 @@ func NewSessionAffinitySelector(fallback Selector) *SessionAffinitySelector {
 	})
 }
 
-// NewSessionAffinitySelectorWithConfig creates a selector with custom configuration.
 func NewSessionAffinitySelectorWithConfig(cfg SessionAffinityConfig) *SessionAffinitySelector {
 	if cfg.Fallback == nil {
 		cfg.Fallback = &RoundRobinSelector{}
@@ -1584,25 +1517,10 @@ func NewSessionAffinitySelectorWithConfig(cfg SessionAffinityConfig) *SessionAff
 	}
 }
 
-// Trees returns a backward-compatible in-memory session tree store.
-// Deprecated: Session tree management has moved to Home.
 func (s *SessionAffinitySelector) Trees() *cliproxysession.InMemorySessionTreeStore {
 	return cliproxysession.NewInMemorySessionTreeStore(0, time.Hour)
 }
 
-// Pick selects an auth with session affinity when possible.
-// Explicit Claude Code, Codex, OpenCode, pi, and request-body session signals
-// are absolute authority. Requests without those signals use the Merkle LCP
-// matcher before retaining the legacy derived/hash fallback behavior.
-//
-// An established binding outranks credential priority: a bound credential that is still
-// available is reused even when a higher-priority credential recovers. Credential priority
-// applies to cold bindings, requests without a session, and genuine bound-credential
-// failover, so the fallback selector only ever receives the highest available priority tier.
-//
-// Note: The cache key includes provider, session ID, and model to handle cases where
-// a session uses multiple models (e.g., gemini-2.5-pro and gemini-3-flash-preview)
-// that may be supported by different auth credentials, and to avoid cross-provider conflicts.
 func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (selected *Auth, errPick error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -1611,7 +1529,7 @@ func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model stri
 		return nil, errContext
 	}
 	var reservation *weightedReservation
-	// Local bindings complete inside Pick; failed selections release speculative credit.
+
 	defer func() { reservation.finish(selected != nil && errPick == nil) }()
 	entry := selectorLogEntry(ctx)
 	if opts.Metadata == nil {
@@ -1620,8 +1538,6 @@ func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model stri
 	opts.Metadata[cliproxyexecutor.SessionAffinityProviderMetadataKey] = provider
 	opts.Metadata[cliproxyexecutor.SessionAffinityModelMetadataKey] = model
 
-	// Explicit harness identities are absolute authority. The LCP matcher is only
-	// consulted when no header, body, or execution-session identity is present.
 	explicitID, explicitFallbackID := extractExplicitSessionIDs(opts.Headers, opts.OriginalRequest, opts.Metadata)
 	if explicitID == "" {
 		if auth, handled, errLCP := s.pickLCP(ctx, provider, model, opts, auths, entry, &reservation); handled || errLCP != nil {
@@ -1669,8 +1585,6 @@ func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model stri
 		return s.pickWithAffinityReservation(ctx, provider, model, opts, fallbackAuths, nil, &reservation)
 	}
 
-	// A single availability pass serves both lookups: the bound credential is validated against
-	// every priority tier, while the fallback selector keeps seeing only the highest tier.
 	available, err := getSelectorAvailableAuthsAcrossPriorities(ctx, availabilityCandidates, provider, model, now)
 	if err != nil && !s.rebindOnNever {
 		return nil, err
@@ -1728,7 +1642,7 @@ func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model stri
 		if err != nil {
 			return nil, err
 		}
-		// Cached auth not available, reselect via fallback selector for even distribution
+
 		auth, err := s.pickWithAffinityReservation(ctx, provider, model, opts, fallbackAuths, nil, &reservation)
 		if err != nil {
 			return nil, err
@@ -2086,7 +2000,6 @@ func selectorLogEntry(ctx context.Context) *log.Entry {
 	return log.NewEntry(log.StandardLogger())
 }
 
-// truncateSessionID shortens session ID for logging (first 8 chars + "...")
 func truncateSessionID(id string) string {
 	if len(id) <= 20 {
 		return id
@@ -2094,7 +2007,6 @@ func truncateSessionID(id string) string {
 	return id[:8] + "..."
 }
 
-// Stop releases resources held by the selector.
 func (s *SessionAffinitySelector) Stop() {
 	if s == nil {
 		return
@@ -2107,8 +2019,6 @@ func (s *SessionAffinitySelector) Stop() {
 	}
 }
 
-// InvalidateAuth removes all session bindings for a specific auth.
-// Called when an auth becomes rate-limited or unavailable.
 func (s *SessionAffinitySelector) InvalidateAuth(authID string) {
 	if s == nil {
 		return
@@ -2121,15 +2031,10 @@ func (s *SessionAffinitySelector) InvalidateAuth(authID string) {
 	}
 }
 
-// ForgetAuth forwards permanent credential removal to the fallback selector so
-// weighted round-robin accounting can prune deregistered credentials without
-// disturbing credits of transiently excluded credentials.
 func (s *SessionAffinitySelector) ForgetAuth(authID string) {
 	s.ForgetAuthUpTo(authID, ^uint64(0), ^uint64(0))
 }
 
-// ForgetAuthUpTo forwards epoch-gated permanent credential removal to the fallback selector
-// so delayed removals never evict a newly re-registered credential with the same ID.
 func (s *SessionAffinitySelector) ForgetAuthUpTo(authID string, maxEpoch, maxGen uint64) {
 	if s == nil || authID == "" {
 		return
@@ -2145,9 +2050,6 @@ func (s *SessionAffinitySelector) ForgetAuthUpTo(authID string, maxEpoch, maxGen
 	}
 }
 
-// LookupAffinity observes the current session affinity binding without side effects.
-// It never selects a credential, creates a binding, rebinds, or refreshes TTL.
-// Optional authFilters allow callers (such as Manager) to exclude credentials that do not match the requested provider.
 func (s *SessionAffinitySelector) LookupAffinity(provider, model, sessionID string, authFilters ...func(authID string) bool) (string, string) {
 	if s == nil || s.cache == nil {
 		return "", "unsupported"
@@ -2245,7 +2147,6 @@ func (s *SessionAffinitySelector) LookupAffinity(provider, model, sessionID stri
 	return "", "unbound"
 }
 
-// OnResult handles session affinity binding or release based on execution outcome.
 func (s *SessionAffinitySelector) OnResult(res Result) {
 	if s == nil || res.AuthID == "" {
 		return
@@ -2268,19 +2169,14 @@ func (s *SessionAffinitySelector) OnResult(res Result) {
 	}
 
 	if res.Error != nil && shouldSkipCredentialCooldown(res.Error) {
-		// Request-scoped or caller-attributed failures are not evidence that the
-		// selected credential is unhealthy, so preserve both explicit and LCP bindings.
+
 		return
 	}
 	if !res.Success && (s.rebindOnNever || (s.rebindOnQuotaOnly && !shouldRebindSessionAffinityOnError(res.Error))) {
-		// Under session-affinity-rebind-on: never (or quota on transient failures),
-		// keep the session bound to its original credential.
+
 		return
 	}
 
-	// LCP bindings are independent from explicit harness bindings. A successful
-	// extension is recorded as a new sequence while credential-attributed failures
-	// only remove the exact sequence that was attempted.
 	if explicitID == "" && s.matcher != nil {
 		if namespace := lcpAffinityNamespace(ns, nsModel, res.Options.Metadata); namespace != "" {
 			fingerprints, minPrefixLength := lcpFingerprintsFromMetadata(res.Options.Metadata)
@@ -2423,7 +2319,6 @@ func (s *SessionAffinitySelector) boundAuthForRequest(providers []string, model 
 	return "", false
 }
 
-// isGuardianRequest deliberately matches the header, not the configurable review model.
 func isGuardianRequest(headers http.Header) bool {
 	for key, values := range headers {
 		if strings.EqualFold(key, "X-Openai-Subagent") && len(values) > 0 {
@@ -2433,9 +2328,6 @@ func isGuardianRequest(headers http.Header) bool {
 	return false
 }
 
-// normalizedSessionCandidate validates an explicit client-provided session signal.
-// It keeps opaque printable IDs intact while rejecting values that are unsafe or
-// implausibly large for routing keys and logs.
 func normalizedSessionCandidate(raw string) string {
 	return cliproxysession.NormalizeExplicitID(raw)
 }
@@ -2450,7 +2342,6 @@ func isSubagentSession(primaryID, fallbackID string) bool {
 	return isHierarchyParent(primaryID, fallbackID)
 }
 
-// CanonicalSessionID resolves the single authoritative session identity from request options and metadata.
 func CanonicalSessionID(headers http.Header, payload []byte, metadata map[string]any) string {
 	if explicitID, _ := extractExplicitSessionIDs(headers, payload, metadata); explicitID != "" {
 		return cliproxysession.BoundSessionIdentity(explicitID)
@@ -2466,21 +2357,6 @@ func CanonicalSessionID(headers http.Header, payload []byte, metadata map[string
 	return cliproxysession.BoundSessionIdentity(ExtractSessionID(headers, payload, metadata))
 }
 
-// ExtractSessionID extracts a session identifier from explicit client signals,
-// then falls back to execution metadata, derived identity, and message history.
-// Priority order:
-//  1. X-Claude-Code-Session-Id
-//  2. Claude Code metadata.user_id session
-//  3. Session-Id / Session_id (Codex and compatible clients)
-//  4. X-Session-ID
-//  5. X-Session-Affinity (OpenCode)
-//  6. X-Client-Request-Id (pi Responses)
-//  7. session_id / sessionId
-//  8. prompt_cache_key, with conversation / conversation.id as an alias
-//  9. metadata.user_id and conversation_id legacy body fields
-//  10. explicit execution session metadata
-//  11. stable context-derived session identity
-//  12. stable hash from initial message content
 func ExtractSessionID(headers http.Header, payload []byte, metadata map[string]any) string {
 	primary, _ := extractSessionIDs(headers, payload, metadata)
 	return primary
@@ -2508,8 +2384,6 @@ func extractConversationAlias(payload []byte) string {
 	return ""
 }
 
-// extractExplicitSessionIDs returns only client- or execution-provided identities.
-// LCP fallback must run after this function so explicit harness sessions remain authoritative.
 func extractExplicitSessionIDs(headers http.Header, payload []byte, metadata map[string]any) (string, string) {
 	info, ok := cliproxysession.ExtractSessionInfo(headers, payload, metadata)
 	if !ok || info.ClientType == "lcp" {
@@ -2530,9 +2404,6 @@ func extractExplicitSessionIDs(headers http.Header, payload []byte, metadata map
 	return info.SessionID, fallback
 }
 
-// extractSessionIDs returns (primaryID, fallbackID) for session affinity.
-// fallbackID preserves an earlier binding when a stronger body identifier appears
-// later, and lets callers bind both identifiers when both are present.
 func extractSessionIDs(headers http.Header, payload []byte, metadata map[string]any) (string, string) {
 	if primaryID, fallbackID := extractExplicitSessionIDs(headers, payload, metadata); primaryID != "" {
 		return primaryID, fallbackID
@@ -2549,7 +2420,6 @@ func extractSessionIDs(headers http.Header, payload []byte, metadata map[string]
 func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 	var systemPrompt, firstUserMsg, firstAssistantMsg string
 
-	// OpenAI/Claude messages format
 	messages := ojson.GetBytesNoCopy(payload, "messages")
 	if messages.Exists() && messages.IsArray() {
 		messages.ForEach(func(_, msg ojson.Result) bool {
@@ -2581,7 +2451,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 		})
 	}
 
-	// Claude API: top-level "system" field (array or string)
 	if systemPrompt == "" {
 		topSystem := ojson.GetBytesNoCopy(payload, "system")
 		if topSystem.Exists() {
@@ -2599,7 +2468,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 		}
 	}
 
-	// Gemini format
 	if systemPrompt == "" && firstUserMsg == "" {
 		sysInstr := ojson.GetBytesNoCopy(payload, "systemInstruction.parts")
 		if sysInstr.Exists() && sysInstr.IsArray() {
@@ -2641,7 +2509,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 		}
 	}
 
-	// OpenAI Responses API format (v1/responses)
 	if systemPrompt == "" && firstUserMsg == "" {
 		if instr := ojson.GetBytesNoCopy(payload, "instructions").String(); instr != "" {
 			systemPrompt = truncateString(instr, 100)
@@ -2654,8 +2521,7 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 				if itemType == "reasoning" {
 					return true
 				}
-				// Skip non-message typed items (function_call, function_call_output, etc.)
-				// but allow items with no type that have a role (inline message format).
+
 				if itemType != "" && itemType != "message" {
 					return true
 				}
@@ -2665,7 +2531,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 					return true
 				}
 
-				// Handle both string content and array content (multimodal).
 				content := item.Get("content")
 				var text string
 				if content.Type == ojson.String {
@@ -2734,27 +2599,22 @@ func truncateString(s string, maxLen int) string {
 	return s
 }
 
-// extractMessageContent extracts text content from a message content field.
-// Handles both string content and array content (multimodal messages).
-// For array content, extracts text from all text-type elements.
 func extractMessageContent(content ojson.Result) string {
-	// String content: "Hello world"
+
 	if content.Type == ojson.String {
 		return content.String()
 	}
 
-	// Array content: [{"type":"text","text":"Hello"},{"type":"image",...}]
 	if content.IsArray() {
 		var texts []string
 		content.ForEach(func(_, part ojson.Result) bool {
-			// Handle Claude format: {"type":"text","text":"content"}
+
 			if part.Get("type").String() == "text" {
 				if text := part.Get("text").String(); text != "" {
 					texts = append(texts, text)
 				}
 			}
-			// Handle OpenAI format: {"type":"text","text":"content"}
-			// Same structure as Claude, already handled above
+
 			return true
 		})
 		if len(texts) > 0 {
@@ -2785,8 +2645,6 @@ func extractResponsesAPIContent(content ojson.Result) string {
 	return ""
 }
 
-// extractSessionID is kept for backward compatibility.
-// Deprecated: Use ExtractSessionID instead.
 func extractSessionID(payload []byte) string {
 	return ExtractSessionID(nil, payload, nil)
 }

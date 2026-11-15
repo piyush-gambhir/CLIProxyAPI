@@ -7,9 +7,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ForAPIKey returns a request-local configuration view without v8 OAuth-only
-// overrides. Legacy global settings and explicit API-key settings keep their
-// existing semantics. The shared configuration is never modified.
 func (cfg *Config) ForAPIKey() *Config {
 	if cfg == nil || len(cfg.OAuthOnlyFields) == 0 {
 		return cfg
@@ -26,9 +23,6 @@ func (cfg *Config) ForAPIKey() *Config {
 	return &filtered
 }
 
-// MarshalYAML preserves OAuth scope across watcher/server YAML snapshots. A
-// legacy-only Config still produces its original layout. Persistence explicitly
-// marshals legacyConfig before reconciling the on-disk layout.
 func (cfg Config) MarshalYAML() (any, error) {
 	var root yaml.Node
 	if err := root.Encode(legacyConfig(cfg)); err != nil {

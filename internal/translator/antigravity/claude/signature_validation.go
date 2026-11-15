@@ -1,4 +1,3 @@
-// Claude thinking signature validation wrappers for Antigravity bypass mode.
 package claude
 
 import (
@@ -14,8 +13,6 @@ import (
 const (
 	maxBypassSignatureLen = signature.MaxClaudeThinkingSignatureLen
 
-	// Gemini carrier envelopes exist only on the Claude-facing wire. The request
-	// translator validates and unwraps them before writing native Gemini parts.
 	geminiClaudeCarrierPrefix     = "cpa-gemini-carrier-v1:"
 	geminiClaudeCarrierNext       = "next"
 	geminiClaudeCarrierPrevious   = "previous"
@@ -223,16 +220,10 @@ func geminiClaudePrecomputeCarrierContext(blocks []ojson.Result) geminiClaudeCar
 	return ctx
 }
 
-// StripEmptySignatureThinkingBlocks removes thinking blocks whose signatures
-// are empty or not valid Claude thinking signatures. These usually come from
-// proxy-generated responses where no real Claude signature exists.
 func StripEmptySignatureThinkingBlocks(payload []byte) []byte {
 	return signature.StripInvalidClaudeThinkingBlocks(payload, signature.ClaudeSignatureValidationOptions{PrefixOnly: true})
 }
 
-// StripInvalidGeminiSignatureThinkingBlocks preserves only thinking carriers
-// whose signatures can be replayed to Gemini. Claude Code uses these carriers
-// to return provider-native signatures from prior translated responses.
 func StripInvalidGeminiSignatureThinkingBlocks(payload []byte) []byte {
 	messages := ojson.GetBytesNoCopy(payload, "messages")
 	if !messages.IsArray() {

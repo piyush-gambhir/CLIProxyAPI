@@ -46,12 +46,8 @@ func logV8MigrationWarning(section, msg string) {
 	}
 }
 
-// LogFormatter defines a custom log format for logrus.
-// This formatter adds timestamp, level, request ID, and source location to each log entry.
-// Format: [2025-12-23 20:14:04] [debug] [manager.go:524] | a1b2c3d4 | Use API key sk-9...0RHO for model gpt-5.2
 type LogFormatter struct{}
 
-// logFieldOrder defines the display order for common log fields.
 var logFieldOrder = []string{
 	"provider", "model",
 	"plugin_id", "plugin_name", "source_id",
@@ -106,7 +102,6 @@ func escapeLogControls(value string) string {
 	return out.String()
 }
 
-// Format renders a single log entry with custom formatting.
 func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	var buffer *bytes.Buffer
 	if entry.Buffer != nil {
@@ -129,7 +124,6 @@ func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	}
 	levelStr := fmt.Sprintf("%-5s", level)
 
-	// Build fields string (only print fields in logFieldOrder)
 	var fieldsStr string
 	if len(entry.Data) > 0 {
 		var fields []string
@@ -156,15 +150,13 @@ func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	} else {
 		formatted = fmt.Sprintf("[%s] [%s] [%s] %s%s\n", timestamp, reqID, levelStr, message, fieldsStr)
 	}
-	// Escape controls after assembling fields so untrusted values cannot forge log lines.
+
 	formatted = escapeLogControls(strings.TrimSuffix(formatted, "\n")) + "\n"
 	buffer.WriteString(formatted)
 
 	return buffer.Bytes(), nil
 }
 
-// SetupBaseLogger configures the shared logrus instance and Gin writers.
-// It is safe to call multiple times; initialization happens only once.
 func SetupBaseLogger() {
 	setupOnce.Do(func() {
 		log.SetOutput(os.Stdout)
@@ -184,7 +176,6 @@ func SetupBaseLogger() {
 	})
 }
 
-// isDirWritable checks if the specified directory exists and is writable by attempting to create and remove a test file.
 func isDirWritable(dir string) bool {
 	info, err := os.Stat(dir)
 	if err != nil || !info.IsDir() {
@@ -204,7 +195,6 @@ func isDirWritable(dir string) bool {
 	return true
 }
 
-// ResolveLogDirectory determines the directory used for application logs.
 func ResolveLogDirectory(cfg *config.Config) string {
 	logDir := "logs"
 	if base := util.WritablePath(); base != "" {
@@ -225,9 +215,6 @@ func ResolveLogDirectory(cfg *config.Config) string {
 	return logDir
 }
 
-// ConfigureLogOutput switches the global log destination between rotating files and stdout.
-// When logsMaxTotalSizeMB > 0, a background cleaner removes the oldest log files in the logs directory
-// until the total size is within the limit.
 func ConfigureLogOutput(cfg *config.Config) error {
 	SetupBaseLogger()
 

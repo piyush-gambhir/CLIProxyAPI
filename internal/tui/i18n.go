@@ -1,23 +1,17 @@
 package tui
 
-// i18n provides a simple internationalization system for the TUI.
-// Supported locales: "zh" (Chinese, default), "en" (English).
-
 var currentLocale = "en"
 
-// SetLocale changes the active locale.
 func SetLocale(locale string) {
 	if _, ok := locales[locale]; ok {
 		currentLocale = locale
 	}
 }
 
-// CurrentLocale returns the active locale code.
 func CurrentLocale() string {
 	return currentLocale
 }
 
-// ToggleLocale switches between zh and en.
 func ToggleLocale() {
 	if currentLocale == "zh" {
 		currentLocale = "en"
@@ -26,14 +20,13 @@ func ToggleLocale() {
 	}
 }
 
-// T returns the translated string for the given key.
 func T(key string) string {
 	if m, ok := locales[currentLocale]; ok {
 		if v, ok := m[key]; ok {
 			return v
 		}
 	}
-	// Fallback to English
+
 	if m, ok := locales["en"]; ok {
 		if v, ok := m[key]; ok {
 			return v
@@ -47,13 +40,9 @@ var locales = map[string]map[string]string{
 	"en": enStrings,
 }
 
-// ──────────────────────────────────────────
-// Tab names
-// ──────────────────────────────────────────
 var zhTabNames = []string{"仪表盘", "配置", "认证文件", "API 密钥", "OAuth", "日志"}
 var enTabNames = []string{"Dashboard", "Config", "Auth Files", "API Keys", "OAuth", "Logs"}
 
-// TabNames returns tab names in the current locale.
 func TabNames() []string {
 	if currentLocale == "zh" {
 		return zhTabNames
@@ -62,7 +51,7 @@ func TabNames() []string {
 }
 
 var zhStrings = map[string]string{
-	// ── Common ──
+
 	"loading":      "加载中...",
 	"refresh":      "刷新",
 	"save":         "保存",
@@ -82,7 +71,6 @@ var zhStrings = map[string]string{
 	"not_set":      "(未设置)",
 	"error_prefix": "⚠ 错误: ",
 
-	// ── Status bar ──
 	"status_left":                 " CLIProxyAPI 管理终端",
 	"status_right":                "Tab/Shift+Tab: 切换 • L: 语言 • q/Ctrl+C: 退出 ",
 	"initializing_tui":            "正在初始化...",
@@ -94,7 +82,6 @@ var zhStrings = map[string]string{
 	"auth_gate_connect_fail":      "连接失败：%s",
 	"auth_gate_password_required": "请输入密码",
 
-	// ── Dashboard ──
 	"dashboard_title":  "📊 仪表盘",
 	"dashboard_help":   " [r] 刷新 • [↑↓] 滚动",
 	"connected":        "● 已连接",
@@ -119,7 +106,6 @@ var zhStrings = map[string]string{
 	"bool_yes":         "是 ✓",
 	"bool_no":          "否",
 
-	// ── Config ──
 	"config_title":      "⚙ 配置",
 	"config_help1":      "  [↑↓/jk] 导航 • [Enter/Space] 编辑 • [r] 刷新",
 	"config_help2":      "  布尔: Enter 切换 • 文本/数字: Enter 输入, Enter 确认, Esc 取消",
@@ -133,7 +119,6 @@ var zhStrings = map[string]string{
 	"section_websocket": "WebSocket",
 	"section_other":     "其他",
 
-	// ── Auth Files ──
 	"auth_title":      "🔑 认证文件",
 	"auth_help1":      " [↑↓/jk] 导航 • [Enter] 展开 • [e] 启用/停用 • [d] 删除 • [r] 刷新 • [R] 刷新凭证",
 	"auth_help2":      " [1] 编辑 prefix • [2] 编辑 proxy_url • [3] 编辑 priority",
@@ -148,7 +133,6 @@ var zhStrings = map[string]string{
 	"status_active":   "活跃",
 	"status_disabled": "已停用",
 
-	// ── API Keys ──
 	"keys_title":         "🔐 API 密钥",
 	"keys_help":          " [↑↓/jk] 导航 • [a] 添加 • [e] 编辑 • [d] 删除 • [c] 复制 • [r] 刷新",
 	"no_keys":            "  无 API Key，按 [a] 添加",
@@ -164,7 +148,6 @@ var zhStrings = map[string]string{
 	"enter_add":          "    Enter: 添加 • Esc: 取消",
 	"enter_save_esc":     "    Enter: 保存 • Esc: 取消",
 
-	// ── OAuth ──
 	"oauth_title":          "🔐 OAuth 登录",
 	"oauth_select":         "  选择提供商并按 [Enter] 开始 OAuth 登录:",
 	"oauth_help":           "  [↑↓/jk] 导航 • [Enter] 登录 • [Esc] 清除状态",
@@ -187,7 +170,6 @@ var zhStrings = map[string]string{
 	"oauth_device_hint":    "  设备码登录：在浏览器打开上述链接并确认授权，无需粘贴回调 URL。",
 	"oauth_device_expires": "  设备码将在 %d 秒后过期。",
 
-	// ── Usage ──
 	"usage_title":         "📈 使用统计",
 	"usage_help":          " [r] 刷新 • [↑↓] 滚动",
 	"usage_no_data":       "  使用数据不可用",
@@ -208,7 +190,6 @@ var zhStrings = map[string]string{
 	"usage_reasoning":     "思考",
 	"usage_time":          "时间",
 
-	// ── Logs ──
 	"logs_title":       "📋 日志",
 	"logs_auto_scroll": "● 自动滚动",
 	"logs_paused":      "○ 已暂停",
@@ -219,7 +200,7 @@ var zhStrings = map[string]string{
 }
 
 var enStrings = map[string]string{
-	// ── Common ──
+
 	"loading":      "Loading...",
 	"refresh":      "Refresh",
 	"save":         "Save",
@@ -239,7 +220,6 @@ var enStrings = map[string]string{
 	"not_set":      "(not set)",
 	"error_prefix": "⚠ Error: ",
 
-	// ── Status bar ──
 	"status_left":                 " CLIProxyAPI Management TUI",
 	"status_right":                "Tab/Shift+Tab: switch • L: lang • q/Ctrl+C: quit ",
 	"initializing_tui":            "Initializing...",
@@ -251,7 +231,6 @@ var enStrings = map[string]string{
 	"auth_gate_connect_fail":      "Connection failed: %s",
 	"auth_gate_password_required": "password is required",
 
-	// ── Dashboard ──
 	"dashboard_title":  "📊 Dashboard",
 	"dashboard_help":   " [r] Refresh • [↑↓] Scroll",
 	"connected":        "● Connected",
@@ -276,7 +255,6 @@ var enStrings = map[string]string{
 	"bool_yes":         "Yes ✓",
 	"bool_no":          "No",
 
-	// ── Config ──
 	"config_title":      "⚙ Configuration",
 	"config_help1":      "  [↑↓/jk] Navigate • [Enter/Space] Edit • [r] Refresh",
 	"config_help2":      "  Bool: Enter to toggle • String/Int: Enter to type, Enter to confirm, Esc to cancel",
@@ -290,7 +268,6 @@ var enStrings = map[string]string{
 	"section_websocket": "WebSocket",
 	"section_other":     "Other",
 
-	// ── Auth Files ──
 	"auth_title":      "🔑 Auth Files",
 	"auth_help1":      " [↑↓/jk] Navigate • [Enter] Expand • [e] Enable/Disable • [d] Delete • [r] Refresh • [R] Refresh Token",
 	"auth_help2":      " [1] Edit prefix • [2] Edit proxy_url • [3] Edit priority",
@@ -305,7 +282,6 @@ var enStrings = map[string]string{
 	"status_active":   "active",
 	"status_disabled": "disabled",
 
-	// ── API Keys ──
 	"keys_title":         "🔐 API Keys",
 	"keys_help":          " [↑↓/jk] Navigate • [a] Add • [e] Edit • [d] Delete • [c] Copy • [r] Refresh",
 	"no_keys":            "  No API Keys. Press [a] to add",
@@ -321,7 +297,6 @@ var enStrings = map[string]string{
 	"enter_add":          "    Enter: Add • Esc: Cancel",
 	"enter_save_esc":     "    Enter: Save • Esc: Cancel",
 
-	// ── OAuth ──
 	"oauth_title":          "🔐 OAuth Login",
 	"oauth_select":         "  Select a provider and press [Enter] to start OAuth login:",
 	"oauth_help":           "  [↑↓/jk] Navigate • [Enter] Login • [Esc] Clear status",
@@ -344,7 +319,6 @@ var enStrings = map[string]string{
 	"oauth_device_hint":    "  Device-code login: open the URL above and approve access. No callback URL paste is required.",
 	"oauth_device_expires": "  Device code expires in %d seconds.",
 
-	// ── Usage ──
 	"usage_title":         "📈 Usage Statistics",
 	"usage_help":          " [r] Refresh • [↑↓] Scroll",
 	"usage_no_data":       "  Usage data not available",
@@ -365,7 +339,6 @@ var enStrings = map[string]string{
 	"usage_reasoning":     "Reasoning",
 	"usage_time":          "Time",
 
-	// ── Logs ──
 	"logs_title":       "📋 Logs",
 	"logs_auto_scroll": "● AUTO-SCROLL",
 	"logs_paused":      "○ PAUSED",

@@ -712,12 +712,10 @@ func TestConvertOpenAIRequestToClaude_DeduplicatesToolResults(t *testing.T) {
 		t.Fatalf("expected at least 5 messages, got %d. Output: %s", len(messages), string(out))
 	}
 
-	// Message 1: assistant tool_use call_dup
 	if got := messages[1].Get("content.0.id").String(); got != "call_dup" {
 		t.Fatalf("messages[1].content.0.id = %q, want call_dup", got)
 	}
 
-	// Message 2: user tool_result for call_dup with final payload, before assistant message 3
 	if got := messages[2].Get("content.0.type").String(); got != "tool_result" {
 		t.Fatalf("messages[2].content.0.type = %q, want tool_result", got)
 	}
@@ -728,7 +726,6 @@ func TestConvertOpenAIRequestToClaude_DeduplicatesToolResults(t *testing.T) {
 		t.Fatalf("messages[2].content.0.content = %q, want 'final output'", got)
 	}
 
-	// Message 3: assistant Next step + tool_use call_other
 	if got := messages[3].Get("content.0.text").String(); got != "Next step" {
 		t.Fatalf("messages[3].content.0.text = %q, want 'Next step'", got)
 	}
@@ -736,7 +733,6 @@ func TestConvertOpenAIRequestToClaude_DeduplicatesToolResults(t *testing.T) {
 		t.Fatalf("messages[3].content.1.id = %q, want call_other", got)
 	}
 
-	// Message 4: user tool_results for call_other (search output) and empty id output; call_dup should NOT be repeated here
 	msg4Blocks := messages[4].Get("content").Array()
 	if len(msg4Blocks) != 2 {
 		t.Fatalf("expected 2 tool_result blocks in message 4, got %d. Output: %s", len(msg4Blocks), string(out))
@@ -1066,9 +1062,6 @@ func TestConvertOpenAIRequestToClaude_ResponseFormatAbsentOrTextNoOp(t *testing.
 	}
 }
 
-// Anthropic only accepts cache_control on the tool_result block itself, never
-// inside tool_result.content. A part-level marker on an OpenAI tool message
-// must be hoisted to the block, while ordinary message parts keep theirs.
 func TestConvertOpenAIRequestToClaude_ToolResultPartCacheControlHoisted(t *testing.T) {
 	inputJSON := []byte(`{
 		"messages":[
@@ -1085,13 +1078,11 @@ func TestConvertOpenAIRequestToClaude_ToolResultPartCacheControlHoisted(t *testi
 		t.Fatalf("message count = %d, want 3. Output: %s", len(messages), string(out))
 	}
 
-	// Ordinary user content parts keep their part-level cache_control.
 	firstText := messages[0].Get("content.0")
 	if got := firstText.Get("cache_control.type").String(); got != "ephemeral" {
 		t.Fatalf("user text part cache_control.type = %q, want ephemeral (must not be stripped). Output: %s", got, string(out))
 	}
 
-	// The tool_result block carries the hoisted marker.
 	toolResult := messages[2].Get("content.0")
 	if got := toolResult.Get("type").String(); got != "tool_result" {
 		t.Fatalf("messages[2].content[0].type = %q, want tool_result. Output: %s", got, string(out))
@@ -1100,7 +1091,6 @@ func TestConvertOpenAIRequestToClaude_ToolResultPartCacheControlHoisted(t *testi
 		t.Fatalf("tool_result block cache_control.type = %q, want ephemeral (hoisted from the part). Output: %s", got, string(out))
 	}
 
-	// ... and the inner content parts carry no cache_control.
 	innerParts := toolResult.Get("content").Array()
 	for i, part := range innerParts {
 		if part.Get("cache_control").Exists() {
@@ -1475,13 +1465,11 @@ func TestConvertOpenAIRequestToClaude_SanitizesToolNamesAndProvidesFallbackSchem
 
 	result, _ := ConvertOpenAIRequestToClaude("claude-sonnet-4-6", []byte(inputJSON), false)
 
-	// 1. Tool name in declarations must be sanitized
 	tool0Name := ojson.GetBytesNoCopy(result, "tools.0.name").String()
 	if tool0Name != "mcp_server_special_get_time" {
 		t.Fatalf("tools.0.name = %q, want mcp_server_special_get_time. Output: %s", tool0Name, result)
 	}
 
-	// 2. Parameterless tool must have a fallback input_schema object
 	tool0Schema := ojson.GetBytesNoCopy(result, "tools.0.input_schema")
 	if !tool0Schema.Exists() || tool0Schema.Get("type").String() != "object" {
 		t.Fatalf("tools.0.input_schema = %s, want object schema. Output: %s", tool0Schema, result)
@@ -1491,13 +1479,11 @@ func TestConvertOpenAIRequestToClaude_SanitizesToolNamesAndProvidesFallbackSchem
 		t.Fatalf("tools.1.input_schema = %s, want object schema. Output: %s", tool1Schema, result)
 	}
 
-	// 3. Historical tool_use name in assistant turn must be sanitized
 	toolUseName := ojson.GetBytesNoCopy(result, "messages.0.content.1.name").String()
 	if toolUseName != "mcp_server_special_get_time" {
 		t.Fatalf("messages.0.content.1.name = %q, want mcp_server_special_get_time. Output: %s", toolUseName, result)
 	}
 
-	// 4. Tool choice function name must be sanitized
 	toolChoiceName := ojson.GetBytesNoCopy(result, "tool_choice.name").String()
 	if toolChoiceName != "mcp_server_special_get_time" {
 		t.Fatalf("tool_choice.name = %q, want mcp_server_special_get_time. Output: %s", toolChoiceName, result)

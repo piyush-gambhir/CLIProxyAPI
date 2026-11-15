@@ -70,7 +70,7 @@ func TestGeminiStream_TerminalDisconnectUsage(t *testing.T) {
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 					w.Header().Set("Content-Type", "text/event-stream")
 					if tc.readError {
-						// A short body produces a real, non-cancellation scanner error.
+
 						w.Header().Set("Content-Length", fmt.Sprint(len(sse)+100))
 					}
 					if _, errWrite := io.WriteString(w, sse); errWrite != nil {
@@ -78,7 +78,7 @@ func TestGeminiStream_TerminalDisconnectUsage(t *testing.T) {
 					}
 					w.(http.Flusher).Flush()
 					if tc.cancelEvent != "" {
-						// Keep EOF behind the downstream event and cancellation.
+
 						select {
 						case <-request.Context().Done():
 						case <-releaseUpstream:

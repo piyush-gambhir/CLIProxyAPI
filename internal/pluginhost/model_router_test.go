@@ -359,8 +359,6 @@ func TestHostRouteModelSkipsOriginatingPlugin(t *testing.T) {
 	}
 }
 
-// newHostWithAuthProviders builds a host whose AuthManager registers auths for the given
-// provider keys, so built-in provider routing can be exercised.
 func newHostWithAuthProviders(t *testing.T, providers []string, records ...capabilityRecord) *Host {
 	t.Helper()
 	host := newRouteModelHostWithRecords(records...)
@@ -520,8 +518,7 @@ func TestHostRouteModelSkipsExecutorWithoutProviderIdentifier(t *testing.T) {
 			id:       "no-provider",
 			priority: 10,
 			plugin: pluginapi.Plugin{Capabilities: pluginapi.Capabilities{
-				// Executor is declared but resolves no provider identifier, so execution
-				// would fail. Routing must skip it and fall through to the lower-priority router.
+
 				Executor: &fakeExecutor{identifierFunc: func() string { return "" }},
 				ModelRouter: modelRouterFunc(func(ctx context.Context, req pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, error) {
 					return pluginapi.ModelRouteResponse{Handled: true, TargetKind: pluginapi.ModelRouteTargetSelf}, nil

@@ -144,8 +144,7 @@ func (e *XAIExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req 
 				completedData := xaiPatchCompletedOutput(eventData, outputItemsByIndex, outputItemsFallback)
 				completedData = xaiNormalizeReasoningSummaryData(completedData)
 				if eventType == "response.completed" {
-					// A truncated turn carries no replayable terminal state, so only a
-					// completed response may refresh the reasoning replay cache.
+
 					cacheXAIReasoningReplayFromCompleted(ctx, prepared.replayScope, completedData)
 				}
 				var param any
@@ -281,8 +280,7 @@ func (e *XAIExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.Aut
 
 func (e *XAIExecutor) executeCompactRequest(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*xaiPreparedRequest, []byte, http.Header, *helps.UsageReporter, error) {
 	token, _ := xaiCreds(auth)
-	// Compact must not use xaiChatBaseURL: CLI chat-proxy returns 404 for
-	// /responses/compact and a 404 cools down the whole xAI auth pool.
+
 	baseURL := xaiCompactBaseURL(auth)
 	logXAIResolvedBaseURL(ctx, baseURL)
 
@@ -293,9 +291,7 @@ func (e *XAIExecutor) executeCompactRequest(ctx context.Context, auth *cliproxya
 	doc := prepared.ensureDoc()
 	_ = doc.Delete("stream")
 	_ = doc.Delete("tools")
-	// Compact deletes tools after prepareResponsesRequestTo, which can now keep
-	// image_generation and rewrite its forced choice to "required" on grok-4.6+.
-	// Drop the leftover selection so compact does not send tool_choice without tools.
+
 	normalizeXAIToolChoiceForToolsDoc(doc)
 	for _, field := range []string{"max_output_tokens", "temperature", "top_p", "top_k", "stop"} {
 		_ = doc.Delete(field)
@@ -317,8 +313,7 @@ func (e *XAIExecutor) executeCompactRequest(ctx context.Context, auth *cliproxya
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	// Official API / custom compact endpoints use standard API headers, not CLI
-	// chat-proxy identity headers (which applyXAIChatHeaders may still attach for OAuth chat).
+
 	applyXAIHeaders(httpReq, auth, token, false, prepared.sessionID, opts.Headers)
 	e.recordXAIRequest(ctx, auth, requestURL, httpReq.Header.Clone(), prepared.body)
 

@@ -84,7 +84,6 @@ func TestCodexExcludedModelsCredentialPriorityAfterPatchAndReload(t *testing.T) 
 	sync(inherited)
 	check("reloaded empty fallback", false, true)
 
-	// A later global config change applies to the same credential on the next registration.
 	cfg.OAuthExcludedModels = map[string][]string{"codex": {credentialModel}}
 	sync(inherited)
 	check("updated global fallback", true, false)

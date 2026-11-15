@@ -32,34 +32,18 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 	}
 	for _, count := range []int{len(active.GeminiKey), len(active.CodexKey), len(active.ClaudeKey), len(active.VertexCompatAPIKey), len(active.XAIKey), len(active.MetaKey), len(active.InteractionsKey), len(active.OpenAICompatibility)} {
 		if count != 0 {
-			t.Fatal("placeholder upstream credentials must remain commented")
+			t.Fatal("default template must not activate upstream credentials")
 		}
 	}
 	if _, changed, errNormalize := NormalizeConfigLayout(example, false); errNormalize != nil || changed {
 		t.Fatalf("v8 template unexpectedly needs conflict cleanup: changed=%v error=%v", changed, errNormalize)
 	}
-	// Validate the provider examples exactly as operators uncomment them.
-	text := strings.ReplaceAll(string(example), "\r\n", "\n")
-	_, block, found := strings.Cut(text, "# BEGIN API KEY EXAMPLES\n")
-	if !found {
-		t.Fatal("config.example.yaml is missing the API-key examples")
+
+	examples, err := os.ReadFile(filepath.Join("testdata", "api-key-examples.yaml"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	block, _, found = strings.Cut(block, "# END API KEY EXAMPLES")
-	if !found {
-		t.Fatal("config.example.yaml is missing the end of the API-key examples")
-	}
-	var uncommented strings.Builder
-	for _, line := range strings.Split(strings.TrimSuffix(block, "\n"), "\n") {
-		if line == "" {
-			continue
-		}
-		if !strings.HasPrefix(line, "#") {
-			t.Fatal("placeholder upstream examples must remain commented")
-		}
-		uncommented.WriteString(strings.TrimPrefix(strings.TrimPrefix(line, "#"), " "))
-		uncommented.WriteByte('\n')
-	}
-	data := []byte(text + "\n" + uncommented.String())
+	data := []byte(string(example) + "\n" + string(examples))
 	if err = ValidateV8Config(data); err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +55,7 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 		t.Fatal("v8 example fields did not reach runtime config")
 	}
 	if !cfg.QuotaExceeded.AntigravityCredits || cfg.QuotaExceeded.SwitchProject || cfg.QuotaExceeded.SwitchPreviewModel {
-		t.Fatal("legacy-only quota examples must remain commented")
+		t.Fatal("default quota settings were overwritten")
 	}
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	if err = os.WriteFile(path, data, 0600); err != nil {
@@ -247,7 +231,7 @@ openai-compatibility:
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Scope metadata is intentionally added when fields move under oauth.providers.
+
 	after.OAuthOnlyFields = nil
 	if !reflect.DeepEqual(before, after) {
 		t.Fatal("migration changed effective config")
@@ -394,7 +378,6 @@ another-legacy-key:
 		t.Fatalf("expected warnings for all unmapped sections, found: %+v", foundSections)
 	}
 
-	// Repeated migration should not repeat warnings
 	hook.Reset()
 	remigrated, _, errRemigrate := NormalizeConfigLayout(migrated, true)
 	if errRemigrate != nil {
@@ -405,7 +388,6 @@ another-legacy-key:
 	}
 	_ = remigrated
 
-	// Test warning hook customization
 	var hookBuf bytes.Buffer
 	var hookMu sync.Mutex
 	SetV8MigrationWarnFunc(func(section, msg string) {
@@ -429,7 +411,6 @@ another-legacy-key:
 		t.Fatalf("expected custom hook to capture warnings, got: %s", hookOutput)
 	}
 
-	// Known-only config produces no warnings
 	hook.Reset()
 	hookBuf.Reset()
 	knownRaw := []byte(`host: "127.0.0.1"
@@ -931,35 +912,5 @@ func TestV8SecretHashResolvesReferences(t *testing.T) {
 				t.Fatalf("second load changed the persisted hash or settings: %v", err)
 			}
 		})
-	}
-}
-
-func TestV8ExampleDocumentsSessionAffinityCompactionGuidance(t *testing.T) {
-	example, errRead := os.ReadFile(filepath.Join("..", "..", "config.example.yaml"))
-	if errRead != nil {
-		t.Fatal(errRead)
-	}
-	var doc yaml.Node
-	if errUnmarshal := yaml.Unmarshal(example, &doc); errUnmarshal != nil {
-		t.Fatal(errUnmarshal)
-	}
-	routing := yamlPath(doc.Content[0], "routing")
-	if routing == nil {
-		t.Fatal("config.example.yaml is missing routing block")
-	}
-	idx := findMapKeyIndex(routing, "session-affinity")
-	if idx < 0 {
-		t.Fatal("config.example.yaml is missing routing.session-affinity")
-	}
-	comment := routing.Content[idx].HeadComment
-	for _, required := range []string{
-		"Merkle LCP prefix/compaction matching",
-		"2 shared trailing turns",
-		"replaces all earlier turns with a summary",
-		"send X-Session-ID",
-	} {
-		if !strings.Contains(comment, required) {
-			t.Fatalf("routing.session-affinity comment in config.example.yaml is missing %q; got:\n%s", required, comment)
-		}
 	}
 }

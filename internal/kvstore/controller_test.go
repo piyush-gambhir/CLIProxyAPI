@@ -53,7 +53,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 		t.Fatalf("CurrentKVClient() type = %T, want *BoltStore", client1)
 	}
 
-	// Reconfiguring with the same resolved path must reuse the same *BoltStore instance.
 	if errCfgAgain := ConfigureLocal(true, dbPath1); errCfgAgain != nil {
 		t.Fatalf("ConfigureLocal(true, dbPath1) second call error = %v", errCfgAgain)
 	}
@@ -65,7 +64,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 		t.Fatalf("ConfigureLocal with identical path did not reuse *BoltStore instance: got %p, want %p", client1Again, bolt1)
 	}
 
-	// Switching to a new path must close the old store and open the new one.
 	if errCfg2 := ConfigureLocal(true, dbPath2); errCfg2 != nil {
 		t.Fatalf("ConfigureLocal(true, dbPath2) error = %v", errCfg2)
 	}
@@ -83,12 +81,11 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 	if bolt2.Path() != dbPath2 {
 		t.Fatalf("bolt2.Path() = %q, want %q", bolt2.Path(), dbPath2)
 	}
-	// Old store should be closed; operations on bolt1 must fail.
+
 	if _, _, errOld := bolt1.KVGet(context.Background(), "key"); errOld == nil {
 		t.Fatalf("expected old BoltStore to be closed after switching path")
 	}
 
-	// Disabling local KV closes the store and resets state to memory mode.
 	if errDisable := ConfigureLocal(false, ""); errDisable != nil {
 		t.Fatalf("ConfigureLocal(false, \"\") error = %v", errDisable)
 	}
@@ -101,7 +98,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 func TestControllerConfigureLocalInvalidPathReportsUnavailableError(t *testing.T) {
 	resetControllerForTest(t)
 
-	// Passing an existing directory as the database file path causes bbolt.Open to fail.
 	invalidPath := t.TempDir()
 	errCfg := ConfigureLocal(true, invalidPath)
 	if errCfg == nil {
@@ -149,7 +145,6 @@ func TestControllerPrioritizesHomeProviderOverLocalBoltStore(t *testing.T) {
 		t.Fatalf("CurrentKVClient() returned %p, want Home provider client %p", client, homeStore)
 	}
 
-	// When Home provider reports homeMode=true with an error, CurrentKVClient must return that error instead of falling back to local BoltStore.
 	expectedErr := errors.New("home kv store unavailable: not connected")
 	RegisterHomeProvider(func() (KVClient, bool, error) {
 		return nil, true, expectedErr
@@ -159,7 +154,6 @@ func TestControllerPrioritizesHomeProviderOverLocalBoltStore(t *testing.T) {
 		t.Fatalf("CurrentKVClient() with unavailable Home = (%v, %v, %v), want (nil, true, %v)", clientErr, kvModeErr, errHome, expectedErr)
 	}
 
-	// When Home provider reports homeMode=false, CurrentKVClient falls back to the enabled local BoltStore.
 	RegisterHomeProvider(func() (KVClient, bool, error) {
 		return nil, false, nil
 	})

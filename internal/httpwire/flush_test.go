@@ -77,7 +77,6 @@ func (w *bufferedFlushWriter) Flush() {
 	w.ResponseWriter.(http.Flusher).Flush()
 }
 
-// Embedding Gin's interface must not make middleware look like its raw writer.
 type bufferedGinFlushWriter struct {
 	gin.ResponseWriter
 	buffered *bufferedFlushWriter

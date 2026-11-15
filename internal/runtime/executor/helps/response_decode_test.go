@@ -168,7 +168,7 @@ func TestDecodeResponseBodySniffsSplitMagicBytes(t *testing.T) {
 		wire := encodeResponseDecodeTestBody(t, encoding, plain)
 		reader, writer := io.Pipe()
 		go func() {
-			// The magic bytes arrive one write at a time.
+
 			for i := range wire {
 				_, _ = writer.Write(wire[i : i+1])
 			}

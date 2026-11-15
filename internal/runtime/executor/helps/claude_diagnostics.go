@@ -48,7 +48,6 @@ const (
 	claudeIncomingHeadersContextKey claudeContextKey = "cpa_claude_incoming_headers"
 )
 
-// WithIncomingHeaders attaches incoming HTTP headers to ctx.
 func WithIncomingHeaders(ctx context.Context, headers http.Header) context.Context {
 	if headers == nil {
 		return ctx
@@ -56,7 +55,6 @@ func WithIncomingHeaders(ctx context.Context, headers http.Header) context.Conte
 	return context.WithValue(ctx, claudeIncomingHeadersContextKey, headers)
 }
 
-// IncomingHeadersFromContext retrieves incoming HTTP headers from ctx, if present.
 func IncomingHeadersFromContext(ctx context.Context) http.Header {
 	if ctx == nil {
 		return nil
@@ -67,21 +65,17 @@ func IncomingHeadersFromContext(ctx context.Context) http.Header {
 	return nil
 }
 
-// ClaudeContinuityContext holds request-scoped continuity state across cloaking and execution.
 type ClaudeContinuityContext struct {
 	Key               string
 	Sequence          uint64
 	PreviousMessageID string
 	PreviousRequestID string
 	PromptID          string
-	// PinnedDate is the calendar date this session was first seen on. The
-	// cloaked currentDate reminder reuses it so the reminder text stays
-	// byte-stable within a session even when the local date flips mid-session.
+
 	PinnedDate  string
 	Initialized bool
 }
 
-// WithClaudeSessionID attaches a known Claude session ID to ctx.
 func WithClaudeSessionID(ctx context.Context, sessionID string) context.Context {
 	if sessionID == "" {
 		return ctx
@@ -89,7 +83,6 @@ func WithClaudeSessionID(ctx context.Context, sessionID string) context.Context 
 	return context.WithValue(ctx, claudeSessionIDContextKey, sessionID)
 }
 
-// ClaudeSessionIDFromContext retrieves the Claude session ID from ctx, if present.
 func ClaudeSessionIDFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -100,7 +93,6 @@ func ClaudeSessionIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// WithClaudeContinuityContext attaches a mutable ClaudeContinuityContext to ctx.
 func WithClaudeContinuityContext(ctx context.Context, cc *ClaudeContinuityContext) context.Context {
 	if cc == nil {
 		return ctx
@@ -108,7 +100,6 @@ func WithClaudeContinuityContext(ctx context.Context, cc *ClaudeContinuityContex
 	return context.WithValue(ctx, claudeContinuityContextKey, cc)
 }
 
-// ClaudeContinuityContextFromContext retrieves the ClaudeContinuityContext from ctx, if present.
 func ClaudeContinuityContextFromContext(ctx context.Context) *ClaudeContinuityContext {
 	if ctx == nil {
 		return nil
@@ -130,8 +121,6 @@ type claudeDiagnosticsEntry struct {
 	expiresAt         time.Time
 }
 
-// claudeSessionDatePin retains a session date independently of continuity
-// state when the operator configures a retention window.
 type claudeSessionDatePin struct {
 	date      string
 	expiresAt time.Time
@@ -146,8 +135,6 @@ var claudeDiagnosticsState = struct {
 	nextAccess   uint64
 }{entries: make(map[string]claudeDiagnosticsEntry), datePins: make(map[string]claudeSessionDatePin)}
 
-// ClaudeSessionDatePinKey returns the credential-independent store key
-// for a session date pin, or "" for an empty session ID.
 func ClaudeSessionDatePinKey(sessionID string) string {
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID == "" {
@@ -213,16 +200,11 @@ func storePermanentClaudeSessionDatePin(pinKey, date string) {
 	claudeDiagnosticsState.Unlock()
 }
 
-// IsClaudeSessionDatePinKVActive reports whether a persistent KV store (local
-// bbolt or Home KV) is configured as the backing store for Claude session date pins.
 func IsClaudeSessionDatePinKVActive() bool {
 	_, kvMode, _ := currentClaudeSessionDatePinKVClient()
 	return kvMode
 }
 
-// LookupClaudeSessionDatePin returns the retained pinned date for a session
-// without creating or refreshing it. When a KV store is active, pins are stored
-// permanently and retention is ignored; otherwise non-positive retention returns "".
 func LookupClaudeSessionDatePin(sessionID string, retention time.Duration) string {
 	pinKey := ClaudeSessionDatePinKey(sessionID)
 	if pinKey == "" {
@@ -257,7 +239,6 @@ func LookupClaudeSessionDatePin(sessionID string, retention time.Duration) strin
 	return lookupClaudeSessionDatePinLocked(pinKey, now)
 }
 
-// IsValidClaudePromptID verifies whether an explicit prompt ID adheres to strict RFC 4122 UUIDv4 semantics.
 func IsValidClaudePromptID(id string) bool {
 	id = strings.TrimSpace(id)
 	if !claudePromptIDPattern.MatchString(id) {
@@ -267,11 +248,10 @@ func IsValidClaudePromptID(id string) bool {
 	return err == nil && parsed.Version() == 4 && parsed.Variant() == uuid.RFC4122
 }
 
-// ClaudeDeterministicPromptID generates a deterministic RFC 4122 UUIDv4 from a seed string.
 func ClaudeDeterministicPromptID(seed string) string {
 	digest := sha256.Sum256([]byte(seed))
-	digest[6] = (digest[6] & 0x0f) | 0x40 // Version 4
-	digest[8] = (digest[8] & 0x3f) | 0x80 // Variant RFC 4122
+	digest[6] = (digest[6] & 0x0f) | 0x40
+	digest[8] = (digest[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
 		digest[0:4],
 		digest[4:6],
@@ -281,11 +261,6 @@ func ClaudeDeterministicPromptID(seed string) string {
 	)
 }
 
-// BeginClaudeContinuity starts one request generation for a stable credential
-// identity and Claude conversation. It tracks the previous upstream message ID,
-// previous upstream request ID (cc_prev_req), and active prompt ID (cc_prompt_id).
-// If explicitPromptID is provided and valid, it is adopted. Otherwise if isNewPromptTurn
-// is true (or if no prompt ID exists), a fresh UUIDv4 is generated.
 func BeginClaudeContinuity(credentialIdentity, sessionID string, isNewPromptTurn bool, explicitPromptID string) (key string, sequence uint64, previousMessageID, previousRequestID, promptID string) {
 	credentialIdentity = strings.TrimSpace(credentialIdentity)
 	sessionID = strings.TrimSpace(sessionID)
@@ -327,14 +302,6 @@ func BeginClaudeContinuity(credentialIdentity, sessionID string, isNewPromptTurn
 	return key, sequence, entry.previousMessageID, entry.previousRequestID, activePromptID
 }
 
-// PinClaudeSessionDate returns the calendar date pinned for a session,
-// recording date on the first call and returning the pinned value on later
-// calls. When a KV store is active, the pin is persisted permanently under a
-// session-only KV key and retention is ignored. Otherwise, a non-positive
-// retention keeps the legacy continuity-scoped pin (whose lifetime follows
-// claudeDiagnosticsTTL) and a positive retention stores the pin in memory
-// under a session-only key for retention. An unknown continuity key returns
-// date unchanged, matching per-request dates.
 func PinClaudeSessionDate(key, sessionID, date string, retention time.Duration) string {
 	key = strings.TrimSpace(key)
 	sessionID = strings.TrimSpace(sessionID)
@@ -448,19 +415,11 @@ func PinClaudeSessionDate(key, sessionID, date string, retention time.Duration) 
 	return pin.date
 }
 
-// BeginClaudeDiagnostics starts one request generation for a stable credential
-// identity and Claude conversation. It returns the last successfully completed
-// upstream message ID, if any. Only a SHA-256 digest of the credential identity
-// and session is retained as the cache key, so access-token rotation does not
-// interrupt continuity.
 func BeginClaudeDiagnostics(credentialIdentity, sessionID string) (key string, sequence uint64, previousMessageID string) {
 	key, sequence, prevMsg, _, _ := BeginClaudeContinuity(credentialIdentity, sessionID, false, "")
 	return key, sequence, prevMsg
 }
 
-// CommitClaudeContinuity advances continuity only after a response completes.
-// It commits the upstream message ID (msg_01...), request ID (req_01...), and prompt ID (cc_prompt_id).
-// A non-empty messageID is required so incomplete/truncated streams do not advance sequence.
 func CommitClaudeContinuity(key string, sequence uint64, messageID, requestID string, promptIDs ...string) {
 	key = strings.TrimSpace(key)
 	messageID = strings.TrimSpace(messageID)
@@ -494,9 +453,6 @@ func CommitClaudeContinuity(key string, sequence uint64, messageID, requestID st
 	claudeDiagnosticsState.entries[key] = entry
 }
 
-// CommitClaudeDiagnostics advances continuity only after a response completes.
-// A response from an older concurrently-started request cannot overwrite a
-// newer committed generation, including after TTL expiry or capacity eviction.
 func CommitClaudeDiagnostics(key string, sequence uint64, messageID string) {
 	CommitClaudeContinuity(key, sequence, messageID, "")
 }
@@ -518,8 +474,6 @@ func cleanupClaudeDiagnosticsLocked(now time.Time) {
 	claudeDiagnosticsState.lastCleanup = now
 }
 
-// evictClaudeSessionDatePinsLocked drops the pins closest to expiry once
-// the store is full. Sliding expiry makes those the least recently used.
 func evictClaudeSessionDatePinsLocked() {
 	if len(claudeDiagnosticsState.datePins) < claudeDiagnosticsMaxEntries {
 		return
@@ -567,13 +521,10 @@ func evictClaudeDiagnosticsLocked() {
 	}
 }
 
-// ResetClaudeDiagnosticsForTest resets in-memory continuity state for test isolation.
 func ResetClaudeDiagnosticsForTest() {
 	resetClaudeDiagnosticsForTest()
 }
 
-// ClaudeSessionDatePinExpiryForTest returns the expiry of the retained date
-// pin for a session, or the zero time when no pin exists.
 func ClaudeSessionDatePinExpiryForTest(sessionID string) time.Time {
 	pinKey := ClaudeSessionDatePinKey(sessionID)
 	if pinKey == "" {
@@ -588,8 +539,6 @@ func ClaudeSessionDatePinExpiryForTest(sessionID string) time.Time {
 	return pin.expiresAt
 }
 
-// ExpireClaudeDiagnosticsForTest expires continuity entries and retained date
-// pins without waiting for wall-clock TTLs. Pin expiry is relative to now.
 func ExpireClaudeDiagnosticsForTest(expireContinuity bool, pinExpiryOffset *time.Duration) {
 	claudeDiagnosticsState.Lock()
 	defer claudeDiagnosticsState.Unlock()
@@ -620,9 +569,6 @@ func resetClaudeDiagnosticsForTest() {
 	claudeDiagnosticsState.nextAccess = 0
 }
 
-// IsClaudeNewPromptTurn inspects the request messages to determine whether
-// this request starts a new user prompt turn (requiring a new cc_prompt_id)
-// versus a tool continuation step (which reuses the current cc_prompt_id).
 func IsClaudeNewPromptTurn(body []byte) bool {
 	if IsClaudeProbeOrHelperRequest(body) {
 		return false
@@ -641,7 +587,7 @@ func IsClaudeNewPromptTurn(body []byte) bool {
 	}
 	content := lastMsg.Get("content")
 	if content.IsArray() {
-		// If any element is a tool_result, this is a tool continuation turn.
+
 		for _, part := range content.Array() {
 			if part.Get("type").String() == "tool_result" {
 				return false
@@ -667,7 +613,7 @@ func isClaudeProbeRequest(body []byte) bool {
 	}
 	messages := ojson.GetBytesNoCopy(body, "messages")
 	if !messages.Exists() || !messages.IsArray() || len(messages.Array()) == 0 {
-		return true // headless preflight probe without messages
+		return true
 	}
 	arr := messages.Array()
 	if len(arr) != 1 {
@@ -736,8 +682,7 @@ func isClaudeTitleHelperInstruction(body []byte) bool {
 }
 
 func isClaudeTitleHelperRequest(body []byte) bool {
-	// Without an output_config key the request is a helper only if one of the
-	// system title instructions below appears, so skip the walks when none can.
+
 	if !jsonMayContainASCII(body, "output_config", "naming a coding session", "Return a short title",
 		"Write the title in the predominant language") {
 		return false
@@ -750,9 +695,6 @@ func isClaudeTitleHelperRequest(body []byte) bool {
 		return false
 	}
 
-	// When structured output schema is absent, it can only be an internal helper
-	// if a system-role block (either in system or in messages) contains the title instruction.
-	// Ordinary user messages ("role": "user") without a title schema are never internal helpers.
 	matchesSystemTitleInstruction := func(t string) bool {
 		return strings.Contains(t, "naming a coding session") ||
 			strings.Contains(t, "Return a short title") ||
@@ -789,21 +731,14 @@ func isClaudeTitleHelperRequest(body []byte) bool {
 	return false
 }
 
-// IsClaudeProbeOrHelperRequest reports whether the request is a minimal
-// probe/preflight (max_tokens: 1) or an automated title generation helper,
-// which in native Claude Code do not emit cc_prompt_id or cc_prev_req.
 func IsClaudeProbeOrHelperRequest(body []byte) bool {
 	return isClaudeProbeRequest(body) || isClaudeTitleHelperRequest(body)
 }
 
-// IsClaudeQuotaProbeRequest reports the max_tokens=1 quota probe alone,
-// excluding the session-title helper that IsClaudeProbeOrHelperRequest also covers.
 func IsClaudeQuotaProbeRequest(body []byte) bool {
 	return isClaudeProbeRequest(body)
 }
 
-// IsClaudeSubagentRequest reports whether the incoming request originates from
-// or represents a Claude Code subagent.
 func IsClaudeSubagentRequest(headers http.Header, body []byte) bool {
 	if val := HeaderValueCaseInsensitive(headers, "X-Claude-Code-Agent-Id"); val != "" {
 		return true
@@ -819,7 +754,7 @@ func IsClaudeSubagentRequest(headers http.Header, body []byte) bool {
 			return true
 		}
 	}
-	// Only inspect system[0].text or billing header for cc_is_subagent, never raw user message content
+
 	system := ojson.GetBytesNoCopy(body, "system")
 	if system.IsArray() && len(system.Array()) > 0 {
 		if strings.Contains(system.Array()[0].Get("text").String(), "cc_is_subagent=true") {
@@ -831,11 +766,8 @@ func IsClaudeSubagentRequest(headers http.Header, body []byte) bool {
 	return false
 }
 
-// ClaudePayloadHas1hTTL reports whether the request payload contains any cache_control
-// block with ttl set to "1h".
 func ClaudePayloadHas1hTTL(payload []byte) bool {
-	// A ttl of "1h" is the JSON string "1h"; its quotes are structural and never
-	// escaped, so a payload without that token cannot match.
+
 	if len(payload) == 0 || !jsonMayContainASCII(payload, `"1h"`) || !ojson.ValidBytes(payload) {
 		return false
 	}
@@ -881,9 +813,6 @@ func ClaudePayloadHas1hTTL(payload []byte) bool {
 	return has1h
 }
 
-// ClaudeSubagentRequests1h reports whether a subagent request explicitly requests
-// 1h cache TTL either via a cache_control block with ttl="1h" in the payload or via
-// extended-cache-ttl-2025-04-11 in incoming Anthropic-Beta headers.
 func ClaudeSubagentRequests1h(headers http.Header, body []byte) bool {
 	if ClaudePayloadHas1hTTL(body) {
 		return true
@@ -892,7 +821,6 @@ func ClaudeSubagentRequests1h(headers http.Header, body []byte) bool {
 	return strings.Contains(betas, "extended-cache-ttl-2025-04-11")
 }
 
-// StripClaudeBillingTags removes cc_prev_req and cc_prompt_id from the billing header in body.
 func StripClaudeBillingTags(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -904,7 +832,6 @@ func StripClaudeBillingTags(body []byte) []byte {
 	return doc.Bytes()
 }
 
-// StripClaudeBillingTagsDoc removes cc_prev_req and cc_prompt_id from the billing header in doc in place.
 func StripClaudeBillingTagsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -925,7 +852,6 @@ func StripClaudeBillingTagsDoc(doc *ojson.Doc) bool {
 	return false
 }
 
-// InjectClaudeBillingTags appends cc_prev_req and cc_prompt_id to the billing header in body if present.
 func InjectClaudeBillingTags(body []byte, prevReq, promptID string) []byte {
 	if len(body) == 0 {
 		return body
@@ -937,7 +863,6 @@ func InjectClaudeBillingTags(body []byte, prevReq, promptID string) []byte {
 	return doc.Bytes()
 }
 
-// InjectClaudeBillingTagsDoc appends cc_prev_req and cc_prompt_id to the billing header in doc in place.
 func InjectClaudeBillingTagsDoc(doc *ojson.Doc, prevReq, promptID string) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -965,8 +890,6 @@ func InjectClaudeBillingTagsDoc(doc *ojson.Doc, prevReq, promptID string) bool {
 	return doc.Set("system.0.text", cleaned) == nil
 }
 
-// ExtractClaudeBillingTags extracts existing cc_prev_req and cc_prompt_id values
-// from a billing header in system text, if present.
 func ExtractClaudeBillingTags(body []byte) (prevReq, promptID string) {
 	system := ojson.GetBytesNoCopy(body, "system")
 	var billingText string

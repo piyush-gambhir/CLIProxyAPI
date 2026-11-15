@@ -1,8 +1,3 @@
-// Package gemini provides response translation functionality for OpenAI to Gemini API.
-// This package handles the conversion of OpenAI Chat Completions API responses into Gemini API-compatible
-// JSON format, transforming streaming events and non-streaming responses into the format
-// expected by Gemini API clients. It supports both streaming and non-streaming modes,
-// handling text content, tool calls, and usage metadata appropriately.
 package gemini
 
 import (
@@ -18,17 +13,14 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertOpenAIResponseToGeminiParams holds parameters for response conversion
 type ConvertOpenAIResponseToGeminiParams struct {
-	// Tool calls accumulator for streaming
 	ToolCallsAccumulator map[int]*ToolCallAccumulator
-	// Content accumulator for streaming
+
 	ContentAccumulator strings.Builder
-	// Track if this is the first chunk
+
 	IsFirstChunk bool
 }
 
-// ToolCallAccumulator holds the state for accumulating tool call data
 type ToolCallAccumulator struct {
 	ID               string
 	Name             string
@@ -36,18 +28,6 @@ type ToolCallAccumulator struct {
 	ThoughtSignature string
 }
 
-// ConvertOpenAIResponseToGemini converts OpenAI Chat Completions streaming response format to Gemini API format.
-// This function processes OpenAI streaming chunks and transforms them into Gemini-compatible JSON responses.
-// It handles text content, tool calls, and usage metadata, outputting responses that match the Gemini API format.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the OpenAI API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - [][]byte: A slice of Gemini-compatible JSON responses.
 func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &ConvertOpenAIResponseToGeminiParams{
@@ -57,7 +37,6 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 		}
 	}
 
-	// Handle [DONE] marker
 	if bytes.Equal(bytes.TrimSpace(rawJSON), []byte("[DONE]")) {
 		return [][]byte{}
 	}
@@ -68,20 +47,17 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Initialize accumulators if needed
 	if (*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator == nil {
 		(*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator = make(map[int]*ToolCallAccumulator)
 	}
 
-	// Process choices
 	if choices := root.Get("choices"); choices.Exists() && choices.IsArray() {
-		// Handle empty choices array (usage-only chunk)
+
 		if len(choices.Array()) == 0 {
-			// This is a usage-only chunk, handle usage and return
+
 			if usage := root.Get("usage"); usage.Exists() {
 				templateDoc := ojson.NewDocString(`{"candidates":[],"usageMetadata":{}}`)
 
-				// Set model if available
 				if model := root.Get("model"); model.Exists() {
 					_ = templateDoc.Set("model", model.String())
 				}
@@ -95,21 +71,19 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 		var results [][]byte
 
 		choices.ForEach(func(choiceIndex, choice ojson.Result) bool {
-			// Base Gemini response template without finishReason; set when known
+
 			template := []byte(`{"candidates":[{"content":{"parts":[],"role":"model"},"index":0}]}`)
 
-			// Set model if available
 			if model := root.Get("model"); model.Exists() {
 				template, _ = ojson.SetBytes(template, "model", model.String())
 			}
 
-			_ = int(choice.Get("index").Int()) // choiceIdx not used in streaming
+			_ = int(choice.Get("index").Int())
 			delta := choice.Get("delta")
 			baseTemplate := append([]byte(nil), template...)
 
-			// Handle role (only in first chunk)
 			if role := delta.Get("role"); role.Exists() && (*param).(*ConvertOpenAIResponseToGeminiParams).IsFirstChunk {
-				// OpenAI assistant -> Gemini model
+
 				if role.String() == "assistant" {
 					template, _ = ojson.SetBytes(template, "candidates.0.content.role", "model")
 				}
@@ -120,7 +94,6 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 
 			var chunkOutputs [][]byte
 
-			// Handle reasoning/thinking delta
 			if reasoning := delta.Get("reasoning_content"); reasoning.Exists() {
 				for _, reasoningText := range extractReasoningTexts(reasoning) {
 					if reasoningText == "" {
@@ -133,12 +106,10 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 				}
 			}
 
-			// Handle content delta
 			if content := delta.Get("content"); content.Exists() && content.String() != "" {
 				contentText := content.String()
 				(*param).(*ConvertOpenAIResponseToGeminiParams).ContentAccumulator.WriteString(contentText)
 
-				// Create text part for this delta
 				contentTemplate := append([]byte(nil), baseTemplate...)
 				contentTemplate, _ = ojson.SetBytes(contentTemplate, "candidates.0.content.parts.0.text", contentText)
 				chunkOutputs = append(chunkOutputs, contentTemplate)
@@ -152,7 +123,6 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 				}
 			}
 
-			// Handle tool calls delta
 			if toolCalls := delta.Get("tool_calls"); toolCalls.Exists() && toolCalls.IsArray() {
 				toolCalls.ForEach(func(_, toolCall ojson.Result) bool {
 					toolIndex := int(toolCall.Get("index").Int())
@@ -161,12 +131,10 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 					function := toolCall.Get("function")
 					thoughtSig := openAIToolCallThoughtSignature(toolCall)
 
-					// Skip non-function tool calls explicitly marked as other types.
 					if toolType != "" && toolType != "function" {
 						return true
 					}
 
-					// OpenAI streaming deltas may omit the type field while still carrying function data.
 					if !function.Exists() && thoughtSig == "" {
 						return true
 					}
@@ -174,7 +142,6 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 					functionName := function.Get("name").String()
 					functionArgs := function.Get("arguments").String()
 
-					// Initialize accumulator if needed so later deltas without type can append arguments.
 					if _, exists := (*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator[toolIndex]; !exists {
 						(*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator[toolIndex] = &ToolCallAccumulator{
 							ID:   strings.Clone(toolID),
@@ -184,17 +151,14 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 
 					acc := (*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator[toolIndex]
 
-					// Update ID if provided
 					if toolID != "" {
 						acc.ID = strings.Clone(toolID)
 					}
 
-					// Update name if provided
 					if functionName != "" {
 						acc.Name = strings.Clone(functionName)
 					}
 
-					// Accumulate arguments
 					if functionArgs != "" {
 						acc.Arguments.WriteString(functionArgs)
 					}
@@ -207,18 +171,16 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 				})
 
 				if finishReason := choice.Get("finish_reason"); finishReason.Type != ojson.String || finishReason.String() == "" {
-					// Don't output anything for tool call deltas - wait for completion
+
 					return true
 				}
 			}
 
-			// Handle finish reason
 			if finishReason := choice.Get("finish_reason"); finishReason.Type == ojson.String && finishReason.String() != "" {
 				geminiFinishReason := mapOpenAIFinishReasonToGemini(finishReason.String())
 				templateDoc := ojson.NewDoc(template)
 				_ = templateDoc.Set("candidates.0.finishReason", geminiFinishReason)
 
-				// If we have accumulated tool calls, output them now
 				if len((*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator) > 0 {
 					toolIndices := make([]int, 0, len((*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator))
 					for toolIndex := range (*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator {
@@ -244,7 +206,6 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 						partIndex++
 					}
 
-					// Clear accumulators
 					(*param).(*ConvertOpenAIResponseToGeminiParams).ToolCallsAccumulator = make(map[int]*ToolCallAccumulator)
 				}
 
@@ -252,7 +213,6 @@ func ConvertOpenAIResponseToGemini(_ context.Context, _ string, originalRequestR
 				return true
 			}
 
-			// Handle usage information
 			if usage := root.Get("usage"); usage.Exists() {
 				templateDoc := ojson.NewDoc(template)
 				setGeminiUsageMetadataFromOpenAIUsageDoc(templateDoc, usage)
@@ -281,7 +241,6 @@ func openAIToolCallThoughtSignature(toolCall ojson.Result) string {
 	return ""
 }
 
-// mapOpenAIFinishReasonToGemini maps OpenAI finish reasons to Gemini finish reasons
 func mapOpenAIFinishReasonToGemini(openAIReason string) string {
 	switch openAIReason {
 	case "stop":
@@ -289,7 +248,7 @@ func mapOpenAIFinishReasonToGemini(openAIReason string) string {
 	case "length":
 		return "MAX_TOKENS"
 	case "tool_calls":
-		return "STOP" // Gemini doesn't have a specific tool_calls finish reason
+		return "STOP"
 	case "content_filter":
 		return "SAFETY"
 	default:
@@ -297,15 +256,12 @@ func mapOpenAIFinishReasonToGemini(openAIReason string) string {
 	}
 }
 
-// parseArgsToObjectRaw safely parses a JSON string of function arguments into an object JSON string.
-// It returns "{}" if the input is empty or cannot be parsed as a JSON object.
 func parseArgsToObjectRaw(argsStr string) string {
 	trimmed := strings.TrimSpace(argsStr)
 	if trimmed == "" || trimmed == "{}" {
 		return "{}"
 	}
 
-	// First try strict JSON
 	if ojson.Valid(trimmed) {
 		strict := ojson.Parse(trimmed)
 		if strict.IsObject() {
@@ -313,13 +269,11 @@ func parseArgsToObjectRaw(argsStr string) string {
 		}
 	}
 
-	// Tolerant parse: handle streams where values are barewords (e.g., 北京, celsius)
 	tolerant := tolerantParseJSONObjectRaw(trimmed)
 	if tolerant != "{}" {
 		return tolerant
 	}
 
-	// Fallback: return empty object when parsing fails
 	return "{}"
 }
 
@@ -329,11 +283,8 @@ func escapeSjsonPathKey(key string) string {
 	return key
 }
 
-// tolerantParseJSONObjectRaw attempts to parse a JSON-like object string into a JSON object string, tolerating
-// bareword values (unquoted strings) commonly seen during streamed tool calls.
-// Example input: {"location": 北京, "unit": celsius}
 func tolerantParseJSONObjectRaw(s string) string {
-	// Ensure we operate within the outermost braces if present
+
 	start := strings.Index(s, "{")
 	end := strings.LastIndex(s, "}")
 	if start == -1 || end == -1 || start >= end {
@@ -347,7 +298,7 @@ func tolerantParseJSONObjectRaw(s string) string {
 	resultDoc := ojson.NewDocString(`{}`)
 
 	for i < n {
-		// Skip whitespace and commas
+
 		for i < n && (runes[i] == ' ' || runes[i] == '\n' || runes[i] == '\r' || runes[i] == '\t' || runes[i] == ',') {
 			i++
 		}
@@ -355,16 +306,14 @@ func tolerantParseJSONObjectRaw(s string) string {
 			break
 		}
 
-		// Expect quoted key
 		if runes[i] != '"' {
-			// Unable to parse this segment reliably; skip to next comma
+
 			for i < n && runes[i] != ',' {
 				i++
 			}
 			continue
 		}
 
-		// Parse JSON string for key
 		keyToken, nextIdx := parseJSONStringRunes(runes, i)
 		if nextIdx == -1 {
 			break
@@ -373,15 +322,14 @@ func tolerantParseJSONObjectRaw(s string) string {
 		sjsonKey := escapeSjsonPathKey(keyName)
 		i = nextIdx
 
-		// Skip whitespace
 		for i < n && (runes[i] == ' ' || runes[i] == '\n' || runes[i] == '\r' || runes[i] == '\t') {
 			i++
 		}
 		if i >= n || runes[i] != ':' {
 			break
 		}
-		i++ // skip ':'
-		// Skip whitespace
+		i++
+
 		for i < n && (runes[i] == ' ' || runes[i] == '\n' || runes[i] == '\r' || runes[i] == '\t') {
 			i++
 		}
@@ -389,13 +337,12 @@ func tolerantParseJSONObjectRaw(s string) string {
 			break
 		}
 
-		// Parse value (string, number, object/array, bareword)
 		switch runes[i] {
 		case '"':
-			// JSON string
+
 			valToken, ni := parseJSONStringRunes(runes, i)
 			if ni == -1 {
-				// Malformed; treat as empty string
+
 				_ = resultDoc.Set(sjsonKey, "")
 				i = n
 			} else {
@@ -403,7 +350,7 @@ func tolerantParseJSONObjectRaw(s string) string {
 				i = ni
 			}
 		case '{', '[':
-			// Bracketed value: attempt to capture balanced structure
+
 			seg, ni := captureBracketed(runes, i)
 			if ni == -1 {
 				i = n
@@ -416,13 +363,13 @@ func tolerantParseJSONObjectRaw(s string) string {
 				i = ni
 			}
 		default:
-			// Bare token until next comma or end
+
 			j := i
 			for j < n && runes[j] != ',' {
 				j++
 			}
 			token := strings.TrimSpace(string(runes[i:j]))
-			// Interpret common JSON atoms and numbers; otherwise treat as string
+
 			if token == "true" {
 				_ = resultDoc.Set(sjsonKey, true)
 			} else if token == "false" {
@@ -437,7 +384,6 @@ func tolerantParseJSONObjectRaw(s string) string {
 			i = j
 		}
 
-		// Skip trailing whitespace and optional comma before next pair
 		for i < n && (runes[i] == ' ' || runes[i] == '\n' || runes[i] == '\r' || runes[i] == '\t') {
 			i++
 		}
@@ -449,7 +395,6 @@ func tolerantParseJSONObjectRaw(s string) string {
 	return resultDoc.String()
 }
 
-// parseJSONStringRunes returns the JSON string token (including quotes) and the index just after it.
 func parseJSONStringRunes(runes []rune, start int) (string, int) {
 	if start >= len(runes) || runes[start] != '"' {
 		return "", -1
@@ -472,21 +417,18 @@ func parseJSONStringRunes(runes []rune, start int) (string, int) {
 	return string(runes[start:]), -1
 }
 
-// jsonStringTokenToRawString converts a JSON string token (including quotes) to a raw Go string value.
 func jsonStringTokenToRawString(token string) string {
 	r := ojson.Parse(token)
 	if r.Type == ojson.String {
 		return r.String()
 	}
-	// Fallback: strip surrounding quotes if present
+
 	if len(token) >= 2 && token[0] == '"' && token[len(token)-1] == '"' {
 		return token[1 : len(token)-1]
 	}
 	return token
 }
 
-// captureBracketed captures a balanced JSON object/array starting at index i.
-// Returns the segment string and the index just after it; -1 if malformed.
 func captureBracketed(runes []rune, i int) (string, int) {
 	if i >= len(runes) {
 		return "", -1
@@ -538,12 +480,11 @@ func captureBracketed(runes []rune, i int) (string, int) {
 	return string(runes[i:]), -1
 }
 
-// tryParseNumber attempts to parse a string as an int or float.
 func tryParseNumber(s string) (interface{}, bool) {
 	if s == "" {
 		return nil, false
 	}
-	// Try integer
+
 	if i64, errParseInt := strconv.ParseInt(s, 10, 64); errParseInt == nil {
 		return i64, true
 	}
@@ -556,36 +497,22 @@ func tryParseNumber(s string) (interface{}, bool) {
 	return nil, false
 }
 
-// ConvertOpenAIResponseToGeminiNonStream converts a non-streaming OpenAI response to a non-streaming Gemini response.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the OpenAI API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - []byte: A Gemini-compatible JSON response.
 func ConvertOpenAIResponseToGeminiNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Base Gemini response template without finishReason; set when known
 	outDoc := ojson.NewDocString(`{"candidates":[{"content":{"parts":[],"role":"model"},"index":0}]}`)
 
-	// Set model if available
 	if model := root.Get("model"); model.Exists() {
 		_ = outDoc.Set("model", model.String())
 	}
 
 	var allParts [][]byte
 
-	// Process choices
 	if choices := root.Get("choices"); choices.Exists() && choices.IsArray() {
 		choices.ForEach(func(choiceIndex, choice ojson.Result) bool {
 			choiceIdx := int(choice.Get("index").Int())
 			message := choice.Get("message")
 
-			// Set role
 			if role := message.Get("role"); role.Exists() {
 				if role.String() == "assistant" {
 					_ = outDoc.Set("candidates.0.content.role", "model")
@@ -600,7 +527,6 @@ func ConvertOpenAIResponseToGeminiNonStream(_ context.Context, _ string, origina
 				return ojson.NewDoc(allParts[idx])
 			}
 
-			// Handle reasoning content before visible text
 			if reasoning := message.Get("reasoning_content"); reasoning.Exists() {
 				for _, reasoningText := range extractReasoningTexts(reasoning) {
 					if reasoningText == "" {
@@ -614,7 +540,6 @@ func ConvertOpenAIResponseToGeminiNonStream(_ context.Context, _ string, origina
 				}
 			}
 
-			// Handle content first
 			if content := message.Get("content"); content.Exists() && content.String() != "" {
 				partDoc := ensurePartDoc(partIndex)
 				_ = partDoc.Set("text", content.String())
@@ -622,7 +547,6 @@ func ConvertOpenAIResponseToGeminiNonStream(_ context.Context, _ string, origina
 				partIndex++
 			}
 
-			// Handle tool calls
 			if toolCalls := message.Get("tool_calls"); toolCalls.Exists() && toolCalls.IsArray() {
 				toolCalls.ForEach(func(_, toolCall ojson.Result) bool {
 					if toolCall.Get("type").String() == "function" {
@@ -647,13 +571,11 @@ func ConvertOpenAIResponseToGeminiNonStream(_ context.Context, _ string, origina
 				})
 			}
 
-			// Handle finish reason
 			if finishReason := choice.Get("finish_reason"); finishReason.Type == ojson.String && finishReason.String() != "" {
 				geminiFinishReason := mapOpenAIFinishReasonToGemini(finishReason.String())
 				_ = outDoc.Set("candidates.0.finishReason", geminiFinishReason)
 			}
 
-			// Set index
 			_ = outDoc.Set("candidates.0.index", choiceIdx)
 
 			return true
@@ -664,7 +586,6 @@ func ConvertOpenAIResponseToGeminiNonStream(_ context.Context, _ string, origina
 		}
 	}
 
-	// Handle usage information
 	if usage := root.Get("usage"); usage.Exists() {
 		setGeminiUsageMetadataFromOpenAIUsageDoc(outDoc, usage)
 	}

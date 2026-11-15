@@ -142,11 +142,11 @@ func buildHostNSECRData(hostFQDN string, hasA, hasAAAA bool) []byte {
 	var bitmap [4]byte
 	bitmapLen := 0
 	if hasA {
-		bitmap[0] |= 1 << (7 - 1) // TypeA = 1
+		bitmap[0] |= 1 << (7 - 1)
 		bitmapLen = 1
 	}
 	if hasAAAA {
-		bitmap[3] |= 1 << (7 - (28 - 24)) // TypeAAAA = 28
+		bitmap[3] |= 1 << (7 - (28 - 24))
 		bitmapLen = 4
 	}
 	out := append(wireName, 0x00, byte(bitmapLen))
@@ -1596,7 +1596,6 @@ func (r *hostRecordResponder) Shutdown() {
 	})
 }
 
-// ZeroconfAdvertiser wraps libp2p/zeroconf/v2 Server with defensive lifecycle management.
 type ZeroconfAdvertiser struct {
 	mu                sync.Mutex
 	server            zeroconfServer
@@ -1608,7 +1607,6 @@ type ZeroconfAdvertiser struct {
 	probeHostConflict hostConflictProbeFunc
 }
 
-// NewZeroconfAdvertiser returns a new ZeroconfAdvertiser.
 func NewZeroconfAdvertiser() *ZeroconfAdvertiser {
 	return &ZeroconfAdvertiser{}
 }
@@ -1626,8 +1624,6 @@ func cleanHostname(h string) string {
 	return h
 }
 
-// extractCleanHost returns bare hostname without any .local suffix
-// to prevent libp2p/zeroconf/v2 from appending a duplicate .local. (e.g. on macOS).
 func extractCleanHost() string {
 	h, err := os.Hostname()
 	if err != nil || h == "" {
@@ -1658,9 +1654,6 @@ func sanitizeDNSLabel(s string) string {
 	return strings.Trim(b.String(), "-")
 }
 
-// buildAdvertisedHost derives a proxy-specific RFC 1123 host label from the
-// instance name so mDNS advertisement never claims or flushes the OS-owned
-// <hostname>.local. record.
 func buildAdvertisedHost(instanceName, osHost string) string {
 	clean := sanitizeDNSLabel(instanceName)
 	var rest string
@@ -1901,8 +1894,6 @@ func canonicalHostRecordList(ips []string) [][]byte {
 	return dedup
 }
 
-// compareHostRecordSets compares two proposed record sets lexicographically per RFC 6762 §8.2.
-// Returns -1 if localIPs < peerIPs (local loses), +1 if localIPs > peerIPs (local wins), 0 if equal.
 func compareHostRecordSets(localIPs, peerIPs []string) int {
 	ours := canonicalHostRecordList(localIPs)
 	theirs := canonicalHostRecordList(peerIPs)
@@ -2442,7 +2433,6 @@ func extractInterfaceAddrs(addrs []net.Addr) []string {
 	return append(v4, v6LinkLocal...)
 }
 
-// extractInterfaceIPs collects non-loopback IP addresses from the selected interfaces.
 func extractInterfaceIPs(ifaces []net.Interface) []string {
 	var ips []string
 	for _, iface := range ifaces {
@@ -2515,8 +2505,6 @@ func resolveRegisterProxyIPs(ifaces []net.Interface, advertisedIPs []string, goo
 	return ips, nil
 }
 
-// Start registers and starts mDNS advertisement for the primary service type
-// and any configured API protocol subtypes.
 func (a *ZeroconfAdvertiser) Start(ctx context.Context, spec ServiceSpec) (err error) {
 	if ctx != nil && ctx.Err() != nil {
 		return ctx.Err()
@@ -2657,7 +2645,6 @@ func (a *ZeroconfAdvertiser) Start(ctx context.Context, spec ServiceSpec) (err e
 	return nil
 }
 
-// Stop shuts down the mDNS advertisement server and sends goodbye packets.
 func (a *ZeroconfAdvertiser) Stop() error {
 	a.mu.Lock()
 	a.closed = true
@@ -2676,12 +2663,10 @@ func (a *ZeroconfAdvertiser) Stop() error {
 	return nil
 }
 
-// ZeroconfBrowser provides DNS-SD browsing with fallback support.
 type ZeroconfBrowser struct {
 	ifaces []net.Interface
 }
 
-// NewZeroconfBrowser creates a new ZeroconfBrowser.
 func NewZeroconfBrowser(ifaces ...net.Interface) *ZeroconfBrowser {
 	return &ZeroconfBrowser{ifaces: append([]net.Interface(nil), ifaces...)}
 }
@@ -2712,7 +2697,6 @@ func browseEntryWithinLimits(entry *zeroconf.ServiceEntry) bool {
 	return true
 }
 
-// Browse performs a standard mDNS browse query for the given service type.
 func (b *ZeroconfBrowser) Browse(ctx context.Context, serviceType, domain string) ([]DiscoveredService, error) {
 	if ctx == nil {
 		ctx = context.TODO()
@@ -2779,12 +2763,10 @@ func parseTXTList(value string) []string {
 	return result
 }
 
-// BrowseWithFallback discovers all AI gateways on the LAN (_ai-gateway._tcp) and prioritizes CPA instances.
 func (b *ZeroconfBrowser) BrowseWithFallback(ctx context.Context) ([]DiscoveredService, error) {
 	return b.BrowseWithFallbackServiceType(ctx, DefaultServiceType)
 }
 
-// BrowseWithFallbackServiceType discovers services of the requested type and prioritizes CPA instances.
 func (b *ZeroconfBrowser) BrowseWithFallbackServiceType(ctx context.Context, serviceType string) ([]DiscoveredService, error) {
 	if strings.TrimSpace(serviceType) == "" {
 		serviceType = DefaultServiceType
@@ -2794,7 +2776,6 @@ func (b *ZeroconfBrowser) BrowseWithFallbackServiceType(ctx context.Context, ser
 		return nil, errMain
 	}
 
-	// Partition: prioritize CPA instances first, then other standard AI gateways
 	var cpaGateways []DiscoveredService
 	var otherGateways []DiscoveredService
 	for _, gw := range allGateways {
@@ -2808,8 +2789,6 @@ func (b *ZeroconfBrowser) BrowseWithFallbackServiceType(ctx context.Context, ser
 	return append(cpaGateways, otherGateways...), nil
 }
 
-// entryToDiscovered converts a zeroconf entry and reports whether its TXT
-// record satisfies draft-su-ai-gateway-discovery-00 (or the legacy CPA schema).
 func entryToDiscovered(e *zeroconf.ServiceEntry) (DiscoveredService, bool) {
 	port := e.Port
 	if port < 1 || port > 65535 {

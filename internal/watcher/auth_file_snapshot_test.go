@@ -12,7 +12,7 @@ import (
 )
 
 func TestSnapshotAuthFileRelativeAuthDir(t *testing.T) {
-	// Keep the fixture on the working directory's volume without changing cwd.
+
 	authDir, errMkdirTemp := os.MkdirTemp(".", "snapshot-relative-authdir-")
 	if errMkdirTemp != nil {
 		t.Fatal(errMkdirTemp)
@@ -70,7 +70,7 @@ func TestSnapshotAuthFile(t *testing.T) {
 					t.Fatal(errWriteFile)
 				}
 			}
-			// Another file must never contribute IDs to the single-file snapshot.
+
 			otherPath := filepath.Join(dir, "other.json")
 			if errWriteFile := os.WriteFile(otherPath, []byte(`{"type":"plugin","ids":["a"]}`), 0o600); errWriteFile != nil {
 				t.Fatal(errWriteFile)

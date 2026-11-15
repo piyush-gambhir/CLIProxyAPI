@@ -85,10 +85,6 @@ func TestManager_ShouldRetryAfterError_RetriesPreHTTPTransportFailure(t *testing
 	}
 }
 
-// TestConfiguredTLSHandshakeTimeoutIsRetryable pins the Issue #6615 retry
-// contract: an internal establishment deadline is a transient pre-HTTP
-// failure even though its chain contains context.DeadlineExceeded, while
-// caller-owned deadline and cancellation shapes remain non-retryable.
 func TestConfiguredTLSHandshakeTimeoutIsRetryable(t *testing.T) {
 	configuredClaudeErr := &url.Error{
 		Op:  "Post",
@@ -381,8 +377,6 @@ func TestExecuteDoesNotPoisonCredentialOnPreHTTPTransportFailure(t *testing.T) {
 	}
 }
 
-// alwaysFailExecutor is local to the configured-handshake retry-round test
-// because transportThenSuccessExecutor intentionally fails only once.
 type alwaysFailExecutor struct {
 	identifier string
 	fail       error
@@ -416,10 +410,6 @@ func (*alwaysFailExecutor) HttpRequest(context.Context, *Auth, *http.Request) (*
 
 func (e *alwaysFailExecutor) callCount() int { return e.calls }
 
-// TestExecuteRetriesConfiguredClaudeHandshakeTimeoutToConfiguredRounds
-// verifies the complete request-retry round behavior with one credential:
-// request-retry 3 means the initial attempt plus three additional rounds,
-// and a caller deadline with the same retry setting still runs only once.
 func TestExecuteRetriesConfiguredClaudeHandshakeTimeoutToConfiguredRounds(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)

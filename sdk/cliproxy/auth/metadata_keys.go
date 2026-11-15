@@ -1,7 +1,5 @@
 package auth
 
-// CanonicalCredentialMetadataKey returns the canonical snake_case name for
-// credential metadata keys that previously also accepted config-style aliases.
 func CanonicalCredentialMetadataKey(key string) string {
 	switch key {
 	case "api-key":
@@ -33,8 +31,6 @@ func CanonicalCredentialMetadataKey(key string) string {
 	}
 }
 
-// NormalizeCredentialMetadata rewrites recognized legacy keys to their
-// canonical snake_case names. An explicitly present canonical value wins.
 func NormalizeCredentialMetadata(metadata map[string]any) {
 	for key, value := range metadata {
 		canonical := CanonicalCredentialMetadataKey(key)

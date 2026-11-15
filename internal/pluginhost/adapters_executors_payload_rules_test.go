@@ -17,7 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// payloadUpstream records the JSON bodies a plugin sends through host.http.
 type payloadUpstream struct {
 	*httptest.Server
 	mu     sync.Mutex
@@ -73,8 +72,6 @@ func TestExecutorAdapterAppliesPayloadRulesAfterTranslation(t *testing.T) {
 		},
 	}, []sdktranslator.Format{sdktranslator.FormatOpenAI}, []sdktranslator.Format{sdktranslator.FormatOpenAI})
 
-	// The thinking suffix is deliberately left in place: rules match on the
-	// suffix-free model, and thinking handling is not part of this change.
 	_, errExecute := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "claude-model(high)",
 		Format:  sdktranslator.FormatClaude,
@@ -182,7 +179,7 @@ func TestExecutorAdapterAppliesPayloadRulesToCountTokens(t *testing.T) {
 
 func TestExecutorAdapterPayloadRulesCanonicalizeSourceFormatAlias(t *testing.T) {
 	host := New()
-	// The rule is gated on the documented canonical source protocol "claude".
+
 	host.runtimeConfig = payloadRulesConfig("openai", "claude", map[string]any{"max_tokens": 64})
 
 	var pluginPayload []byte
@@ -194,7 +191,6 @@ func TestExecutorAdapterPayloadRulesCanonicalizeSourceFormatAlias(t *testing.T) 
 		},
 	}, []sdktranslator.Format{sdktranslator.FormatOpenAI}, []sdktranslator.Format{sdktranslator.FormatOpenAI})
 
-	// "anthropic" is an accepted alias for the Claude source format.
 	_, errExecute := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "claude-model",
 		Format:  sdktranslator.Format("anthropic"),

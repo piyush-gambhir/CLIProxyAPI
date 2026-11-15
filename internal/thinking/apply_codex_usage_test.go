@@ -445,14 +445,13 @@ func TestApplyThinkingLogsNativeResponsesEffectiveEffort(t *testing.T) {
 }
 
 func TestApplyThinkingPreservesCodexTopLevelReasoningEffortBaseline(t *testing.T) {
-	// Preserving request-level baseline sent upstream ensures prompt prefix cache preservation.
+
 	body := []byte(`{"model":"gpt-6-astra","reasoning":{"effort":"xhigh","summary":"auto"},"input":[{"type":"configuration_update","reasoning":{"effort":"low"}}]}`)
 	applied, err := thinking.ApplyThinking(body, "gpt-6-astra", "codex", "codex", "codex")
 	if err != nil {
 		t.Fatalf("ApplyThinking() error = %v", err)
 	}
 
-	// Verify top-level request baseline is preserved for upstream prompt caching.
 	if gotTopEffort := ojson.GetBytes(applied, "reasoning.effort").String(); gotTopEffort != "xhigh" {
 		t.Fatalf("ApplyThinking() top-level reasoning.effort = %q, want %q", gotTopEffort, "xhigh")
 	}
@@ -463,7 +462,6 @@ func TestApplyThinkingPreservesCodexTopLevelReasoningEffortBaseline(t *testing.T
 		t.Fatalf("ApplyThinking() input[0].reasoning.effort = %q, want %q", gotInputEffort, "low")
 	}
 
-	// Verify usage reporting extracts the effective in-turn effort.
 	effort := thinking.ExtractTranslatedReasoningEffort(applied, "codex")
 	if effort != "low" {
 		t.Fatalf("ExtractTranslatedReasoningEffort(applied) = %q, want %q", effort, "low")

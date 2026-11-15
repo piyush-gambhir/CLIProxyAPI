@@ -35,8 +35,7 @@ var corsExposedResponseHeaders = []string{
 	"X-SERVER-BUILD-DATE",
 	"Location",
 	"Retry-After",
-	// Cross-origin management clients must read the config version token to
-	// send it back as If-Match on writes.
+
 	"ETag",
 	"X-Request-Id",
 	"OpenAI-Request-Id",
@@ -44,10 +43,6 @@ var corsExposedResponseHeaders = []string{
 
 var corsExposedResponseHeadersJoined = strings.Join(corsExposedResponseHeaders, ", ")
 
-// corsAllowedRequestHeaders lists the request headers browser clients may
-// send to the API. The Fetch standard treats Authorization as a CORS
-// non-wildcard request-header name, so it must be named explicitly: a
-// wildcard does not cover it when a browser enforces that rule.
 var corsAllowedRequestHeaders = []string{
 	"Authorization",
 	"Content-Type",
@@ -423,11 +418,6 @@ func isExampleAPIKeySafeModeProxyPath(path string) bool {
 	}
 }
 
-// corsMiddleware returns a Gin middleware handler that adds CORS headers
-// to every response, allowing cross-origin requests.
-//
-// Returns:
-//   - gin.HandlerFunc: The CORS middleware handler
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
@@ -445,13 +435,6 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// corsAllowHeadersValue builds the Access-Control-Allow-Headers value for a
-// request. It always names the known API request headers explicitly and, for
-// preflight requests, also echoes the headers the client asked about, so no
-// allowed header depends on the wildcard that strict non-wildcard rules
-// reject for Authorization. Echoing requested headers preserves the previous
-// wildcard behavior for arbitrary custom client headers without widening
-// the allowed origins or enabling credentials.
 func corsAllowHeadersValue(req *http.Request) string {
 	allowed := make([]string, 0, len(corsAllowedRequestHeaders))
 	seen := make(map[string]struct{}, len(corsAllowedRequestHeaders))
@@ -478,9 +461,6 @@ func corsAllowHeadersValue(req *http.Request) string {
 	return strings.Join(allowed, ", ")
 }
 
-// AuthMiddleware returns a Gin middleware handler that authenticates requests
-// using the configured authentication providers. When no providers are available,
-// it allows all requests (legacy behaviour).
 func AuthMiddleware(manager *sdkaccess.Manager) gin.HandlerFunc {
 	return accessAuthMiddleware(manager, false)
 }

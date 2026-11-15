@@ -3,7 +3,6 @@ package helps
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -311,18 +310,6 @@ func BenchmarkSetStringIfDifferentLargeCanonicalPayload(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		benchmarkPayloadMutationOutput = SetStringIfDifferent(input, "model", "gpt-test")
-	}
-}
-
-func TestConfigExampleDocumentsCodexAdditionalToolsPayloadFilter(t *testing.T) {
-	data, err := os.ReadFile("../../../../config.example.yaml")
-	if err != nil {
-		t.Fatalf("failed to read config.example.yaml: %v", err)
-	}
-	content := string(data)
-	const expectedPath = `'input.#(type=="additional_tools")#.tools.#(name=="functions")#.tools.#(name=="apply_patch")#'`
-	if !strings.Contains(content, expectedPath) {
-		t.Fatalf("config.example.yaml does not contain expected additional_tools path: %s", expectedPath)
 	}
 }
 

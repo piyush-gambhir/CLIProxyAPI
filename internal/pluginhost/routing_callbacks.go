@@ -11,8 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// callHostRoutingResetCooldown clears quota and cooldown routing state for one credential, the
-// same reset POST /v8/management/routing/cooldown/reset performs, while ensuring token files are left alone.
 func (h *Host) callHostRoutingResetCooldown(ctx context.Context, request []byte) ([]byte, error) {
 	var req pluginapi.HostRoutingResetCooldownRequest
 	if errUnmarshal := json.Unmarshal(request, &req); errUnmarshal != nil {

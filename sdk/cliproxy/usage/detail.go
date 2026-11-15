@@ -2,7 +2,6 @@ package usage
 
 import "maps"
 
-// CacheDetails holds prompt cache configuration and TTL-bucketed write token counts.
 type CacheDetails struct {
 	Mode                    string           `json:"mode,omitempty"`
 	TTL                     string           `json:"ttl,omitempty"`
@@ -14,7 +13,6 @@ type CacheDetails struct {
 	ByTTL                   map[string]int64 `json:"by_ttl,omitempty"`
 }
 
-// ToolUsageDetails holds structured server-side tool execution counters.
 type ToolUsageDetails struct {
 	WebSearchCalls         *int64           `json:"web_search_calls,omitempty"`
 	WebSearchQueries       *int64           `json:"web_search_queries,omitempty"`
@@ -35,7 +33,6 @@ type ToolUsageDetails struct {
 	Extra                  map[string]int64 `json:"extra,omitempty"`
 }
 
-// IterationUsage holds per-iteration usage reported in usage.iterations[].
 type IterationUsage struct {
 	Type                     string        `json:"type,omitempty"`
 	Model                    string        `json:"model,omitempty"`
@@ -50,7 +47,6 @@ type IterationUsage struct {
 	CacheCreation            *CacheDetails `json:"cache_creation,omitempty"`
 }
 
-// ImageDetails holds image/video generation dimension and quality attributes.
 type ImageDetails struct {
 	Size           string `json:"size,omitempty"`
 	Resolution     string `json:"resolution,omitempty"`
@@ -64,7 +60,6 @@ type ImageDetails struct {
 	InputFidelity  string `json:"input_fidelity,omitempty"`
 }
 
-// Clone returns a deep copy of ImageDetails.
 func (d *ImageDetails) Clone() *ImageDetails {
 	if d == nil {
 		return nil
@@ -73,7 +68,6 @@ func (d *ImageDetails) Clone() *ImageDetails {
 	return &out
 }
 
-// MediaCounts holds prompt/completion media item counts and audio/video duration.
 type MediaCounts struct {
 	PromptMedia     *int64   `json:"prompt_media,omitempty"`
 	CompletionMedia *int64   `json:"completion_media,omitempty"`
@@ -81,7 +75,6 @@ type MediaCounts struct {
 	AudioSeconds    *float64 `json:"audio_seconds,omitempty"`
 }
 
-// Clone returns a deep copy of MediaCounts.
 func (m *MediaCounts) Clone() *MediaCounts {
 	if m == nil {
 		return nil
@@ -94,7 +87,6 @@ func (m *MediaCounts) Clone() *MediaCounts {
 	}
 }
 
-// CostDetails holds optional upstream-reported cost information (e.g. OpenRouter).
 type CostDetails struct {
 	Cost                             *float64 `json:"cost,omitempty"`
 	CostInUSDTicks                   *int64   `json:"cost_in_usd_ticks,omitempty"`
@@ -104,17 +96,14 @@ type CostDetails struct {
 	UpstreamInferenceCompletionsCost *float64 `json:"upstream_inference_completions_cost,omitempty"`
 }
 
-// Int64Ptr returns a pointer to v.
 func Int64Ptr(v int64) *int64 {
 	return &v
 }
 
-// Float64Ptr returns a pointer to v.
 func Float64Ptr(v float64) *float64 {
 	return &v
 }
 
-// BoolPtr returns a pointer to v.
 func BoolPtr(v bool) *bool {
 	return &v
 }
@@ -143,12 +132,10 @@ func cloneBoolPtr(p *bool) *bool {
 	return &v
 }
 
-// CloneInt64Ptr returns a shallow copy of p when non-nil.
 func CloneInt64Ptr(p *int64) *int64 {
 	return cloneInt64Ptr(p)
 }
 
-// Clone returns a deep copy of CacheDetails.
 func (c *CacheDetails) Clone() *CacheDetails {
 	if c == nil {
 		return nil
@@ -168,7 +155,6 @@ func (c *CacheDetails) Clone() *CacheDetails {
 	return out
 }
 
-// SumTokens returns the sum of TTL-bucketed tokens and whether at least one TTL bucket was present.
 func (c *CacheDetails) SumTokens() (int64, bool) {
 	if c == nil || len(c.ByTTL) == 0 {
 		return 0, false
@@ -183,7 +169,6 @@ func (c *CacheDetails) SumTokens() (int64, bool) {
 	return sum, true
 }
 
-// Clone returns a deep copy of ToolUsageDetails.
 func (t *ToolUsageDetails) Clone() *ToolUsageDetails {
 	if t == nil {
 		return nil
@@ -212,7 +197,6 @@ func (t *ToolUsageDetails) Clone() *ToolUsageDetails {
 	return out
 }
 
-// Clone returns a deep copy of IterationUsage.
 func (it IterationUsage) Clone() IterationUsage {
 	return IterationUsage{
 		Type:                     it.Type,
@@ -229,7 +213,6 @@ func (it IterationUsage) Clone() IterationUsage {
 	}
 }
 
-// CloneIterations returns a deep copy of a slice of IterationUsage.
 func CloneIterations(items []IterationUsage) []IterationUsage {
 	if len(items) == 0 {
 		return nil
@@ -241,7 +224,6 @@ func CloneIterations(items []IterationUsage) []IterationUsage {
 	return out
 }
 
-// IterationsPtr returns a pointer to a cloned non-empty IterationUsage slice, or nil when empty.
 func IterationsPtr(items []IterationUsage) *[]IterationUsage {
 	cloned := CloneIterations(items)
 	if len(cloned) == 0 {
@@ -250,7 +232,6 @@ func IterationsPtr(items []IterationUsage) *[]IterationUsage {
 	return &cloned
 }
 
-// IterationSlice returns a deep copy of Detail.Iterations when present.
 func (d Detail) IterationSlice() []IterationUsage {
 	if d.Iterations == nil {
 		return nil
@@ -258,7 +239,6 @@ func (d Detail) IterationSlice() []IterationUsage {
 	return CloneIterations(*d.Iterations)
 }
 
-// Clone returns a deep copy of CostDetails.
 func (c *CostDetails) Clone() *CostDetails {
 	if c == nil {
 		return nil

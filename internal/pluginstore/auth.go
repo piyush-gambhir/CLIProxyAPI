@@ -36,10 +36,8 @@ type AuthConfig struct {
 	AllowInsecure  bool     `yaml:"allow-insecure,omitempty" json:"allow_insecure,omitempty"`
 }
 
-// Secret holds short-lived credential material that can be overwritten after use.
 type Secret []byte
 
-// Clear overwrites the secret and releases its backing slice reference.
 func (s *Secret) Clear() {
 	if s == nil {
 		return

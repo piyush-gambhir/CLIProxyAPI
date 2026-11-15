@@ -86,7 +86,7 @@ func TestIssue6199AntigravitySharedOAuthHasIndependentAcquisitionDeadline(t *tes
 			t.Fatal("OAuth request did not reach the intercepted transport")
 		}
 		go runRefresh(followerCtx, "issue6199-oauth-follower")
-		// Wait until the follower is blocked inside singleflight, without wall-clock sleeps.
+
 		synctest.Wait()
 		if tokenCalls != 1 {
 			t.Fatalf("shared OAuth requests = %d, want 1", tokenCalls)
@@ -105,7 +105,6 @@ func TestIssue6199AntigravitySharedOAuthHasIndependentAcquisitionDeadline(t *tes
 			t.Fatalf("shared OAuth deadline = %s, want an independent acquisition budget before caller deadline %s", deadline, callerDeadline)
 		}
 
-		// Advance only the bubble clock to the actual acquisition deadline.
 		timer := time.NewTimer(time.Until(deadline))
 		defer timer.Stop()
 		<-timer.C
@@ -283,7 +282,7 @@ func issue6199CreditsLifecycleFixture(t *testing.T, authID string) {
 		antigravityCreditsHintRefreshByID.Delete(authID)
 		cliproxyauth.SetAntigravityCreditsHint(authID, cliproxyauth.AntigravityCreditsHint{})
 	}
-	// Isolate repeated test runs without changing state between lifecycle transitions.
+
 	reset()
 	t.Cleanup(reset)
 }
@@ -353,7 +352,7 @@ func TestIssue6199AntigravityCreditsRecoverAfterLifecycleCancellation(t *testing
 		default:
 			t.Error("old credits transport did not observe lifecycle cancellation")
 		}
-		// Isolate the held-lock regression from the existing retry interval policy.
+
 		timer := time.NewTimer(antigravityCreditsHintRefreshInterval + time.Nanosecond)
 		defer timer.Stop()
 		<-timer.C
@@ -466,7 +465,7 @@ func TestIssue6199AntigravityCanceledCreditsCannotOverwriteReplacementBalance(t 
 				return issue6199AntigravityJSONResponse(req, `{"access_token":"old-access","expires_in":3600}`), nil
 			case "https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist":
 				oldRequest = req.Context()
-				// Emulate a transport that returns a successful response after cancellation.
+
 				<-releaseOld
 				return issue6199CreditsBalanceResponse(req, 10), nil
 			default:
@@ -493,7 +492,7 @@ func TestIssue6199AntigravityCanceledCreditsCannotOverwriteReplacementBalance(t 
 		replacement := updated.Clone()
 		replacement.RegistrationEpoch++
 		newCtx := context.WithValue(context.Background(), "cliproxy.roundtripper", healthyTransport)
-		// Commit through the real balance updater to isolate publication from admission.
+
 		executor.updateAntigravityCreditsBalance(newCtx, replacement, "replacement-access")
 		if healthyCalls != 1 {
 			t.Fatalf("replacement balance queries = %d, want 1", healthyCalls)
@@ -544,7 +543,7 @@ func TestIssue6199AntigravityCanceledCreditsRetryWithoutOldThrottle(t *testing.T
 		cancelLifecycle()
 		synctest.Wait()
 		newCtx := context.WithValue(context.Background(), "cliproxy.roundtripper", transport)
-		// No clock advancement: cancellation must not retain the old task's throttle.
+
 		issue6199RefreshForCreditsLifecycle(t, executor, newCtx, updated.Clone())
 		if healthyCalls != 1 {
 			t.Errorf("immediate same-epoch credits recovery requests = %d, want 1", healthyCalls)

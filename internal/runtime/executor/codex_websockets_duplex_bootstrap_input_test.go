@@ -47,7 +47,7 @@ func TestCodexDuplexBootstrapPreservesFollowup(t *testing.T) {
 						t.Error(err)
 						return
 					}
-					// Keep this socket open; bootstrap cleanup must close it without forwarding input.
+
 					for {
 						if _, _, err = c.ReadMessage(); err != nil {
 							return
@@ -150,7 +150,7 @@ func TestCodexDuplexBootstrapCancellationPreservesInput(t *testing.T) {
 			return
 		}
 		close(initialRead)
-		// No response.created: cancellation must release the blocked writer.
+
 		_, _, _ = c.ReadMessage()
 	}))
 	defer upstream.Close()

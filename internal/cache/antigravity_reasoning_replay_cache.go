@@ -18,28 +18,17 @@ import (
 )
 
 const (
-	// AntigravityReasoningReplayCacheTTL limits how long encrypted reasoning replay
-	// items stay in process memory.
 	AntigravityReasoningReplayCacheTTL = 1 * time.Hour
 
-	// AntigravityReasoningReplayCacheMaxEntries bounds process memory for replay
-	// continuity. Oldest entries are evicted first.
 	AntigravityReasoningReplayCacheMaxEntries = 10240
 
-	// AntigravityReasoningReplayCacheEvictBatchSize leaves headroom after the cache
-	// reaches capacity so high write volume does not rescan the map every turn.
 	AntigravityReasoningReplayCacheEvictBatchSize = 128
 
 	minAntigravityThoughtSignatureReplayLen = 16
 
-	// AntigravityReasoningReplayCacheMaxItemsPerEntry and MaxBytesPerEntry
-	// bound one logical conversation. Oversized chains are not partially cached,
-	// because dropping an arbitrary prefix would break native signature ordering.
 	AntigravityReasoningReplayCacheMaxItemsPerEntry = 4096
 	AntigravityReasoningReplayCacheMaxBytesPerEntry = 16 << 20
 
-	// JSON encodes each normalized []byte item as base64. Leave enough room for
-	// that expansion while rejecting oversized Home values before unmarshalling.
 	antigravityReasoningReplayCacheMaxSerializedBytes = 24 << 20
 )
 
@@ -53,8 +42,6 @@ type antigravityReasoningReplayEntry struct {
 
 const antigravityReasoningReplayGenerationItemType = "cpa_antigravity_replay_generation"
 
-// AntigravityReasoningReplaySnapshot identifies the exact replay state read for
-// one request. Its fields are intentionally opaque outside this package.
 type AntigravityReasoningReplaySnapshot struct {
 	raw           []byte
 	items         [][]byte
@@ -83,20 +70,14 @@ var currentAntigravityReasoningReplayKVClient = func() (antigravityReasoningRepl
 	return homekv.CurrentKVClient()
 }
 
-// CacheAntigravityReasoningReplayItem stores a final GPT/Codex reasoning item for
-// stateless replay. The stored item is normalized to the minimal shape accepted
-// by Responses input replay.
 func CacheAntigravityReasoningReplayItem(modelName, sessionKey string, item []byte) bool {
 	return CacheAntigravityReasoningReplayItems(modelName, sessionKey, [][]byte{item})
 }
 
-// CacheAntigravityReasoningReplayItems stores the final GPT/Codex assistant output
-// items needed to replay a stateless next turn.
 func CacheAntigravityReasoningReplayItems(modelName, sessionKey string, items [][]byte) bool {
 	return CacheAntigravityReasoningReplayItemsBestEffort(context.Background(), modelName, sessionKey, items)
 }
 
-// CacheAntigravityReasoningReplayItemsBestEffort stores replay items for completed response paths.
 func CacheAntigravityReasoningReplayItemsBestEffort(ctx context.Context, modelName, sessionKey string, items [][]byte) bool {
 	key := antigravityReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -141,7 +122,6 @@ func CacheAntigravityReasoningReplayItemsBestEffort(ctx context.Context, modelNa
 	return true
 }
 
-// GetAntigravityReasoningReplayItem retrieves a normalized reasoning replay item.
 func GetAntigravityReasoningReplayItem(modelName, sessionKey string) ([]byte, bool) {
 	items, ok := GetAntigravityReasoningReplayItems(modelName, sessionKey)
 	if !ok || len(items) == 0 {
@@ -150,7 +130,6 @@ func GetAntigravityReasoningReplayItem(modelName, sessionKey string) ([]byte, bo
 	return items[0], true
 }
 
-// GetAntigravityReasoningReplayItems retrieves normalized assistant output items.
 func GetAntigravityReasoningReplayItems(modelName, sessionKey string) ([][]byte, bool) {
 	items, ok, err := GetAntigravityReasoningReplayItemsRequired(context.Background(), modelName, sessionKey)
 	if err == nil {
@@ -159,29 +138,20 @@ func GetAntigravityReasoningReplayItems(modelName, sessionKey string) ([][]byte,
 	return nil, false
 }
 
-// GetAntigravityReasoningReplayItemsRequired retrieves replay items for request-time paths.
 func GetAntigravityReasoningReplayItemsRequired(ctx context.Context, modelName, sessionKey string) ([][]byte, bool, error) {
 	items, _, found, errGet := GetAntigravityReasoningReplayItemsWithSnapshotRequired(ctx, modelName, sessionKey)
 	return items, found, errGet
 }
 
-// PeekAntigravityReasoningReplayItemsRequired retrieves existing replay items
-// without creating an absence reservation tombstone on a cache miss. Use this
-// for read-only paths such as CountTokens that never commit or delete a turn.
 func PeekAntigravityReasoningReplayItemsRequired(ctx context.Context, modelName, sessionKey string) ([][]byte, bool, error) {
 	items, _, found, errGet := getAntigravityReasoningReplayItemsWithSnapshot(ctx, modelName, sessionKey, false)
 	return items, found, errGet
 }
 
-// PeekAntigravityReasoningReplayItemsWithSnapshotRequired retrieves existing
-// replay items and their snapshot without creating an absence reservation
-// tombstone on a cache miss.
 func PeekAntigravityReasoningReplayItemsWithSnapshotRequired(ctx context.Context, modelName, sessionKey string) ([][]byte, AntigravityReasoningReplaySnapshot, bool, error) {
 	return getAntigravityReasoningReplayItemsWithSnapshot(ctx, modelName, sessionKey, false)
 }
 
-// GetAntigravityReasoningReplayItemsWithSnapshotRequired retrieves replay items
-// and the exact cache state that guarded this request.
 func GetAntigravityReasoningReplayItemsWithSnapshotRequired(ctx context.Context, modelName, sessionKey string) ([][]byte, AntigravityReasoningReplaySnapshot, bool, error) {
 	return getAntigravityReasoningReplayItemsWithSnapshot(ctx, modelName, sessionKey, true)
 }
@@ -278,9 +248,6 @@ func getAntigravityReasoningReplayItemsWithSnapshot(ctx context.Context, modelNa
 	return cloneAntigravityReasoningReplayItems(entry.Items), snapshot, true, nil
 }
 
-// reserveAntigravityReasoningReplayAbsentLocked fences a local miss with a
-// per-key tombstone so eviction of an unrelated key cannot invalidate it.
-// antigravityReasoningReplayMu must be held by the caller.
 func reserveAntigravityReasoningReplayAbsentLocked(key string, now time.Time) AntigravityReasoningReplaySnapshot {
 	if len(antigravityReasoningReplayEntries) >= AntigravityReasoningReplayCacheMaxEntries {
 		evictOldestAntigravityReasoningReplayEntries(AntigravityReasoningReplayCacheEvictBatchSize)
@@ -302,8 +269,6 @@ func reserveAntigravityReasoningReplayAbsentLocked(key string, now time.Time) An
 	}
 }
 
-// ReplaceAntigravityReasoningReplayItemsIfUnchanged publishes a completed chain
-// only when no newer request has changed the state read by this request.
 func ReplaceAntigravityReasoningReplayItemsIfUnchanged(ctx context.Context, modelName, sessionKey string, snapshot AntigravityReasoningReplaySnapshot, items [][]byte) (bool, error) {
 	key := antigravityReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -380,8 +345,6 @@ func ReplaceAntigravityReasoningReplayItemsIfUnchanged(ctx context.Context, mode
 	return true, nil
 }
 
-// DeleteAntigravityReasoningReplayItemsIfUnchanged clears replay state only when
-// it still matches the state read for this request.
 func DeleteAntigravityReasoningReplayItemsIfUnchanged(ctx context.Context, modelName, sessionKey string, snapshot AntigravityReasoningReplaySnapshot) (bool, error) {
 	key := antigravityReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -412,15 +375,12 @@ func DeleteAntigravityReasoningReplayItemsIfUnchanged(ctx context.Context, model
 	return true, nil
 }
 
-// DeleteAntigravityReasoningReplayItem removes one replay item after upstream rejects
-// it or the caller otherwise knows it is stale.
 func DeleteAntigravityReasoningReplayItem(modelName, sessionKey string) {
 	if errDelete := DeleteAntigravityReasoningReplayItemRequired(context.Background(), modelName, sessionKey); errDelete != nil {
 		return
 	}
 }
 
-// DeleteAntigravityReasoningReplayItemRequired removes one replay item for request-time paths.
 func DeleteAntigravityReasoningReplayItemRequired(ctx context.Context, modelName, sessionKey string) error {
 	key := antigravityReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -547,7 +507,6 @@ func newAntigravityReasoningReplayTombstone() []byte {
 	return raw
 }
 
-// ClearAntigravityReasoningReplayCache clears all Antigravity reasoning replay state.
 func ClearAntigravityReasoningReplayCache() {
 	antigravityReasoningReplayMu.Lock()
 	antigravityReasoningReplayEntries = make(map[string]antigravityReasoningReplayEntry)
@@ -561,8 +520,7 @@ func antigravityReasoningReplayCacheKey(modelName, sessionKey string) string {
 	if modelName == "" || sessionKey == "" {
 		return ""
 	}
-	// The session key is the continuity boundary. Keep this independent from
-	// the selected upstream Codex credential so auth failover can preserve replay.
+
 	return strings.Join([]string{"antigravity-reasoning-replay", modelName, sessionKey}, "\x00")
 }
 

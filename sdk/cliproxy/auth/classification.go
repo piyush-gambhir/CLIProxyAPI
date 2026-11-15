@@ -25,8 +25,6 @@ const (
 	AttributeWeight               = "weight"
 )
 
-// AuthKind returns the credential kind using explicit metadata first and legacy
-// field-shape fallbacks second.
 func (a *Auth) AuthKind() string {
 	if a == nil {
 		return ""
@@ -49,7 +47,6 @@ func (a *Auth) AuthKind() string {
 	return ""
 }
 
-// AuthSourceKind returns where the Auth entry came from at runtime.
 func (a *Auth) AuthSourceKind() string {
 	if a == nil {
 		return ""

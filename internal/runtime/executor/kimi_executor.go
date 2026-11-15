@@ -28,13 +28,11 @@ import (
 
 const kimiReasoningUnavailable = "[reasoning unavailable]"
 
-// KimiExecutor is a stateless executor for Kimi API using OpenAI-compatible chat completions.
 type KimiExecutor struct {
 	ClaudeExecutor
 	cfg *config.Config
 }
 
-// NewKimiExecutor creates a new Kimi executor.
 func NewKimiExecutor(cfg *config.Config) *KimiExecutor {
 	return &KimiExecutor{
 		ClaudeExecutor: ClaudeExecutor{
@@ -47,15 +45,10 @@ func NewKimiExecutor(cfg *config.Config) *KimiExecutor {
 	}
 }
 
-// Identifier returns the executor identifier.
 func (e *KimiExecutor) Identifier() string { return "kimi" }
 
-// SupportsNativeToolSearch keeps Kimi out of native tool search. Catalog checks
-// see Kimi credentials before their base_url is filled in, so the embedded
-// Claude rule would mistake them for Anthropic's origin.
 func (e *KimiExecutor) SupportsNativeToolSearch(*cliproxyauth.Auth, string) bool { return false }
 
-// RequestToFormat reports the upstream request format used after auth selection.
 func (e *KimiExecutor) RequestToFormat(_ cliproxyexecutor.Request, opts cliproxyexecutor.Options) sdktranslator.Format {
 	if opts.SourceFormat == sdktranslator.FormatClaude {
 		return sdktranslator.FormatClaude
@@ -66,7 +59,6 @@ func (e *KimiExecutor) RequestToFormat(_ cliproxyexecutor.Request, opts cliproxy
 	return sdktranslator.FormatOpenAI
 }
 
-// PrepareRequest injects Kimi credentials into the outgoing HTTP request.
 func (e *KimiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -83,7 +75,6 @@ func (e *KimiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth
 	return nil
 }
 
-// HttpRequest injects Kimi credentials into the request and executes it.
 func (e *KimiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("kimi executor: request is nil")
@@ -99,7 +90,6 @@ func (e *KimiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth,
 	return httpClient.Do(httpReq)
 }
 
-// Execute performs a non-streaming chat completion request to Kimi.
 func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	from := opts.SourceFormat
 	if from.String() == "claude" {
@@ -144,7 +134,6 @@ func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req
 		return resp, err
 	}
 
-	// Strip kimi- prefix and any [1m] suffix for upstream API
 	upstreamModel := normalizeKimiUpstreamModel(baseModel)
 	reporter.SetUpstreamModel(upstreamModel)
 	doc := ojson.NewDoc(body)
@@ -227,8 +216,7 @@ func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req
 	}
 	reporter.ObserveResponseModel(data)
 	var param any
-	// Note: TranslateNonStream uses req.Model (original with suffix) to preserve
-	// the original model name in the response for client compatibility.
+
 	out := sdktranslator.TranslateNonStream(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), body, data, &param)
 	if helps.ApplyPatchTranslationError(param) != nil || len(out) == 0 {
 		return cliproxyexecutor.Response{}, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
@@ -241,7 +229,6 @@ func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req
 	return resp, nil
 }
 
-// ExecuteStream performs a streaming chat completion request to Kimi.
 func (e *KimiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	from := opts.SourceFormat
 	if from.String() == "claude" {
@@ -284,7 +271,6 @@ func (e *KimiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Aut
 		return nil, err
 	}
 
-	// Strip kimi- prefix and any [1m] suffix for upstream API
 	upstreamModel := normalizeKimiUpstreamModel(baseModel)
 	reporter.SetUpstreamModel(upstreamModel)
 	doc := ojson.NewDoc(body)
@@ -369,7 +355,7 @@ func (e *KimiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Aut
 			}
 		}()
 		scanner := bufio.NewScanner(httpResp.Body)
-		scanner.Buffer(nil, 1_048_576) // 1MB
+		scanner.Buffer(nil, 1_048_576)
 		claudeInputTokens := helps.NewClaudeInputTokenState(from, to, responseFormat, originalPayload)
 		var streamUsage helps.StreamUsageBuffer
 		defer streamUsage.Publish(ctx, reporter)
@@ -823,7 +809,6 @@ func (e *KimiExecutor) executeKimiResponsesCompactionStream(ctx context.Context,
 	return &cliproxyexecutor.StreamResult{Headers: headers, Chunks: out}, nil
 }
 
-// CountTokens estimates token count for Kimi requests.
 func (e *KimiExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	if opts.SourceFormat == sdktranslator.FormatOpenAIResponse {
 		if errExpand := helps.ExpandResponsesCompactionCapsules(&req, &opts, "kimi"); errExpand != nil {
@@ -1128,7 +1113,6 @@ func fallbackAssistantReasoning(msg ojson.Result, hasLatest bool, latest string)
 	return kimiReasoningUnavailable
 }
 
-// Refresh refreshes the Kimi token using the refresh token.
 func (e *KimiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("kimi executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
@@ -1137,7 +1121,7 @@ func (e *KimiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	if auth == nil {
 		return nil, fmt.Errorf("kimi executor: auth is nil")
 	}
-	// Expect refresh_token in metadata for OAuth-based accounts
+
 	var refreshToken string
 	if auth.Metadata != nil {
 		if v, ok := auth.Metadata["refresh_token"].(string); ok && strings.TrimSpace(v) != "" {
@@ -1145,7 +1129,7 @@ func (e *KimiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 		}
 	}
 	if strings.TrimSpace(refreshToken) == "" {
-		// Nothing to refresh
+
 		return auth, nil
 	}
 
@@ -1204,12 +1188,10 @@ func (e *KimiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	return auth, nil
 }
 
-// applyKimiHeaders sets required headers for Kimi API requests.
-// Headers identify CLIProxyAPI with the current build version.
 func applyKimiHeaders(r *http.Request, token string, stream bool) {
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Authorization", "Bearer "+token)
-	// Identify requests with the current CLIProxyAPI version.
+
 	r.Header.Set("User-Agent", "CLIProxyAPI/"+buildinfo.Version)
 	r.Header.Set("X-Msh-Platform", "CLIProxyAPI")
 	r.Header.Set("X-Msh-Version", buildinfo.Version)
@@ -1270,7 +1252,6 @@ func applyKimiHeadersWithAuth(r *http.Request, token string, stream bool, auth *
 	}
 }
 
-// getKimiHostname returns the machine hostname.
 func getKimiHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -1279,18 +1260,16 @@ func getKimiHostname() string {
 	return hostname
 }
 
-// getKimiDeviceModel returns a device model string matching kimi-cli format.
 func getKimiDeviceModel() string {
 	return fmt.Sprintf("%s %s", runtime.GOOS, runtime.GOARCH)
 }
 
-// getKimiDeviceID returns a stable device ID, matching kimi-cli storage location.
 func getKimiDeviceID() string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "cli-proxy-api-device"
 	}
-	// Check kimi-cli's device_id location first (platform-specific)
+
 	var kimiShareDir string
 	switch runtime.GOOS {
 	case "darwin":
@@ -1301,7 +1280,7 @@ func getKimiDeviceID() string {
 			appData = filepath.Join(homeDir, "AppData", "Roaming")
 		}
 		kimiShareDir = filepath.Join(appData, "kimi")
-	default: // linux and other unix-like
+	default:
 		kimiShareDir = filepath.Join(homeDir, ".local", "share", "kimi")
 	}
 	deviceIDPath := filepath.Join(kimiShareDir, "device_id")
@@ -1311,18 +1290,17 @@ func getKimiDeviceID() string {
 	return "cli-proxy-api-device"
 }
 
-// kimiCreds extracts the access token from auth.
 func kimiCreds(a *cliproxyauth.Auth) (token string) {
 	if a == nil {
 		return ""
 	}
-	// Check metadata first (OAuth flow stores tokens here)
+
 	if a.Metadata != nil {
 		if v, ok := a.Metadata["access_token"].(string); ok && strings.TrimSpace(v) != "" {
 			return v
 		}
 	}
-	// Fallback to attributes (API key style)
+
 	if a.Attributes != nil {
 		if v := a.Attributes["access_token"]; v != "" {
 			return v
@@ -1334,7 +1312,6 @@ func kimiCreds(a *cliproxyauth.Auth) (token string) {
 	return ""
 }
 
-// stripKimiPrefix removes the "kimi-" prefix from model names for the upstream API.
 func stripKimiPrefix(model string) string {
 	model = strings.TrimSpace(model)
 	if strings.HasPrefix(strings.ToLower(model), "kimi-") {
@@ -1343,12 +1320,6 @@ func stripKimiPrefix(model string) string {
 	return model
 }
 
-// normalizeKimiUpstreamModel returns the canonical upstream model ID for Kimi.
-// It strips the CLIProxyAPI "kimi-" prefix and any Claude Code "[1m]" context
-// suffix while preserving a trailing thinking suffix (e.g. "(1024)"), so that
-// the upstream API receives IDs such as "k3(1024)" instead of "kimi-k3[1m](1024)".
-// K2.8 and K2.7 Code aliases are remapped to the official Kimi Code model IDs before
-// generic prefix stripping, so already-canonical IDs stay idempotent.
 func normalizeKimiUpstreamModel(model string) string {
 	model = strings.TrimSpace(model)
 	parsed := thinking.ParseSuffix(model)
@@ -1371,9 +1342,6 @@ func normalizeKimiUpstreamModel(model string) string {
 	return normalized
 }
 
-// normalizeKimiTools normalizes tool and legacy function parameter schemas for Moonshot.
-// It resolves and inlines local $ref pointers, strips $defs / definitions, and ensures
-// parameters root objects declare an explicit type: "object".
 func normalizeKimiTools(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -1518,12 +1486,6 @@ func normalizeKimiParametersSchema(paramsRaw string) string {
 	return doc.String()
 }
 
-// normalizeKimiTemperature normalizes or strips the temperature parameter for Kimi upstream.
-// Upstream enforces strict temperature values based on thinking mode:
-// - Thinking disabled: only temperature 0.6 is accepted (or absent).
-// - Thinking enabled: only temperature 1.0 is accepted (or absent).
-// If a client specifies an invalid temperature, stripping it allows the upstream
-// to apply its safe model default and avoids a 400 Bad Request error.
 func normalizeKimiTemperature(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !normalizeKimiTemperatureDoc(doc) {
@@ -1547,17 +1509,15 @@ func normalizeKimiTemperatureDoc(doc *ojson.Doc) bool {
 		}
 		return false
 	}
-	// Default / enabled thinking requires temperature 1.0.
+
 	if tempRes.Float() != 1.0 {
 		return doc.Delete("temperature") == nil
 	}
 	return false
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
 func (e *KimiExecutor) SupportsApplyPatch() bool { return e != nil }
 
-// ForAPIKey preserves Kimi's actual Responses/Chat routing while scoping its config.
 func (e KimiExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	e.cfg = e.cfg.ForAPIKey()
 	e.ClaudeExecutor = *e.ClaudeExecutor.ForAPIKey().(*ClaudeExecutor)

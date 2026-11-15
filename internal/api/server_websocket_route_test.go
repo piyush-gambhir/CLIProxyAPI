@@ -20,11 +20,11 @@ func TestAttachWebsocketRouteDisabledInHomeMode(t *testing.T) {
 					WebsocketAuth: wsAuth,
 				}
 				if homeEnabled {
-					// Home mode clears local API keys during startup.
+
 					cfg.APIKeys = nil
 				}
 				server := newTestServerWithConfig(t, cfg)
-				// Isolate route registration from the Home heartbeat readiness gate.
+
 				server.engine = gin.New()
 				handlerCalled := false
 				server.AttachWebsocketRoute("/v1/ws", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

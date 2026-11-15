@@ -10,7 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// With every decode slot taken, a decoding request waits and gives up with its context.
 func TestAccessAdapterDecodeWaitsForSlot(t *testing.T) {
 	saved := authDecodeSlots
 	authDecodeSlots = make(chan struct{}, 1)
@@ -24,8 +23,6 @@ func TestAccessAdapterDecodeWaitsForSlot(t *testing.T) {
 	}
 }
 
-// When a client cancels while a guarded RPC auth call is still running, the decode slot stays
-// held until the underlying inner plugin call finishes.
 func TestAccessAdapterCanceledRPCKeepsSlotUntilInnerCallFinishes(t *testing.T) {
 	saved := authDecodeSlots
 	authDecodeSlots = make(chan struct{}, 1)

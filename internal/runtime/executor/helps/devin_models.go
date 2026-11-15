@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-// knownDevinSuffixes lists recognized model uid suffixes.
 var knownDevinSuffixes = []string{
 	"-none",
 	"-low",
@@ -50,13 +49,11 @@ var knownDevinSuffixes = []string{
 	"_thinking",
 }
 
-// Special private Devin upstream aliases that cannot be dynamically inferred.
 var specialDevinAliases = map[string]string{
 	"claude-haiku-4-5": "MODEL_PRIVATE_11",
 	"gpt-4-1":          "MODEL_CHAT_GPT_4_1_2025_04_14",
 }
 
-// HasDevinEffortSuffix reports whether the model name already ends with a known Devin effort suffix.
 func HasDevinEffortSuffix(model string) bool {
 	lower := strings.ToLower(strings.TrimSpace(model))
 	for _, s := range knownDevinSuffixes {
@@ -67,7 +64,6 @@ func HasDevinEffortSuffix(model string) bool {
 	return false
 }
 
-// NormalizeThinkingLevel converts numeric budgets or loose effort strings to canonical Devin efforts.
 func NormalizeThinkingLevel(level string, budgetTokens int) string {
 	normalized := strings.ToLower(strings.TrimSpace(level))
 	switch normalized {
@@ -95,28 +91,21 @@ func NormalizeThinkingLevel(level string, budgetTokens int) string {
 	return ""
 }
 
-// ResolveDevinChatModelUID resolves a model identifier into a valid upstream Devin chat_model_uid.
-// It prioritizes dynamic catalog metadata from devin_models.json, automatically clamps
-// requested efforts to supported levels, applies sensible default efforts for thinking models,
-// and ensures bare non-thinking models remain bare.
 func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetTokens int) string {
 	model := strings.TrimSpace(rawModel)
 	if model == "" {
 		return "swe-2-high"
 	}
 
-	// 1. Strip devin/ prefix if present (case-insensitive)
 	cleanModel := model
 	if strings.HasPrefix(strings.ToLower(cleanModel), "devin/") {
 		cleanModel = cleanModel[6:]
 	}
 
-	// 2. If already ends with an exact Devin effort suffix, use directly
 	if HasDevinEffortSuffix(cleanModel) {
 		return cleanModel
 	}
 
-	// 3. Strip CPA colon or parenthesis suffix (suffix overrides body per CPA convention)
 	parsedSuffix := thinking.ParseSuffix(cleanModel)
 	baseModel := strings.TrimSpace(parsedSuffix.ModelName)
 	if parsedSuffix.HasSuffix {
@@ -126,15 +115,11 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		thinkingLevel = strings.TrimSpace(cleanModel[colonIdx+1:])
 	}
 
-	// 4. Normalize requested effort. Compound "<level>-fast" requests select upstream
-	// fast-mode variants (see step 10); NormalizeThinkingLevel cannot represent them,
-	// so keep the raw level alongside the normalized effort.
 	rawLevel := strings.ToLower(strings.TrimSpace(thinkingLevel))
 	effort := NormalizeThinkingLevel(thinkingLevel, budgetTokens)
 	lowerBase := strings.ToLower(baseModel)
 	canonicalBase := strings.ReplaceAll(lowerBase, ".", "-")
 
-	// 5. Check special private upstream aliases
 	if alias, exists := specialDevinAliases[canonicalBase]; exists {
 		return alias
 	}
@@ -165,7 +150,6 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		return "MODEL_CLAUDE_4_5_OPUS"
 	}
 
-	// 6. Look up dynamic model metadata from the Devin catalog (devin_models.json)
 	modelInfo := registry.LookupDevinModel(canonicalBase)
 	if modelInfo == nil && canonicalBase != lowerBase {
 		modelInfo = registry.LookupDevinModel(lowerBase)
@@ -176,7 +160,6 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		allowedLevels = modelInfo.Thinking.Levels
 	}
 
-	// 7. Special base models that default to bare name unless specific variant requested
 	switch canonicalBase {
 	case "swe-1-7":
 		if effort == "medium" {
@@ -221,12 +204,10 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		return canonicalBase
 	}
 
-	// 8. Lightning tier: upstream UIDs keep the effort before the suffix
-	// (swe-2-high-lightning), unlike every other model which appends effort.
 	if strings.HasSuffix(canonicalBase, "-lightning") {
 		stem := strings.TrimSuffix(canonicalBase, "-lightning")
 		if HasDevinEffortSuffix(stem) {
-			// Already a full upstream UID such as swe-2-high-lightning
+
 			return canonicalBase
 		}
 		if len(allowedLevels) == 0 {
@@ -237,20 +218,16 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		return stem + "-" + clamped + "-lightning"
 	}
 
-	// 9. If model has no thinking levels defined in catalog, treat as bare model
 	if len(allowedLevels) == 0 {
 		return canonicalBase
 	}
 
-	// 10. Fast-mode variants: a strict "<level>-fast" request keeps its level
-	// clamped to the catalog, never to the plain default.
 	if base, isFast := strings.CutSuffix(rawLevel, "-fast"); isFast && devinLevelIndex(base) != -1 {
 		defaultEffort := selectDefaultDevinEffort(canonicalBase, allowedLevels)
 		clamped := clampEffort(base, allowedLevels, defaultEffort)
 		return canonicalBase + "-" + clamped + "-fast"
 	}
 
-	// 11. Model has thinking levels: determine default effort and clamp
 	defaultEffort := selectDefaultDevinEffort(canonicalBase, allowedLevels)
 	clamped := clampEffort(effort, allowedLevels, defaultEffort)
 	if effort == "fast" {
@@ -279,11 +256,11 @@ func selectDefaultDevinEffort(baseModel string, levels []string) string {
 			hasHigh = true
 		}
 	}
-	// For OpenAI GPT-5.x families in Devin CLI (which support "none" and "low"), default to low
+
 	if hasNone && hasLow && strings.HasPrefix(baseModel, "gpt-5") {
 		return "low"
 	}
-	// For models with high thinking (e.g. deepseek, gemini, grok, glm, kimi, nemotron), prefer high
+
 	if hasHigh && (strings.Contains(baseModel, "gemini") ||
 		strings.Contains(baseModel, "grok") ||
 		strings.Contains(baseModel, "glm") ||
@@ -352,7 +329,7 @@ func clampEffort(requested string, allowed []string, defaultEffort string) strin
 			bestMatch = a
 			bestIdx = aIdx
 		} else if dist == bestDist && aIdx > bestIdx {
-			// On tie, prefer the higher effort (e.g. medium -> high for glm-5-3; xhigh -> max for swe-2)
+
 			bestMatch = a
 			bestIdx = aIdx
 		}

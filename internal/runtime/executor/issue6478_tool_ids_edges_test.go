@@ -106,7 +106,6 @@ func TestIssue6478_DevinReservedPrefixStatelessFragmentedRoundTrip(t *testing.T)
 			}
 			idsByMode = append(idsByMode, ids)
 
-			// A fresh executor has no state from the response that minted these IDs.
 			fresh := NewDevinExecutor(&config.Config{})
 			req.Payload = issue6478History(ids)
 			opts.OriginalRequest = req.Payload
@@ -165,7 +164,7 @@ func TestIssue6478_ClaudeLegacyEncodingCollision(t *testing.T) {
 				t.Errorf("legal/encoded history ID was re-encoded: %q, want %q", id, ids[i])
 			}
 		}
-		// Repairing a repaired transcript must be byte-stable at schema ID fields.
+
 		again := executeClaudeContextManagementRequest(t, &config.Config{}, body, stream)
 		if ojson.GetBytes(again, "messages.1.content").Raw != ojson.GetBytes(body, "messages.1.content").Raw {
 			t.Errorf("history ID repair is not idempotent")

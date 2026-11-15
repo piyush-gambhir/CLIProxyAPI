@@ -11,7 +11,6 @@ import (
 	cliproxysession "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/session"
 )
 
-// DerivedSessionID returns the first context-derived session identity in metadata order.
 func DerivedSessionID(metadataSets ...map[string]any) string {
 	for _, metadata := range metadataSets {
 		if derivedID := cliproxysession.DerivedID(metadata); derivedID != "" {
@@ -21,12 +20,10 @@ func DerivedSessionID(metadataSets ...map[string]any) string {
 	return ""
 }
 
-// DerivedSessionUUID maps a derived session identity to a provider-scoped stable UUID.
 func DerivedSessionUUID(provider string, metadataSets ...map[string]any) string {
 	return stableProviderSessionUUID(provider, "derived-session", DerivedSessionID(metadataSets...))
 }
 
-// ProviderSessionUUID prefers a long-lived execution session and falls back to the derived identity.
 func ProviderSessionUUID(provider string, metadataSets ...map[string]any) string {
 	for _, metadata := range metadataSets {
 		if executionID := metadataString(metadata, cliproxyexecutor.ExecutionSessionMetadataKey); executionID != "" {
@@ -46,7 +43,6 @@ func stableProviderSessionUUID(provider string, kind string, identityValue strin
 	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(identity)).String()
 }
 
-// DerivedAntigravitySessionID maps a derived session identity to Antigravity's negative decimal format.
 func DerivedAntigravitySessionID(metadataSets ...map[string]any) string {
 	derivedID := DerivedSessionID(metadataSets...)
 	if derivedID == "" {

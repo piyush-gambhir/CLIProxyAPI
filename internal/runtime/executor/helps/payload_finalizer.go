@@ -13,8 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// PayloadFinalizer applies user rules to a fully prepared business payload.
-// Each rebuilt attempt must start from the unconfigured body, not a previous result.
 type PayloadFinalizer func([]byte) []byte
 
 var (
@@ -29,7 +27,6 @@ func payloadFinalizerKeyPtr(f PayloadFinalizer) uintptr {
 	return reflect.ValueOf(f).Pointer()
 }
 
-// FinalizeDoc applies the finalizer to doc in place without probing custom wrappers.
 func (f PayloadFinalizer) FinalizeDoc(doc *ojson.Doc) {
 	if f == nil || doc == nil {
 		return
@@ -47,7 +44,6 @@ func (f PayloadFinalizer) FinalizeDoc(doc *ojson.Doc) {
 	*doc = *ojson.NewDoc(updated)
 }
 
-// NewPayloadFinalizer snapshots matching context before built-in request mutations.
 func NewPayloadFinalizer(cfg *config.Config, executor, model, protocol, root string, original []byte, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, auths ...*cliproxyauth.Auth) PayloadFinalizer {
 	requestedModel := PayloadRequestedModel(opts, req.Model)
 	requestPath := PayloadRequestPath(opts)
@@ -91,12 +87,10 @@ func NewPayloadFinalizer(cfg *config.Config, executor, model, protocol, root str
 
 type payloadFinalizerKey struct{}
 
-// WithPayloadFinalizer carries the final barrier through shared request builders.
 func WithPayloadFinalizer(ctx context.Context, finalize PayloadFinalizer) context.Context {
 	return context.WithValue(ctx, payloadFinalizerKey{}, finalize)
 }
 
-// FinalizePayload runs immediately before serialization or transport framing.
 func FinalizePayload(ctx context.Context, body []byte) []byte {
 	if finalize, ok := ctx.Value(payloadFinalizerKey{}).(PayloadFinalizer); ok && finalize != nil {
 		return finalize(body)
@@ -104,8 +98,6 @@ func FinalizePayload(ctx context.Context, body []byte) []byte {
 	return body
 }
 
-// FinalizePayloadDoc runs immediately before serialization or transport framing,
-// mutating doc in place.
 func FinalizePayloadDoc(ctx context.Context, doc *ojson.Doc) {
 	if doc == nil {
 		return

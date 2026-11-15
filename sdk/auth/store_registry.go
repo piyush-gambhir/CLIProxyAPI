@@ -11,14 +11,12 @@ var (
 	registeredStore coreauth.Store
 )
 
-// RegisterTokenStore sets the global token store used by the authentication helpers.
 func RegisterTokenStore(store coreauth.Store) {
 	storeMu.Lock()
 	registeredStore = store
 	storeMu.Unlock()
 }
 
-// GetTokenStore returns the globally registered token store.
 func GetTokenStore() coreauth.Store {
 	storeMu.RLock()
 	s := registeredStore

@@ -1,9 +1,3 @@
-// Package openai provides utilities to translate OpenAI Chat Completions
-// request JSON into OpenAI Responses API request JSON using gjson/ojson.
-// It supports tools, multimodal text/image inputs, and Structured Outputs.
-// The package handles the conversion of OpenAI API requests into the format
-// expected by the OpenAI Responses API, including proper mapping of messages,
-// tools, and generation parameters.
 package chat_completions
 
 import (
@@ -18,35 +12,20 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertOpenAIRequestToCodex converts an OpenAI Chat Completions request JSON
-// into an OpenAI Responses API request JSON. The transformation follows the
-// examples defined in docs/2.md exactly, including tools, multi-turn dialog,
-// multimodal text/image handling, and Structured Outputs mapping.
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request
-//   - rawJSON: The raw JSON request data from the OpenAI Chat Completions API
-//   - stream: A boolean indicating if the request is for a streaming response
-//
-// Returns:
-//   - []byte: The transformed request data in OpenAI Responses API format
 func ConvertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToCodex(modelName, inputRawJSON, stream)
 
 }
 
-// convertOpenAIRequestToCodex also reports a file or audio part Responses cannot
-// receive when it leaves a user turn with nothing to send.
 func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	rawJSON := inputRawJSON
 	var drops translatorcommon.UserTurnDrops
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	tools := root.Get("tools")
 	toolResults := tools.Array()
-	// Start with empty JSON object
+
 	outDoc := ojson.NewDocString(`{"instructions":""}`)
 
-	// Stream must be set to true
 	_ = outDoc.Set("stream", stream)
 
 	for _, path := range []string{"max_completion_tokens", "max_tokens", "max_output_tokens"} {
@@ -56,7 +35,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 		}
 	}
 
-	// Map reasoning effort
 	if v := root.Get("reasoning_effort"); v.Exists() {
 		_ = outDoc.Set("reasoning.effort", v.Value())
 	} else {
@@ -66,15 +44,11 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 		_ = outDoc.Set("service_tier", serviceTier)
 	}
 	_ = outDoc.Set("parallel_tool_calls", root.Get("parallel_tool_calls").Type != ojson.False)
-	// OpenAI documents reasoning summaries as explicit opt-in output. Leave
-	// reasoning.summary to the source request's canonical summary intent instead
-	// of coupling it to reasoning effort.
+
 	_ = outDoc.Set("include", []string{"reasoning.encrypted_content"})
 
-	// Model
 	_ = outDoc.Set("model", modelName)
 
-	// Build request-local tool metadata and name shortening map.
 	originalToolNameMap := map[string]string{}
 	customToolNames := map[string]struct{}{}
 	functionToolNames := map[string]struct{}{}
@@ -88,8 +62,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 					customToolNames[customToolDefinition(tool).Get("name").String()] = struct{}{}
 				}
 			}
-			// A normalized function envelope cannot disambiguate declarations that share a name.
-			// Preserve function behavior for such ambiguous names.
+
 			for name := range functionToolNames {
 				delete(customToolNames, name)
 			}
@@ -112,7 +85,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 			}
 			input = toolCall.Get("function.arguments").String()
 			if callType == "custom" && strings.TrimSpace(name) == "apply_patch" {
-				// Only normalized function history carries the JSON envelope. Explicit custom input is raw.
+
 				if unwrapped, errUnwrap := applypatch.UnwrapInput(input); errUnwrap == nil {
 					input = unwrapped
 				}
@@ -123,7 +96,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 		}
 	}
 
-	// Extract system instructions from first system message (string or text object)
 	messages := root.Get("messages")
 	type pendingToolCall struct {
 		callID       string
@@ -134,7 +106,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 	var pendingToolCalls []pendingToolCall
 	ambiguousToolCallIDs := map[string]struct{}{}
 
-	// Build input from messages, handling all message types including tool calls
 	inputItems := translatorcommon.NewRawArrayItems(messages.Get("#").Int())
 	if messages.IsArray() {
 		arr := messages.Array()
@@ -144,7 +115,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 
 			switch role {
 			case "tool":
-				// Handle tool response messages as top-level tool call output objects.
+
 				toolCallID := m.Get("tool_call_id").String()
 				if _, ambiguous := ambiguousToolCallIDs[toolCallID]; toolCallID != "" && ambiguous {
 					continue
@@ -180,11 +151,10 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				inputItems = append(inputItems, toolOutputDoc.Bytes())
 
 			default:
-				// A new conversational message starts a new tool-call batch.
+
 				pendingToolCalls = nil
 				ambiguousToolCallIDs = map[string]struct{}{}
 
-				// Handle regular messages
 				msgDoc := ojson.NewDocString(`{}`)
 				_ = msgDoc.Set("type", "message")
 				if role == "system" {
@@ -194,14 +164,13 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				}
 
 				contentItems := make([][]byte, 0, 4)
-				// Counts the parts this user turn really sends; an empty text part does not.
+
 				turnSendable := 0
 
-				// Handle regular content
 				c := m.Get("content")
 				if c.Exists() && c.Type == ojson.String && c.String() != "" {
 					turnSendable++
-					// Single string content
+
 					partType := "input_text"
 					if role == "assistant" {
 						partType = "output_text"
@@ -229,7 +198,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 								turnSendable++
 							}
 						case "image_url":
-							// Map image inputs to input_image for Responses API
+
 							if role == "user" {
 								partDoc := ojson.NewDocString(`{}`)
 								_ = partDoc.Set("type", "input_image")
@@ -272,15 +241,11 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 					drops.EndTurn(turnSendable)
 				}
 
-				// Don't emit empty assistant messages when only tool_calls
-				// are present — Responses API needs function_call items
-				// directly, otherwise call_id matching fails (#2132).
 				if role != "assistant" || len(contentItems) > 0 {
 					_ = msgDoc.SetRawBytes("content", translatorcommon.JoinRawArray(contentItems))
 					inputItems = append(inputItems, msgDoc.Bytes())
 				}
 
-				// Handle tool calls for assistant messages as separate top-level objects
 				if role == "assistant" {
 					toolCalls := m.Get("tool_calls")
 					if toolCalls.Exists() && toolCalls.IsArray() {
@@ -323,7 +288,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 								}
 								usedCallIDs[callID] = struct{}{}
 							}
-							// Codex rejects call_id values longer than 64 characters.
+
 							if shortID := shortenCodexCallIDIfNeeded(callID); shortID != callID {
 								for attempt := 1; ; attempt++ {
 									if _, used := usedCallIDs[shortID]; !used {
@@ -342,7 +307,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 
 							switch toolCallType {
 							case "function":
-								// Create function_call as top-level object
+
 								funcCallDoc := ojson.NewDocString(`{}`)
 								_ = funcCallDoc.Set("type", "function_call")
 								_ = funcCallDoc.Set("call_id", callID)
@@ -375,11 +340,10 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 	}
 	translatorcommon.SetRawArrayItemsDoc(outDoc, "input", inputItems)
 
-	// Map response_format and text settings to Responses API text.format
 	rf := root.Get("response_format")
 	text := root.Get("text")
 	if rf.Exists() {
-		// Always create text object when response_format provided
+
 		_ = outDoc.SetRawBytes("text", []byte(`{}`))
 
 		rft := rf.Get("type").String()
@@ -402,21 +366,19 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 			}
 		}
 
-		// Map verbosity if provided
 		if text.Exists() {
 			if v := text.Get("verbosity"); v.Exists() {
 				_ = outDoc.Set("text.verbosity", v.Value())
 			}
 		}
 	} else if text.Exists() {
-		// If only text.verbosity present (no response_format), map verbosity
+
 		if v := text.Get("verbosity"); v.Exists() {
 			_ = outDoc.SetRawBytes("text", []byte(`{}`))
 			_ = outDoc.Set("text.verbosity", v.Value())
 		}
 	}
 
-	// Map tools (flatten function fields)
 	if tools.IsArray() && len(toolResults) > 0 {
 		toolItems := make([][]byte, 0, len(toolResults))
 		arr := toolResults
@@ -442,8 +404,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				continue
 			}
 
-			// Pass through built-in tools (e.g. {"type":"web_search"}) directly for the Responses API.
-			// Only function and custom tools need structural conversion.
 			if toolType != "" && toolType != "function" && t.IsObject() {
 				toolItems = append(toolItems, []byte(t.Raw))
 				continue
@@ -472,8 +432,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 					if v := fn.Get("strict"); v.Exists() {
 						_ = itemDoc.Set("strict", v.Value())
 					} else {
-						// Chat Completions defaults strict to false while the Responses API
-						// defaults it to true, so an omitted value must be forwarded explicitly.
+
 						_ = itemDoc.Set("strict", false)
 					}
 				}
@@ -483,9 +442,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 		_ = outDoc.SetRawBytes("tools", translatorcommon.JoinRawArray(toolItems))
 	}
 
-	// Map tool_choice when present.
-	// Chat Completions: "tool_choice" can be a string ("auto"/"none") or an object (e.g. {"type":"function","function":{"name":"..."}}).
-	// Responses API: keep built-in tool choices as-is and flatten named choices to {"type":"...","name":"..."}.
 	if tc := root.Get("tool_choice"); tc.Exists() {
 		switch {
 		case tc.Type == ojson.String:
@@ -514,7 +470,7 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				}
 				_ = outDoc.SetRawBytes("tool_choice", choiceDoc.Bytes())
 			} else if tcType != "" {
-				// Built-in tool choices (e.g. {"type":"web_search"}) are already Responses-compatible.
+
 				_ = outDoc.SetRawBytes("tool_choice", []byte(tc.Raw))
 			}
 		}
@@ -592,8 +548,6 @@ func toolOutputContentPart(item ojson.Result) []byte {
 	}
 }
 
-// codexInputFilePart maps a Chat Completions file part onto a Responses input_file
-// part. It reports false when the part names no file id, bytes or url.
 func codexInputFilePart(item ojson.Result) ([]byte, bool) {
 	fileID := item.Get("file.file_id").String()
 	fileData := item.Get("file.file_data").String()
@@ -648,8 +602,6 @@ func toolOutputFallbackPart(item ojson.Result) []byte {
 	return partDoc.Bytes()
 }
 
-// sanitizeToolName normalizes a tool name by replacing any character outside
-// [a-zA-Z0-9_-] with an underscore so it conforms to Codex upstream requirements.
 func sanitizeToolName(name string) string {
 	if name == "" {
 		return ""
@@ -665,9 +617,6 @@ func sanitizeToolName(name string) string {
 	return sb.String()
 }
 
-// shortenNameIfNeeded normalizes invalid characters and applies the shortening rule for a single name.
-// If the name length exceeds 64, it will try to preserve the "mcp__" prefix and last segment.
-// Otherwise it truncates to 64 characters.
 func shortenNameIfNeeded(name string) string {
 	const limit = 64
 	sanitized := sanitizeToolName(name)
@@ -675,7 +624,7 @@ func shortenNameIfNeeded(name string) string {
 		return sanitized
 	}
 	if strings.HasPrefix(sanitized, "mcp__") {
-		// Keep prefix and last segment after '__'
+
 		idx := strings.LastIndex(sanitized, "__")
 		if idx > 0 {
 			candidate := "mcp__" + sanitized[idx+2:]
@@ -688,7 +637,6 @@ func shortenNameIfNeeded(name string) string {
 	return sanitized[:limit]
 }
 
-// customToolDefinition accepts both Chat Completions and Responses declarations.
 func customToolDefinition(tool ojson.Result) ojson.Result {
 	if custom := tool.Get("custom"); custom.IsObject() {
 		return custom
@@ -696,8 +644,6 @@ func customToolDefinition(tool ojson.Result) ojson.Result {
 	return tool
 }
 
-// collectRequestToolNames extracts unique tool names across tools declarations,
-// tool_choice, and historical assistant tool_calls in a deterministic order.
 func collectRequestToolNames(rawJSON []byte) []string {
 	var names []string
 	seen := map[string]struct{}{}
@@ -712,7 +658,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 		}
 	}
 
-	// 1. tools declarations
 	tools := ojson.GetBytesNoCopy(rawJSON, "tools")
 	if tools.IsArray() {
 		for _, tool := range tools.Array() {
@@ -725,7 +670,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 		}
 	}
 
-	// 2. tool_choice
 	tc := ojson.GetBytesNoCopy(rawJSON, "tool_choice")
 	if tc.IsObject() {
 		switch tc.Get("type").String() {
@@ -740,7 +684,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 		}
 	}
 
-	// 3. assistant tool_calls in messages
 	messages := ojson.GetBytesNoCopy(rawJSON, "messages")
 	if messages.IsArray() {
 		for _, msg := range messages.Array() {
@@ -763,9 +706,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 	return names
 }
 
-// buildShortNameMap generates unique short names (<=64) for the given list of names.
-// It preserves the "mcp__" prefix with the last segment when possible and ensures uniqueness
-// by appending suffixes like "_1", "_2" if needed.
 func buildShortNameMap(names []string) map[string]string {
 	const limit = 64
 	used := map[string]struct{}{}
@@ -821,8 +761,6 @@ func normalizeCodexServiceTier(result ojson.Result) string {
 	}
 }
 
-// shortenCodexCallIDIfNeeded keeps client tool call IDs within the Codex
-// call_id limit with a deterministic, low-collision mapping.
 func shortenCodexCallIDIfNeeded(id string) string {
 	const limit = 64
 	if len(id) <= limit {

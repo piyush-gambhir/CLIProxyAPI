@@ -356,7 +356,6 @@ func TestServePluginAuthURLPassesQueryParamsAsMetadata(t *testing.T) {
 		t.Fatalf("capturedReq.Metadata[scopes] = %#v, want [read write]", capturedReq.Metadata["scopes"])
 	}
 
-	// Verify no query parameters passes nil metadata
 	capturedReq = pluginapi.AuthLoginStartRequest{}
 	recNoQuery := httptest.NewRecorder()
 	ctxNoQuery, _ := gin.CreateTestContext(recNoQuery)
@@ -516,7 +515,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		t.Fatalf("expected plugin without AuthEntries to omit oauth_provider_entries, got body=%s", listRec.Body.String())
 	}
 
-	// Start and complete login via second portal (zcode-bigmodel)
 	startRec := httptest.NewRecorder()
 	router.ServeHTTP(startRec, httptest.NewRequest(http.MethodGet, "/v8/management/oauth/auth-url?provider=zcode-bigmodel", nil))
 	if startRec.Code != http.StatusOK {
@@ -539,7 +537,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		t.Fatalf("poll zcode-bigmodel status=%d body=%s", pollRec.Code, pollRec.Body.String())
 	}
 
-	// Simulate a cold-started host (no prior in-memory PollLogin state) with the saved "zcode" credential
 	pollEmail := "user@example.com"
 	coldHost := pluginhost.New()
 	coldHost.RegisterPluginForTest("omc-zcode-oauth", pluginapi.Plugin{
@@ -589,7 +586,7 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		Provider: "zcode",
 		Metadata: map[string]any{"email": "user@example.com", "oauth_provider": "zcode-bigmodel"},
 	})
-	// 1. Re-login specifying an explicit portal ("zcode-zai") against canonical credential provider ("zcode") on cold start
+
 	reloginRec := httptest.NewRecorder()
 	router.ServeHTTP(reloginRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"zcode-zai","name":"zcode-account.json"}`)))
 	if reloginRec.Code != http.StatusOK {
@@ -624,7 +621,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		t.Fatalf("replaced target file retained stale portal metadata: %s", string(rawSaved))
 	}
 
-	// 2. Re-login omitting "provider" (only passing credential "name") on cold start, and verify mismatched email is rejected
 	pollEmail = "wrong-user@example.com"
 	reloginNoProviderRec := httptest.NewRecorder()
 	router.ServeHTTP(reloginNoProviderRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"name":"zcode-account.json"}`)))
@@ -643,7 +639,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		t.Fatalf("mismatch poll status=%d body=%s, want mismatch error", mismatchPollRec.Code, mismatchPollRec.Body.String())
 	}
 
-	// 3. Target credential without email/account_id must reject blind overwrite when filename differs
 	_, _ = manager.Register(context.Background(), &coreauth.Auth{
 		ID:       "zcode-anonymous.json",
 		FileName: "zcode-anonymous.json",
@@ -738,8 +733,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/v8/management/get-auth-status", h.GetAuthStatus)
 
-	// 1. Re-login targeting subdirectory credential "team/account.json" must update team/account.json, leave root account.json untouched,
-	// and pass persistedRecord.ID == "team/account.json" (not "account.json") to postAuthPersistHook.
 	var persistedIDs []string
 	h.postAuthPersistHook = func(_ context.Context, auth *coreauth.Auth) error {
 		if auth != nil {
@@ -775,7 +768,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("team/account.json content = %q (err=%v), want updated team-relogin-token", string(teamBytes), errReadTeam)
 	}
 
-	// 2. If postAuthPersistHook fails after overwriting team/account.json, rollback must restore the previous file and runtime auth instead of deleting them.
 	h.postAuthPersistHook = func(_ context.Context, _ *coreauth.Auth) error {
 		return fmt.Errorf("simulated post-persist failure")
 	}
@@ -807,7 +799,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatal("expected team/account.json to remain in runtime auth manager after failed overwrite")
 	}
 
-	// 3. If another session concurrently commits a newer credential before rollback runs, rollback must not clobber the newer file or runtime state.
 	concurrentWinnerJSON := `{"access_token":"concurrent-winner-token","disabled":false,"email":"user@example.com","oauth_provider":"zcode-zai","type":"zcode"}`
 	h.postAuthPersistHook = func(ctx context.Context, _ *coreauth.Auth) error {
 		if errWrite := os.WriteFile(teamFile, []byte(concurrentWinnerJSON), 0o600); errWrite != nil {
@@ -847,8 +838,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("runtime auth after concurrent session = %#v, want access_token=concurrent-winner-token", currentAuth)
 	}
 
-	// 4. When a plugin puts access_token only in StorageJSON (not Metadata) and a batch save fails on the second record,
-	// both disk and runtime auth for the first record must be restored to the previous state.
 	h.postAuthPersistHook = nil
 	batchRecords := []*coreauth.Auth{
 		host.AuthDataToCoreAuth(pluginapi.AuthData{
@@ -871,7 +860,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("runtime auth after StorageJSON-only batch rollback = %#v, want access_token=concurrent-winner-token", currentAuth)
 	}
 
-	// 5. Targeted re-login succeeds when email is only present in StorageJSON (omitted from AuthData.Metadata).
 	records := []*coreauth.Auth{
 		host.AuthDataToCoreAuth(pluginapi.AuthData{
 			Provider:    "zcode",
@@ -891,8 +879,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatal("applyPluginOAuthRecoveryTarget rejected matching email stored only in StorageJSON")
 	}
 
-	// 6. When the existing target credential itself only stores email in StorageJSON (omitted from Metadata),
-	// StartOAuthV8 must still populate target.Email from RawJSON so sibling-portal relogin with a different filename succeeds.
 	storageOnlyTarget := host.AuthDataToCoreAuth(pluginapi.AuthData{
 		Provider:    "zcode",
 		ID:          "storage-only-target.json",
@@ -919,8 +905,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("storageTargetPollRec status=%d body=%s, want ok", storageTargetPollRec.Code, storageTargetPollRec.Body.String())
 	}
 
-	// 7. When a newly created credential in a batch has record.ID != record.FileName and the second record fails,
-	// rollback must remove the runtime auth registered under the file-derived ID ("different-file-name.json").
 	mismatchIDRecords := []*coreauth.Auth{
 		host.AuthDataToCoreAuth(pluginapi.AuthData{
 			Provider:    "zcode",
@@ -944,8 +928,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatal("expected custom-logical-id to be absent from runtime manager after batch rollback")
 	}
 
-	// 8. When postAuthPersistHook is nil and an existing target credential has logical ID != FileName,
-	// relogin must update the existing logical ID in manager without creating a duplicate file-derived ID.
 	logicalTargetFile := filepath.Join(authDir, "custom-target-file.json")
 	if errWrite := os.WriteFile(logicalTargetFile, []byte(`{"type":"zcode","email":"user@example.com","oauth_provider":"zcode-bigmodel","access_token":"old-logical-tok"}`), 0o600); errWrite != nil {
 		t.Fatalf("write logicalTargetFile: %v", errWrite)
@@ -981,8 +963,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatal("expected no duplicate file-derived ID custom-target-file.json in manager")
 	}
 
-	// 9. When an existing file-backed credential ("team/account.json") is overwritten by a batch record with a new logical ID
-	// ("new-logical-id-for-team") and the second record fails, rollback must remove "new-logical-id-for-team" and preserve exact disk bytes.
 	if errWrite := os.WriteFile(teamFile, []byte(`{"type":"zcode","email":"user@example.com","access_token":"newer-disk-token","custom_disk_only":"keep"}`), 0o600); errWrite != nil {
 		t.Fatalf("write teamFile: %v", errWrite)
 	}

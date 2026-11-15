@@ -14,8 +14,6 @@ func ConvertOpenAIResponsesRequestToInteractions(modelName string, inputRawJSON 
 
 }
 
-// convertOpenAIResponsesRequestToInteractions also reports a file, audio or video
-// part Interactions cannot receive when it leaves a user turn with nothing to send.
 func convertOpenAIResponsesRequestToInteractions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	var drops translatorcommon.UserTurnDrops
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
@@ -259,9 +257,6 @@ func setResponsesInputOnInteractionsDoc(outDoc *ojson.Doc, input ojson.Result, f
 	}
 }
 
-// responsesUserTurnDrops returns drops when the item is a real user turn. A
-// system or developer message is also sent as a user_input step, but it is not
-// the user's own turn and must never be refused or hide an emptied one.
 func responsesUserTurnDrops(role string, drops *translatorcommon.UserTurnDrops) *translatorcommon.UserTurnDrops {
 	if role == "" || role == "user" {
 		return drops
@@ -335,10 +330,6 @@ func responsesInputItemToInteractions(item ojson.Result, functionNamesByCallID m
 	return nil
 }
 
-// appendResponsesContentToInteractionsDoc converts one message content into step
-// content. A non-nil drops closes the user turn: an attachment that cannot be
-// sent is recorded, and text or any other sendable part beside it keeps the turn
-// alive. An empty text part is forwarded but does not count as sendable.
 func appendResponsesContentToInteractionsDoc(stepDoc *ojson.Doc, content ojson.Result, drops *translatorcommon.UserTurnDrops) {
 	var contentItems [][]byte
 	sendable := 0
@@ -378,9 +369,6 @@ func appendResponsesContentToInteractionsDoc(stepDoc *ojson.Doc, content ojson.R
 	}
 }
 
-// isResponsesUnsendableAttachmentType reports the Responses attachment types
-// whose loss must be refused when they leave a user turn empty. A file id,
-// a part without bytes and a video have no Interactions counterpart.
 func isResponsesUnsendableAttachmentType(partType string) bool {
 	switch partType {
 	case "input_file", "input_audio", "input_video":
@@ -410,9 +398,6 @@ func responsesContentPartToInteractions(part ojson.Result) ([]byte, bool) {
 	return nil, false
 }
 
-// responsesFilePartToInteractions maps an input_file onto an Interactions
-// document. Interactions takes inline bytes or a url; a bare file_id names a file
-// only the OpenAI side can resolve, so it reports false.
 func responsesFilePartToInteractions(part ojson.Result) ([]byte, bool) {
 	filename := part.Get("filename").String()
 	fallbackMIMEType := firstNonEmpty(part.Get("mime_type").String(), part.Get("mimeType").String())
@@ -433,8 +418,6 @@ func responsesFilePartToInteractions(part ojson.Result) ([]byte, bool) {
 	return outDoc.Bytes(), hasContent
 }
 
-// responsesAudioPartToInteractions maps an input_audio with inline bytes onto an
-// Interactions audio part.
 func responsesAudioPartToInteractions(part ojson.Result) ([]byte, bool) {
 	audio := part.Get("input_audio")
 	data := firstNonEmpty(audio.Get("data").String(), part.Get("data").String())
@@ -550,10 +533,6 @@ func responsesFunctionOutputToInteractions(item ojson.Result, functionNamesByCal
 	return outDoc.Bytes()
 }
 
-// responsesReasoningToInteractions carries a Devin-sealed reasoning item back
-// upstream as a thought step so the model keeps its own earlier thinking across
-// tool-call turns. Reasoning items without a Devin signature are left out, as
-// before, because other providers cannot read them.
 func responsesReasoningToInteractions(item ojson.Result) []byte {
 	sig := strings.TrimSpace(item.Get("encrypted_content").String())
 	if !strings.HasPrefix(sig, "sealed.v1.") {

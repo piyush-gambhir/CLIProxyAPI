@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-// TestGenerateFilenameRejectsPathSeparators covers the request-log filename
-// traversal (report nine, F-23): the file name is built from the client-supplied
-// request path, and on Windows a backslash in that path used to survive
-// sanitisation so filepath.Join could climb out of the log directory.
 func TestGenerateFilenameRejectsPathSeparators(t *testing.T) {
 	logger := &FileRequestLogger{}
 	cases := []string{
@@ -46,8 +42,6 @@ func TestGenerateFilenameRejectsPathSeparators(t *testing.T) {
 	}
 }
 
-// TestGenerateFilenameKeepsOrdinaryPaths guards against over-sanitising: a normal
-// request path must still produce the historical "<path>-<timestamp>-<id>.log" shape.
 func TestGenerateFilenameKeepsOrdinaryPaths(t *testing.T) {
 	logger := &FileRequestLogger{}
 	got := logger.generateFilename("/v1/chat/completions", "deadbeef")

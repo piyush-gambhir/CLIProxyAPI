@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-// Generate the envelope at test time; no captured signature files are needed.
 func antigravityCAQSFixture(t *testing.T) string {
 	t.Helper()
 	return signaturetest.AntigravityCAQS()
@@ -65,7 +64,7 @@ func TestAntigravityCAQSRejectsMalformedWrappers(t *testing.T) {
 	wrongVersion := append([]byte(nil), raw...)
 	wrongVersion[1] = 2
 	wrongInfra := append([]byte(nil), raw...)
-	// Locate the channel infrastructure field without touching the ciphertext.
+
 	index := strings.Index(string(wrongInfra), string([]byte{8, 18, 16, 2, 24, 2}))
 	if index < 0 {
 		t.Fatal("fixture channel missing")
@@ -77,13 +76,13 @@ func TestAntigravityCAQSRejectsMalformedWrappers(t *testing.T) {
 	futureVersion[1] = 5
 	noChannelContainer, _ := extractClaudeBytesField(raw, 2, "container")
 	noChannelBlock, _ := extractClaudeBytesField(noChannelContainer, 1, "channel")
-	// Strip the leading channel_id field (tag 0x08, varint 18) from the channel block.
+
 	noChannel := protowire.AppendTag(nil, 1, protowire.BytesType)
 	noChannel = protowire.AppendBytes(noChannel, noChannelBlock[2:])
 	noChannel = append(noChannel, noChannelContainer[2+len(noChannelBlock):]...)
 	wrongChannel := protowire.AppendTag([]byte{8, 4}, 2, protowire.BytesType)
 	wrongChannel = protowire.AppendBytes(wrongChannel, noChannel)
-	// Build an otherwise valid CAQS with its signature in the old channel slot.
+
 	misplaced := defaultClaudeCAISParts("claude-opus-5-5")
 	misplaced.topEnvelope = 4
 	misplaced.channelID = 18
@@ -97,7 +96,7 @@ func TestAntigravityCAQSRejectsMalformedWrappers(t *testing.T) {
 	misplacedPayload := []byte{8, 4}
 	misplacedPayload = protowire.AppendTag(misplacedPayload, 2, protowire.BytesType)
 	misplacedPayload = protowire.AppendBytes(misplacedPayload, newContainer)
-	// Add a harmless unknown varint to make the inner encoding padded.
+
 	paddedPayload := append(append([]byte(nil), raw...), 32, 0)
 	badPadding := []byte(base64.StdEncoding.EncodeToString(paddedPayload))
 	alphabet := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"

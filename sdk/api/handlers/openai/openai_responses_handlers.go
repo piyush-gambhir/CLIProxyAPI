@@ -1,9 +1,3 @@
-// Package openai provides HTTP handlers for OpenAIResponses API endpoints.
-// This package implements the OpenAIResponses-compatible API interface, including model listing
-// and chat completion functionality. It supports both streaming and non-streaming responses,
-// and manages a pool of clients to interact with backend services.
-// The handlers translate OpenAIResponses API requests to the appropriate backend format and
-// convert responses back to OpenAIResponses-compatible format.
 package openai
 
 import (
@@ -57,7 +51,6 @@ func writeResponsesSSEChunk(w io.Writer, chunk []byte) error {
 	return nil
 }
 
-// flushResponsesSSE preserves middleware behavior and transport flush errors.
 func flushResponsesSSE(w http.ResponseWriter) error {
 	return httpwire.FlushResponse(w)
 }
@@ -259,12 +252,10 @@ func (f *responsesSSEFramer) shouldFilterPrivateEvent(streamEvent, payloadType s
 			return false
 		}
 
-		// Always filter internal WebSocket timing telemetry and Meta subscription usage from SSE streams.
 		if strings.HasPrefix(name, "responsesapi.") || name == "response.subscription_usage" {
 			return true
 		}
 
-		// If official Codex client, preserve codex.response.metadata but filter rate limits.
 		if f != nil && f.isCodexClient {
 			if name == "codex.rate_limits" {
 				return true
@@ -272,9 +263,6 @@ func (f *responsesSSEFramer) shouldFilterPrivateEvent(streamEvent, payloadType s
 			return false
 		}
 
-		// For standard Responses API clients: filter any codex.* private events, and the Codex
-		// backend's moderation metadata, which is not a public Responses event: clients that parse
-		// a closed event list fail on it.
 		if strings.HasPrefix(name, "codex.") || name == "response.metadata" {
 			return true
 		}
@@ -513,7 +501,6 @@ func responsesSSERecoverJSONFrame(frame []byte, syntheticBreaks []int) []byte {
 		return frame
 	}
 
-	// Consider only newlines inserted at chunk boundaries when recovering invalid JSON.
 	positions := make([]int, 0, len(syntheticBreaks))
 	for _, pos := range syntheticBreaks {
 		if pos >= 0 && pos < len(frame) && frame[pos] == '\n' {
@@ -814,42 +801,27 @@ func responsesSSEDataEndsInsideJSONString(chunk []byte) bool {
 	return inString
 }
 
-// OpenAIResponsesAPIHandler contains the handlers for OpenAIResponses API endpoints.
-// It holds a pool of clients to interact with the backend service.
 type OpenAIResponsesAPIHandler struct {
 	*handlers.BaseAPIHandler
 	AccessManager *sdkaccess.Manager
 }
 
-// NewOpenAIResponsesAPIHandler creates a new OpenAIResponses API handlers instance.
-// It takes an BaseAPIHandler instance as input and returns an OpenAIResponsesAPIHandler.
-//
-// Parameters:
-//   - apiHandlers: The base API handlers instance
-//
-// Returns:
-//   - *OpenAIResponsesAPIHandler: A new OpenAIResponses API handlers instance
 func NewOpenAIResponsesAPIHandler(apiHandlers *handlers.BaseAPIHandler) *OpenAIResponsesAPIHandler {
 	return &OpenAIResponsesAPIHandler{
 		BaseAPIHandler: apiHandlers,
 	}
 }
 
-// HandlerType returns the identifier for this handler implementation.
 func (h *OpenAIResponsesAPIHandler) HandlerType() string {
 	return OpenaiResponse
 }
 
-// Models returns the OpenAIResponses-compatible model metadata supported by this handler.
 func (h *OpenAIResponsesAPIHandler) Models() []map[string]any {
-	// Get dynamic models from the global registry
+
 	modelRegistry := registry.GetGlobalRegistry()
 	return modelRegistry.GetAvailableModels("openai")
 }
 
-// OpenAIResponsesModels handles the /v1/models endpoint.
-// It returns a list of available AI models with their capabilities
-// and specifications in OpenAIResponses-compatible format.
 func (h *OpenAIResponsesAPIHandler) OpenAIResponsesModels(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"object": "list",
@@ -943,15 +915,9 @@ func (h *OpenAIResponsesAPIHandler) prepareCodexRequestPayload(c *gin.Context, p
 	return doc.Bytes()
 }
 
-// Responses handles the /v1/responses endpoint.
-// It determines whether the request is for a streaming or non-streaming response
-// and calls the appropriate handler based on the model provider.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
 func (h *OpenAIResponsesAPIHandler) Responses(c *gin.Context) {
 	rawJSON, err := handlers.ReadRequestBody(c)
-	// If data retrieval fails, return a 400 Bad Request error.
+
 	if err != nil {
 		c.JSON(clienterror.HTTPStatusFromErrorOr(err, http.StatusBadRequest), handlers.ErrorResponse{
 			Error: handlers.ErrorDetail{
@@ -964,7 +930,6 @@ func (h *OpenAIResponsesAPIHandler) Responses(c *gin.Context) {
 
 	rawJSON = h.prepareCodexRequestPayload(c, rawJSON)
 
-	// Check if the client requested a streaming response.
 	streamResult := ojson.GetBytesNoCopy(rawJSON, "stream")
 	if streamResult.Type == ojson.True {
 		h.handleStreamingResponse(c, rawJSON)
@@ -1025,13 +990,6 @@ func (h *OpenAIResponsesAPIHandler) Compact(c *gin.Context) {
 	cliCancel()
 }
 
-// handleNonStreamingResponse handles non-streaming chat completion responses
-// for Gemini models. It selects a client from the pool, sends the request, and
-// aggregates the response before sending it back to the client in OpenAIResponses format.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
-//   - rawJSON: The raw JSON bytes of the OpenAIResponses-compatible request
 func (h *OpenAIResponsesAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
 
@@ -1051,15 +1009,8 @@ func (h *OpenAIResponsesAPIHandler) handleNonStreamingResponse(c *gin.Context, r
 	cliCancel()
 }
 
-// handleStreamingResponse handles streaming responses for Gemini models.
-// It establishes a streaming connection with the backend service and forwards
-// the response chunks to the client in real-time using Server-Sent Events.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
-//   - rawJSON: The raw JSON bytes of the OpenAIResponses-compatible request
 func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byte) {
-	// Get the http.Flusher interface to manually flush the response.
+
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, handlers.ErrorResponse{
@@ -1071,7 +1022,6 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 		return
 	}
 
-	// New core execution path
 	modelName := strings.Clone(ojson.GetBytesNoCopy(rawJSON, "model").String())
 	deliveryCtx, finishDelivery := usage.WithStreamDelivery(context.Background())
 	defer finishDelivery(context.Canceled)
@@ -1127,7 +1077,6 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 	framer := &responsesSSEFramer{failureEvent: failureEvent, isCodexClient: isCodexClient, canComplete: func() bool { return usage.StreamDeliverySupported(cliCtx) }}
 	var initialOutput bytes.Buffer
 
-	// Peek at the first complete SSE data frame.
 	for {
 		select {
 		case <-c.Request.Context().Done():
@@ -1135,7 +1084,7 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 			return
 		case errMsg, ok := <-errChan:
 			if !ok {
-				// Err channel closed cleanly; wait for data channel.
+
 				errChan = nil
 				continue
 			}
@@ -1164,7 +1113,7 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 				h.forwardResponsesStream(c, flusher, func(err error) { cliCancel(err) }, make(chan []byte), pendingErrors, framer)
 				return
 			}
-			// Upstream failed before SSE was committed. Return JSON with HTTP status.
+
 			safeErrMsg := sanitizeResponsesInitialErrorMessage(errMsg)
 			h.LoggingAPIResponseError(context.WithValue(context.Background(), "gin", c), safeErrMsg)
 			h.WriteErrorResponse(c, safeErrMsg)
@@ -1261,7 +1210,6 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 	}
 }
 
-// isCodexResponsesClientRequest limits the alternate terminal event to official Codex clients.
 func isCodexResponsesClientRequest(c *gin.Context) bool {
 	if c == nil || c.Request == nil {
 		return false
@@ -1453,7 +1401,7 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesStream(c *gin.Context, flush
 		framer.failureEvent = "error"
 		framer.isCodexClient = false
 	}
-	// Initial frames have already been written and flushed by the caller.
+
 	if framer.writeErr != nil {
 		cancel(framer.writeErr)
 		return

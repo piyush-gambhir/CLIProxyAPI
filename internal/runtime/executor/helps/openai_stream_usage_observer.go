@@ -2,8 +2,6 @@ package helps
 
 import "bytes"
 
-// OpenAIStreamUsageObserver assembles SSE events for accounting while callers
-// continue forwarding the original network chunks unchanged.
 type OpenAIStreamUsageObserver struct {
 	usage         *StreamUsageBuffer
 	line          []byte
@@ -14,7 +12,6 @@ type OpenAIStreamUsageObserver struct {
 	eventOverflow bool
 }
 
-// NewOpenAIStreamUsageObserver bounds both incomplete lines and assembled events.
 func NewOpenAIStreamUsageObserver(usage *StreamUsageBuffer, maxBytes int) *OpenAIStreamUsageObserver {
 	if maxBytes <= 0 {
 		maxBytes = defaultMaxStreamModelBufferBound
@@ -22,7 +19,6 @@ func NewOpenAIStreamUsageObserver(usage *StreamUsageBuffer, maxBytes int) *OpenA
 	return &OpenAIStreamUsageObserver{usage: usage, maxBytes: maxBytes}
 }
 
-// Feed consumes arbitrary network chunks, retaining incomplete lines across reads.
 func (o *OpenAIStreamUsageObserver) Feed(chunk []byte) {
 	if o == nil || o.usage == nil {
 		return
@@ -59,7 +55,6 @@ func (o *OpenAIStreamUsageObserver) Feed(chunk []byte) {
 	}
 }
 
-// Finish observes a trailing event even if the upstream omitted its final newline.
 func (o *OpenAIStreamUsageObserver) Finish() {
 	if o == nil || o.usage == nil {
 		return

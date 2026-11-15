@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
 )
 
-// ParsePluginExecutorResponseUsage extracts token usage from a non-streaming plugin executor response.
 func ParsePluginExecutorResponseUsage(protocol string, payload []byte) usage.Detail {
 	if len(payload) == 0 {
 		return usage.Detail{}
@@ -30,9 +29,6 @@ func ParsePluginExecutorResponseUsage(protocol string, payload []byte) usage.Det
 	}
 }
 
-// parseResponsesPluginExecutorUsage reads both streaming-event usage (response.usage)
-// and a completed Responses object (top-level usage). A service tier without
-// response.usage must not hide the completed object's token counts.
 func parseResponsesPluginExecutorUsage(payload []byte) usage.Detail {
 	detail, ok := ParseCodexUsage(payload)
 	if ok && (hasNonZeroTokenUsage(detail) || hasStructuredUsageDetail(detail)) {
@@ -51,7 +47,6 @@ func parseResponsesPluginExecutorUsage(payload []byte) usage.Detail {
 	return openAIDetail
 }
 
-// ObservePluginExecutorStreamUsage parses streaming chunks and updates a stream usage buffer.
 func ObservePluginExecutorStreamUsage(protocol string, payload []byte, buffer *StreamUsageBuffer) {
 	if buffer == nil || len(payload) == 0 {
 		return
@@ -81,8 +76,7 @@ func ObservePluginExecutorStreamUsage(protocol string, payload []byte, buffer *S
 				if bytes.Contains(jsonBytes, responsesOutputItemDoneMarker) && buffer.ObserveResponsesStream(jsonBytes) {
 					return
 				}
-				// A service tier without response.usage is not token usage. Fall through
-				// so a completed Responses object's top-level usage is still recorded.
+
 				if detail, ok := ParseCodexUsageWithOutputItems(jsonBytes, buffer.responsesOutputByIndex, buffer.responsesOutputFallback); ok && (hasNonZeroTokenUsage(detail) || hasStructuredUsageDetail(detail)) {
 					buffer.Observe(detail, true)
 					return
@@ -97,7 +91,6 @@ func ObservePluginExecutorStreamUsage(protocol string, payload []byte, buffer *S
 	}
 }
 
-// ObservePluginExecutorStreamTTFT inspects a streaming payload and records TTFT on the reporter.
 func ObservePluginExecutorStreamTTFT(protocol string, reporter *UsageReporter, payload []byte) {
 	if reporter == nil || len(payload) == 0 {
 		return
@@ -147,7 +140,6 @@ func parseClaudeStreamLine(line []byte) (usage.Detail, bool) {
 	return parseClaudeUsageNode(usageNode), true
 }
 
-// ObserveMergedStreamUsage updates buffer with merged usage details.
 func ObserveMergedStreamUsage(buffer *StreamUsageBuffer, update usage.Detail) {
 	if buffer == nil {
 		return
@@ -160,7 +152,6 @@ func ObserveMergedStreamUsage(buffer *StreamUsageBuffer, update usage.Detail) {
 	buffer.Observe(update, true)
 }
 
-// MergeStreamUsageDetail merges existing stream usage with a newer update.
 func MergeStreamUsageDetail(existing, update usage.Detail) usage.Detail {
 	merged := update
 	if merged.InputTokens == 0 && existing.InputTokens > 0 {
@@ -490,7 +481,6 @@ func detailOutputExcludesReasoning(detail usage.Detail) (bool, bool) {
 	return false, false
 }
 
-// IterateStreamLines splits payload by newline and invokes fn for non-empty lines.
 func IterateStreamLines(payload []byte, fn func(line []byte)) {
 	for _, line := range bytes.Split(payload, []byte("\n")) {
 		trimmed := bytes.TrimSpace(line)
@@ -501,7 +491,6 @@ func IterateStreamLines(payload []byte, fn func(line []byte)) {
 	}
 }
 
-// ExtractStreamJSONPayload extracts SSE data/json payload from a raw line.
 func ExtractStreamJSONPayload(line []byte) []byte {
 	trimmed := bytes.TrimSpace(line)
 	if len(trimmed) == 0 {

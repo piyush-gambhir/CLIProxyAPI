@@ -6,21 +6,16 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// IsChatTokenEvent reports whether the given OpenAI-compatible Chat Completions SSE or JSON chunk
-// carries substantive output token content (such as text delta, reasoning content, or tool call arguments).
-// It filters out container metadata, role announcements, and empty delta frames.
 func IsChatTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
 
-	// Handle SSE stream terminal marker
 	if bytes.Equal(payload, []byte("data: [DONE]")) || bytes.Equal(payload, []byte("[DONE]")) {
 		return true
 	}
 
-	// Handle SSE line format (e.g., "data: {...}")
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
 		if bytes.HasPrefix(payload, []byte("data: ")) {
@@ -35,7 +30,6 @@ func IsChatTokenEvent(payload []byte) bool {
 		}
 	}
 
-	// Terminal error envelope fallback
 	if ojson.GetBytesNoCopy(payload, "error.message").Exists() || ojson.GetBytesNoCopy(payload, "error").Exists() {
 		return true
 	}
@@ -46,7 +40,7 @@ func IsChatTokenEvent(payload []byte) bool {
 	}
 
 	for _, choice := range choices {
-		// Streaming delta checks
+
 		delta := choice.Get("delta")
 		if delta.Exists() {
 			if len(delta.Get("content").String()) > 0 {
@@ -71,7 +65,6 @@ func IsChatTokenEvent(payload []byte) bool {
 			}
 		}
 
-		// Non-streaming / completed message fallback
 		message := choice.Get("message")
 		if message.Exists() {
 			if len(message.Get("content").String()) > 0 {
@@ -90,7 +83,6 @@ func IsChatTokenEvent(payload []byte) bool {
 			}
 		}
 
-		// Finish reason terminal fallback
 		if len(choice.Get("finish_reason").String()) > 0 {
 			return true
 		}
@@ -99,9 +91,6 @@ func IsChatTokenEvent(payload []byte) bool {
 	return false
 }
 
-// ObserveChatTokenEvent inspects an OpenAI Chat Completions chunk and records TTFT if the frame
-// represents the first meaningful token event. It records first-packet arrival time as fallback
-// and returns immediately with zero allocations once effective token TTFT is set.
 func ObserveChatTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {
 		reporter.ObserveResponseModel(payload)

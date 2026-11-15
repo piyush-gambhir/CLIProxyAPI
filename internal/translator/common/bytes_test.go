@@ -135,7 +135,6 @@ func TestSetStringWithoutHTMLEscape(t *testing.T) {
 				t.Fatalf("SetStringWithoutHTMLEscape() = %s, want %s", string(got), tc.want)
 			}
 
-			// Verify that the JSON parses back and decodes to the exact same value (round-trip)
 			res := ojson.GetBytesNoCopy(got, tc.path)
 			if !res.Exists() {
 				t.Fatalf("path %q does not exist in result: %s", tc.path, string(got))

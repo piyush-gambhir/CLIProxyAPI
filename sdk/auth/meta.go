@@ -13,27 +13,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// MetaAuthenticator implements the Meta Muse OAuth device-code flow.
 type MetaAuthenticator struct{}
 
-// NewMetaAuthenticator constructs a new Meta authenticator.
 func NewMetaAuthenticator() Authenticator {
 	return &MetaAuthenticator{}
 }
 
-// Provider returns the provider key for Meta.
 func (MetaAuthenticator) Provider() string {
 	return "meta"
 }
 
-// RefreshLead instructs the manager on token refresh lead time.
-// Meta credentials do not advertise an API key expiration, so scheduled refresh
-// is disabled and recovery is triggered on demand (e.g. on 401 or request preparation).
 func (MetaAuthenticator) RefreshLead() *time.Duration {
 	return nil
 }
 
-// Login launches the OAuth device-code flow to obtain Meta tokens and persists them.
 func (a MetaAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("cliproxy auth: configuration is required")

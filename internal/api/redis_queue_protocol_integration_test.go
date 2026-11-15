@@ -522,15 +522,15 @@ func TestReadRESPBoundsAndOverflowProtection(t *testing.T) {
 			wantErr     string
 			overflows32 bool
 		}{
-			{raw: "9223372036854775806\r\n", wantErr: "bulk string too large", overflows32: true}, // MaxInt64 - 1 (length+2 wraps negative)
-			{raw: "9223372036854775807\r\n", wantErr: "bulk string too large", overflows32: true}, // MaxInt64
-			{raw: "2147483646\r\n", wantErr: "bulk string too large"},                             // MaxInt32 - 1
-			{raw: "2147483647\r\n", wantErr: "bulk string too large"},                             // MaxInt32
-			{raw: "2147483648\r\n", wantErr: "bulk string too large", overflows32: true},          // MaxInt32 + 1
+			{raw: "9223372036854775806\r\n", wantErr: "bulk string too large", overflows32: true},
+			{raw: "9223372036854775807\r\n", wantErr: "bulk string too large", overflows32: true},
+			{raw: "2147483646\r\n", wantErr: "bulk string too large"},
+			{raw: "2147483647\r\n", wantErr: "bulk string too large"},
+			{raw: "2147483648\r\n", wantErr: "bulk string too large", overflows32: true},
 			{raw: "-2\r\n", wantErr: "protocol error"},
 			{raw: "-9223372036854775808\r\n", wantErr: "protocol error", overflows32: true},
 			{raw: strconv.Itoa(maxRESPBulkLen+1) + "\r\n" + strings.Repeat("x", maxRESPBulkLen+4), wantErr: "bulk string too large"},
-			{raw: "1073741824\r\n", wantErr: "bulk string too large"}, // 1 GiB
+			{raw: "1073741824\r\n", wantErr: "bulk string too large"},
 		} {
 			r := bufio.NewReader(strings.NewReader(tc.raw))
 			_, errRead := readRESPBulkString(r)
@@ -667,7 +667,7 @@ func TestReadRESPBoundsAndOverflowProtection(t *testing.T) {
 	})
 
 	t.Run("small reader buffer handles CRLF across ErrBufferFull fragments", func(t *testing.T) {
-		want := strings.Repeat("C", 15) // 15 bytes + '\r' fills 16-byte buffer, '\n' is in next fragment
+		want := strings.Repeat("C", 15)
 		r := bufio.NewReaderSize(strings.NewReader(want+"\r\n"), 16)
 		got, errRead := readRESPLine(r)
 		if errRead != nil {
@@ -728,7 +728,7 @@ func TestRedisProtocol_MalformedAndOverflowFramesDoNotCrashServer(t *testing.T) 
 				t.Fatalf("failed to set connection deadline: %v", errDeadline)
 			}
 			if _, errWrite := conn.Write(tc.bytes); errWrite != nil && !errors.Is(errWrite, net.ErrClosed) {
-				// For oversized frames the server may reject and close before all bytes are written.
+
 				t.Logf("write returned early after server rejection: %v", errWrite)
 			}
 
@@ -742,7 +742,6 @@ func TestRedisProtocol_MalformedAndOverflowFramesDoNotCrashServer(t *testing.T) 
 		})
 	}
 
-	// Verify the server is still alive and serves normal RESP commands afterwards.
 	conn, errDial := net.DialTimeout("tcp", addr, time.Second)
 	if errDial != nil {
 		t.Fatalf("failed to dial redis listener after malformed frames: %v", errDial)

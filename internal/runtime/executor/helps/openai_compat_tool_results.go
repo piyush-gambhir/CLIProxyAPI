@@ -15,8 +15,6 @@ const (
 	claudeToolResultImagePlaceholder = "[Tool returned image content; the images follow in the next user message.]"
 )
 
-// ShouldNormalizeOpenAIToolResultsForModel reports whether the selected model
-// explicitly excludes image input through its input-modalities configuration.
 func ShouldNormalizeOpenAIToolResultsForModel(compat *config.OpenAICompatibility, upstreamModel, requestedModel string) bool {
 	if compat == nil {
 		return false
@@ -29,9 +27,6 @@ func ShouldNormalizeOpenAIToolResultsForModel(compat *config.OpenAICompatibility
 	return normalize
 }
 
-// NormalizeOpenAIToolResultsTextOnly converts tool message content to strings
-// and strips relayed tool result images for text-only compatibility models.
-// Text parts are preserved and image parts are replaced with a short marker.
 func NormalizeOpenAIToolResultsTextOnly(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -43,8 +38,6 @@ func NormalizeOpenAIToolResultsTextOnly(payload []byte) []byte {
 	return doc.Bytes()
 }
 
-// NormalizeOpenAIToolResultsTextOnlyDoc converts tool message content to strings
-// and strips relayed tool result images in place on doc for text-only compatibility models.
 func NormalizeOpenAIToolResultsTextOnlyDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -129,7 +122,7 @@ func NormalizeOpenAIToolResultsTextOnlyDoc(doc *ojson.Doc) bool {
 					replacedPlaceholderInCurrentTurn = false
 
 					if len(remainingParts) == 0 {
-						// Synthetic relay message contained only relayed images; omit entirely.
+
 						omitted[i] = true
 						modified = true
 						continue

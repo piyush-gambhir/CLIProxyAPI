@@ -11,9 +11,6 @@ import (
 	"github.com/MoeForge/moego/base64"
 )
 
-// NormalizeServiceAccountJSON normalizes the given JSON-encoded service account payload.
-// It returns the normalized JSON (with sanitized private_key) or, if normalization fails,
-// the original bytes and the encountered error.
 func NormalizeServiceAccountJSON(raw []byte) ([]byte, error) {
 	if len(raw) == 0 {
 		return raw, nil
@@ -33,8 +30,6 @@ func NormalizeServiceAccountJSON(raw []byte) ([]byte, error) {
 	return out, nil
 }
 
-// NormalizeServiceAccountMap returns a copy of the given service account map with
-// a sanitized private_key field that is guaranteed to contain a valid RSA PRIVATE KEY PEM block.
 func NormalizeServiceAccountMap(sa map[string]any) (map[string]any, error) {
 	if sa == nil {
 		return nil, fmt.Errorf("service account payload is empty")
@@ -64,7 +59,7 @@ func sanitizePrivateKey(raw string) (string, error) {
 
 	normalized := pk
 	if block, _ := pem.Decode([]byte(pk)); block == nil {
-		// Attempt to reconstruct from the textual payload.
+
 		if reconstructed, err := rebuildPEM(pk); err == nil {
 			normalized = reconstructed
 		} else {
@@ -109,7 +104,6 @@ func ensureRSAPrivateKey(block *pem.Block) (*pem.Block, error) {
 		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: der}, nil
 	}
 
-	// Attempt auto-detection: try PKCS#1 first, then PKCS#8.
 	if rsaKey, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
 		der := x509.MarshalPKCS1PrivateKey(rsaKey)
 		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: der}, nil
@@ -161,7 +155,7 @@ func filterBase64(s string) string {
 		case r == '+' || r == '/' || r == '=':
 			b.WriteRune(r)
 		default:
-			// skip
+
 		}
 	}
 	return b.String()
@@ -202,7 +196,7 @@ func stripANSIEscape(s string) string {
 				i++
 			}
 		default:
-			// skip single ESC
+
 		}
 	}
 	return string(out)

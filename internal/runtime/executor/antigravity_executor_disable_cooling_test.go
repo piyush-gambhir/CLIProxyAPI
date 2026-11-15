@@ -44,7 +44,6 @@ func TestAntigravityDisableCooling_ShortCooldownBypassedInHomeMode(t *testing.T)
 	now := time.Now()
 	duration := 30 * time.Second
 
-	// 1. In Home mode with DisableCooling, marking short cooldown should be a no-op
 	if errMark := markAntigravityShortCooldownRequired(context.Background(), auth, modelName, now, duration); errMark != nil {
 		t.Fatalf("markAntigravityShortCooldownRequired() error = %v", errMark)
 	}
@@ -52,7 +51,6 @@ func TestAntigravityDisableCooling_ShortCooldownBypassedInHomeMode(t *testing.T)
 		t.Fatalf("KVSet count = %d, want 0 when DisableCooling is true", client.setCount)
 	}
 
-	// 2. Pre-populate KV key manually to simulate existing key; read should still return false when cooling disabled
 	antigravityShortCooldownByAuth = sync.Map{}
 	client.values[antigravityShortCooldownKVKey(auth, modelName)] = []byte("9999999999999999999")
 	inCooldown, remaining, errRead := antigravityIsInShortCooldownRequired(context.Background(), auth, modelName, now)
@@ -63,7 +61,6 @@ func TestAntigravityDisableCooling_ShortCooldownBypassedInHomeMode(t *testing.T)
 		t.Fatalf("inCooldown = %v, remaining = %v, want false/0 when DisableCooling is true", inCooldown, remaining)
 	}
 
-	// 3. In Execute, upstream 429 RATE_LIMIT_EXCEEDED should not record short cooldown to KV
 	client.setCount = 0
 	upstreamResp := `{"error":{"code":429,"message":"Rate limit exceeded","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"RATE_LIMIT_EXCEEDED"}]}}`
 	execCtx := context.WithValue(context.Background(), "cliproxy.roundtripper", roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -162,7 +159,6 @@ func TestAntigravityDisableCooling_AuthOverrideBypassesShortCooldown(t *testing.
 	now := time.Now()
 	duration := 30 * time.Second
 
-	// In memory map: marking short cooldown should be skipped for auth with disable_cooling override
 	if errMark := markAntigravityShortCooldownRequired(context.Background(), auth, modelName, now, duration); errMark != nil {
 		t.Fatalf("markAntigravityShortCooldownRequired() error = %v", errMark)
 	}
@@ -170,7 +166,6 @@ func TestAntigravityDisableCooling_AuthOverrideBypassesShortCooldown(t *testing.
 		t.Fatalf("antigravityShortCooldownByAuth stored key, want skipped for auth with disable_cooling override")
 	}
 
-	// Pre-populate in-memory map; read should return false
 	antigravityShortCooldownByAuth.Store(antigravityShortCooldownKey(auth, modelName), now.Add(time.Hour))
 	inCooldown, remaining, errRead := antigravityIsInShortCooldownRequired(context.Background(), auth, modelName, now)
 	if errRead != nil {
@@ -180,7 +175,6 @@ func TestAntigravityDisableCooling_AuthOverrideBypassesShortCooldown(t *testing.
 		t.Fatalf("inCooldown = %v, remaining = %v, want false/0 when auth has disable_cooling override", inCooldown, remaining)
 	}
 
-	// In Execute, upstream 429 RATE_LIMIT_EXCEEDED should not record short cooldown to memory map
 	antigravityShortCooldownByAuth = sync.Map{}
 	upstreamResp := `{"error":{"code":429,"message":"Rate limit exceeded","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"RATE_LIMIT_EXCEEDED"}]}}`
 	execCtx := context.WithValue(context.Background(), "cliproxy.roundtripper", roundTripperFunc(func(req *http.Request) (*http.Response, error) {

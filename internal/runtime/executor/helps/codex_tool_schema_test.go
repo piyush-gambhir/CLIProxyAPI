@@ -8,7 +8,7 @@ import (
 )
 
 func TestNormalizeCodexToolSchemas_ComplexOneOfSimplified_PreservesProperties(t *testing.T) {
-	// Minimal repro from issue #5551: 13-branch oneOf inside a property schema
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -52,11 +52,11 @@ func TestNormalizeCodexToolSchemas_ComplexOneOfSimplified_PreservesProperties(t 
 	out := NormalizeCodexToolSchemas(input)
 
 	tool := ojson.GetBytes(out, "tools.0")
-	// Complex oneOf must be removed from action property
+
 	if tool.Get("parameters.properties.action.oneOf").Exists() {
 		t.Fatalf("expected oneOf to be removed from action property, got: %s", tool.Get("parameters").Raw)
 	}
-	// Action type and enum must be PRESERVED
+
 	if tool.Get("parameters.properties.action.type").String() != "string" {
 		t.Fatalf("expected action.type = string, got: %s", tool.Get("parameters.properties.action.type").String())
 	}
@@ -64,15 +64,15 @@ func TestNormalizeCodexToolSchemas_ComplexOneOfSimplified_PreservesProperties(t 
 	if len(enumArr) != 13 {
 		t.Fatalf("expected action.enum to retain all 13 items, got %d", len(enumArr))
 	}
-	// Sibling property 'target' must be PRESERVED
+
 	if tool.Get("parameters.properties.target.type").String() != "string" {
 		t.Fatalf("sibling property 'target' was deleted or altered")
 	}
-	// 'required' array must be PRESERVED
+
 	if tool.Get("parameters.required.0").String() != "action" {
 		t.Fatalf("required list was deleted or altered")
 	}
-	// Tool name and strict mode preserved
+
 	if tool.Get("name").String() != "t1" {
 		t.Fatalf("name should be preserved as t1, got: %s", tool.Get("name").String())
 	}
@@ -82,7 +82,7 @@ func TestNormalizeCodexToolSchemas_ComplexOneOfSimplified_PreservesProperties(t 
 }
 
 func TestNormalizeCodexToolSchemas_DottedPropertyName(t *testing.T) {
-	// A property whose key contains a dot (e.g. "my.action") must not be split into nested paths
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -106,7 +106,6 @@ func TestNormalizeCodexToolSchemas_DottedPropertyName(t *testing.T) {
 
 	out := NormalizeCodexToolSchemas(input)
 
-	// Ensure properties contains "my.action", NOT nested object "my": {"action": ...}
 	tool := ojson.GetBytes(out, "tools.0")
 	dottedProp := tool.Get(`parameters.properties.my\.action`)
 	if !dottedProp.Exists() {
@@ -118,14 +117,14 @@ func TestNormalizeCodexToolSchemas_DottedPropertyName(t *testing.T) {
 	if dottedProp.Get("type").String() != "string" {
 		t.Fatalf("type should be string")
 	}
-	// Verify that "my" was NOT created as an object containing "action"
+
 	if tool.Get("parameters.properties.my.action").Exists() {
 		t.Fatalf("my.action was incorrectly split into nested path parameters.properties.my.action")
 	}
 }
 
 func TestNormalizeCodexToolSchemas_ColonPropertyName(t *testing.T) {
-	// A property whose key starts with or contains a colon (e.g. ":action") must not be interpreted as control syntax
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -163,8 +162,7 @@ func TestNormalizeCodexToolSchemas_ColonPropertyName(t *testing.T) {
 }
 
 func TestNormalizeCodexToolSchemas_NumericDuplicateConstNotTouched(t *testing.T) {
-	// 1 and 1.0 are mathematically equal in JSON Schema. Having both in oneOf violates exclusivity.
-	// Because exclusivity cannot be proven, the union must remain completely untouched.
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -194,7 +192,7 @@ func TestNormalizeCodexToolSchemas_NumericDuplicateConstNotTouched(t *testing.T)
 }
 
 func TestNormalizeCodexToolSchemas_LargeIntegerPrecisionPreserved(t *testing.T) {
-	// Number larger than 2^53 (53 bits of mantissa in float64) must not lose precision
+
 	largeInt := "9007199254740993"
 	input := []byte(`{
 		"model": "gpt-5.5",
@@ -223,7 +221,7 @@ func TestNormalizeCodexToolSchemas_LargeIntegerPrecisionPreserved(t *testing.T) 
 	if tool.Get("parameters.properties.id.oneOf").Exists() {
 		t.Fatalf("oneOf should be deleted")
 	}
-	// Raw string of first enum item must preserve exact large integer digits without float rounding
+
 	firstEnumItem := tool.Get("parameters.properties.id.enum.0").Raw
 	if firstEnumItem != largeInt {
 		t.Fatalf("large integer precision was lost: got %s, want %s", firstEnumItem, largeInt)
@@ -231,8 +229,7 @@ func TestNormalizeCodexToolSchemas_LargeIntegerPrecisionPreserved(t *testing.T) 
 }
 
 func TestNormalizeCodexToolSchemas_UnicodeDuplicateConstNotTouched(t *testing.T) {
-	// Branch containing "\u0061" and branch containing "a" have the same semantic string value.
-	// In oneOf this violates exclusivity; because it's not pure distinct constants, keep untouched.
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -262,8 +259,7 @@ func TestNormalizeCodexToolSchemas_UnicodeDuplicateConstNotTouched(t *testing.T)
 }
 
 func TestNormalizeCodexToolSchemas_TypePreservingComparison(t *testing.T) {
-	// Existing enum contains strings ["1", ..., "8"], but oneOf contains numbers [1, ..., 8].
-	// Because JSON types differ, they must NOT be treated as identical and must remain untouched.
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -293,7 +289,7 @@ func TestNormalizeCodexToolSchemas_TypePreservingComparison(t *testing.T) {
 }
 
 func TestNormalizeCodexToolSchemas_BothOneOfAndAnyOfUntouched(t *testing.T) {
-	// A property with BOTH oneOf and anyOf must be left completely untouched
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -326,7 +322,7 @@ func TestNormalizeCodexToolSchemas_BothOneOfAndAnyOfUntouched(t *testing.T) {
 }
 
 func TestNormalizeCodexToolSchemas_MigratesConstBranchesToEnum(t *testing.T) {
-	// Property has oneOf with 10 const branches, but no enum field
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -361,8 +357,7 @@ func TestNormalizeCodexToolSchemas_MigratesConstBranchesToEnum(t *testing.T) {
 }
 
 func TestNormalizeCodexToolSchemas_NonMatchingEnumNotTouched(t *testing.T) {
-	// Existing enum has 9 values, while oneOf const branches only cover 8 values.
-	// Because they are not proven identical, the union must remain completely untouched.
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -393,8 +388,7 @@ func TestNormalizeCodexToolSchemas_NonMatchingEnumNotTouched(t *testing.T) {
 }
 
 func TestNormalizeCodexToolSchemas_NonConstUnionNotTouched(t *testing.T) {
-	// Union branches have additional constraints (e.g. pattern, type) and are not pure consts.
-	// Must remain completely untouched to preserve validation semantics.
+
 	input := []byte(`{
 		"model": "gpt-5.5",
 		"tools": [{
@@ -522,7 +516,6 @@ func TestNormalizeCodexToolSchemas_StripsUnsupportedUnicodePropertyEscapePattern
 	tool := ojson.GetBytes(out, "tools.0")
 	params := tool.Get("parameters")
 
-	// Unsupported pattern must be removed
 	if params.Get("properties.field.pattern").Exists() {
 		t.Errorf("expected properties.field.pattern to be removed, got: %s", params.Get("properties.field.pattern").Raw)
 	}
@@ -530,12 +523,10 @@ func TestNormalizeCodexToolSchemas_StripsUnsupportedUnicodePropertyEscapePattern
 		t.Errorf("expected properties.field.type == 'string', got %q", got)
 	}
 
-	// Valid pattern must be preserved
 	if got := params.Get("properties.asset_id.pattern").String(); got != "^[0-9a-f]{32}$" {
 		t.Errorf("expected properties.asset_id.pattern preserved, got %q", got)
 	}
 
-	// Idempotence test
 	outAgain := NormalizeCodexToolSchemas(out)
 	if string(outAgain) != string(out) {
 		t.Errorf("expected NormalizeCodexToolSchemas to be idempotent")
@@ -543,10 +534,7 @@ func TestNormalizeCodexToolSchemas_StripsUnsupportedUnicodePropertyEscapePattern
 }
 
 func TestNormalizeCodexToolSchemas_StripsOctalNULPatternEscape(t *testing.T) {
-	// Claude Code's built-in Artifact tool guards file paths with the octal NUL
-	// escape, e.g. "^[^\\0]*$" on the upload_asset file_paths item. Strict upstream
-	// validators reject that spelling ("is not a 'regex'") while accepting the
-	// equivalent \\x00, so the pattern has to come off before the request goes out.
+
 	input := []byte(`{
 		"model": "gpt-5.6",
 		"tools": [{
@@ -583,7 +571,6 @@ func TestNormalizeCodexToolSchemas_StripsOctalNULPatternEscape(t *testing.T) {
 
 	params := ojson.GetBytes(out, "tools.0.parameters")
 
-	// The octal NUL pattern must be removed, while the rest of the item schema stays.
 	if params.Get("properties.file_paths.items.pattern").Exists() {
 		t.Errorf("expected properties.file_paths.items.pattern to be removed, got: %s",
 			params.Get("properties.file_paths.items.pattern").Raw)
@@ -601,17 +588,14 @@ func TestNormalizeCodexToolSchemas_StripsOctalNULPatternEscape(t *testing.T) {
 		}
 	}
 
-	// A plain pattern is valid and must survive.
 	if got := params.Get("properties.asset_id.pattern").String(); got != "^[0-9a-f]{32}$" {
 		t.Errorf("expected properties.asset_id.pattern preserved, got %q", got)
 	}
 
-	// The hex NUL spelling is the one strict validators accept, so it must survive.
 	if got := params.Get("properties.hex_nul.pattern").String(); got != `^[^\x00]*$` {
 		t.Errorf("expected properties.hex_nul.pattern preserved, got %q", got)
 	}
 
-	// Idempotence test
 	outAgain := NormalizeCodexToolSchemas(out)
 	if string(outAgain) != string(out) {
 		t.Errorf("expected NormalizeCodexToolSchemas to be idempotent")
@@ -619,8 +603,7 @@ func TestNormalizeCodexToolSchemas_StripsOctalNULPatternEscape(t *testing.T) {
 }
 
 func TestNormalizeCodexToolSchemas_PreservesNonSchemaPatternKeys(t *testing.T) {
-	// A property whose default, enum, or description metadata contains a nested object
-	// with a 'pattern' key must NOT be mutated, because it is user data, not a schema.
+
 	input := []byte(`{
 		"model": "gpt-5.6",
 		"tools": [{
@@ -652,12 +635,10 @@ func TestNormalizeCodexToolSchemas_PreservesNonSchemaPatternKeys(t *testing.T) {
 	tool := ojson.GetBytes(out, "tools.0")
 	params := tool.Get("parameters")
 
-	// Real schema pattern must be removed
 	if params.Get("properties.real_schema.pattern").Exists() {
 		t.Errorf("expected real_schema.pattern to be removed, got: %s", params.Get("properties.real_schema").Raw)
 	}
 
-	// User data under default and enum must be PRESERVED
 	if got := params.Get("properties.regex_config.default.pattern").String(); got != `\p{L}+` {
 		t.Errorf("expected default.pattern preserved, got %q", got)
 	}
@@ -723,7 +704,6 @@ func TestNormalizeCodexToolSchemas_CoversAllSchemaKeywordLocations(t *testing.T)
 	tool := ojson.GetBytes(out, "tools.0")
 	params := tool.Get("parameters")
 
-	// All subschemas in schema-aware locations must have their incompatible patterns stripped
 	if params.Get("$defs.custom_type.pattern").Exists() {
 		t.Errorf("expected $defs.custom_type.pattern to be removed")
 	}
@@ -743,14 +723,13 @@ func TestNormalizeCodexToolSchemas_CoversAllSchemaKeywordLocations(t *testing.T)
 		t.Errorf("expected else.properties.other.pattern to be removed")
 	}
 
-	// Subschema types must be preserved
 	if got := params.Get("$defs.custom_type.type").String(); got != "string" {
 		t.Errorf("expected $defs.custom_type.type == 'string', got %q", got)
 	}
 }
 
 func TestNormalizeCodexToolSchemas_MalformedOrEmptyParametersFallback(t *testing.T) {
-	// Malformed JSON, non-object parameters, null, and empty payloads must not panic
+
 	cases := [][]byte{
 		[]byte(`{"model":"gpt-5.6","tools":[{"type":"function","name":"t","parameters":null}]}`),
 		[]byte(`{"model":"gpt-5.6","tools":[{"type":"function","name":"t","parameters":"not_an_object"}]}`),
@@ -768,8 +747,7 @@ func TestNormalizeCodexToolSchemas_MalformedOrEmptyParametersFallback(t *testing
 }
 
 func TestNormalizeCodexToolSchemas_JSONUnicodeEscapeBypassPrevention(t *testing.T) {
-	// Patterns encoded using JSON Unicode escapes (e.g. \u005c for '\' or \u0070 for 'p')
-	// decode to \p{...} / \P{...} and must not be skipped by the fast-path check.
+
 	input := []byte(`{
 		"model": "gpt-5.6",
 		"tools": [{
@@ -841,12 +819,11 @@ func TestNormalizeCodexToolSchemas_PatternPropertiesKeySanitization(t *testing.T
 	tool := ojson.GetBytes(out, "tools.0")
 	params := tool.Get("parameters")
 
-	// Key with \p{L}+ must be removed
 	patternProps := params.Get("patternProperties").Map()
 	if _, exists := patternProps[`^\p{L}+$`]; exists {
 		t.Errorf("expected patternProperties key '^\\\\p{L}+$' to be removed, got: %s", params.Get("patternProperties").Raw)
 	}
-	// Safe key must be preserved
+
 	if _, exists := patternProps[`^[a-z]+$`]; !exists {
 		t.Errorf("expected patternProperties key '^[a-z]+$' to be preserved, got: %s", params.Get("patternProperties").Raw)
 	}
@@ -1003,17 +980,14 @@ func TestNormalizeCodexToolIntegerTypes_CodexClientToolFieldTypes(t *testing.T) 
 			}
 		}
 
-		// Check non-target field cmd in exec_command
 		if got := toolMap["exec_command"].Get("parameters.properties.cmd.type").String(); got != "string" {
 			t.Errorf("exec_command cmd type = %q, want string", got)
 		}
 
-		// Check unrelated tool retains number
 		if got := toolMap["unrelated_tool"].Get("parameters.properties.timeout_ms.type").String(); got != "number" {
 			t.Errorf("unrelated_tool timeout_ms type = %q, want number", got)
 		}
 
-		// Check additional_tools under input
 		addToolType := ojson.GetBytes(out, "input.0.tools.0.parameters.properties.yield_time_ms.type").Array()
 		if len(addToolType) != 2 || addToolType[0].String() != "integer" || addToolType[1].String() != "null" {
 			t.Errorf("additional_tools yield_time_ms type = %v, want [integer null]", addToolType)
@@ -1186,19 +1160,19 @@ func TestNormalizeCodexToolIntegerTypes_CodexClientToolFieldTypes(t *testing.T) 
 		for _, tool := range ojson.GetBytes(out, "tools").Array() {
 			toolMap[tool.Get("name").String()] = tool
 		}
-		// mcp__server__sleep must remain number
+
 		if got := toolMap["mcp__server__sleep"].Get("parameters.properties.duration_ms.type").String(); got != "number" {
 			t.Errorf("mcp__server__sleep duration_ms type = %q, want number", got)
 		}
-		// mcp__server__exec_command must remain number
+
 		if got := toolMap["mcp__server__exec_command"].Get("parameters.properties.yield_time_ms.type").String(); got != "number" {
 			t.Errorf("mcp__server__exec_command yield_time_ms type = %q, want number", got)
 		}
-		// functions__sleep must be normalized to integer
+
 		if got := toolMap["functions__sleep"].Get("parameters.properties.duration_ms.type").String(); got != "integer" {
 			t.Errorf("functions__sleep duration_ms type = %q, want integer", got)
 		}
-		// collab__exec_command must be normalized to integer
+
 		if got := toolMap["collab__exec_command"].Get("parameters.properties.yield_time_ms.type").String(); got != "integer" {
 			t.Errorf("collab__exec_command yield_time_ms type = %q, want integer", got)
 		}
@@ -1336,7 +1310,6 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 	params := ojson.GetBytes(out, "tools.0.parameters")
 	optsProps := params.Get("properties.options.properties")
 
-	// Issue #6579 reproduction: u64::MAX bound dropped, minimum: 0 and type preserved.
 	if optsProps.Get("seed.maximum").Exists() {
 		t.Errorf("expected options.seed.maximum to be removed, got %s", optsProps.Get("seed.maximum").Raw)
 	}
@@ -1347,14 +1320,12 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 		t.Errorf("expected options.seed.type == 'integer', got %q", got)
 	}
 
-	// All four bound keywords outside int64 must be dropped.
 	for _, kw := range []string{"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"} {
 		if optsProps.Get("over_max_int64." + kw).Exists() {
 			t.Errorf("expected over_max_int64.%s to be removed, got %s", kw, optsProps.Get("over_max_int64."+kw).Raw)
 		}
 	}
 
-	// Exact int64 min/max must be preserved without precision loss.
 	if got := optsProps.Get("exact_int64_limits.minimum").Raw; got != "-9223372036854775808" {
 		t.Errorf("expected exact_int64_limits.minimum == -9223372036854775808, got %s", got)
 	}
@@ -1368,7 +1339,6 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 		t.Errorf("expected exact_int64_limits.exclusiveMaximum == 9223372036854775807, got %s", got)
 	}
 
-	// Fractional float bounds must be preserved.
 	if got := optsProps.Get("float_bounds.minimum").Raw; got != "-0.5" {
 		t.Errorf("expected float_bounds.minimum == -0.5, got %s", got)
 	}
@@ -1376,7 +1346,6 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 		t.Errorf("expected float_bounds.maximum == 3.14, got %s", got)
 	}
 
-	// Scientific/decimal integer bounds: in-range preserved, out-of-range dropped.
 	if got := optsProps.Get("scientific_bounds.minimum").Raw; got != "1e5" {
 		t.Errorf("expected scientific_bounds.minimum == 1e5, got %s", got)
 	}
@@ -1386,13 +1355,11 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 		}
 	}
 
-	// High-precision non-integer bound must not be rounded to an integer and dropped.
 	wantHighPrec := "18446744073709552000.00000000000000000000000000000000000000000000000000000000000000000000000000000001"
 	if got := optsProps.Get("high_precision_fraction.maximum").Raw; got != wantHighPrec {
 		t.Errorf("expected high_precision_fraction.maximum preserved as %s, got %s", wantHighPrec, got)
 	}
 
-	// Extreme int64 exponents must not overflow effectiveExp calculation.
 	if got := optsProps.Get("extreme_exponents.minimum").Raw; got != "1.1e-9223372036854775808" {
 		t.Errorf("expected extreme_exponents.minimum preserved as 1.1e-9223372036854775808, got %s", got)
 	}
@@ -1400,7 +1367,6 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 		t.Errorf("expected extreme_exponents.maximum (10e9223372036854775807) to be removed, got %s", optsProps.Get("extreme_exponents.maximum").Raw)
 	}
 
-	// Non-schema user data under default/enum and property named "maximum" must be preserved.
 	if got := optsProps.Get("user_data.default.maximum").Raw; got != "18446744073709552000" {
 		t.Errorf("expected user_data.default.maximum preserved, got %s", got)
 	}
@@ -1411,12 +1377,10 @@ func TestNormalizeCodexToolSchemas_StripsOutOfRangeInt64Bounds(t *testing.T) {
 		t.Errorf("expected property named 'maximum' preserved, got %q", got)
 	}
 
-	// Subschemas under $defs must also have out-of-range integer bounds removed.
 	if params.Get("$defs.uint64_id.maximum").Exists() {
 		t.Errorf("expected $defs.uint64_id.maximum to be removed, got %s", params.Get("$defs.uint64_id.maximum").Raw)
 	}
 
-	// Idempotence check.
 	outAgain := NormalizeCodexToolSchemas(out)
 	if string(outAgain) != string(out) {
 		t.Errorf("expected NormalizeCodexToolSchemas to be idempotent")

@@ -2106,7 +2106,6 @@ func TestHostApplyConfigWaitsForCanceledRecoveryReconfigureAndQuiescesAgainOnNex
 	h.ApplyConfig(context.Background(), versionedPluginHostConfig(t, pluginsDir, "1.0.0"))
 	writeVersionedPluginFile(t, pluginsDir, "alpha", "2.0.0")
 
-	// Attempt 1: quiesce succeeds, replacement fails, rollback reconfigure reopens resource and fails.
 	h.ApplyConfig(context.Background(), versionedPluginHostConfig(t, pluginsDir, "2.0.0"))
 	if got := quiesceCalls.Load(); got != 1 {
 		t.Fatalf("quiesce calls after first replacement = %d, want 1", got)
@@ -2115,7 +2114,6 @@ func TestHostApplyConfigWaitsForCanceledRecoveryReconfigureAndQuiescesAgainOnNex
 		t.Fatal("expected rollback reconfigure to leave simulated resource open after partial failure")
 	}
 
-	// Attempt 2: same-path recovery reconfigure is canceled while blocked in native call.
 	recoveryCtx, cancelRecovery := context.WithCancel(context.Background())
 	recoveryDone := make(chan struct{})
 	go func() {
@@ -2133,7 +2131,6 @@ func TestHostApplyConfigWaitsForCanceledRecoveryReconfigureAndQuiescesAgainOnNex
 	releaseRecoveryOnce.Do(func() { close(releaseRecoveryReconfigure) })
 	waitForHostTestSignal(t, recoveryDone, "canceled recovery ApplyConfig completion")
 
-	// Attempt 3: replacement must call quiesce again before loading workingReplacementClient.
 	h.ApplyConfig(context.Background(), versionedPluginHostConfig(t, pluginsDir, "2.0.0"))
 	if got := quiesceCalls.Load(); got != 2 {
 		t.Fatalf("quiesce calls after second replacement = %d, want 2", got)
@@ -2845,8 +2842,7 @@ func TestHostCanceledInitializationDiscardsBlockedClient(t *testing.T) {
 	}
 
 	close(client.release)
-	// Late cleanup shuts the client down first and drops the load token after;
-	// wait for the end of the cleanup, not for the shutdown alone.
+
 	waitForHostTestSignal(t, cleanupDone, "late load cleanup")
 	if got := client.shutdown.Load(); got != 1 {
 		t.Fatalf("blocked initialization client shutdown calls = %d, want 1", got)
@@ -2886,8 +2882,6 @@ func TestHostCancellationUnderMutationLockDoesNotInsertLoadedPlugin(t *testing.T
 	h.mu.Unlock()
 	waitForHostTestSignal(t, applyDone, "canceled plugin apply")
 
-	// Late cleanup shuts the client down first and drops the load token after;
-	// wait for the end of the cleanup, not for the shutdown alone.
 	waitForHostTestSignal(t, cleanupDone, "late load cleanup")
 	if got := client.shutdown.Load(); got != 1 {
 		t.Fatalf("late client shutdown calls = %d, want 1", got)

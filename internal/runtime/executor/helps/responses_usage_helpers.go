@@ -6,9 +6,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// EnsureResponsesUsageDetails ensures that Responses usage objects contain output_tokens_details
-// (defaulting reasoning_tokens to 0) and input_tokens_details (defaulting cached_tokens to 0).
-// It supports plain JSON payloads, single-line SSE data: lines, and multi-line SSE frames (e.g. event: ...\ndata: ...).
 func EnsureResponsesUsageDetails(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -19,7 +16,6 @@ func EnsureResponsesUsageDetails(payload []byte) []byte {
 		return payload
 	}
 
-	// 1. JSON-first: If trimmed payload starts with '{', process as a plain JSON object.
 	if trimmed[0] == '{' {
 		if ojson.GetBytesNoCopy(trimmed, "object").String() == "response.compaction" {
 			return payload
@@ -31,7 +27,6 @@ func EnsureResponsesUsageDetails(payload []byte) []byte {
 		return doc.Bytes()
 	}
 
-	// 2. SSE frames: Scan lines for data: prefixed lines and patch their JSON payloads.
 	if bytes.Contains(payload, []byte("data:")) {
 		lines := bytes.Split(payload, []byte("\n"))
 		modified := false
@@ -69,8 +64,6 @@ func EnsureResponsesUsageDetails(payload []byte) []byte {
 	return payload
 }
 
-// EnsureResponsesUsageDetailsDoc ensures that Responses usage objects in doc contain
-// output_tokens_details and input_tokens_details in place.
 func EnsureResponsesUsageDetailsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false

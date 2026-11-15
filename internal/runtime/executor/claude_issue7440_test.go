@@ -207,7 +207,6 @@ func TestClaudeExecutor_ServerSideFallbackOptInAndPayloadFilter_Issue7440(t *tes
 		}
 	}
 
-	// Payload filter remains the final barrier even when server-side-fallback is enabled.
 	filteredCfg, errParseFilter := config.ParseConfigBytes([]byte("config-version: 8\nupstream:\n  claude:\n    server-side-fallback: true\nrequests:\n  payload:\n    filter:\n      - models:\n          - name: \"claude-opus-5-5\"\n            protocol: \"claude\"\n        params:\n          - \"fallbacks\"\n"))
 	if errParseFilter != nil {
 		t.Fatalf("ParseConfigBytes(filtered) error = %v", errParseFilter)
@@ -226,7 +225,7 @@ func TestClaudeExecutor_ServerSideFallbackOptInAndPayloadFilter_Issue7440(t *tes
 }
 
 func TestClaudeExecutor_DefaultNoFallbackPreservesCallerFallbackAndRefusalTransparency_Issue7440(t *testing.T) {
-	// 1. Explicit caller fallbacks are still honored when server-side-fallback defaults to false.
+
 	var seenBody []byte
 	var seenHeaders http.Header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -260,8 +259,6 @@ func TestClaudeExecutor_DefaultNoFallbackPreservesCallerFallbackAndRefusalTransp
 		t.Fatalf("Anthropic-Beta = %q, want %s for explicit caller fallback", seenHeaders.Get("Anthropic-Beta"), claudeServerSideFallbackBeta)
 	}
 
-	// 2. When server-side-fallback is off and Opus 5.5 declines with reasoning_extraction refusal,
-	// both Execute and ExecuteStream surface the refusal transparently on OpenAI Chat Completions.
 	refusalServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if ojson.GetBytes(body, "stream").Bool() {

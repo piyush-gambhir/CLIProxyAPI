@@ -39,13 +39,7 @@ func writeResponsesWebsocketSyntheticPrewarm(
 	}
 	for i := 0; i < len(payloads); i++ {
 		markAPIResponseTimestamp(c)
-		// log.Infof(
-		// 	"responses websocket: downstream_out id=%s type=%d event=%s payload=%s",
-		// 	sessionID,
-		// 	websocket.TextMessage,
-		// 	websocketPayloadEventType(payloads[i]),
-		// 	websocketPayloadPreview(payloads[i]),
-		// )
+
 		if errWrite := writeResponsesWebsocketPayload(writer, wsTimelineLog, payloads[i], time.Now()); errWrite != nil {
 			log.Warnf(
 				"responses websocket: downstream_out write failed id=%s event=%s error=%v",
@@ -59,9 +53,6 @@ func writeResponsesWebsocketSyntheticPrewarm(
 	return strings.Clone(ojson.GetBytesNoCopy(payloads[0], "response.id").String()), nil
 }
 
-// A synthetic warm-up acknowledges input that never reached the upstream.
-// Materialize that input before compacted-history detection can mistake the
-// client's remaining delta for a complete replacement transcript.
 func normalizeResponsesWebsocketPrewarmFollowup(rawJSON, warmupRequest []byte) ([]byte, []byte, *interfaces.ErrorMessage) {
 	var fieldsBuf [2]ojson.Result
 	fields := ojson.GetManyBytesNoCopy(fieldsBuf[:0], rawJSON, "type", "input")
@@ -120,14 +111,6 @@ func syntheticResponsesWebsocketPrewarmPayloads(requestJSON []byte) ([][]byte, e
 	return [][]byte{createdDoc.Bytes(), completedDoc.Bytes()}, nil
 }
 
-// inputContainsFullTranscript returns true when the input array carries compact
-// replay markers that indicate the client already sent the full conversation
-// transcript. Merging that input with stale lastRequest/lastResponseOutput
-// would duplicate or break function_call/function_call_output pairings, so the
-// caller should use the input as-is.
-//
-// Assistant messages alone are not enough to classify the payload as a replay:
-// incremental websocket requests may legitimately append assistant items.
 func inputContainsFullTranscript(input ojson.Result) bool {
 	if !input.IsArray() {
 		return false

@@ -15,21 +15,11 @@ import (
 )
 
 const (
-	// GeminiInteractionsAPIRevision is the Api-Revision header required for the Interactions API.
 	GeminiInteractionsAPIRevision = "2026-05-20"
-	// StreamScannerBuffer sets the scanner buffer capacity for streaming response chunks (50MB).
+
 	StreamScannerBuffer = 52_428_800
 )
 
-// SanitizeGeminiInteractionsUnsupportedInputIDs aligns input step IDs with the
-// official Gemini Interactions API schema:
-// - `function_call` (FunctionCallStep) requires `id` and rejects `call_id`
-// - `function_result` (FunctionResultStep) requires `call_id` and rejects `id`
-// - other steps and content parts do not support `id`
-//
-// allowVertexBareTink must be true only for the Vertex AI Interactions endpoint;
-// other endpoints reject Vertex bare-Tink thought signatures, so those thought
-// steps are dropped like any other incompatible signature.
 func SanitizeGeminiInteractionsUnsupportedInputIDs(body []byte, allowVertexBareTink bool) []byte {
 	if len(body) == 0 {
 		return body
@@ -41,8 +31,6 @@ func SanitizeGeminiInteractionsUnsupportedInputIDs(body []byte, allowVertexBareT
 	return doc.Bytes()
 }
 
-// SanitizeGeminiInteractionsUnsupportedInputIDsDoc aligns input step IDs with the
-// official Gemini Interactions API schema in place on doc.
 func SanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc, allowVertexBareTink bool) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -74,9 +62,7 @@ func SanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc, allowVerte
 				ok = false
 			}
 			if !ok || normalizedSig == "" || signature.IsGeminiThoughtSignatureBypass(signature.SignaturePayloadWithoutProviderPrefix(normalizedSig)) {
-				// Official Gemini Interactions API rejects thought steps without a
-				// valid Gemini signature (or with foreign/corrupt base64 signatures
-				// or "content" arrays).
+
 				dropped[idx] = true
 				changed = true
 				continue
@@ -138,7 +124,6 @@ func SanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc, allowVerte
 	return true
 }
 
-// TranslateGeminiInteractionsRequestBody translates a request payload to FormatInteractions.
 func TranslateGeminiInteractionsRequestBody(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) ([]byte, error) {
 	if opts.SourceFormat == "" || opts.SourceFormat == sdktranslator.FormatInteractions {
 		return bytes.Clone(payload), nil
@@ -146,10 +131,6 @@ func TranslateGeminiInteractionsRequestBody(ctx context.Context, cfg *config.Con
 	return TranslateRequestReturningError(ctx, opts.Headers, cfg, opts.SourceFormat, sdktranslator.FormatInteractions, model, payload, stream, isCompat)
 }
 
-// TranslateGeminiInteractionsRequestPair translates the working payload and the
-// payload-config baseline. Identical inputs are translated once, including plugin
-// hooks. The baseline is captured before model and thinking mutations, and the
-// working buffer is a separate copy so those mutations cannot change it.
 func TranslateGeminiInteractionsRequestPair(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) (original, working []byte, err error) {
 	source := geminiInteractionsPayloadConfigInput(opts, payload)
 	if geminiInteractionsSameByteSlice(payload, source) {
@@ -182,7 +163,6 @@ func geminiInteractionsSameByteSlice(a, b []byte) bool {
 	return &a[0] == &b[0]
 }
 
-// ApplyGeminiInteractionsThinking applies thinking/reasoning configuration to the interactions payload.
 func ApplyGeminiInteractionsThinking(body []byte, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) ([]byte, error) {
 	fromFormat := opts.SourceFormat.String()
 	if strings.TrimSpace(fromFormat) == "" {
@@ -191,7 +171,6 @@ func ApplyGeminiInteractionsThinking(body []byte, req cliproxyexecutor.Request, 
 	return ApplyRequestThinking(body, req, opts, fromFormat, sdktranslator.FormatInteractions.String(), "gemini")
 }
 
-// ApplyGeminiInteractionsThinkingDoc applies thinking/reasoning configuration to doc in place.
 func ApplyGeminiInteractionsThinkingDoc(doc *ojson.Doc, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) error {
 	fromFormat := opts.SourceFormat.String()
 	if strings.TrimSpace(fromFormat) == "" {
@@ -200,7 +179,6 @@ func ApplyGeminiInteractionsThinkingDoc(doc *ojson.Doc, req cliproxyexecutor.Req
 	return ApplyRequestThinkingDoc(doc, req, opts, fromFormat, sdktranslator.FormatInteractions.String(), "gemini")
 }
 
-// ApplyGeminiInteractionsRevisionHeader sets the default Api-Revision header on outgoing HTTP requests.
 func ApplyGeminiInteractionsRevisionHeader(req *http.Request) {
 	if req == nil {
 		return
@@ -210,7 +188,6 @@ func ApplyGeminiInteractionsRevisionHeader(req *http.Request) {
 	}
 }
 
-// ApplyGeminiInteractionsRequestHeaders forwards any incoming Api-Revision header to upstream requests.
 func ApplyGeminiInteractionsRequestHeaders(req *http.Request, headers http.Header) {
 	if req == nil || headers == nil || req.Header.Get("Api-Revision") != "" {
 		return
@@ -220,7 +197,6 @@ func ApplyGeminiInteractionsRequestHeaders(req *http.Request, headers http.Heade
 	}
 }
 
-// GeminiInteractionsSSEPayload extracts SSE data payload from raw SSE frames.
 func GeminiInteractionsSSEPayload(frame []byte) []byte {
 	trimmed := bytes.TrimSpace(frame)
 	if len(trimmed) == 0 {
@@ -251,7 +227,6 @@ func GeminiInteractionsSSEPayload(frame []byte) []byte {
 	return payload
 }
 
-// GeminiInteractionsSSEDone reports whether the SSE frame signals stream completion.
 func GeminiInteractionsSSEDone(frame []byte) bool {
 	trimmed := bytes.TrimSpace(frame)
 	if bytes.Equal(trimmed, []byte("[DONE]")) {

@@ -42,8 +42,6 @@ func runPerfCodexStream(request []byte, upstreamNames []string) []byte {
 	return out
 }
 
-// The per-stream cached resolver must return exactly what the uncached
-// resolveCodexClaudeToolUseName returns for every request/name combination.
 func TestCodexClaudeToolNameCacheEquivalence(t *testing.T) {
 	longA := "mcp__very_long_server_name_for_testing__" + strings.Repeat("a", 40)
 	longB := "mcp__very_long_server_name_for_testing__" + strings.Repeat("a", 39) + "b"
@@ -63,8 +61,7 @@ func TestCodexClaudeToolNameCacheEquivalence(t *testing.T) {
 		{"web-search", perfCodexClaudeRequest([]string{"web_search"}), []string{"web_search"}},
 	}
 	for _, tc := range cases {
-		// The full stream through one param must be deterministic and exercise
-		// the cache across multiple tool calls.
+
 		first := runPerfCodexStream(tc.request, tc.upstream)
 		second := runPerfCodexStream(tc.request, tc.upstream)
 		if !bytes.Equal(first, second) {

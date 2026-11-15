@@ -23,7 +23,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 	dbPath1 := filepath.Join(dir, "kv1.db")
 	dbPath2 := filepath.Join(dir, "kv2.db")
 
-	// Unmanaged service (before applyKVStoreConfig / Run) does not open KVStore on applyConfigUpdate.
 	unmanagedSvc := &Service{}
 	unmanagedSvc.applyConfigUpdate(&config.Config{
 		AuthDir: authDir,
@@ -32,7 +31,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("CurrentKVClient(unmanaged applyConfigUpdate) = %v, %v, %v; want nil, false, nil", client, active, errClient)
 	}
 
-	// Default configuration (Disabled: false, Path: "") opens <auth-dir>/kv.db.
 	svc := &Service{}
 	svc.applyKVStoreConfig(&config.Config{
 		AuthDir: authDir,
@@ -45,7 +43,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("expected defaultAuthDBPath %s to exist: %v", defaultAuthDBPath, errStat)
 	}
 
-	// Explicit Path overrides AuthDir.
 	svc.applyKVStoreConfig(&config.Config{
 		AuthDir: authDir,
 		KVStore: config.KVStoreConfig{Disabled: false, Path: dbPath1},
@@ -58,7 +55,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("expected dbPath1 %s to exist: %v", dbPath1, errStat)
 	}
 
-	// Same path reload reuses the store instance.
 	svc.applyKVStoreConfig(&config.Config{
 		AuthDir: authDir,
 		KVStore: config.KVStoreConfig{Disabled: false, Path: dbPath1},
@@ -68,7 +64,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("same path reload did not reuse store: got %v want %v", clientSame, client1)
 	}
 
-	// Switching path closes old store and opens new store.
 	svc.applyKVStoreConfig(&config.Config{
 		KVStore: config.KVStoreConfig{Disabled: false, Path: dbPath2},
 	})
@@ -77,7 +72,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("path switch failed: client=%v active=%v err=%v", client2, active, errClient)
 	}
 
-	// Disabling (Disabled: true) closes the local store and falls back to memory mode.
 	svc.applyKVStoreConfig(&config.Config{
 		KVStore: config.KVStoreConfig{Disabled: true, Path: dbPath2},
 	})
@@ -85,7 +79,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("CurrentKVClient(disabled) = %v, %v, %v; want nil, false, nil", client, active, errClient)
 	}
 
-	// applyKVStoreConfig(nil) shuts down the local store cleanly.
 	svc.applyKVStoreConfig(&config.Config{
 		KVStore: config.KVStoreConfig{Disabled: false, Path: dbPath2},
 	})
@@ -94,7 +87,6 @@ func TestServiceApplyKVStoreConfig_LifecycleAndHotReload(t *testing.T) {
 		t.Fatalf("CurrentKVClient(nil cfg) = %v, %v, %v; want nil, false, nil", client, active, errClient)
 	}
 
-	// applyConfigUpdate hot-reloads KVStore when svc is managed, and Shutdown closes it and resets managed state.
 	svc.applyConfigUpdate(&config.Config{
 		KVStore: config.KVStoreConfig{Disabled: false, Path: dbPath1},
 	})
@@ -143,7 +135,6 @@ func TestServiceApplyKVStoreConfig_HomeModeNeverOpensBBolt(t *testing.T) {
 		t.Fatalf("Home mode created bbolt file at %s (err=%v)", dbPath, errStat)
 	}
 
-	// Active home.Current() must also isolate and shut down any local bbolt store even if Home.Enabled is false.
 	localBeforeHomePath := filepath.Join(dir, "local-before-home.db")
 	svc.applyKVStoreConfig(&config.Config{
 		KVStore: config.KVStoreConfig{Disabled: false, Path: localBeforeHomePath},

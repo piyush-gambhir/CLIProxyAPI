@@ -14,10 +14,6 @@ var largeInlineDataBenchmarkOutput []byte
 func TestConvertGeminiRequestToGeminiReusesLargeNormalizedPayload(t *testing.T) {
 	input := largeInlineDataGeminiRequest(true)
 
-	// Assert the reuse invariant with t.Fatal rather than inside testing.Benchmark:
-	// a failing benchmark aborts before any iteration completes and yields a zero
-	// BenchmarkResult, so AllocedBytesPerOp would report 0 and silently satisfy the
-	// allocation check below exactly when the payload is being copied.
 	output, _ := ConvertGeminiRequestToGemini("gemini-test", input, false)
 	if &output[0] != &input[0] {
 		t.Fatal("normalized request should reuse the input payload")
@@ -179,7 +175,7 @@ func TestConvertGeminiRequestToGemini_BackfillsEmptyName(t *testing.T) {
 }
 
 func TestBackfillEmptyFunctionResponseNames_MoreResponsesThanCalls(t *testing.T) {
-	// Extra responses beyond the call count should not panic and should be left unchanged.
+
 	input := []byte(`{
 		"contents": [
 			{
@@ -204,7 +200,7 @@ func TestBackfillEmptyFunctionResponseNames_MoreResponsesThanCalls(t *testing.T)
 	if name0 != "Bash" {
 		t.Errorf("Expected first name 'Bash', got '%s'", name0)
 	}
-	// Second response has no matching call, should remain empty
+
 	name1 := ojson.GetBytesNoCopy(out, "contents.1.parts.1.functionResponse.name").String()
 	if name1 != "" {
 		t.Errorf("Expected second name to remain empty, got '%s'", name1)
@@ -212,7 +208,7 @@ func TestBackfillEmptyFunctionResponseNames_MoreResponsesThanCalls(t *testing.T)
 }
 
 func TestBackfillEmptyFunctionResponseNames_MultipleGroups(t *testing.T) {
-	// Two sequential call/response groups should each get correct names.
+
 	input := []byte(`{
 		"contents": [
 			{

@@ -8,18 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Claude rejects a request whose tools declare an input_schema property key
-// outside ^[a-zA-Z0-9_.-]{1,64}$, while OpenAI-compatible clients and MCP
-// servers commonly use parameter names such as "not[labels]". Because clients
-// resend their tools on every turn, one such tool fails the whole conversation.
-//
-// Claude presents tool schemas to the model as part of its prompt, so such a
-// tool is sent with an open object input_schema and its original schema
-// embedded verbatim in the description. No parameter is renamed or dropped:
-// the model sees every original name and constraint and calls the tool with
-// the original names, so neither historical tool_use inputs nor tool calls in
-// responses need any rewriting. Claude no longer enforces the embedded schema
-// structurally, so strict is removed as structured outputs cannot apply it.
 const (
 	claudePropertyKeyMaxLength      = 64
 	claudeToolSchemaMaxInspectDepth = 256
@@ -27,8 +15,6 @@ const (
 	claudeToolSchemaFallbackSchema  = `{"type":"object"}`
 )
 
-// claudePropertyKeyAccepted reports whether Claude accepts name as an
-// input_schema property key.
 func claudePropertyKeyAccepted(name string) bool {
 	if len(name) == 0 || len(name) > claudePropertyKeyMaxLength {
 		return false
@@ -43,14 +29,6 @@ func claudePropertyKeyAccepted(name string) bool {
 	return true
 }
 
-// claudeSchemaHasRejectedPropertyKey reports whether schema, or any subschema
-// reachable through JSON Schema applicator and definition keywords, declares a
-// properties key Claude rejects. Keyword names are only interpreted at schema
-// positions, so a definition or property named like a keyword is handled by
-// its role. Values of other keywords, such as const, default, enum, examples
-// and unknown annotations, are data and are not inspected. Schemas nested
-// beyond the inspection depth are reported as rejected so they take the
-// fallback, which still carries the full schema text.
 func claudeSchemaHasRejectedPropertyKey(schema ojson.Result, depth int) bool {
 	if !schema.IsObject() {
 		return false
@@ -80,8 +58,7 @@ func claudeSchemaHasRejectedPropertyKey(schema ojson.Result, depth int) bool {
 				return subschema(item)
 			})
 		case "$defs", "definitions", "patternProperties", "dependentSchemas", "dependencies":
-			// Maps of named subschemas; dependencies may also hold name arrays,
-			// which are not objects and are skipped by subschema.
+
 			if value.IsObject() {
 				subschemas(value)
 			}
@@ -104,8 +81,6 @@ func claudeSchemaHasRejectedPropertyKey(schema ojson.Result, depth int) bool {
 	return found
 }
 
-// claudeToolNeedsSchemaFallback reports whether a Claude client tool
-// declaration has an input_schema that Claude would reject.
 func claudeToolNeedsSchemaFallback(tool ojson.Result) bool {
 	if IsClaudeServerToolType(tool.Get("type").String()) {
 		return false
@@ -114,10 +89,6 @@ func claudeToolNeedsSchemaFallback(tool ojson.Result) bool {
 	return schema.IsObject() && claudeSchemaHasRejectedPropertyKey(schema, 0)
 }
 
-// NormalizeClaudeToolPropertyNamesDoc applies the schema fallback to every
-// client tool declared in tools[] or in an inline tool_addition definition
-// whose input_schema has a property key Claude rejects. Tools Claude accepts
-// are left unchanged. It must run before user payload rules.
 func NormalizeClaudeToolPropertyNamesDoc(doc *ojson.Doc) {
 	if doc == nil || doc.Len() == 0 {
 		return

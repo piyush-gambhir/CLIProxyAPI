@@ -947,8 +947,7 @@ func TestMapCodexWebsocketWriteErrorDoesNotReusePriorConnectionClose(t *testing.
 	}
 
 	sess.resetUpstreamDisconnectError(replacementConn)
-	// A late close callback from the prior connection must not overwrite the
-	// replacement connection's close state.
+
 	sess.setUpstreamDisconnectError(priorConn, &websocket.CloseError{Code: websocket.CloseMessageTooBig})
 	sess.setUpstreamDisconnectError(replacementConn, &websocket.CloseError{Code: websocket.CloseNormalClosure})
 	replacementErr := mapCodexWebsocketWriteError(sess, replacementConn, websocket.ErrCloseSent)
@@ -2387,7 +2386,6 @@ func TestCodexWebsocketsExecuteStreamObservesWebSocketResponseEvents(t *testing.
 		t.Fatalf("ExecuteStream() error = %v", err)
 	}
 
-	// Drain stream
 	for chunk := range streamResult.Chunks {
 		if chunk.Err != nil {
 			t.Fatalf("stream chunk error: %v", chunk.Err)
@@ -2609,7 +2607,6 @@ func TestCodexWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 	sess := &codexWebsocketSession{sessionID: "test-keepalive"}
 	sess.configureConn(clientConn)
 
-	// Start client read loop so it processes control frames.
 	go func() {
 		for {
 			if _, _, errRead := clientConn.ReadMessage(); errRead != nil {
@@ -2618,17 +2615,14 @@ func TestCodexWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 		}
 	}()
 
-	// Simulate an active application message write holding writeMu.
 	sess.writeMu.Lock()
 	defer sess.writeMu.Unlock()
 
-	// Upstream sends a keepalive ping while writeMu is held.
 	errPing := serverConn.WriteControl(websocket.PingMessage, []byte("keepalive-ping"), time.Now().Add(time.Second))
 	if errPing != nil {
 		t.Fatalf("failed to send ping: %v", errPing)
 	}
 
-	// Pong must be received promptly without being starved by writeMu.
 	select {
 	case got := <-pongReceived:
 		if got != "keepalive-ping" {
@@ -2651,7 +2645,7 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
 		inWriteHookOnce.Do(func() { close(inWriteHook) })
-		// Wait until server confirms pong was received before allowing write to finish.
+
 		select {
 		case <-pongDeliveredDuringWrite:
 		case <-time.After(5 * time.Second):
@@ -2673,7 +2667,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return nil
 		})
 
-		// Start server reader loop so server processes control frames.
 		readErrCh := make(chan error, 1)
 		payloadReceived := make(chan struct{})
 		go func() {
@@ -2690,7 +2683,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			}
 		}()
 
-		// Wait until client has entered writeMessage and is actively holding writeMu.
 		select {
 		case <-inWriteHook:
 		case <-time.After(5 * time.Second):
@@ -2698,10 +2690,8 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-		// Upstream sends Ping WHILE client payload write is in progress holding writeMu.
 		_ = conn.WriteControl(websocket.PingMessage, []byte("session-ping"), time.Now().Add(5*time.Second))
 
-		// Server asserts Pong arrives while client write is still blocked in the hook.
 		select {
 		case got := <-serverPongCh:
 			if got != "session-ping" {
@@ -2713,8 +2703,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-		// The held client write is released together with the pong. Wait until the
-		// request frame arrives before writing the terminal event and closing.
 		select {
 		case <-payloadReceived:
 		case <-time.After(5 * time.Second):
@@ -2722,7 +2710,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-		// Now send terminal response.
 		respPayload := []byte(`{"type":"response.completed","response":{"id":"resp-1","status":"completed","output":[]}}`)
 		_ = conn.WriteMessage(websocket.TextMessage, respPayload)
 		<-serverDone
@@ -2806,7 +2793,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 			}
 		}()
 
-		// Wait until client has entered writeMessage on sessionless path.
 		select {
 		case <-inWriteHook:
 		case <-time.After(5 * time.Second):
@@ -2814,10 +2800,8 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 			return
 		}
 
-		// Upstream sends Ping WHILE client payload write is in progress.
 		_ = conn.WriteControl(websocket.PingMessage, []byte("sessionless-ping"), time.Now().Add(5*time.Second))
 
-		// Server asserts Pong arrives while client write is still in progress.
 		select {
 		case got := <-serverPongCh:
 			if got != "sessionless-ping" {
@@ -2916,7 +2900,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_NonstreamSessionless(t *testi
 			}
 		}()
 
-		// Wait until client has entered writeMessage on nonstream path.
 		select {
 		case <-inWriteHook:
 		case <-time.After(5 * time.Second):
@@ -2924,10 +2907,8 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_NonstreamSessionless(t *testi
 			return
 		}
 
-		// Upstream sends Ping WHILE client payload write is in progress.
 		_ = conn.WriteControl(websocket.PingMessage, []byte("nonstream-sessionless-ping"), time.Now().Add(5*time.Second))
 
-		// Server asserts Pong arrives while client write is still in progress.
 		select {
 		case got := <-serverPongCh:
 			if got != "nonstream-sessionless-ping" {
@@ -2991,16 +2972,13 @@ func TestCodexWebsockets_SessionlessBufferingImmediateTerminalClosesConnection(t
 			close(serverClosed)
 		}()
 
-		// Read client request.
 		if _, _, errRead := conn.ReadMessage(); errRead != nil {
 			return
 		}
 
-		// Send immediate terminal event while buffering is enabled.
 		respPayload := []byte(`{"type":"response.completed","response":{"id":"resp-1","status":"completed","output":[]}}`)
 		_ = conn.WriteMessage(websocket.TextMessage, respPayload)
 
-		// Wait until client closes connection.
 		for {
 			if _, _, errRead := conn.ReadMessage(); errRead != nil {
 				return
@@ -3025,7 +3003,6 @@ func TestCodexWebsockets_SessionlessBufferingImmediateTerminalClosesConnection(t
 	opts := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FromString("openai-response"),
 		ResponseFormat: sdktranslator.FromString("openai-response"),
-		// Sessionless
 	}
 
 	result, errStream := exec.ExecuteStream(context.Background(), auth, req, opts)
@@ -3039,7 +3016,6 @@ func TestCodexWebsockets_SessionlessBufferingImmediateTerminalClosesConnection(t
 		}
 	}
 
-	// Server connection must be closed by client immediately upon terminal buffering.
 	select {
 	case <-serverClosed:
 	case <-time.After(2 * time.Second):
@@ -3052,13 +3028,11 @@ func TestCodexWebsockets_LastEventAndTerminalTracking(t *testing.T) {
 	conn2 := &websocket.Conn{}
 	sess := &codexWebsocketSession{sessionID: "track-session"}
 
-	// Initially empty
 	sess.resetUpstreamDisconnectError(conn1)
 	if got := sess.getLastEventType(conn1); got != "" {
 		t.Fatalf("initial lastEventType = %q, want empty", got)
 	}
 
-	// Non-terminal event
 	sess.setLastEventType(conn1, "response.output_item.added")
 	if got := sess.getLastEventType(conn1); got != "response.output_item.added" {
 		t.Fatalf("lastEventType = %q, want response.output_item.added", got)
@@ -3067,7 +3041,6 @@ func TestCodexWebsockets_LastEventAndTerminalTracking(t *testing.T) {
 		t.Fatalf("output_item.added should not be terminal")
 	}
 
-	// Terminal event
 	sess.setLastEventType(conn1, "response.completed")
 	if got := sess.getLastEventType(conn1); got != "response.completed" {
 		t.Fatalf("lastEventType = %q, want response.completed", got)
@@ -3076,12 +3049,11 @@ func TestCodexWebsockets_LastEventAndTerminalTracking(t *testing.T) {
 		t.Fatalf("response.completed must be terminal")
 	}
 
-	// Reset for new connection resets tracking
 	sess.resetUpstreamDisconnectError(conn2)
 	if got := sess.getLastEventType(conn2); got != "" {
 		t.Fatalf("reconnected lastEventType = %q, want empty", got)
 	}
-	// Old conn should not match
+
 	if got := sess.getLastEventType(conn1); got != "" {
 		t.Fatalf("stale conn lastEventType = %q, want empty", got)
 	}
@@ -3097,8 +3069,7 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 
 	testWebsocketWriteChunkHook = func(chunkIndex int, totalChunks int) {
 		if chunkIndex == 1 {
-			// Chunk 0 was sent to the network. Now wait until server confirms it has
-			// received chunk 0 and sent a keepalive Ping:
+
 			select {
 			case <-firstChunkReadOnServer:
 			case <-time.After(5 * time.Second):
@@ -3111,7 +3082,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 	}
 	defer func() { testWebsocketWriteChunkHook = nil }()
 
-	// Large message that spans multiple 32KB chunks (128KB total).
 	largeContent := strings.Repeat("A", 128*1024)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3127,7 +3097,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			return nil
 		})
 
-		// Read the first chunk of data using NextReader, proving receipt of partial message on the wire.
 		msgType, reader, errNext := conn.NextReader()
 		if errNext != nil {
 			t.Errorf("server NextReader error: %v", errNext)
@@ -3145,13 +3114,10 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			return
 		}
 
-		// Server confirmed reading chunk 0 from the wire!
 		close(firstChunkReadOnServer)
 
-		// Server injects keepalive Ping while client is paused between chunks.
 		_ = conn.WriteControl(websocket.PingMessage, []byte("chunked-interleaved-ping"), time.Now().Add(time.Second))
 
-		// Goroutine to read reader so Gorilla processes the interleaved Pong frame.
 		readDone := make(chan struct{})
 		var totalMsg []byte
 		var readErr error
@@ -3162,7 +3128,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			close(readDone)
 		}()
 
-		// Server asserts Pong is received while remaining chunks are still paused.
 		select {
 		case got := <-serverPongCh:
 			if got != "chunked-interleaved-ping" {
@@ -3176,7 +3141,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			return
 		}
 
-		// Wait for read to finish now that allowRemainingChunks was closed.
 		select {
 		case <-readDone:
 			if readErr != nil {
@@ -3193,7 +3157,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			return
 		}
 
-		// Send terminal response.
 		respPayload := []byte(`{"type":"response.completed","response":{"id":"resp-1","status":"completed","output":[]}}`)
 		_ = conn.WriteMessage(websocket.TextMessage, respPayload)
 	}))
@@ -3212,7 +3175,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 	exec := NewCodexWebsocketsExecutor(&config.Config{})
 	go exec.readUpstreamLoop(sess, clientConn)
 
-	// Write 128KB message through production sess.writeMessage path:
 	payload := []byte(largeContent)
 	errWrite := sess.writeMessage(clientConn, websocket.TextMessage, payload)
 	if errWrite != nil {
@@ -3306,7 +3268,6 @@ func TestCodexWebsockets_SendErrorLogsSessionObject(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Deterministically cause send error by expiring write deadline right before writing.
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
 		_ = conn.SetWriteDeadline(time.Now().Add(-time.Second))
 	}
@@ -3325,7 +3286,6 @@ func TestCodexWebsockets_SendErrorLogsSessionObject(t *testing.T) {
 	opts := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FromString("openai-response"),
 		ResponseFormat: sdktranslator.FromString("openai-response"),
-		// Sessionless -> ephemeral
 	}
 
 	result, err := exec.ExecuteStream(context.Background(), auth, req, opts)

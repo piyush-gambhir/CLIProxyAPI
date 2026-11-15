@@ -563,13 +563,13 @@ func (s *Service) runHomeSubscriber(homeCtx context.Context, parentCtx context.C
 		}, func() {
 			readyOnce.Do(func() { close(ready) })
 		})
-		// Exclude draining and retry waits from the successful subscription lifetime.
+
 		endedAt := time.Now()
 		plannedRebalance := errors.Is(errRun, home.ErrRebalanceRequested)
 		settleBound := time.Duration(cancelBound.Load())
 		var errPending error
 		if plannedRebalance {
-			// Settle issued dispatches before deciding between target takeover and source drain/flush.
+
 			client.FenceDispatch()
 			settleCtx, cancelSettle := context.WithTimeout(context.WithoutCancel(parentCtx), settleBound)
 			errPending = registry.WaitPending(settleCtx)

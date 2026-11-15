@@ -20,9 +20,6 @@ var (
 	claudeWebSearchCitationMarker   = []byte(`"web_search_result_location"`)
 )
 
-// WithClaudeWebSearchResultRestore attaches a request-scoped cache lookup so
-// Responses -> Claude request translation can restore web_search_tool_result
-// blocks before deciding whether assistant citations remain backed by results.
 func WithClaudeWebSearchResultRestore(ctx context.Context, sessionKey string, ttl ...time.Duration) context.Context {
 	if strings.TrimSpace(sessionKey) == "" {
 		return ctx
@@ -36,16 +33,10 @@ func WithClaudeWebSearchResultRestore(ctx context.Context, sessionKey string, tt
 	})
 }
 
-// RecordClaudeWebSearchResults stores the web_search_tool_result blocks of a
-// Claude response for sessionKey. data is either a complete Messages response
-// or SSE text (one or more lines); the result block arrives whole in its
-// content_block_start event.
 func RecordClaudeWebSearchResults(sessionKey string, data []byte, ttl time.Duration, limit int) {
 	RecordClaudeWebSearchResultsContext(context.Background(), sessionKey, data, ttl, limit)
 }
 
-// RecordClaudeWebSearchResultsContext stores the web_search_tool_result blocks
-// of a Claude response for sessionKey using ctx for Home KV operations.
 func RecordClaudeWebSearchResultsContext(ctx context.Context, sessionKey string, data []byte, ttl time.Duration, limit int) {
 	if strings.TrimSpace(sessionKey) == "" || !bytes.Contains(data, claudeWebSearchToolResultMarker) {
 		return
@@ -80,23 +71,14 @@ func recordClaudeWebSearchResultBlock(ctx context.Context, sessionKey string, bl
 	cache.CacheClaudeWebSearchResultBestEffort(ctx, sessionKey, strings.Clone(block.Get("tool_use_id").String()), []byte(content.Raw), ttl, limit)
 }
 
-// RestoreClaudeWebSearchResults fills assistant web_search_tool_result blocks
-// whose content is missing or empty with the content stored for sessionKey.
-// Blocks that already carry content, and blocks without a stored entry, are
-// left unchanged.
 func RestoreClaudeWebSearchResults(body []byte, sessionKey string, ttl ...time.Duration) []byte {
 	return RestoreClaudeWebSearchResultsContext(context.Background(), body, sessionKey, ttl...)
 }
 
-// RestoreClaudeWebSearchResultsDoc fills assistant web_search_tool_result blocks
-// in doc whose content is missing or empty with the content stored for sessionKey.
 func RestoreClaudeWebSearchResultsDoc(doc *ojson.Doc, sessionKey string, ttl ...time.Duration) bool {
 	return RestoreClaudeWebSearchResultsContextDoc(context.Background(), doc, sessionKey, ttl...)
 }
 
-// RestoreClaudeWebSearchResultsContext fills assistant web_search_tool_result
-// blocks whose content is missing or empty with the content stored for
-// sessionKey using ctx for Home KV operations.
 func RestoreClaudeWebSearchResultsContext(ctx context.Context, body []byte, sessionKey string, ttl ...time.Duration) []byte {
 	if !bytes.Contains(body, claudeWebSearchToolResultMarker) {
 		return body
@@ -111,10 +93,6 @@ func RestoreClaudeWebSearchResultsContext(ctx context.Context, body []byte, sess
 	return doc.Bytes()
 }
 
-// RestoreClaudeWebSearchResultsContextDoc fills assistant web_search_tool_result
-// blocks in doc whose content is missing or empty with the content stored for
-// sessionKey using ctx for Home KV operations, and drops web_search_result_location
-// citations from assistant turns whose web_search_tool_result remains empty.
 func RestoreClaudeWebSearchResultsContextDoc(ctx context.Context, doc *ojson.Doc, sessionKey string, ttl ...time.Duration) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false

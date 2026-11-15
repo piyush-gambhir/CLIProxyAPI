@@ -49,7 +49,6 @@ func TestNextRefreshCheckAt_DisabledWithInvalidGrantUnschedule(t *testing.T) {
 		return &d
 	})
 
-	// Case 1: Normal disabled credential WITHOUT invalid_grant is scheduled for token refresh (expected behavior)
 	normalDisabledAuth := &Auth{
 		ID:       "normal-disabled",
 		Provider: "disabled-schedule",
@@ -69,7 +68,6 @@ func TestNextRefreshCheckAt_DisabledWithInvalidGrantUnschedule(t *testing.T) {
 		t.Fatalf("nextRefreshCheckAt() = %s, want %s", got, want)
 	}
 
-	// Case 2: Disabled credential WITH invalid_grant is permanently unscheduled (never refreshed)
 	invalidGrantDisabledAuth := &Auth{
 		ID:       "invalid-grant-disabled",
 		Provider: "disabled-schedule",
@@ -125,7 +123,7 @@ func TestNextRefreshCheckAt_PreferredInterval_PicksEarliestCandidate(t *testing.
 		Metadata: map[string]any{
 			"email":                    "x@example.com",
 			"expires_at":               expiry.Format(time.RFC3339),
-			"refresh_interval_seconds": 900, // 15m
+			"refresh_interval_seconds": 900,
 		},
 	}
 	got, ok := nextRefreshCheckAt(now, auth, 15*time.Minute)
@@ -229,7 +227,6 @@ func TestAuthAutoRefreshLoop_TimerWaitClampedForLongNextExpiry(t *testing.T) {
 		t.Fatalf("nextWait() = %v, want exactly %v", got, maxRefreshTimerWait)
 	}
 
-	// Short wait should not be clamped
 	shortNext := now.Add(10 * time.Second)
 	loop.upsert("a2", shortNext)
 	gotShort, okShort := loop.nextWait(now)
@@ -242,26 +239,21 @@ func TestAuthAutoRefreshLoop_PopDue_AfterSystemSuspendResume(t *testing.T) {
 	loop := newAuthAutoRefreshLoop(nil, 5*time.Second, 1)
 	beforeSleep := time.Date(2026, 4, 12, 10, 0, 0, 0, time.UTC)
 
-	// Credential scheduled to refresh 50 minutes later
 	scheduledRefresh := beforeSleep.Add(50 * time.Minute)
 	loop.upsert("gemini-oauth", scheduledRefresh)
 
-	// Before sleep, wait is clamped to maxRefreshTimerWait
 	wait, ok := loop.nextWait(beforeSleep)
 	if !ok || wait != maxRefreshTimerWait {
 		t.Fatalf("nextWait() before sleep = (%v, %t), want (%v, true)", wait, ok, maxRefreshTimerWait)
 	}
 
-	// Not due yet before sleep
 	dueBefore := loop.popDue(beforeSleep)
 	if len(dueBefore) != 0 {
 		t.Fatalf("popDue() before sleep = %v, want empty", dueBefore)
 	}
 
-	// System resumes 2 hours later (monotonic clock froze, but wall clock jumped)
 	afterResume := beforeSleep.Add(2 * time.Hour)
 
-	// Upon wake, the clamped timer fires within maxRefreshTimerWait and checks with current wall clock
 	waitAfter, okAfter := loop.nextWait(afterResume)
 	if !okAfter || waitAfter != 0 {
 		t.Fatalf("nextWait() after resume = (%v, %t), want (0, true)", waitAfter, okAfter)
@@ -281,8 +273,6 @@ func TestCodexDualRefreshScheduling(t *testing.T) {
 	})
 	mgr := NewManager(nil, nil, nil)
 
-	// Case 1: Outer expires in 5 days (due in 4 days), SIWC expires in 15 minutes (due in 10 minutes with 5m lead)
-	// Minimum trigger should be SIWC due time (now + 10m), and shouldRefresh at now is false; at now + 10m is true.
 	outerExp := now.Add(5 * 24 * time.Hour)
 	siwcExp := now.Add(15 * time.Minute)
 	auth := &Auth{
@@ -326,7 +316,6 @@ func TestCodexDualRefreshScheduling(t *testing.T) {
 		t.Fatalf("siwc at now+10m: has=%v need=%v, want has=true need=true", hasSIWC, needSIWC)
 	}
 
-	// Case 2: Outer expires in 20 hours (due now since lead is 24h), SIWC expires in 50 minutes (due in 45m)
 	auth.Metadata["expired"] = now.Add(20 * time.Hour).Format(time.RFC3339)
 	auth.Metadata["siwc"].(map[string]any)["expired"] = now.Add(50 * time.Minute).Format(time.RFC3339)
 	nextAt2, ok2 := nextRefreshCheckAt(now, auth, 5*time.Second)
@@ -345,7 +334,7 @@ func TestCodexDualRefreshScheduling(t *testing.T) {
 
 func TestCodexUseSIWCActiveAccessTokenAndValidity(t *testing.T) {
 	now := time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)
-	// Outer expired 1 hour ago, SIWC valid for 30 minutes, use_siwc = true
+
 	auth := &Auth{
 		ID:       "codex-active-siwc.json",
 		Provider: "codex",
@@ -369,7 +358,6 @@ func TestCodexUseSIWCActiveAccessTokenAndValidity(t *testing.T) {
 		t.Fatal("HasValidAccessToken(use_siwc=true with valid SIWC) = false, want true")
 	}
 
-	// Now SIWC is expired while outer is valid for 5 days
 	auth.Metadata["expired"] = now.Add(5 * 24 * time.Hour).Format(time.RFC3339)
 	auth.Metadata["siwc"].(map[string]any)["expired"] = now.Add(-1 * time.Minute).Format(time.RFC3339)
 	if auth.HasValidAccessToken(now) {
@@ -382,14 +370,14 @@ func TestCodexSIWCRefreshDoesNotPostponeOuterIntervalRefresh(t *testing.T) {
 	auth := &Auth{
 		ID:       "codex-interval.json",
 		Provider: "codex",
-		// Shared LastRefreshedAt was just updated by an SIWC refresh 5 minutes ago
+
 		LastRefreshedAt: now.Add(-5 * time.Minute),
 		Metadata: map[string]any{
 			"type":                     "codex",
 			"access_token":             "outer-tok",
 			"refresh_token":            "outer-ref",
 			"refresh_interval_seconds": 3600,
-			// Outer was refreshed 55 minutes ago, so it should be due in 5 minutes (now + 5m), NOT now + 55m
+
 			"last_refresh": now.Add(-55 * time.Minute).Format(time.RFC3339),
 			"expired":      now.Add(7 * 24 * time.Hour).Format(time.RFC3339),
 			"use_siwc":     true,
@@ -500,7 +488,6 @@ func TestManagerRefreshOuterPreservesConcurrentSIWCBind(t *testing.T) {
 
 	<-exec.started
 
-	// While outer refresh is in flight, simulate -siwc-bind updating disk and watcher updating Manager
 	boundMeta := map[string]any{
 		"type":          "codex",
 		"access_token":  "outer-initial-access",
@@ -526,7 +513,6 @@ func TestManagerRefreshOuterPreservesConcurrentSIWCBind(t *testing.T) {
 	close(exec.release)
 	<-doneRefresh
 
-	// Verify both Manager and disk have the rotated outer token AND the concurrently bound SIWC section
 	finalAuth, ok := m.GetByID("codex-concurrent.json")
 	if !ok || finalAuth == nil {
 		t.Fatal("finalAuth not found in Manager")

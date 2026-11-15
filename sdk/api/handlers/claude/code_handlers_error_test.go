@@ -271,7 +271,7 @@ func TestWriteClaudeErrorResponse_IncludesRetryAfterForModelCooldownDefaultSetti
 
 	cooldownErr := coreauth.NewManager(nil, nil, nil)
 	_ = cooldownErr
-	// Create mock model cooldown error
+
 	msg := &interfaces.ErrorMessage{
 		StatusCode: http.StatusTooManyRequests,
 		Error:      coreauth.NewModelCooldownError("claude-sonnet-4-6", "claude", 20*time.Second),
@@ -572,7 +572,7 @@ func TestClaudeStreamTerminalErrorAfterSingleNewlineInsertsBlankLine(t *testing.
 	data := make(chan []byte)
 	errs := make(chan *interfaces.ErrorMessage)
 	go func() {
-		// Ends with a single '\n' (complete line, but missing the blank-line SSE event separator).
+
 		data <- []byte("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"hi\"}}\n")
 		errs <- &interfaces.ErrorMessage{
 			StatusCode: http.StatusBadGateway,
@@ -714,7 +714,7 @@ func TestClaudeStreamTruncatedErrorEventHeaderDoesNotSuppressTerminalError(t *te
 	data := make(chan []byte)
 	errs := make(chan *interfaces.ErrorMessage)
 	go func() {
-		// Upstream started an error event header but dropped before sending a valid data JSON frame.
+
 		data <- []byte("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"m\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\nevent: error\n")
 		errs <- &interfaces.ErrorMessage{
 			StatusCode: http.StatusBadGateway,

@@ -11,16 +11,12 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Review round 6 regression: a Home aggregate immediate (explicit zero from
-// an earlier credential) must not be replaced by the last attempt's positive
-// trusted hint, in headers or scheduling.
-
 func TestIssue7017HomeAggregateImmediateWinsHeadersAndScheduling(t *testing.T) {
 	zero := time.Duration(0)
 	positive := 256 * time.Second
 	cause := withTrustedRetryAfter(issue7017HintError{msg: issue7017TurnBody(), hint: &positive}, &positive)
 	_ = zero
-	// roundTiming encodes an observed explicit zero as RetryAfter() == nil.
+
 	timing := &homeRetryRoundTiming{}
 	timing.Observe(issue7017HintError{msg: issue7017TurnBody(), hint: &zero})
 	timing.Observe(cause)

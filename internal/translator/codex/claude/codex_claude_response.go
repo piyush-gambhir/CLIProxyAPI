@@ -1,9 +1,3 @@
-// Package claude provides response translation functionality for Codex to Claude Code API compatibility.
-// This package handles the conversion of Codex API responses into Claude Code-compatible
-// Server-Sent Events (SSE) format, implementing a sophisticated state machine that manages
-// different response types including text content, thinking processes, and function calls.
-// The translation ensures proper sequencing of SSE events and maintains state across
-// multiple response chunks to provide a seamless streaming experience.
 package claude
 
 import (
@@ -22,32 +16,18 @@ var (
 	dataTag = []byte("data:")
 )
 
-// codexThinkingSummaryPartSeparator joins consecutive reasoning summary parts inside
-// the single thinking block that represents one Codex reasoning item.
 const codexThinkingSummaryPartSeparator = "\n\n"
 
-// codexCommentarySignatureMarker is the CLIProxyAPI-internal marker carried in
-// the signature field of the thinking block that relays a Codex commentary
-// message. The shared definition lives in the signature package so every
-// Claude history consumer recognizes and strips it before it can reach an
-// upstream.
 const codexCommentarySignatureMarker = sigcompat.CodexCommentarySignatureMarker
 
-// ConvertCodexResponseToClaudeParams holds parameters for response conversion.
 type ConvertCodexResponseToClaudeParams struct {
-	// ShortToOriginalToolNames maps shortened upstream tool names back to the
-	// client-declared names. It is resolved once per stream on first tool use;
-	// callers pass the same request bytes for the stream's lifetime.
 	ShortToOriginalToolNames map[string]string
 	ToolNamesResolved        bool
 	HasEmittedToolUse        bool
 	BlockIndex               int
 	HasTextDelta             bool
 	TextBlockOpen            bool
-	// CommentaryMessageOpen is set while the current `message` output item carries
-	// phase "commentary": a preamble GPT-5.x emits before its final_answer item.
-	// Its text goes into a thinking block, so clients that render or speak text
-	// blocks get the answer once instead of the preamble followed by the answer.
+
 	CommentaryMessageOpen   bool
 	PublicCommentaryText    strings.Builder
 	VisiblePublicCommentary bool
@@ -77,22 +57,6 @@ type codexFunctionCallStream struct {
 	Closed                    bool
 }
 
-// ConvertCodexResponseToClaude performs sophisticated streaming response format conversion.
-// This function implements a complex state machine that translates Codex API responses
-// into Claude Code-compatible Server-Sent Events (SSE) format. It manages different response types
-// and handles state transitions between content blocks, thinking processes, and function calls.
-//
-// Response type states: 0=none, 1=content, 2=thinking, 3=function
-// The function maintains state across multiple calls to ensure proper SSE event sequencing.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response (unused in current implementation)
-//   - rawJSON: The raw JSON response from the Codex API
-//   - param: A pointer to a parameter object for maintaining state between calls
-//
-// Returns:
-//   - [][]byte: A slice of Claude Code-compatible JSON responses
 func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequestRawJSON, _ []byte, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &ConvertCodexResponseToClaudeParams{
@@ -133,10 +97,7 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		output = append(output, stopCodexTextBlock(params)...)
 		output = append(output, finalizeCodexCommentaryBlock(params)...)
 		params.CommentaryMessageOpen = false
-		// Codex splits a single reasoning item into several summary parts, but only
-		// output_item.done carries that item's final encrypted_content. Keep one
-		// thinking block open for the whole item and separate the parts with a blank
-		// line, so the only signature ever emitted is the final one.
+
 		if params.ThinkingBlockOpen {
 			output = append(output, appendCodexThinkingDelta(params, codexThinkingSummaryPartSeparator)...)
 		} else {
@@ -151,8 +112,7 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		output = append(output, appendCodexThinkingDelta(params, rootResult.Get("delta").String())...)
 		params.ThinkingSummarySeen = true
 	case "response.reasoning_summary_part.done":
-		// Intentionally does not close the thinking block: it stays open until
-		// output_item.done delivers the reasoning item's final encrypted_content.
+
 	case "response.content_part.added":
 		if rootResult.Get("part.type").String() == "output_text" {
 			if params.CommentaryMessageOpen {
@@ -188,7 +148,7 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 			}
 		}
 	case "response.web_search_call.searching", "response.web_search_call.completed", "response.web_search_call.in_progress":
-		// Wait for populated web_search_call items on output_item.done.
+
 	case "response.completed", "response.incomplete":
 		templateDoc := ojson.NewDocString(`{"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},"usage":{"input_tokens":0,"output_tokens":0}}`)
 		responseData := rootResult.Get("response")
@@ -219,8 +179,7 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		itemType := itemResult.Get("type").String()
 		switch itemType {
 		case "message":
-			// Each message item streams its own text; a later item's done fallback
-			// must not be skipped because an earlier item had deltas.
+
 			output = append(output, finalizeCodexThinkingBlock(params)...)
 			output = append(output, stopCodexTextBlock(params)...)
 			params.HasTextDelta = false
@@ -238,16 +197,14 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 			output = appendCodexFunctionCallQueue(output, params, originalRequestRawJSON)
 		case "reasoning":
 			output = append(output, stopCodexTextBlock(params)...)
-			// A previous reasoning item that never reported output_item.done must not
-			// leak its still-open block into this one.
+
 			output = append(output, finalizeCodexThinkingBlock(params)...)
 			params.CommentaryMessageOpen = false
 			params.ThinkingSummarySeen = false
-			// Kept only as a fallback for streams whose output_item.done omits
-			// encrypted_content; it is a pre-content snapshot, never the final value.
+
 			params.ThinkingSignature = strings.Clone(itemResult.Get("encrypted_content").String())
 		case "web_search_call":
-			// Defer server_tool_use until output_item.done carries action/query.
+
 		}
 	case "response.output_item.done":
 		itemResult := rootResult.Get("item")
@@ -284,7 +241,7 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 				return [][]byte{output}
 			}
 			if commentary {
-				// Whole on done, nothing streamed: emit it as thinking.
+
 				output = append(output, finalizeCodexThinkingBlock(params)...)
 				output = append(output, stopCodexTextBlock(params)...)
 				params.CommentaryMessageOpen = true
@@ -424,10 +381,6 @@ func codexStreamErrorToClaudeError(rootResult ojson.Result) []byte {
 	return translatorcommon.AppendSSEEventBytes(nil, "error", outDoc.Bytes(), 2)
 }
 
-// ConvertCodexResponseToClaudeNonStream converts a non-streaming Codex response to a non-streaming Claude Code response.
-// This function processes the complete Codex response and transforms it into a single Claude Code-compatible
-// JSON response. It handles message content, tool calls, reasoning content, and usage metadata, combining all
-// the information into a single response that matches the Claude Code API format.
 func ConvertCodexResponseToClaudeNonStream(ctx context.Context, _ string, originalRequestRawJSON, _ []byte, rawJSON []byte, _ *any) []byte {
 	revNames := buildReverseMapFromClaudeOriginalShortToOriginal(originalRequestRawJSON)
 
@@ -475,8 +428,7 @@ func ConvertCodexResponseToClaudeNonStream(ctx context.Context, _ string, origin
 					contentBlocks = append(contentBlocks, blockDoc.Bytes())
 				}
 			case "message":
-				// A "commentary" phase message is the model's preamble, not its answer:
-				// relay it as thinking so text consumers see the final_answer alone.
+
 				blockType := "text"
 				if item.Get("phase").String() == "commentary" {
 					blockType = "thinking"
@@ -851,8 +803,6 @@ func clearCodexFunctionCalls(params *ConvertCodexResponseToClaudeParams) {
 	params.LastFunctionCall = nil
 }
 
-// resolveToolUseName restores the client-declared tool name using the reverse
-// map cached on first use for this stream.
 func (p *ConvertCodexResponseToClaudeParams) resolveToolUseName(originalRequestRawJSON []byte, name string) string {
 	if p == nil {
 		return resolveCodexClaudeToolUseName(originalRequestRawJSON, name)
@@ -932,7 +882,6 @@ func setClaudeReasoningUsageDoc(doc *ojson.Doc, usage ojson.Result) {
 	_ = doc.Set("usage.output_tokens_details.thinking_tokens", tokens)
 }
 
-// buildReverseMapFromClaudeOriginalShortToOriginal builds a map[short]original from original Claude request tools.
 func buildReverseMapFromClaudeOriginalShortToOriginal(original []byte) map[string]string {
 	rev := map[string]string{}
 	m := buildReverseMapFromClaudeOriginalToShort(original)
@@ -958,10 +907,6 @@ func startCodexTextBlock(params *ConvertCodexResponseToClaudeParams) []byte {
 	return translatorcommon.AppendSSEEventBytes(nil, "content_block_start", template, 2)
 }
 
-// finalizeCodexCommentaryBlock closes the thinking block that carries a commentary
-// message. A reasoning item's encrypted_content never belongs to it, so the
-// internal commentary marker is emitted as the block signature instead of any
-// pending reasoning signature.
 func finalizeCodexCommentaryBlock(params *ConvertCodexResponseToClaudeParams) []byte {
 	if !params.CommentaryMessageOpen || !params.ThinkingBlockOpen {
 		return nil
@@ -969,9 +914,6 @@ func finalizeCodexCommentaryBlock(params *ConvertCodexResponseToClaudeParams) []
 	return finalizeCodexThinkingBlock(params)
 }
 
-// codexMessageTextBlock builds a non-stream content block: {"type":"text","text":...}
-// or, for a commentary message, {"type":"thinking","thinking":...} carrying the
-// internal commentary marker in its signature field.
 func codexMessageTextBlock(blockType, text string) []byte {
 	if blockType == "thinking" {
 		blockDoc := ojson.NewDocString(`{"type":"thinking","thinking":"","signature":""}`)
@@ -1044,7 +986,6 @@ func startCodexThinkingBlock(params *ConvertCodexResponseToClaudeParams) []byte 
 	return translatorcommon.AppendSSEEventBytes(nil, "content_block_start", template, 2)
 }
 
-// appendCodexThinkingDelta emits a thinking_delta for the currently open thinking block.
 func appendCodexThinkingDelta(params *ConvertCodexResponseToClaudeParams, text string) []byte {
 	if text == "" {
 		return nil
@@ -1096,8 +1037,7 @@ func finalizeCodexThinkingBlock(params *ConvertCodexResponseToClaudeParams) []by
 
 	params.BlockIndex++
 	params.ThinkingBlockOpen = false
-	// Preserve the phase marker for lossless replay and mirror public commentary
-	// into visible text. Genuine reasoning is never mirrored.
+
 	if signatureToEmit == codexCommentarySignatureMarker && params.PublicCommentaryText.Len() > 0 {
 		text := params.PublicCommentaryText.String()
 		params.PublicCommentaryText.Reset()

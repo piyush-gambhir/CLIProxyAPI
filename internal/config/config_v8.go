@@ -11,8 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config remains the effective runtime/wire representation. Layout translation is
-// confined to YAML boundaries so older SDK and Home consumers keep their contract.
 type legacyConfig Config
 
 type configPath struct{ old, current string }
@@ -21,16 +19,12 @@ var v8FieldIndexes = make(map[string][]int)
 var v8StructPaths []configPath
 var v8Paths = buildV8Paths()
 
-// Historical spellings are YAML-boundary aliases, not provider runtime fields.
-// The canonical client path wins by presence (including explicit false/null).
-// If it is absent, prefer the previous v8 OAuth path, then providers, then codex.
 var v8ClientPaths = []configPath{
 	{"oauth.providers.codex.optimize-multi-agent-v2", "client.codex.optimize-multi-agent-v2"},
 	{"providers.codex.optimize-multi-agent-v2", "client.codex.optimize-multi-agent-v2"},
 	{"codex.optimize-multi-agent-v2", "client.codex.optimize-multi-agent-v2"},
 }
 
-// Canonical upstream fields win by presence; historical OAuth fields precede globals.
 var v8SharedPaths = []configPath{
 	{"oauth.providers.codex.disable-codex-cloaking", "upstream.codex.disable-codex-cloaking"},
 	{"oauth.providers.codex.stream-bootstrap-buffering", "upstream.codex.stream-bootstrap-buffering"},
@@ -176,8 +170,6 @@ func setYAMLPath(root *yaml.Node, path string, value *yaml.Node) {
 	*dst = *deepCopyNode(value)
 }
 
-// setYAMLPathWithComments attaches leading comments to the destination key;
-// yaml.v3 does not render a scalar value's HeadComment.
 func setYAMLPathWithComments(root *yaml.Node, path string, value *yaml.Node) {
 	setYAMLPath(root, path, value)
 	parts := strings.Split(path, ".")
@@ -191,7 +183,6 @@ func setYAMLPathWithComments(root *yaml.Node, path string, value *yaml.Node) {
 	yamlPath(root, path).FootComment = ""
 }
 
-// copyYAMLPathValue carries key comments and comments of pruned ancestors.
 func copyYAMLPathValue(root *yaml.Node, path string) *yaml.Node {
 	copy := deepCopyNode(yamlPath(root, path))
 	parts := strings.Split(path, ".")
@@ -208,8 +199,7 @@ func copyYAMLPathValue(root *yaml.Node, path string) *yaml.Node {
 		copy.HeadComment = strings.TrimSpace(key.HeadComment + "\n" + key.LineComment + "\n" + copy.HeadComment)
 		copy.FootComment = strings.TrimSpace(copy.FootComment + "\n" + key.FootComment)
 	}
-	// A move also prunes single-child ancestors. Carry their comments with the
-	// field; section line comments become leading comments at the destination.
+
 	for i := len(parents) - 1; i > 0 && len(parents[i].Content) == 2; i-- {
 		idx := findMapKeyIndex(parents[i-1], parts[i-1])
 		key := parents[i-1].Content[idx]
@@ -246,10 +236,6 @@ func legacyPath(root *yaml.Node, path string) *yaml.Node {
 	return node
 }
 
-// EffectiveResponseCompression returns the downstream response compression
-// settings from their canonical storage (SDKConfig.ResponseCompression, YAML
-// server.response-compression), falling back to the JSON/programmatic mirror
-// on the outer Config when the canonical value was never populated.
 func (cfg *Config) EffectiveResponseCompression() ResponseCompressionConfig {
 	if cfg == nil {
 		return ResponseCompressionConfig{}
@@ -260,8 +246,6 @@ func (cfg *Config) EffectiveResponseCompression() ResponseCompressionConfig {
 	return cfg.ServerResponseCompression
 }
 
-// SyncServerResponseCompression copies the canonical response compression
-// settings into the JSON-visible mirror on the outer Config.
 func (cfg *Config) SyncServerResponseCompression() {
 	if cfg == nil {
 		return
@@ -269,8 +253,6 @@ func (cfg *Config) SyncServerResponseCompression() {
 	cfg.ServerResponseCompression = cfg.ResponseCompression
 }
 
-// UnmarshalYAML accepts both layouts, including partially migrated documents.
-// Presence, rather than Go zero values, determines which setting wins.
 func (cfg *Config) UnmarshalYAML(node *yaml.Node) error {
 	root, err := flattenV8(node)
 	if err != nil {
@@ -302,8 +284,7 @@ func flattenV8(node *yaml.Node) (*yaml.Node, error) {
 	if node.Kind != yaml.MappingNode {
 		return nil, fmt.Errorf("config must be a mapping")
 	}
-	// Decode once before transformation to reject duplicate keys even when a
-	// winning v8 value would otherwise hide the malformed legacy subtree.
+
 	var shape map[string]any
 	if err := node.Decode(&shape); err != nil {
 		return nil, err
@@ -319,7 +300,7 @@ func flattenV8(node *yaml.Node) (*yaml.Node, error) {
 			if parent == nil {
 				break
 			}
-			// Routing is shared with the legacy layout, where null means defaults.
+
 			if i == 1 && parts[0] == "routing" && parent.Tag == "!!null" {
 				break
 			}
@@ -358,7 +339,7 @@ func flattenV8(node *yaml.Node) (*yaml.Node, error) {
 	if version := yamlPath(root, "config-version"); version != nil && (version.Tag != "!!int" || version.Value != "8") {
 		return nil, fmt.Errorf("unsupported config-version (expected 8)")
 	}
-	// The v8 upstream map reuses the legacy client-key field name.
+
 	if keys := yamlPath(root, "api-keys"); keys != nil && keys.Kind == yaml.MappingNode {
 		deleteYAMLPath(root, "api-keys")
 	}
@@ -385,8 +366,7 @@ var sharedKeyFields = map[string]bool{
 	"priority": true, "prefix": true, "proxy-url": true, "headers": true,
 	"models": true, "excluded-models": true, "disable-cooling": true,
 	"request-retry": true, "request-scoped-errors": true,
-	// connection-pool follows proxy-url: a group-level default that each key may
-	// override, so an operator can pool one provider without touching the others.
+
 	"connection-pool": true,
 }
 
@@ -449,10 +429,7 @@ func expandV8Groups(groups *yaml.Node, provider string) (*yaml.Node, error) {
 					continue
 				}
 				if field == "connection-pool" {
-					// A per-key block merges onto the group block so a key that overrides
-					// one field keeps inheriting the rest, matching the runtime resolution
-					// where an omitted field inherits the outer value. Replacing the whole
-					// block would silently drop the group's enabled: true.
+
 					setYAMLPath(item, field, mergeConnectionPoolNode(yamlPath(group, field), key.Content[i+1]))
 					continue
 				}
@@ -464,8 +441,6 @@ func expandV8Groups(groups *yaml.Node, provider string) (*yaml.Node, error) {
 	return out, nil
 }
 
-// mergeConnectionPoolNode merges a per-key connection-pool block onto the group block.
-// Missing sub-keys fall back to the group value; the result is always a fresh node.
 func mergeConnectionPoolNode(base, override *yaml.Node) *yaml.Node {
 	merged := deepCopyNode(base)
 	if merged == nil || merged.Kind != yaml.MappingNode || override == nil || override.Kind != yaml.MappingNode {
@@ -480,8 +455,6 @@ func mergeConnectionPoolNode(base, override *yaml.Node) *yaml.Node {
 	return merged
 }
 
-// groupLegacyKeys deliberately keeps one group per legacy entry: equal endpoints
-// do not imply equal routing, headers, models, or credential policies.
 func groupLegacyKeys(keys *yaml.Node, provider string) *yaml.Node {
 	out := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
 	for index, entry := range keys.Content {
@@ -511,8 +484,6 @@ func groupLegacyKeys(keys *yaml.Node, provider string) *yaml.Node {
 	return out
 }
 
-// NormalizeConfigLayout removes conflicting legacy fields. migrate also moves
-// legacy-only fields; callers use it only for an explicit v8 configuration write.
 func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -534,8 +505,7 @@ func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	// Empty legacy structs have no leaf fields to move. Preserve them as empty v8
-	// mappings; null structs also mean defaults. User-owned maps are not included.
+
 	paths := append(append([]configPath(nil), v8Aliases...), v8Paths...)
 	for _, path := range append(append([]configPath(nil), v8StructPaths...), v8SharedStructPaths...) {
 		old := yamlPath(root, path.old)
@@ -581,8 +551,7 @@ func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 		changed = true
 	}
 	if migrate {
-		// Existing unknown fields are ignored by the runtime. Retain their
-		// contents as comments while keeping new v8 writes strictly validated.
+
 		if err := commentUnknownV8Sections(root); err != nil {
 			return nil, false, err
 		}
@@ -596,8 +565,6 @@ func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	return out, true, err
 }
 
-// IsV8ConfigLayout identifies a validated document by its version or v8 paths.
-// Roots shared with the legacy runtime schema do not alone indicate v8.
 func IsV8ConfigLayout(root *yaml.Node) bool {
 	if root == nil || root.Kind != yaml.MappingNode {
 		return false
@@ -647,7 +614,6 @@ var (
 	v8WarnFunc func(section, msg string)
 )
 
-// SetV8MigrationWarnFunc sets a custom warning handler (e.g. from logging package).
 func SetV8MigrationWarnFunc(fn func(section, msg string)) {
 	v8WarnMu.Lock()
 	defer v8WarnMu.Unlock()
@@ -682,7 +648,7 @@ func commentUnknownV8Sections(root *yaml.Node) error {
 			children[parent][parts[i]] = true
 		}
 	}
-	// Some structs already live at their v8 path and therefore have no remap entry.
+
 	allowedRoots := v8AllowedRoots()
 	var includeNative func(reflect.Type, string)
 	includeNative = func(t reflect.Type, path string) {
@@ -762,16 +728,13 @@ func commentUnknownV8Fields(node *yaml.Node, archive *yaml.Node, allowed map[str
 		comments = append(comments, "# "+strings.ReplaceAll(text, "\n", "\n# "))
 		node.Content = append(node.Content[:i], node.Content[i+2:]...)
 	}
-	// Archive at the root so deleting a neighboring nested field cannot drop it.
+
 	if len(comments) > 0 {
 		archive.FootComment = strings.TrimSpace(archive.FootComment + "\n" + strings.Join(comments, "\n"))
 	}
 	return nil
 }
 
-// The deprecated allow flag is the inverse of disable-private-remote-ips.
-// Resolve it before applying v8 precedence so both names cannot reach the runtime
-// decoder together. Legacy-only files are left untouched until a migration/save.
 func normalizeV8PrivateIPAlias(root *yaml.Node, migrate bool) (bool, error) {
 	const old = "codex.live-media-relay.allow-private-remote-ips"
 	const canonical = "codex.live-media-relay.disable-private-remote-ips"
@@ -798,8 +761,6 @@ func normalizeV8PrivateIPAlias(root *yaml.Node, migrate bool) (bool, error) {
 	return true, nil
 }
 
-// restoreV8Layout lets v0 handlers update the effective runtime fields without
-// reintroducing their legacy spellings into an existing v8 document.
 func restoreV8Layout(root, layout *yaml.Node, original []byte, generated *yaml.Node) error {
 	for _, path := range v8Paths {
 		upstreams := yamlPath(layout, "api-keys")
@@ -872,10 +833,6 @@ func preserveV8Comments(dst, src *yaml.Node) {
 	}
 }
 
-// Expand aliases and YAML merge keys before moving paths. Keeping an alias to a
-// removed legacy anchor would produce an unreadable file, and updating a shared
-// anchor in place could unintentionally change an unrelated setting.
-// Callers first decode the document so yaml.v3 rejects cyclic/invalid aliases.
 func expandConfigAliases(node *yaml.Node) *yaml.Node {
 	if node.Kind == yaml.AliasNode {
 		return expandConfigAliases(node.Alias)
@@ -911,8 +868,6 @@ func expandConfigAliases(node *yaml.Node) *yaml.Node {
 	return &copy
 }
 
-// ValidateV8Config accepts only the v8 layout in management writes.
-// Plugin-owned configuration remains extensible through its existing decoder.
 func ValidateV8Config(data []byte) error {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -953,8 +908,7 @@ func ValidateV8Config(data []byte) error {
 		}
 	}
 	deleteYAMLPath(flat, "config-version")
-	// Empty struct containers are valid replacements. Only strip known structural
-	// paths; empty user maps (headers, aliases, plugin options) carry real values.
+
 	for _, path := range v8Paths {
 		parts := strings.Split(path.current, ".")
 		for end := len(parts) - 1; end > 0; end-- {

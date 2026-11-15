@@ -9,12 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// Chat Completions has no tool search, so the client-executed Responses
-// tool_search declaration is bridged as an ordinary function. Calls to it are
-// restored as tool_search_call items, the client runs the search, and the
-// tools it returns in tool_search_output stay declared as functions on every
-// later request (see walkResponsesToolDeclarations).
-
 const (
 	responsesToolSearchIDPrefix          = "tsc_"
 	responsesToolSearchDefaultParameters = `{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`
@@ -47,10 +41,6 @@ func (idx *responsesToolIndex) toolSearchName() string {
 	return ""
 }
 
-// toolSearchHistory rewrites replayed client tool_search_call and
-// tool_search_output items into the function_call pair that the Chat
-// Completions conversion already groups and pairs. Hosted (server) search
-// items are left as they are.
 func (idx *responsesToolIndex) toolSearchHistory(items []ojson.Result) []ojson.Result {
 	var out []ojson.Result
 	name := ""
@@ -155,8 +145,6 @@ func (idx *responsesToolIndex) toolSearchOutputAsFunctionCallOutput(item ojson.R
 	return util.ParseGJSONBytesNoCopy(outputDoc.Bytes())
 }
 
-// toolSearchCallItem renders a bridged search function call as a
-// client-executed Responses tool_search_call with object arguments.
 func toolSearchCallItem(callID, args, status string) []byte {
 	trimmed := strings.TrimSpace(args)
 	parsedArgs := ojson.Parse(trimmed)

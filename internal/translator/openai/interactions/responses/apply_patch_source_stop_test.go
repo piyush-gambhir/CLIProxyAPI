@@ -8,7 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// Source completion is a barrier even when the winning name or either ID is late.
 func TestInteractionsApplyPatchSourceStopFragments(t *testing.T) {
 	for _, first := range []string{"item", "call", "neither", "ready"} {
 		for _, lateName := range []bool{false, true} {
@@ -160,7 +159,6 @@ func TestInteractionsApplyPatchSourceStopLateIdentityReplay(t *testing.T) {
 	}
 }
 
-// An arguments delta can establish a candidate before its first named start.
 func TestInteractionsApplyPatchSourceStopBeforeStart(t *testing.T) {
 	for _, before := range []string{`{"input":"p`, `{"input":"pq"}`} {
 		t.Run(before, func(t *testing.T) {

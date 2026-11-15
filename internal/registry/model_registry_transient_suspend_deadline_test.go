@@ -48,7 +48,6 @@ func TestModelRegistry_TransientSuspendDeadline_AutoExpiresCacheAndAllViews(t *t
 		t.Fatal("expected initial projection to apply")
 	}
 
-	// During cooldown: grok-4.7 and grok-4.7-cp are hidden, grok-4.6 remains listed.
 	duringOpenAI := listedIDs(r.GetAvailableModels("openai"))
 	if duringOpenAI["grok-4.7"] || duringOpenAI["grok-4.7-cp"] || !duringOpenAI["grok-4.6"] {
 		t.Fatalf("unexpected /v1/models set during transient cooldown: %v", duringOpenAI)
@@ -69,14 +68,12 @@ func TestModelRegistry_TransientSuspendDeadline_AutoExpiresCacheAndAllViews(t *t
 		t.Fatal("expected IsModelSuspendedForClient to report true during active transient cooldown")
 	}
 
-	// Still active 1ns before deadline.
 	mockNow = deadline.Add(-time.Nanosecond)
 	stillCooling := listedIDs(r.GetAvailableModels("openai"))
 	if stillCooling["grok-4.7"] || stillCooling["grok-4.7-cp"] {
 		t.Fatalf("models listed before deadline elapsed: %v", stillCooling)
 	}
 
-	// Exact deadline instant with NO re-projection, NO request, and NO refresh.
 	mockNow = deadline
 	afterOpenAI := listedIDs(r.GetAvailableModels("openai"))
 	if !afterOpenAI["grok-4.7"] || !afterOpenAI["grok-4.7-cp"] || !afterOpenAI["grok-4.6"] {
@@ -118,14 +115,12 @@ func TestModelRegistry_OpenEndedSuspensionAndManualOverridePersist(t *testing.T)
 	epoch := r.ClientRegistrationEpoch("xai-auth")
 	deadline := baseNow.Add(time.Minute)
 
-	// Start with a bounded transient suspension.
 	if !r.ApplyClientModelProjections("xai-auth", epoch, 1, []ClientModelProjection{
 		{ModelID: "grok-4.7", Suspended: true, SuspendReason: "transient 408", SuspendUntil: deadline},
 	}) {
 		t.Fatal("initial transient projection rejected")
 	}
 
-	// Override with manual open-ended SuspendClientModel while already in SuspendedClients.
 	r.SuspendClientModel("xai-auth", "grok-4.7", "manual")
 
 	mockNow = baseNow.Add(24 * time.Hour)
@@ -136,7 +131,6 @@ func TestModelRegistry_OpenEndedSuspensionAndManualOverridePersist(t *testing.T)
 		t.Fatal("expected manual open-ended suspension to stay active")
 	}
 
-	// Resume, then apply an open-ended projection (zero SuspendUntil).
 	r.ResumeClientModel("xai-auth", "grok-4.7")
 	if !listedIDs(r.GetAvailableModels("openai"))["grok-4.7"] {
 		t.Fatal("expected ResumeClientModel to restore listing")
@@ -183,7 +177,6 @@ func TestModelRegistry_ShortQuotaDeadlineRecoversWithDisabledBackup(t *testing.T
 		t.Fatal("expected model hidden while c1 is in 1m quota cooldown and c2 is disabled")
 	}
 
-	// Advance past the 1m quota deadline (still within the default 5m modelQuotaExceededWindow).
 	mockNow = shortQuotaDeadline.Add(time.Second)
 	if !listedIDs(r.GetAvailableModels("openai"))["grok-4.7"] {
 		t.Fatal("expected model listed once c1's 1m quota deadline passed")

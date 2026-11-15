@@ -6,7 +6,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-// defaultWebSearchFallbackChain is the ordered backend try list when route=fallback.
 func defaultWebSearchFallbackChain() []routeBackend {
 	return []routeBackend{
 		backendAntigravityGoogle,
@@ -21,7 +20,6 @@ func isFallbackRoute(route string) bool {
 	return r == "" || r == string(backendFallback)
 }
 
-// tryRouteBackend returns a handled ModelRouteResponse and true when this backend can serve the request.
 func tryRouteBackend(backend routeBackend, cfg pluginConfig, req pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, bool) {
 	switch backend {
 	case backendTavily:

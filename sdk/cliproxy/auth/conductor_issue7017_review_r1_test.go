@@ -10,9 +10,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Review round 1 regressions: real upstream-attempt marking, Home aggregate
-// scheduling precedence, explicit zero hints, and deadline decay.
-
 type issue7017MarkingExecutor struct {
 	inner error
 }
@@ -20,14 +17,11 @@ type issue7017MarkingExecutor struct {
 func (e *issue7017MarkingExecutor) Identifier() string { return "codex" }
 
 func (e *issue7017MarkingExecutor) Execute(ctx context.Context, _ *Auth, _ cliproxyexecutor.Request, _ cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
-	// Mirror the HTTP transport: it marks the upstream attempt before the
-	// executor returns its status error.
+
 	cliproxyexecutor.MarkUpstreamAttempt(ctx)
 	return cliproxyexecutor.Response{}, e.inner
 }
 
-// streamFirstChunkErr selects the bootstrap variant: the executor accepts
-// the stream and the first chunk carries the failure.
 var issue7017StreamFirstChunk bool
 
 func (e *issue7017MarkingExecutor) ExecuteStream(ctx context.Context, _ *Auth, _ cliproxyexecutor.Request, _ cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
@@ -204,8 +198,7 @@ func TestIssue7017TransientZeroHintKeepsQuotaDeadline(t *testing.T) {
 }
 
 func TestTrustedRetryAfterIdentityHintMayDifferFromDeadline(t *testing.T) {
-	// The trusted wrapper hides behind the original *Error identity but must
-	// not fabricate one for plain errors.
+
 	plain := errors.New("plain")
 	hint := time.Minute
 	err := withTrustedRetryAfter(plain, &hint)
@@ -223,8 +216,7 @@ func TestTrustedRetryAfterDeadlineDecays(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected trusted wrapper, got %T", err)
 	}
-	// Move the captured deadline into the past by direct field manipulation
-	// so the remaining calculation is deterministic without sleeping.
+
 	wrapped.deadline = time.Now().Add(-time.Second)
 	if got := SafeResponseHeaders(err).Get("Retry-After"); got != "" {
 		t.Fatalf("expired trusted deadline must not advertise Retry-After, got %q", got)

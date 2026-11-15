@@ -27,8 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// antigravityReplayLogKey returns a short, non-reversible tag for a replay
-// identifier. Session keys and tool call IDs are never logged verbatim.
 func antigravityReplayLogKey(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -38,8 +36,6 @@ func antigravityReplayLogKey(value string) string {
 	return fmt.Sprintf("%x", sum[:8])
 }
 
-// antigravityCountClaudeToolProvenanceIDs reports how many reserved
-// Claude-facing provenance IDs are still present in a Gemini-shaped payload.
 func antigravityCountClaudeToolProvenanceIDs(payload []byte) int {
 	contents := util.GetGJSONBytesNoCopy(payload, "request.contents")
 	if !contents.IsArray() {
@@ -79,7 +75,7 @@ func antigravityCountClaudeToolProvenanceIDsResult(contents ojson.Result) int {
 				return true
 			})
 		} else if parts.Type != ojson.Null {
-			// Result.Array returns a non-array JSON value as one item.
+
 			countPart(parts)
 		}
 		return true
@@ -161,9 +157,7 @@ func antigravityReasoningReplayScopeFromRequest(ctx context.Context, modelName s
 	if antigravityRequestIsSymmetricForReasoningReplay(opts) && !antigravityPayloadHasClaudeToolProvenanceID(payload) {
 		return antigravityReasoningReplayScope{}
 	}
-	// Prefer an explicit downstream session over a provider sessionId synthesized
-	// from request text. This keeps identical prompts in separate client sessions
-	// from sharing an opaque Gemini reasoning chain.
+
 	scope := antigravityReasoningReplayScope{modelName: modelName}
 	if sessionKey := antigravityReasoningReplayClientSessionKey(ctx, req, opts); sessionKey != "" {
 		scope.sessionKey = sessionKey
@@ -174,8 +168,7 @@ func antigravityReasoningReplayScopeFromRequest(ctx context.Context, modelName s
 		}
 	}
 	scope.openAIChat = opts.SourceFormat.String() == "openai"
-	// Only trusted execution metadata can namespace the ledger. Never read a
-	// caller identity from request JSON or downstream credential headers here.
+
 	callerScope := metadataString(opts.Metadata, cliproxyexecutor.CallerScopeMetadataKey)
 	if callerScope == "" {
 		callerScope = metadataString(req.Metadata, cliproxyexecutor.CallerScopeMetadataKey)
@@ -272,8 +265,7 @@ func antigravityReasoningReplayClientSessionKey(ctx context.Context, req cliprox
 			return "prompt-cache:" + strings.Clone(value)
 		}
 	}
-	// Reuse ingress extraction for explicit session aliases before falling back
-	// to inferred roots. Keep the established session/execution priorities above.
+
 	if info, ok := session.ExtractSessionInfo(opts.Headers, nil, nil); ok && info.SessionID != "" {
 		return "client:" + info.SessionID
 	}
@@ -359,10 +351,6 @@ func antigravityReasoningReplayResolveContentIndex(payload []byte, cached int) i
 	return -1
 }
 
-// logAntigravityReasoningReplayDegraded reports that a replay-state operation
-// failed and the request continued without it. A Home that predates the CAS
-// command fails every call, and the Home client already warns once about that,
-// so those are logged at debug level to avoid one warning per request.
 func logAntigravityReasoningReplayDegraded(scope antigravityReasoningReplayScope, stage string, err error) {
 	if err == nil {
 		return
@@ -388,9 +376,6 @@ func prepareAntigravityGeminiReasoningReplayPayload(ctx context.Context, modelNa
 	return doc.Bytes(), scope, nil
 }
 
-// antigravityStreamChunksHaveTerminalCommitEvent reports whether translated SSE
-// chunks carry a client-visible terminal completion/truncation event before
-// which accumulated reasoning replay items must be committed to KV.
 func antigravityStreamChunksHaveTerminalCommitEvent(chunks [][]byte) bool {
 	for _, chunk := range chunks {
 		for _, line := range bytes.Split(chunk, []byte("\n")) {
@@ -706,9 +691,7 @@ func applyAntigravityReasoningReplayItems(payload []byte, items [][]byte, toolSc
 		if handled > 0 {
 			next, ok := batch.build(updated)
 			if !ok {
-				// A malformed or non-addressable part offset makes splicing unsafe.
-				// Nothing has been committed yet, so retain the exact legacy behavior
-				// for all remaining items.
+
 				tracker.setPhase(antigravityReplayPhaseSequential)
 				next, sequentialChanged := applyAntigravityReasoningReplayItemsSequential(index, updated, items, toolSchemas)
 				return next, changed || sequentialChanged
@@ -720,19 +703,12 @@ func applyAntigravityReasoningReplayItems(payload []byte, items [][]byte, toolSc
 				break
 			}
 			index = newAntigravityReplayRequestIndexWithTracker(updated, tracker)
-			// Retry only when this batch restored a stable ID. That changes the
-			// context fingerprint, so the rejection may belong to the stale index.
-			// A context-hash mismatch on an unchanged identity cannot be repaired
-			// by rebuilding the same payload.
+
 			if !(contextHashStopped && !batch.identityChanged) {
 				continue
 			}
 		}
 
-		// Apply one structural or context-dependent item with the original
-		// sequential implementation, then start another safe batch. A rare
-		// fallback therefore cannot make every preceding signature rewrite the
-		// entire request again.
 		tracker.setPhase(antigravityReplayPhaseSequential)
 		next, itemChanged := applyAntigravityReasoningReplayItemsSequential(index, updated, items[:1], toolSchemas)
 		updated = next
@@ -759,9 +735,7 @@ func applyAntigravityReasoningReplayItemsSequential(index *antigravityReplayRequ
 		}
 		updated = next
 		changed = true
-		// Replay application is intentionally sequential. Rebuild only after a
-		// mutation so later items observe exactly the same payload as before.
-		// The final item has no successor, so its rebuild would never be read.
+
 		if itemIndex+1 < len(items) {
 			index = newAntigravityReplayRequestIndexWithTracker(updated, index.logTracker)
 		}
@@ -774,11 +748,6 @@ type antigravityReplayPartKey struct {
 	partIndex    int
 }
 
-// antigravityReplayBatch applies replay items to small part fragments
-// and splices them into the full request once. Stable provenance IDs can be
-// restored on this path because their identity does not depend on context. If
-// that restore would make a later item depend on stale context, the current
-// segment ends and the caller retries that item against the flushed payload.
 type antigravityReplayBatch struct {
 	index                     *antigravityReplayRequestIndex
 	replacements              map[antigravityReplayPartKey][]byte
@@ -882,9 +851,7 @@ func (b *antigravityReplayBatch) applyThoughtSignature(itemResult ojson.Result) 
 	if signature == "" {
 		return true
 	}
-	// Legacy positional items rely on the context fingerprint. Restoring a
-	// stable function-call ID changes that fingerprint, while the immutable
-	// batch index still describes the original payload.
+
 	if b.identityChanged && strings.TrimSpace(itemResult.Get("targetHash").String()) == "" {
 		return false
 	}
@@ -906,8 +873,7 @@ func (b *antigravityReplayBatch) applyThoughtSignature(itemResult ojson.Result) 
 	}
 	b.removeThoughtSignatureFromOtherParts(contentIndex, signature, key)
 	b.setPart(key, updated)
-	// The sequential thought-signature path treats any successful Set as an
-	// applied replay, even when a later item restores the original bytes.
+
 	b.applied = true
 	return true
 }
@@ -942,9 +908,7 @@ func (b *antigravityReplayBatch) applyFunctionCallSignature(itemResult ojson.Res
 	if !sameNativeCall && !restoreStableID {
 		return false
 	}
-	// The immutable lookup keeps the first location for an ID. If a malformed
-	// history reuses a stable ID, sequential replay must rebuild after restoring
-	// each occurrence so the next one becomes addressable.
+
 	if restoreStableID && b.index.functionCallCountsByID[currentID] != 1 {
 		return false
 	}
@@ -952,9 +916,7 @@ func (b *antigravityReplayBatch) applyFunctionCallSignature(itemResult ojson.Res
 	if sameNativeCall && (signature == "" || antigravityHasNativeThoughtSignature(part.Get("thoughtSignature").String())) {
 		return true
 	}
-	// A native-ID item needs context to authorize a signature mutation. After
-	// an earlier stable-ID restore that decision must be made against a rebuilt
-	// index, so conservatively fall back to sequential replay.
+
 	if b.identityChanged && currentID == nativeID {
 		return false
 	}
@@ -975,9 +937,6 @@ func (b *antigravityReplayBatch) applyFunctionCallSignature(itemResult ojson.Res
 	}
 	updated := partDoc.Bytes()
 
-	// Stage every fragment before committing any of them. A function replay can
-	// touch the call, matching responses, and duplicate signatures; a failed
-	// staging attempt must not leak partial work into the preceding safe batch.
 	pending := map[antigravityReplayPartKey][]byte{key: updated}
 	if signature != "" {
 		for partIndex := range b.index.contents[location.contentIndex].parts {
@@ -1157,8 +1116,7 @@ func filterAntigravityReasoningReplayItemsForRequestWithIndex(
 				}
 				break
 			}
-			// Even without a context match, an exact opaque ID match can still
-			// restore the native call identity.
+
 			if _, foundProvenance := index.functionCallProvenanceLocation(itemResult, toolSchemas); foundProvenance {
 				break
 			}
@@ -1340,9 +1298,7 @@ func (i *antigravityReplayRequestIndex) functionCallPartLocationForReplayWithSch
 				name, location.contentIndex, location.partIndex, util.IsGeminiClaudeToolUseID(candidateID))
 			return antigravityReplayIndexedPart{}, false
 		}
-		// The candidate ID matched exactly, so callID+name+args are already proven
-		// identical. Only the surrounding context drifted, which invalidates the
-		// cached signature but not the tool identity.
+
 		key := antigravityReplayPartKey{contentIndex: location.contentIndex, partIndex: location.partIndex}
 		i.logTracker.recordRejection(antigravityReplayContextHashSample{
 			name:         name,
@@ -1430,16 +1386,6 @@ func (i *antigravityReplayRequestIndex) functionCallProvenanceLocation(
 	return location, true
 }
 
-// thoughtSignaturePartIndex resolves the part a thought_signature item belongs
-// to. It is the single locator shared by the eligibility check and the write
-// path, so the two can never disagree about the target part.
-//
-// A target hash pins the signature to a part whose own bytes are unchanged,
-// which is all Gemini validates: the signature's own integrity, never its
-// binding to the surrounding history. Drift elsewhere in the conversation
-// therefore costs this signature nothing, so it is deliberately not gated on
-// the context fingerprint. The positional fallback below has no such proof and
-// stays gated.
 func (i *antigravityReplayRequestIndex) thoughtSignaturePartIndex(itemResult ojson.Result) (contentIndex int, partIndex int, ok bool) {
 	contentIndex = int(itemResult.Get("contentIndex").Int())
 	if i == nil || contentIndex < 0 || contentIndex >= len(i.contents) {
@@ -1487,8 +1433,7 @@ func (i *antigravityReplayRequestIndex) thoughtSignaturePartIndex(itemResult ojs
 			}
 		}
 	} else {
-		// No target hash: nothing proves which part this signature belongs to, so
-		// only a matching context fingerprint makes the positional guess safe.
+
 		if !i.contextMatches(itemResult, contentIndex) {
 			return -1, -1, false
 		}
@@ -1498,9 +1443,7 @@ func (i *antigravityReplayRequestIndex) thoughtSignaturePartIndex(itemResult ojs
 				partIndex = candidateIndex
 			}
 		}
-		// Legacy cache entries may point at a streamed signature-only part after
-		// multiple text chunks. Attach them to the last semantic part in the same
-		// model content, never to a different turn.
+
 		if partIndex < 0 {
 			for candidateIndex := len(parts) - 1; candidateIndex >= 0; candidateIndex-- {
 				if kind, _ := antigravityReplayPartFingerprint(parts[candidateIndex]); kind != "" {
@@ -1679,11 +1622,6 @@ type antigravityReplayIndexedContent struct {
 	parts   []ojson.Result
 }
 
-// antigravityReplayRequestIndex is an immutable, request-scoped view over one
-// exact revision of a replay payload. It retains no-copy GJSON results that
-// alias the payload bytes and memoizes context fingerprints lazily, so it must
-// be discarded and rebuilt as soon as the payload changes, and it must never be
-// shared across goroutines.
 type antigravityReplayPhase int
 
 const (
@@ -1884,9 +1822,6 @@ func (i *antigravityReplayRequestIndex) contextFingerprint(beforeContentIndex in
 	return i.contextFingerprints.at(beforeContentIndex)
 }
 
-// openAIChatContextFingerprint binds historical calls to system instructions and
-// preceding contents, not the current turn's tool declarations or tool choice.
-// The version tag leaves legacy and non-OpenAI ledger matching unchanged.
 func (i *antigravityReplayRequestIndex) openAIChatContextFingerprint(contentIndex int) string {
 	if i.openAIChatContextFingerprints == nil {
 		i.openAIChatContextFingerprints = newAntigravityReplayContextFingerprints(i.payload, i.contents, i.validContents, false)
@@ -1923,10 +1858,6 @@ func (i *antigravityReplayRequestIndex) pendingModelContentIndex() (contentIndex
 	return len(i.contents), 0
 }
 
-// antigravityReplayContextFingerprints hashes the replay context incrementally,
-// snapshotting the running SHA-256 after every content boundary so that a
-// prefix lookup is O(1). Prefix sums are appended in content order on first
-// use, so at() mutates the running hasher and is not safe for concurrent use.
 type antigravityReplayContextFingerprints struct {
 	valid      bool
 	contents   []antigravityReplayIndexedContent
@@ -1986,8 +1917,6 @@ func (f *antigravityReplayContextFingerprints) writeByte(value byte) {
 	f.write([]byte{value})
 }
 
-// sum reports the empty fingerprint until at least one byte has been hashed,
-// which keeps an all-empty context indistinguishable from a missing one.
 func (f *antigravityReplayContextFingerprints) sum() string {
 	if !f.wroteBytes {
 		return ""
@@ -2172,7 +2101,7 @@ func antigravityContentsHasClaudeToolProvenanceID(contents ojson.Result) bool {
 				return !found
 			})
 		} else if parts.Type != ojson.Null {
-			// Result.Array returns a non-array JSON value as one item.
+
 			found = hasReservedID(parts)
 		}
 		return !found
@@ -2180,26 +2109,11 @@ func antigravityContentsHasClaudeToolProvenanceID(contents ojson.Result) bool {
 	return found
 }
 
-// antigravitySyntheticToolCallID derives a deterministic neutral call ID for a
-// reserved Claude-facing provenance ID that could not be resolved back to its
-// provider-native call. It is stable across turns and never lands in the reserved
-// namespace, so call/response pairs stay consistent without impersonating a
-// provider-issued ID.
 func antigravitySyntheticToolCallID(reservedID string) string {
 	sum := sha256.Sum256([]byte("antigravity-degraded-tool-call\x00" + reservedID))
 	return fmt.Sprintf("call_%x", sum[:6])
 }
 
-// degradeAntigravityClaudeToolProvenanceIDs rewrites unresolved reserved tool
-// provenance IDs to neutral synthetic IDs so a conversation survives a replay
-// ledger miss instead of failing closed forever.
-//
-// The same reserved ID always maps to the same synthetic ID, so functionCall and
-// functionResponse stay paired. Stale thought signatures on degraded calls are replaced
-// with the bypass sentinel (GeminiSkipThoughtSignatureValidator) to prevent signature
-// validation failures across accounts or synthetic IDs. Calls left with no signature at
-// all get the leading bypass sentinel from antigravityRepairUnsignedFirstFunctionCalls.
-// Every other part is left alone, preserving the native parallel-call shape.
 func degradeAntigravityClaudeToolProvenanceIDs(payload []byte) ([]byte, int) {
 	contents := util.GetGJSONBytesNoCopy(payload, "request.contents")
 	if !contents.IsArray() {
@@ -2259,7 +2173,6 @@ func degradeAntigravityClaudeToolProvenanceIDs(payload []byte) ([]byte, int) {
 		return payload, 0
 	}
 
-	// Mutate each small part independently, then copy the full request only once.
 	outputSize := len(payload)
 	for _, replacement := range replacements {
 		outputSize += len(replacement.data) - (replacement.end - replacement.start)
@@ -2278,15 +2191,6 @@ func degradeAntigravityClaudeToolProvenanceIDs(payload []byte) ([]byte, int) {
 	return out, len(replacements)
 }
 
-// antigravityRepairUnsignedFirstFunctionCalls restores Gemini's bypass sentinel on
-// the first function call of any model turn that replay left completely unsigned.
-//
-// Gemini rejects a model turn whose leading functionCall carries no
-// thoughtSignature. The request-level sanitizer enforces that invariant, but it
-// runs before reasoning replay, and replay can legitimately drop a signature
-// afterwards: a degraded call loses one, and an identity-only restore on drifted
-// context deliberately declines to replay one. Only a missing signature is filled
-// in here, so native signatures are never touched.
 func antigravityRepairUnsignedFirstFunctionCalls(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !antigravityRepairUnsignedFirstFunctionCallsDoc(doc) {
@@ -2326,8 +2230,7 @@ func antigravityRepairUnsignedFirstFunctionCallsDoc(doc *ojson.Doc) bool {
 					changed = true
 				}
 			}
-			// Only the first function call of a turn needs a signature; siblings stay
-			// unsigned to preserve the native parallel-call shape.
+
 			return false
 		})
 		return true
@@ -2381,15 +2284,10 @@ func antigravityReplayPartWritePath(payload []byte, contentIndex int, partIndex 
 	return partsPath + ".0"
 }
 
-// insertAntigravityReasoningReplayItemsWithSchemas applies items sequentially.
-// index must describe payload on entry and is rebuilt after any mutation so each
-// item observes exactly the payload the previous item produced.
 func insertAntigravityReasoningReplayItemsWithSchemas(index *antigravityReplayRequestIndex, payload []byte, items [][]byte, toolSchemas map[string]any) ([]byte, bool) {
 	out := payload
 	changed := false
-	// The index only exists to serve later items in this loop, so it is refreshed
-	// after a mutation exclusively when a successor still has to read it. Callers
-	// receive no index back and must rebuild their own if they keep using one.
+
 	for itemIndex, item := range items {
 		hasSuccessor := itemIndex+1 < len(items)
 		itemResult := util.ParseGJSONBytesNoCopy(item)
@@ -2411,8 +2309,7 @@ func insertAntigravityReasoningReplayItemsWithSchemas(index *antigravityReplayRe
 			out = antigravityRemoveThoughtSignatureFromOtherParts(out, ci, sig, partPath)
 			updated, err := ojson.SetBytes(out, path, sig)
 			if err != nil {
-				// antigravityRemoveThoughtSignatureFromOtherParts may already have
-				// rewritten out, so the index has to be refreshed regardless.
+
 				if hasSuccessor {
 					index = newAntigravityReplayRequestIndexWithTracker(out, index.logTracker)
 				}
@@ -2488,11 +2385,6 @@ func antigravityFunctionResponsesCanRestoreID(payload []byte, currentID, nativeN
 	return valid
 }
 
-// restoreAntigravityNativeFunctionCallReplay rewrites one function call part back
-// to its provider-native identity. allowSignature reports whether the cached
-// thoughtSignature may be replayed as well; identity-only restores pass false
-// because the surrounding context no longer matches the one the signature was
-// issued for.
 func restoreAntigravityNativeFunctionCallReplay(payload []byte, contentIndex, partIndex int, itemResult ojson.Result, allowLegacyIDRestore, allowSignature bool) ([]byte, bool) {
 	partPath := fmt.Sprintf("request.contents.%d.parts.%d", contentIndex, partIndex)
 	currentCall := ojson.GetBytesNoCopy(payload, partPath+".functionCall")
@@ -2561,10 +2453,6 @@ func restoreAntigravityNativeFunctionCallReplay(payload []byte, contentIndex, pa
 	return out, !bytes.Equal(out, payload)
 }
 
-// mergeAntigravityFunctionCallPartReplayWithSchemas locates the target call via
-// index, which must describe exactly the payload passed alongside it. Every
-// lookup happens before the first mutation, so one index is valid for the whole
-// call.
 func mergeAntigravityFunctionCallPartReplayWithSchemas(index *antigravityReplayRequestIndex, payload []byte, itemResult ojson.Result, toolSchemas map[string]any) ([]byte, bool) {
 	name := strings.TrimSpace(itemResult.Get("name").String())
 	args := itemResult.Get("args")
@@ -2577,10 +2465,7 @@ func mergeAntigravityFunctionCallPartReplayWithSchemas(index *antigravityReplayR
 		_, allowLegacyIDRestore := toolSchemas[name]
 		return restoreAntigravityNativeFunctionCallReplay(payload, location.contentIndex, location.partIndex, itemResult, allowLegacyIDRestore, true)
 	}
-	// The context drifted, but an exact opaque ID match still proves this call's
-	// identity. Gemini validates a thought signature's own integrity and nothing
-	// about the history around it, so the drift costs the signature nothing: restore
-	// the native call and its signature rather than making the model re-reason.
+
 	if location, exists := index.functionCallProvenanceLocation(itemResult, toolSchemas); exists {
 		return restoreAntigravityNativeFunctionCallReplay(payload, location.contentIndex, location.partIndex, itemResult, false, true)
 	}
@@ -2592,10 +2477,7 @@ func mergeAntigravityFunctionCallPartReplayWithSchemas(index *antigravityReplayR
 			_, hasStableID = index.functionCallPartLocation(stableID)
 		}
 		if hasNativeID || hasStableID {
-			// The call is already in the history under its native or Claude-facing
-			// ID, and neither lookup above accepted it, so the client changed it.
-			// Never replay an opaque signature onto that changed call, and never
-			// insert a second copy of it further down.
+
 			return payload, false
 		}
 		if frIndex, currentResponseID, ok := index.functionResponseContentIndexForReplay(itemResult); ok {
@@ -2612,8 +2494,7 @@ func mergeAntigravityFunctionCallPartReplayWithSchemas(index *antigravityReplayR
 			}
 		}
 	} else {
-		// Without a native call ID, only an exact semantic match is safe. Never
-		// put an opaque signature on a different call at the old numeric slot.
+
 		return payload, false
 	}
 
@@ -2790,8 +2671,7 @@ func antigravityReasoningReplayItemsFromRequest(payload []byte) [][]byte {
 }
 
 func (i *antigravityReplayRequestIndex) reasoningReplayItemsFromRequest() [][]byte {
-	// Invalid contents yield a nil slice while a valid but empty array yields an
-	// empty non-nil slice, matching the pre-index behavior exactly.
+
 	if i == nil || !i.validContents {
 		return nil
 	}
@@ -3310,9 +3190,7 @@ func (a *antigravityReasoningReplayAccumulator) Commit(ctx context.Context) {
 	log.Debugf("antigravity replay: accumulator commit terminal=%t overflow=%t items=%d (session=%s)",
 		a.terminal, a.overflow, len(a.items), antigravityReplayLogKey(a.scope.sessionKey))
 	if !a.terminal || a.activeStreamingFC != nil || a.hasIncompleteFC {
-		// No terminal finishReason (or an unclosed/corrupted streaming tool call)
-		// means the stream never completed cleanly, so this turn contributes
-		// nothing to the ledger and its tool IDs become unresolvable.
+
 		return
 	}
 	if a.overflow {
@@ -3352,7 +3230,7 @@ func applyAntigravityNativeSignatureReplayIfNeeded(modelName string, payload []b
 	if antigravityUsesReasoningReplayCache(modelName) {
 		return payload
 	}
-	// Native per-part signature replay is not on upstream/dev; Gemini uses HOME replay only.
+
 	return payload
 }
 
@@ -3360,7 +3238,7 @@ func applyAntigravityNativeSignatureReplayIfNeededDoc(modelName string, doc *ojs
 	if doc == nil || antigravityUsesReasoningReplayCache(modelName) {
 		return
 	}
-	// Native per-part signature replay is not on upstream/dev; Gemini uses HOME replay only.
+
 }
 
 func antigravityUsesReasoningReplayCache(modelName string) bool {

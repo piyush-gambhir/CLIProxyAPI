@@ -61,11 +61,9 @@ func TestSplitRelayFrames(t *testing.T) {
 	}
 }
 
-// streamThroughRelay runs ExecuteStream for the source format with the given relay chunks (the "data" strings of
-// MessageTypeStreamChunk messages, in order) and returns the concatenated client-bound payload and the stream error, if any.
 func streamThroughRelay(t *testing.T, source sdktranslator.Format, chunks []string) (string, error) {
 	t.Helper()
-	// Unique per call: the usage record below is matched on it, so a late record of an earlier call cannot satisfy the check.
+
 	authID := "aistudio-multiframe-" + strconv.FormatInt(multiFrameCalls.Add(1), 10)
 	connected := make(chan struct{})
 	relay := wsrelay.NewManager(wsrelay.Options{
@@ -141,7 +139,7 @@ func streamThroughRelay(t *testing.T, source sdktranslator.Format, chunks []stri
 	if errClient := <-clientDone; errClient != nil {
 		t.Fatal(errClient)
 	}
-	// The usage the executor published for the request: the terminal frame's usage must be in it.
+
 	var record usage.Record
 	for found := false; !found; {
 		select {
@@ -162,9 +160,6 @@ func streamThroughRelay(t *testing.T, source sdktranslator.Format, chunks []stri
 	return out.String(), streamErr
 }
 
-// A relay chunk with two SSE frames used to translate only the first: the frame with the finish reason and the usage was
-// dropped, and the stream never completed. Every response format gets both frames, whether they come in one chunk, in two chunks,
-// or as CRLF frames, and the output is the same.
 func TestAIStudioStreamTranslatesEveryFrameOfAChunk(t *testing.T) {
 	formats := []struct {
 		name            string
@@ -218,7 +213,6 @@ func TestAIStudioStreamTranslatesEveryFrameOfAChunk(t *testing.T) {
 	}
 }
 
-// A pretty-printed JSON chunk (blank lines inside) is one frame and translates as before.
 func TestAIStudioStreamKeepsPrettyJSONChunkWhole(t *testing.T) {
 	pretty := "{\n  \"candidates\": [\n    {\"content\": {\"role\": \"model\", \"parts\": [{\"text\": \"PPP\"}]},\n\n     \"finishReason\": \"STOP\"}\n  ],\n  \"usageMetadata\": {\"promptTokenCount\": 11, \"candidatesTokenCount\": 4, \"totalTokenCount\": 15}\n}\n"
 	got, errGot := streamThroughRelay(t, sdktranslator.FormatOpenAI, []string{pretty})

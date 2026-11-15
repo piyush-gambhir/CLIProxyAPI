@@ -6,21 +6,12 @@ import (
 	"time"
 )
 
-// UsageReading is the parsed result of a provider usage endpoint response.
 type UsageReading struct {
-	// Plan is the provider's plan slug when the response carries one.
 	Plan string
-	// Windows holds the canonical window readings found in the response.
+
 	Windows map[string]Window
 }
 
-// ParseUsage turns a provider usage endpoint body into canonical windows.
-//
-// Claude answers GET api.anthropic.com/api/oauth/usage, Codex answers
-// GET chatgpt.com/backend-api/wham/usage. Both shapes are read defensively: an
-// unrecognised body yields no windows rather than an error, so a provider
-// changing its response degrades the credential to "no data" instead of
-// breaking routing.
 func ParseUsage(provider string, body []byte, learnedAt time.Time) (UsageReading, error) {
 	var raw map[string]any
 	if err := json.Unmarshal(body, &raw); err != nil {
@@ -36,12 +27,6 @@ func ParseUsage(provider string, body []byte, learnedAt time.Time) (UsageReading
 	}
 }
 
-// parseClaudeUsage reads the limits array, then the flat per-window fallback.
-//
-// In the array form each entry carries kind ("session" is the 5-hour window),
-// group ("weekly" is the 7-day window), percent and resets_at. A Fable-scoped
-// weekly entry becomes the per-model fable window. In the flat form the keys
-// are five_hour, seven_day and iguana_necktie, which is the Fable window.
 func parseClaudeUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	out := UsageReading{Plan: stringField(raw, "plan_type"), Windows: make(map[string]Window)}
 	for _, item := range arrayField(raw, "limits") {
@@ -61,8 +46,7 @@ func parseClaudeUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 		if canonical == "" {
 			continue
 		}
-		// A weekly window scoped to a single model is a per-model window. Fable is
-		// the only one the routing rule consults.
+
 		if canonical == WindowSevenDay && scopeMentionsFable(entry) {
 			canonical = WindowFable
 		}
@@ -119,9 +103,6 @@ func parseClaudeUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	return out
 }
 
-// parseCodexUsage reads rate_limit.primary_window and secondary_window. The
-// reported limit_window_seconds decides the canonical id: 18000 is the 5-hour
-// window and 604800 the weekly one.
 func parseCodexUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	out := UsageReading{Plan: stringField(raw, "plan_type"), Windows: make(map[string]Window)}
 	limits := objectOf(raw["rate_limit"])
@@ -166,8 +147,6 @@ func parseCodexUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	return out
 }
 
-// mergeWindow keeps the reading that reports more usage when a response carries
-// the same canonical window twice, so a pooled surface cannot hide a limit.
 func mergeWindow(windows map[string]Window, canonical string, window Window) {
 	previous, exists := windows[canonical]
 	if !exists {
@@ -182,7 +161,6 @@ func mergeWindow(windows map[string]Window, canonical string, window Window) {
 	}
 }
 
-// scopeMentionsFable reports whether a Claude limit entry is scoped to Fable.
 func scopeMentionsFable(entry map[string]any) bool {
 	scope := objectOf(entry["scope"])
 	if scope == nil {
@@ -249,8 +227,7 @@ func timeField(raw map[string]any, key string) (time.Time, bool) {
 	if raw == nil {
 		return time.Time{}, false
 	}
-	// Usage bodies always carry an absolute reset, so a relative offset is not
-	// accepted here: it would otherwise land near the zero time.
+
 	switch typed := raw[key].(type) {
 	case string:
 		trimmed := strings.TrimSpace(typed)

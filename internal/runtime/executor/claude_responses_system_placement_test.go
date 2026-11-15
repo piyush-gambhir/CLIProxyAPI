@@ -14,8 +14,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// responsesMidSessionPayload is a Responses request whose developer item
-// arrives after the conversation started, the shape Codex sends on later turns.
 func responsesMidSessionPayload(model string) []byte {
 	return []byte(`{"model":"` + model + `","instructions":"Top rule","input":[` +
 		`{"role":"user","content":[{"type":"input_text","text":"hi"}]},` +
@@ -74,9 +72,6 @@ func claudeSystemTurnTexts(body []byte) []string {
 	return texts
 }
 
-// With the cloaked wire and a model that accepts mid-conversation system turns,
-// the developer item reaches the upstream right after the user message it
-// preceded, so the messages of earlier turns keep their cached prefix.
 func TestResponsesMidSessionSystemItemStaysInPlace(t *testing.T) {
 	const model = "claude-sonnet-5"
 	for name, call := range responsesPlacementCalls {
@@ -101,9 +96,6 @@ func TestResponsesMidSessionSystemItemStaysInPlace(t *testing.T) {
 	}
 }
 
-// A model that rejects mid-conversation system turns keeps the top-level path,
-// so the executor sees the same body as before in-place placement: both
-// instructions in source order, placed together by the existing cloaking.
 func TestResponsesMidSessionSystemItemKeepsTopLevelPathForLegacyModel(t *testing.T) {
 	const model = "claude-sonnet-4-5"
 	upstream := &midSystemUpstream{}
@@ -121,8 +113,6 @@ func TestResponsesMidSessionSystemItemKeepsTopLevelPathForLegacyModel(t *testing
 	}
 }
 
-// Strict cloaking drops every caller system instruction. A translated
-// mid-session developer item must not survive it as an in-place turn.
 func TestResponsesMidSessionSystemItemDroppedByStrictCloaking(t *testing.T) {
 	const model = "claude-sonnet-5"
 	for name, call := range responsesPlacementCalls {
@@ -144,8 +134,6 @@ func TestResponsesMidSessionSystemItemDroppedByStrictCloaking(t *testing.T) {
 	}
 }
 
-// An uncloaked request forwards the caller's betas, so it never gains the
-// mid-conversation system beta and keeps both instructions top-level.
 func TestResponsesMidSessionSystemItemUncloakedStaysTopLevel(t *testing.T) {
 	const model = "claude-sonnet-5"
 	upstream := &midSystemUpstream{}
@@ -163,10 +151,6 @@ func TestResponsesMidSessionSystemItemUncloakedStaysTopLevel(t *testing.T) {
 	}
 }
 
-// An unsupported system part keeps failing explicitly on the top-level path,
-// even when a text-only developer item would otherwise stay in place. With the
-// rebuild opt-in, an in-place turn would be folded through a text-only filter
-// that drops the unsupported part, so the opt-in must keep the top-level path.
 func TestResponsesUnsupportedSystemPartStillRejected(t *testing.T) {
 	for _, test := range []struct {
 		name       string
@@ -201,9 +185,6 @@ func TestResponsesUnsupportedSystemPartStillRejected(t *testing.T) {
 	}
 }
 
-// Local estimation sends nothing upstream, so it keeps every system item at the
-// top level, where its request validation accepts them, even for a credential
-// whose Messages requests would carry an in-place turn.
 func TestResponsesMidSessionSystemItemLocalCountTokensKeepsTopLevel(t *testing.T) {
 	const model = "claude-sonnet-5"
 	for _, attributes := range []map[string]string{
@@ -227,9 +208,6 @@ func TestResponsesMidSessionSystemItemLocalCountTokensKeepsTopLevel(t *testing.T
 	}
 }
 
-// A payload rule that switches the model after translation is outside the
-// placement decision. The existing validation answers it explicitly instead of
-// sending a turn the model rejects.
 func TestResponsesMidSessionSystemItemLateLegacyOverrideRejected(t *testing.T) {
 	upstream := &midSystemUpstream{}
 	cfg := midSystemConfig()

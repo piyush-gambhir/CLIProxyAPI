@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Tab identifiers
 const (
 	tabDashboard = iota
 	tabConfig
@@ -21,7 +20,6 @@ const (
 	tabLogs
 )
 
-// App is the root bubbletea model that contains all tab sub-models.
 type App struct {
 	activeTab int
 	tabs      []string
@@ -47,7 +45,6 @@ type App struct {
 	height int
 	ready  bool
 
-	// Track which tabs have been initialized (fetched data)
 	initialized [6]bool
 }
 
@@ -56,12 +53,10 @@ type authConnectMsg struct {
 	err error
 }
 
-// NewApp creates the root TUI application model targeting localhost on the given port.
 func NewApp(port int, secretKey string, hook *LogHook) App {
 	return NewAppWithBaseURL(fmt.Sprintf("http://127.0.0.1:%d", port), secretKey, hook)
 }
 
-// NewAppWithBaseURL creates the root TUI application model targeting the specified management base URL.
 func NewAppWithBaseURL(baseURL string, secretKey string, hook *LogHook) App {
 	standalone := hook != nil
 	authRequired := !standalone
@@ -120,7 +115,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if a.width > 0 {
 			a.authInput.Width = a.width - 6
 		}
-		contentH := a.height - 4 // tab bar + status bar
+		contentH := a.height - 4
 		if contentH < 1 {
 			contentH = 1
 		}
@@ -215,7 +210,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return a, tea.Quit
 		case "q":
-			// Only quit if not in logs tab (where 'q' might be useful)
+
 			if !a.logsEnabled || a.activeTab != tabLogs {
 				return a, tea.Quit
 			}
@@ -246,7 +241,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, cmd
 	}
 
-	// Route msg to active tab
 	var cmd tea.Cmd
 	switch a.activeTab {
 	case tabDashboard:
@@ -263,7 +257,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.logs, cmd = a.logs.Update(msg)
 	}
 
-	// Keep logs polling alive even when logs tab is not active.
 	if a.logsEnabled && a.activeTab != tabLogs {
 		switch msg.(type) {
 		case logsPollMsg, logsTickMsg, logLineMsg:
@@ -278,7 +271,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, cmd
 }
 
-// localeChangedMsg is broadcast to all tabs when the user toggles locale.
 type localeChangedMsg struct{}
 
 func (a *App) refreshTabs() {
@@ -341,11 +333,9 @@ func (a App) View() string {
 
 	var sb strings.Builder
 
-	// Tab bar
 	sb.WriteString(a.renderTabBar())
 	sb.WriteString("\n")
 
-	// Content
 	switch a.activeTab {
 	case tabDashboard:
 		sb.WriteString(a.dashboard.View())
@@ -363,7 +353,6 @@ func (a App) View() string {
 		}
 	}
 
-	// Status bar
 	sb.WriteString("\n")
 	sb.WriteString(a.renderStatusBar())
 
@@ -413,7 +402,6 @@ func (a App) renderStatusBar() string {
 		width = 1
 	}
 
-	// statusBarStyle has left/right padding(1), so content area is width-2.
 	contentWidth := width - 2
 	if contentWidth < 0 {
 		contentWidth = 0
@@ -488,14 +476,10 @@ func (a App) connectWithPassword(password string) tea.Cmd {
 	}
 }
 
-// Run starts the TUI application targeting localhost on the given port.
-// output specifies where bubbletea renders. If nil, defaults to os.Stdout.
 func Run(port int, secretKey string, hook *LogHook, output io.Writer) error {
 	return RunWithBaseURL(fmt.Sprintf("http://127.0.0.1:%d", port), secretKey, hook, output)
 }
 
-// RunWithBaseURL starts the TUI application targeting the specified management base URL.
-// output specifies where bubbletea renders. If nil, defaults to os.Stdout.
 func RunWithBaseURL(baseURL string, secretKey string, hook *LogHook, output io.Writer) error {
 	if output == nil {
 		output = os.Stdout

@@ -1,9 +1,3 @@
-// Package claude provides response translation functionality for Claude API.
-// This package handles the conversion of backend client responses into Claude-compatible
-// Server-Sent Events (SSE) format, implementing a sophisticated state machine that manages
-// different response types including text content, thinking processes, and function calls.
-// The translation ensures proper sequencing of SSE events and maintains state across
-// multiple response chunks to provide a seamless streaming experience.
 package claude
 
 import (
@@ -18,13 +12,12 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// Params holds parameters for response conversion.
 type Params struct {
 	IsGlAPIKey                   bool
 	HasFirstResponse             bool
 	ResponseType                 int
 	ResponseIndex                int
-	HasContent                   bool // Tracks whether any content (text, thinking, or tool use) has been output
+	HasContent                   bool
 	ToolNameMap                  map[string]string
 	SanitizedNameMap             map[string]string
 	SawToolCall                  bool
@@ -33,10 +26,10 @@ type Params struct {
 	InputTokens                  int64
 	OutputTokens                 int64
 	CachedTokens                 int64
-	CurrentToolName              string // Client-facing name of the currently open tool_use block
-	CurrentToolIsParameterless   bool   // Whether the open tool_use block was declared parameterless
-	CurrentToolInputEmitted      bool   // Whether cleaned input JSON was already emitted for the open tool_use block
-	CurrentToolPendingEmpty      bool   // Whether an empty "{}" input_json_delta is deferred awaiting tool_use completion
+	CurrentToolName              string
+	CurrentToolIsParameterless   bool
+	CurrentToolInputEmitted      bool
+	CurrentToolPendingEmpty      bool
 	ActiveToolCall               *translatorcommon.VertexStreamingToolCall
 	PendingToolThoughtSignatures []string
 	HasIncompleteToolCall        bool
@@ -64,25 +57,8 @@ func resolveGeminiClaudeStopReason(finishReason string, sawToolCall bool) string
 	}
 }
 
-// toolUseIDCounter provides a process-wide unique counter for tool use identifiers.
 var toolUseIDCounter uint64
 
-// ConvertGeminiResponseToClaude performs sophisticated streaming response format conversion.
-// This function implements a complex state machine that translates backend client responses
-// into Claude-compatible Server-Sent Events (SSE) format. It manages different response types
-// and handles state transitions between content blocks, thinking processes, and function calls.
-//
-// Response type states: 0=none, 1=content, 2=thinking, 3=function
-// The function maintains state across multiple calls to ensure proper SSE event sequencing.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the Gemini API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - [][]byte: A slice of bytes, each containing a Claude-compatible SSE payload.
 func ConvertGeminiResponseToClaude(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &Params{
@@ -202,14 +178,10 @@ func ConvertGeminiResponseToClaude(_ context.Context, _ string, originalRequestR
 		p.HasContent = true
 	}
 
-	// Initialize the streaming session with a message_start event
-	// This is only sent for the very first response chunk
 	if !(*param).(*Params).HasFirstResponse {
-		// Create the initial message structure with default values
-		// This follows the Claude API specification for streaming message initialization
+
 		messageStartDoc := ojson.NewDocString(`{"type":"message_start","message":{"id":"msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY","type":"message","role":"assistant","content":[],"model":"claude-3-5-sonnet-20241022","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}`)
 
-		// Override default values with actual response metadata if available
 		if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "modelVersion"); modelVersionResult.Exists() {
 			_ = messageStartDoc.Set("message.model", modelVersionResult.String())
 		}
@@ -221,15 +193,12 @@ func ConvertGeminiResponseToClaude(_ context.Context, _ string, originalRequestR
 		(*param).(*Params).HasFirstResponse = true
 	}
 
-	// Process the response parts array from the backend client
-	// Each part can contain text content, thinking content, or function calls
 	partsResult := ojson.GetBytesNoCopy(rawJSON, "candidates.0.content.parts")
 	if partsResult.IsArray() {
 		partResults := partsResult.Array()
 		for i := 0; i < len(partResults); i++ {
 			partResult := partResults[i]
 
-			// Extract the different types of content from each part
 			partTextResult := partResult.Get("text")
 			functionCallResult := partResult.Get("functionCall")
 			thoughtSignatureResult := partResult.Get("thoughtSignature")
@@ -298,7 +267,6 @@ func ConvertGeminiResponseToClaude(_ context.Context, _ string, originalRequestR
 				continue
 			}
 
-			// From here on, !isThought (visible text, functionCall, or standalone signature)
 			if functionCallResult.Exists() {
 				rawToolName := strings.Clone(strings.TrimSpace(functionCallResult.Get("name").String()))
 				upstreamToolName := strings.Clone(util.RestoreSanitizedToolName((*param).(*Params).SanitizedNameMap, rawToolName))
@@ -622,16 +590,6 @@ func ConvertGeminiResponseToClaude(_ context.Context, _ string, originalRequestR
 	return [][]byte{output}
 }
 
-// ConvertGeminiResponseToClaudeNonStream converts a non-streaming Gemini response to a non-streaming Claude response.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the Gemini API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - []byte: A Claude-compatible JSON response.
 func ConvertGeminiResponseToClaudeNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	_ = requestRawJSON
 
@@ -721,8 +679,6 @@ func ConvertGeminiResponseToClaudeNonStream(_ context.Context, _ string, origina
 				continue
 			}
 
-			// If this is a part without visible text or function call, and thinking is in progress:
-			// this signature belongs to the thinking block!
 			if (!text.Exists() || text.String() == "") && !functionCall.Exists() {
 				if thinkingBuilder.Len() > 0 && partSig != "" {
 					thinkingSignature = partSig
@@ -737,7 +693,6 @@ func ConvertGeminiResponseToClaudeNonStream(_ context.Context, _ string, origina
 				continue
 			}
 
-			// From here on, !isThought (visible text or functionCall)
 			flushThinking()
 
 			if functionCall.Exists() {

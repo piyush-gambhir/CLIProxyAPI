@@ -35,9 +35,6 @@ func TestNormalizeClaudeFingerprintProfile(t *testing.T) {
 	}
 }
 
-// An unrecognized value must survive sanitization: rewriting a config file is not
-// the place to discard operator input, and the request path already falls back to
-// the default profile.
 func TestSanitizeClaudeKeysFingerprintProfile(t *testing.T) {
 	cfg := &Config{ClaudeKey: []ClaudeKey{
 		{APIKey: "a", FingerprintProfile: "  OAuth-CLI  "},

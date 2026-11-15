@@ -33,10 +33,9 @@ const (
 	httpUserAgent                = "CLIProxyAPI-management-updater"
 	managementSyncMinInterval    = 30 * time.Second
 	updateCheckInterval          = 3 * time.Hour
-	maxAssetDownloadSize         = 50 << 20 // 10 MB safety limit for management asset downloads
+	maxAssetDownloadSize         = 50 << 20
 )
 
-// ManagementFileName exposes the control panel asset filename.
 const ManagementFileName = managementAssetName
 
 var (
@@ -48,7 +47,6 @@ var (
 	sfGroup             singleflight.Group
 )
 
-// SetCurrentConfig stores the latest configuration snapshot for management asset decisions.
 func SetCurrentConfig(cfg *config.Config) {
 	if cfg == nil {
 		currentConfigPtr.Store(nil)
@@ -57,8 +55,6 @@ func SetCurrentConfig(cfg *config.Config) {
 	currentConfigPtr.Store(cfg)
 }
 
-// StartAutoUpdater launches a background goroutine that periodically ensures the management asset is up to date.
-// It respects the disable-control-panel flag on every iteration and supports hot-reloaded configurations.
 func StartAutoUpdater(ctx context.Context, configFilePath string) {
 	configFilePath = strings.TrimSpace(configFilePath)
 	if configFilePath == "" {
@@ -140,7 +136,6 @@ type releaseResponse struct {
 	Assets []releaseAsset `json:"assets"`
 }
 
-// StaticDir resolves the directory that stores the management control panel asset.
 func StaticDir(configFilePath string) string {
 	if override := strings.TrimSpace(os.Getenv("MANAGEMENT_STATIC_PATH")); override != "" {
 		cleaned := filepath.Clean(override)
@@ -170,7 +165,6 @@ func StaticDir(configFilePath string) string {
 	return filepath.Join(base, "static")
 }
 
-// FilePath resolves the absolute path to the management control panel asset.
 func FilePath(configFilePath string) string {
 	if override := strings.TrimSpace(os.Getenv("MANAGEMENT_STATIC_PATH")); override != "" {
 		cleaned := filepath.Clean(override)
@@ -187,8 +181,6 @@ func FilePath(configFilePath string) string {
 	return filepath.Join(dir, ManagementFileName)
 }
 
-// EnsureLatestManagementHTML checks the latest management.html asset and updates the local copy when needed.
-// It coalesces concurrent sync attempts and returns whether the asset exists after the sync attempt.
 func EnsureLatestManagementHTML(ctx context.Context, staticDir string, proxyURL string, panelRepository string) bool {
 	if ctx == nil {
 		ctx = context.Background()

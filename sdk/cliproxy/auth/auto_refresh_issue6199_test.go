@@ -49,7 +49,6 @@ func TestIssue6199AutoRefreshDoesNotRequeueQueuedAuth(t *testing.T) {
 		t.Fatalf("initial queued jobs = %d, want 1", got)
 	}
 
-	// Advance the pending window without allowing a worker to consume the job.
 	for i := 0; i < 3; i++ {
 		loop.applyDirty(now)
 		now = now.Add(refreshPendingBackoff)
@@ -128,7 +127,6 @@ func TestIssue6199AutoRefreshRunningAuthDoesNotStarveHealthyAuth(t *testing.T) {
 		t.Fatal("initial refresh did not enter the executor")
 	}
 
-	// The refresh remains blocked while the scheduler observes three pending windows.
 	for i := 0; i < 3; i++ {
 		loop.applyDirty(now)
 		now = now.Add(refreshPendingBackoff)
@@ -141,7 +139,7 @@ func TestIssue6199AutoRefreshRunningAuthDoesNotStarveHealthyAuth(t *testing.T) {
 	registerIssue6199ExpiredAuth(t, manager, "healthy", now)
 	loop.applyDirty(now)
 	loop.handleDue(ctx, now)
-	// Start the spare worker only after the FIFO queue is fully arranged.
+
 	startWorker()
 	select {
 	case <-executor.healthyRefreshed:
@@ -161,7 +159,7 @@ func TestIssue6199AutoRefreshFullQueueDoesNotBlockScheduler(t *testing.T) {
 		for i := 0; i <= cap(loop.jobs); i++ {
 			id := fmt.Sprintf("full-queue-%02d", i)
 			registerIssue6199ExpiredAuth(t, manager, id, now)
-			// Explicit ordering makes the last credential the overflow candidate.
+
 			loop.upsert(id, now.Add(time.Duration(i)*time.Nanosecond))
 			overflowID = id
 		}
@@ -207,7 +205,7 @@ func TestIssue6199AutoRefreshFullQueueRetriesAfterCapacityReturns(t *testing.T) 
 		now = now.Add(time.Duration(cap(loop.jobs)) * time.Nanosecond)
 		go loop.handleDue(ctx, now)
 		synctest.Wait()
-		// Also release an unfixed blocking dispatcher so the regression can finish.
+
 		cancelCtx()
 		synctest.Wait()
 		for len(loop.jobs) > 0 {

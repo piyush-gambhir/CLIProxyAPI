@@ -65,7 +65,6 @@ func sessionIDCacheKey(apiKey string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// CachedSessionID returns a stable session UUID per apiKey, refreshing the TTL on each access.
 func CachedSessionID(apiKey string) string {
 	value, errValue := CachedSessionIDRequired(context.Background(), apiKey)
 	if errValue == nil && value != "" {
@@ -74,7 +73,6 @@ func CachedSessionID(apiKey string) string {
 	return uuid.New().String()
 }
 
-// CachedSessionIDRequired returns a stable session UUID per apiKey for request-time paths.
 func CachedSessionIDRequired(ctx context.Context, apiKey string) (string, error) {
 	if apiKey == "" {
 		return uuid.New().String(), nil

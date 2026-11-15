@@ -10,11 +10,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Review round 4 regressions: sibling-model quota must not re-impose the
-// quota wait floor on a transient model, positive transient hints schedule
-// by their actual remaining time, and an expired trusted wrapper must not
-// surface a negative hint.
-
 func issue7017WaitSetup(t *testing.T, auth *Auth, model string) (*Manager, authSelectionEligibility) {
 	t.Helper()
 	withQuotaCooldownEnabled(t)
@@ -34,7 +29,7 @@ func TestIssue7017SiblingQuotaDoesNotBlockTransientZeroWait(t *testing.T) {
 	auth := &Auth{
 		ID:       "turn-sibling-quota",
 		Provider: "codex",
-		// Auth-level aggregate mirrors the sibling model quota.
+
 		Quota: QuotaState{Exceeded: true, Reason: "quota", NextRecoverAt: future, BackoffLevel: 1},
 		ModelStates: map[string]*ModelState{
 			model: {

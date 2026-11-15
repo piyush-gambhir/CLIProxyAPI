@@ -10,9 +10,6 @@ import (
 	proxyconfig "github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// TestConfigV8ETagExposedForCORS covers issue #6666 through the real server:
-// a cross-origin management page must be able to read the ETag that the v8
-// config endpoints return, otherwise the GET -> If-Match flow cannot run.
 func TestConfigV8ETagExposedForCORS(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "test-management-key")
 
@@ -63,8 +60,8 @@ func TestConfigV8ETagExposedForCORS(t *testing.T) {
 	}
 
 	etag := wantETagExposed(do(http.MethodGet, "", ""), http.StatusOK)
-	// A stale precondition reports the current version, still CORS-readable.
+
 	wantETagExposed(do(http.MethodPut, "config-version: 8\n", `"stale"`), http.StatusPreconditionFailed)
-	// A successful conditional write chains through its exposed new ETag.
+
 	wantETagExposed(do(http.MethodPut, "config-version: 8\nserver: {port: 8318}\n", etag), http.StatusOK)
 }

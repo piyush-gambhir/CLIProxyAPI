@@ -44,7 +44,6 @@ func TestSaveTokenToFile_PreservesCustomMetadata(t *testing.T) {
 		t.Fatalf("json.Unmarshal error = %v", errUnmarshal)
 	}
 
-	// Verify updated OAuth token fields
 	if saved["access_token"] != "new-access-token" {
 		t.Errorf("access_token = %v, want new-access-token", saved["access_token"])
 	}
@@ -58,7 +57,6 @@ func TestSaveTokenToFile_PreservesCustomMetadata(t *testing.T) {
 		t.Errorf("account_id = %v, want new-account", saved["account_id"])
 	}
 
-	// Verify custom fields in metadata
 	if saved["prefix"] != "my-prefix" {
 		t.Errorf("prefix = %v, want my-prefix", saved["prefix"])
 	}

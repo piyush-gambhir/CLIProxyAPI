@@ -30,7 +30,7 @@ func (p *claudeAuthorizationProbe) GenerateAuthURL(state string, pkceCodes *clau
 		return "", "", errGenerate
 	}
 	p.authURL, p.state = authURL, returnedState
-	// Stop before starting a background callback waiter that could outlive this test.
+
 	return "", "", errors.New("authorization URL inspected")
 }
 

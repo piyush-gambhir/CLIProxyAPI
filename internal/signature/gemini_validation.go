@@ -1,71 +1,3 @@
-// Gemini thought signature validation notes.
-//
-// The Antigravity Gemini request translator can preserve provider-compatible
-// Gemini thought signatures and uses the skip sentinel only for synthetic or
-// incompatible model parts.
-//
-// Gemini 3 and later models can return thoughtSignature on model content parts.
-// Function-call parts are the strict case: when a model functionCall is replayed
-// with a following functionResponse, Gemini validates that the original
-// functionCall part still carries its provider-issued thoughtSignature. Text or
-// other non-functionCall parts may also carry a signature; those should be
-// preserved when replaying native Gemini history, but they are not the primary
-// validation gate.
-//
-// Synthetic history and migration from other model families are different. If a
-// functionCall part was not produced by Gemini API, there is no real signature
-// to preserve. Gemini documents two bypass sentinels for that case:
-//
-//   - "skip_thought_signature_validator"
-//   - "context_engineering_is_the_way_to_go"
-//
-// This repo emits "skip_thought_signature_validator" only when the first
-// functionCall in a synthetic model turn lacks a compatible provider signature.
-// Later parallel calls and ordinary text/thought parts preserve their native
-// unsigned shape.
-//
-// This validator is intentionally more conservative than a decrypting verifier.
-// Claude has a known E/R base64 envelope and a protobuf tree in this package.
-// Gemini thought signatures are opaque provider state here, so local validation
-// checks only the transport-level protobuf envelope and leaves the wrapped
-// provider payload uninterpreted.
-//
-// Validation tiers:
-//
-//   - Sentinel tier: accept the documented bypass sentinels only on the first
-//     model functionCall when it is synthetic, migrated, or otherwise not
-//     traceable to a prior Gemini model response in the same conversation.
-//   - Opaque-shape tier: for real Gemini signatures, require a non-empty string,
-//     bounded length, successful standard base64 decoding, and a known protobuf
-//     envelope when the caller needs provider compatibility. The known
-//     envelope is the Gemini 3.x field-2 -> field-1 payload, whose body holds
-//     versioned opaque Tink state, a provider UUID, or a nested protobuf structure
-//     wrapping Tink ciphertext for server-side tool invocations (toolCall/toolResponse).
-//     Gemini 2.5 emitted a repeated field-1 form; those models are out of scope and
-//     their signatures are no longer a known envelope. Bare base64 UUID payloads are
-//     classified separately and should be replaced with the bypass sentinel rather than
-//     replayed.
-//   - Replay tier: real validation means preserving the exact model part that
-//     came from Gemini, including its thoughtSignature, id/name/function args,
-//     part index, and ordering relative to sibling parallel function calls.
-//   - Tool pairing tier: functionResponse parts must match the preceding
-//     functionCall id/name and must not be interleaved between parallel calls.
-//     The valid shape is all model functionCalls first, then their responses.
-//   - Compatibility tier: GPT-compatible Gemini traffic stores the same state
-//     under tool_calls[].extra_content.google.thought_signature. If that path is
-//     translated back to native Gemini, the value must stay attached to the same
-//     assistant tool call.
-//
-// Important non-goals:
-//
-//   - Do not treat a Gemini thoughtSignature as a Claude signature. Similar
-//     base64 prefixes are not provenance.
-//   - Do not attach a signature to user functionResponse/tool-result parts.
-//   - Do not log complete signatures during validation failures; log only field
-//     paths, lengths, and redacted prefixes.
-//   - Do not preserve client-provided signatures across model/provider/session
-//     boundaries unless the request pipeline can prove they came from the same
-//     Gemini conversation state.
 package signature
 
 import (
@@ -85,23 +17,11 @@ const (
 	GeminiContextEngineeringBypass      = "context_engineering_is_the_way_to_go"
 )
 
-// GeminiThoughtSignatureValidationOptions controls how much local validation is
-// applied to Gemini thought signatures. This validation checks only the opaque
-// transport envelope; it does not prove that a signature came from Gemini or can
-// be decrypted by Gemini.
 type GeminiThoughtSignatureValidationOptions struct {
-	// AllowBypassSentinel accepts Gemini's documented synthetic-history bypass
-	// sentinels. Keep this false when validating provider-issued signatures.
 	AllowBypassSentinel bool
-	// RequireKnownEnvelope requires the decoded payload to match one of the
-	// protobuf envelopes observed in Gemini samples. This rejects opaque base64
-	// values such as base64 UUIDs.
+
 	RequireKnownEnvelope bool
-	// RequireObservedMarker requires the decoded payload to start with 0x12. Every
-	// observed Gemini 3.x sample carries this marker, but it is only the outer
-	// protobuf tag, so RequireKnownEnvelope is the stronger check and should be
-	// preferred. This option exists for narrow experiments that want the marker
-	// without the full envelope walk.
+
 	RequireObservedMarker bool
 }
 
@@ -109,25 +29,13 @@ type GeminiThoughtSignatureEnvelope string
 
 const (
 	GeminiThoughtSignatureEnvelopeUnknown GeminiThoughtSignatureEnvelope = "unknown"
-	// GeminiThoughtSignatureEnvelopeProtobufField2 is a replay-safe Gemini
-	// envelope. The repeated field-1 form emitted by Gemini 2.5 is no longer
-	// recognized: those models are out of scope, and their signatures now fall
-	// through to the bypass sentinel like any other unknown envelope.
+
 	GeminiThoughtSignatureEnvelopeProtobufField2 GeminiThoughtSignatureEnvelope = "protobuf_field_2"
-	// GeminiThoughtSignatureEnvelopeBareTink is the envelope emitted by the
-	// Vertex AI serve path (observed on gemini-4-argon and gemini-3.8-flash via
-	// the Vertex channel, 2026-10-26): the Tink primitive output is carried directly
-	// in the thoughtSignature field with no protobuf wrapper. The decoded payload is
-	// byte 0 = 0x01 (TINK prefix-type), bytes 1..4 = big-endian key id, remainder
-	// ciphertext. Only Vertex accepts it; Antigravity and AI Studio reject it, so
-	// non-Vertex callers must treat it as incompatible
-	// (see IsGeminiVertexBareTinkSignature).
+
 	GeminiThoughtSignatureEnvelopeBareTink  GeminiThoughtSignatureEnvelope = "bare_tink"
 	GeminiThoughtSignatureEnvelopeASCIIUUID GeminiThoughtSignatureEnvelope = "ascii_uuid"
 )
 
-// GeminiThoughtSignatureInfo describes the locally inspectable properties of an
-// opaque Gemini thought signature.
 type GeminiThoughtSignatureInfo struct {
 	IsBypassSentinel  bool
 	BypassSentinel    string
@@ -158,9 +66,6 @@ func geminiThoughtSignatureValidationOptions(opts []GeminiThoughtSignatureValida
 	return opts[0]
 }
 
-// IsGeminiThoughtSignatureBypass reports whether rawSignature is one of
-// Gemini's documented bypass sentinels for synthetic or migrated function-call
-// history.
 func IsGeminiThoughtSignatureBypass(rawSignature string) bool {
 	switch strings.TrimSpace(rawSignature) {
 	case GeminiSkipThoughtSignatureValidator, GeminiContextEngineeringBypass:
@@ -170,16 +75,11 @@ func IsGeminiThoughtSignatureBypass(rawSignature string) bool {
 	}
 }
 
-// IsValidGeminiThoughtSignature returns whether rawSignature has a valid local
-// Gemini thought-signature shape under opts.
 func IsValidGeminiThoughtSignature(rawSignature string, opts ...GeminiThoughtSignatureValidationOptions) bool {
 	_, err := InspectGeminiThoughtSignature(rawSignature, opts...)
 	return err == nil
 }
 
-// InspectGeminiThoughtSignature validates and inspects the local transport
-// shape of a Gemini thought signature. It intentionally treats provider-issued
-// signatures as opaque base64 payloads.
 func InspectGeminiThoughtSignature(rawSignature string, opts ...GeminiThoughtSignatureValidationOptions) (*GeminiThoughtSignatureInfo, error) {
 	opt := geminiThoughtSignatureValidationOptions(opts)
 	sig := strings.TrimSpace(rawSignature)
@@ -226,11 +126,6 @@ func InspectGeminiThoughtSignature(rawSignature string, opts ...GeminiThoughtSig
 	return info, nil
 }
 
-// ValidateGeminiThoughtSignatures validates thoughtSignature fields in a Gemini
-// native payload. The first functionCall in each parallel-call group of a model
-// Content must have a valid provider signature or allowed synthetic sentinel.
-// Later parallel sibling calls may be unsigned, but any signature they do carry
-// must still be valid.
 func ValidateGeminiThoughtSignatures(inputRawJSON []byte, opts ...GeminiThoughtSignatureValidationOptions) error {
 	contents, contentsPath := geminiContents(inputRawJSON)
 	if !contents.IsArray() {
@@ -289,11 +184,6 @@ func ValidateGeminiThoughtSignatures(inputRawJSON []byte, opts ...GeminiThoughtS
 	return nil
 }
 
-// ValidateGeminiFunctionCallPairing validates the replay shape around Gemini
-// functionCall and functionResponse parts. It checks id/name pairing and
-// prevents response parts from being interleaved inside the same content as
-// function calls. It allows a final pending functionCall group because callers
-// may validate a freshly returned model step before tool outputs exist.
 func ValidateGeminiFunctionCallPairing(inputRawJSON []byte) error {
 	contents, contentsPath := geminiContents(inputRawJSON)
 	if !contents.IsArray() {
@@ -363,9 +253,7 @@ func ValidateGeminiFunctionCallPairing(inputRawJSON []byte) error {
 			pending = calls
 			return true
 		case len(responses) == 0 && len(pending) > 0:
-			// Allow intervening user content (such as system reminders, mid-session developer notices, or user turns)
-			// to appear before the pending functionResponse turn. Upstream Antigravity accepts this natively.
-			// Reject only if it is a model turn without responses, which breaks turn ownership.
+
 			role := strings.ToLower(strings.TrimSpace(content.Get("role").String()))
 			if role == "model" {
 				validationErr = fmt.Errorf(
@@ -477,8 +365,7 @@ func inspectGeminiEnvelope(decoded []byte, envelope GeminiThoughtSignatureEnvelo
 			return info.RecordCount, info.OpaquePayloadLen
 		}
 	case GeminiThoughtSignatureEnvelopeBareTink:
-		// The whole decoded payload is the Tink primitive output; there is no
-		// inner record separator, so the single record spans the full blob.
+
 		if isGeminiBareTinkEnvelope(decoded) {
 			return 1, len(decoded)
 		}
@@ -486,25 +373,12 @@ func inspectGeminiEnvelope(decoded []byte, envelope GeminiThoughtSignatureEnvelo
 	return 0, 0
 }
 
-// geminiBareTinkMinLen is the structural floor for a bare Tink payload:
-// one prefix-type byte, a four-byte key id, and at least a 16-byte
-// authentication tag.
 const geminiBareTinkMinLen = 1 + 4 + 16
 
-// geminiVertexBareTinkKeyIDs are the Tink key ids observed on the Vertex AI
-// serve path. Without a protobuf wrapper the ciphertext is indistinguishable
-// from uniform random bytes, so the prefix byte alone would claim about 1/256
-// of any unenveloped payload (xAI encrypted_content, Kimi signatures). Matching
-// the key id as well raises that to 40 fixed bits. A rotated key is simply not
-// recognized and falls back to the bypass sentinel, which is the behavior
-// before bare-Tink recognition existed; add the new id when it is observed.
 var geminiVertexBareTinkKeyIDs = [][4]byte{
 	{0x8f, 0x3d, 0x6b, 0x5f},
 }
 
-// isGeminiBareTinkEnvelope reports whether decoded is the unwrapped Tink
-// primitive output that the Vertex serve path emits as the whole thought
-// signature.
 func isGeminiBareTinkEnvelope(decoded []byte) bool {
 	if len(decoded) < geminiBareTinkMinLen || decoded[0] != 0x01 {
 		return false
@@ -518,9 +392,6 @@ func isGeminiBareTinkEnvelope(decoded []byte) bool {
 	return false
 }
 
-// IsGeminiVertexBareTinkSignature reports whether rawSignature is a Vertex AI
-// bare-Tink thought signature. Callers sending to Gemini endpoints other than
-// Vertex AI must treat such signatures as incompatible.
 func IsGeminiVertexBareTinkSignature(rawSignature string) bool {
 	info, err := InspectGeminiThoughtSignature(
 		SignaturePayloadWithoutProviderPrefix(rawSignature),
@@ -577,29 +448,12 @@ func consumeGeminiField2Field1Value(decoded []byte) ([]byte, bool) {
 }
 
 func isLikelyGeminiOpaquePayload(value []byte) bool {
-	// The envelope body is a Google Tink primitive output: one prefix-type byte
-	// (0x01 selects the TINK prefix) followed by a four-byte big-endian key id and
-	// then the ciphertext. Only the prefix-type byte is checked here, because it is
-	// a format constant while the key id is key material that Google rotates.
-	// Pinning the key id would reduce false positives to nothing but would reject
-	// every signature the moment a rotation happens, which is the worse failure.
-	// That rotation is observed, not hypothetical: gemini-3.1-flash-lite carries key
-	// id 0x0c39d6c7 in the archived corpus and 0x114d320f in the 2026-07-27 capture,
-	// and the newer id is shared by every Gemini 3.x variant captured that day. The
-	// bytes after the prefix are high-entropy provider state and stay opaque, so this
-	// one format byte is the only anchor available. It leaves a 1/256 false-positive
-	// rate against a caller that reproduces the protobuf envelope but not the key
-	// material; provenance or target scoping, not more byte checks, closes that gap.
+
 	return len(value) > 0 && value[0] == 0x01
 }
 
 func isLikelyGeminiToolInvocationPayload(value []byte) bool {
-	// In Gemini 3 Tool Combination / Context Circulation, server-side tool blocks
-	// (toolCall and toolResponse) wrap the Tink ciphertext in a protobuf message
-	// containing a length-delimited bytes field whose content is a valid Tink payload
-	// starting with 0x01 (commonly preceded by a status/type varint field).
-	// Validate that value is a valid protobuf structure containing at least one
-	// length-delimited bytes field whose content is a valid Gemini Tink payload.
+
 	if len(value) == 0 {
 		return false
 	}

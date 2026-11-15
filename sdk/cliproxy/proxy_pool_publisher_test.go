@@ -11,10 +11,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// TestServiceProxyPoolFenceIsPerService pins that building or reloading one service
-// never retires the connection pools another service is still serving. The fence used
-// to be a single process-wide counter, so creating a second SDK service permanently
-// degraded the first one to a fresh transport per request.
 func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 	helps.ResetProxyTransports()
 	t.Cleanup(helps.ResetProxyTransports)
@@ -56,7 +52,6 @@ func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 		t.Fatal("first service did not reuse its pool")
 	}
 
-	// A second, independent service publishes its own config.
 	second := build()
 	if second.proxyPoolPublisher == first.proxyPoolPublisher {
 		t.Fatal("services share one pool publisher")
@@ -65,7 +60,6 @@ func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 		t.Fatal("building another service retired the active service's pool")
 	}
 
-	// Reloading the second service must not touch the first service's pools either.
 	if commit := second.commitConfigUpdate(&config.Config{AuthDir: second.currentConfig().AuthDir}); commit.cfg == nil {
 		t.Fatal("config update was rejected")
 	}
@@ -73,8 +67,6 @@ func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 		t.Fatal("reloading another service retired the active service's pool")
 	}
 
-	// Shutting down the second service retires its publisher and fences its snapshot
-	// without touching the first service's pool.
 	secondTransport := transportFor(second)
 	secondCfgBeforeShutdown := second.currentConfig()
 	if errShutdown := second.Shutdown(context.Background()); errShutdown != nil {
@@ -115,20 +107,16 @@ func TestOpenAICompatExecutorRebindsWhenConfigGenerationAdvances(t *testing.T) {
 		ProxyConnectionPool: &coreauth.ProxyConnectionPoolOverride{},
 	}
 
-	// Register initial executor bound to generation 1 config.
 	service.ensureExecutorsForAuthWithContext(context.Background(), compatAuth, false)
 	exec1, ok := service.coreManager.Executor("openai-compatible-ollama")
 	if !ok || exec1 == nil {
 		t.Fatal("expected initial openai-compatible-ollama executor")
 	}
 
-	// Advance service config generation (simulating a config reload before watcher delivers the new auth).
 	if commit := service.commitConfigUpdate(&config.Config{AuthDir: dir}); commit.cfg == nil {
 		t.Fatal("config update rejected")
 	}
 
-	// Non-forced ensureExecutorsForAuth (used by watcher auth updates) must replace the executor
-	// because its bound config snapshot is from the retired generation.
 	service.ensureExecutorsForAuthWithContext(context.Background(), compatAuth, false)
 	exec2, ok := service.coreManager.Executor("openai-compatible-ollama")
 	if !ok || exec2 == nil {

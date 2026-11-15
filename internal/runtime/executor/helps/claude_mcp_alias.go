@@ -9,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// IsClaudeMCPToolName reports whether name follows Claude Code's MCP tool
-// convention and contains only characters accepted by Anthropic tool names.
 func IsClaudeMCPToolName(name string) bool {
 	if len(name) == 0 || len(name) > 64 || !strings.HasPrefix(name, "mcp__") {
 		return false
@@ -30,19 +28,10 @@ func IsClaudeMCPToolName(name string) bool {
 	return true
 }
 
-// ClaudeMCPAliasWordCount is the BIP-39 English dictionary size used for the
-// virtual server pair and the one-word tool ID.
 func ClaudeMCPAliasWordCount() int {
 	return len(claudeMCPAliasEnglishWords)
 }
 
-// ClaudeMCPToolAlias derives a Claude Code-style MCP tool name. Aliases from
-// one caller share a virtual server component. The tool component combines a
-// stable keyed ID with a truncated semantic suffix so the model can distinguish
-// tools by name while the request-local symbol table restores the exact original.
-// A higher attempt linearly probes the next word when a collision must be avoided.
-// Server and tool IDs use BIP-39 English words so weak models are less likely
-// to drift high-entropy Base32 fragments.
 func ClaudeMCPToolAlias(secret, original string, attempt uint32) string {
 	toolDigest := claudeMCPAliasDigest(secret, "tool", original)
 	return claudeMCPAliasFor(
@@ -52,10 +41,6 @@ func ClaudeMCPToolAlias(secret, original string, attempt uint32) string {
 	)
 }
 
-// AllocateClaudeMCPToolAlias picks an alias that is not already reserved.
-// Attempts are capped at the wordlist size so names that sanitize to the same
-// suffix cannot spin forever. ok is false only when every one-word tool ID for
-// this semantic is already reserved.
 func AllocateClaudeMCPToolAlias(secret, original string, reserved map[string]bool) (string, bool) {
 	words := claudeMCPAliasEnglishWords
 	totalWords := len(words)
@@ -77,9 +62,6 @@ func AllocateClaudeMCPToolAlias(secret, original string, reserved map[string]boo
 	return "", false
 }
 
-// claudeMCPAliasFor assembles the final alias for one server/tool word pair.
-// Both the single-shot and the allocating entry point must build names here so
-// the two cannot drift apart.
 func claudeMCPAliasFor(server, toolID, original string) string {
 	prefix := "mcp__" + server + "__" + toolID + "_"
 	maxSemanticLen := 64 - len(prefix)
@@ -89,8 +71,6 @@ func claudeMCPAliasFor(server, toolID, original string) string {
 	return prefix + claudeMCPToolSemanticSuffix(original, maxSemanticLen)
 }
 
-// claudeMCPAliasServerComponent derives the caller-stable two-word virtual
-// server shared by every alias generated for one credential.
 func claudeMCPAliasServerComponent(secret string) string {
 	serverDigest := claudeMCPAliasDigest(secret, "server", "")
 	return claudeMCPAliasWord(serverDigest[:], 0, 0) + "_" + claudeMCPAliasWord(serverDigest[:], 2, 0)

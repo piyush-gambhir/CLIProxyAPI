@@ -1,8 +1,3 @@
-// Package gemini provides request translation functionality for Codex to Gemini API compatibility.
-// It handles parsing and transforming Codex API requests into Gemini API format,
-// extracting model information, system instructions, message contents, and tool declarations.
-// The package performs JSON data transformation to ensure compatibility
-// between Codex API format and Gemini API's expected format.
 package gemini
 
 import (
@@ -17,32 +12,14 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertGeminiRequestToCodex parses and transforms a Gemini API request into Codex API format.
-// It extracts the model name, system instruction, message contents, and tool declarations
-// from the raw JSON request and returns them in the format expected by the Codex API.
-// The function performs comprehensive transformation including:
-// 1. Model name mapping and generation configuration extraction
-// 2. System instruction conversion to Codex format
-// 3. Message content conversion with proper role mapping
-// 4. Tool call and tool result handling with FIFO queue for ID matching
-// 5. Tool declaration and tool choice configuration mapping
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request
-//   - rawJSON: The raw JSON request data from the Gemini API
-//   - stream: A boolean indicating if the request is for a streaming response (unused in current implementation)
-//
-// Returns:
-//   - []byte: The transformed request data in Codex API format
 func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	rawJSON := inputRawJSON
-	// Base template
+
 	outDoc := ojson.NewDocString(`{"model":"","instructions":"","input":[]}`)
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	inputItems := translatorcommon.NewRawArrayItems(root.Get("contents.#").Int())
 
-	// Pre-compute tool name shortening map from declared functionDeclarations
 	shortMap := map[string]string{}
 	if tools := root.Get("tools"); tools.IsArray() {
 		var names []string
@@ -63,10 +40,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		}
 	}
 
-	// helper for generating paired call IDs in the form: call_gemini_<seq>
-	// Gemini uses sequential pairing across possibly multiple in-flight
-	// functionCalls, so we keep a FIFO queue of generated call IDs and
-	// consume them in order when functionResponses arrive.
 	var pendingCallIDs []string
 	callCounter := 0
 	emittedThoughtSignatures := map[string]bool{}
@@ -91,13 +64,11 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		return ids
 	}
 
-	// Model
 	_ = outDoc.Set("model", modelName)
 	if serviceTier := normalizeGeminiCodexServiceTier(root.Get("service_tier")); serviceTier != "" {
 		_ = outDoc.Set("service_tier", serviceTier)
 	}
 
-	// System instruction -> as a user message with input_text parts
 	sysParts := root.Get("system_instruction.parts")
 	if !sysParts.Exists() {
 		sysParts = root.Get("systemInstruction.parts")
@@ -124,7 +95,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		}
 	}
 
-	// Contents -> messages and function calls/results
 	contents := root.Get("contents")
 	if contents.IsArray() {
 		items := contents.Array()
@@ -143,12 +113,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 			for j := 0; j < len(parr); j++ {
 				p := parr[j]
 
-				// A thoughtSignature is replayable reasoning state, not visible
-				// content. Restore it as a reasoning item only when its detected
-				// family matches this request's target model family, so a Muse
-				// (or GPT/Grok) signature can never be replayed to a wrong upstream
-				// through the Gemini ingress. Unmatched signatures fall through to
-				// the existing hidden-thought drop below.
 				if role == "assistant" {
 					if rawSignature := geminiPartThoughtSignature(p); rawSignature != "" {
 						if normalizedSignature, ok := normalizedGeminiThoughtSignatureForCodexTarget(signatureTargetModel, rawSignature); ok && !emittedThoughtSignatures[normalizedSignature] {
@@ -186,7 +150,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					continue
 				}
 
-				// text part
 				if t := p.Get("text"); t.Exists() {
 					partType := "input_text"
 					if role == "assistant" {
@@ -209,7 +172,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					continue
 				}
 
-				// function call from model
 				if fc := translatorcommon.GeminiPartFunctionCall(p); fc.Exists() {
 					fnDoc := ojson.NewDocString(`{"type":"function_call"}`)
 					if name := fc.Get("name"); name.Exists() {
@@ -224,7 +186,7 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					if args := fc.Get("args"); args.Exists() {
 						_ = fnDoc.Set("arguments", args.Raw)
 					}
-					// Reuse gateway-provided IDs when present, otherwise generate one for pairing.
+
 					id := getGeminiCallID(fc)
 					if id == "" {
 						callCounter++
@@ -236,24 +198,22 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					continue
 				}
 
-				// function response from user
 				if fr := translatorcommon.GeminiPartFunctionResponse(p); fr.Exists() {
 					fnoDoc := ojson.NewDocString(`{"type":"function_call_output"}`)
-					// Prefer a string result if present; otherwise embed the raw response as a string
+
 					if res := fr.Get("response.result"); res.Exists() {
 						_ = fnoDoc.Set("output", res.String())
 					} else if resp := fr.Get("response"); resp.Exists() {
 						_ = fnoDoc.Set("output", resp.Raw)
 					}
-					// attach the oldest queued call_id to pair the response
-					// with its call. If the queue is empty, generate a new id.
+
 					var id string
 					if customID := getGeminiCallID(fr); customID != "" {
 						id = customID
 						pendingCallIDs = removePendingCallID(pendingCallIDs, id)
 					} else if len(pendingCallIDs) > 0 {
 						id = pendingCallIDs[0]
-						// pop the first element
+
 						pendingCallIDs = pendingCallIDs[1:]
 					} else {
 						callCounter++
@@ -269,7 +229,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 
 	translatorcommon.SetRawArrayItemsDoc(outDoc, "input", inputItems)
 
-	// Tools mapping: Gemini functionDeclarations -> Codex tools
 	tools := root.Get("tools")
 	hasTools := false
 	if tools.IsArray() {
@@ -337,7 +296,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		_ = outDoc.SetRawBytes("tools", toolsRaw)
 	}
 
-	// Fixed flags aligning with Codex expectations
 	_ = outDoc.Set("parallel_tool_calls", true)
 	setCodexToolChoiceFromGeminiToolConfigDoc(outDoc, hasTools, root.Get("toolConfig.functionCallingConfig"))
 
@@ -358,8 +316,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		}
 	}
 
-	// Convert Gemini thinkingConfig to Codex reasoning.effort.
-	// Note: Google official Python SDK sends snake_case fields (thinking_level/thinking_budget).
 	effortSet := false
 	if genConfig.Exists() {
 		thinkingLevel := genConfig.Get("thinkingLevel")
@@ -398,12 +354,10 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		}
 	}
 	if !effortSet {
-		// No thinking config, set default effort
+
 		_ = outDoc.Set("reasoning.effort", "medium")
 	}
-	// OpenAI documents reasoning summaries as explicit opt-in output. Leave
-	// reasoning.summary to the source request's canonical summary intent instead
-	// of coupling it to reasoning effort.
+
 	_ = outDoc.Set("stream", true)
 	_ = outDoc.Set("store", false)
 	_ = outDoc.Set("include", []string{"reasoning.encrypted_content"})
@@ -411,8 +365,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 	return outDoc.Bytes(), nil
 }
 
-// geminiPartThoughtSignature extracts a part's thought signature under either
-// the camelCase or snake_case field spelling.
 func geminiPartThoughtSignature(part ojson.Result) string {
 	if signature := strings.TrimSpace(part.Get("thoughtSignature").String()); signature != "" {
 		return signature
@@ -420,9 +372,6 @@ func geminiPartThoughtSignature(part ojson.Result) string {
 	return strings.TrimSpace(part.Get("thought_signature").String())
 }
 
-// decodeGeminiCodexThoughtSignature unwraps the carrier written by
-// encodeGeminiCodexThoughtSignature. Values without the carrier magic are
-// returned unchanged, preserving legacy raw-signature echoes.
 func decodeGeminiCodexThoughtSignature(value string) string {
 	value = strings.TrimSpace(value)
 	decoded, err := base64.StdEncoding.DecodeString(value)
@@ -432,12 +381,6 @@ func decodeGeminiCodexThoughtSignature(value string) string {
 	return strings.TrimSpace(strings.TrimPrefix(string(decoded), geminiCodexThoughtSignatureCarrierMagic))
 }
 
-// normalizedGeminiThoughtSignatureForCodexTarget unwraps and normalizes a
-// client-echoed thought signature for the Codex-format upstream serving
-// modelName, returning the exact value that may be written as reasoning
-// encrypted_content. The carrier magic written by
-// encodeGeminiCodexThoughtSignature is stripped first; the family match and
-// normalization rules live in translatorcommon.CodexReplaySignatureForTarget.
 func normalizedGeminiThoughtSignatureForCodexTarget(modelName, rawSignature string) (string, bool) {
 	return translatorcommon.CodexReplaySignatureForTarget(modelName, decodeGeminiCodexThoughtSignature(rawSignature))
 }
@@ -639,7 +582,6 @@ func codexFileNameFromMIME(mimeType string) string {
 	}
 }
 
-// shortenNameIfNeeded applies the simple shortening rule for a single name.
 func shortenNameIfNeeded(name string) string {
 	const limit = 64
 	if len(name) <= limit {
@@ -658,7 +600,6 @@ func shortenNameIfNeeded(name string) string {
 	return name[:limit]
 }
 
-// buildShortNameMap ensures uniqueness of shortened names within a request.
 func buildShortNameMap(names []string) map[string]string {
 	const limit = 64
 	used := map[string]struct{}{}

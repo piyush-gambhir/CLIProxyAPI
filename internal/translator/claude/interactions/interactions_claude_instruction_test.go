@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// claudeInstructionSteps are developer and system steps in the shapes an
-// Interactions client can send. Each one carries the text "note".
 var claudeInstructionSteps = map[string]string{
 	"developer user_input":     `{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}`,
 	"system user_input":        `{"type":"user_input","role":"system","content":[{"type":"text","text":"note"}]}`,
@@ -17,7 +15,6 @@ var claudeInstructionSteps = map[string]string{
 	"developer wrapper":        `{"role":"developer","steps":[{"type":"user_input","content":[{"type":"text","text":"note"}]}]}`,
 }
 
-// claudeEmptiedStep is a user step whose only part Claude cannot carry.
 const claudeEmptiedStep = `{"type":"user_input","content":[{"type":"video","mime_type":"video/mp4","uri":"https://example.test/a.mp4"}]}`
 
 func TestInteractionsToClaudeDeveloperOrSystemStepDoesNotHideAnEmptiedUserTurn(t *testing.T) {

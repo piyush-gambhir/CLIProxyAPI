@@ -100,7 +100,7 @@ func TestSubscriptionTelemetryPreservesHeartbeatDeadline(t *testing.T) {
 							frame = fmt.Sprintf("*3\r\n$7\r\nmessage\r\n$%d\r\n%s\r\n$2\r\n{}\r\n", len(test.traffic), test.traffic)
 						}
 						if _, errWrite := io.WriteString(peer, frame); errWrite != nil {
-							// The receiver closes the pipe when its heartbeat deadline expires.
+
 							if !errors.Is(errWrite, io.ErrClosedPipe) && !errors.Is(errWrite, net.ErrClosed) {
 								t.Errorf("write telemetry PONG: %v", errWrite)
 							}

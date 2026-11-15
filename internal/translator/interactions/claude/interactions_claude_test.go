@@ -85,11 +85,7 @@ func TestConvertClaudeRequestToInteractionsInfersToolNamesForOutOfOrderResults(t
 		]
 	}`)
 	out, _ := ConvertClaudeRequestToInteractions("gemini-3.1-flash-lite", raw, false)
-	// Since AlignClaudeToolResults aligns tool results with tool_use order (toolu_1 then toolu_2):
-	// input.0: function_call toolu_1 (lookup)
-	// input.1: function_call toolu_2 (weather)
-	// input.2: function_result toolu_1 (lookup)
-	// input.3: function_result toolu_2 (weather)
+
 	if got := ojson.GetBytesNoCopy(out, "input.2.call_id").String(); got != "toolu_1" {
 		t.Fatalf("input.2.call_id = %q, want toolu_1. Output: %s", got, string(out))
 	}
@@ -144,14 +140,6 @@ func TestConvertClaudeRequestToInteractions_PreservesToolAdjacencyWithIntervenin
 	out, _ := ConvertClaudeRequestToInteractions("gemini-3.1-flash-lite", raw, false)
 	inputs := ojson.GetBytesNoCopy(out, "input").Array()
 
-	// Expected types:
-	// 0: user_input ("Execute tools")
-	// 1: function_call (call_1)
-	// 2: function_call (call_2)
-	// 3: function_result (call_1)
-	// 4: function_result (call_2)
-	// 5: user_input (<system-reminder>...)
-	// 6: user_input ("Now summarize")
 	types := make([]string, 0, len(inputs))
 	for _, item := range inputs {
 		types = append(types, item.Get("type").String())
@@ -277,14 +265,13 @@ func TestConvertInteractionsResponseToClaudeNonStream(t *testing.T) {
 }
 
 func TestConvertInteractionsResponseToClaude_IncompleteMaxTokens(t *testing.T) {
-	// Non-stream
+
 	raw := []byte(`{"id":"interaction_1","model":"devin/swe-2","status":"incomplete","finish_reason":"length","steps":[{"type":"model_output","content":[{"type":"text","text":"cut short"}]}],"usage":{"total_input_tokens":3,"total_output_tokens":4}}`)
 	out := ConvertInteractionsResponseToClaudeNonStream(context.Background(), "devin/swe-2", nil, nil, raw, nil)
 	if got := ojson.GetBytesNoCopy(out, "stop_reason").String(); got != "max_tokens" {
 		t.Fatalf("stop_reason = %q, want max_tokens. Output: %s", got, string(out))
 	}
 
-	// Stream
 	var param any
 	chunks := [][]byte{
 		[]byte(`data: {"event_type":"interaction.created","interaction":{"id":"i1","model":"devin/swe-2"}}`),
@@ -403,7 +390,7 @@ func TestConvertInteractionsResponseToClaude_PreservesCacheReadUsage(t *testing.
 	})
 
 	t.Run("explicit_uncached_with_cache_write_in_total", func(t *testing.T) {
-		// Total input (10436) = uncached (71) + read (10340) + write (25)
+
 		raw := []byte(`{"id":"i5","model":"devin/swe-2","status":"completed","steps":[{"type":"model_output","content":[{"type":"text","text":"response text"}]}],"usage":{"input_tokens":71,"total_input_tokens":10436,"total_output_tokens":76,"cache_read_input_tokens":10340,"cache_creation_input_tokens":25,"total_tokens":10512}}`)
 		out := ConvertInteractionsResponseToClaudeNonStream(context.Background(), "devin/swe-2", nil, nil, raw, nil)
 		usage := ojson.GetBytesNoCopy(out, "usage")

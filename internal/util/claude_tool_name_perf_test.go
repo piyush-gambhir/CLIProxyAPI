@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-// The legacy mapper is kept as a differential oracle for collision semantics.
 func TestUnambiguousClaudeToolNames(t *testing.T) {
 	requests := []string{
 		``, `{`, `null`, `{"tools":null}`, `{"tools":{}}`,

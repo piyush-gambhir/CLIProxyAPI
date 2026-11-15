@@ -92,8 +92,6 @@ func BenchmarkNormalizeCodexToolSchemas(b *testing.B) {
 	}
 }
 
-// Frozen pre-batching traversal: compare exact bytes and benchmark the same
-// input before/after without changing the schema normalization policy.
 func codexSequentialToolSchemas(body []byte) []byte {
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	if !tools.IsArray() {

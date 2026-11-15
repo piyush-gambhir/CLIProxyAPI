@@ -55,10 +55,9 @@ type codexWebsocketSession struct {
 	reqMu sync.Mutex
 
 	connMu sync.Mutex
-	// recoverTransport (under connMu): the current turn belongs to a downstream websocket,
-	// so a transport loss ends the turn but not the downstream socket.
+
 	recoverTransport          bool
-	turnContext               context.Context // attempt context of the current downstream turn
+	turnContext               context.Context
 	conn                      *websocket.Conn
 	connCloser                *websocketConnectionCloser
 	wsURL                     string
@@ -84,14 +83,7 @@ type codexWebsocketSession struct {
 
 	responseStateConn   *websocket.Conn
 	terminalResponseIDs map[string]struct{}
-	// activeResponseID is the newest response known to run, or to have run,
-	// on responseStateConn. The read loop sets it on response.created and on
-	// the terminal event of that same response, before the payload is
-	// delivered downstream. activeResponseTerminal then tells an interrupt
-	// snapshot that the turn already ended even while its read channel is
-	// still awaiting teardown. A duplex socket may also reject a queued
-	// create while another response runs; only the matching id ends the
-	// active response. An empty id means no response.created was seen yet.
+
 	activeResponseID       string
 	activeResponseTerminal bool
 
@@ -296,7 +288,6 @@ func (s *codexWebsocketSession) isMultiAgentV2Optimized(conn *websocket.Conn) bo
 	return s.conn == conn && s.multiAgentV2OptimizedConn == conn
 }
 
-// sendTerminalWebsocketRead reports whether it invalidated a full channel's connection before waiting.
 func sendTerminalWebsocketRead(ch chan<- codexWebsocketRead, done <-chan struct{}, event codexWebsocketRead, invalidate func()) bool {
 	select {
 	case ch <- event:
@@ -332,8 +323,7 @@ func (s *codexWebsocketSession) configureConn(conn *websocket.Conn) {
 		log.Debugf("codex websockets: upstream ping received session=%s session_object=%s ping_bytes=%d", sessionID, sessionKind, len(appData))
 		log.Debugf("codex websockets: upstream pong write started session=%s session_object=%s", sessionID, sessionKind)
 		start := time.Now()
-		// Gorilla websocket allows concurrent WriteControl with WriteMessage.
-		// Avoid writeMu here so keepalive pongs are not starved by long payload writes.
+
 		errPong := conn.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(10*time.Second))
 		if errPong != nil {
 			log.Warnf("codex websockets: upstream pong write failed session=%s session_object=%s duration=%v err=%v", sessionID, sessionKind, time.Since(start), errPong)
@@ -636,7 +626,7 @@ func (s *codexWebsocketSession) notifyUpstreamDisconnect(err error) {
 		return
 	}
 	if cliproxyexecutor.IsUpstreamWebsocketTurnError(err) {
-		// The active turn reports it; an idle loss ends no turn and keeps the downstream socket.
+
 		return
 	}
 	s.upstreamDisconnectOnce.Do(func() {
@@ -806,8 +796,7 @@ func (e *CodexWebsocketsExecutor) readUpstreamLoop(sess *codexWebsocketSession, 
 			}
 			invalidated := false
 			if cliproxyexecutor.IsUpstreamWebsocketTurnError(errRead) {
-				// Drop the dead connection before the turn error is visible, so the next
-				// create reconnects instead of writing to it.
+
 				invalidate()
 				invalidated = true
 			}
@@ -853,19 +842,7 @@ func (e *CodexWebsocketsExecutor) readUpstreamLoop(sess *codexWebsocketSession, 
 			if eventType != "" {
 				sess.setLastEventType(conn, eventType)
 			}
-			// Track the running response before delivery: downstream may
-			// still be processing this turn after its active read channel is
-			// cleared, and interrupts arriving after the completion must not
-			// forward while teardown is still pending. Terminal events only
-			// end their own response; a duplex socket can reject a queued
-			// create while another response is still running.
-			//
-			// Failure events (error, response.failed) use the duplex
-			// attribution shapes: an explicit response id (response.id or
-			// top-level response_id) ends only that response, while an
-			// id-less failure ends the running one. Success terminals only
-			// carry response.id, and one without an id is left unattributed,
-			// as before.
+
 			responseID := strings.Clone(ojson.GetBytesNoCopy(payload, "response.id").String())
 			if eventType == "response.created" {
 				if responseID != "" {
@@ -886,12 +863,11 @@ func (e *CodexWebsocketsExecutor) readUpstreamLoop(sess *codexWebsocketSession, 
 					if sess.responseStateConn == conn {
 						terminalID := responseID
 						if terminalID == "" {
-							// Id-less failure: the running response ended.
+
 							terminalID = sess.activeResponseID
 						}
 						if terminalID != "" && eventType != "error" {
-							// Match the pre-existing terminal-ID recording,
-							// which never covered error events.
+
 							sess.terminalResponseIDs[terminalID] = struct{}{}
 						}
 						if terminalID != "" && sess.activeResponseID == terminalID {
@@ -967,7 +943,7 @@ func (e *CodexWebsocketsExecutor) invalidateUpstreamConnWithNotify(sess *codexWe
 	}
 	if lifecycle != nil {
 		if owner, ok := lifecycle.(interface{ EndWebsocketTurn(context.Context, string) }); ok && cliproxyexecutor.IsUpstreamWebsocketTurnError(err) {
-			// The lost turn's attempt must survive to deliver its error to the client.
+
 			owner.EndWebsocketTurn(turnContext, reason)
 		} else {
 			lifecycle.End(reason)
@@ -1158,8 +1134,6 @@ func logCodexWebsocketDisconnectedWithLastEvent(sess *codexWebsocketSession, ses
 	log.Infof("codex websockets: upstream disconnected session=%s auth=%s url=%s session_object=%s reason=%s is_terminal=false", sessionStr, strings.TrimSpace(authID), strings.TrimSpace(wsURL), sessionKind, strings.TrimSpace(reason))
 }
 
-// CloseCodexWebsocketSessionsForAuthID closes all active Codex upstream websocket sessions
-// associated with the supplied auth ID.
 func CloseCodexWebsocketSessionsForAuthID(authID string, reason string) {
 	closeCodexWebsocketSessionsInStoreForAuthID(globalCodexWebsocketSessionStore, authID, reason)
 }

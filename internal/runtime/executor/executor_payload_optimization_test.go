@@ -501,7 +501,7 @@ func TestClaudeCacheControlDocChecksDoNotMaterializeLargeMessagesArray(t *testin
 		raw := []byte(b.String())
 
 		doc := ojson.NewDoc(raw)
-		// Mutate messages.0 so "messages" splits into an ojson container (v.c != nil).
+
 		_ = doc.Set("messages.0.content.0.text", "short")
 
 		var mBefore, mAfter runtime.MemStats
@@ -548,7 +548,7 @@ func TestClaudeCacheControlDocChecksDoNotMaterializeLargeMessagesArray(t *testin
 		raw := []byte(b.String())
 
 		doc := ojson.NewDoc(raw)
-		// Mutate only "model" so "messages" remains unsplit in root tail.
+
 		_ = doc.Set("model", "claude-sonnet-4-5-20250929")
 
 		var mBefore, mAfter runtime.MemStats
@@ -680,7 +680,6 @@ func TestNormalizeXAIImageRefsDocAvoidsLargePayloadCopy(t *testing.T) {
 	raw := []byte(`{"model":"grok-imagine-image","prompt":"` + largePrompt + `","image":{"image_url":"https://example.com/a.png"}}`)
 	doc := ojson.NewDoc(raw)
 
-	// Warm up ojson WriteTo buffer pool before measuring allocations.
 	warmDoc := ojson.NewDoc([]byte(`{"model":"grok-imagine-image","image":{"image_url":"https://example.com/w.png"}}`))
 	normalizeXAIImageRefsDoc(warmDoc)
 

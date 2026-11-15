@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// This test changes the process-wide generation and must not run in parallel.
 func TestProxyPoolGenerationRejectsOldSnapshotAfterReload(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -28,7 +27,7 @@ func TestProxyPoolGenerationRejectsOldSnapshotAfterReload(t *testing.T) {
 	if proxyTransportCache.Len() != 0 {
 		t.Fatal("reload did not retire the publisher's pools")
 	}
-	// A request captured the old snapshot before reload and resumes only after it.
+
 	resume := make(chan struct{})
 	result := make(chan *http.Transport, 1)
 	go func() {
@@ -58,11 +57,6 @@ func TestProxyPoolGenerationRejectsOldSnapshotAfterReload(t *testing.T) {
 	}
 }
 
-// TestProxyPoolFenceIsPerPublisher pins the isolation requirement: a reload or a new
-// runtime in one publisher must never retire the snapshots another publisher is still
-// serving. A shared counter used to fence every runtime in the process, so building a
-// second SDK service silently turned the first service's pooling into a fresh
-// transport per request.
 func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -80,7 +74,6 @@ func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 		t.Fatal("first publisher did not pool")
 	}
 
-	// Publishing in another runtime must not retire or purge the first runtime's pool.
 	secondCfg := &config.Config{}
 	AdvanceProxyPoolGeneration(secondPublisher, secondCfg)
 	if got := pooledProxyTransport("direct", firstCfg, auth); got != firstTransport {
@@ -90,13 +83,11 @@ func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 		t.Fatalf("cache holds %d pools, want the first publisher's pool only", got)
 	}
 
-	// Publishers keep separate pools even for the same credential and proxy.
 	secondTransport := pooledProxyTransport("direct", secondCfg, auth)
 	if secondTransport == nil || secondTransport == firstTransport {
 		t.Fatal("publishers share one pool")
 	}
 
-	// A reload inside the first publisher still retires the first publisher's pool.
 	nextFirst := firstCfg.CloneForRuntime()
 	AdvanceProxyPoolGeneration(firstPublisher, nextFirst)
 	if pooledProxyTransport("direct", firstCfg, auth) == firstTransport {
@@ -105,22 +96,16 @@ func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 	if got := pooledProxyTransport("direct", nextFirst, auth); got == firstTransport {
 		t.Fatal("reload of the same publisher reused the retired transport")
 	}
-	// ... while the second publisher's pool survives it.
+
 	if got := pooledProxyTransport("direct", secondCfg, auth); got != secondTransport {
 		t.Fatal("reload of one publisher retired another publisher's pool")
 	}
 }
 
-// TestProxyPoolUnfencedSnapshotStillPools covers configs that never passed through the
-// SDK generation fence: generation 0 cannot be stale, so pooling must stay on even after
-// the process-wide generation has advanced. Regression for callers that build their own
-// config.Config (direct api usage, helper probes) and would otherwise lose pooling
-// silently once any SDK service published a config.
 func TestProxyPoolUnfencedSnapshotStillPools(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
 
-	// Publish a config so the process-wide generation moves past zero.
 	AdvanceProxyPoolGeneration(RegisterProxyPoolPublisher(), &config.Config{})
 
 	plain := &config.Config{}
@@ -136,7 +121,6 @@ func TestProxyPoolUnfencedSnapshotStillPools(t *testing.T) {
 		t.Fatal("unfenced snapshot did not reuse its pool")
 	}
 
-	// A snapshot carrying a retired generation is still fenced out.
 	retired := &config.Config{ProxyPoolPublisher: plain.ProxyPoolPublisher}
 	proxyPoolFence.RLock()
 	retired.ProxyPoolGeneration = proxyPoolFence.current[retired.ProxyPoolPublisher] + 1

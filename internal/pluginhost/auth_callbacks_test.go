@@ -1003,7 +1003,6 @@ func TestHostAuthModelsCallbackReturnsAllCredentialsIncludingConfigBacked(t *tes
 	host.runtimeConfig = &config.Config{AuthDir: authDir}
 	host.SetAuthManager(manager)
 
-	// Verify all credentials (including config-backed API key) are returned when AuthIndex is empty.
 	rawAll, errCallAll := host.callFromPlugin(context.Background(), pluginabi.MethodHostAuthModels, nil)
 	if errCallAll != nil {
 		t.Fatalf("callFromPlugin(host.auth.models, nil) error = %v", errCallAll)
@@ -1045,7 +1044,6 @@ func TestHostAuthModelsCallbackReturnsAllCredentialsIncludingConfigBacked(t *tes
 		t.Fatalf("runtime credential = %#v, want index=%q provider=aistudio non-nil empty models", gotRuntime, runtimeAuth.Index)
 	}
 
-	// Verify filtering by AuthIndex for a config-backed credential.
 	reqFiltered, errMarshal := json.Marshal(pluginapi.HostAuthModelsRequest{AuthIndex: configAuth.Index})
 	if errMarshal != nil {
 		t.Fatalf("marshal filter request: %v", errMarshal)
@@ -1062,7 +1060,6 @@ func TestHostAuthModelsCallbackReturnsAllCredentialsIncludingConfigBacked(t *tes
 		t.Fatalf("filtered credentials = %#v, want single entry for %q", respFiltered.Credentials, configAuth.ID)
 	}
 
-	// Verify host.auth.models is callable from response.intercept_after via rpcPluginAdapter.InterceptResponse.
 	loader := newTestSymbolLoader()
 	loader.lookups["catalog-filter"] = newTestSymbolLookup(&testPlugin{
 		registerResult: pluginapi.Plugin{

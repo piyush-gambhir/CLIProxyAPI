@@ -618,7 +618,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 		}
 	}
 
-	// 1. Initial response.create
 	turn1 := `{"type":"response.create","model":"` + modelName + `","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn1)); err != nil {
 		t.Fatal(err)
@@ -630,7 +629,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 	}
 	assertRewrittenUpstreamFrame("initial response.create")
 
-	// 2. Subsequent response.create over the same duplex WebSocket
 	turn2 := `{"type":"response.create","model":"` + modelName + `","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn2)); err != nil {
 		t.Fatal(err)
@@ -642,7 +640,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 	}
 	assertRewrittenUpstreamFrame("subsequent response.create")
 
-	// 3. Subsequent response.append over the same duplex WebSocket
 	turn3 := `{"type":"response.append","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn3)); err != nil {
 		t.Fatal(err)
@@ -654,7 +651,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 	}
 	assertRewrittenUpstreamFrame("subsequent response.append")
 
-	// 4. Subsequent response.steer over the same duplex WebSocket
 	turn4 := `{"type":"response.steer","input":[{"role":"user","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn4)); err != nil {
 		t.Fatal(err)

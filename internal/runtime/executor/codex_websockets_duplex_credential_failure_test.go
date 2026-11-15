@@ -67,7 +67,7 @@ func TestCodexDuplexLaterCredentialFailure(t *testing.T) {
 						} else {
 							write(fmt.Sprintf(`{"type":"response.failed","response":{"id":"started","error":%s}}`, errorBody))
 						}
-						// The proxy must terminate this still-open socket on its own.
+
 						_, _, _ = c.ReadMessage()
 					}))
 					defer upstream.Close()

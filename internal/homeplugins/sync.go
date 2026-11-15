@@ -85,7 +85,6 @@ const (
 	pluginLoadStatusFailed       = "failed"
 )
 
-// CurrentPlatform reports the platform used by pluginhost discovery.
 func CurrentPlatform() Platform {
 	return Platform{
 		GOOS:   runtime.GOOS,
@@ -730,7 +729,6 @@ func newSyncReport(platform Platform) SyncReport {
 	}
 }
 
-// CompletedSyncReport builds a completed report for outcomes before plugin installation starts.
 func CompletedSyncReport(platform Platform, errSync error) SyncReport {
 	report := newSyncReport(platform)
 	finishReport(&report, errSync)

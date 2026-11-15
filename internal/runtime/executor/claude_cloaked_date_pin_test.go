@@ -24,8 +24,6 @@ import (
 
 var claudeDateReminderPattern = regexp.MustCompile(`Today's date is (\d{4}-\d{2}-\d{2})`)
 
-// extractClaudeCloakDate pulls the calendar date out of the currentDate
-// reminder injected into the first user message of a cloaked payload.
 func extractClaudeCloakDate(t *testing.T, payload []byte) string {
 	t.Helper()
 	content := ojson.GetBytes(payload, "messages.0.content")
@@ -42,11 +40,6 @@ func extractClaudeCloakDate(t *testing.T, payload []byte) string {
 	return ""
 }
 
-// TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight verifies that the
-// cloaked currentDate reminder stays identical for one session even when the
-// local calendar date flips between two requests. Rewriting the date on every
-// request would invalidate the prompt-cache prefix in front of the entire
-// conversation, including in-flight turns.
 func TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight(t *testing.T) {
 	helps.ResetClaudeDiagnosticsForTest()
 	t.Cleanup(helps.ResetClaudeDiagnosticsForTest)
@@ -72,9 +65,6 @@ func TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight(t *testing.T) {
 		t.Fatalf("first request date = %q, want pinned anchor %q", date1, cCtx1.PinnedDate)
 	}
 
-	// Second request after local midnight: the per-request candidate would be
-	// the flipped date, but the session pin must win. Compute the next calendar day
-	// dynamically from the pinned anchor date rather than hardcoding.
 	parsedAnchor, errParse := time.Parse("2006-01-02", cCtx1.PinnedDate)
 	if errParse != nil {
 		t.Fatalf("parse anchor date: %v", errParse)
@@ -106,17 +96,12 @@ func TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight(t *testing.T) {
 	}
 }
 
-// roundTripperFunc mirrors the helper used by the cache repro tests.
 type datePinRoundTripperFunc func(req *http.Request) (*http.Response, error)
 
 func (f datePinRoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-// TestClaudeCloakedDateReminderSessionByteStability locks the executor-level
-// behaviour: two requests of the same pinned session produce an identical
-// messages[0] (which carries the currentDate reminder) even across simulated
-// local midnight, and a fresh session re-anchors to the new date.
 func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 	helps.ResetClaudeDiagnosticsForTest()
 	t.Cleanup(helps.ResetClaudeDiagnosticsForTest)
@@ -178,7 +163,6 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		Headers:      http.Header{"X-Session-ID": []string{"date-pin-session-1"}},
 	}
 
-	// Request 1: before midnight
 	mockTime = time.Date(2026, 8, 1, 23, 59, 0, 0, time.UTC)
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", http.RoundTripper(transport))
 	req := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(payload)}
@@ -186,13 +170,11 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		t.Fatalf("request 1 failed: %v", err)
 	}
 
-	// Request 2: after midnight in the same session
 	mockTime = time.Date(2026, 8, 2, 0, 1, 0, 0, time.UTC)
 	if _, err := exec.Execute(ctx, auth, req, options); err != nil {
 		t.Fatalf("request 2 failed: %v", err)
 	}
 
-	// Request 2b: after midnight in the same session via ExecuteStream
 	if _, err := exec.ExecuteStream(ctx, auth, req, options); err != nil {
 		t.Fatalf("request 2b (stream) failed: %v", err)
 	}
@@ -221,7 +203,6 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		t.Fatalf("stream session date across midnight = %q, want pinned 2026-08-01", got)
 	}
 
-	// Request 3: a fresh session re-anchors to the new date
 	options.Headers = http.Header{"X-Session-ID": []string{"date-pin-session-2"}}
 	if _, err := exec.Execute(ctx, auth, req, options); err != nil {
 		t.Fatalf("fresh session request failed: %v", err)
@@ -234,7 +215,6 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 	}
 }
 
-// Explicit max_tokens overrides must not rerun the built-in probe date policy.
 func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t *testing.T) {
 	helps.ResetClaudeDiagnosticsForTest()
 	t.Cleanup(helps.ResetClaudeDiagnosticsForTest)
@@ -272,7 +252,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		}, nil
 	})
 
-	// Override max_tokens without reclassifying the original probe.
 	cfg := &config.Config{
 		Payload: config.PayloadConfig{
 			Override: []config.PayloadRule{
@@ -295,7 +274,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 	}
 	exec := NewClaudeExecutor(cfg)
 
-	// Normal request establishing the session on day 1
 	mockTime = time.Date(2026, 8, 1, 23, 59, 0, 0, time.UTC)
 	normalPayload := `{
 		"model": "claude-opus-5",
@@ -312,8 +290,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		t.Fatalf("request 1 failed: %v", err)
 	}
 
-	// Request 2: Across midnight, request initially has max_tokens: 1 and content: "probe",
-	// and PayloadOverride changes only the final max_tokens field.
 	mockTime = time.Date(2026, 8, 2, 0, 1, 0, 0, time.UTC)
 	probePayload := `{
 		"model": "claude-opus-5",
@@ -325,7 +301,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		t.Fatalf("request 2 (Execute) failed: %v", err)
 	}
 
-	// Request 3: Same thing for ExecuteStream
 	req3 := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(probePayload)}
 	if _, err := exec.ExecuteStream(ctx, auth, req3, options); err != nil {
 		t.Fatalf("request 3 (ExecuteStream) failed: %v", err)
@@ -335,7 +310,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		t.Fatalf("expected 3 captured bodies, got %d", len(capturedBodies))
 	}
 
-	// Payload does not reclassify probes or replay the prior session date.
 	if got := extractClaudeCloakDate(t, capturedBodies[1]); got != "2026-08-02" {
 		t.Fatalf("configured Execute request date = %q, want original probe date 2026-08-02", got)
 	}
@@ -351,7 +325,6 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 	}
 	helps.ResetClaudeDiagnosticsForTest()
 
-	// Cleanups run in LIFO order: close bbolt before TempDir removes its files.
 	dbPath := filepath.Join(t.TempDir(), "kv.db")
 	t.Cleanup(func() {
 		homekv.ClearCurrent()
@@ -398,8 +371,6 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 		}, nil
 	})
 
-	// Explicitly configure session-date-pin-days: 0 to verify KV mode ignores it
-	// and persists the session date pin permanently.
 	zero := 0
 	cfg := &config.Config{
 		Claude: config.ClaudeConfig{SessionDatePinDays: &zero},
@@ -439,14 +410,11 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", http.RoundTripper(transport))
 	req := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(payload)}
 
-	// 1. Send request 1 on day 1 (2026-08-01).
 	mockTime = time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
 	if _, err := exec1.Execute(ctx, authA, req, options); err != nil {
 		t.Fatalf("request 1 failed: %v", err)
 	}
 
-	// 2. Simulate a full CPA restart: close and reopen local bbolt at the same
-	// dbPath and wipe all in-memory continuity/date-pin state.
 	if errShutdown := kvstore.ShutdownLocal(); errShutdown != nil {
 		t.Fatalf("kvstore.ShutdownLocal() error = %v", errShutdown)
 	}
@@ -456,11 +424,8 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 	}
 	exec2 := NewClaudeExecutor(cfg)
 
-	// 3. Advance mockTime to 2026-09-15 (45 days later, well past the 7-day
-	// in-memory default and with session-date-pin-days: 0).
 	mockTime = time.Date(2026, 9, 15, 14, 30, 0, 0, time.UTC)
 
-	// 4. Send request 2 for the same session with a different credential.
 	if _, err := exec2.Execute(ctx, authB, req, options); err != nil {
 		t.Fatalf("request 2 after restart failed: %v", err)
 	}
@@ -485,9 +450,6 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 		t.Fatalf("session date after restart = %q, want anchored 2026-08-01", got)
 	}
 
-	// 5. Verify that a caller-supplied string-form currentDate reminder seeds the
-	// permanent KV anchor, strips the duplicate string reminder while preserving
-	// user text, and survives a restart + 45-day clock jump with session-date-pin-days: 0.
 	callerOptions := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatClaude,
 		Headers:      http.Header{"X-Session-ID": []string{"bbolt-restart-caller-session-2"}},

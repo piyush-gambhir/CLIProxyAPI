@@ -100,7 +100,6 @@ func testManagerSavedFieldsPublished(t *testing.T, saveErr error) {
 	}
 }
 
-// blockingEnrichingAuthStore pauses one save before enriching the auth.
 type blockingEnrichingAuthStore struct {
 	enrichingAuthStore
 	entered chan struct{}

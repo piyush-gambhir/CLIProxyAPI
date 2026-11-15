@@ -427,9 +427,7 @@ func executeOnce(opts runOptions) (pluginapi.HostModelExecutionResponse, error) 
 	if errBody != nil {
 		return pluginapi.HostModelExecutionResponse{}, errBody
 	}
-	// Forward HostCallbackID so the host skips this plugin's interceptors on the
-	// nested model execution. Host model callbacks do not recursively call the
-	// originating plugin's interceptor chain.
+
 	result, errCall := callHost(pluginabi.MethodHostModelExecute, hostModelExecutionRequest{
 		HostModelExecutionRequest: pluginapi.HostModelExecutionRequest{
 			EntryProtocol: opts.EntryProtocol,
@@ -459,9 +457,7 @@ func executeStream(opts runOptions) (data streamPageData) {
 		data.Error = errBody.Error()
 		return data
 	}
-	// Forward HostCallbackID so the host skips this plugin's interceptors on the
-	// nested model execution. Host model callbacks do not recursively call the
-	// originating plugin's interceptor chain.
+
 	result, errCall := callHost(pluginabi.MethodHostModelExecuteStream, hostModelExecutionRequest{
 		HostModelExecutionRequest: pluginapi.HostModelExecutionRequest{
 			EntryProtocol: opts.EntryProtocol,
@@ -492,7 +488,7 @@ func executeStream(opts runOptions) (data streamPageData) {
 		return data
 	}
 	if opts.ImplicitClose {
-		// When implicit_close=true, the host closes this stream when the management.handle RPC callback scope returns.
+
 		data.CloseMode = "implicit close at management.handle return"
 	} else {
 		data.CloseMode = "explicit close through host.model.stream_close"

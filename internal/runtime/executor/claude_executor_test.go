@@ -153,10 +153,6 @@ func assertClaudeCredentialIdentity(t *testing.T, body []byte, headers http.Head
 	}
 }
 
-// assertClaudeCountTokensIdentity pins the count_tokens shape captured from real
-// Claude Code 2.1.220: the endpoint carries no metadata whatsoever. Anthropic
-// rejects the field there with "metadata: Extra inputs are not permitted", so the
-// credential identity travels only on the header and on the Messages endpoint.
 func assertClaudeCountTokensIdentity(t *testing.T, body []byte, headers http.Header) {
 	t.Helper()
 	if got := ojson.GetBytes(body, "metadata"); got.Exists() {
@@ -753,7 +749,7 @@ func TestApplyClaudeHeaders_EmptyAPIKey_OmitsAuthHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewRequest() error = %v", err)
 	}
-	// Preset preexisting client headers to ensure they get stripped for empty API key
+
 	req.Header.Set("Authorization", "Bearer preexisting-bearer")
 	req.Header.Set("x-api-key", "preexisting-key")
 
@@ -770,7 +766,6 @@ func TestApplyClaudeHeaders_EmptyAPIKey_OmitsAuthHeaders(t *testing.T) {
 		t.Fatalf("Custom-Token = %q, want custom-secret", got)
 	}
 
-	// Also verify PrepareRequest
 	req2, _ := http.NewRequest(http.MethodPost, "https://custom-claude.example.com/v1/messages", nil)
 	req2.Header.Set("Authorization", "Bearer preexisting-bearer")
 	req2.Header.Set("x-api-key", "preexisting-key")
@@ -837,9 +832,7 @@ func TestClaudeExecutor_NonClaudeRequestUsesClaudeCode220CLIFingerprint(t *testi
 	if got := system[1].Get("cache_control.type").String(); got != "ephemeral" {
 		t.Fatalf("system[1].cache_control.type = %q, want ephemeral", got)
 	}
-	// This credential is an API key, and native only selects the 1h cache pool for
-	// OAuth. The body ttl therefore has to stay absent, matching the fact that
-	// claudeCodeCLIBetas does not emit extended-cache-ttl-2025-04-11 here either.
+
 	if system[1].Get("cache_control.ttl").Exists() {
 		t.Fatalf("API-key request must not carry a 1h body ttl: %s", system[1].Raw)
 	}
@@ -1631,8 +1624,7 @@ func TestApplyClaudeToolPrefix_WithToolReference(t *testing.T) {
 }
 
 func TestSanitizeClaudeWebSearchDomains(t *testing.T) {
-	// Mirrors the litellm payload from issue #2681: a non-empty allowed_domains
-	// alongside an empty blocked_domains, which Anthropic rejects as ambiguous.
+
 	input := []byte(`{"tools":[{"type":"web_search_20250305","name":"web_search","allowed_domains":["anthropic.com"],"blocked_domains":[],"max_uses":8}]}`)
 	out := sanitizeClaudeWebSearchDomains(input)
 
@@ -1648,7 +1640,7 @@ func TestSanitizeClaudeWebSearchDomains(t *testing.T) {
 }
 
 func TestSanitizeClaudeWebSearchDomains_LeavesNonBuiltinAndNonEmpty(t *testing.T) {
-	// Empty arrays on non-web_search tools must be left untouched.
+
 	input := []byte(`{"tools":[{"type":"custom","name":"x","blocked_domains":[]},{"type":"web_search_20250305","name":"web_search","blocked_domains":["evil.com"]}]}`)
 	out := sanitizeClaudeWebSearchDomains(input)
 
@@ -2485,10 +2477,6 @@ func TestClaudeExecutor_ExecuteStreamOpenAIResponseTranslatesCacheAndTrailingUsa
 	}
 }
 
-// TestClaudeExecutor_ExecuteStreamDecodesCompressedSSE guards the dependency that
-// lets CPA advertise the real client's Accept-Encoding on streaming requests:
-// once compression is offered the upstream may compress the SSE body, so the
-// streaming success path must decode it and still emit event boundaries intact.
 func TestClaudeExecutor_ExecuteStreamDecodesCompressedSSE(t *testing.T) {
 	firstData := `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hi"}}`
 	secondData := `{"type":"message_stop"}`
@@ -2834,10 +2822,6 @@ func TestClaudeExecutor_CountTokensCloakMatchesMeasuredDirectAnthropicShape(t *t
 	}
 }
 
-// TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates asserts
-// that a cloaked direct-Anthropic count_tokens request keeps Claude Code's
-// measured shape (no system field) while still accounting for the caller's
-// system prompt and honouring sensitive-word obfuscation.
 func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *testing.T) {
 	const callerSystem = "third party ACMECORP orchestrator rules"
 	const sensitiveWord = "ACMECORP"
@@ -2884,12 +2868,10 @@ func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *te
 				t.Fatalf("countTokensUpstream() error = %v", errCount)
 			}
 
-			// Claude Code's count_tokens never carries a system field.
 			if got := ojson.GetBytes(upstreamBody, "system"); got.Exists() {
 				t.Fatalf("cloaked count system = %s, want absent", got.Raw)
 			}
-			// The caller's system prompt must still be counted, relocated into messages.
-			// Compare decoded text so JSON escaping does not affect the assertions.
+
 			var decodedTexts []string
 			sawSystemRole := false
 			ojson.GetBytes(upstreamBody, "messages").ForEach(func(_, message ojson.Result) bool {
@@ -2913,7 +2895,7 @@ func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *te
 			} else if !strings.Contains(joinedTexts, "<system-reminder>") {
 				t.Fatalf("expected a legacy system reminder, got %s", upstreamBody)
 			}
-			// Sensitive words must not reach Anthropic verbatim on this endpoint either.
+
 			if strings.Contains(joinedTexts, sensitiveWord) {
 				t.Fatalf("sensitive word %q leaked to count_tokens: %s", sensitiveWord, upstreamBody)
 			}
@@ -2921,9 +2903,6 @@ func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *te
 	}
 }
 
-// TestClaudeExecutor_CountTokensCloakStrictModeDropsCallerSystem mirrors the
-// Messages path: strict mode keeps only Claude Code identity, so a caller's
-// system prompt must not be reintroduced into the counted body.
 func TestClaudeExecutor_CountTokensCloakStrictModeDropsCallerSystem(t *testing.T) {
 	var upstreamBody []byte
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -3448,7 +3427,7 @@ func TestStripClaudeToolPrefixFromResponse_NestedToolReference(t *testing.T) {
 }
 
 func TestApplyClaudeToolPrefix_NestedToolReferenceWithStringContent(t *testing.T) {
-	// tool_result.content can be a string - should not be processed
+
 	input := []byte(`{"messages":[{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_123","content":"plain string result"}]}]}`)
 	out := applyClaudeToolPrefix(input, "proxy_")
 	got := ojson.GetBytes(out, "messages.0.content.0.content").String()
@@ -3484,9 +3463,7 @@ func TestNormalizeCacheControlTTL_DowngradesLaterOneHourBlocks(t *testing.T) {
 }
 
 func TestNormalizeCacheControlTTL_PreservesOriginalBytesWhenNoChange(t *testing.T) {
-	// Payload where no TTL normalization is needed (all blocks use 1h with no
-	// preceding 5m block). The text intentionally contains HTML chars (<, >, &)
-	// that json.Marshal would escape to \u003c etc., altering byte identity.
+
 	payload := []byte(`{"tools":[{"name":"t1","cache_control":{"type":"ephemeral","ttl":"1h"}}],"system":[{"type":"text","text":"<system-reminder>foo & bar</system-reminder>","cache_control":{"type":"ephemeral","ttl":"1h"}}],"messages":[{"role":"user","content":[{"type":"text","text":"hello"}]}]}`)
 
 	out := normalizeCacheControlTTL(payload)
@@ -3618,7 +3595,7 @@ func TestEnforceCacheControlLimit_ToolOnlyPayloadStillRespectsLimit(t *testing.T
 }
 
 func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
-	// 1 real cache_control followed by 5 "cache_control": null blocks.
+
 	payload := []byte(`{
 		"messages": [
 			{
@@ -3635,12 +3612,10 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		]
 	}`)
 
-	// countCacheControls must count only valid breakpoints, ignoring null.
 	if got := countCacheControls(payload); got != 1 {
 		t.Fatalf("countCacheControls = %d, want 1 (null cache_control must not be counted)", got)
 	}
 
-	// enforceCacheControlLimit must not strip the real cache breakpoint when nulls are present.
 	out := enforceCacheControlLimit(payload, 4)
 	if got := countCacheControls(out); got != 1 {
 		t.Fatalf("countCacheControls after enforce = %d, want 1", got)
@@ -3652,7 +3627,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		t.Fatalf("messages.0.content.0.cache_control.type = %q, want ephemeral", ojson.GetBytes(out, "messages.0.content.0.cache_control.type").String())
 	}
 
-	// Auto-injection must not be suppressed by "cache_control": null in system or tools.
 	toolsPayload := []byte(`{
 		"tools": [{"name": "tool1", "description": "desc", "cache_control": null}]
 	}`)
@@ -3679,7 +3653,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		t.Fatalf("injectMessagesCacheControl should inject cache_control when existing value is null, got %q", got)
 	}
 
-	// enforceCacheControlLimit stripping loop when total real marks > 4 and nulls are present.
 	excessWithNullPayload := []byte(`{
 		"tools": [
 			{"name": "t1", "cache_control": {"type": "ephemeral"}},
@@ -3701,8 +3674,7 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 			}
 		]
 	}`)
-	// Total real marks = 2 tools + 1 system + 2 messages = 5 real marks (and 3 nulls).
-	// Limit 4 means 1 real mark should be stripped (specifically t1, non-last tool).
+
 	outExcess := enforceCacheControlLimit(excessWithNullPayload, 4)
 	if got := countCacheControls(outExcess); got != 4 {
 		t.Fatalf("countCacheControls after enforce with excess = %d, want 4", got)
@@ -3714,7 +3686,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		t.Fatalf("last tool cache_control should be preserved")
 	}
 
-	// normalizeCacheControlTTL must not treat "cache_control": null as a 5m breakpoint that downgrades 1h TTL.
 	mixedTTLPayload := []byte(`{
 		"system": [
 			{"type": "text", "text": "sys0", "cache_control": null},
@@ -3914,9 +3885,6 @@ func TestEnsureModelMaxTokens_SkipsUnregisteredModel(t *testing.T) {
 	}
 }
 
-// TestClaudeExecutor_ExecuteStream_SetsIdentityAcceptEncoding verifies that streaming
-// requests use Accept-Encoding: identity so the upstream cannot respond with a
-// compressed SSE body that would silently break the line scanner.
 func TestClaudeExecutor_ExecuteStream_SetsIdentityAcceptEncoding(t *testing.T) {
 	var gotEncoding, gotAccept string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3957,9 +3925,6 @@ func TestClaudeExecutor_ExecuteStream_SetsIdentityAcceptEncoding(t *testing.T) {
 	}
 }
 
-// TestClaudeExecutor_Execute_SetsCompressedAcceptEncoding verifies that non-streaming
-// requests keep the full accept-encoding to allow response compression (which
-// decodeResponseBody handles correctly).
 func TestClaudeExecutor_Execute_SetsCompressedAcceptEncoding(t *testing.T) {
 	var gotEncoding, gotAccept string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3995,9 +3960,6 @@ func TestClaudeExecutor_Execute_SetsCompressedAcceptEncoding(t *testing.T) {
 	}
 }
 
-// TestClaudeExecutor_ExecuteStream_GzipSuccessBodyDecoded verifies that a streaming
-// HTTP 200 response with Content-Encoding: gzip is correctly decompressed before
-// the line scanner runs, so SSE chunks are not silently dropped.
 func TestClaudeExecutor_ExecuteStream_GzipSuccessBodyDecoded(t *testing.T) {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
@@ -4081,8 +4043,6 @@ func TestDecodeResponseBodyStackedRepeatedHeaders(t *testing.T) {
 	}
 }
 
-// TestDecodeResponseBody_MagicByteGzipNoHeader verifies that decodeResponseBody
-// detects gzip-compressed content via magic bytes even when Content-Encoding is absent.
 func TestDecodeResponseBody_MagicByteGzipNoHeader(t *testing.T) {
 	const plaintext = "data: {\"type\":\"message_stop\"}\n"
 
@@ -4107,8 +4067,6 @@ func TestDecodeResponseBody_MagicByteGzipNoHeader(t *testing.T) {
 	}
 }
 
-// TestDecodeResponseBody_MagicByteZstdNoHeader verifies that decodeResponseBody
-// detects zstd-compressed content via magic bytes even when Content-Encoding is absent.
 func TestDecodeResponseBody_MagicByteZstdNoHeader(t *testing.T) {
 	const plaintext = "data: {\"type\":\"message_stop\"}\n"
 
@@ -4136,8 +4094,6 @@ func TestDecodeResponseBody_MagicByteZstdNoHeader(t *testing.T) {
 	}
 }
 
-// TestDecodeResponseBody_PlainTextNoHeader verifies that decodeResponseBody returns
-// plain text untouched when Content-Encoding is absent and no magic bytes match.
 func TestDecodeResponseBody_PlainTextNoHeader(t *testing.T) {
 	const plaintext = "data: {\"type\":\"message_stop\"}\n"
 	rc := io.NopCloser(strings.NewReader(plaintext))
@@ -4156,10 +4112,6 @@ func TestDecodeResponseBody_PlainTextNoHeader(t *testing.T) {
 	}
 }
 
-// TestClaudeExecutor_ExecuteStream_GzipNoContentEncodingHeader verifies the full
-// pipeline: when the upstream returns a gzip-compressed SSE body WITHOUT setting
-// Content-Encoding (a misbehaving upstream), the magic-byte sniff in
-// decodeResponseBody still decompresses it, so chunks reach the caller.
 func TestClaudeExecutor_ExecuteStream_GzipNoContentEncodingHeader(t *testing.T) {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
@@ -4169,7 +4121,7 @@ func TestClaudeExecutor_ExecuteStream_GzipNoContentEncodingHeader(t *testing.T) 
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
-		// Intentionally omit Content-Encoding to simulate misbehaving upstream.
+
 		_, _ = w.Write(compressedBody)
 	}))
 	defer server.Close()
@@ -4207,10 +4159,6 @@ func TestClaudeExecutor_ExecuteStream_GzipNoContentEncodingHeader(t *testing.T) 
 	}
 }
 
-// TestClaudeExecutor_Execute_GzipErrorBodyNoContentEncodingHeader verifies that the
-// error path (4xx) correctly decompresses a gzip body even when the upstream omits
-// the Content-Encoding header.  This closes the gap left by PR #1771, which only
-// fixed header-declared compression on the error path.
 func TestClaudeExecutor_Execute_GzipErrorBodyNoContentEncodingHeader(t *testing.T) {
 	const errJSON = `{"type":"error","error":{"type":"invalid_request_error","message":"test error"}}`
 
@@ -4222,7 +4170,7 @@ func TestClaudeExecutor_Execute_GzipErrorBodyNoContentEncodingHeader(t *testing.
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		// Intentionally omit Content-Encoding to simulate misbehaving upstream.
+
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write(compressedBody)
 	}))
@@ -4249,9 +4197,6 @@ func TestClaudeExecutor_Execute_GzipErrorBodyNoContentEncodingHeader(t *testing.
 	}
 }
 
-// TestClaudeExecutor_ExecuteStream_GzipErrorBodyNoContentEncodingHeader verifies
-// the same for the streaming executor: 4xx gzip body without Content-Encoding is
-// decoded and the error message is readable.
 func TestClaudeExecutor_ExecuteStream_GzipErrorBodyNoContentEncodingHeader(t *testing.T) {
 	const errJSON = `{"type":"error","error":{"type":"invalid_request_error","message":"stream test error"}}`
 
@@ -4263,7 +4208,7 @@ func TestClaudeExecutor_ExecuteStream_GzipErrorBodyNoContentEncodingHeader(t *te
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		// Intentionally omit Content-Encoding to simulate misbehaving upstream.
+
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write(compressedBody)
 	}))
@@ -4290,8 +4235,6 @@ func TestClaudeExecutor_ExecuteStream_GzipErrorBodyNoContentEncodingHeader(t *te
 	}
 }
 
-// TestClaudeExecutor_ExecuteStream_AcceptEncodingOverrideCannotBypassIdentity verifies that the
-// streaming executor enforces Accept-Encoding: identity regardless of auth.Attributes override.
 func TestClaudeExecutor_ExecuteStream_AcceptEncodingOverrideCannotBypassIdentity(t *testing.T) {
 	var gotEncoding string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -4329,9 +4272,6 @@ func TestClaudeExecutor_ExecuteStream_AcceptEncodingOverrideCannotBypassIdentity
 	}
 }
 
-// assertClaudeMidConversationSystemMessage checks a forwarded caller system prompt.
-// wantTTL is "" for the native default marker and "1h" once
-// upgradeClaudeCacheControlTTL has run, which only happens for OAuth credentials.
 func assertClaudeMidConversationSystemMessage(t *testing.T, body []byte, messageIndex int, wantText, wantTTL string) {
 	t.Helper()
 	messagePath := fmt.Sprintf("messages.%d", messageIndex)
@@ -4393,9 +4333,6 @@ func assertClaudeCodeCurrentDateBlockAt(t *testing.T, block ojson.Result, now ti
 	}
 }
 
-// assertEphemeralUserTextBlock checks the cloaked first-user block. wantTTL is ""
-// for the native default marker and "1h" once upgradeClaudeCacheControlTTL has run,
-// which only happens for OAuth credentials.
 func assertEphemeralUserTextBlock(t *testing.T, block ojson.Result, wantText, wantTTL string) {
 	t.Helper()
 	if got := block.Get("type").String(); got != "text" {
@@ -4512,9 +4449,6 @@ func TestClaudeCallerCurrentDateSeedsOnlyFirstAnchor(t *testing.T) {
 		t.Fatalf("later caller date = %q, want established anchor 2026-08-01", got)
 	}
 
-	// The resolver refreshes the sliding retention on every hit: shrink the
-	// pin expiry to ~now+1s, resolve once, and prove the expiry grew back to
-	// the full retention. Without the refresh the timestamp stays shrunk.
 	nearExpiry := time.Second
 	helps.ExpireClaudeDiagnosticsForTest(true, &nearExpiry)
 	before := helps.ClaudeSessionDatePinExpiryForTest("caller-date-session")
@@ -4538,14 +4472,12 @@ func TestInjectClaudeCodeCurrentDateStripsCallerReminderFromStringContent(t *tes
 	if got := claudeCallerCurrentDateReminderDate(payload); got != "2026-08-01" {
 		t.Fatalf("string caller date = %q, want 2026-08-01", got)
 	}
-	// Default injection keeps caller text verbatim (duplicate reminders),
-	// matching the pre-retention behavior byte for byte.
+
 	legacy := injectClaudeCodeCurrentDate(payload, "2026-08-01")
 	if got := strings.Count(string(legacy), "Today's date is"); got != 2 {
 		t.Fatalf("legacy payload has %d date reminders, want 2: %s", got, legacy)
 	}
-	// Pre-stripping the caller reminder lets one injection leave a single
-	// canonical reminder plus the untouched user text.
+
 	stripped := injectClaudeCodeCurrentDate(stripFirstUserClaudeCodeCurrentDateReminder(payload), "2026-08-01")
 	if got := strings.Count(string(stripped), "Today's date is"); got != 1 {
 		t.Fatalf("stripped payload has %d date reminders, want 1: %s", got, stripped)
@@ -4553,7 +4485,7 @@ func TestInjectClaudeCodeCurrentDateStripsCallerReminderFromStringContent(t *tes
 	if got := ojson.GetBytes(stripped, "messages.0.content.1.text").String(); got != "hello" {
 		t.Fatalf("user text after strip = %q, want hello: %s", got, stripped)
 	}
-	// A caller reminder without the trailing blank lines is still stripped.
+
 	noTrailer := []byte(`{"messages":[{"role":"user","content":""}]}`)
 	noTrailer, _ = ojson.SetBytes(noTrailer, "messages.0.content", strings.TrimRight(claudeCodeCurrentDateReminder("2026-08-01"), "\n")+"hello")
 	strippedNoTrailer := injectClaudeCodeCurrentDate(stripFirstUserClaudeCodeCurrentDateReminder(noTrailer), "2026-08-01")
@@ -4686,8 +4618,6 @@ func TestInjectClaudeCodeCurrentDateFollowsAllLeadingToolResults(t *testing.T) {
 	assertClaudeCodeCurrentDateBlockAt(t, content[2], fixed)
 }
 
-// Test case 1: String system prompt becomes an authoritative mid-conversation
-// system message after the first user turn.
 func TestCheckSystemInstructionsWithMode_StringSystemPreserved(t *testing.T) {
 	payload := []byte(`{"model":"claude-opus-5","system":"You are a helpful assistant.","messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"},{"role":"user","content":"follow-up"}]}`)
 
@@ -4809,7 +4739,6 @@ func TestCheckSystemInstructionsWithMode_LegacyModelKeepsSystemBlocksSeparate(t 
 	assertEphemeralUserTextBlock(t, content[3], "hi", "")
 }
 
-// Test case 2: Strict mode keeps only the injected Claude Code system blocks.
 func TestCheckSystemInstructionsWithMode_StringSystemStrict(t *testing.T) {
 	payload := []byte(`{"system":"You are a helpful assistant.","messages":[{"role":"user","content":"hi"}]}`)
 
@@ -4827,7 +4756,6 @@ func TestCheckSystemInstructionsWithMode_StringSystemStrict(t *testing.T) {
 	assertEphemeralUserTextBlock(t, content[1], "hi", "")
 }
 
-// Test case 3: Empty string system prompt adds only currentDate before user text.
 func TestCheckSystemInstructionsWithMode_EmptyStringSystemIgnored(t *testing.T) {
 	payload := []byte(`{"system":"","messages":[{"role":"user","content":"hi"}]}`)
 
@@ -4845,7 +4773,6 @@ func TestCheckSystemInstructionsWithMode_EmptyStringSystemIgnored(t *testing.T) 
 	assertEphemeralUserTextBlock(t, content[1], "hi", "")
 }
 
-// Test case 4: Array system prompt becomes one mid-conversation system message.
 func TestCheckSystemInstructionsWithMode_ArraySystemStillWorks(t *testing.T) {
 	payload := []byte(`{"model":"claude-opus-5","system":[{"type":"text","text":"Be concise."}],"messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"},{"role":"user","content":"follow-up"}]}`)
 
@@ -5109,8 +5036,6 @@ func TestCheckSystemInstructionsWithMode_AdvisorToolResultPreservesTopLevelSyste
 
 	out := checkSystemInstructionsWithMode(payload, false)
 
-	// Messages must NOT have mid-conversation role=system turns inserted,
-	// so the message count stays at 4 and roles remain intact.
 	if got := ojson.GetBytes(out, "messages.#").Int(); got != 4 {
 		t.Fatalf("messages count = %d, want 4 (no mid-conversation system splice): %s", got, out)
 	}
@@ -5122,7 +5047,6 @@ func TestCheckSystemInstructionsWithMode_AdvisorToolResultPreservesTopLevelSyste
 		}
 	}
 
-	// Top-level system must retain caller system blocks in addition to Claude Code identity blocks.
 	systemBlocks := ojson.GetBytes(out, "system").Array()
 	if len(systemBlocks) != 4 {
 		t.Fatalf("system blocks count = %d, want 4 (2 identity + 2 caller blocks): %s", len(systemBlocks), out)
@@ -5170,8 +5094,6 @@ func TestRelocateClaudeSystemPromptForCountTokens_AdvisorToolResultLeavesMessage
 
 	out := relocateClaudeSystemPromptForCountTokens(payload, false)
 
-	// Caller system blocks must be retained in top-level system so that
-	// their tokens are counted, without splicing them into messages[].
 	systemBlocks := ojson.GetBytes(out, "system").Array()
 	if len(systemBlocks) != 2 {
 		t.Fatalf("count_tokens system blocks count = %d, want 2: %s", len(systemBlocks), out)
@@ -5196,7 +5118,7 @@ func TestRelocateClaudeSystemPromptForCountTokens_AdvisorToolResultLeavesMessage
 }
 
 func TestCheckSystemInstructionsWithMode_UnicodeEscapedAdvisor(t *testing.T) {
-	// JSON with unicode-escaped "advisor" name: \u0061dvisor
+
 	payload := []byte(`{
 		"model": "claude-opus-5",
 		"system": [
@@ -5228,7 +5150,7 @@ func TestCheckSystemInstructionsWithMode_UnicodeEscapedAdvisor(t *testing.T) {
 }
 
 func TestCheckSystemInstructionsWithMode_StandaloneAdvisorCallWithoutResult(t *testing.T) {
-	// Assistant made an advisor call, but no result has arrived yet
+
 	payload := []byte(`{
 		"model": "claude-opus-5",
 		"system": [
@@ -5267,7 +5189,7 @@ func TestCheckSystemInstructionsWithMode_StandaloneAdvisorCallWithoutResult(t *t
 }
 
 func TestCheckSystemInstructionsWithMode_StandaloneAdvisorResultWithoutCall(t *testing.T) {
-	// User message has advisor_tool_result without preceding server_tool_use in the window
+
 	payload := []byte(`{
 		"model": "claude-opus-5",
 		"system": [
@@ -5330,7 +5252,6 @@ func TestCheckSystemInstructionsWithMode_NormalTextWithAdvisorWordDoesNotBypassM
 
 	out := checkSystemInstructionsWithMode(payload, false)
 
-	// Since there is no advisor tool invocation/result, normal mid-conversation system insertion occurs.
 	if got := ojson.GetBytes(out, "messages.#").Int(); got != 5 {
 		t.Fatalf("messages count = %d, want 5 (user + 2 system messages + assistant + user): %s", got, out)
 	}
@@ -5445,10 +5366,7 @@ func TestCheckSystemInstructionsWithMode_ToolResultWithAdvisorRedactedResult(t *
 }
 
 func TestCheckSystemInstructionsWithMode_ClientToolNamedAdvisorRelocatesSystemPrompt(t *testing.T) {
-	// A client tool (e.g. MCP tool) happens to be named "advisor".
-	// It uses ordinary "tool_use" (not "server_tool_use") and returns a string "tool_result".
-	// The caller's system prompt must be relocated to mid-conversation system messages,
-	// NOT hoisted into the top-level system array.
+
 	payload := []byte(`{
 		"model": "claude-opus-5",
 		"system": [
@@ -5477,8 +5395,6 @@ func TestCheckSystemInstructionsWithMode_ClientToolNamedAdvisorRelocatesSystemPr
 
 	out := checkSystemInstructionsWithMode(payload, false)
 
-	// Caller prompt must be relocated to a mid-conversation system message,
-	// so the top-level system must only have the 2 Claude Code cloak blocks.
 	systemBlocks := ojson.GetBytes(out, "system").Array()
 	if len(systemBlocks) != 2 {
 		t.Fatalf("system blocks count = %d, want 2 (caller prompt must be relocated, not hoisted): %s", len(systemBlocks), out)
@@ -5526,7 +5442,6 @@ func TestRelocateClaudeSystemPromptForCountTokens_ClientToolNamedAdvisorRelocate
 	assertClaudeMidConversationSystemMessage(t, out, 1, "caller guidance", "")
 }
 
-// Test case 5: Special characters survive the mid-conversation system move.
 func TestCheckSystemInstructionsWithMode_StringWithSpecialChars(t *testing.T) {
 	payload := []byte(`{"model":"claude-opus-5","system":"Use <xml> tags & \"quotes\" in output.","messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"},{"role":"user","content":"follow-up"}]}`)
 
@@ -5971,8 +5886,7 @@ func TestClaudeOAuthMetadataSensitiveWordsReplaceAndDisabledCloaking(t *testing.
 }
 
 func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
-	// Pure credential_options.cloak WITHOUT duplicate cloak_* attributes or top-level metadata,
-	// isolating resolveClaudeKeyCloakConfig's Home path directly.
+
 	optionsOnlyAuth := &cliproxyauth.Auth{
 		Provider: "claude",
 		Attributes: map[string]string{
@@ -5990,7 +5904,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 	}
 	payload := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"You are Codex, an agent based on GPT-5. Contact ACME, Inc. or Beta Inc."}]}]}`)
 
-	// 1. Omitted cloak.mode must respect shared DisableClaudeCloakMode=true.
 	cfgDisabled := &config.Config{
 		Home:                   config.HomeConfig{Enabled: true},
 		DisableClaudeCloakMode: true,
@@ -6003,8 +5916,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("expected didCloak=false when DisableClaudeCloakMode=true and cloak.mode is omitted, got body=%s", outDisabled)
 	}
 
-	// 2. When DisableClaudeCloakMode=false, credential_options.cloak alone enables cloaking
-	// and preserves comma-containing sensitive-words without splitting on ','.
 	cfgEnabled := &config.Config{
 		Home: config.HomeConfig{Enabled: true},
 	}
@@ -6022,8 +5933,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("rewritten text = %q, want %q", gotText, wantText)
 	}
 
-	// 3. Empty cloak block (cloak: {}) enables CLI cloaking when DisableClaudeCloakMode=false,
-	// and stays disabled when DisableClaudeCloakMode=true.
 	emptyCloakAuth := &cliproxyauth.Auth{
 		Provider:   "claude",
 		Attributes: map[string]string{"api_key": "sk-ant-empty-cloak", "auth_kind": cliproxyauth.AuthKindAPIKey},
@@ -6036,7 +5945,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("empty cloak block with DisableClaudeCloakMode=true: didCloak=%v, err=%v", didEmptyDisabled, errEmptyDis)
 	}
 
-	// 4. Explicit mode="always" in credential_options.cloak overrides DisableClaudeCloakMode=true.
 	explicitAlwaysAuth := &cliproxyauth.Auth{
 		Provider:   "claude",
 		Attributes: map[string]string{"api_key": "sk-ant-explicit-always", "auth_kind": cliproxyauth.AuthKindAPIKey},
@@ -6046,8 +5954,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("explicit mode=always failed to override DisableClaudeCloakMode=true: didCloak=%v, err=%v", didExplicit, errExplicit)
 	}
 
-	// 5. Standalone mode (Home.Enabled == false) ignores Home-only credential_options.cloak,
-	// while []string cloak_sensitive_words in OAuth metadata works concurrently under claudeDevicePoolMu.
 	_, didCloakStandalone, errStandalone := applyCloaking(context.Background(), &config.Config{}, explicitAlwaysAuth, payload, "sk-ant-explicit-always", false, false)
 	if errStandalone != nil || didCloakStandalone {
 		t.Fatalf("standalone mode consumed Home credential_options.cloak: didCloak=%v, err=%v", didCloakStandalone, errStandalone)
@@ -6069,8 +5975,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("unexpected []string sensitive-words obfuscation: %q", got)
 	}
 
-	// Concurrent metadata lock test across StoreDeviceIDPool, ReadMetadataHomeCloak,
-	// ReadMetadataStringSlice, and ReadMetadataStringMap.
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -6351,7 +6255,7 @@ func TestApplyCloaking_NativeClaudeCodeLeavesFableUntouched(t *testing.T) {
 		auth,
 		payload,
 		"sk-ant-oat-fable-test",
-		true, // confirmedClaudeCode = true
+		true,
 		true,
 	)
 	if err != nil {
@@ -6447,12 +6351,10 @@ func TestClaudeExecutor_TitleHelperWithSystemPromptIsolated(t *testing.T) {
 		t.Fatalf("Execute error: %v", err)
 	}
 
-	// Title helper must NOT carry diagnostics
 	if ojson.GetBytes(seenBody, "diagnostics").Exists() {
 		t.Fatalf("expected title helper to omit diagnostics, got: %s", ojson.GetBytes(seenBody, "diagnostics").Raw)
 	}
 
-	// Title helper must NOT advance session continuity state
 	credID := claudeDiagnosticsCredentialIdentity(auth)
 	_, _, prevMsg := helps.BeginClaudeDiagnostics(credID, "session-title-1")
 	if prevMsg != "" {
@@ -6488,7 +6390,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 
 	executor := NewClaudeExecutor(cfg)
 
-	// 1. Subagent request: carries X-Claude-Code-Agent-Id header
 	subagentPayload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"do task"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -6511,7 +6412,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 		}
 	}
 
-	// 2. Probe request: max_tokens: 1
 	probePayload := []byte(`{"model":"claude-sonnet-5","max_tokens":1,"messages":[{"role":"user","content":"probe"}]}`)
 	_, err = executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -6531,7 +6431,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 		}
 	}
 
-	// 3. Normal interactive main-thread request: MUST carry 1h cache and beta
 	mainPayload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"hello"}]}`)
 	_, err = executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -6556,7 +6455,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 		t.Fatalf("main thread request system block must carry ttl: 1h, got: %s", ojson.GetBytes(seenBody, "system").Raw)
 	}
 
-	// 4. Confirmed native Claude Code subagent: must NOT have extended-cache-ttl restored
 	confirmedSubagentPayload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"task"}]}`)
 	_, err = executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -6620,7 +6518,6 @@ func TestClaudeExecutor_PayloadOverrideFableModelLeavesBuiltinsUnchanged(t *test
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Model was rewritten to claude-sonnet-5
 	if got := ojson.GetBytes(seenBody, "model").String(); got != "claude-sonnet-5" {
 		t.Fatalf("model = %q, want claude-sonnet-5", got)
 	}
@@ -6677,7 +6574,6 @@ func TestClaudeExecutor_PayloadOverrideNonFableModelDoesNotInjectFableBuiltins(t
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Model was rewritten to claude-fable-5-1
 	if got := ojson.GetBytes(seenBody, "model").String(); got != "claude-fable-5-1" {
 		t.Fatalf("model = %q, want claude-fable-5-1", got)
 	}
@@ -6736,7 +6632,6 @@ func TestClaudeExecutor_PayloadOverridePreservesExplicitFallbacks(t *testing.T) 
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Explicit payload fallback override must be preserved!
 	fallbacks := ojson.GetBytes(seenBody, "fallbacks").Array()
 	if len(fallbacks) != 1 || fallbacks[0].Get("model").String() != "claude-opus-5" {
 		t.Fatalf("explicit payload fallback override must be preserved, got: %s", ojson.GetBytes(seenBody, "fallbacks").Raw)
@@ -6763,14 +6658,14 @@ func TestClaudeExecutor_PayloadUnrelatedRuleLeavesBuiltinFallbacksUnchanged(t *t
 		}},
 		Payload: config.PayloadConfig{
 			Override: []config.PayloadRule{
-				// Rule 1: Unrelated rule for gpt-4 has fallbacks
+
 				{
 					Models: []config.PayloadModelRule{{Name: "gpt-4"}},
 					Params: map[string]any{
 						"fallbacks": []any{map[string]any{"model": "claude-opus-5"}},
 					},
 				},
-				// Rule 2: Rewrites Fable 5.1 to Sonnet 5 WITHOUT fallbacks
+
 				{
 					Models: []config.PayloadModelRule{{Name: "claude-fable-5-1"}},
 					Params: map[string]any{
@@ -6850,7 +6745,6 @@ func TestClaudeExecutor_PayloadMaxTokensOverrideDoesNotReclassifyBuiltins(t *tes
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Payload rule made it max_tokens: 1
 	if got := ojson.GetBytes(seenBody, "max_tokens").Int(); got != 1 {
 		t.Fatalf("max_tokens = %d, want 1", got)
 	}
@@ -6895,7 +6789,7 @@ func TestClaudeExecutor_PayloadFableProbeOverrideKeepsBuiltinAdditions(t *testin
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Initially non-probe (max_tokens: 1000, content: ".")
+
 	payload := []byte(`{"model":"claude-fable-5-1","thinking":{"type":"adaptive"},"max_tokens":1000,"messages":[{"role":"user","content":"."}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -6951,7 +6845,7 @@ func TestClaudeExecutor_PayloadProbeToNormalDoesNotReinitializeBuiltins(t *testi
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Initially a probe (max_tokens: 1, content: ".")
+
 	payload := []byte(`{"model":"claude-fable-5-1","thinking":{"type":"adaptive"},"max_tokens":1,"messages":[{"role":"user","content":"."}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -6991,7 +6885,7 @@ func TestClaudeExecutor_CallerOwnedDiagnosticsPreservedOnProbe(t *testing.T) {
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Caller sends max_tokens: 1 probe with their own explicit diagnostics object
+
 	payload := []byte(`{"model":"claude-haiku-4-5-20251001","max_tokens":1,"diagnostics":{"caller_custom_key":"val123"},"messages":[{"role":"user","content":"quota"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-haiku-4-5-20251001",
@@ -7001,7 +6895,6 @@ func TestClaudeExecutor_CallerOwnedDiagnosticsPreservedOnProbe(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Caller-owned diagnostics must be preserved!
 	if got := ojson.GetBytes(seenBody, "diagnostics.caller_custom_key").String(); got != "val123" {
 		t.Fatalf("caller diagnostics must be preserved, got: %s", ojson.GetBytes(seenBody, "diagnostics").Raw)
 	}
@@ -7051,7 +6944,6 @@ func TestClaudeExecutor_PayloadOverrideParentThinkingPreventsDisplayUpdates(t *t
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Payload rule replaced parent "thinking" without "display", so "display" must NOT be re-added!
 	if ojson.GetBytes(seenBody, "thinking.display").Exists() {
 		t.Fatalf("thinking.display must not be injected when parent thinking was overridden, got: %s", ojson.GetBytes(seenBody, "thinking").Raw)
 	}
@@ -7197,7 +7089,7 @@ func TestClaudeExecutor_PayloadOverrideProbeWithExplicitDiagnosticsPreserved(t *
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Initially non-probe so CPA injects diagnostics, then payload rule overrides to probe AND sets custom diagnostics
+
 	payload := []byte(`{"model":"claude-haiku-4-5-20251001","max_tokens":1000,"messages":[{"role":"user","content":"quota"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-haiku-4-5-20251001",
@@ -7207,7 +7099,6 @@ func TestClaudeExecutor_PayloadOverrideProbeWithExplicitDiagnosticsPreserved(t *
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// The operator-provided diagnostics object must be preserved!
 	if got := ojson.GetBytes(seenBody, "diagnostics.operator_custom").String(); got != "custom_value_123" {
 		t.Fatalf("operator custom diagnostics must be preserved, got: %s", ojson.GetBytes(seenBody, "diagnostics").Raw)
 	}
@@ -7392,8 +7283,7 @@ func TestClaudeExecutor_PayloadFableThinkingAdaptiveToDisabledKeepsBuiltinDispla
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Starts with adaptive thinking so CPA cloaking injects thinking.display=updates,
-	// then payload rule overrides thinking.type to disabled:
+
 	payload := []byte(`{"model":"claude-fable-5-1","thinking":{"type":"adaptive"},"messages":[{"role":"user","content":"test"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -7403,11 +7293,10 @@ func TestClaudeExecutor_PayloadFableThinkingAdaptiveToDisabledKeepsBuiltinDispla
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// The scalar override does not rerun thinking normalization.
 	if ojson.GetBytes(seenBody, "thinking.display").String() != "updates" {
 		t.Fatalf("thinking.display must remain untouched by the thinking.type override, got: %s", ojson.GetBytes(seenBody, "thinking").Raw)
 	}
-	// thinking-display-updates beta header must NOT be present
+
 	betas := seenHeaders.Get("anthropic-beta")
 	if strings.Contains(betas, "thinking-display-updates") {
 		t.Fatalf("thinking-display-updates beta header must NOT be present on disabled thinking, got: %s", betas)
@@ -7426,7 +7315,6 @@ func TestClaudeExecutor_UncloakedProbePreservesCallerBillingTags(t *testing.T) {
 	cfg := &config.Config{
 		ClaudeKey: []config.ClaudeKey{{
 			APIKey: "sk-ant-api03-uncloaked-test",
-			// No CloakConfig, uncloaked request
 		}},
 	}
 	auth := &cliproxyauth.Auth{
@@ -7438,7 +7326,7 @@ func TestClaudeExecutor_UncloakedProbePreservesCallerBillingTags(t *testing.T) {
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Caller provides their own billing header with prompt ID on probe
+
 	callerBilling := "x-anthropic-billing-header: cc_version=2.1.258; cc_entrypoint=cli; cch=abc12; cc_prompt_id=00000000-0000-4000-8000-000000000001;"
 	payload := []byte(fmt.Sprintf(`{"model":"claude-haiku-4-5-20251001","max_tokens":1,"system":[{"type":"text","text":%q}],"messages":[{"role":"user","content":"quota"}]}`, callerBilling))
 
@@ -7450,7 +7338,6 @@ func TestClaudeExecutor_UncloakedProbePreservesCallerBillingTags(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Because cloaking was disabled, the caller-owned billing header must be preserved exactly!
 	gotSystem := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.Contains(gotSystem, "cc_prompt_id=00000000-0000-4000-8000-000000000001") {
 		t.Fatalf("uncloaked request must preserve caller billing tags on probe, got: %s", gotSystem)
@@ -7664,7 +7551,6 @@ func TestClaudeExecutor_SensitiveWordsDoNotCorruptBillingHeaderTags(t *testing.T
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// system[0] billing header must NOT contain zero-width spaces in its tags
 	billingText := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.HasPrefix(billingText, "x-anthropic-billing-header: cc_version=") {
 		t.Fatalf("billing header must start cleanly without obfuscation, got: %q", billingText)
@@ -7845,7 +7731,7 @@ func TestClaudeExecutor_UserTitlePromptWithoutSchemaTreatedAsNormalTurn(t *testi
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Normal user query with text "Return a short title for this blog post", but NO structured output schema
+
 	payload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"Return a short title for this blog post"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -7855,8 +7741,6 @@ func TestClaudeExecutor_UserTitlePromptWithoutSchemaTreatedAsNormalTurn(t *testi
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Must NOT be treated as a title helper:
-	// 1. Must carry 1h cache TTL and extended-cache-ttl beta
 	has1h := false
 	for _, blk := range ojson.GetBytes(seenBody, "system").Array() {
 		if blk.Get("cache_control.ttl").String() == "1h" {
@@ -7870,7 +7754,7 @@ func TestClaudeExecutor_UserTitlePromptWithoutSchemaTreatedAsNormalTurn(t *testi
 	if !strings.Contains(seenHeaders.Get("Anthropic-Beta"), "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("user title query must carry extended-cache-ttl beta, got: %s", seenHeaders.Get("Anthropic-Beta"))
 	}
-	// 2. Billing header must carry cc_prompt_id
+
 	billingText := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.Contains(billingText, "cc_prompt_id=") {
 		t.Fatalf("user title query must carry cc_prompt_id, got: %s", billingText)
@@ -7922,7 +7806,6 @@ func TestClaudeExecutor_PayloadOverrideRawPreservesExplicitFallbacks(t *testing.
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// Raw payload override setting fallbacks must be preserved!
 	fallbacks := ojson.GetBytes(seenBody, "fallbacks").Array()
 	if len(fallbacks) != 1 || fallbacks[0].Get("model").String() != "claude-opus-5" {
 		t.Fatalf("explicit raw payload fallback override must be preserved, got: %s", ojson.GetBytes(seenBody, "fallbacks").Raw)
@@ -7975,7 +7858,6 @@ func TestClaudeExecutor_PayloadFilterFallbacksPreservesRemovalOnFable(t *testing
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// fallbacks was filtered out by operator rule, must NOT be recreated!
 	if ojson.GetBytes(seenBody, "fallbacks").Exists() {
 		t.Fatalf("fallbacks must remain deleted after payload filter, got: %s", ojson.GetBytes(seenBody, "fallbacks").Raw)
 	}
@@ -8102,12 +7984,8 @@ func TestNormalizeClaudeSamplingForUpstream_AfterForcedToolChoiceRemovesTemperat
 	}
 }
 
-// The measured structured Haiku helper sends "temperature":1, and
-// claudeCodeHelperShapeStructured keys on exactly that value. Stripping it would
-// make CPA emit a shape no native client produces, so a confirmed native caller
-// must keep it.
 func TestNormalizeClaudeSamplingForUpstreamNativeKeepsMeasuredHelperTemperature(t *testing.T) {
-	// Top-level key order and values mirror the measured structured helper.
+
 	payload := []byte(`{"model":"claude-haiku-4-5-20251001","messages":[{"role":"user","content":[{"type":"text","text":"helper probe"}]}],"system":[{"type":"text","text":"Return a short title."}],"tools":[],"metadata":{"user_id":"u"},"max_tokens":32000,"thinking":{"type":"disabled"},"temperature":1,"output_config":{"format":{"type":"json_schema"}},"stream":true}`)
 	if got := ojson.GetBytes(payload, "temperature"); !got.Exists() || got.Num != 1 {
 		t.Fatalf("measured helper fixture should carry temperature=1, got %q", got.Raw)
@@ -8120,10 +7998,6 @@ func TestNormalizeClaudeSamplingForUpstreamNativeKeepsMeasuredHelperTemperature(
 	}
 }
 
-// Anthropic's real constraints, verified against the live API: with thinking
-// active temperature must be 1, top_p must be >= 0.95 and top_k must be unset;
-// otherwise temperature and top_p cannot both be specified. Preserving the
-// native wire must never forward a combination that would 400.
 func TestNormalizeClaudeSamplingForUpstreamNativeDropsOnlyRejectedCombinations(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -8534,7 +8408,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	callerCtx := context.WithValue(context.Background(), "gin", ginCtx)
 	callerScope := session.CallerScope("sk-downstream-pi-caller")
 
-	// 1. Original HTTP stream request with gin context.
 	streamRes, errStream := executor.ExecuteStream(callerCtx, auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8551,7 +8424,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	for range streamRes.Chunks {
 	}
 
-	// 2. Plugin replay stream request on background context (no gin.Context) with CallerScope metadata.
 	replayStreamRes, errReplayStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8568,7 +8440,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	for range replayStreamRes.Chunks {
 	}
 
-	// 3. Plugin replay non-stream Execute on background context with CallerScope metadata.
 	if _, errExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8581,7 +8452,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 		t.Fatalf("replay Execute() error = %v", errExec)
 	}
 
-	// 4. Plugin replay countTokensUpstream on background context with CallerScope metadata.
 	if _, errCount := executor.countTokensUpstream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8594,7 +8464,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 		t.Fatalf("replay CountTokens() error = %v", errCount)
 	}
 
-	// 5. Unscoped background request (default caller fallback).
 	defaultStreamRes, errDefaultStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8645,12 +8514,9 @@ func TestRemapOAuthToolNames_MixedCaseNamesRemainDistinct(t *testing.T) {
 	}
 }
 
-// TestReverseRemapOAuthToolNamesFromStreamLine_HonorsPerRequestMap guards the
-// SSE streaming code path against the same mixed-case bug.
 func TestReverseRemapOAuthToolNamesFromStreamLine_HonorsPerRequestMap(t *testing.T) {
 	reverseMap := map[string]string{"Glob": "glob"}
 
-	// Bash block was never renamed, must pass through as-is.
 	bashLine := []byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_01","name":"Bash","input":{}}}`)
 	out, errReverse := reverseRemapOAuthToolNamesFromStreamLine(bashLine, reverseMap)
 	if errReverse != nil {
@@ -8663,7 +8529,6 @@ func TestReverseRemapOAuthToolNamesFromStreamLine_HonorsPerRequestMap(t *testing
 		t.Fatalf("Bash must not be lowercased, got: %s", string(out))
 	}
 
-	// Glob block IS in the reverseMap, must be restored to `glob`.
 	globLine := []byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_02","name":"Glob","input":{}}}`)
 	out, errReverse = reverseRemapOAuthToolNamesFromStreamLine(globLine, reverseMap)
 	if errReverse != nil {
@@ -9031,9 +8896,6 @@ func TestInsertClaudeMidConversationSystemMessages_IsIdempotent(t *testing.T) {
 	assertClaudeMidConversationSystemMessage(t, first, 2, texts[1], "")
 }
 
-// TestClaudeCodeCLIBetas_MatchesObservedClientMatrix pins the Anthropic-Beta
-// baseline to Claude Code 2.1.220 behavior captured against api.anthropic.com.
-// The OAuth profile was reverified on 2026-08-03 with two distinct accounts.
 func TestClaudeCodeCLIBetas_MatchesObservedClientMatrix(t *testing.T) {
 	const constants = "claude-code-20250219,interleaved-thinking-2025-05-14,redact-thinking-2026-02-12,context-management-2025-06-27,prompt-caching-scope-2026-01-05"
 
@@ -9266,9 +9128,7 @@ func TestClaudeCodeCLIBetas_MatchesObservedClientMatrix(t *testing.T) {
 			want: constants + ",mid-conversation-tool-changes-2026-07-01,advisor-tool-2026-03-01,thinking-token-count-2026-05-13,effort-2025-11-24",
 		},
 		{
-			// Captured 2026-09-02 from Claude Code 2.1.258 (cli entrypoint, OAuth,
-			// auto mode on): 158 inline tools without tool search, advisor beta
-			// enabled for the account, thinking adaptive without display.
+
 			name:  "2.1.258 main thread capture with inline tools and afk-mode",
 			body:  `{"model":"claude-fable-5-1","tools":[{"name":"Read"}],"thinking":{"type":"adaptive"}}`,
 			oauth: true,
@@ -9408,14 +9268,6 @@ func TestClaudeCodeCLIBetas_MatchesObservedClientMatrix(t *testing.T) {
 	}
 }
 
-// TestApplyClaudeHeaders_StreamTransportNegotiation pins the observed 2.1.220
-// behaviour: a streaming request to api.anthropic.com negotiates exactly like a
-// non-streaming one, because Anthropic selects SSE from the body. Other
-// Anthropic-compatible upstreams keep the conservative SSE contract.
-
-// TestWithClaudeAdvisorToolBeta_InsertsBeforeTrailingBetas pins the advisor
-// insertion point against every beta that follows it on the 2.1.258 wire,
-// including a caller-supplied afk-mode-2026-01-31.
 func TestWithClaudeAdvisorToolBeta_InsertsBeforeTrailingBetas(t *testing.T) {
 	const head = "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,mid-conversation-system-2026-04-07"
 	tests := []struct {
@@ -9486,7 +9338,6 @@ func TestApplyClaudeHeaders_DefaultPreservesCallerBetas(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": "key-caller-betas"}}
 	body := []byte(`{"model":"claude-opus-4-6"}`)
 
-	// Default API-key mode preserves caller betas on direct Anthropic.
 	directReq := newClaudeHeaderTestRequest(t, incoming)
 	if errApply := applyClaudeHeaders(directReq, auth, "key-caller-betas", false, nil, body, nil, incoming, false); errApply != nil {
 		t.Fatalf("applyClaudeHeaders() error = %v", errApply)
@@ -9495,7 +9346,6 @@ func TestApplyClaudeHeaders_DefaultPreservesCallerBetas(t *testing.T) {
 		t.Fatalf("Anthropic-Beta = %q, want caller beta on api.anthropic.com", got)
 	}
 
-	// Other Anthropic-compatible upstreams keep caller betas functional.
 	gatewayReq := httptest.NewRequest(http.MethodPost, "https://api.kimi.com/coding/v1/messages", nil)
 	gatewayReq = gatewayReq.WithContext(directReq.Context())
 	if errApply := applyClaudeHeaders(gatewayReq, auth, "key-caller-betas", false, nil, body, nil, incoming, false); errApply != nil {
@@ -9506,8 +9356,6 @@ func TestApplyClaudeHeaders_DefaultPreservesCallerBetas(t *testing.T) {
 	}
 }
 
-// TestInjectClaudeCodeContextManagement pins the captured 2.1.220 object and
-// the thinking and caller-ownership rules that control automatic injection.
 func TestInjectClaudeCodeContextManagement(t *testing.T) {
 	const captured = `{"edits":[{"type":"clear_thinking_20251015","keep":"all"}]}`
 
@@ -9538,9 +9386,6 @@ func TestInjectClaudeCodeContextManagement(t *testing.T) {
 		t.Fatalf("caller context_management was modified: %s", callerOwnedGot)
 	}
 
-	// Anthropic rejects clear_thinking_20251015 unless thinking is enabled or
-	// adaptive, so an omitted thinking field is as ineligible as an explicit
-	// disabled one.
 	for _, test := range []struct {
 		name    string
 		payload string
@@ -9565,13 +9410,6 @@ func TestInjectClaudeCodeContextManagement(t *testing.T) {
 	}
 }
 
-// Anthropic rejects a request carrying the clear_thinking_20251015 strategy
-// without enabled/adaptive thinking:
-//
-//	`clear_thinking_20251015` strategy requires `thinking` to be enabled or adaptive
-//
-// This walks the real execute.go ordering, where disableThinkingIfToolChoiceForced
-// deletes the thinking field between injection and reconciliation.
 func TestClaudeCodeContextManagementNeverOutlivesEligibleThinking(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -9831,10 +9669,7 @@ func TestClaudeExecutorPayloadOverrideDisabledThinking(t *testing.T) {
 	})
 
 	for _, stream := range []bool{false, true} {
-		// Anthropic rejects the automatic strategy once forced tool choice has
-		// stripped thinking:
-		//
-		//	`clear_thinking_20251015` strategy requires `thinking` to be enabled or adaptive
+
 		name := "forced tool choice drops automatic context management execute"
 		if stream {
 			name += " stream"
@@ -10008,11 +9843,6 @@ func TestValidateClaudeCallerSystemBlocksAcceptsTextOnly(t *testing.T) {
 	}
 }
 
-// Anthropic rejects every non-text block in both system slots, verified live on
-// 2026-08-03: the top-level field answers "system.<i>.type: Input should be
-// 'text'" and a role=system message answers "role 'system' supports text,
-// tool_addition, and tool_removal blocks only". Cloaking has no third slot, so
-// the request has to fail here instead of losing the caller's instructions.
 func TestValidateClaudeCallerSystemBlocksRejectsNonTextBlock(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -10077,8 +9907,6 @@ func TestApplyCloakingRejectsNonTextCallerSystemBlock(t *testing.T) {
 	}
 }
 
-// Strict mode never forwards caller system prompts, so an unusable block cannot
-// lose information and must not fail the request.
 func TestApplyCloakingStrictModeIgnoresNonTextCallerSystemBlock(t *testing.T) {
 	cfg := &config.Config{
 		ClaudeKey: []config.ClaudeKey{{
@@ -10101,9 +9929,6 @@ func TestApplyCloakingStrictModeIgnoresNonTextCallerSystemBlock(t *testing.T) {
 	}
 }
 
-// A cloaked direct-Anthropic count_tokens request relocates caller system blocks
-// into messages, so a non-text block has no destination there either and must be
-// rejected before any upstream call.
 func TestClaudeExecutor_CountTokensRejectsNonTextCallerSystemBlock(t *testing.T) {
 	upstreamCalled := false
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -10129,9 +9954,6 @@ func TestClaudeExecutor_CountTokensRejectsNonTextCallerSystemBlock(t *testing.T)
 	}
 }
 
-// The native gate selects the 1h cache pool only for OAuth credentials and pushes
-// extended-cache-ttl-2025-04-11 exactly when that selection produced a 1h body ttl.
-// Body ttl and the beta must therefore always travel together.
 func TestClaudeExecutor_CacheTTLIsPairedWithExtendedCacheTTLBeta(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -10193,8 +10015,7 @@ func TestClaudeExecutor_CacheTTLIsPairedWithExtendedCacheTTLBeta(t *testing.T) {
 			if gotBeta != test.wantBeta {
 				t.Fatalf("extended-cache-ttl declared = %v, want %v: %s", gotBeta, test.wantBeta, seenHeaders.Get("Anthropic-Beta"))
 			}
-			// The pairing invariant itself: a 1h body ttl without the beta, or the beta
-			// without a 1h body ttl, is a combination native never produces.
+
 			if (gotTTL == "1h") != gotBeta {
 				t.Fatalf("body ttl %q and extended-cache-ttl beta %v disagree", gotTTL, gotBeta)
 			}
@@ -10355,7 +10176,7 @@ func TestClaudeExecutor_ProbeStripsCaller1hTTLAndBetas(t *testing.T) {
 	}
 
 	executor := NewClaudeExecutor(cfg)
-	// Probe request with caller-supplied 1h TTL and forbidden betas
+
 	payload := []byte(`{
 		"model": "claude-sonnet-5",
 		"max_tokens": 1,
@@ -10380,13 +10201,11 @@ func TestClaudeExecutor_ProbeStripsCaller1hTTLAndBetas(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// 1. Verify body cache_control does not have ttl: "1h"
 	rawBody := string(seenBody)
 	if strings.Contains(rawBody, `"ttl":"1h"`) || strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("probe body must have ttl stripped, got: %s", rawBody)
 	}
 
-	// 2. Verify forbidden betas are stripped from header
 	betas := seenHeaders.Get("Anthropic-Beta")
 	for _, forbidden := range []string{
 		"extended-cache-ttl-2025-04-11",
@@ -10450,13 +10269,11 @@ func TestClaudeExecutor_SubagentPreservesCaller1hTTLAndExtendedCacheBeta(t *test
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// 1. Verify body cache_control preserves ttl: "1h"
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("subagent body must preserve ttl: 1h when requested, got: %s", rawBody)
 	}
 
-	// 2. Verify extended-cache-ttl beta is preserved in header
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Errorf("subagent Anthropic-Beta must preserve extended-cache-ttl when requested, got: %s", betas)
@@ -10547,7 +10364,6 @@ func TestClaudeExecutor_CloakModePrefersStoredPrevReqOverCallerFake(t *testing.T
 	executor := NewClaudeExecutor(cfg)
 	headers := http.Header{"Session-Id": []string{"sess-test-001"}}
 
-	// Turn 1: normal turn, establishes real upstream request-id req_real_upstream_001
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
 		Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"turn 1"}]}`),
@@ -10559,7 +10375,6 @@ func TestClaudeExecutor_CloakModePrefersStoredPrevReqOverCallerFake(t *testing.T
 		t.Fatalf("Turn 1 Execute error = %v", err)
 	}
 
-	// Turn 2: a non-native caller in cloak mode sends a fake cc_prev_req in system
 	fakeCallerPayload := []byte(`{
 		"model": "claude-sonnet-5",
 		"system": [
@@ -10736,9 +10551,6 @@ func TestClaudeExecutor_ChatCompletionsDefaultMaxTokensAndPayloadDefaultRule(t *
 	})
 }
 
-// preservedThinkingTestSignature is a syntactically valid Claude thinking
-// signature sample that survives signature sanitization, so executor-level
-// tests can exercise replayed-history handling without a real upstream.
 const preservedThinkingTestSignature = "CAISqwIKiAEIEBgCKkBHRlRBsNiptQUWfPoOhuQKwi5LnncZVO9bB5jqOs76D7uBtgktML0zqJtNmLHXHHcgD6lk4MQu4QBXzFd1lbC3Mg5jbGF1ZGUtZmFibGUtNTgBQgh0aGlua2luZ1okZDk3NDM5NzUtNGJiMC00OTM2LTllMjgtZDViMGQyMWJkYzQ4EgxCGh+XVFFFeySAjtAaDL/A1LltGu6MMJ+eXSIwsN0oBpDrqLv22UBfkMnTotnIbkvkOyb9xZHgigG6OZVHaI3gThm+maLKmgO5PrFLKlDFYp+YZksy/wKwszJlnLTPzAK+NUlfzagOE1ymtZTXhAYK260XyFYmg/te/C231+Fr/hoX+EJoUBnrn0gD7hqMISOT+TaFEuOXYsN517GfaxgB"
 
 func preservedThinkingReplayPayload(model string) []byte {

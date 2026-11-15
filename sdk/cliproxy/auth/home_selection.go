@@ -147,7 +147,6 @@ func (r *executionResources) Close() error {
 	return result
 }
 
-// HomeDispatchSelection keeps a Home execution scope separate from its auth.
 type HomeDispatchSelection struct {
 	Auth                       *Auth
 	Executor                   ProviderExecutor
@@ -199,7 +198,6 @@ func newHomeDispatchSelection(auth *Auth, executor ProviderExecutor, provider st
 	return selection, nil
 }
 
-// Bind adds a resource to be closed when this selection ends or drains.
 func (s *HomeDispatchSelection) Bind(closeFn func() error) error {
 	if s == nil || s.resources == nil {
 		if closeFn != nil {
@@ -210,7 +208,6 @@ func (s *HomeDispatchSelection) Bind(closeFn func() error) error {
 	return s.resources.Add(closeFn)
 }
 
-// AttemptContext creates a selection-owned context and returns its release function.
 func (s *HomeDispatchSelection) AttemptContext(ctx context.Context) (context.Context, func(), error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -229,7 +226,6 @@ func (s *HomeDispatchSelection) AttemptContext(ctx context.Context) (context.Con
 	return context.WithValue(attemptCtx, homeAttemptContextKey{}, attempt), release, nil
 }
 
-// Retain transfers selection ownership from a request to an execution session.
 func (s *HomeDispatchSelection) Retain() {
 	if s == nil || s.ended.Load() {
 		return
@@ -237,24 +233,18 @@ func (s *HomeDispatchSelection) Retain() {
 	s.retained.Store(true)
 }
 
-// Retained reports whether an executor transferred this selection to a session.
 func (s *HomeDispatchSelection) Retained() bool {
 	return s != nil && s.retained.Load() && !s.ended.Load()
 }
 
-// Active reports whether the selection has not ended.
 func (s *HomeDispatchSelection) Active() bool {
 	return s != nil && !s.ended.Load()
 }
 
-// End closes all bound resources and releases the Home execution scope once.
 func (s *HomeDispatchSelection) End(reason string) {
 	_ = s.EndWithRelease(reason)
 }
 
-// EndWebsocketTurn releases a selection whose websocket was lost while the attempt of ctx
-// still has to deliver the turn error: that attempt is not cancelled. Its own release
-// (or the request context) ends it.
 func (s *HomeDispatchSelection) EndWebsocketTurn(ctx context.Context, reason string) {
 	if s == nil {
 		return
@@ -267,7 +257,6 @@ func (s *HomeDispatchSelection) EndWebsocketTurn(ctx context.Context, reason str
 	s.End(reason)
 }
 
-// EndWithRelease closes all bound resources and returns the Home release ticket.
 func (s *HomeDispatchSelection) EndWithRelease(reason string) *executionregistry.ReleaseTicket {
 	if s == nil {
 		return nil
@@ -285,7 +274,6 @@ func (s *HomeDispatchSelection) EndWithRelease(reason string) *executionregistry
 	return s.scope.EndWithRelease("")
 }
 
-// ReplaceAuth updates the selection after Home returns refreshed credentials.
 func (s *HomeDispatchSelection) ReplaceAuth(auth *Auth) {
 	if s == nil || auth == nil {
 		return
@@ -311,7 +299,6 @@ func preserveHomeRoutingAttributes(updated, previous *Auth) {
 	}
 }
 
-// CloneAuth returns a standalone auth copy without the selection handle.
 func (s *HomeDispatchSelection) CloneAuth() *Auth {
 	if s == nil {
 		return nil
@@ -324,7 +311,6 @@ func (s *HomeDispatchSelection) CloneAuth() *Auth {
 	return s.Auth.Clone()
 }
 
-// CloneAuthForRoute returns an auth copy adapted for a retained canonical route.
 func (s *HomeDispatchSelection) CloneAuthForRoute(routeModel string) *Auth {
 	auth := s.CloneAuth()
 	if auth == nil || !s.Retained() {

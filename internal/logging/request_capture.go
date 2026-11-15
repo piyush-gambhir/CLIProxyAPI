@@ -15,18 +15,16 @@ import (
 )
 
 const (
-	// MaxDeferredAPIRequestBodyBytes bounds total deferred upstream request bodies per HTTP request.
-	MaxDeferredAPIRequestBodyBytes = 32 << 20 // 32 MiB
-	// MaxDeferredAPIResponseBodyBytes bounds each upstream attempt's deferred response body.
-	MaxDeferredAPIResponseBodyBytes = 64 << 10 // 64 KiB
-	// MaxDeferredAPIResponseHeaderBytes bounds cloned response headers per upstream attempt.
-	MaxDeferredAPIResponseHeaderBytes = 16 << 10 // 16 KiB
-	// MaxDeferredAPIResponseErrorBytes bounds each recorded upstream error string.
-	MaxDeferredAPIResponseErrorBytes = 16 << 10 // 16 KiB
-	// MaxTotalDeferredAPIResponseBodyBytes bounds total deferred upstream response payload
-	// (body chunks, headers, and error strings) across retries for a single HTTP request.
-	MaxTotalDeferredAPIResponseBodyBytes = 512 << 10 // 512 KiB
-	// MaxDeferredAPIResponseAttempts bounds the number of upstream response attempt slots retained per HTTP request.
+	MaxDeferredAPIRequestBodyBytes = 32 << 20
+
+	MaxDeferredAPIResponseBodyBytes = 64 << 10
+
+	MaxDeferredAPIResponseHeaderBytes = 16 << 10
+
+	MaxDeferredAPIResponseErrorBytes = 16 << 10
+
+	MaxTotalDeferredAPIResponseBodyBytes = 512 << 10
+
 	MaxDeferredAPIResponseAttempts = 16
 	maxDeferredErrorsPerAttempt    = 8
 	maxDeferredHeaderEntries       = 64
@@ -35,10 +33,6 @@ const (
 type deferredAPIRequestCaptureDisabledKey struct{}
 type deferredAPICaptureKey struct{}
 
-// WithDeferredAPIRequestCaptureDisabled skips error-only upstream request and response capture
-// for this context and its descendants. Full request logging is unaffected.
-// Connection-scoped contexts keep this policy even when asynchronous callbacks
-// outlive the handler and its pooled Gin context is reused.
 func WithDeferredAPIRequestCaptureDisabled(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -49,7 +43,6 @@ func WithDeferredAPIRequestCaptureDisabled(ctx context.Context) context.Context 
 	return context.WithValue(ctx, deferredAPIRequestCaptureDisabledKey{}, true)
 }
 
-// DeferredAPIRequestCaptureDisabled reports whether error-only capture is disabled.
 func DeferredAPIRequestCaptureDisabled(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -58,19 +51,12 @@ func DeferredAPIRequestCaptureDisabled(ctx context.Context) bool {
 	return disabled
 }
 
-// DeferredAPIResponse renders the upstream response attempt sections of an
-// error log from details captured while full request logging is disabled.
 type DeferredAPIResponse interface {
-	// HasPayload reports whether any upstream response metadata, body, or error was captured.
 	HasPayload() bool
-	// RenderAPIResponse returns the formatted "=== API RESPONSE n ===" attempt
-	// sections, or nil when no upstream response details were captured.
+
 	RenderAPIResponse() []byte
 }
 
-// WithDeferredAPICapture attaches a request-scoped DeferredAPICapture to ctx so
-// background stream producers record into the request's own synchronized holder
-// without accessing a pooled Gin context.
 func WithDeferredAPICapture(ctx context.Context, capture *DeferredAPICapture) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -81,7 +67,6 @@ func WithDeferredAPICapture(ctx context.Context, capture *DeferredAPICapture) co
 	return context.WithValue(ctx, deferredAPICaptureKey{}, capture)
 }
 
-// DeferredAPICaptureFromContext returns the request-scoped DeferredAPICapture carried by ctx, if any.
 func DeferredAPICaptureFromContext(ctx context.Context) *DeferredAPICapture {
 	if ctx == nil {
 		return nil
@@ -90,8 +75,6 @@ func DeferredAPICaptureFromContext(ctx context.Context) *DeferredAPICapture {
 	return capture
 }
 
-// InheritDeferredCapture propagates error-only capture policy and any request-scoped
-// DeferredAPICapture holder from src to dst.
 func InheritDeferredCapture(dst, src context.Context) context.Context {
 	if dst == nil {
 		dst = context.Background()
@@ -141,10 +124,6 @@ func (a *deferredResponseAttempt) hasContent() bool {
 	return a.status > 0 || a.headersRecorded || a.headersTruncated || a.bodyHasContent || a.bodyTruncated || len(a.errors) > 0 || a.errorsTruncated
 }
 
-// DeferredAPICapture retains bounded upstream request and response details for
-// a single HTTP request while full request logging is disabled. All operations
-// are synchronized and become no-ops after Close so asynchronous stream workers
-// cannot race with Finalize or leak into a reused Gin context.
 type DeferredAPICapture struct {
 	mu              sync.Mutex
 	requests        []DeferredAPIRequest
@@ -155,12 +134,10 @@ type DeferredAPICapture struct {
 	closed          bool
 }
 
-// NewDeferredAPICapture constructs a fresh request-scoped DeferredAPICapture.
 func NewDeferredAPICapture() *DeferredAPICapture {
 	return &DeferredAPICapture{}
 }
 
-// Close marks the capture closed and releases buffered upstream payloads.
 func (c *DeferredAPICapture) Close() {
 	if c == nil {
 		return
@@ -175,7 +152,6 @@ func (c *DeferredAPICapture) Close() {
 	c.responseBytes = 0
 }
 
-// IsClosed reports whether Close has been called.
 func (c *DeferredAPICapture) IsClosed() bool {
 	if c == nil {
 		return true
@@ -185,16 +161,10 @@ func (c *DeferredAPICapture) IsClosed() bool {
 	return c.closed
 }
 
-// RecordRequest stores a deferred upstream request builder within MaxDeferredAPIRequestBodyBytes
-// and opens the paired upstream response attempt slot.
 func (c *DeferredAPICapture) RecordRequest(body []byte, build func(index int, capturedAt time.Time, capturedBody []byte, bodyEmpty, bodyTruncated bool) DeferredAPIRequest) (DeferredAPIRequest, int, bool) {
 	return c.recordRequest(body, false, build)
 }
 
-// RecordOrReplacePendingRequest replaces the trailing request builder when its paired
-// response attempt has recorded no response details yet (for example when a websocket
-// request is immediately rejected during its HTTP upgrade handshake), or appends a new
-// request attempt otherwise.
 func (c *DeferredAPICapture) RecordOrReplacePendingRequest(body []byte, build func(index int, capturedAt time.Time, capturedBody []byte, bodyEmpty, bodyTruncated bool) DeferredAPIRequest) (DeferredAPIRequest, int, bool, bool) {
 	fn, bytesUsed, replaced, ok := c.recordRequestWithReplace(body, true, build)
 	return fn, bytesUsed, replaced, ok
@@ -264,7 +234,6 @@ func (c *DeferredAPICapture) recordRequestWithReplace(body []byte, replacePendin
 	return fn, c.requestBytes, false, true
 }
 
-// HasRequests reports whether any deferred upstream requests were captured.
 func (c *DeferredAPICapture) HasRequests() bool {
 	if c == nil {
 		return false
@@ -274,7 +243,6 @@ func (c *DeferredAPICapture) HasRequests() bool {
 	return !c.closed && len(c.requests) > 0
 }
 
-// RenderAPIRequests renders all captured upstream request sections.
 func (c *DeferredAPICapture) RenderAPIRequests() []byte {
 	if c == nil {
 		return nil
@@ -327,7 +295,6 @@ func (c *DeferredAPICapture) latestAttemptLocked() *deferredResponseAttempt {
 	return c.attempts[len(c.attempts)-1]
 }
 
-// RecordResponseMetadata records the HTTP status and bounded cloned headers for the latest attempt.
 func (c *DeferredAPICapture) RecordResponseMetadata(status int, headers http.Header) {
 	if c == nil {
 		return
@@ -357,7 +324,6 @@ func (c *DeferredAPICapture) RecordResponseMetadata(status int, headers http.Hea
 	}
 }
 
-// RecordResponseError appends a bounded transport or stream error to the latest attempt.
 func (c *DeferredAPICapture) RecordResponseError(err error) {
 	if c == nil || err == nil {
 		return
@@ -397,7 +363,6 @@ func (c *DeferredAPICapture) RecordResponseError(err error) {
 	attempt.errors = append(attempt.errors, cloned)
 }
 
-// AppendResponseChunk appends a bounded response chunk to the latest attempt.
 func (c *DeferredAPICapture) AppendResponseChunk(chunk []byte) {
 	if c == nil {
 		return
@@ -457,7 +422,6 @@ func (c *DeferredAPICapture) AppendResponseChunk(chunk []byte) {
 	attempt.prevWasSSEEvent = currentChunkIsSSEEvent && !attempt.bodyTruncated
 }
 
-// HasPayload reports whether any attempt recorded upstream response details.
 func (c *DeferredAPICapture) HasPayload() bool {
 	if c == nil {
 		return false
@@ -479,7 +443,6 @@ func (c *DeferredAPICapture) hasPayloadLocked() bool {
 	return false
 }
 
-// RenderAPIResponse formats captured upstream response attempts for error logs.
 func (c *DeferredAPICapture) RenderAPIResponse() []byte {
 	if c == nil {
 		return nil
@@ -549,7 +512,6 @@ func (c *DeferredAPICapture) RenderAPIResponse() []byte {
 	return []byte(builder.String())
 }
 
-// AttemptCount returns the number of recorded response attempt slots.
 func (c *DeferredAPICapture) AttemptCount() int {
 	if c == nil {
 		return 0
@@ -559,7 +521,6 @@ func (c *DeferredAPICapture) AttemptCount() int {
 	return len(c.attempts)
 }
 
-// AttemptCapturedAt returns the captured response timestamp for the given 0-based attempt slot.
 func (c *DeferredAPICapture) AttemptCapturedAt(i int) time.Time {
 	if c == nil {
 		return time.Time{}
@@ -572,7 +533,6 @@ func (c *DeferredAPICapture) AttemptCapturedAt(i int) time.Time {
 	return c.attempts[i].capturedAt
 }
 
-// AttemptBodyStats returns the captured body length, slice capacity, and truncation flag for the given 0-based attempt slot.
 func (c *DeferredAPICapture) AttemptBodyStats(i int) (length int, capacity int, truncated bool) {
 	if c == nil {
 		return 0, 0, false
@@ -586,7 +546,6 @@ func (c *DeferredAPICapture) AttemptBodyStats(i int) (length int, capacity int, 
 	return len(attempt.body), cap(attempt.body), attempt.bodyTruncated
 }
 
-// TotalResponseBodyBytes returns the total captured upstream response bytes across attempts.
 func (c *DeferredAPICapture) TotalResponseBodyBytes() int {
 	if c == nil {
 		return 0

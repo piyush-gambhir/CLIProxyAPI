@@ -13,8 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// A completion arriving while credential validation is in progress must be
-// reflected in the interrupt decision, not forwarded into the following turn.
 func TestInterruptExecutionSessionCompletesDuringAuthCheck(t *testing.T) {
 	complete := make(chan struct{})
 	interruptCount := make(chan int, 1)
@@ -78,8 +76,7 @@ func TestInterruptExecutionSessionCompletesDuringAuthCheck(t *testing.T) {
 	if errInterrupt := exec.InterruptExecutionSession(ctx, sessionID, []byte(`{"type":"response.interrupt","response_id":"r1"}`)); errInterrupt != nil {
 		t.Fatalf("completed interrupt = %v", errInterrupt)
 	}
-	// A transport-order barrier avoids sleeps or assumptions about whether the
-	// upstream reader has already consumed a wrongly forwarded interrupt.
+
 	if errWrite := client.WriteMessage(websocket.TextMessage, []byte("barrier")); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -93,8 +90,6 @@ func TestInterruptExecutionSessionCompletesDuringAuthCheck(t *testing.T) {
 	}
 }
 
-// Clearing a completed turn must not turn its delayed interrupt into an error,
-// or forward it into the next response on the retained upstream socket.
 func TestInterruptExecutionSessionAfterTerminal(t *testing.T) {
 	for _, terminal := range []string{"response.completed", "response.done", "response.incomplete", "response.failed"} {
 		t.Run(terminal, func(t *testing.T) {
@@ -118,7 +113,7 @@ func TestInterruptExecutionSessionAfterTerminal(t *testing.T) {
 						return
 					}
 				}
-				// The only forwarded interrupt must target the active r2, not r1.
+
 				_, payload, errRead := conn.ReadMessage()
 				if errRead != nil {
 					return

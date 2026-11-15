@@ -99,8 +99,6 @@ func TestClaudeToAntigravityRegistryCarriesTheRefusal(t *testing.T) {
 	}
 }
 
-// claudeImageTurnToAntigravity translates a conversation of two history turns followed by a final user
-// turn holding the given content parts.
 func claudeImageTurnToAntigravity(finalContent string) sdktranslator.RequestEnvelope {
 	input := `{"model":"m","messages":[{"role":"user","content":"a"},{"role":"assistant","content":"b"},{"role":"user","content":[` + finalContent + `]}]}`
 	return sdktranslator.TranslateRequestEnvelope(context.Background(), sdktranslator.FormatClaude, sdktranslator.FormatAntigravity, sdktranslator.RequestEnvelope{

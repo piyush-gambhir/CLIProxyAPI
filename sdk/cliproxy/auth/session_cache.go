@@ -12,14 +12,12 @@ const (
 	defaultMaxSessionEntries = 65536
 )
 
-// sessionBinding records selection order independently of TTL refreshes and eviction order.
 type sessionBinding struct {
 	sessionID string
 	provider  string
 	sequence  uint64
 }
 
-// sessionEntry stores an auth binding, its identifier aliases, and expiration.
 type sessionEntry struct {
 	authID    string
 	expiresAt time.Time
@@ -27,7 +25,6 @@ type sessionEntry struct {
 	binding   sessionBinding
 }
 
-// SessionCache provides TTL-based session to auth mapping with automatic cleanup.
 type SessionCache struct {
 	mu               sync.RWMutex
 	entries          map[string]sessionEntry
@@ -42,13 +39,10 @@ type SessionCache struct {
 	bindingSequence  uint64
 }
 
-// NewSessionCache creates a cache with the specified TTL.
-// A background goroutine periodically cleans expired entries.
 func NewSessionCache(ttl time.Duration) *SessionCache {
 	return NewSessionCacheWithCapacity(ttl, defaultMaxSessionEntries)
 }
 
-// NewSessionCacheWithCapacity creates a cache with the specified TTL and max entries limit.
 func NewSessionCacheWithCapacity(ttl time.Duration, maxEntries int) *SessionCache {
 	if ttl <= 0 {
 		ttl = 30 * time.Minute
@@ -87,8 +81,6 @@ func (c *SessionCache) ensureInitializedLocked() {
 	}
 }
 
-// Get retrieves the auth ID bound to a session, if still valid.
-// Does NOT refresh the TTL on access.
 func (c *SessionCache) Get(sessionID string) (string, bool) {
 	if c == nil || sessionID == "" {
 		return "", false
@@ -119,8 +111,6 @@ func (c *SessionCache) Get(sessionID string) (string, bool) {
 	return "", false
 }
 
-// GetAndRefresh retrieves the auth ID bound to a session and refreshes the TTL
-// for every identifier known to represent the same logical session.
 func (c *SessionCache) GetAndRefresh(sessionID string) (string, bool) {
 	if c == nil || sessionID == "" {
 		return "", false
@@ -143,8 +133,6 @@ func (c *SessionCache) GetAndRefresh(sessionID string) (string, bool) {
 	return entry.authID, true
 }
 
-// Set binds a session to an auth ID with TTL refresh. Existing aliases for the
-// same logical session remain attached when the binding is refreshed or moved.
 func (c *SessionCache) Set(sessionID, authID string) {
 	if c == nil {
 		return
@@ -152,13 +140,10 @@ func (c *SessionCache) Set(sessionID, authID string) {
 	c.SetAliases(authID, sessionID)
 }
 
-// SetAliases binds multiple identifiers for one logical session to an auth ID.
 func (c *SessionCache) SetAliases(authID string, sessionIDs ...string) {
 	c.setAliases(authID, sessionBinding{}, sessionIDs...)
 }
 
-// setSessionAliases records a real selection, including reuse of an existing binding.
-// Result-driven Touch calls preserve this order rather than becoming new selections.
 func (c *SessionCache) setSessionAliases(authID, provider, sessionID string, keys ...string) {
 	c.setAliases(authID, sessionBinding{sessionID: sessionID, provider: provider}, keys...)
 }
@@ -354,8 +339,6 @@ func mergeSessionAliases(existing []string, candidates ...string) []string {
 	return aliases
 }
 
-// latestSessionAuth observes the newest live selection on the requested real providers.
-// It does not refresh TTL or eviction order and visits only this session's groups.
 func (c *SessionCache) latestSessionAuth(sessionID string, providers map[string]struct{}) string {
 	if c == nil || sessionID == "" || len(providers) == 0 {
 		return ""
@@ -376,7 +359,6 @@ func (c *SessionCache) latestSessionAuth(sessionID string, providers map[string]
 	return latest.authID
 }
 
-// Touch refreshes the expiration for a session binding if it currently matches expectedAuthID.
 func (c *SessionCache) Touch(sessionID, expectedAuthID string) bool {
 	if c == nil || sessionID == "" || expectedAuthID == "" {
 		return false
@@ -394,7 +376,6 @@ func (c *SessionCache) Touch(sessionID, expectedAuthID string) bool {
 	return true
 }
 
-// CompareAndDelete removes the session binding only if it is currently bound to expectedAuthID.
 func (c *SessionCache) CompareAndDelete(sessionID, expectedAuthID string) bool {
 	if c == nil || sessionID == "" || expectedAuthID == "" {
 		return false
@@ -420,8 +401,6 @@ func (c *SessionCache) CompareAndDelete(sessionID, expectedAuthID string) bool {
 	return true
 }
 
-// Invalidate removes a specific session binding without allowing another alias
-// in the same group to recreate it on its next refresh.
 func (c *SessionCache) Invalidate(sessionID string) {
 	if c == nil || sessionID == "" {
 		return
@@ -446,8 +425,6 @@ func (c *SessionCache) Invalidate(sessionID string) {
 	}
 }
 
-// InvalidateAuth removes all sessions bound to a specific auth ID.
-// Used when an auth becomes unavailable.
 func (c *SessionCache) InvalidateAuth(authID string) {
 	if c == nil || authID == "" {
 		return
@@ -462,7 +439,6 @@ func (c *SessionCache) InvalidateAuth(authID string) {
 	}
 }
 
-// Stop terminates the background cleanup goroutine.
 func (c *SessionCache) Stop() {
 	if c == nil {
 		return
@@ -491,7 +467,6 @@ func (c *SessionCache) cleanupLoop() {
 	}
 }
 
-// Len returns the current count of tracked session aliases.
 func (c *SessionCache) Len() int {
 	if c == nil {
 		return 0

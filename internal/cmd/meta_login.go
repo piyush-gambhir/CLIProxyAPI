@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DoMetaLogin triggers the OAuth device-code flow for the Meta provider and saves tokens.
 func DoMetaLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {
 		options = &LoginOptions{}

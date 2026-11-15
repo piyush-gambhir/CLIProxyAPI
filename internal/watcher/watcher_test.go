@@ -47,7 +47,6 @@ func TestApplyAuthExcludedModelsMeta_OAuthProvider(t *testing.T) {
 
 	synthesizer.ApplyAuthExcludedModelsMeta(auth, nil, "oauth")
 
-	// Global oauth-excluded-models are resolved at model registration, not stored on the auth.
 	for _, key := range []string{"excluded_models", "excluded_models_hash"} {
 		if got, ok := auth.Attributes[key]; ok {
 			t.Fatalf("expected %s to be absent, got %q", key, got)
@@ -209,7 +208,6 @@ func TestReloadConfigIfChanged_TriggersOnChangeAndSkipsUnchanged(t *testing.T) {
 		t.Fatalf("expected first reload to trigger callback once, got %d", reloads)
 	}
 
-	// Same content should be skipped by hash check.
 	w.reloadConfigIfChanged()
 	if reloads != 1 {
 		t.Fatalf("expected unchanged config to be skipped, callback count %d", reloads)
@@ -341,7 +339,7 @@ func TestAddOrUpdateClientSkipsUnchanged(t *testing.T) {
 		},
 	}
 	w.SetConfig(&config.Config{AuthDir: tmpDir})
-	// Use normalizeAuthPath to match how addOrUpdateClient stores the key
+
 	w.lastAuthHashes[w.normalizeAuthPath(authFile)] = hexString(sum[:])
 
 	w.addOrUpdateClient(authFile)
@@ -372,7 +370,7 @@ func TestAddOrUpdateClientTriggersReloadAndHash(t *testing.T) {
 	if got := atomic.LoadInt32(&reloads); got != 0 {
 		t.Fatalf("expected no reload callback for auth update, got %d", got)
 	}
-	// Use normalizeAuthPath to match how addOrUpdateClient stores the key
+
 	normalized := w.normalizeAuthPath(authFile)
 	if _, ok := w.lastAuthHashes[normalized]; !ok {
 		t.Fatalf("expected hash to be stored for %s", normalized)
@@ -392,7 +390,7 @@ func TestRemoveClientRemovesHash(t *testing.T) {
 		},
 	}
 	w.SetConfig(&config.Config{AuthDir: tmpDir})
-	// Use normalizeAuthPath to set up the hash with the correct key format
+
 	w.lastAuthHashes[w.normalizeAuthPath(authFile)] = "hash"
 
 	w.removeClient(authFile)
@@ -612,7 +610,7 @@ func TestAuthFileUnchangedUsesHash(t *testing.T) {
 	}
 
 	sum := sha256.Sum256(content)
-	// Use normalizeAuthPath to match how authFileUnchanged looks up the key
+
 	w.lastAuthHashes[w.normalizeAuthPath(authFile)] = hexString(sum[:])
 
 	unchanged, err = w.authFileUnchanged(authFile)
@@ -818,7 +816,7 @@ func TestHandleEventRemovesAuthFile(t *testing.T) {
 			atomic.AddInt32(&reloads, 1)
 		},
 	}
-	// Use normalizeAuthPath to set up the hash with the correct key format
+
 	w.lastAuthHashes[w.normalizeAuthPath(authFile)] = "hash"
 
 	w.handleEvent(fsnotify.Event{Name: authFile, Op: fsnotify.Remove})
@@ -857,7 +855,7 @@ func TestDispatchAuthUpdatesFlushesQueue(t *testing.T) {
 }
 
 func TestDispatchLoopExitsOnContextDoneWhileSending(t *testing.T) {
-	queue := make(chan AuthUpdate) // unbuffered to block sends
+	queue := make(chan AuthUpdate)
 	w := &Watcher{
 		authQueue: queue,
 		pendingUpdates: map[string]AuthUpdate{
@@ -1185,7 +1183,6 @@ func TestHandleEventAtomicReplaceDelayedStatPreservesClient(t *testing.T) {
 		normalized: {"token.json": mockAuth},
 	}
 
-	// Delay writing the new file until 60ms (after the initial 50ms check, within retry window)
 	errChan := make(chan error, 1)
 	go func() {
 		time.Sleep(60 * time.Millisecond)
@@ -1197,7 +1194,6 @@ func TestHandleEventAtomicReplaceDelayedStatPreservesClient(t *testing.T) {
 		t.Fatalf("async WriteFile failed: %v", errWrite)
 	}
 
-	// If the retry loop settles and detects the replaced file, it should NOT have been removed.
 	w.clientsMutex.RLock()
 	_, stillKnown := w.lastAuthHashes[normalized]
 	_, stillInCurrent := w.currentAuths["token.json"]
@@ -1327,7 +1323,7 @@ func TestAddOrUpdateClientEdgeCases(t *testing.T) {
 		t.Fatalf("expected no reloads for missing/empty file, got %d", reloads)
 	}
 
-	w.addOrUpdateClient(authFile) // config nil -> should not panic or update
+	w.addOrUpdateClient(authFile)
 	if len(w.lastAuthHashes) != 0 {
 		t.Fatalf("expected no hash entries without config, got %d", len(w.lastAuthHashes))
 	}
@@ -1365,14 +1361,14 @@ func TestReloadConfigIfChangedHandlesMissingAndEmpty(t *testing.T) {
 		configPath: filepath.Join(tmpDir, "missing.yaml"),
 		authDir:    authDir,
 	}
-	w.reloadConfigIfChanged() // missing file -> log + return
+	w.reloadConfigIfChanged()
 
 	emptyPath := filepath.Join(tmpDir, "empty.yaml")
 	if err := os.WriteFile(emptyPath, []byte(""), 0o644); err != nil {
 		t.Fatalf("failed to write empty config: %v", err)
 	}
 	w.configPath = emptyPath
-	w.reloadConfigIfChanged() // empty file -> early return
+	w.reloadConfigIfChanged()
 }
 
 func TestReloadConfigUsesMirroredAuthDir(t *testing.T) {
@@ -1414,7 +1410,6 @@ func TestReloadConfigFiltersAffectedOAuthProviders(t *testing.T) {
 	}
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-	// Ensure SnapshotCoreAuths yields a provider that is NOT affected, so we can assert it survives.
 	if err := os.WriteFile(filepath.Join(authDir, "provider-b.json"), []byte(`{"type":"provider-b","email":"b@example.com"}`), 0o644); err != nil {
 		t.Fatalf("failed to write auth file: %v", err)
 	}
@@ -1512,7 +1507,7 @@ func TestReloadConfigRedispatchesUnchangedAuthForGlobalOAuthExclusionChange(t *t
 			if update.Auth == nil || update.Auth.Provider != "claude" {
 				t.Fatalf("%s: unexpected auth update %+v", stage, update)
 			}
-			// Global rules are resolved at registration and never stored on the credential.
+
 			if value, ok := update.Auth.Attributes["excluded_models"]; ok {
 				t.Fatalf("%s: excluded_models attribute = %q, want absent", stage, value)
 			}
@@ -1526,7 +1521,6 @@ func TestReloadConfigRedispatchesUnchangedAuthForGlobalOAuthExclusionChange(t *t
 	w.refreshAuthState(false)
 	initial := nextUpdate("initial load")
 
-	// The credential is unchanged, so only the affected-provider refresh can trigger re-registration.
 	if ok := w.reloadConfig(); !ok {
 		t.Fatal("expected reloadConfig to succeed")
 	}
@@ -1637,7 +1631,6 @@ func TestNormalizeAuthNil(t *testing.T) {
 	}
 }
 
-// stubStore implements coreauth.Store plus watcher-specific persistence helpers.
 type stubStore struct {
 	mu              sync.Mutex
 	authDir         string
@@ -1972,7 +1965,6 @@ func TestReloadConfigUpdatesAuthDirWatchAndSnapshots(t *testing.T) {
 		t.Fatalf("expected cred-a.json and shared.json in initial updates, got %v", initialSeen)
 	}
 
-	// Switch auth-dir from dirA to dirB at runtime.
 	writeConfig(dirB)
 	w.ReloadConfigIfChanged()
 
@@ -2016,7 +2008,6 @@ func TestReloadConfigUpdatesAuthDirWatchAndSnapshots(t *testing.T) {
 		t.Fatalf("expected SnapshotAuthFile(credBPath) ID=cred-b.json, got %+v", fileSnapshot)
 	}
 
-	// Events for the old directory must be ignored, while events in the new directory must be processed.
 	credA2Path := filepath.Join(dirA, "cred-a2.json")
 	if errWriteA2 := os.WriteFile(credA2Path, []byte(`{"type":"codex","email":"a2@example.com"}`), 0o600); errWriteA2 != nil {
 		t.Fatalf("failed to write cred-a2.json: %v", errWriteA2)
@@ -2144,7 +2135,6 @@ func TestAddOrUpdateClientDiscardsStaleDirEventAcrossAuthDirSwitch(t *testing.T)
 		t.Fatal("timed out waiting for addOrUpdateClientLocked to reach synthesis")
 	}
 
-	// Switch auth-dir to dirB while the dirA event is paused mid-synthesis.
 	w.SetConfig(&config.Config{AuthDir: dirB})
 	w.refreshAuthState(false)
 

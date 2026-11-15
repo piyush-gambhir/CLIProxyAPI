@@ -65,8 +65,7 @@ func TestCodexDuplexConnectionTimeoutDoesNotCoolHealthyAccount(t *testing.T) {
 	for chunk := range stream.Chunks {
 		if ojson.GetBytes(chunk.Payload, "type").String() == "response.completed" {
 			sawCompleted = true
-			// Inject a real net.Error through the input seam after a successful response.
-			// No wall-clock sleep or production network deadline is needed.
+
 			input <- core.WebsocketInput{Err: &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}}
 		}
 		if chunk.Err != nil {

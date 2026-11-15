@@ -24,7 +24,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// Download single auth file by name
 func (h *Handler) DownloadAuthFile(c *gin.Context) {
 	name := strings.TrimSpace(c.Query("name"))
 	if isUnsafeAuthFileName(name) {
@@ -49,7 +48,6 @@ func (h *Handler) DownloadAuthFile(c *gin.Context) {
 	c.Data(200, "application/json", data)
 }
 
-// Upload auth file: multipart or raw JSON with ?name=
 func (h *Handler) UploadAuthFile(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
@@ -138,7 +136,6 @@ func (h *Handler) UploadAuthFile(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }
 
-// Delete auth files: single by name or all
 func (h *Handler) DeleteAuthFile(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
@@ -496,7 +493,7 @@ func (h *Handler) authIDForPath(path string) string {
 			}
 		}
 	}
-	// On Windows, normalize ID casing to avoid duplicate auth entries caused by case-insensitive paths.
+
 	if runtime.GOOS == "windows" {
 		id = strings.ToLower(id)
 	}
@@ -547,7 +544,7 @@ func (h *Handler) buildAuthFromFileData(path string, data []byte) (*coreauth.Aut
 		return nil, fmt.Errorf("%w: %w", errInvalidAuthFile, err)
 	}
 	coreauth.NormalizeCredentialMetadata(metadata)
-	// Loading tolerates invalid exclusion rules, so reject them here before anything is persisted.
+
 	if _, errExcluded := synthesizer.ExtractExcludedModelsFromMetadata(metadata); errExcluded != nil {
 		return nil, fmt.Errorf("%w: %w", errInvalidAuthFile, errExcluded)
 	}

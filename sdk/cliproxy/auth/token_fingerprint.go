@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-// AccessTokenSHA256 returns the normalized OAuth access-token fingerprint used
-// to fence asynchronous Home execution results without exposing the token.
 func AccessTokenSHA256(auth *Auth) string {
 	accessToken := accessTokenForFingerprint(auth)
 	if accessToken == "" {
@@ -30,9 +28,6 @@ func withAccessTokenFingerprintObserver(ctx context.Context, observer func(*Auth
 	return context.WithValue(ctx, accessTokenFingerprintObserverContextKey{}, observer)
 }
 
-// NotifyAccessTokenFingerprint reports the auth snapshot actually used by an
-// executor that may refresh its local token before sending upstream. The
-// observer derives the fingerprint and can reuse that snapshot for recovery.
 func NotifyAccessTokenFingerprint(ctx context.Context, auth *Auth) {
 	if ctx == nil || auth == nil || AccessTokenSHA256(auth) == "" {
 		return

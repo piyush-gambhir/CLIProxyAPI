@@ -77,7 +77,6 @@ func (e *noForkAliasTestExecutor) LastAuthID() string {
 	return e.lastAuthID
 }
 
-// Test 1: no-fork alias retains cooldown across reconcile
 func TestManager_NoForkAlias_RetainsCooldownAfterReconcile(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -124,7 +123,6 @@ func TestManager_NoForkAlias_RetainsCooldownAfterReconcile(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Perform reconciliation
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
@@ -148,13 +146,11 @@ func TestManager_NoForkAlias_RetainsCooldownAfterReconcile(t *testing.T) {
 		t.Fatalf("targetModel state Quota.Exceeded = false, want true")
 	}
 
-	// Verify registry projection
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q was not suspended in registry for client %s", routeModel, auth.ID)
 	}
 }
 
-// Test 2: requesting alias skips cooling credential and executes on available credential
 func TestManager_NoForkAlias_BypassesCoolingAuthOnSubsequentRequest(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -229,7 +225,6 @@ func TestManager_NoForkAlias_BypassesCoolingAuthOnSubsequentRequest(t *testing.T
 	}
 }
 
-// Test 3: cooldown store persistence consistency
 func TestManager_NoForkAlias_CooldownPersistenceConsistency(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -266,7 +261,6 @@ func TestManager_NoForkAlias_CooldownPersistenceConsistency(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Mark rate limit failure on targetModel
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
@@ -296,11 +290,9 @@ func TestManager_NoForkAlias_CooldownPersistenceConsistency(t *testing.T) {
 		t.Fatalf("expected cooldown record for model %q in store, records = %#v", targetModel, records)
 	}
 
-	// Trigger model re-registration and reconcile
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{{ID: routeModel}})
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
-	// Verify store still has the cooldown record
 	recordsAfter := store.savedRecords()
 	foundTargetAfter := false
 	for _, rec := range recordsAfter {
@@ -314,7 +306,6 @@ func TestManager_NoForkAlias_CooldownPersistenceConsistency(t *testing.T) {
 	}
 }
 
-// Test 4: multiple aliases pointing to the same upstream target model
 func TestManager_NoForkAlias_MultipleAliasesToSameTarget(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -351,7 +342,6 @@ func TestManager_NoForkAlias_MultipleAliasesToSameTarget(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Trigger rate limit cooldown on targetModel
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
@@ -366,7 +356,6 @@ func TestManager_NoForkAlias_MultipleAliasesToSameTarget(t *testing.T) {
 		RetryAfter: &retryAfter,
 	})
 
-	// Verify that ModelStates only contains a single authoritative entry for targetModel
 	manager.mu.RLock()
 	currentAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
@@ -378,7 +367,6 @@ func TestManager_NoForkAlias_MultipleAliasesToSameTarget(t *testing.T) {
 		t.Fatalf("expected state for targetModel %q", targetModel)
 	}
 
-	// Verify both routeModel1 and routeModel2 are suspended in registry
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel1) {
 		t.Fatalf("routeModel1 %q was not suspended in registry", routeModel1)
 	}
@@ -386,14 +374,12 @@ func TestManager_NoForkAlias_MultipleAliasesToSameTarget(t *testing.T) {
 		t.Fatalf("routeModel2 %q was not suspended in registry", routeModel2)
 	}
 
-	// Re-register and reconcile
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{
 		{ID: routeModel1},
 		{ID: routeModel2},
 	})
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
-	// Cooldown and suspension must be retained on both
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel1) {
 		t.Fatalf("routeModel1 %q lost suspension after reconcile", routeModel1)
 	}
@@ -402,7 +388,6 @@ func TestManager_NoForkAlias_MultipleAliasesToSameTarget(t *testing.T) {
 	}
 }
 
-// Test 5: cleanup after all aliases pointing to target model are removed
 func TestManager_NoForkAlias_CleanupAfterAliasRemoved(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -448,7 +433,6 @@ func TestManager_NoForkAlias_CleanupAfterAliasRemoved(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Reconcile with alias present -> state retained
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 	manager.mu.RLock()
 	if _, exists := manager.auths[auth.ID].ModelStates[targetModel]; !exists {
@@ -457,13 +441,11 @@ func TestManager_NoForkAlias_CleanupAfterAliasRemoved(t *testing.T) {
 	}
 	manager.mu.RUnlock()
 
-	// Now remove alias from config and register only otherModel
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: nil,
 	})
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{{ID: otherModel}})
 
-	// Reconcile -> targetModel is no longer reachable via any registered model or alias
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
@@ -476,7 +458,6 @@ func TestManager_NoForkAlias_CleanupAfterAliasRemoved(t *testing.T) {
 		}
 	}
 
-	// Check store has no targetModel record
 	records := store.savedRecords()
 	for _, rec := range records {
 		if rec.Model == targetModel && rec.AuthID == auth.ID {
@@ -485,7 +466,6 @@ func TestManager_NoForkAlias_CleanupAfterAliasRemoved(t *testing.T) {
 	}
 }
 
-// Test 6: Fork: true regression test
 func TestManager_ForkTrue_RetainsStateAndSuspendsBoth(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -530,7 +510,6 @@ func TestManager_ForkTrue_RetainsStateAndSuspendsBoth(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Reconcile
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
@@ -545,7 +524,6 @@ func TestManager_ForkTrue_RetainsStateAndSuspendsBoth(t *testing.T) {
 		t.Fatal("targetModel state Unavailable = false, want true")
 	}
 
-	// Verify both targetModel and routeModel are suspended in registry
 	if !reg.IsModelSuspendedForClient(auth.ID, targetModel) {
 		t.Fatalf("targetModel %q was not suspended in registry", targetModel)
 	}
@@ -554,7 +532,6 @@ func TestManager_ForkTrue_RetainsStateAndSuspendsBoth(t *testing.T) {
 	}
 }
 
-// Test 7: expired cooldown is reset cleanly on reconcile
 func TestManager_NoForkAlias_ExpiredCooldownResetClean(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -573,7 +550,6 @@ func TestManager_NoForkAlias_ExpiredCooldownResetClean(t *testing.T) {
 		}},
 	})
 
-	// Cooldown expired 10 minutes ago
 	expiredTime := time.Now().Add(-10 * time.Minute)
 	auth := &Auth{
 		ID:       "nofork-expired-auth",
@@ -598,7 +574,6 @@ func TestManager_NoForkAlias_ExpiredCooldownResetClean(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Reconcile should reset the expired state
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
@@ -613,7 +588,6 @@ func TestManager_NoForkAlias_ExpiredCooldownResetClean(t *testing.T) {
 	}
 }
 
-// Test 8: MarkResult and ResetQuota projection on no-fork alias
 func TestManager_NoForkAlias_MarkResultAndResetQuotaProjection(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -647,7 +621,6 @@ func TestManager_NoForkAlias_MarkResultAndResetQuotaProjection(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Trigger rate limit failure
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
@@ -662,7 +635,6 @@ func TestManager_NoForkAlias_MarkResultAndResetQuotaProjection(t *testing.T) {
 		RetryAfter: &retryAfter,
 	})
 
-	// Verify routeModel in registry is marked with quota exceeded and suspension
 	if !reg.IsModelQuotaExceededForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q was not marked quota exceeded in registry", routeModel)
 	}
@@ -670,12 +642,10 @@ func TestManager_NoForkAlias_MarkResultAndResetQuotaProjection(t *testing.T) {
 		t.Fatalf("routeModel %q was not suspended in registry", routeModel)
 	}
 
-	// Reset quota
 	if _, _, errReset := manager.ResetQuota(context.Background(), auth.ID); errReset != nil {
 		t.Fatalf("ResetQuota failed: %v", errReset)
 	}
 
-	// Verify routeModel in registry is cleared
 	if reg.IsModelQuotaExceededForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q is still marked quota exceeded after ResetQuota", routeModel)
 	}
@@ -684,7 +654,6 @@ func TestManager_NoForkAlias_MarkResultAndResetQuotaProjection(t *testing.T) {
 	}
 }
 
-// Test 9: per-auth alias and per-auth overriding global alias with no-fork reconcile
 func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testing.T) {
 	const (
 		provider      = "antigravity"
@@ -697,7 +666,6 @@ func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testi
 	executor := &noForkAliasTestExecutor{id: provider}
 	manager.RegisterExecutor(executor)
 
-	// Set a global alias pointing routeModel -> globalTarget
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: {{
 			Name:  globalTarget,
@@ -729,7 +697,7 @@ func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testi
 			},
 		},
 	}
-	// Configure per-auth alias overriding global alias: routeModel -> perAuthTarget
+
 	SetOAuthModelAliasesAttribute(auth1, []internalconfig.OAuthModelAlias{{
 		Name:  perAuthTarget,
 		Alias: routeModel,
@@ -746,7 +714,6 @@ func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testi
 		reg.UnregisterClient(auth1.ID)
 	})
 
-	// Reconcile
 	manager.ReconcileRegistryModelStates(context.Background(), auth1.ID)
 
 	manager.mu.RLock()
@@ -757,7 +724,6 @@ func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testi
 		t.Fatal("auth1 not found after reconcile")
 	}
 
-	// perAuthTarget cooldown must be retained
 	state, exists := currentAuth.ModelStates[perAuthTarget]
 	if !exists || state == nil {
 		t.Fatalf("perAuthTarget %q state was deleted or nil after reconcile", perAuthTarget)
@@ -766,12 +732,10 @@ func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testi
 		t.Fatalf("perAuthTarget state active cooldown was lost: %#v", state)
 	}
 
-	// globalTarget state must be pruned because per-auth alias overrode global alias
 	if _, existsGlobal := currentAuth.ModelStates[globalTarget]; existsGlobal {
 		t.Fatalf("overridden globalTarget %q should have been pruned from ModelStates", globalTarget)
 	}
 
-	// Registry must project suspension onto routeModel
 	if !reg.IsModelSuspendedForClient(auth1.ID, routeModel) {
 		t.Fatalf("routeModel %q was not suspended in registry for client %s", routeModel, auth1.ID)
 	}
@@ -780,7 +744,6 @@ func TestManager_NoForkAlias_PerAuthAlias_RetainsCooldownAfterReconcile(t *testi
 	}
 }
 
-// Test 10: real persistence restore from store and verify execution bypasses cooling credential
 func TestManager_NoForkAlias_RealPersistenceRestore_BypassesCoolingAuth(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -820,7 +783,6 @@ func TestManager_NoForkAlias_RealPersistenceRestore_BypassesCoolingAuth(t *testi
 		reg.UnregisterClient(auth2.ID)
 	})
 
-	// Put auth1 into cooldown on targetModel via MarkResult
 	retryAfter := 30 * time.Minute
 	manager1.MarkResult(context.Background(), Result{
 		AuthID:   auth1.ID,
@@ -840,7 +802,6 @@ func TestManager_NoForkAlias_RealPersistenceRestore_BypassesCoolingAuth(t *testi
 		t.Fatal("expected saved cooldown records in store, got 0")
 	}
 
-	// Create new Manager instance simulating fresh startup
 	restoreStore := &recordingCooldownStateStore{load: savedRecords}
 	manager2 := NewManager(nil, nil, nil)
 	manager2.SetCooldownStateStore(restoreStore)
@@ -864,22 +825,18 @@ func TestManager_NoForkAlias_RealPersistenceRestore_BypassesCoolingAuth(t *testi
 		t.Fatalf("register freshAuth2: %v", errRegister)
 	}
 
-	// Restore cooldown states from store
 	if errRestore := manager2.RestoreCooldownStates(context.Background()); errRestore != nil {
 		t.Fatalf("RestoreCooldownStates failed: %v", errRestore)
 	}
 
-	// Reconcile and refresh scheduler
 	manager2.ReconcileRegistryModelStates(context.Background(), freshAuth1.ID)
 	manager2.ReconcileRegistryModelStates(context.Background(), freshAuth2.ID)
 	manager2.RefreshSchedulerAll()
 
-	// Verify routeModel on freshAuth1 is suspended in registry
 	if !reg.IsModelSuspendedForClient(freshAuth1.ID, routeModel) {
 		t.Fatalf("routeModel %q should be suspended for restored auth1", routeModel)
 	}
 
-	// Execute request on alias -> should skip freshAuth1 and select freshAuth2
 	resp, errExecute := manager2.Execute(context.Background(), []string{provider}, cliproxyexecutor.Request{Model: routeModel}, cliproxyexecutor.Options{})
 	if errExecute != nil {
 		t.Fatalf("execute error: %v", errExecute)
@@ -896,7 +853,6 @@ func TestManager_NoForkAlias_RealPersistenceRestore_BypassesCoolingAuth(t *testi
 	}
 }
 
-// Test 11: store persistence records cleaned when alias is removed
 func TestManager_NoForkAlias_StorePersistenceCleanedWhenAliasRemoved(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -934,7 +890,6 @@ func TestManager_NoForkAlias_StorePersistenceCleanedWhenAliasRemoved(t *testing.
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Cooldown on targetModel
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
@@ -949,7 +904,6 @@ func TestManager_NoForkAlias_StorePersistenceCleanedWhenAliasRemoved(t *testing.
 		RetryAfter: &retryAfter,
 	})
 
-	// Ensure store has record
 	recordsBefore := store.savedRecords()
 	found := false
 	for _, rec := range recordsBefore {
@@ -962,13 +916,11 @@ func TestManager_NoForkAlias_StorePersistenceCleanedWhenAliasRemoved(t *testing.
 		t.Fatalf("expected store record for targetModel %q before alias removal", targetModel)
 	}
 
-	// Remove alias from configuration and update registry
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: nil,
 	})
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{{ID: otherModel}})
 
-	// Reconcile -> removes targetModel from auth.ModelStates and persists updated snapshot to store
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	recordsAfter := store.savedRecords()
@@ -979,7 +931,6 @@ func TestManager_NoForkAlias_StorePersistenceCleanedWhenAliasRemoved(t *testing.
 	}
 }
 
-// Test 12: multiple aliases (B1, B2 -> A) both skip cooling auth end-to-end
 func TestManager_NoForkAlias_MultipleAliases_BothSkipCoolingAuthEndToEnd(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1036,7 +987,6 @@ func TestManager_NoForkAlias_MultipleAliases_BothSkipCoolingAuthEndToEnd(t *test
 	manager.ReconcileRegistryModelStates(context.Background(), auth2.ID)
 	manager.RefreshSchedulerAll()
 
-	// Execute via routeModel1 -> skips auth1, selects auth2
 	resp1, errExecute1 := manager.Execute(context.Background(), []string{provider}, cliproxyexecutor.Request{Model: routeModel1}, cliproxyexecutor.Options{})
 	if errExecute1 != nil {
 		t.Fatalf("execute routeModel1: %v", errExecute1)
@@ -1048,7 +998,6 @@ func TestManager_NoForkAlias_MultipleAliases_BothSkipCoolingAuthEndToEnd(t *test
 		t.Fatalf("selected auth = %q, want %q for routeModel1", executor.LastAuthID(), auth2.ID)
 	}
 
-	// Execute via routeModel2 -> skips auth1, selects auth2
 	resp2, errExecute2 := manager.Execute(context.Background(), []string{provider}, cliproxyexecutor.Request{Model: routeModel2}, cliproxyexecutor.Options{})
 	if errExecute2 != nil {
 		t.Fatalf("execute routeModel2: %v", errExecute2)
@@ -1061,7 +1010,6 @@ func TestManager_NoForkAlias_MultipleAliases_BothSkipCoolingAuthEndToEnd(t *test
 	}
 }
 
-// Test 13: alias repointing scenarios (B -> A changed to B -> C, and route A mapped to C)
 func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -1070,7 +1018,6 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 		modelC   = "gemini-model-c"
 	)
 
-	// Scenario 1: B -> A changed to B -> C
 	t.Run("Repointing B from A to C", func(t *testing.T) {
 		manager := NewManager(nil, nil, nil)
 		executor := &noForkAliasTestExecutor{id: provider}
@@ -1106,13 +1053,11 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 			reg.UnregisterClient(auth.ID)
 		})
 
-		// First reconcile: modelA cooldown is retained, modelB suspended
 		manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 		if !reg.IsModelSuspendedForClient(auth.ID, modelB) {
 			t.Fatalf("modelB should be suspended for client %s", auth.ID)
 		}
 
-		// Change alias: B -> C
 		manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 			provider: {{
 				Name:  modelC,
@@ -1121,7 +1066,6 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 			}},
 		})
 
-		// Reconcile: old modelA state pruned, modelB resumed because modelC is clean
 		manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 		manager.mu.RLock()
@@ -1137,7 +1081,6 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 			t.Fatalf("modelB should no longer be suspended after repointing to clean modelC")
 		}
 
-		// Now trigger cooldown on modelC via MarkResult
 		retryAfterC := 30 * time.Minute
 		manager.MarkResult(context.Background(), Result{
 			AuthID:   auth.ID,
@@ -1152,18 +1095,16 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 			RetryAfter: &retryAfterC,
 		})
 
-		// modelB in registry must now be suspended for modelC cooldown
 		if !reg.IsModelSuspendedForClient(auth.ID, modelB) {
 			t.Fatalf("modelB should now be suspended after modelC cooldown")
 		}
 	})
 
-	// Scenario 2: Route named A originally, now mapped to C (A -> C)
 	t.Run("Route named A mapped to C", func(t *testing.T) {
 		manager := NewManager(nil, nil, nil)
 		executor := &noForkAliasTestExecutor{id: provider}
 		manager.RegisterExecutor(executor)
-		// Alias maps route modelA -> modelC
+
 		manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 			provider: {{
 				Name:  modelC,
@@ -1178,7 +1119,7 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 			Provider: provider,
 			Status:   StatusActive,
 			ModelStates: map[string]*ModelState{
-				// Legacy state for modelA
+
 				modelA: {
 					Unavailable:    true,
 					Status:         StatusError,
@@ -1196,7 +1137,6 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 			reg.UnregisterClient(auth.ID)
 		})
 
-		// Reconcile: route modelA now resolves to modelC. Legacy modelA state migrated to modelC.
 		manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 		manager.mu.RLock()
@@ -1218,7 +1158,6 @@ func TestManager_NoForkAlias_AliasRepointing_PrunesOldTargetAndReconciles(t *tes
 	})
 }
 
-// Test 14: concurrent Reconcile and MarkResult stability
 func TestManager_NoForkAlias_ConcurrentReconcileAndMarkResult(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1259,7 +1198,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileAndMarkResult(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(3)
 
-	// Goroutine 1: Rapid Reconcile
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -1268,7 +1206,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileAndMarkResult(t *testing.T) {
 		}
 	}()
 
-	// Goroutine 2: Alternate MarkResult failure and ResetQuota
 	go func() {
 		defer wg.Done()
 		retryAfter := 10 * time.Minute
@@ -1293,7 +1230,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileAndMarkResult(t *testing.T) {
 		}
 	}()
 
-	// Goroutine 3: Concurrent Execute calls
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -1305,7 +1241,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileAndMarkResult(t *testing.T) {
 	wg.Wait()
 }
 
-// Test 15: MarkResult with route model B generates authoritative ModelStates[A] and never ModelStates[B]
 func TestManager_NoForkAlias_MarkResultRouteModelWritesAuthoritativeState(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1339,7 +1274,6 @@ func TestManager_NoForkAlias_MarkResultRouteModelWritesAuthoritativeState(t *tes
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Pass routeModel B to MarkResult via RouteModel with 429 failure
 	retryAfter := 20 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -1362,12 +1296,10 @@ func TestManager_NoForkAlias_MarkResultRouteModelWritesAuthoritativeState(t *tes
 		t.Fatal("auth not found")
 	}
 
-	// ModelStates[routeModel] must NEVER be created
 	if _, existsB := currentAuth.ModelStates[routeModel]; existsB {
 		t.Fatalf("ModelStates[%q] was created, but only authoritative targetModel should exist", routeModel)
 	}
 
-	// Authoritative ModelStates[targetModel] must exist and be cooling
 	stateA, existsA := currentAuth.ModelStates[targetModel]
 	if !existsA || stateA == nil {
 		t.Fatalf("authoritative ModelStates[%q] missing", targetModel)
@@ -1376,12 +1308,10 @@ func TestManager_NoForkAlias_MarkResultRouteModelWritesAuthoritativeState(t *tes
 		t.Fatalf("authoritative ModelStates[%q] not in cooling: %#v", targetModel, stateA)
 	}
 
-	// Registry must project suspension onto routeModel
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should be suspended in registry", routeModel)
 	}
 
-	// Now mark success on routeModel via RouteModel
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
 		Provider:   provider,
@@ -1393,22 +1323,20 @@ func TestManager_NoForkAlias_MarkResultRouteModelWritesAuthoritativeState(t *tes
 	currentAuth = manager.auths[auth.ID]
 	manager.mu.RUnlock()
 
-	// Still no ModelStates[routeModel]
 	if _, existsB := currentAuth.ModelStates[routeModel]; existsB {
 		t.Fatalf("ModelStates[%q] was created after success", routeModel)
 	}
-	// ModelStates[targetModel] is clean
+
 	stateA, existsA = currentAuth.ModelStates[targetModel]
 	if !existsA || stateA == nil || !modelStateIsClean(stateA) {
 		t.Fatalf("authoritative ModelStates[%q] should be clean after success: %#v", targetModel, stateA)
 	}
-	// Registry resumed routeModel
+
 	if reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should be resumed in registry after success", routeModel)
 	}
 }
 
-// Test 16: Legacy ModelStates[B] is automatically pruned on Reconcile when configured as B -> A
 func TestManager_NoForkAlias_LegacyModelStatePrunedOnReconcile(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1457,19 +1385,16 @@ func TestManager_NoForkAlias_LegacyModelStatePrunedOnReconcile(t *testing.T) {
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Reconcile
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
 	currentAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
 
-	// ModelStates[routeModel] must be pruned
 	if _, existsLegacy := currentAuth.ModelStates[routeModel]; existsLegacy {
 		t.Fatalf("legacy ModelStates[%q] was not pruned after Reconcile", routeModel)
 	}
 
-	// ModelStates[targetModel] must be retained
 	stateA, existsA := currentAuth.ModelStates[targetModel]
 	if !existsA || stateA == nil {
 		t.Fatalf("authoritative ModelStates[%q] missing after Reconcile", targetModel)
@@ -1478,7 +1403,6 @@ func TestManager_NoForkAlias_LegacyModelStatePrunedOnReconcile(t *testing.T) {
 		t.Fatalf("authoritative ModelStates[%q] should be unavailable", targetModel)
 	}
 
-	// Both routeModel and targetModel in registry are suspended
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should be suspended in registry", routeModel)
 	}
@@ -1487,7 +1411,6 @@ func TestManager_NoForkAlias_LegacyModelStatePrunedOnReconcile(t *testing.T) {
 	}
 }
 
-// Test 17: Real disk file persistence restore using NewFileCooldownStateStoreWithAuthDir
 func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1546,7 +1469,6 @@ func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *tes
 		reg.UnregisterClient(auth2.ID)
 	})
 
-	// Put auth1 into cooldown on targetModel (via RouteModel) via MarkResult
 	retryAfter := 30 * time.Minute
 	manager1.MarkResult(context.Background(), Result{
 		AuthID:     auth1.ID,
@@ -1562,7 +1484,6 @@ func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *tes
 		RetryAfter: &retryAfter,
 	})
 
-	// Verify disk cooldown file exists
 	loadedRecords, errLoad := diskStore1.Load(context.Background())
 	if errLoad != nil {
 		t.Fatalf("diskStore1.Load failed: %v", errLoad)
@@ -1571,7 +1492,6 @@ func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *tes
 		t.Fatal("expected persisted cooldown records on disk, got 0")
 	}
 
-	// Create fresh Manager instance with real disk store
 	diskStore2 := NewFileCooldownStateStoreWithAuthDir(storeDir, authDir)
 	manager2 := NewManager(nil, nil, nil)
 	manager2.SetCooldownStateStore(diskStore2)
@@ -1595,7 +1515,6 @@ func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *tes
 		t.Fatalf("register freshAuth2: %v", errRegister)
 	}
 
-	// Restore cooldown states from disk
 	if errRestore := manager2.RestoreCooldownStates(context.Background()); errRestore != nil {
 		t.Fatalf("RestoreCooldownStates failed: %v", errRestore)
 	}
@@ -1604,12 +1523,10 @@ func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *tes
 	manager2.ReconcileRegistryModelStates(context.Background(), freshAuth2.ID)
 	manager2.RefreshSchedulerAll()
 
-	// Verify routeModel on freshAuth1 is suspended in registry
 	if !reg.IsModelSuspendedForClient(freshAuth1.ID, routeModel) {
 		t.Fatalf("routeModel %q should be suspended for restored disk-auth-1", routeModel)
 	}
 
-	// Execute alias request -> should bypass cooling disk-auth-1 and select disk-auth-2
 	resp, errExecute := manager2.Execute(context.Background(), []string{provider}, cliproxyexecutor.Request{Model: routeModel}, cliproxyexecutor.Options{})
 	if errExecute != nil {
 		t.Fatalf("execute error: %v", errExecute)
@@ -1622,7 +1539,6 @@ func TestManager_NoForkAlias_RealDiskFileStoreRestore_BypassesCoolingAuth(t *tes
 	}
 }
 
-// Test 18: Concurrent Reconcile, MarkResult, and ResetQuota with full consistency assertion
 func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1663,7 +1579,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 	var wg sync.WaitGroup
 	wg.Add(4)
 
-	// Goroutine 1: Continuous Reconcile
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -1672,7 +1587,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 		}
 	}()
 
-	// Goroutine 2: MarkResult on routeModel
 	go func() {
 		defer wg.Done()
 		retryAfter := 10 * time.Minute
@@ -1706,7 +1620,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 		}
 	}()
 
-	// Goroutine 3: MarkResult on targetModel
 	go func() {
 		defer wg.Done()
 		retryAfter := 10 * time.Minute
@@ -1731,7 +1644,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 		}
 	}()
 
-	// Goroutine 4: Execute
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -1742,7 +1654,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 
 	wg.Wait()
 
-	// Natural final consistency assertion without artificial post-reconcile
 	manager.mu.RLock()
 	finalAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
@@ -1751,12 +1662,10 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 		t.Fatal("finalAuth is nil")
 	}
 
-	// ModelStates must never contain routeModel
 	if _, existsB := finalAuth.ModelStates[routeModel]; existsB {
 		t.Fatalf("ModelStates still contains routeModel %q after concurrency", routeModel)
 	}
 
-	// Registry suspension must match targetModel availability
 	stateA := finalAuth.ModelStates[targetModel]
 	isTargetCooling := stateA != nil && (stateA.Unavailable || (!stateA.NextRetryAfter.IsZero() && stateA.NextRetryAfter.After(time.Now())))
 	isRegistrySuspended := reg.IsModelSuspendedForClient(auth.ID, routeModel)
@@ -1764,7 +1673,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 		t.Fatalf("registry suspended mismatch: targetCooling=%v, registrySuspended=%v", isTargetCooling, isRegistrySuspended)
 	}
 
-	// Cooldown store must be consistent with memory ModelStates
 	records := store.savedRecords()
 	var storeRecordForTarget *CooldownStateRecord
 	for i := range records {
@@ -1783,7 +1691,6 @@ func TestManager_NoForkAlias_ConcurrentReconcileMarkResult_FullConsistency(t *te
 	}
 }
 
-// Test 19: Reconcile with cancelled context still cleans cooldown store properly
 func TestManager_NoForkAlias_CancelledContextReconcile_CooldownStoreCleaned(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1821,7 +1728,6 @@ func TestManager_NoForkAlias_CancelledContextReconcile_CooldownStoreCleaned(t *t
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Put into cooldown on targetModel (via RouteModel)
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -1849,19 +1755,16 @@ func TestManager_NoForkAlias_CancelledContextReconcile_CooldownStoreCleaned(t *t
 		t.Fatalf("expected store record for targetModel %q initially, got records: %#v", targetModel, recordsBefore)
 	}
 
-	// Remove alias and change supported model in registry
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: nil,
 	})
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{{ID: otherModel}})
 
-	// Reconcile with cancelled context
 	cancelledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	manager.ReconcileRegistryModelStates(cancelledCtx, auth.ID)
 
-	// Memory ModelStates must have targetModel deleted
 	manager.mu.RLock()
 	currentAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
@@ -1872,7 +1775,6 @@ func TestManager_NoForkAlias_CancelledContextReconcile_CooldownStoreCleaned(t *t
 		}
 	}
 
-	// Cooldown store must be cleanly updated and no longer have targetModel
 	recordsAfter := store.savedRecords()
 	for _, rec := range recordsAfter {
 		if rec.AuthID == auth.ID && rec.Model == targetModel {
@@ -1881,7 +1783,6 @@ func TestManager_NoForkAlias_CancelledContextReconcile_CooldownStoreCleaned(t *t
 	}
 }
 
-// Test 20: MarkResult receiving already targetModel does NOT perform secondary alias resolution
 func TestManager_NoForkAlias_MarkResultTargetModelNoSecondaryAliasResolution(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -1894,7 +1795,6 @@ func TestManager_NoForkAlias_MarkResultTargetModelNoSecondaryAliasResolution(t *
 	executor := &noForkAliasTestExecutor{id: provider}
 	manager.RegisterExecutor(executor)
 
-	// Configure chained aliases: modelB -> modelA, and modelA -> modelC
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: {
 			{Name: modelA, Alias: modelB, Fork: false},
@@ -1917,7 +1817,6 @@ func TestManager_NoForkAlias_MarkResultTargetModelNoSecondaryAliasResolution(t *
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Execution layer passes authoritative target Model: modelA and RouteModel: modelB
 	retryAfter := 20 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -1941,7 +1840,6 @@ func TestManager_NoForkAlias_MarkResultTargetModelNoSecondaryAliasResolution(t *
 		t.Fatal("auth not found")
 	}
 
-	// ModelStates must record state directly on modelA
 	stateA, existsA := currentAuth.ModelStates[modelA]
 	if !existsA || stateA == nil {
 		t.Fatalf("expected ModelStates[%q] to exist", modelA)
@@ -1950,7 +1848,6 @@ func TestManager_NoForkAlias_MarkResultTargetModelNoSecondaryAliasResolution(t *
 		t.Fatalf("ModelStates[%q] expected cooling, got %#v", modelA, stateA)
 	}
 
-	// Secondary alias resolution must NOT have occurred on modelA -> modelC
 	if _, existsC := currentAuth.ModelStates[modelC]; existsC {
 		t.Fatalf("ModelStates[%q] was created due to secondary alias resolution", modelC)
 	}
@@ -1958,13 +1855,11 @@ func TestManager_NoForkAlias_MarkResultTargetModelNoSecondaryAliasResolution(t *
 		t.Fatalf("ModelStates[%q] should not exist", modelB)
 	}
 
-	// Registry must project suspension onto route modelB
 	if !reg.IsModelSuspendedForClient(auth.ID, modelB) {
 		t.Fatalf("route model %q should be suspended in registry", modelB)
 	}
 }
 
-// Test 21: MarkResult on 500/503/transient errors immediately suspends route alias in registry
 func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -1998,7 +1893,6 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Initial check: routeModel is active and count is 1
 	if reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should not be suspended initially", routeModel)
 	}
@@ -2006,7 +1900,6 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 		t.Fatalf("expected count 1 for routeModel %q, got %d", routeModel, count)
 	}
 
-	// 1. MarkResult with 500 Internal Server Error
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
 		Provider:   provider,
@@ -2020,7 +1913,6 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 		},
 	})
 
-	// Immediately verify routeModel is suspended in registry (before any Reconcile)
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should be synchronously suspended in registry after 500 error", routeModel)
 	}
@@ -2028,7 +1920,6 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 		t.Fatalf("expected count 0 for suspended routeModel, got %d", count)
 	}
 
-	// 2. MarkResult with 503 Service Unavailable
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
 		Provider:   provider,
@@ -2042,12 +1933,10 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 		},
 	})
 
-	// Still suspended in registry
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should remain suspended after 503 error", routeModel)
 	}
 
-	// 3. MarkResult with Success -> immediately resumes routeModel in registry
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
 		Provider:   provider,
@@ -2056,7 +1945,6 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 		Success:    true,
 	})
 
-	// Verify routeModel is resumed
 	if reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should be resumed in registry after success", routeModel)
 	}
@@ -2065,7 +1953,6 @@ func TestManager_NoForkAlias_MarkResultTransientErrorsSyncSuspendRegistry(t *tes
 	}
 }
 
-// Test 22: Stale disabled snapshot cannot remove updated active entry in scheduler
 func TestManager_Scheduler_StaleDisabledSnapshotCannotRemoveActiveEntry(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -2092,12 +1979,10 @@ func TestManager_Scheduler_StaleDisabledSnapshotCannotRemoveActiveEntry(t *testi
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Initial generation should be >= 1
 	if registeredAuth.Generation == 0 {
 		t.Fatalf("expected initial generation >= 1, got %d", registeredAuth.Generation)
 	}
 
-	// Trigger MarkResult on success to advance generation
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: provider,
@@ -2114,7 +1999,6 @@ func TestManager_Scheduler_StaleDisabledSnapshotCannotRemoveActiveEntry(t *testi
 		t.Fatalf("expected active generation %d > %d", activeGen, registeredAuth.Generation)
 	}
 
-	// Scheduler must be able to pick the active auth
 	picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPick != nil {
 		t.Fatalf("expected scheduler to pick active auth, got error: %v", errPick)
@@ -2123,16 +2007,13 @@ func TestManager_Scheduler_StaleDisabledSnapshotCannotRemoveActiveEntry(t *testi
 		t.Fatalf("picked auth ID = %q, want %q", picked.ID, auth.ID)
 	}
 
-	// Construct a stale snapshot with Disabled = true and older Generation
 	staleDisabled := currentAuth.Clone()
 	staleDisabled.Disabled = true
-	staleDisabled.Generation = registeredAuth.Generation // older generation
+	staleDisabled.Generation = registeredAuth.Generation
 	staleDisabled.UpdatedAt = currentAuth.UpdatedAt.Add(-10 * time.Minute)
 
-	// Send stale disabled snapshot to scheduler
 	manager.scheduler.upsertAuth(staleDisabled)
 
-	// Scheduler MUST NOT have removed the newer active entry
 	pickedAfterStale, errPickAfterStale := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterStale != nil {
 		t.Fatalf("stale disabled snapshot deleted active scheduler entry: %v", errPickAfterStale)
@@ -2141,7 +2022,6 @@ func TestManager_Scheduler_StaleDisabledSnapshotCannotRemoveActiveEntry(t *testi
 		t.Fatalf("picked auth after stale = %q, want %q", pickedAfterStale.ID, auth.ID)
 	}
 
-	// Now send a fresh disabled snapshot with newer Generation
 	freshDisabled := currentAuth.Clone()
 	freshDisabled.Disabled = true
 	freshDisabled.Generation = activeGen + 1
@@ -2149,7 +2029,6 @@ func TestManager_Scheduler_StaleDisabledSnapshotCannotRemoveActiveEntry(t *testi
 
 	manager.scheduler.upsertAuth(freshDisabled)
 
-	// Scheduler MUST now remove the entry
 	_, errPickAfterFresh := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterFresh == nil {
 		t.Fatal("expected auth_not_found after fresh disabled snapshot, but auth was still picked")
@@ -2197,7 +2076,6 @@ func (s *strictContextCheckingStore) savedRecords() []CooldownStateRecord {
 	return out
 }
 
-// Test 23: Strict context-checking store persists and cleans invalid records on Reconcile even with cancelled outer context
 func TestManager_NoForkAlias_StrictContextCheckingStore_ReconcilePersistsUnderCancelledContext(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -2235,7 +2113,6 @@ func TestManager_NoForkAlias_StrictContextCheckingStore_ReconcilePersistsUnderCa
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Put into cooldown on targetModel
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -2263,20 +2140,16 @@ func TestManager_NoForkAlias_StrictContextCheckingStore_ReconcilePersistsUnderCa
 		t.Fatalf("expected store record for targetModel %q initially, got records: %#v", targetModel, recordsBefore)
 	}
 
-	// Remove alias and change supported model in registry
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: nil,
 	})
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{{ID: otherModel}})
 
-	// Reconcile with cancelled context
 	cancelledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	// Reconcile must reliably persist using context.Background() without failing due to cancelledCtx
 	manager.ReconcileRegistryModelStates(cancelledCtx, auth.ID)
 
-	// Memory ModelStates must have targetModel deleted
 	manager.mu.RLock()
 	currentAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
@@ -2287,7 +2160,6 @@ func TestManager_NoForkAlias_StrictContextCheckingStore_ReconcilePersistsUnderCa
 		}
 	}
 
-	// Cooldown store must be cleanly updated and no longer have targetModel
 	recordsAfter := store.savedRecords()
 	for _, rec := range recordsAfter {
 		if rec.AuthID == auth.ID && rec.Model == targetModel {
@@ -2296,7 +2168,6 @@ func TestManager_NoForkAlias_StrictContextCheckingStore_ReconcilePersistsUnderCa
 	}
 }
 
-// Test 24: Scheduler tombstone protection - delayed stale active snapshot cannot reactivate disabled auth
 func TestManager_Scheduler_Tombstone_StaleActiveSnapshotCannotReactivateDisabledEntry(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -2328,16 +2199,13 @@ func TestManager_Scheduler_Tombstone_StaleActiveSnapshotCannotReactivateDisabled
 	currentActiveSnapshot := manager.auths[auth.ID].Clone()
 	manager.mu.RUnlock()
 
-	// Verify auth can be picked initially
 	picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPick != nil || picked.ID != auth.ID {
 		t.Fatalf("initial pickSingle failed: picked=%v, err=%v", picked, errPick)
 	}
 
-	// Capture active snapshot at current Generation
 	staleActiveSnapshot := currentActiveSnapshot
 
-	// Apply higher generation disabled snapshot (e.g. Generation 10)
 	highGenDisabled := registeredAuth.Clone()
 	highGenDisabled.Generation = 10
 	highGenDisabled.Disabled = true
@@ -2346,23 +2214,19 @@ func TestManager_Scheduler_Tombstone_StaleActiveSnapshotCannotReactivateDisabled
 
 	manager.scheduler.upsertAuth(highGenDisabled)
 
-	// Scheduler must reject picking because auth is disabled
 	_, errPickAfterDisable := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterDisable == nil {
 		t.Fatal("expected scheduler pickSingle to fail after highGenDisabled, but succeeded")
 	}
 
-	// Now send the delayed low generation active snapshot (Generation 1)
 	manager.scheduler.upsertAuth(staleActiveSnapshot)
 
-	// Scheduler must still reject picking because the tombstone at Generation 10 firmly blocks Generation 1
 	_, errPickAfterStaleActive := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterStaleActive == nil {
 		t.Fatal("expected scheduler pickSingle to fail after staleActiveSnapshot was rejected by tombstone, but succeeded")
 	}
 }
 
-// Test 25: Registry projection generation protection - stale cooling projection cannot overwrite fresh clean projection
 func TestModelRegistry_Projection_GenerationProtection(t *testing.T) {
 	const (
 		clientID = "client-projection-gen-test"
@@ -2378,7 +2242,6 @@ func TestModelRegistry_Projection_GenerationProtection(t *testing.T) {
 
 	epoch := reg.ClientRegistrationEpoch(clientID)
 
-	// Apply clean projection at Generation 10
 	appliedHigh := reg.ApplyClientModelProjections(clientID, epoch, 10, []registry.ClientModelProjection{
 		{
 			ModelID:       modelID,
@@ -2393,7 +2256,6 @@ func TestModelRegistry_Projection_GenerationProtection(t *testing.T) {
 		t.Fatalf("model %q should not be suspended at gen 10 clean projection", modelID)
 	}
 
-	// Attempt to apply stale cooling projection at Generation 5 (older than 10)
 	appliedStale := reg.ApplyClientModelProjections(clientID, epoch, 5, []registry.ClientModelProjection{
 		{
 			ModelID:       modelID,
@@ -2406,12 +2268,10 @@ func TestModelRegistry_Projection_GenerationProtection(t *testing.T) {
 		t.Fatalf("expected ApplyClientModelProjections to return false for stale generation 5 < 10")
 	}
 
-	// Model MUST remain clean and not suspended in registry
 	if reg.IsModelSuspendedForClient(clientID, modelID) {
 		t.Fatalf("stale generation 5 cooling projection erroneously overwrote generation 10 clean state")
 	}
 
-	// Apply newer cooling projection at Generation 11
 	appliedNewer := reg.ApplyClientModelProjections(clientID, epoch, 11, []registry.ClientModelProjection{
 		{
 			ModelID:       modelID,
@@ -2428,7 +2288,6 @@ func TestModelRegistry_Projection_GenerationProtection(t *testing.T) {
 	}
 }
 
-// Test 26: Historical state only containing route ModelStates[B] migrates to authoritative target ModelStates[A]
 func TestManager_NoForkAlias_HistoricalRouteStateOnly_MigratedToTargetCooldown(t *testing.T) {
 	const (
 		provider     = "antigravity"
@@ -2453,7 +2312,7 @@ func TestManager_NoForkAlias_HistoricalRouteStateOnly_MigratedToTargetCooldown(t
 		Provider: provider,
 		Status:   StatusActive,
 		ModelStates: map[string]*ModelState{
-			// Only historical routeModelB state exists initially
+
 			routeModelB: {
 				Unavailable:    true,
 				Status:         StatusError,
@@ -2472,19 +2331,16 @@ func TestManager_NoForkAlias_HistoricalRouteStateOnly_MigratedToTargetCooldown(t
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Reconcile must migrate historical ModelStates[B] to authoritative ModelStates[A]
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
 	currentAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
 
-	// Route B state must be pruned
 	if _, existsB := currentAuth.ModelStates[routeModelB]; existsB {
 		t.Fatalf("historical ModelStates[%q] was not pruned after reconcile", routeModelB)
 	}
 
-	// Authoritative target A state must exist with active cooldown
 	stateA, existsA := currentAuth.ModelStates[targetModelA]
 	if !existsA || stateA == nil {
 		t.Fatalf("authoritative ModelStates[%q] missing after reconcile migration", targetModelA)
@@ -2493,13 +2349,11 @@ func TestManager_NoForkAlias_HistoricalRouteStateOnly_MigratedToTargetCooldown(t
 		t.Fatalf("authoritative ModelStates[%q] lost cooldown during migration: %#v", targetModelA, stateA)
 	}
 
-	// Registry must have routeModelB suspended
 	if !reg.IsModelSuspendedForClient(auth.ID, routeModelB) {
 		t.Fatalf("routeModelB %q should be suspended in registry after reconcile migration", routeModelB)
 	}
 }
 
-// Test 27: ResetQuota reliably clears CooldownStateStore even when outer context is cancelled
 func TestManager_NoForkAlias_ResetQuota_CancelledContextCleansCooldownStore(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -2536,7 +2390,6 @@ func TestManager_NoForkAlias_ResetQuota_CancelledContextCleansCooldownStore(t *t
 		reg.UnregisterClient(auth.ID)
 	})
 
-	// Put into cooldown
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -2552,7 +2405,6 @@ func TestManager_NoForkAlias_ResetQuota_CancelledContextCleansCooldownStore(t *t
 		RetryAfter: &retryAfter,
 	})
 
-	// Verify store has the cooldown record
 	recordsBefore := store.savedRecords()
 	found := false
 	for _, rec := range recordsBefore {
@@ -2565,13 +2417,11 @@ func TestManager_NoForkAlias_ResetQuota_CancelledContextCleansCooldownStore(t *t
 		t.Fatalf("expected store to contain cooldown record before ResetQuota, got: %#v", recordsBefore)
 	}
 
-	// Call ResetQuota with a cancelled context
 	cancelledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	_, _, _ = manager.ResetQuota(cancelledCtx, auth.ID)
 
-	// Cooldown store MUST have no records remaining for this auth/model
 	recordsAfter := store.savedRecords()
 	for _, rec := range recordsAfter {
 		if rec.AuthID == auth.ID && rec.Model == targetModel {
@@ -2579,13 +2429,11 @@ func TestManager_NoForkAlias_ResetQuota_CancelledContextCleansCooldownStore(t *t
 		}
 	}
 
-	// Memory and registry must be clean
 	if reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should no longer be suspended in registry after ResetQuota", routeModel)
 	}
 }
 
-// Test 28: Concurrent operations natural termination final consistency (no manual post-reconciliation)
 func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -2626,7 +2474,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 	var wg sync.WaitGroup
 	wg.Add(4)
 
-	// Worker 1: Reconcile
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -2635,7 +2482,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 		}
 	}()
 
-	// Worker 2: Failures and Successes
 	go func() {
 		defer wg.Done()
 		retryAfter := 10 * time.Minute
@@ -2667,7 +2513,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 		}
 	}()
 
-	// Worker 3: ResetQuota
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -2678,7 +2523,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 		}
 	}()
 
-	// Worker 4: Execute
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
@@ -2689,7 +2533,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 
 	wg.Wait()
 
-	// Assert NATURAL final consistency without calling ReconcileRegistryModelStates or RefreshSchedulerEntry!
 	manager.mu.RLock()
 	finalAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
@@ -2698,12 +2541,10 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 		t.Fatal("finalAuth is nil")
 	}
 
-	// ModelStates must never contain routeModel
 	if _, existsB := finalAuth.ModelStates[routeModel]; existsB {
 		t.Fatalf("ModelStates contains routeModel %q after concurrent natural termination", routeModel)
 	}
 
-	// Registry suspension must strictly match memory targetModel availability
 	stateA := finalAuth.ModelStates[targetModel]
 	isTargetCooling := stateA != nil && (stateA.Unavailable || (!stateA.NextRetryAfter.IsZero() && stateA.NextRetryAfter.After(time.Now())))
 	isRegistrySuspended := reg.IsModelSuspendedForClient(auth.ID, routeModel)
@@ -2711,7 +2552,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 		t.Fatalf("natural consistency mismatch: isTargetCooling=%v, isRegistrySuspended=%v", isTargetCooling, isRegistrySuspended)
 	}
 
-	// Cooldown store records must match in-memory state
 	records := store.savedRecords()
 	foundStoreTarget := false
 	for _, rec := range records {
@@ -2730,7 +2570,6 @@ func TestManager_NoForkAlias_ConcurrentOperations_NaturalFinalConsistency(t *tes
 	}
 }
 
-// Test 29: Remove records tombstone so stale active snapshots cannot resurrect removed auth (including via rebuild)
 func TestManager_Scheduler_Tombstone_RemoveRejectsDelayedActiveSnapshotAndRebuild(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -2762,31 +2601,25 @@ func TestManager_Scheduler_Tombstone_RemoveRejectsDelayedActiveSnapshotAndRebuil
 	activeSnapshot := manager.auths[auth.ID].Clone()
 	manager.mu.RUnlock()
 
-	// Initial pick succeeds
 	picked, errPickInitial := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickInitial != nil || picked.ID != auth.ID {
 		t.Fatalf("initial pick failed: picked=%v, err=%v", picked, errPickInitial)
 	}
 
-	// Remove the auth from manager
 	manager.Remove(context.Background(), auth.ID)
 
-	// Scheduler must immediately reject picking
 	_, errPickAfterRemove := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterRemove == nil {
 		t.Fatal("expected auth_not_found after Remove, but pick succeeded")
 	}
 
-	// Simulate delayed in-flight active snapshot arriving at scheduler
 	manager.scheduler.upsertAuth(activeSnapshot)
 
-	// Scheduler must still reject picking because the tombstone rejects stale active snapshot
 	_, errPickAfterDelayedActive := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterDelayedActive == nil {
 		t.Fatal("stale active snapshot resurrected removed auth in scheduler")
 	}
 
-	// Also test rebuild: rebuild must preserve authGenerations and filter out stale snapshot
 	manager.scheduler.rebuild([]*Auth{activeSnapshot, registeredAuth})
 	_, errPickAfterRebuild := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterRebuild == nil {
@@ -2794,7 +2627,6 @@ func TestManager_Scheduler_Tombstone_RemoveRejectsDelayedActiveSnapshotAndRebuil
 	}
 }
 
-// Test 30: UnregisterClient tombstone and multi-client shared model ghost projection protection
 func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t *testing.T) {
 	const (
 		clientOwner  = "client-owner-multi-test"
@@ -2806,7 +2638,6 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 
 	reg := registry.GetGlobalRegistry()
 
-	// Part 1: Unregister client keeps generation tombstone & rejects future projections
 	clientUnreg := "client-unreg-gen-test"
 	modelUnreg := "model-unreg-test"
 	reg.RegisterClient(clientUnreg, providerName, []*registry.ModelInfo{{ID: modelUnreg}})
@@ -2827,11 +2658,9 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 		t.Fatalf("expected ApplyClientModelProjections to succeed at gen 10")
 	}
 
-	// Unregister clientUnreg
 	reg.UnregisterClient(clientUnreg)
 	unregEpoch2 := reg.ClientRegistrationEpoch(clientUnreg)
 
-	// Older generation projection must be rejected
 	appliedStale := reg.ApplyClientModelProjections(clientUnreg, unregEpoch1, 5, []registry.ClientModelProjection{
 		{
 			ModelID:       modelUnreg,
@@ -2844,7 +2673,6 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 		t.Fatalf("stale generation 5 projection accepted after unregistering client")
 	}
 
-	// Newer generation projection for unregistered client must also be rejected
 	appliedNewerUnreg := reg.ApplyClientModelProjections(clientUnreg, unregEpoch2, 15, []registry.ClientModelProjection{
 		{
 			ModelID:       modelUnreg,
@@ -2857,7 +2685,6 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 		t.Fatalf("projection accepted for unregistered client without models")
 	}
 
-	// Part 2: Multi-client ghost projection protection
 	reg.RegisterClient(clientOwner, providerName, []*registry.ModelInfo{
 		{ID: modelShared},
 		{ID: modelOwner},
@@ -2872,7 +2699,6 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 
 	otherEpoch := reg.ClientRegistrationEpoch(clientOther)
 
-	// clientOther submits projection affecting modelOwner (which clientOther does NOT own)
 	reg.ApplyClientModelProjections(clientOther, otherEpoch, 1, []registry.ClientModelProjection{
 		{
 			ModelID:       modelOwner,
@@ -2882,7 +2708,6 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 		},
 	})
 
-	// Verify modelOwner is NOT suspended for clientOwner
 	if reg.IsModelSuspendedForClient(clientOwner, modelOwner) {
 		t.Fatalf("ghost projection from clientOther suspended clientOwner on model %q", modelOwner)
 	}
@@ -2891,7 +2716,6 @@ func TestModelRegistry_UnregisterClient_TombstoneAndGhostProjectionProtection(t 
 	}
 }
 
-// Test 31: Chained alias configuration (B -> A and A -> C) preserves authoritative ModelStates[A] on Reconcile
 func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesStateA(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -2904,7 +2728,6 @@ func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesSt
 	executor := &noForkAliasTestExecutor{id: provider}
 	manager.RegisterExecutor(executor)
 
-	// Configure chained aliases: routeB -> targetA, and targetA -> targetC
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: {
 			{
@@ -2949,7 +2772,6 @@ func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesSt
 	manager.RefreshSchedulerEntry(auth1.ID)
 	manager.RefreshSchedulerEntry(auth2.ID)
 
-	// Record error on authoritative target A for Auth1
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth1.ID,
@@ -2965,14 +2787,12 @@ func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesSt
 		RetryAfter: &retryAfter,
 	})
 
-	// Execute Reconcile on Auth1
 	manager.ReconcileRegistryModelStates(context.Background(), auth1.ID)
 
 	manager.mu.RLock()
 	currentAuth1 := manager.auths[auth1.ID]
 	manager.mu.RUnlock()
 
-	// Authoritative ModelStates[A] must be intact with active cooldown
 	stateA, existsA := currentAuth1.ModelStates[targetA]
 	if !existsA || stateA == nil {
 		t.Fatalf("authoritative ModelStates[%q] missing after Reconcile", targetA)
@@ -2981,17 +2801,14 @@ func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesSt
 		t.Fatalf("authoritative ModelStates[%q] lost cooldown: %#v", targetA, stateA)
 	}
 
-	// ModelStates[C] must NOT exist (no incorrect secondary alias migration)
 	if _, existsC := currentAuth1.ModelStates[targetC]; existsC {
 		t.Fatalf("ModelStates erroneously contains targetC %q due to secondary alias resolution", targetC)
 	}
 
-	// ModelStates[routeB] must NOT exist
 	if _, existsB := currentAuth1.ModelStates[routeB]; existsB {
 		t.Fatalf("ModelStates contains routeB %q", routeB)
 	}
 
-	// Registry must report routeB suspended for Auth1 and not suspended for Auth2
 	if !reg.IsModelSuspendedForClient(auth1.ID, routeB) {
 		t.Fatalf("routeB %q should be suspended in registry for Auth1", routeB)
 	}
@@ -2999,7 +2816,6 @@ func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesSt
 		t.Fatalf("routeB %q should not be suspended in registry for Auth2", routeB)
 	}
 
-	// Manager Execute for routeB must skip Auth1 (cooling on targetA) and execute on Auth2
 	resp, errExec := manager.Execute(context.Background(), []string{provider}, cliproxyexecutor.Request{Model: routeB}, cliproxyexecutor.Options{})
 	if errExec != nil {
 		t.Fatalf("manager.Execute failed: %v", errExec)
@@ -3012,7 +2828,6 @@ func TestManager_NoForkAlias_ChainedAlias_MarkResultTargetA_ReconcilePreservesSt
 	}
 }
 
-// Test 32: Unregister and re-register same clientID resets tombstone epoch in ModelRegistry
 func TestModelRegistry_UnregisterAndReRegister_ResetsTombstone(t *testing.T) {
 	const (
 		clientID     = "client-rereg-gen-test"
@@ -3028,7 +2843,6 @@ func TestModelRegistry_UnregisterAndReRegister_ResetsTombstone(t *testing.T) {
 
 	epoch1 := reg.ClientRegistrationEpoch(clientID)
 
-	// Generation 10 projection succeeds
 	if !reg.ApplyClientModelProjections(clientID, epoch1, 10, []registry.ClientModelProjection{
 		{ModelID: modelName, Suspended: true, SuspendReason: "cooldown_test"},
 	}) {
@@ -3038,22 +2852,18 @@ func TestModelRegistry_UnregisterAndReRegister_ResetsTombstone(t *testing.T) {
 		t.Fatalf("expected model to be suspended")
 	}
 
-	// Unregister client
 	reg.UnregisterClient(clientID)
 	epoch2 := reg.ClientRegistrationEpoch(clientID)
 
-	// Projection on unregistered client must be rejected
 	if reg.ApplyClientModelProjections(clientID, epoch2, 15, []registry.ClientModelProjection{
 		{ModelID: modelName, Suspended: false},
 	}) {
 		t.Fatalf("expected ApplyClientModelProjections on unregistered client to return false")
 	}
 
-	// Re-register same clientID
 	reg.RegisterClient(clientID, providerName, []*registry.ModelInfo{{ID: modelName}})
 	epoch3 := reg.ClientRegistrationEpoch(clientID)
 
-	// Fresh projection starting at generation 1 must succeed because tombstone epoch was reset
 	if !reg.ApplyClientModelProjections(clientID, epoch3, 1, []registry.ClientModelProjection{
 		{ModelID: modelName, Suspended: false},
 	}) {
@@ -3064,7 +2874,6 @@ func TestModelRegistry_UnregisterAndReRegister_ResetsTombstone(t *testing.T) {
 	}
 }
 
-// Test 33: Remove and re-register same authID clears scheduler tombstone
 func TestManager_RemoveAndReRegister_ClearsSchedulerTombstone(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3094,21 +2903,17 @@ func TestManager_RemoveAndReRegister_ClearsSchedulerTombstone(t *testing.T) {
 	})
 	manager.RefreshSchedulerEntry(auth.ID)
 
-	// Initial pick succeeds
 	picked, errPickInitial := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickInitial != nil || picked.ID != auth.ID {
 		t.Fatalf("initial pick failed: picked=%v, err=%v", picked, errPickInitial)
 	}
 
-	// Remove auth
 	manager.Remove(context.Background(), auth.ID)
 
-	// Scheduler must immediately reject picking
 	if _, errPickAfterRemove := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil); errPickAfterRemove == nil {
 		t.Fatal("expected pickSingle to fail after Remove, but succeeded")
 	}
 
-	// Re-register same auth ID with generation 1
 	freshAuth := &Auth{
 		ID:         authID,
 		Provider:   provider,
@@ -3120,14 +2925,12 @@ func TestManager_RemoveAndReRegister_ClearsSchedulerTombstone(t *testing.T) {
 	}
 	manager.RefreshSchedulerEntry(freshAuth.ID)
 
-	// Scheduler pick must succeed for the re-registered auth
 	pickedAfterReReg, errPickAfterReReg := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfterReReg != nil || pickedAfterReReg.ID != freshAuth.ID {
 		t.Fatalf("pick after re-register failed: picked=%v, err=%v", pickedAfterReReg, errPickAfterReReg)
 	}
 }
 
-// Test 34: Chained alias when both B and A are registered routes: targetA is authoritative and never migrated/deleted
 func TestManager_NoForkAlias_ChainedAlias_BothRoutesRegistered_SafeTwoPhaseMigration(t *testing.T) {
 	const (
 		provider = "antigravity"
@@ -3140,7 +2943,6 @@ func TestManager_NoForkAlias_ChainedAlias_BothRoutesRegistered_SafeTwoPhaseMigra
 	executor := &noForkAliasTestExecutor{id: provider}
 	manager.RegisterExecutor(executor)
 
-	// Aliases: routeB -> targetA, targetA -> targetC
 	manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		provider: {
 			{
@@ -3166,7 +2968,7 @@ func TestManager_NoForkAlias_ChainedAlias_BothRoutesRegistered_SafeTwoPhaseMigra
 	}
 
 	reg := registry.GetGlobalRegistry()
-	// Both routeB and targetA are registered as supported models for this client
+
 	reg.RegisterClient(auth.ID, provider, []*registry.ModelInfo{
 		{ID: routeB},
 		{ID: targetA},
@@ -3177,7 +2979,6 @@ func TestManager_NoForkAlias_ChainedAlias_BothRoutesRegistered_SafeTwoPhaseMigra
 
 	manager.RefreshSchedulerEntry(auth.ID)
 
-	// Set cooldown on targetA
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -3193,15 +2994,12 @@ func TestManager_NoForkAlias_ChainedAlias_BothRoutesRegistered_SafeTwoPhaseMigra
 		RetryAfter: &retryAfter,
 	})
 
-	// Reconcile
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
 	manager.mu.RLock()
 	currentAuth := manager.auths[auth.ID]
 	manager.mu.RUnlock()
 
-	// targetA is authoritative for routeB (authoritativeTargets[targetA] == true)
-	// It must NOT be deleted or mutated into targetC
 	stateA, existsA := currentAuth.ModelStates[targetA]
 	if !existsA || stateA == nil {
 		t.Fatalf("authoritative ModelStates[%q] missing after two-phase reconcile", targetA)
@@ -3240,7 +3038,6 @@ func (s *mockFailingAuthStoreForResetQuota) Delete(ctx context.Context, id strin
 	return nil
 }
 
-// Test 35: ResetQuota reliably clears CooldownStore via defer even when Auth Store.Save returns error
 func TestManager_NoForkAlias_ResetQuota_ErrorPersistCleansCooldownStore(t *testing.T) {
 	const (
 		provider    = "antigravity"
@@ -3285,7 +3082,6 @@ func TestManager_NoForkAlias_ResetQuota_ErrorPersistCleansCooldownStore(t *testi
 	})
 	manager.RefreshSchedulerEntry(auth.ID)
 
-	// Trigger cooldown
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -3301,19 +3097,16 @@ func TestManager_NoForkAlias_ResetQuota_ErrorPersistCleansCooldownStore(t *testi
 		RetryAfter: &retryAfter,
 	})
 
-	// Verify cooldownStore contains records
 	recordsBefore, errLoadBefore := cooldownStore.Load(context.Background())
 	if errLoadBefore != nil || len(recordsBefore) == 0 {
 		t.Fatalf("expected cooldown records in store before ResetQuota, got: %#v, err: %v", recordsBefore, errLoadBefore)
 	}
 
-	// ResetQuota will encounter failingStore error on persist
 	_, _, errReset := manager.ResetQuota(context.Background(), auth.ID)
 	if errReset == nil {
 		t.Fatal("expected ResetQuota to return simulated error from auth store, got nil")
 	}
 
-	// Verify cooldown store is nevertheless cleanly cleared via defer
 	recordsAfter, errLoadAfter := cooldownStore.Load(context.Background())
 	if errLoadAfter != nil {
 		t.Fatalf("failed to load cooldown store: %v", errLoadAfter)
@@ -3322,13 +3115,11 @@ func TestManager_NoForkAlias_ResetQuota_ErrorPersistCleansCooldownStore(t *testi
 		t.Fatalf("expected cooldown store to be cleared after ResetQuota, got: %#v", recordsAfter)
 	}
 
-	// Verify registry projection is also resumed
 	if reg.IsModelSuspendedForClient(auth.ID, routeModel) {
 		t.Fatalf("routeModel %q should no longer be suspended in registry after ResetQuota", routeModel)
 	}
 }
 
-// Test 36: Model A cooldown does NOT suspend independent Model C, and no aggregation fallback flip occurs
 func TestManager_NoForkAlias_PerModelIsolation_NoAggregationFallbackFlip(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3360,7 +3151,6 @@ func TestManager_NoForkAlias_PerModelIsolation_NoAggregationFallbackFlip(t *test
 	})
 	manager.RefreshSchedulerEntry(auth.ID)
 
-	// Cooldown model A only
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     auth.ID,
@@ -3376,21 +3166,17 @@ func TestManager_NoForkAlias_PerModelIsolation_NoAggregationFallbackFlip(t *test
 		RetryAfter: &retryAfter,
 	})
 
-	// Reconcile
 	manager.ReconcileRegistryModelStates(context.Background(), auth.ID)
 
-	// Model A must be suspended
 	if !reg.IsModelSuspendedForClient(auth.ID, modelA) {
 		t.Fatalf("model A should be suspended in registry")
 	}
 
-	// Model C has state == nil and auth is not disabled, so Model C must NOT be suspended!
 	if reg.IsModelSuspendedForClient(auth.ID, modelC) {
 		t.Fatalf("model C was incorrectly suspended due to aggregated availability fallback!")
 	}
 }
 
-// Test 37: Monotonically increasing Registration Epoch ensures delayed high-generation snapshots from old epoch are rejected in both ModelRegistry and Scheduler
 func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGeneration(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3404,7 +3190,6 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 
 	reg := registry.GetGlobalRegistry()
 
-	// --- 1. ModelRegistry Epoch Verification ---
 	reg.RegisterClient(authID, provider, []*registry.ModelInfo{{ID: modelID}})
 	t.Cleanup(func() {
 		reg.UnregisterClient(authID)
@@ -3415,7 +3200,6 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 		t.Fatalf("expected epoch >= 1 after RegisterClient, got %d", epoch1)
 	}
 
-	// Apply projection at epoch1, generation 100
 	if !reg.ApplyClientModelProjections(authID, epoch1, 100, []registry.ClientModelProjection{
 		{ModelID: modelID, Suspended: true, SuspendReason: "cooldown_epoch_1"},
 	}) {
@@ -3425,21 +3209,18 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 		t.Fatalf("expected model to be suspended at epoch1")
 	}
 
-	// Unregister client -> bumps epoch
 	reg.UnregisterClient(authID)
 	epoch2 := reg.ClientRegistrationEpoch(authID)
 	if epoch2 <= epoch1 {
 		t.Fatalf("expected epoch to increment on UnregisterClient: epoch2=%d, epoch1=%d", epoch2, epoch1)
 	}
 
-	// Re-register client -> bumps epoch again
 	reg.RegisterClient(authID, provider, []*registry.ModelInfo{{ID: modelID}})
 	epoch3 := reg.ClientRegistrationEpoch(authID)
 	if epoch3 <= epoch2 {
 		t.Fatalf("expected epoch to increment on re-RegisterClient: epoch3=%d, epoch2=%d", epoch3, epoch2)
 	}
 
-	// Delayed snapshot from epoch1 with extremely high generation (gen 99999) arrives
 	staleDelayedOldEpoch := reg.ApplyClientModelProjections(authID, epoch1, 99999, []registry.ClientModelProjection{
 		{ModelID: modelID, Suspended: true, SuspendReason: "delayed_stale_suspension"},
 	})
@@ -3447,7 +3228,6 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 		t.Fatalf("expected ApplyClientModelProjections to REJECT stale old epoch %d < current epoch %d with high generation 99999", epoch1, epoch3)
 	}
 
-	// Fresh projection on epoch3 with low generation 1 MUST succeed
 	if !reg.ApplyClientModelProjections(authID, epoch3, 1, []registry.ClientModelProjection{
 		{ModelID: modelID, Suspended: false},
 	}) {
@@ -3457,7 +3237,6 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 		t.Fatalf("expected model to NOT be suspended after fresh epoch3 gen 1 projection")
 	}
 
-	// --- 2. AuthScheduler Epoch Verification ---
 	auth := &Auth{
 		ID:       authID,
 		Provider: provider,
@@ -3474,21 +3253,17 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 		t.Fatalf("expected RegistrationEpoch >= 1, got %d", authEpoch1)
 	}
 
-	// Verify initial scheduler pick succeeds
 	picked1, errPick1 := manager.scheduler.pickSingle(context.Background(), provider, modelID, cliproxyexecutor.Options{}, nil)
 	if errPick1 != nil || picked1.ID != authID {
 		t.Fatalf("initial scheduler pick failed: picked=%v, err=%v", picked1, errPick1)
 	}
 
-	// Unregister auth from manager
 	manager.Remove(context.Background(), authID)
 
-	// Verify scheduler pick fails after removal
 	if _, errPickAfterRemove := manager.scheduler.pickSingle(context.Background(), provider, modelID, cliproxyexecutor.Options{}, nil); errPickAfterRemove == nil {
 		t.Fatalf("expected scheduler pickSingle to fail after remove")
 	}
 
-	// Re-register same auth ID
 	freshAuth := &Auth{
 		ID:       authID,
 		Provider: provider,
@@ -3505,7 +3280,6 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 		t.Fatalf("expected RegistrationEpoch to monotonically increase: authEpoch2=%d, authEpoch1=%d", authEpoch2, authEpoch1)
 	}
 
-	// Simulate delayed snapshot from old epoch1 with high generation (gen 99999) and Disabled = true
 	delayedOldEpochSnapshot := &Auth{
 		ID:                authID,
 		Provider:          provider,
@@ -3517,14 +3291,12 @@ func TestManager_NoForkAlias_MonotonicRegistrationEpoch_RejectsOldEpochHighGener
 	}
 	manager.scheduler.upsertAuth(delayedOldEpochSnapshot)
 
-	// Scheduler must still pick the fresh active auth because old epoch snapshot was ignored
 	picked2, errPick2 := manager.scheduler.pickSingle(context.Background(), provider, modelID, cliproxyexecutor.Options{}, nil)
 	if errPick2 != nil || picked2.ID != authID {
 		t.Fatalf("expected scheduler pick to succeed after stale old epoch snapshot ignored: picked=%v, err=%v", picked2, errPick2)
 	}
 }
 
-// Test 38: Reconcile detects concurrent RegisterClient epoch bump, reloads latest supported models atomically and preserves active cooldown
 func TestManager_NoForkAlias_Reconcile_ConcurrentClientRegistrationEpochChange_PreservesCooldown(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3539,7 +3311,7 @@ func TestManager_NoForkAlias_Reconcile_ConcurrentClientRegistrationEpochChange_P
 	manager.RegisterExecutor(executor)
 
 	reg := registry.GetGlobalRegistry()
-	// Initially client supports modelA and modelB
+
 	reg.RegisterClient(authID, provider, []*registry.ModelInfo{
 		{ID: modelA},
 		{ID: modelB},
@@ -3558,7 +3330,6 @@ func TestManager_NoForkAlias_Reconcile_ConcurrentClientRegistrationEpochChange_P
 	}
 	manager.RefreshSchedulerEntry(authID)
 
-	// Cooldown modelB
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     authID,
@@ -3574,26 +3345,21 @@ func TestManager_NoForkAlias_Reconcile_ConcurrentClientRegistrationEpochChange_P
 		RetryAfter: &retryAfter,
 	})
 
-	// Concurrently re-register client with updated model set (modelB and modelC), bumping epoch
 	reg.RegisterClient(authID, provider, []*registry.ModelInfo{
 		{ID: modelB},
 		{ID: modelC},
 	})
 
-	// Reconcile must atomically detect the epoch change and retain modelB cooldown while dropping disappeared modelA
 	manager.ReconcileRegistryModelStates(context.Background(), authID)
 
-	// ModelB must still be suspended in registry
 	if !reg.IsModelSuspendedForClient(authID, modelB) {
 		t.Fatalf("expected modelB to remain suspended in registry after reconcile with epoch update")
 	}
 
-	// ModelC is newly registered and must NOT be suspended
 	if reg.IsModelSuspendedForClient(authID, modelC) {
 		t.Fatalf("expected new modelC to NOT be suspended in registry")
 	}
 
-	// Check auth state in manager
 	manager.mu.RLock()
 	reconciledAuth := manager.auths[authID]
 	manager.mu.RUnlock()
@@ -3609,7 +3375,6 @@ func TestManager_NoForkAlias_Reconcile_ConcurrentClientRegistrationEpochChange_P
 	}
 }
 
-// Test 39: High concurrency stability test under simultaneous Register, Reconcile, MarkResult, Unregister, and Projections
 func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *testing.T) {
 	const (
 		provider   = "gemini"
@@ -3642,7 +3407,6 @@ func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *te
 
 	var wg sync.WaitGroup
 
-	// Worker 1: Concurrent ReconcileRegistryModelStates
 	for i := 0; i < numWorkers/2; i++ {
 		wg.Add(1)
 		go func() {
@@ -3653,7 +3417,6 @@ func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *te
 		}()
 	}
 
-	// Worker 2: Concurrent MarkResult (cooldown / success)
 	for i := 0; i < numWorkers/2; i++ {
 		wg.Add(1)
 		go func(workerID int) {
@@ -3691,7 +3454,6 @@ func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *te
 		}(i)
 	}
 
-	// Worker 3: Concurrent RegisterClient with alternating models
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -3710,7 +3472,6 @@ func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *te
 		}
 	}()
 
-	// Worker 4: Concurrent scheduler pickSingle
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -3721,7 +3482,6 @@ func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *te
 
 	wg.Wait()
 
-	// Final verification: manager and registry remain consistent and pick succeeds on clean model
 	reg.RegisterClient(authID, provider, []*registry.ModelInfo{
 		{ID: "model-stable-final"},
 	})
@@ -3733,7 +3493,6 @@ func TestManager_NoForkAlias_ConcurrentHighLoadStability_EpochAndReconcile(t *te
 	}
 }
 
-// Test 40: Manager Update rejects stale registration epoch
 func TestManager_Update_RejectsStaleRegistrationEpoch(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3758,7 +3517,6 @@ func TestManager_Update_RejectsStaleRegistrationEpoch(t *testing.T) {
 		t.Fatalf("expected registration epoch >= 1, got %d", epoch1)
 	}
 
-	// Remove and re-register
 	manager.Remove(context.Background(), authID)
 
 	freshAuth := &Auth{
@@ -3775,7 +3533,6 @@ func TestManager_Update_RejectsStaleRegistrationEpoch(t *testing.T) {
 		t.Fatalf("expected epoch2 (%d) > epoch1 (%d)", epoch2, epoch1)
 	}
 
-	// Attempt Update with stale epoch1
 	staleUpdateAuth := registered1.Clone()
 	staleUpdateAuth.RegistrationEpoch = epoch1
 	_, errStaleUpdate := manager.Update(context.Background(), staleUpdateAuth)
@@ -3783,7 +3540,6 @@ func TestManager_Update_RejectsStaleRegistrationEpoch(t *testing.T) {
 		t.Fatalf("expected Update with stale epoch %d < current epoch %d to fail, but succeeded", epoch1, epoch2)
 	}
 
-	// Update with current epoch2 must succeed
 	validUpdateAuth := registered2.Clone()
 	validUpdateAuth.RegistrationEpoch = epoch2
 	updated, errValidUpdate := manager.Update(context.Background(), validUpdateAuth)
@@ -3795,7 +3551,6 @@ func TestManager_Update_RejectsStaleRegistrationEpoch(t *testing.T) {
 	}
 }
 
-// Test 41: Manager Remove increments epoch and tombstone blocks high-gen old epoch snapshot
 func TestManager_Remove_IncrementsAuthEpoch_AndRejectsDelayedOldEpochSnapshot(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3826,13 +3581,11 @@ func TestManager_Remove_IncrementsAuthEpoch_AndRejectsDelayedOldEpochSnapshot(t 
 
 	epoch1 := registered.RegistrationEpoch
 
-	// Pick must succeed initially
 	picked, errPick1 := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPick1 != nil || picked.ID != authID {
 		t.Fatalf("initial pick failed: picked=%v, err=%v", picked, errPick1)
 	}
 
-	// Remove auth
 	manager.Remove(context.Background(), authID)
 
 	manager.mu.RLock()
@@ -3843,7 +3596,6 @@ func TestManager_Remove_IncrementsAuthEpoch_AndRejectsDelayedOldEpochSnapshot(t 
 		t.Fatalf("expected manager.authEpochs to increment on Remove: %d <= %d", currentEpoch, epoch1)
 	}
 
-	// Delayed snapshot from epoch1 with generation 99999 arrives at scheduler
 	delayedSnapshot := &Auth{
 		ID:                authID,
 		Provider:          provider,
@@ -3854,13 +3606,11 @@ func TestManager_Remove_IncrementsAuthEpoch_AndRejectsDelayedOldEpochSnapshot(t 
 	}
 	manager.scheduler.upsertAuth(delayedSnapshot)
 
-	// Scheduler pick must still fail because the removal tombstone rejects old epoch
 	if _, errPickAfterStale := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil); errPickAfterStale == nil {
 		t.Fatalf("expected scheduler pickSingle to fail after stale snapshot rejected by tombstone, but succeeded")
 	}
 }
 
-// Test 42: ModelRegistry ApplyClientModelProjections strict epoch and batch validation
 func TestModelRegistry_ApplyClientModelProjections_StrictEpochAndBatchValidation(t *testing.T) {
 	const (
 		clientID     = "client-proj-strict-test"
@@ -3877,26 +3627,22 @@ func TestModelRegistry_ApplyClientModelProjections_StrictEpochAndBatchValidation
 
 	epoch := reg.ClientRegistrationEpoch(clientID)
 
-	// 1. Mismatched epoch (higher than current) must be rejected
 	if reg.ApplyClientModelProjections(clientID, epoch+10, 1, []registry.ClientModelProjection{
 		{ModelID: model1, Suspended: true},
 	}) {
 		t.Fatalf("expected ApplyClientModelProjections with mismatched epoch to return false")
 	}
 
-	// 2. Empty projections batch must return false and not advance generation
 	if reg.ApplyClientModelProjections(clientID, epoch, 10, []registry.ClientModelProjection{}) {
 		t.Fatalf("expected ApplyClientModelProjections with empty batch to return false")
 	}
 
-	// 3. Batch with only unowned models must return false and not advance generation
 	if reg.ApplyClientModelProjections(clientID, epoch, 10, []registry.ClientModelProjection{
 		{ModelID: modelUnowned, Suspended: true},
 	}) {
 		t.Fatalf("expected ApplyClientModelProjections with unowned model batch to return false")
 	}
 
-	// 4. Valid batch on exact epoch must succeed and advance generation to 5
 	if !reg.ApplyClientModelProjections(clientID, epoch, 5, []registry.ClientModelProjection{
 		{ModelID: model1, Suspended: true, SuspendReason: "strict_test"},
 	}) {
@@ -3906,7 +3652,6 @@ func TestModelRegistry_ApplyClientModelProjections_StrictEpochAndBatchValidation
 		t.Fatalf("expected model1 to be suspended")
 	}
 
-	// 5. Stale generation (3 < 5) on exact epoch must be rejected
 	if reg.ApplyClientModelProjections(clientID, epoch, 3, []registry.ClientModelProjection{
 		{ModelID: model1, Suspended: false},
 	}) {
@@ -3917,7 +3662,6 @@ func TestModelRegistry_ApplyClientModelProjections_StrictEpochAndBatchValidation
 	}
 }
 
-// Test 43: Scheduler rejects delayed old-epoch Remove tombstone after new-epoch registration
 func TestManager_Scheduler_DelayedOldEpochRemoveTombstone_RejectedAndNewAuthSchedulable(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -3935,7 +3679,6 @@ func TestManager_Scheduler_DelayedOldEpochRemoveTombstone_RejectedAndNewAuthSche
 		reg.UnregisterClient(authID)
 	})
 
-	// 1. Initial registration at epoch 1
 	auth1 := &Auth{
 		ID:       authID,
 		Provider: provider,
@@ -3948,13 +3691,11 @@ func TestManager_Scheduler_DelayedOldEpochRemoveTombstone_RejectedAndNewAuthSche
 	manager.RefreshSchedulerEntry(authID)
 	epoch1 := regAuth1.RegistrationEpoch
 
-	// Pick must succeed
 	picked1, errPick1 := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPick1 != nil || picked1.ID != authID {
 		t.Fatalf("pick 1 failed: picked=%v, err=%v", picked1, errPick1)
 	}
 
-	// 2. Auth is removed -> Manager increments epoch and records tombstone
 	manager.Remove(context.Background(), authID)
 	manager.mu.RLock()
 	removalEpoch := manager.authEpochs[authID]
@@ -3963,12 +3704,10 @@ func TestManager_Scheduler_DelayedOldEpochRemoveTombstone_RejectedAndNewAuthSche
 		t.Fatalf("expected removal epoch > epoch1: %d <= %d", removalEpoch, epoch1)
 	}
 
-	// Pick must fail
 	if _, errPickRemoved := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil); errPickRemoved == nil {
 		t.Fatalf("expected pickSingle to fail after removal, but succeeded")
 	}
 
-	// 3. Re-register same authID -> gets new monotonic epoch > removalEpoch
 	auth2 := &Auth{
 		ID:       authID,
 		Provider: provider,
@@ -3984,17 +3723,13 @@ func TestManager_Scheduler_DelayedOldEpochRemoveTombstone_RejectedAndNewAuthSche
 		t.Fatalf("expected re-registered epoch > removalEpoch: %d <= %d", epoch2, removalEpoch)
 	}
 
-	// Pick must succeed again
 	picked2, errPick2 := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPick2 != nil || picked2.ID != authID {
 		t.Fatalf("pick 2 failed: picked=%v, err=%v", picked2, errPick2)
 	}
 
-	// 4. Delayed old tombstone from removalEpoch arrives at scheduler
 	manager.scheduler.RecordRemovalTombstone(authID, removalEpoch)
 
-	// Verify that the scheduler ignored the old tombstone:
-	// - authGenerations must retain epoch2
 	manager.scheduler.mu.Lock()
 	meta := manager.scheduler.authGenerations[authID]
 	manager.scheduler.mu.Unlock()
@@ -4005,14 +3740,12 @@ func TestManager_Scheduler_DelayedOldEpochRemoveTombstone_RejectedAndNewAuthSche
 		t.Fatalf("expected scheduler generation > 0, got 0 (incorrectly zeroed by old tombstone)")
 	}
 
-	// - Pick must STILL succeed and return the new auth
 	picked3, errPick3 := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPick3 != nil || picked3.ID != authID {
 		t.Fatalf("pick 3 failed after delayed tombstone: picked=%v, err=%v", picked3, errPick3)
 	}
 }
 
-// Test 44: Reconcile with exhausted retries due to persistent epoch mismatches safely aborts without committing stale snapshot
 func TestManager_NoForkAlias_Reconcile_ExhaustedRetryOnEpochMismatch_PreservesStateAndNoStaleSnapshot(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -4044,7 +3777,6 @@ func TestManager_NoForkAlias_Reconcile_ExhaustedRetryOnEpochMismatch_PreservesSt
 	}
 	manager.RefreshSchedulerEntry(authID)
 
-	// Cooldown modelB
 	retryAfter := 30 * time.Minute
 	manager.MarkResult(context.Background(), Result{
 		AuthID:     authID,
@@ -4065,7 +3797,6 @@ func TestManager_NoForkAlias_Reconcile_ExhaustedRetryOnEpochMismatch_PreservesSt
 	manager.mu.RUnlock()
 	initialGen := authBefore.Generation
 
-	// Start continuous background client registration updates to cause epoch mismatch on every retry
 	stopCh := make(chan struct{})
 	doneCh := make(chan struct{})
 	go func() {
@@ -4083,13 +3814,10 @@ func TestManager_NoForkAlias_Reconcile_ExhaustedRetryOnEpochMismatch_PreservesSt
 		}
 	}()
 
-	// Trigger Reconcile while epochs are constantly shifting
 	manager.ReconcileRegistryModelStates(context.Background(), authID)
 	close(stopCh)
 	<-doneCh
 
-	// Verify that if epoch mismatch occurred and retries exhausted without commit:
-	// 1. In-memory auth was NOT modified to an invalid or stale snapshot
 	manager.mu.RLock()
 	authAfter := manager.auths[authID]
 	manager.mu.RUnlock()
@@ -4097,18 +3825,16 @@ func TestManager_NoForkAlias_Reconcile_ExhaustedRetryOnEpochMismatch_PreservesSt
 	if authAfter == nil {
 		t.Fatalf("auth was lost in manager")
 	}
-	// Cooldown for modelB must be preserved
+
 	stateB, hasB := authAfter.ModelStates[modelB]
 	if !hasB || stateB == nil || !isModelStateActiveCooldown(stateB, time.Now()) {
 		t.Fatalf("expected modelB to retain active cooldown after retry exhaustion, got: %#v", stateB)
 	}
-	// Generation must not have mutated if reconcile aborted without committing
-	// Or if it committed on a matched retry, it must still have valid state
+
 	if authAfter.Generation < initialGen {
 		t.Fatalf("unexpected generation decrease: %d < %d", authAfter.Generation, initialGen)
 	}
 
-	// Perform a clean, unperturbed Reconcile now to ensure full eventual consistency
 	manager.ReconcileRegistryModelStates(context.Background(), authID)
 
 	manager.mu.RLock()
@@ -4154,7 +3880,6 @@ func (s *memoryAuthTestStore) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Test 45: Manager Load assigns monotonically increasing epochs on reload and records tombstones for removed items
 func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T) {
 	const (
 		provider = "gemini"
@@ -4191,7 +3916,6 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 		reg.UnregisterClient(authID2)
 	})
 
-	// 1. Initial Load from store
 	if errLoad := manager.Load(context.Background()); errLoad != nil {
 		t.Fatalf("manager.Load failed: %v", errLoad)
 	}
@@ -4204,15 +3928,14 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 	if loadedAuth1 == nil || loadedAuth2 == nil {
 		t.Fatalf("expected both auths loaded: auth1=%v, auth2=%v", loadedAuth1, loadedAuth2)
 	}
-	// Epochs must be strictly greater than disk epochs:
-	// auth1: max(0, 5) + 1 = 6
+
 	if loadedAuth1.RegistrationEpoch != 6 {
 		t.Fatalf("expected auth1 RegistrationEpoch == 6, got %d", loadedAuth1.RegistrationEpoch)
 	}
 	if loadedAuth1.Generation != 1 {
 		t.Fatalf("expected auth1 Generation == 1, got %d", loadedAuth1.Generation)
 	}
-	// auth2: max(0, 3) + 1 = 4
+
 	if loadedAuth2.RegistrationEpoch != 4 {
 		t.Fatalf("expected auth2 RegistrationEpoch == 4, got %d", loadedAuth2.RegistrationEpoch)
 	}
@@ -4220,7 +3943,6 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 		t.Fatalf("expected auth2 Generation == 1, got %d", loadedAuth2.Generation)
 	}
 
-	// Both auths must be picked from scheduler
 	manager.RefreshSchedulerEntry(authID1)
 	manager.RefreshSchedulerEntry(authID2)
 
@@ -4236,7 +3958,6 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 		t.Fatalf("expected both auth1 and auth2 to be picked, got set: %#v", pickedSet)
 	}
 
-	// 2. Remove authID2 from store and reload
 	_ = store.Delete(context.Background(), authID2)
 
 	if errLoad2 := manager.Load(context.Background()); errLoad2 != nil {
@@ -4249,20 +3970,18 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 	epochAuth2Tombstone := manager.authEpochs[authID2]
 	manager.mu.RUnlock()
 
-	// auth1 must get new epoch: max(6, 6) + 1 = 7
 	if reloadedAuth1 == nil || reloadedAuth1.RegistrationEpoch != 7 {
 		t.Fatalf("expected reloaded auth1 with epoch 7, got %#v", reloadedAuth1)
 	}
-	// auth2 must NOT exist in manager.auths
+
 	if reloadedAuth2 != nil {
 		t.Fatalf("expected auth2 to be absent from manager.auths, got %#v", reloadedAuth2)
 	}
-	// auth2 tombstone epoch must be incremented: 4 + 1 = 5
+
 	if epochAuth2Tombstone != 5 {
 		t.Fatalf("expected auth2 tombstone epoch == 5, got %d", epochAuth2Tombstone)
 	}
 
-	// Scheduler must have tombstone for auth2 with epoch 5
 	manager.scheduler.mu.Lock()
 	metaAuth2 := manager.scheduler.authGenerations[authID2]
 	manager.scheduler.mu.Unlock()
@@ -4270,14 +3989,12 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 		t.Fatalf("expected scheduler tombstone for auth2 with epoch 5, generation 0, got %#v", metaAuth2)
 	}
 
-	// Refresh scheduler for auth1 and test picks
 	manager.RefreshSchedulerEntry(authID1)
 	pickedAfter, errPickAfter := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 	if errPickAfter != nil || pickedAfter.ID != authID1 {
 		t.Fatalf("expected pickSingle to return auth1, got: picked=%v, err=%v", pickedAfter, errPickAfter)
 	}
 
-	// 3. Stale snapshot of authID2 with old epoch 4 (or 3) arriving at scheduler MUST be rejected by tombstone
 	staleAuth2 := &Auth{
 		ID:                authID2,
 		Provider:          provider,
@@ -4288,7 +4005,6 @@ func TestManager_Load_MonotonicEpochAssignment_AndRemovalTombstones(t *testing.T
 	}
 	manager.scheduler.upsertAuth(staleAuth2)
 
-	// Pick must still ONLY return authID1, never authID2
 	for i := 0; i < 3; i++ {
 		p, errP := manager.scheduler.pickSingle(context.Background(), provider, model, cliproxyexecutor.Options{}, nil)
 		if errP != nil || p.ID != authID1 {
@@ -4710,7 +4426,6 @@ func TestManager_Issue7360_Shape2_CooldownRecordedBeforeAliasMappingMigratesToTa
 			t.Fatalf("after first Execute, calls = %v, want [%q]", calls, targetA)
 		}
 
-		// Re-applying alias configuration or reconciling must not migrate targetA's cooldown to targetC
 		manager.SetOAuthModelAlias(aliases)
 		manager.ReconcileRegistryModelStates(context.Background(), authID)
 
@@ -4810,8 +4525,7 @@ func TestManager_Issue7360_Shape2_CooldownRecordedBeforeAliasMappingMigratesToTa
 		}()
 
 		<-saveBlockedCh
-		// While the first credential's store persistence is blocked, both credentials
-		// must already have migrated their in-memory cooldowns atomically with the alias table.
+
 		_, errExecDuringSave := manager.Execute(context.Background(), []string{provider}, cliproxyexecutor.Request{Model: aliasModel}, cliproxyexecutor.Options{})
 		if errExecDuringSave == nil {
 			t.Fatal("expected Execute during SetOAuthModelAlias persistence to be blocked by migrated cooldowns on both credentials")

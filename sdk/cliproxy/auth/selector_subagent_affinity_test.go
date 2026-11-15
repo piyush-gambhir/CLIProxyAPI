@@ -9,9 +9,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// TestSessionAffinityAntigravitySubagentInheritsParentByDefault reproduces issue #5417:
-// Subagents across all providers (including Antigravity and Gemini) should inherit
-// the parent session's credential by default to maximize prompt and KV cache reuse.
 func TestSessionAffinityAntigravitySubagentInheritsParentByDefault(t *testing.T) {
 	t.Parallel()
 
@@ -26,7 +23,6 @@ func TestSessionAffinityAntigravitySubagentInheritsParentByDefault(t *testing.T)
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent request binds to auth-ag-1.
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-100"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -40,7 +36,6 @@ func TestSessionAffinityAntigravitySubagentInheritsParentByDefault(t *testing.T)
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
 
-	// 2. Subagent request carries child agent ID and should inherit parent auth-ag-1 by default.
 	subagentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-100"},
@@ -57,7 +52,6 @@ func TestSessionAffinityAntigravitySubagentInheritsParentByDefault(t *testing.T)
 		t.Fatalf("subagent did not inherit parent auth %q, got %q", parentAuth.ID, subagentAuth.ID)
 	}
 
-	// 3. Subsequent turn of subagent must stay sticky to the inherited auth.
 	subagentTurn2Auth, errSub2 := selector.Pick(context.Background(), "antigravity", "gemini-3.7-flash-high", subagentOpts, auths)
 	if errSub2 != nil {
 		t.Fatalf("subagent turn 2 Pick() error = %v", errSub2)
@@ -67,8 +61,6 @@ func TestSessionAffinityAntigravitySubagentInheritsParentByDefault(t *testing.T)
 	}
 }
 
-// TestSessionAffinityGeminiSubagentInheritsParentWhenExplicitlyTrue verifies that when
-// SubagentAffinity is explicitly set to true, Gemini subagents inherit the parent's auth.
 func TestSessionAffinityGeminiSubagentInheritsParentWhenExplicitlyTrue(t *testing.T) {
 	t.Parallel()
 
@@ -85,7 +77,6 @@ func TestSessionAffinityGeminiSubagentInheritsParentWhenExplicitlyTrue(t *testin
 		{ID: "auth-gem-2", Provider: "gemini"},
 	}
 
-	// 1. Parent request binds to auth-gem-1.
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"gem-root-200"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent gemini task"}]}`),
@@ -99,7 +90,6 @@ func TestSessionAffinityGeminiSubagentInheritsParentWhenExplicitlyTrue(t *testin
 		t.Fatalf("parent auth = %q, want auth-gem-1", parentAuth.ID)
 	}
 
-	// 2. Subagent request inherits parent auth-gem-1.
 	subagentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"gem-root-200"},
@@ -117,8 +107,6 @@ func TestSessionAffinityGeminiSubagentInheritsParentWhenExplicitlyTrue(t *testin
 	}
 }
 
-// TestSessionAffinitySubagentIsolatesWhenExplicitlyFalse verifies that when
-// SubagentAffinity is false, subagents do not inherit parent credentials and balance across pool.
 func TestSessionAffinitySubagentIsolatesWhenExplicitlyFalse(t *testing.T) {
 	t.Parallel()
 
@@ -135,7 +123,6 @@ func TestSessionAffinitySubagentIsolatesWhenExplicitlyFalse(t *testing.T) {
 		{ID: "auth-2", Provider: "claude"},
 	}
 
-	// 1. Parent request binds to auth-1.
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"sess-iso-300"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -149,7 +136,6 @@ func TestSessionAffinitySubagentIsolatesWhenExplicitlyFalse(t *testing.T) {
 		t.Fatalf("parent auth = %q, want auth-1", parentAuth.ID)
 	}
 
-	// 2. Subagent request should NOT inherit auth-1; it picks auth-2 via fallback round-robin.
 	subagentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"sess-iso-300"},
@@ -170,8 +156,6 @@ func TestSessionAffinitySubagentIsolatesWhenExplicitlyFalse(t *testing.T) {
 	}
 }
 
-// TestSessionAffinitySubagentFailureIsolation verifies that failure on a subagent session
-// only deletes the subagent's own binding, leaving the parent's binding intact.
 func TestSessionAffinitySubagentFailureIsolation(t *testing.T) {
 	t.Parallel()
 
@@ -186,7 +170,6 @@ func TestSessionAffinitySubagentFailureIsolation(t *testing.T) {
 		{ID: "auth-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent request binds to auth-1.
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"sess-fail-400"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -200,13 +183,11 @@ func TestSessionAffinitySubagentFailureIsolation(t *testing.T) {
 		t.Fatalf("parent auth = %q, want auth-1", parentAuth.ID)
 	}
 
-	// Parent cache key must be bound to auth-1.
 	parentCacheKey := "antigravity::claude:sess-fail-400::gemini-3.7-flash-high"
 	if bound, ok := selector.cache.Get(parentCacheKey); !ok || bound != "auth-1" {
 		t.Fatalf("parent cache binding = (%q, %v), want (auth-1, true)", bound, ok)
 	}
 
-	// 2. Subagent inherits auth-1 and binds its own cache key.
 	subagentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"sess-fail-400"},
@@ -228,24 +209,20 @@ func TestSessionAffinitySubagentFailureIsolation(t *testing.T) {
 		t.Fatalf("subagent cache binding = (%q, %v), want (auth-1, true)", bound, ok)
 	}
 
-	// 3. Subagent fails with an upstream error via OnResult.
 	selector.OnResult(Result{
 		AuthID:  "auth-1",
 		Success: false,
 		Options: subagentOpts,
 	})
 
-	// 4. Subagent's cache key must be cleared.
 	if bound, ok := selector.cache.Get(subagentCacheKey); ok {
 		t.Fatalf("subagent cache binding was not cleared after failure: got %q", bound)
 	}
 
-	// 5. Parent session binding in cache MUST still remain intact on auth-1.
 	if bound, ok := selector.cache.Get(parentCacheKey); !ok || bound != "auth-1" {
 		t.Fatalf("parent binding was damaged by subagent failure: got (%q, %v), want (auth-1, true)", bound, ok)
 	}
 
-	// 6. Parent request turn 2 must still hit auth-1.
 	parentTurn2Auth, errParent2 := selector.Pick(context.Background(), "antigravity", "gemini-3.7-flash-high", parentOpts, auths)
 	if errParent2 != nil {
 		t.Fatalf("parent turn 2 Pick() error = %v", errParent2)
@@ -255,8 +232,6 @@ func TestSessionAffinitySubagentFailureIsolation(t *testing.T) {
 	}
 }
 
-// TestSessionAffinitySubagentAliasIsolation verifies that subagents bind only their
-// own cacheKey and never register an alias that overrides the parent's fallbackKey.
 func TestSessionAffinitySubagentAliasIsolation(t *testing.T) {
 	t.Parallel()
 
@@ -271,7 +246,6 @@ func TestSessionAffinitySubagentAliasIsolation(t *testing.T) {
 		{ID: "auth-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent binds auth-1.
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"sess-alias-500"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -282,7 +256,6 @@ func TestSessionAffinitySubagentAliasIsolation(t *testing.T) {
 		t.Fatalf("parent Pick() error = %v", errParent)
 	}
 
-	// 2. Subagent picks and inherits auth-1.
 	subagentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"sess-alias-500"},
@@ -296,14 +269,12 @@ func TestSessionAffinitySubagentAliasIsolation(t *testing.T) {
 		t.Fatalf("subagent Pick() error = %v", errSub)
 	}
 
-	// 3. Invalidate subagent's auth by calling OnResult(Success: false).
 	selector.OnResult(Result{
 		AuthID:  "auth-1",
 		Success: false,
 		Options: subagentOpts,
 	})
 
-	// Parent fallbackKey in cache MUST still resolve to auth-1, proving subagent did not alias it.
 	parentCacheKey := "antigravity::claude:sess-alias-500::gemini-3.7-flash-high"
 	val, ok := selector.cache.Get(parentCacheKey)
 	if !ok || val != "auth-1" {

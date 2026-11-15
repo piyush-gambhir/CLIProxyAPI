@@ -23,8 +23,6 @@ const (
 	issue6630ReasoningItem = `{"type":"reasoning","id":"rs_test_1","summary":[{"type":"summary_text","text":"I should say hi briefly."}]}`
 )
 
-// issue6630VertexContents sends a Responses request through the selected Vertex
-// executor path and returns the raw contents array received upstream.
 func issue6630VertexContents(t *testing.T, cfg *config.Config, authMode string, stream bool, input string) string {
 	t.Helper()
 	const okBody = `{"candidates":[{"content":{"role":"model","parts":[{"text":"hi"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2}}`
@@ -95,8 +93,6 @@ func issue6630VertexContents(t *testing.T, cfg *config.Config, authMode string, 
 	return ojson.GetBytes(<-captured, "contents").Raw
 }
 
-// issue6630AssertContents compares upstream contents with a hand-written JSON
-// literal, ignoring object key order.
 func issue6630AssertContents(t *testing.T, got, want string) {
 	t.Helper()
 	var gotValue, wantValue any
@@ -111,8 +107,6 @@ func issue6630AssertContents(t *testing.T, got, want string) {
 	}
 }
 
-// TestGeminiVertexDropsTrailingReasoningTurn covers #6630: Vertex rejects a
-// trailing thought-only model turn even when an empty user turn follows it.
 func TestGeminiVertexDropsTrailingReasoningTurn(t *testing.T) {
 	const signature = "EjQKMgEMOdbHO0Gd+c9Mxk4ELwPGbpCEcp2mFfYYLix2UVtBH3fL8GECc4+JITVnHF4qZDsA"
 	tests := []struct {
@@ -156,8 +150,6 @@ func TestGeminiVertexDropsTrailingReasoningTurn(t *testing.T) {
 	}
 }
 
-// TestGeminiVertexTrailingReasoningDropPrecedesPayloadRules keeps payload rules
-// as the final barrier: configured contents are sent exactly as configured.
 func TestGeminiVertexTrailingReasoningDropPrecedesPayloadRules(t *testing.T) {
 	const configured = `[{"role":"user","parts":[{"text":"configured"}]},{"role":"model","parts":[{"text":"configured thought","thought":true}]}]`
 	cfg := &config.Config{Payload: config.PayloadConfig{OverrideRaw: []config.PayloadRule{{

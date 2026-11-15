@@ -1,18 +1,3 @@
-// Command fetch_codex_models connects to the Codex API using stored auth
-// credentials and saves the dynamically fetched Codex client model catalog to a
-// JSON file for inspection or offline use.
-//
-// Usage:
-//
-//	go run ./cmd/fetch_codex_models [flags]
-//
-// Flags:
-//
-//	--auths-dir       <path>  Directory containing auth JSON files (default: config auth-dir)
-//	--config          <path>  Config file path                 (default: "config.yaml")
-//	--output          <path>  Output JSON file path             (default: "codex_client_models.json")
-//	--client-version <ver>   Codex client_version query value  (default: "0.154.0")
-//	--pretty                 Pretty-print the output JSON      (default: true)
 package main
 
 import (
@@ -311,9 +296,7 @@ func ensureBaselineModel(raw []byte) ([]byte, int, error) {
 	if errUnmarshal := json.Unmarshal(raw, &payload); errUnmarshal != nil {
 		return nil, 0, fmt.Errorf("failed to parse response JSON: %w", errUnmarshal)
 	}
-	// Keep this check intentionally loose: fetch_codex_models dumps the upstream
-	// Codex API payload. Strict CPA catalog validation belongs in
-	// cmd/validate_codex_models and registry.ValidateCodexClientModelsJSON.
+
 	if payload.Models == nil {
 		return nil, 0, fmt.Errorf("response JSON does not contain models array")
 	}
@@ -396,9 +379,7 @@ func countModels(raw []byte) (int, error) {
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return 0, fmt.Errorf("failed to parse response JSON: %w", err)
 	}
-	// Keep this check intentionally loose: fetch_codex_models dumps the upstream
-	// Codex API payload. Strict CPA catalog validation belongs in
-	// cmd/validate_codex_models and registry.ValidateCodexClientModelsJSON.
+
 	if payload.Models == nil {
 		return 0, fmt.Errorf("response JSON does not contain models array")
 	}

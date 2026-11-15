@@ -45,28 +45,21 @@ func ensureOpenAICompatUserAgent(r *http.Request, clientHeaders ...http.Header) 
 	misc.EnsureHeader(r.Header, util.ResolveClientHeaders(r, clientHeaders...), "User-Agent", openAICompatDefaultUserAgent)
 }
 
-// OpenAICompatExecutor implements a stateless executor for OpenAI-compatible providers.
-// It performs request/response translation and executes against the provider base URL
-// using per-auth credentials (API key) and per-auth HTTP transport (proxy) from context.
 type OpenAICompatExecutor struct {
 	provider string
 	cfg      *config.Config
 }
 
-// NewOpenAICompatExecutor creates an executor bound to a provider key (e.g., "openrouter").
 func NewOpenAICompatExecutor(provider string, cfg *config.Config) *OpenAICompatExecutor {
 	return &OpenAICompatExecutor{provider: provider, cfg: cfg}
 }
 
-// Identifier implements cliproxyauth.ProviderExecutor.
 func (e *OpenAICompatExecutor) Identifier() string { return e.provider }
 
-// UsesConfig reports whether the executor is bound to the provided config snapshot.
 func (e *OpenAICompatExecutor) UsesConfig(cfg *config.Config) bool {
 	return e != nil && e.cfg == cfg
 }
 
-// PrepareRequest injects OpenAI-compatible credentials into the outgoing HTTP request.
 func (e *OpenAICompatExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -84,7 +77,6 @@ func (e *OpenAICompatExecutor) PrepareRequest(req *http.Request, auth *cliproxya
 	return nil
 }
 
-// HttpRequest injects OpenAI-compatible credentials into the request and executes it.
 func (e *OpenAICompatExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("openai compat executor: request is nil")
@@ -246,8 +238,7 @@ func (e *OpenAICompatExecutor) executeWithCredentials(ctx context.Context, auth 
 		return resp, err
 	}
 	reporter.ObserveResponseModel(body)
-	// Ensure we at least record the request even if upstream doesn't return usage
-	// Translate response back to source format when needed
+
 	var param any
 	out := sdktranslator.TranslateNonStream(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, body, &param)
 	if helps.ApplyPatchTranslationError(param) != nil || len(out) == 0 {
@@ -421,8 +412,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 		}
 	}
 
-	// Request usage data in the final streaming chunk so that token statistics
-	// are captured even when the upstream is an OpenAI-compatible provider.
 	helps.SetBoolIfDifferentDoc(doc, "stream_options.include_usage", true)
 
 	url := strings.TrimSuffix(baseURL, "/") + "/chat/completions"
@@ -464,7 +453,7 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 	})
 
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
-	// Early role/empty frames are only first-packet fallbacks, not effective tokens.
+
 	httpClient = reporter.TrackHTTPClientRoundTripOnly(httpClient)
 	httpResp, err := httpClient.Do(httpReq)
 	if err != nil {
@@ -494,7 +483,7 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 			}
 		}()
 		scanner := bufio.NewScanner(httpResp.Body)
-		scanner.Buffer(nil, 52_428_800) // 50MB
+		scanner.Buffer(nil, 52_428_800)
 		claudeInputTokens := helps.NewClaudeInputTokenState(from, to, responseFormat, originalPayload)
 		var param any
 		helps.InitializeApplyPatchStream(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, &param)
@@ -564,7 +553,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 				}
 			}
 
-			// Observe complete upstream frames before translation or downstream backpressure.
 			if !isDone && len(dataLines) > 1 {
 				streamUsage.ObserveOpenAIStream(dataPayload)
 			}
@@ -655,8 +643,7 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 			case <-ctx.Done():
 			}
 		} else if !seenDone {
-			// Without a translator-confirmed terminal state, a clean Responses or Claude EOF
-			// without [DONE] remains a failed stream instead of completing it.
+
 			if responseFormat == sdktranslator.FormatOpenAIResponse || (responseFormat == sdktranslator.FormatClaude && !sawFinishReason) {
 				streamErr := statusErr{code: http.StatusBadGateway, msg: "upstream stream closed before [DONE]", streamTruncated: true}
 				helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
@@ -672,7 +659,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 				return
 			}
 
-			// Other protocols retain compatibility with providers that omit [DONE].
 			chunks := helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, []byte("data: [DONE]"), &param, claudeInputTokens)
 			helps.RecordApplyPatchStreamFailure(ctx, param, reporter, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage})
 			for i := range chunks {
@@ -683,7 +669,7 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 				}
 			}
 		}
-		// Ensure we record the request if no usage chunk was ever seen.
+
 		streamUsage.Publish(ctx, reporter)
 		reporter.EnsurePublished(ctx)
 	}()
@@ -921,9 +907,6 @@ func (e *OpenAICompatExecutor) CountTokens(ctx context.Context, auth *cliproxyau
 	return cliproxyexecutor.Response{Payload: translatedUsage}, nil
 }
 
-// Refresh is a no-op for API-key based compatibility providers.
-// OAuth-style credentials with a refresh token cannot be rotated here; callers
-// that need plugin/Home refresh must bind a refresh-capable executor instead.
 func (e *OpenAICompatExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("openai compat executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
@@ -1156,8 +1139,7 @@ func (e *OpenAICompatExecutor) resolveCompatConfig(auth *cliproxyauth.Auth, req 
 		return nil
 	}
 	if e.cfg.Home.Enabled {
-		// Home excludes provider credentials from the global configuration. These
-		// non-secret options belong to the credential selected for this attempt.
+
 		var options struct {
 			SupportPromptCacheKey bool                              `json:"support-prompt-cache-key"`
 			Models                []config.OpenAICompatibilityModel `json:"models"`
@@ -1282,7 +1264,7 @@ type statusErr struct {
 	credentialScoped   bool
 	streamTruncated    bool
 	transientRateLimit bool
-	// diagnostic is a content-free detail for logs only; it never reaches clients.
+
 	diagnostic string
 }
 
@@ -1296,15 +1278,10 @@ func (e statusErr) StatusCode() int            { return e.code }
 func (e statusErr) RetryAfter() *time.Duration { return e.retryAfter }
 func (e statusErr) IsCredentialScoped() bool   { return e.credentialScoped }
 
-// LogDiagnostic lets upstream failure logs explain a sanitized client message.
 func (e statusErr) LogDiagnostic() string { return e.diagnostic }
 
-// IsStreamTruncated marks a locally synthesized failure for an accepted
-// upstream stream that ended without its terminal frame.
 func (e statusErr) IsStreamTruncated() bool { return e.streamTruncated }
 
-// IsTransientRateLimit marks a transient per-model capacity/admission 429
-// that must not be recorded as credential quota exhaustion.
 func (e statusErr) IsTransientRateLimit() bool { return e.transientRateLimit }
 
 const openAICompatTPMFallbackRetryAfter = time.Minute
@@ -1317,15 +1294,6 @@ func newOpenAICompatStatusError(status int, headers http.Header, body []byte) st
 	}
 }
 
-// openAICompatRetryAfter preserves the provider's standard Retry-After signal.
-// Some OpenAI-compatible providers omit that header for explicit per-minute
-// token limits; in that narrow case a one-minute fallback prevents immediate
-// replay of the same large request while keeping the retry wait bounded.
-// parseRetryAfterHeader parses an HTTP Retry-After header in either the
-// delay-seconds or HTTP-date form. A present, valid value always yields a
-// non-nil result so that an explicit immediate retry (0 seconds or a past
-// date) stays distinguishable from an absent hint; missing or malformed
-// values yield nil and let body-derived hints apply.
 func parseRetryAfterHeader(headers http.Header, now time.Time) *time.Duration {
 	if headers == nil {
 		return nil
@@ -1336,8 +1304,7 @@ func parseRetryAfterHeader(headers http.Header, now time.Time) *time.Duration {
 	}
 	if seconds, errParse := strconv.ParseInt(raw, 10, 64); errParse == nil && seconds >= 0 {
 		if seconds > int64(math.MaxInt64)/int64(time.Second) {
-			// Out of representable range: clamp to the largest duration so
-			// far-future deadlines only ever over-report recovery.
+
 			delay := time.Duration(math.MaxInt64)
 			return &delay
 		}
@@ -1372,5 +1339,4 @@ func openAICompatRetryAfter(status int, headers http.Header, body []byte, now ti
 	return nil
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
 func (e *OpenAICompatExecutor) SupportsApplyPatch() bool { return e != nil }

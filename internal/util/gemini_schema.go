@@ -1,4 +1,3 @@
-// Package util provides utility functions for the CLI Proxy API server.
 package util
 
 import (
@@ -17,15 +16,6 @@ var gjsonPathKeyReplacer = strings.NewReplacer(".", "\\.", "*", "\\*", "?", "\\?
 
 const placeholderReasonDescription = "Brief explanation of why you are calling this tool"
 
-// Pass a single JSON schema to the functions below — never a whole request document.
-//
-// Cleaning walks every node and rewrites keys by name, and schema keywords such as "title",
-// "format", "default" and "const" are also ordinary data keys. Handing these functions a request
-// silently rewrites tool-call arguments inside the conversation history: the guard that protects
-// a key under ".properties" does not apply to argument values, so the keys are deleted outright
-// and replacements such as "enum" and "type" are fabricated. That regression reached production
-// once already; scope every call site to the schema itself.
-
 type jsonSchemaCleanOptions struct {
 	addPlaceholder       bool
 	addMissingArrayItems bool
@@ -33,9 +23,7 @@ type jsonSchemaCleanOptions struct {
 	removeToolTitle      bool
 	removeGeminiMetadata bool
 	flattenUnions        bool
-	// flattenMultiBranchUnions forces multi-branch anyOf/oneOf unions down to a single
-	// strongest branch instead of preserving them. It is used on routes whose upstream
-	// rejects nested multi-branch unions even though they are valid JSON Schema.
+
 	flattenMultiBranchUnions          bool
 	forceEnumStringType               bool
 	dropAllEnums                      bool
@@ -45,27 +33,14 @@ type jsonSchemaCleanOptions struct {
 	preserveStandardConstraints       bool
 }
 
-// CleanJSONSchemaForAntigravity transforms a tool schema to be compatible with Antigravity API.
-// It handles unsupported keywords, type flattening, and schema simplification while preserving
-// semantic information as description hints and adding placeholders required by VALIDATED mode.
 func CleanJSONSchemaForAntigravity(jsonStr string) string {
 	return CleanJSONSchemaForAntigravityTool(jsonStr, true)
 }
 
-// CleanJSONSchemaForAntigravityTool transforms an Antigravity function schema. The private
-// backend accepts enum members only as strings, but the declared type still controls the JSON
-// type of generated function arguments, so numeric and boolean types must not be rewritten.
-// requirePlaceholder is used only for Claude VALIDATED mode.
 func CleanJSONSchemaForAntigravityTool(jsonStr string, requirePlaceholder bool) string {
 	return cleanJSONSchemaForAntigravityTool(jsonStr, requirePlaceholder, false)
 }
 
-// CleanJSONSchemaForAntigravityClaudeTool is the Antigravity tool cleaner for Claude
-// models. It applies the same Antigravity schema cleanup, but flattens multi-branch
-// anyOf/oneOf unions to a single strongest branch: the Antigravity Claude backend
-// converts Gemini function declarations into Claude custom.input_schema and rejects
-// nested multi-branch unions with "JSON schema is invalid", while the Gemini
-// backends accept preserved unions (see Issue 3662 and its regression follow-up).
 func CleanJSONSchemaForAntigravityClaudeTool(jsonStr string, requirePlaceholder bool) string {
 	return cleanJSONSchemaForAntigravityTool(jsonStr, requirePlaceholder, true)
 }
@@ -82,18 +57,6 @@ func cleanJSONSchemaForAntigravityTool(jsonStr string, requirePlaceholder, flatt
 	})
 }
 
-// CleanJSONSchemaForAntigravityResponse transforms a response schema without applying tool-only
-// compatibility rewrites that would alter the client's structured output contract.
-//
-// Sanitization policy:
-//   - Passthrough: type, properties, items, required, description, enum, nullable, and
-//     additionalProperties: false (which Antigravity natively enforces for response schemas).
-//   - Description hints + deletion: unsupported or accepted-but-ignored constraints.
-//   - Flattened: allOf merged into properties/required.
-//   - Unions: multi-branch anyOf/oneOf unions are preserved; single-type nullable unions ([T, null]) project to T with nullable:true.
-//   - Resolved: local $ref targets are inlined before $defs/definitions are removed.
-//   - Dropped: unresolved $ref (after a hint), metadata, unsupported object-key constraints,
-//     conditional keywords (after non-conflicting properties are retained), and x-* extensions.
 func CleanJSONSchemaForAntigravityResponse(jsonStr string) string {
 	return cleanJSONSchema(jsonStr, jsonSchemaCleanOptions{
 		antigravitySemantics:              true,
@@ -103,8 +66,6 @@ func CleanJSONSchemaForAntigravityResponse(jsonStr string) string {
 	})
 }
 
-// CleanJSONSchemaForGemini transforms a JSON schema to be compatible with Gemini tool calling.
-// It removes unsupported keywords and simplifies schemas, without adding empty-schema placeholders.
 func CleanJSONSchemaForGemini(jsonStr string) string {
 	return cleanJSONSchema(jsonStr, jsonSchemaCleanOptions{
 		addMissingArrayItems: true,
@@ -114,10 +75,6 @@ func CleanJSONSchemaForGemini(jsonStr string) string {
 	})
 }
 
-// CleanJSONSchemaForGeminiJSONSchema transforms a JSON schema for Gemini tool calling
-// when using the parametersJsonSchema carrier. It preserves standard JSON Schema constraints
-// (such as pattern, minLength, maxLength) and additionalProperties (both boolean and schema-valued),
-// while removing Gemini-incompatible metadata fields and cleaning required properties.
 func CleanJSONSchemaForGeminiJSONSchema(jsonStr string) string {
 	return cleanJSONSchema(jsonStr, jsonSchemaCleanOptions{
 		addMissingArrayItems:            true,
@@ -129,17 +86,11 @@ func CleanJSONSchemaForGeminiJSONSchema(jsonStr string) string {
 	})
 }
 
-// cleanJSONSchema performs the core cleaning operations on the JSON schema.
 func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
-	// Phase 0: Normalize malformed schemas (e.g. bare property maps and boolean required from MCP tools).
-	// Array placeholders and array type inference are deferred to Phase 3 (sanitizeArrayItems) after
-	// local references are inlined and allOf/union structures are resolved, so synthetic placeholders
-	// do not clobber items supplied by $ref targets or allOf branches.
+
 	jsonStr = normalizeMalformedSchemaObjects(jsonStr)
 	jsonStr = NormalizeJSONSchemaNumericConstraints(jsonStr)
 
-	// Phase 1: Convert and add hints. Every cleaner removes $defs/definitions later, so local
-	// references must be expanded here for every route; otherwise nested fields are lost.
 	jsonStr = inlineLocalRefsForClean(jsonStr)
 	jsonStr = convertRefsToHints(jsonStr, options.antigravitySemantics)
 	jsonStr = convertConstToEnum(jsonStr)
@@ -154,12 +105,10 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 		jsonStr = moveNotToDescription(jsonStr)
 	}
 
-	// Phase 2: Flatten complex structures. Once a JSON Schema contains a conjunction,
-	// local shape assumptions are unsafe in ancestors, siblings, and descendants alike.
 	preserveConjunctions := options.preserveStandardConstraints && hasSchemaConjunction(jsonStr)
 	jsonStr = mergeConditionals(jsonStr)
 	if !options.preserveStandardConstraints {
-		// The JSON Schema carrier must keep conjunctions, including ref sibling conflicts.
+
 		jsonStr = mergeAllOf(jsonStr)
 	}
 	if !preserveConjunctions {
@@ -169,15 +118,13 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 		jsonStr = flattenTypeArrays(jsonStr, options.antigravitySemantics)
 	}
 
-	// Phase 3: Cleanup
 	jsonStr = removeUnsupportedKeywords(jsonStr, options)
 	if options.removeGeminiMetadata {
-		// Gemini schema cleanup: remove nullable/title and placeholder-only fields.
+
 		jsonStr = removeKeywords(jsonStr, []string{"nullable", "title"})
 		jsonStr = removePlaceholderFields(jsonStr)
 	} else if options.removeToolTitle {
-		// Legacy non-VALIDATED Antigravity requests used the Gemini cleaner, which drops title.
-		// Keep that harmless metadata policy without losing Antigravity's native nullable support.
+
 		jsonStr = removeKeywords(jsonStr, []string{"title"})
 	}
 	if !preserveConjunctions {
@@ -185,7 +132,7 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 		jsonStr = sanitizeObjectProperties(jsonStr)
 		jsonStr = sanitizeArrayItems(jsonStr, options.addMissingArrayItems)
 	}
-	// Phase 4: Add placeholder for empty object schemas (Claude VALIDATED mode requirement)
+
 	if options.addPlaceholder {
 		jsonStr = addEmptySchemaPlaceholder(jsonStr)
 	}
@@ -193,8 +140,6 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 	return jsonStr
 }
 
-// sanitizeObjectProperties normalizes native Schema object declarations. The caller skips this
-// pass for JSON Schema conjunctions, where local properties do not imply an object type.
 func sanitizeObjectProperties(jsonStr string) string {
 	paths := findPaths(jsonStr, "properties")
 	sortByDepth(paths)
@@ -223,9 +168,6 @@ func sanitizeObjectProperties(jsonStr string) string {
 	return jsonStr
 }
 
-// sanitizeArrayItems normalizes native Schema arrays and supplies missing items placeholders.
-// The caller skips this pass for JSON Schema conjunctions, where element and instance types
-// may be constrained elsewhere and synthesizing local fields can make the intersection impossible.
 func sanitizeArrayItems(jsonStr string, addMissing bool) string {
 	paths := findPaths(jsonStr, "items")
 	sortByDepth(paths)
@@ -277,7 +219,6 @@ func sanitizeArrayItems(jsonStr string, addMissing bool) string {
 	return jsonStr
 }
 
-// removeKeywords removes all occurrences of specified keywords from the JSON schema.
 func removeKeywords(jsonStr string, keywords []string) string {
 	deletePaths := make([]string, 0)
 	pathsByField := findPathsByFields(jsonStr, keywords)
@@ -300,9 +241,8 @@ func removeKeywords(jsonStr string, keywords []string) string {
 	return doc.String()
 }
 
-// removePlaceholderFields removes placeholder-only properties ("_" and "reason") and their required entries.
 func removePlaceholderFields(jsonStr string) string {
-	// Remove "_" placeholder properties.
+
 	paths := findPaths(jsonStr, "_")
 	sortByDepth(paths)
 	if len(paths) > 0 {
@@ -341,7 +281,6 @@ func removePlaceholderFields(jsonStr string) string {
 		}
 	}
 
-	// Remove placeholder-only "reason" objects.
 	reasonPaths := findPaths(jsonStr, "reason")
 	sortByDepth(reasonPaths)
 	if len(reasonPaths) > 0 {
@@ -391,11 +330,6 @@ func removePlaceholderFields(jsonStr string) string {
 	return jsonStr
 }
 
-// normalizeMalformedSchemaObjects normalizes malformed JSON schema nodes commonly produced by
-// certain MCP tool definitions (e.g. Asana MCP server):
-// 1. Bare property maps missing the "type": "object" and "properties": {...} wrappers are wrapped.
-// 2. Boolean "required": true on property definitions are stripped and promoted to the parent's "required" array.
-// 3. Boolean true subschemas are normalized to empty schema objects.
 func normalizeMalformedSchemaObjects(jsonStr string) string {
 	if jsonStr == "" {
 		return jsonStr
@@ -417,7 +351,6 @@ func normalizeMalformedSchemaObjects(jsonStr string) string {
 		return jsonStr
 	}
 
-	// If wrapped in single-key {"schema": ...} by cleanNestedSchema, unwrap, repair, and re-wrap.
 	if len(rootMap) == 1 {
 		if innerSchema, ok := rootMap["schema"].(map[string]any); ok {
 			repairedInner, modified := repairSchemaNode(innerSchema)
@@ -544,7 +477,6 @@ func repairSchemaNode(node map[string]any) (map[string]any, bool) {
 		clone[k] = v
 	}
 
-	// 1. If not declared as a primitive/array type, collect bare property definition maps
 	if !isNonObjectDeclaredType(clone["type"]) {
 		var bareProps map[string]any
 		for k, v := range clone {
@@ -589,8 +521,6 @@ func repairSchemaNode(node map[string]any) (map[string]any, bool) {
 		}
 	}
 
-	// 2. Repair declared properties without inferring a type before refs are expanded.
-	// Final sanitization handles native object and array schemas once refs and conjunctions are resolved.
 	if propsVal, ok := clone["properties"].(map[string]any); ok {
 		repairedProps, promotedReqs, propsMod := repairPropertyMap(propsVal)
 		if propsMod {
@@ -605,7 +535,6 @@ func repairSchemaNode(node map[string]any) (map[string]any, bool) {
 		}
 	}
 
-	// 3. Recurse into all other standard schema containers
 	if itemsVal, ok := clone["items"].(map[string]any); ok {
 		repairedItems, itemsMod := repairSchemaNode(itemsVal)
 		if itemsMod {
@@ -791,33 +720,18 @@ func mergeStringSlices(existing, promoted []string) []string {
 	return res
 }
 
-// InlineLocalRefs resolves JSON Pointer references against the original schema. Every reference
-// receives its own copy as long as the expansion budget lasts, conflicting sibling assertions
-// remain conjunctive, and cycles terminate as a typed hint instead of recursing forever.
 func InlineLocalRefs(jsonStr string) string {
 	return inlineLocalRefs(jsonStr)
 }
 
-// maxInlinedSchemaBytes bounds the total size of schema material copied into the output by local
-// reference expansion. Shared definitions fan out once per reference, so a small input can expand
-// exponentially; expansions past the budget degrade to a typed hint like cycles do.
 const maxInlinedSchemaBytes = 256 * 1024
 
-// maxFallbackDescriptionBytes bounds the target description copied into a degraded reference, so a
-// large shared description cannot be repeated per reference and defeat the expansion budget.
 const maxFallbackDescriptionBytes = 512
 
-// inlineLocalRefs resolves JSON Pointer references against the original schema. Every reference
-// receives its own copy as long as the expansion budget lasts, conflicting sibling assertions
-// remain conjunctive, and cycles terminate as a typed hint instead of recursing forever.
 func inlineLocalRefs(jsonStr string) string {
 	return inlineLocalRefsRooted(jsonStr, nil, false)
 }
 
-// inlineLocalRefsForClean inlines local references for schema cleaning. Cleaning sometimes
-// receives the single-key {"schema": ...} carrier used to nest a schema one level down (see Phase
-// 0); references inside it must then resolve against the inner schema, not the carrier, or every
-// lookup misses. The carrier shape and root keys are otherwise preserved byte-for-byte.
 func inlineLocalRefsForClean(jsonStr string) string {
 	if !strings.Contains(jsonStr, `"$ref"`) {
 		return jsonStr
@@ -874,9 +788,6 @@ func inlineLocalRefsRooted(jsonStr string, parsedRoot any, forClean bool) string
 	return string(out)
 }
 
-// refResolveState carries the remaining expansion budget of one inlining pass. Every reference
-// charges the size of the target it copies (nested references charge their own targets), so
-// shared-definition fan-out stops once the budget is spent while ordinary reuse still expands.
 type refResolveState struct {
 	budget int
 }
@@ -885,8 +796,6 @@ func newRefResolveState() *refResolveState {
 	return &refResolveState{budget: maxInlinedSchemaBytes}
 }
 
-// sortedKeys returns map keys in a deterministic order, so budget allocation never depends on
-// Go map iteration order.
 func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for key := range m {
@@ -896,13 +805,6 @@ func sortedKeys[V any](m map[string]V) []string {
 	return keys
 }
 
-// resolveSchemaRoot resolves references in the schema body before resolving definition
-// containers. Definitions only matter through references, so walking them first would spend the
-// expansion budget on copies the cleaners delete next (and whose map order is arbitrary), while
-// the fields that are actually kept degraded to hints. For the public InlineLocalRefs the
-// containers are kept, so they are still resolved afterwards with whatever budget remains; when
-// cleaning they are dropped here altogether (references still resolve against the original
-// root), so their bytes never reach the intermediate JSON at all.
 func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 	rootMap, ok := root.(map[string]any)
 	if !ok {
@@ -915,7 +817,7 @@ func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 		switch key {
 		case "$defs", "definitions":
 			if !forClean {
-				out[key] = nil // placeholder, resolved after the schema body below
+				out[key] = nil
 			}
 		case "$ref":
 			out[key] = item
@@ -924,8 +826,6 @@ func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 		}
 	}
 
-	// A root-level reference and its already resolved siblings use the same conjunction rules
-	// as nested references. Keep document declarations outside any generated allOf branches.
 	if ref, hasRef := rootMap["$ref"].(string); hasRef && strings.HasPrefix(ref, "#/") {
 		if target, okTarget := resolveJSONPointer(rootMap, ref); okTarget {
 			if size := targetExpansionSize(target, forClean); size <= state.budget {
@@ -960,12 +860,6 @@ func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 	return out
 }
 
-// targetExpansionSize estimates what copying a reference target into the output costs. When
-// cleaning, definitions nested inside the target are deleted later and never copied, so they are
-// excluded; otherwise a small target carrying a large unused definitions block would be degraded
-// purely because of material that is about to be thrown away. Name-map and literal context is
-// threaded so properties named like a container keyword, and data inside literal values, still
-// count in full.
 func targetExpansionSize(value any, forClean bool) int {
 	if !forClean {
 		return jsonValueSize(value)
@@ -1023,10 +917,6 @@ func cleanExpansionSize(value any, inNameMap bool) int {
 	}
 }
 
-// jsonValueSize estimates the encoded size of a decoded JSON value as encoding/json will emit
-// it, including string escaping (notably the six-byte \u00XX forms for <, >, & and control
-// characters). It is used to bound ref expansion, so it must not under-count what serialization
-// will actually produce.
 func jsonValueSize(value any) int {
 	switch node := value.(type) {
 	case nil:
@@ -1054,8 +944,6 @@ func jsonValueSize(value any) int {
 	}
 }
 
-// jsonStringEncodedSize returns the encoded length of one JSON string including quotes,
-// mirroring encoding/json's default HTML escaping.
 func jsonStringEncodedSize(s string) int {
 	size := 2
 	for i := 0; i < len(s); i++ {
@@ -1083,8 +971,6 @@ func jsonStringEncodedSize(s string) int {
 	return size
 }
 
-// literalValueKeywords carry client data rather than subschemas. Cleaning and ref inlining must
-// copy their values verbatim: keys inside them that happen to look like schema keywords are data.
 var literalValueKeywords = map[string]struct{}{
 	"default":  {},
 	"example":  {},
@@ -1114,10 +1000,7 @@ func resolveLocalRefs(root, value any, active map[string]bool, state *refResolve
 					if active[ref] {
 						return resolveRefFallback(root, node, target, ref, active, state, forClean)
 					}
-					// Charge the stored target size and let nested references charge their own
-					// costs during recursion. The total copied material stays bounded, while an
-					// over-budget chain still expands its affordable outer levels and only the
-					// deepest references degrade to hints.
+
 					if size := targetExpansionSize(target, forClean); size > state.budget {
 						return resolveRefFallback(root, node, target, ref, active, state, forClean)
 					} else {
@@ -1146,7 +1029,7 @@ func resolveLocalRefs(root, value any, active map[string]bool, state *refResolve
 		out := make(map[string]any, len(node))
 		for _, key := range sortedKeys(node) {
 			if forClean && !inNameMap && (key == "$defs" || key == "definitions") {
-				continue // dropped with every other definitions container when cleaning
+				continue
 			}
 			out[key] = resolveSchemaEntry(root, key, node[key], active, state, forClean)
 		}
@@ -1156,15 +1039,11 @@ func resolveLocalRefs(root, value any, active map[string]bool, state *refResolve
 	}
 }
 
-// mergeInlinedRefSchemas keeps both complete schemas when assertions collide. Merging only
-// the conflicting keyword would change the scope of properties/additionalProperties and other
-// interacting keywords. Annotation siblings may still override the target's annotations.
 func mergeInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	if len(siblings) > 0 && (target["unevaluatedProperties"] != nil || target["unevaluatedItems"] != nil) {
 		return conjoinInlinedRefSchemas(target, siblings)
 	}
-	// These assertions depend on adjacent keywords in their own schema. Even equal values
-	// must not inherit property declarations, tuple prefixes, or match counts across a ref.
+
 	for _, pair := range [][2]string{
 		{"additionalProperties", "properties"},
 		{"additionalProperties", "patternProperties"},
@@ -1185,7 +1064,7 @@ func mergeInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	for key, value := range siblings {
 		switch key {
 		case "title", "description", "default", "example", "examples", "$comment", "deprecated", "readOnly", "writeOnly":
-			// Annotations do not relax validation constraints.
+
 		default:
 			if previous, exists := target[key]; exists && !reflect.DeepEqual(previous, value) {
 				return conjoinInlinedRefSchemas(target, siblings)
@@ -1196,9 +1075,6 @@ func mergeInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	return out
 }
 
-// conjoinInlinedRefSchemas replaces $ref with an allOf applicator without moving its siblings.
-// In particular, sibling unevaluatedProperties/unevaluatedItems must still see annotations
-// produced by the reference target, while the target's own evaluation scope stays isolated.
 func conjoinInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	out := make(map[string]any, len(siblings)+1)
 	for key, value := range siblings {
@@ -1212,17 +1088,9 @@ func conjoinInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	return out
 }
 
-// resolveRefFallback degrades a reference that cannot be expanded (cycle or exhausted budget) to
-// a typed hint, but still resolves the sibling subschemas on the same node so their own references
-// are not left dangling behind the degraded one. Literal values stay verbatim through
-// resolveSchemaEntry. The description assembled by cyclicRefFallback is kept afterwards so
-// resolved siblings cannot clobber the hint.
 func resolveRefFallback(root any, node map[string]any, target any, ref string, active map[string]bool, state *refResolveState, forClean bool) map[string]any {
 	out := cyclicRefFallback(node, target, ref)
-	// The target description copied into the fallback is expansion output like any other; charge
-	// it to the budget. Once the budget is spent, fallbacks carry only the short hint, so a large
-	// number of degraded references cannot multiply copied descriptions without bound. Cyclic
-	// fallbacks omit over-long descriptions entirely, and omitted content is not charged.
+
 	if targetMap, okMap := target.(map[string]any); okMap {
 		if description, okDescription := targetMap["description"].(string); okDescription && description != "" && len(description) <= maxFallbackDescriptionBytes {
 			if _, hasOwn := node["description"]; !hasOwn {
@@ -1248,12 +1116,6 @@ func resolveRefFallback(root any, node map[string]any, target any, ref string, a
 	return out
 }
 
-// resolveSchemaEntry resolves one map entry during ref inlining. A literal-value keyword's value
-// is client data and is deep-copied without resolving refs inside it. Under a name map
-// ("properties" and friends), however, a key spelled like a literal keyword is an author-chosen
-// property name whose value is a subschema; name-map entries are therefore resolved directly
-// here so such property names keep their schema semantics. Nested definition containers outside
-// the root still resolve through this path; when cleaning, callers skip them entirely instead.
 func resolveSchemaEntry(root any, key string, item any, active map[string]bool, state *refResolveState, forClean bool) any {
 	if isLiteralValueKeyword(key) {
 		return deepCopyJSONValue(item)
@@ -1349,8 +1211,6 @@ func refName(ref string) string {
 	return ref
 }
 
-// convertRefsToHints retains sibling keywords and converts only unresolved or external references
-// to descriptions. Local references have already been expanded by inlineLocalRefs.
 func convertRefsToHints(jsonStr string, preserveSiblings bool) string {
 	paths := findPaths(jsonStr, "$ref")
 	if len(paths) == 0 {
@@ -1363,7 +1223,7 @@ func convertRefsToHints(jsonStr string, preserveSiblings bool) string {
 	for _, p := range paths {
 		parentPath := trimSuffix(p, ".$ref")
 		if isPropertyDefinition(parentPath) {
-			continue // a property literally named "$ref", not a reference keyword
+			continue
 		}
 		refVal := doc.Get(p).String()
 		defName := refName(refVal)
@@ -1413,9 +1273,6 @@ func convertConstToEnum(jsonStr string) string {
 	return jsonStr
 }
 
-// convertEnumValuesToStrings ensures all enum values use the string representation required by
-// Gemini's proto schema. The declared type remains independent: Antigravity uses it to choose the
-// emitted JSON type on both response and function-argument paths.
 func convertEnumValuesToStrings(jsonStr string, forceStringType bool) string {
 	paths := findPaths(jsonStr, "enum")
 	if len(paths) == 0 {
@@ -1480,9 +1337,6 @@ func addEnumHints(jsonStr string) string {
 	return jsonStr
 }
 
-// Antigravity does not enforce enum on function arguments and ignores boolean response enums.
-// Preserve the advisory values in description, but do not leave an unenforced constraint in the
-// schema contract. Response enums for string, number, and integer remain native constraints.
 func dropIgnoredEnumsToHints(jsonStr string, options jsonSchemaCleanOptions) string {
 	paths := findPaths(jsonStr, "enum")
 	if len(paths) == 0 {
@@ -1540,11 +1394,6 @@ type numericConstraintEdit struct {
 	replacement string
 }
 
-// NormalizeJSONSchemaNumericConstraints converts string-encoded integer values on JSON Schema
-// numeric constraint keywords (minLength, maxLength, minItems, maxItems, minProperties,
-// maxProperties) to JSON numbers. Google's Protobuf Schema format represents these int64
-// fields as strings, whereas standard JSON Schema carriers (such as parametersJsonSchema)
-// require numeric values.
 func NormalizeJSONSchemaNumericConstraints(jsonStr string) string {
 	if !hasNumericSchemaConstraintKeyword(jsonStr) && !strings.Contains(jsonStr, `\u`) && !strings.Contains(jsonStr, `\U`) {
 		return jsonStr
@@ -1657,7 +1506,7 @@ func parseSchemaNonNegativeInt(raw string) (int64, bool) {
 var unsupportedConstraints = []string{
 	"minLength", "maxLength", "exclusiveMinimum", "exclusiveMaximum",
 	"pattern", "minItems", "maxItems", "uniqueItems", "contains", "format",
-	"default", "examples", // Claude rejects these in VALIDATED mode
+	"default", "examples",
 }
 
 func constraintKeywords(options jsonSchemaCleanOptions) []string {
@@ -1812,7 +1661,7 @@ func mergeAllOf(jsonStr string) string {
 					}
 					_ = doc.Set(reqPath, current)
 				case "if", "then", "else", "allOf":
-					// Conditional applicability cannot be represented by the upstream schema.
+
 				default:
 					destination := joinPath(parentPath, escapeGJSONPathKey(field))
 					mergeMissingSchemaAtPathDoc(doc, destination, value)
@@ -1829,9 +1678,6 @@ func mergeAllOf(jsonStr string) string {
 	return jsonStr
 }
 
-// mergeMissingSchemaAtPathDoc recursively fills absent fields without replacing any existing
-// definition. A parent schema is the canonical definition; allOf and conditional branches may
-// enrich gaps in it, but can never replace it with a narrower branch shell.
 func mergeMissingSchemaAtPathDoc(doc *ojson.Doc, destination string, incoming ojson.Result) {
 	existing := doc.Get(destination)
 	if !existing.Exists() {
@@ -1966,13 +1812,6 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 			parent = ojson.Parse(jsonStr)
 		}
 
-		// When a node declares both anyOf and oneOf on a native Schema carrier (!preserveOneOf),
-		// protobuf Schema has only a single anyOf field and cannot represent a second union
-		// conjunction structurally. Preserve anyOf as the primary union and move the sibling
-		// oneOf constraint to a description hint instead of concatenating it into anyOf.
-		// Routes that flatten multi-branch unions skip this shortcut: the primary union is
-		// about to be flattened away too, and hinting the raw oneOf JSON into the
-		// description would only add a giant, misleading hint.
 		if key == "oneOf" && !flattenMultiBranch && !preserveOneOf && parent.Get("anyOf").IsArray() {
 			appendHintDoc(doc, parentPath, "oneOf: "+arr.Raw)
 			_ = doc.Delete(p)
@@ -1983,16 +1822,9 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 		items := arr.Array()
 		parentProps := parent.Get("properties")
 		nonNullItems, hasNull, hasFilteredBranch := partitionUnionBranches(items, parentProps)
-		// An earlier union-preserving pass may already have stripped the null branch and
-		// recorded it as nullable:true on this node (translator -> executor chain). That
-		// marker is part of the schema contract, so the flattening below must inherit it.
+
 		nullable := hasNull || parent.Get("nullable").Bool()
 
-		// Preserve multi-branch unions (2+ standalone non-null branches) so non-first branches are not lost.
-		// On native Gemini/Antigravity Schema carriers (!preserveOneOf), normalize oneOf to anyOf because
-		// the protobuf Schema message supports anyOf but rejects oneOf.
-		// Routes that reject multi-branch unions upstream (flattenMultiBranch) skip this
-		// preservation and fall through to the single-strongest-branch flattening below.
 		if len(nonNullItems) >= 2 && !flattenMultiBranch {
 			targetKey := key
 			if key == "oneOf" && !preserveOneOf {
@@ -2021,9 +1853,6 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 			continue
 		}
 
-		// If the parent already defines properties (e.g. an object schema with unmaterializable
-		// union constraints or a single-branch union), do not replace the parent with a single branch.
-		// Instead, merge any branch properties into the parent and delete the union keyword.
 		if parentProps.IsObject() {
 			for _, item := range nonNullItems {
 				if branchProps := item.Get("properties"); branchProps.IsObject() {
@@ -2070,9 +1899,7 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 
 		parentDesc := doc.Get(descriptionPath(parentPath)).String()
 		_, allTypes := selectBest(candidateItems)
-		// Select the strongest non-null branch (ties keep the first one), matching the
-		// pre-preservation flattening behavior. selectBest already treats union-bearing
-		// branches as score-0, so a nested union never wins over a null-free scalar here.
+
 		selected := nonNullItems[0].Raw
 		if bestIdx, _ := selectBest(nonNullItems); bestIdx >= 0 && bestIdx < len(nonNullItems) {
 			selected = nonNullItems[bestIdx].Raw
@@ -2240,10 +2067,10 @@ func removeUnsupportedKeywords(jsonStr string, options jsonSchemaCleanOptions) s
 	keywords := append(constraintKeywords(options),
 		"$schema", "$defs", "definitions", "const", "$ref", "$id", "id", "additionalProperties",
 		"$anchor", "$vocabulary", "$dynamicRef", "$dynamicAnchor",
-		"propertyNames", "patternProperties", // Gemini doesn't support these schema keywords
+		"propertyNames", "patternProperties",
 		"dependentRequired", "dependentSchemas", "dependencies",
 		"if", "then", "else",
-		"$comment", "enumDescriptions", "enumTitles", "prefill", "deprecated", "encrypted", "discriminator", "readOnly", "writeOnly", // Schema metadata fields unsupported by Gemini
+		"$comment", "enumDescriptions", "enumTitles", "prefill", "deprecated", "encrypted", "discriminator", "readOnly", "writeOnly",
 		"additionalItems", "unevaluatedProperties", "unevaluatedItems", "contentSchema", "contentMediaType", "contentEncoding",
 	)
 	if options.antigravitySemantics {
@@ -2276,19 +2103,15 @@ func removeUnsupportedKeywords(jsonStr string, options jsonSchemaCleanOptions) s
 		}
 		jsonStr = doc.String()
 	}
-	// Remove x-* extension fields (e.g., x-google-enum-descriptions) that are not supported by Gemini API
+
 	jsonStr = removeExtensionFields(jsonStr)
 	return jsonStr
 }
 
-// removeExtensionFields removes all x-* extension fields from the JSON schema.
-// These are OpenAPI/JSON Schema extension fields that Google APIs don't recognize.
 func removeExtensionFields(jsonStr string) string {
 	var paths []string
 	walkForExtensions(ojson.Parse(jsonStr), "", &paths)
-	// walkForExtensions returns paths in a way that deeper paths are added before their ancestors
-	// when they are not deleted wholesale, but since we skip children of deleted x-* nodes,
-	// any collected path is safe to delete.
+
 	if len(paths) == 0 {
 		return jsonStr
 	}
@@ -2314,13 +2137,11 @@ func walkForExtensions(value ojson.Result, path string, paths *[]string) {
 			safeKey := escapeGJSONPathKey(keyStr)
 			childPath := joinPath(path, safeKey)
 
-			// If it's an extension field, we delete it and don't need to look at its children.
 			if strings.HasPrefix(keyStr, "x-") && !isPropertyDefinition(path) {
 				*paths = append(*paths, childPath)
 				return true
 			}
 
-			// Literal values are client data; x-* keys inside them are not schema extensions.
 			if isLiteralValueKeyword(keyStr) && !isPropertyDefinition(path) {
 				return true
 			}
@@ -2385,16 +2206,13 @@ func cleanupRequiredFields(jsonStr string) string {
 	return jsonStr
 }
 
-// addEmptySchemaPlaceholder adds a placeholder "reason" property to empty object schemas.
-// Claude VALIDATED mode requires at least one required property in tool schemas.
 func addEmptySchemaPlaceholder(jsonStr string) string {
-	// Find all "type" fields
+
 	paths := findPaths(jsonStr, "type")
 	if len(paths) == 0 {
 		return jsonStr
 	}
 
-	// Process from deepest to shallowest (to handle nested objects properly)
 	sortByDepth(paths)
 
 	doc := ojson.NewDocString(jsonStr)
@@ -2405,10 +2223,8 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 			continue
 		}
 
-		// Get the parent path (the object containing "type")
 		parentPath := trimSuffix(p, ".type")
 
-		// Check if properties exists and is empty or missing
 		propsPath := joinPath(parentPath, "properties")
 		propsVal := doc.Get(propsPath)
 		reqPath := joinPath(parentPath, "required")
@@ -2420,15 +2236,15 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 
 		needsPlaceholder := false
 		if !propsVal.Exists() {
-			// No properties field at all
+
 			needsPlaceholder = true
 		} else if propsVal.IsObject() && len(propsVal.Map()) == 0 {
-			// Empty properties object
+
 			needsPlaceholder = true
 		}
 
 		if needsPlaceholder {
-			// Add placeholder "reason" property
+
 			reasonPath := joinPath(propsPath, "reason")
 			_ = doc.Set(reasonPath+".type", "string")
 			_ = doc.Set(reasonPath+".description", placeholderReasonDescription)
@@ -2437,10 +2253,8 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 			continue
 		}
 
-		// If schema has properties but none are required, add a minimal placeholder.
 		if propsVal.IsObject() && !hasRequiredProperties {
-			// DO NOT add placeholder if it's a top-level schema (parentPath is empty)
-			// or if we've already added a placeholder reason above.
+
 			if parentPath == "" {
 				continue
 			}
@@ -2457,8 +2271,6 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 	}
 	return jsonStr
 }
-
-// --- Helpers ---
 
 func findPaths(jsonStr, field string) []string {
 	var paths []string
@@ -2494,8 +2306,6 @@ func walkForFields(value ojson.Result, path string, fields map[string]struct{}, 
 				paths[keyStr] = append(paths[keyStr], childPath)
 			}
 
-			// Literal values are client data; schema-looking keys inside them are not keywords.
-			// Under a name map the key is a property name instead, so keep descending there.
 			if isLiteralValueKeyword(keyStr) && !isPropertyDefinition(path) {
 				return true
 			}
@@ -2504,7 +2314,7 @@ func walkForFields(value ojson.Result, path string, fields map[string]struct{}, 
 			return true
 		})
 	case ojson.String, ojson.Number, ojson.True, ojson.False, ojson.Null:
-		// Terminal types - no further traversal needed
+
 	}
 }
 
@@ -2536,10 +2346,6 @@ func setRawAtDoc(doc *ojson.Doc, path, value string) {
 	_ = doc.SetRaw(path, value)
 }
 
-// schemaNameMapKeywords are the schema keywords whose value maps author-chosen names to
-// subschemas. A key directly under one of them is a name, never a schema keyword. The Draft-07
-// "dependencies" container qualifies for object (schema) values; array values are property-name
-// lists and are never walked as maps by the checks that use this set.
 var schemaNameMapKeywords = map[string]struct{}{
 	"properties":        {},
 	"patternProperties": {},
@@ -2549,20 +2355,6 @@ var schemaNameMapKeywords = map[string]struct{}{
 	"definitions":       {},
 }
 
-// isPropertyDefinition reports whether path points at a map whose keys are names chosen by the
-// tool author, so a key spelled like a schema keyword there must be preserved.
-//
-// A trailing ".properties" is not enough to tell: a tool may declare a property named
-// "properties", and the schema for that property then sits at a path ending in ".properties" while
-// being an ordinary schema node. Classifying it as a name map skipped every cleaning pass inside
-// it, so unsupported keywords such as "propertyNames" reached the private Gemini backend, which
-// rejects unknown fields with a 400.
-//
-// Each name-map keyword at the end of the path therefore flips the answer, because the node it
-// names is a map only when its own parent is a schema: "properties" is a map,
-// "properties.properties" the schema of a property named "properties", and
-// "properties.properties.properties" that schema's own map. Only the trailing run matters, so any
-// prefix the caller nests the schema under is ignored.
 func isPropertyDefinition(path string) bool {
 	segments := splitGJSONPath(path)
 	trailing := 0
@@ -2582,15 +2374,11 @@ func descriptionPath(parentPath string) string {
 	return parentPath + ".description"
 }
 
-// mergeHint combines an existing description with a hint. Cleaning is not always a single pass:
-// a schema may be cleaned by a translator and again by an executor, so an already-present hint is
-// kept as-is instead of being appended a second time.
 func mergeHint(existing, hint string) string {
 	if existing == "" {
 		return hint
 	}
-	// A hint added to an empty description is stored bare and later hints are appended after it, so
-	// the bare form may sit alone, lead the description, or appear parenthesised further along.
+
 	if existing == hint ||
 		strings.HasPrefix(existing, hint+" (") ||
 		strings.Contains(existing, fmt.Sprintf("(%s)", hint)) {

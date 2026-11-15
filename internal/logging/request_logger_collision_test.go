@@ -83,7 +83,6 @@ func TestFileRequestLogger_DeterministicPreExistingCollision(t *testing.T) {
 	logsDir := t.TempDir()
 	const targetFilename = "v1_chat_completions-2026-09-23T120000-00000000.log"
 
-	// 1. Create the initial file
 	f1, path1, err1 := createUniqueLogFile(logsDir, targetFilename)
 	if err1 != nil {
 		t.Fatalf("first createUniqueLogFile error: %v", err1)
@@ -96,7 +95,6 @@ func TestFileRequestLogger_DeterministicPreExistingCollision(t *testing.T) {
 		t.Fatalf("close first log: %v", errClose)
 	}
 
-	// 2. Deterministically request the exact same targetFilename again
 	f2, path2, err2 := createUniqueLogFile(logsDir, targetFilename)
 	if err2 != nil {
 		t.Fatalf("second createUniqueLogFile error: %v", err2)
@@ -109,13 +107,11 @@ func TestFileRequestLogger_DeterministicPreExistingCollision(t *testing.T) {
 		t.Fatalf("close second log: %v", errClose)
 	}
 
-	// Verify path2 received the _1 collision sequence
 	expectedSecondName := "v1_chat_completions-2026-09-23T120000_1-00000000.log"
 	if filepath.Base(path2) != expectedSecondName {
 		t.Fatalf("path2 basename = %q, want %q", filepath.Base(path2), expectedSecondName)
 	}
 
-	// Verify path1 was NOT overwritten
 	content1, errRead1 := os.ReadFile(path1)
 	if errRead1 != nil {
 		t.Fatalf("read path1: %v", errRead1)
@@ -124,7 +120,6 @@ func TestFileRequestLogger_DeterministicPreExistingCollision(t *testing.T) {
 		t.Fatalf("path1 content = %q, want first-log-content", string(content1))
 	}
 
-	// Verify path2 has second content
 	content2, errRead2 := os.ReadFile(path2)
 	if errRead2 != nil {
 		t.Fatalf("read path2: %v", errRead2)

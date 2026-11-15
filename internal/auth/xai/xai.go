@@ -17,7 +17,6 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// XAIAuth performs xAI OAuth discovery, device-code login, and refresh.
 type XAIAuth struct {
 	httpClient      *http.Client
 	minPollInterval time.Duration
@@ -25,12 +24,10 @@ type XAIAuth struct {
 
 var xaiRefreshGroup singleflight.Group
 
-// NewXAIAuth creates an xAI OAuth helper using config proxy settings.
 func NewXAIAuth(cfg *config.Config) *XAIAuth {
 	return NewXAIAuthWithProxyURL(cfg, "")
 }
 
-// NewXAIAuthWithProxyURL creates an xAI OAuth helper with an explicit proxy URL.
 func NewXAIAuthWithProxyURL(cfg *config.Config, proxyURL string) *XAIAuth {
 	effectiveProxyURL := strings.TrimSpace(proxyURL)
 	var sdkCfg config.SDKConfig
@@ -44,7 +41,6 @@ func NewXAIAuthWithProxyURL(cfg *config.Config, proxyURL string) *XAIAuth {
 	return &XAIAuth{httpClient: util.SetProxy(&sdkCfg, &http.Client{Timeout: httpClientTimeout})}
 }
 
-// ValidateOAuthEndpoint validates an endpoint returned by xAI discovery.
 func ValidateOAuthEndpoint(rawURL string, field string) (string, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	if rawURL == "" {
@@ -64,7 +60,6 @@ func ValidateOAuthEndpoint(rawURL string, field string) (string, error) {
 	return rawURL, nil
 }
 
-// Discover resolves xAI OAuth endpoints through OIDC discovery.
 func (a *XAIAuth) Discover(ctx context.Context) (*Discovery, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -111,7 +106,6 @@ func (a *XAIAuth) Discover(ctx context.Context) (*Discovery, error) {
 	}, nil
 }
 
-// StartDeviceFlow requests a device code from xAI.
 func (a *XAIAuth) StartDeviceFlow(ctx context.Context) (*DeviceCodeResponse, error) {
 	discovery, errDiscover := a.Discover(ctx)
 	if errDiscover != nil {
@@ -120,7 +114,6 @@ func (a *XAIAuth) StartDeviceFlow(ctx context.Context) (*DeviceCodeResponse, err
 	return a.RequestDeviceCode(ctx, discovery.DeviceAuthorizationEndpoint, discovery.TokenEndpoint)
 }
 
-// RequestDeviceCode requests a device authorization code from the given endpoint.
 func (a *XAIAuth) RequestDeviceCode(ctx context.Context, deviceAuthorizationEndpoint, tokenEndpoint string) (*DeviceCodeResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -176,7 +169,6 @@ func (a *XAIAuth) RequestDeviceCode(ctx context.Context, deviceAuthorizationEndp
 	return &deviceCode, nil
 }
 
-// WaitForAuthorization polls until the user authorizes the device code and returns tokens.
 func (a *XAIAuth) WaitForAuthorization(ctx context.Context, deviceCode *DeviceCodeResponse) (*AuthBundle, error) {
 	tokenData, err := a.PollForToken(ctx, deviceCode)
 	if err != nil {
@@ -194,7 +186,6 @@ func (a *XAIAuth) WaitForAuthorization(ctx context.Context, deviceCode *DeviceCo
 	}, nil
 }
 
-// PollForToken polls the token endpoint until the user authorizes or the device code expires.
 func (a *XAIAuth) PollForToken(ctx context.Context, deviceCode *DeviceCodeResponse) (*TokenData, error) {
 	if deviceCode == nil {
 		return nil, fmt.Errorf("xai device code: response is nil")
@@ -232,7 +223,6 @@ func (a *XAIAuth) PollForToken(ctx context.Context, deviceCode *DeviceCodeRespon
 		}
 	}
 
-	// Poll immediately once, then wait between subsequent attempts.
 	firstAttempt := true
 	timer := time.NewTimer(0)
 	defer timer.Stop()
@@ -260,8 +250,6 @@ func (a *XAIAuth) PollForToken(ctx context.Context, deviceCode *DeviceCodeRespon
 	}
 }
 
-// exchangeDeviceCode attempts to exchange a device code for tokens.
-// Returns (token, error, nextInterval, shouldContinue).
 func (a *XAIAuth) exchangeDeviceCode(ctx context.Context, tokenEndpoint, deviceCode string, interval time.Duration) (*TokenData, error, time.Duration, bool) {
 	form := url.Values{
 		"grant_type":  {DeviceCodeGrantType},
@@ -339,7 +327,6 @@ func (a *XAIAuth) exchangeDeviceCode(ctx context.Context, tokenEndpoint, deviceC
 	return buildTokenData(payload.AccessToken, payload.RefreshToken, payload.IDToken, payload.TokenType, payload.ExpiresIn, email, subject), nil, interval, false
 }
 
-// RefreshTokens refreshes an xAI access token.
 func (a *XAIAuth) RefreshTokens(ctx context.Context, refreshToken, tokenEndpoint string) (*TokenData, error) {
 	if strings.TrimSpace(refreshToken) == "" {
 		return nil, fmt.Errorf("xai token refresh: refresh token is required")
@@ -422,7 +409,6 @@ func (a *XAIAuth) postTokenForm(ctx context.Context, tokenEndpoint string, form 
 	return buildTokenData(payload.AccessToken, payload.RefreshToken, payload.IDToken, payload.TokenType, payload.ExpiresIn, email, subject), nil
 }
 
-// CreateTokenStorage converts an auth bundle into persistable storage.
 func (a *XAIAuth) CreateTokenStorage(bundle *AuthBundle) *TokenStorage {
 	if bundle == nil {
 		return nil

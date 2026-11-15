@@ -237,8 +237,6 @@ func normalizeModelRegistrationResponse(resp pluginapi.ModelRegistrationResponse
 	}}
 }
 
-// RegisterModels collects static catalogs for executor and per-auth registration.
-// Catalog-only plugins must not advertise availability independently of credentials.
 func (h *Host) RegisterModels(ctx context.Context, modelRegistry modelRegistry) {
 	if h == nil || modelRegistry == nil {
 		return
@@ -340,8 +338,6 @@ func (h *Host) RegisterModels(ctx context.Context, modelRegistry modelRegistry) 
 	h.pluginModelRegistrations = nextPluginModelRegistrations
 }
 
-// HasAuthModelProvider reports whether an active plugin declares per-auth model
-// discovery for provider. It does not fetch models or refresh credentials.
 func (h *Host) HasAuthModelProvider(provider string) bool {
 	if h == nil {
 		return false

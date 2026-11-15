@@ -73,14 +73,12 @@ func TestClaudeExecutor_HonorsAnthropicRateLimitHeaders_Execute(t *testing.T) {
 		t.Fatalf("expected non-nil RetryAfter, got nil")
 	}
 
-	// Should be at least 7 days (reported reset) and at most 7 days + 35s (fuzz upper bound).
 	minExpected := 7*24*time.Hour - 5*time.Second
 	maxExpected := 7*24*time.Hour + 35*time.Second
 	if *retryAfter < minExpected || *retryAfter > maxExpected {
 		t.Fatalf("RetryAfter = %v, want between %v and %v", *retryAfter, minExpected, maxExpected)
 	}
 
-	// Verify one-time fuzz stability: repeat calls return exact same value
 	if second := rap.RetryAfter(); second == nil || *second != *retryAfter {
 		t.Fatalf("RetryAfter changed across calls: %v vs %v", *second, *retryAfter)
 	}
@@ -302,7 +300,7 @@ func TestClaudeExecutor_RateLimit_FastModeAuthoritativeRejectionHeadersOverrideB
 		w.Header().Set("Anthropic-Ratelimit-Unified-7d-Reset", strconv.FormatInt(time.Now().Add(7*24*time.Hour).Unix(), 10))
 		w.Header().Set("Retry-After", "604800")
 		w.WriteHeader(http.StatusTooManyRequests)
-		// Body text mentioning fast request rejected, but headers explicitly reject unified quota
+
 		_, _ = w.Write([]byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fast request rejected"}}`))
 	}))
 	defer server1.Close()
@@ -360,7 +358,6 @@ func TestClaudeExecutor_RateLimit_FastModeAuthoritativeRejectionHeadersOverrideB
 		t.Fatalf("attempts on cred2 = %d, want 1", attemptsCred2.Load())
 	}
 
-	// Verify cred1 was cooled down at credential level
 	registeredAuth, ok := manager.GetByID(auth1.ID)
 	if !ok || registeredAuth == nil {
 		t.Fatal("auth1 not found")
@@ -467,7 +464,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("failed to register auth: %v", errRegister)
 	}
 
-	// 1. Initial request on sonnet triggers 429 and records 7d cooldown
 	payload := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]}`)
 	_, err := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
@@ -481,7 +477,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("upstream attempts = %d, want 1", attempts)
 	}
 
-	// 2. Try requesting a completely different model (opus) on the same credential -> must be blocked locally
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-opus-20240229",
 		Payload: payload,
@@ -493,7 +488,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("upstream attempts after opus = %d, want 1 (must be blocked locally)", attempts)
 	}
 
-	// 3. Try requesting a thinking suffix alias on the same credential -> must also be blocked locally
 	_, errThinking := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-7-sonnet-20250219-thinking-16k",
 		Payload: payload,
@@ -505,7 +499,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("upstream attempts after thinking suffix = %d, want 1 (must be blocked locally)", attempts)
 	}
 
-	// 4. Try streaming execution for opus on the same cooling credential -> must also be blocked locally
 	_, errStream := manager.ExecuteStream(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-opus-20240229",
 		Payload: payload,
@@ -570,7 +563,6 @@ func TestClaudeExecutor_AuthManager_OrdinaryModel429DoesNotBlockSiblingModels(t 
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// 1. Initial request on sonnet triggers ordinary model 429
 	payloadSonnet := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]}`)
 	_, errSonnet := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
@@ -583,7 +575,6 @@ func TestClaudeExecutor_AuthManager_OrdinaryModel429DoesNotBlockSiblingModels(t 
 		t.Fatalf("sonnet attempts = %d, want 1", attemptsSonnet.Load())
 	}
 
-	// 2. Request on opus MUST succeed on the same credential (not blocked by ordinary model-level 429)
 	payloadOpus := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"hi opus"}]}]}`)
 	respOpus, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-opus-20240229",
@@ -686,7 +677,6 @@ func TestClaudeExecutor_AuthManager_AlternativeCredentialCanBeSelected(t *testin
 		t.Fatal("expected non-empty response payload from cred2")
 	}
 
-	// Next request should directly use cred2 without attempting cred1 (which is cooling down)
 	resp2, err2 := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
 		Payload: payload,
@@ -784,7 +774,6 @@ func TestClaudeExecutor_AuthManager_MultiModelPoolStreamStopsProbingOn429(t *tes
 		}
 	}
 
-	// Must have tried cred1 exactly once (did NOT probe the 2nd model on cred1 after 429) and failed over to cred2
 	if got := attemptsCred1.Load(); got != 1 {
 		t.Fatalf("attempts on cred1 = %d, want 1 (must not probe other models on cooled cred)", got)
 	}

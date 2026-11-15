@@ -198,7 +198,7 @@ func TestAntigravityVersionChangeUnblocksAccountRefresh(t *testing.T) {
 			t.Fatalf("initial probe requests=%d", calls.Load())
 		}
 		currentUA.Store(antigravityNewTestUA)
-		// Only the synctest clock advances; no wall-clock wait is needed.
+
 		time.Sleep(antigravityRefreshScanInterval)
 		synctest.Wait()
 		if !oldCancelled.Load() || calls.Load() != 2 {

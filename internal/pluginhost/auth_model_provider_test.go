@@ -57,7 +57,7 @@ func TestHasAuthModelProviderDoesNotRunDiscovery(t *testing.T) {
 			if calls != 0 || host.HasAuthModelProvider("claude") || host.HasAuthModelProvider("") {
 				t.Fatal("ownership lookup executed discovery or matched an unrelated provider")
 			}
-			// The normal registration path must still consume discovery and auth updates.
+
 			result := host.ModelsForAuth(t.Context(), &coreauth.Auth{ID: "account", Provider: "antigravity"})
 			if result.Handled != want {
 				t.Fatal("ownership lookup disagrees with per-auth dispatch")

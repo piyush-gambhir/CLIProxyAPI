@@ -72,8 +72,6 @@ func (l *FileRequestLogger) forwardRequestLogToHome(ctx context.Context, headers
 	return client.RPushRequestLog(ctx, raw)
 }
 
-// SetHomeEnabled toggles home request-log forwarding.
-// When enabled, request logs are not written to disk and are instead forwarded to home via Redis RESP.
 func (l *FileRequestLogger) SetHomeEnabled(enabled bool) {
 	if l == nil {
 		return

@@ -129,8 +129,7 @@ func TestConvertInteractionsRequestToCodexWithToolMessagesDirect(t *testing.T) {
 	if got := ojson.GetBytesNoCopy(out, "input.0.content.0.text").String(); got != "hi" {
 		t.Fatalf("input.0.content.0.text = %q, want hi. Output: %s", got, string(out))
 	}
-	// The signatureless thought step is dropped entirely: a reasoning item
-	// without replayable encrypted_content is rejected by both upstreams.
+
 	if got := ojson.GetBytesNoCopy(out, "input.1.type").String(); got != "function_call" {
 		t.Fatalf("input.1.type = %q, want function_call. Output: %s", got, string(out))
 	}
@@ -274,8 +273,6 @@ func TestConvertCodexResponseToInteractionsStreamCompletesAfterSteps(t *testing.
 	}
 }
 
-// testInteractionsMetaSignature builds a shape-valid synthetic Meta envelope;
-// no captured signature is embedded.
 func testInteractionsMetaSignature() string {
 	return "Q-PaDgE" + strings.Repeat("A", 1419)
 }
@@ -345,7 +342,7 @@ func TestConvertCodexResponseToInteractionsStream_ReasoningSignature(t *testing.
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"codex-test"}}`),
 		[]byte(`data: {"type":"response.reasoning_summary_text.delta","delta":"streamed thinking"}`),
 		[]byte(`data: {"type":"response.output_item.done","item":{"id":"rs_1","type":"reasoning","summary":[{"type":"summary_text","text":"streamed thinking"}],"encrypted_content":"` + metaSig + `"}}`),
-		// A duplicated done event for the same item must not re-emit the signature or summary.
+
 		[]byte(`data: {"type":"response.output_item.done","item":{"id":"rs_1","type":"reasoning","summary":[{"type":"summary_text","text":"streamed thinking"}],"encrypted_content":"` + metaSig + `"}}`),
 		[]byte(`data: {"type":"response.output_item.done","item":{"type":"message","content":[{"type":"output_text","text":"answer"}]}}`),
 	} {
@@ -392,7 +389,6 @@ func TestConvertCodexResponseToInteractionsStream_ReasoningSignature(t *testing.
 		t.Fatalf("events = %s, want %s", names, want)
 	}
 
-	// A second done-only reasoning item after a streamed-delta reasoning item must still emit its summary.
 	var param2 any
 	var events2 [][]byte
 	for _, chunk := range [][]byte{
@@ -450,8 +446,6 @@ func TestConvertInteractionsRequestToCodex_ThoughtSignatureTargetMismatch(t *tes
 	metaSig := testInteractionsMetaSignature()
 	payload := []byte(`{"model":"gpt-5.4","input":[{"type":"thought","signature":"` + metaSig + `","content":[{"type":"text","text":"thinking"}],"id":"step_1"}]}`)
 
-	// A foreign signature is never replayed and the thought step is dropped
-	// entirely rather than sent as an unsigned reasoning item.
 	out, _ := ConvertInteractionsRequestToCodex("gpt-5.4", payload, false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 0 {
 		t.Fatalf("input len = %d, want 0 (mismatched thought dropped). Output: %s", got, string(out))
@@ -461,28 +455,21 @@ func TestConvertInteractionsRequestToCodex_ThoughtSignatureTargetMismatch(t *tes
 func TestConvertInteractionsRequestToCodex_DropsEmptyThoughtSteps(t *testing.T) {
 	metaSig := testInteractionsMetaSignature()
 
-	// A rejected signature with no text emits no item at all: a bare
-	// reasoning item carries nothing replayable and is rejected upstream.
 	out, _ := ConvertInteractionsRequestToCodex("gpt-5.4", []byte(`{"input":[{"type":"user_input","content":[{"type":"text","text":"hi"}]},{"type":"thought","signature":"`+metaSig+`"}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 1 {
 		t.Fatalf("input len = %d, want 1 (thought step dropped). Output: %s", got, string(out))
 	}
 
-	// A signatureless, textless thought step emits no item.
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought"}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 0 {
 		t.Fatalf("input len = %d, want 0. Output: %s", got, string(out))
 	}
 
-	// A duplicate accepted signature with no text emits nothing the second
-	// time either.
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought","signature":"`+metaSig+`"},{"type":"thought","signature":"`+metaSig+`"}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 1 {
 		t.Fatalf("input len = %d, want 1 (duplicate without text dropped). Output: %s", got, string(out))
 	}
 
-	// A signatureless thought with text is dropped too, and the message/tool
-	// items around it keep their order.
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"user_input","content":[{"type":"text","text":"hi"}]},{"type":"thought","content":[{"type":"text","text":"thinking"}]},{"type":"function_call","name":"lookup","call_id":"call_1","arguments":{"q":"x"}}]}`), false)
 	items := ojson.GetBytesNoCopy(out, "input").Array()
 	if len(items) != 2 || items[0].Get("type").String() != "message" || items[1].Get("type").String() != "function_call" {
@@ -494,19 +481,16 @@ func TestConvertInteractionsRequestToCodex_ThoughtSignatureVariants(t *testing.T
 	metaSig := testInteractionsMetaSignature()
 	gptSig := testInteractionsGPTSignature()
 
-	// A cache-prefixed signature normalizes to its native payload.
 	out, _ := ConvertInteractionsRequestToCodex("gpt-5.4", []byte(`{"input":[{"type":"thought","signature":"gpt#`+gptSig+`"}]}`), false)
 	if got := ojson.GetBytesNoCopy(out, "input.0.encrypted_content").String(); got != gptSig {
 		t.Fatalf("prefixed GPT signature should normalize to native payload. Output: %s", string(out))
 	}
 
-	// The snake_case thought_signature spelling is accepted too.
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought","thought_signature":"`+metaSig+`"}]}`), false)
 	if got := ojson.GetBytesNoCopy(out, "input.0.encrypted_content").String(); got != metaSig {
 		t.Fatalf("thought_signature field should be accepted. Output: %s", string(out))
 	}
 
-	// An identical signature replays once; the duplicate thought is dropped.
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought","signature":"`+metaSig+`","content":[{"type":"text","text":"one"}]},{"type":"thought","signature":"`+metaSig+`","content":[{"type":"text","text":"two"}]}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 1 {
 		t.Fatalf("input len = %d, want 1 (duplicate dropped). Output: %s", got, string(out))

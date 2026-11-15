@@ -146,9 +146,7 @@ func (h *Handler) ListPluginStore(c *gin.Context) {
 	for _, item := range plugins {
 		pluginSourceCounts[item.plugin.ID]++
 	}
-	// Browsing the catalog must not spend API quota on uninstalled plugins or
-	// on sources that cannot update the installed plugin. Keep positional
-	// placeholders so release versions still align with the catalog entries.
+
 	latestInput := make([]pluginstore.Plugin, len(plugins))
 	for index, item := range plugins {
 		status := statuses[item.plugin.ID]
@@ -171,7 +169,7 @@ func (h *Handler) ListPluginStore(c *gin.Context) {
 			pluginSourceCounts[plugin.ID],
 		)
 		installedVersion := status.InstalledVersion
-		// Fall back to the registry version when the latest release is unknown.
+
 		storeVersion := plugin.Version
 		if latestVersions[index] != "" {
 			storeVersion = latestVersions[index]
@@ -498,8 +496,6 @@ func normalizePluginStoreRequestedVersion(version string) string {
 	return version
 }
 
-// enablePluginConfigLocked sets plugins.configs.<id>.enabled and store while
-// preserving the rest of the plugin's raw configuration. Callers must hold h.mu.
 func (h *Handler) enablePluginConfigLocked(id string, storeManifest pluginstore.Manifest) error {
 	ensurePluginConfigMap(h.cfg)
 	node := pluginConfigNode(h.cfg.Plugins.Configs[id])

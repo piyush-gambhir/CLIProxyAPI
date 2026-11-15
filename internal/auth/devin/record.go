@@ -11,8 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// CreateAuthRecord builds the shared CLI and management OAuth credential record.
-// Profile and quota enrichment are best-effort; the session token is permanent.
 func (s *DevinAuthService) CreateAuthRecord(ctx context.Context, token string) (*coreauth.Auth, error) {
 	sessionToken := FormatSessionToken(token)
 	if sessionToken == "" {
@@ -50,11 +48,11 @@ func (s *DevinAuthService) CreateAuthRecord(ctx context.Context, token string) (
 		identifier = userID
 	}
 	if identifier == "" {
-		// Avoid overwriting another account when profile lookup is unavailable.
+
 		digest := sha256.Sum256([]byte(sessionToken))
 		identifier = fmt.Sprintf("user-%x", digest[:8])
 	}
-	// Upstream profile values must never introduce path components into filenames.
+
 	fileIdentifier := strings.Map(func(r rune) rune {
 		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' || r == '.' || r == '@' {
 			return r

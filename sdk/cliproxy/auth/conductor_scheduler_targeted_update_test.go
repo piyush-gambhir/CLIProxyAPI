@@ -35,7 +35,6 @@ func TestManager_MarkResult_TargetedModelShardUpdate(t *testing.T) {
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Warm up scheduler model shards for all 3 models.
 	for _, m := range []string{"model-a", "model-b", "model-c"} {
 		picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, m, cliproxyexecutor.Options{}, nil)
 		if errPick != nil || picked == nil || picked.ID != authID {
@@ -43,7 +42,6 @@ func TestManager_MarkResult_TargetedModelShardUpdate(t *testing.T) {
 		}
 	}
 
-	// Capture entries and meta pointers before single-model MarkResult.
 	manager.scheduler.mu.Lock()
 	pState := manager.scheduler.providers[provider]
 	if pState == nil {
@@ -61,7 +59,6 @@ func TestManager_MarkResult_TargetedModelShardUpdate(t *testing.T) {
 	entryCBefore := shardC.entries[authID].meta
 	manager.scheduler.mu.Unlock()
 
-	// Trigger single-model non-credential-scoped 500 error on model-a.
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          authID,
 		Provider:        provider,
@@ -78,13 +75,11 @@ func TestManager_MarkResult_TargetedModelShardUpdate(t *testing.T) {
 	manager.scheduler.mu.Lock()
 	defer manager.scheduler.mu.Unlock()
 
-	// 1. Verify model-a shard was updated into blocked / cooldown state.
 	entryA := shardA.entries[authID]
 	if entryA == nil || (entryA.state != scheduledStateBlocked && entryA.state != scheduledStateCooldown) {
 		t.Fatalf("model-a shard state = %v, want scheduledStateBlocked or scheduledStateCooldown", entryA.state)
 	}
 
-	// 2. Verify model-b and model-c shards were NOT visited/rebuilt.
 	entryBAfter := shardB.entries[authID].meta
 	entryCAfter := shardC.entries[authID].meta
 	if entryBAfter != entryBBefore {
@@ -94,7 +89,6 @@ func TestManager_MarkResult_TargetedModelShardUpdate(t *testing.T) {
 		t.Fatalf("unrelated shard model-c was touched/updated by model-a MarkResult (meta pointer changed from %p to %p)", entryCBefore, entryCAfter)
 	}
 
-	// 3. Verify model-b and model-c remain in ready state.
 	if shardB.entries[authID].state != scheduledStateReady {
 		t.Fatalf("model-b state = %v, want scheduledStateReady", shardB.entries[authID].state)
 	}
@@ -178,7 +172,6 @@ func TestManager_MarkResult_CredentialScopedUpdatesAllShards(t *testing.T) {
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Warm up scheduler model shards.
 	for _, m := range []string{"model-x", "model-y"} {
 		picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, m, cliproxyexecutor.Options{}, nil)
 		if errPick != nil || picked == nil || picked.ID != authID {
@@ -186,7 +179,6 @@ func TestManager_MarkResult_CredentialScopedUpdatesAllShards(t *testing.T) {
 		}
 	}
 
-	// Trigger credential-scoped failure.
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          authID,
 		Provider:        provider,
@@ -207,7 +199,6 @@ func TestManager_MarkResult_CredentialScopedUpdatesAllShards(t *testing.T) {
 	shardX := pState.modelShards["model-x"]
 	shardY := pState.modelShards["model-y"]
 
-	// Both shards MUST transition out of ready state since CredentialScope is true.
 	if shardX.entries[authID].state == scheduledStateReady {
 		t.Fatalf("model-x shard should not be ready after credential-scoped error")
 	}
@@ -247,7 +238,7 @@ func TestScheduler_MarkResult_OutOfOrderCrossModelUpdates(t *testing.T) {
 	}
 
 	now := time.Now()
-	// Simulate Request 1 (model-p failure): Generation 1
+
 	authSnapshot1 := auth.Clone()
 	authSnapshot1.Generation = 1
 	authSnapshot1.UpdatedAt = now
@@ -259,7 +250,6 @@ func TestScheduler_MarkResult_OutOfOrderCrossModelUpdates(t *testing.T) {
 		},
 	}
 
-	// Simulate Request 2 (model-q failure): Generation 2 (contains both model-p and model-q failures)
 	authSnapshot2 := auth.Clone()
 	authSnapshot2.Generation = 2
 	authSnapshot2.UpdatedAt = now.Add(time.Millisecond)
@@ -276,13 +266,10 @@ func TestScheduler_MarkResult_OutOfOrderCrossModelUpdates(t *testing.T) {
 		},
 	}
 
-	// Out-of-order execution: Request 2 arrives at scheduler FIRST with target "model-q"
 	manager.scheduler.upsertAuthResult(authSnapshot2, []string{"model-q"}, false)
 
-	// Request 1 arrives SECOND with older Generation 1 and target "model-p"
 	manager.scheduler.upsertAuthResult(authSnapshot1, []string{"model-p"}, false)
 
-	// Both shards MUST reflect cooldown / blocked state despite the out-of-order arrival
 	manager.scheduler.mu.Lock()
 	pState := manager.scheduler.providers[provider]
 	shardP := pState.modelShards["model-p"]
@@ -296,7 +283,6 @@ func TestScheduler_MarkResult_OutOfOrderCrossModelUpdates(t *testing.T) {
 		t.Fatalf("model-p shard state should not be ready even when older generation arrived second")
 	}
 
-	// Verify pickSingle cannot pick auth-ooo-test for either model
 	if _, errPickP := manager.scheduler.pickSingle(context.Background(), provider, "model-p", cliproxyexecutor.Options{}, nil); errPickP == nil {
 		t.Fatalf("pickSingle(model-p) should fail due to cooldown")
 	}
@@ -327,7 +313,6 @@ func TestScheduler_MarkResult_EmptyModelShardUpdated(t *testing.T) {
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Warm up both empty-model shard ("") and "only-model" shard
 	pickedEmpty, errEmpty := manager.scheduler.pickSingle(context.Background(), provider, "", cliproxyexecutor.Options{}, nil)
 	if errEmpty != nil || pickedEmpty == nil || pickedEmpty.ID != authID {
 		t.Fatalf("pickSingle(\"\") error = %v", errEmpty)
@@ -337,7 +322,6 @@ func TestScheduler_MarkResult_EmptyModelShardUpdated(t *testing.T) {
 		t.Fatalf("pickSingle(only-model) error = %v", errModel)
 	}
 
-	// Mark result for only-model failure.
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          authID,
 		Provider:        provider,
@@ -387,7 +371,6 @@ func TestScheduler_MarkResult_CredentialScopedReusesModelSet(t *testing.T) {
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Warm up
 	picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, "m1", cliproxyexecutor.Options{}, nil)
 	if errPick != nil || picked == nil {
 		t.Fatalf("pickSingle error = %v", errPick)
@@ -400,12 +383,11 @@ func TestScheduler_MarkResult_CredentialScopedReusesModelSet(t *testing.T) {
 		manager.scheduler.mu.Unlock()
 		t.Fatalf("initial meta should have supportedModelSet populated")
 	}
-	// Insert sentinel key into existing map to conclusively prove instance reuse
+
 	const sentinelKey = "reused_instance_marker"
 	initialMeta.supportedModelSet[sentinelKey] = struct{}{}
 	manager.scheduler.mu.Unlock()
 
-	// Trigger credential-scoped MarkResult
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          authID,
 		Provider:        provider,
@@ -426,7 +408,7 @@ func TestScheduler_MarkResult_CredentialScopedReusesModelSet(t *testing.T) {
 	if afterMeta == nil {
 		t.Fatalf("afterMeta should not be nil")
 	}
-	// Verify sentinel exists in afterMeta.supportedModelSet, conclusively proving map reuse
+
 	if _, ok := afterMeta.supportedModelSet[sentinelKey]; !ok {
 		t.Fatalf("sentinel %s missing from afterMeta: supportedModelSet was re-queried from registry instead of reused", sentinelKey)
 	}
@@ -444,7 +426,7 @@ func TestScheduler_StaleDisabledSnapshotDoesNotRemoveActiveAuth(t *testing.T) {
 	})
 
 	now := time.Now()
-	// Active auth at Generation 10
+
 	activeAuth := &Auth{
 		ID:                authID,
 		Provider:          provider,
@@ -457,13 +439,11 @@ func TestScheduler_StaleDisabledSnapshotDoesNotRemoveActiveAuth(t *testing.T) {
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Verify auth is present in scheduler
 	picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, "m-stale", cliproxyexecutor.Options{}, nil)
 	if errPick != nil || picked == nil || picked.ID != authID {
 		t.Fatalf("pickSingle failed: %v", errPick)
 	}
 
-	// Incoming stale result with Generation 5 and Disabled: true
 	staleDisabledAuth := &Auth{
 		ID:                authID,
 		Provider:          provider,
@@ -476,7 +456,6 @@ func TestScheduler_StaleDisabledSnapshotDoesNotRemoveActiveAuth(t *testing.T) {
 
 	manager.scheduler.upsertAuthResult(staleDisabledAuth, []string{"m-stale"}, false)
 
-	// Verify active auth was NOT removed from scheduler
 	manager.scheduler.mu.Lock()
 	pState := manager.scheduler.providers[provider]
 	hasAuth := false
@@ -489,7 +468,6 @@ func TestScheduler_StaleDisabledSnapshotDoesNotRemoveActiveAuth(t *testing.T) {
 		t.Fatalf("stale disabled snapshot incorrectly removed active auth from scheduler")
 	}
 
-	// Verify it can still be picked
 	pickedAfter, errPickAfter := manager.scheduler.pickSingle(context.Background(), provider, "m-stale", cliproxyexecutor.Options{}, nil)
 	if errPickAfter != nil || pickedAfter == nil || pickedAfter.ID != authID {
 		t.Fatalf("pickSingle after stale disabled snapshot failed: %v", errPickAfter)
@@ -516,7 +494,6 @@ func TestScheduler_ModelRegistryEpochInvalidatesCache(t *testing.T) {
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Warm up
 	if _, errPick := manager.scheduler.pickSingle(context.Background(), provider, "model-1", cliproxyexecutor.Options{}, nil); errPick != nil {
 		t.Fatalf("pickSingle(model-1) error = %v", errPick)
 	}
@@ -528,14 +505,11 @@ func TestScheduler_ModelRegistryEpochInvalidatesCache(t *testing.T) {
 		t.Fatalf("model-2 should not be supported initially")
 	}
 
-	// Simulate dynamic model registry discovery: register new model-2 for client
-	// (increments ClientRegistrationEpoch)
 	reg.RegisterClient(authID, provider, []*registry.ModelInfo{
 		{ID: "model-1"},
 		{ID: "model-2"},
 	})
 
-	// MarkResult occurs for model-1
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   authID,
 		Provider: provider,
@@ -547,12 +521,10 @@ func TestScheduler_ModelRegistryEpochInvalidatesCache(t *testing.T) {
 	updatedMeta := manager.scheduler.providers[provider].auths[authID]
 	manager.scheduler.mu.Unlock()
 
-	// Cache MUST have been invalidated by new epoch, discovering model-2!
 	if !updatedMeta.supportsModel("model-2") {
 		t.Fatalf("model-2 should be supported after registry epoch changed and result was processed")
 	}
 
-	// Verify model-2 can now be picked
 	if picked, errPick2 := manager.scheduler.pickSingle(context.Background(), provider, "model-2", cliproxyexecutor.Options{}, nil); errPick2 != nil || picked == nil {
 		t.Fatalf("pickSingle(model-2) failed after epoch invalidation: %v", errPick2)
 	}
@@ -581,7 +553,6 @@ func TestScheduler_MarkResult_OutOfOrderCredentialScopedFailureUpdatesAllShards(
 		t.Fatalf("Register() error = %v", errRegister)
 	}
 
-	// Warm up both shards
 	for _, m := range []string{"m-ooo-1", "m-ooo-2"} {
 		picked, errPick := manager.scheduler.pickSingle(context.Background(), provider, m, cliproxyexecutor.Options{}, nil)
 		if errPick != nil || picked == nil || picked.ID != authID {
@@ -590,7 +561,7 @@ func TestScheduler_MarkResult_OutOfOrderCredentialScopedFailureUpdatesAllShards(
 	}
 
 	now := time.Now()
-	// Gen 1: Credential-scoped failure (quota exceeded on entire credential)
+
 	snap1 := auth.Clone()
 	snap1.Generation = 1
 	snap1.UpdatedAt = now
@@ -599,18 +570,14 @@ func TestScheduler_MarkResult_OutOfOrderCredentialScopedFailureUpdatesAllShards(
 	snap1.Quota.Reason = "credential_quota"
 	snap1.Quota.NextRecoverAt = now.Add(time.Hour)
 
-	// Gen 2: Later single-model result
 	snap2 := snap1.Clone()
 	snap2.Generation = 2
 	snap2.UpdatedAt = now.Add(time.Millisecond)
 
-	// Request 2 arrives FIRST at scheduler with target "m-ooo-2"
 	manager.scheduler.upsertAuthResult(snap2, []string{"m-ooo-2"}, false)
 
-	// Request 1 arrives SECOND with older Gen 1 and credentialScoped: true
 	manager.scheduler.upsertAuthResult(snap1, nil, true)
 
-	// Verify ALL shards are in cooldown / blocked because Request 1 was credential-scoped!
 	manager.scheduler.mu.Lock()
 	pState := manager.scheduler.providers[provider]
 	shard1 := pState.modelShards["m-ooo-1"]
@@ -630,9 +597,8 @@ func TestScheduler_ModelRegistryEpochChangeSyncsExistingShards(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
 	provider := "custom-prov-epoch-sync"
 
-	// Auth 1 supports model-1
 	reg.RegisterClient("auth-1", provider, []*registry.ModelInfo{{ID: "model-1"}})
-	// Auth 2 supports model-2 (pre-creates shard for model-2)
+
 	reg.RegisterClient("auth-2", provider, []*registry.ModelInfo{{ID: "model-2"}})
 	t.Cleanup(func() {
 		reg.UnregisterClient("auth-1")
@@ -648,7 +614,6 @@ func TestScheduler_ModelRegistryEpochChangeSyncsExistingShards(t *testing.T) {
 		t.Fatalf("Register(auth-2) error = %v", err)
 	}
 
-	// Warm up shard model-1 with auth-1, and shard model-2 with auth-2
 	if _, err := manager.scheduler.pickSingle(context.Background(), provider, "model-1", cliproxyexecutor.Options{}, nil); err != nil {
 		t.Fatalf("pickSingle(model-1) error = %v", err)
 	}
@@ -656,7 +621,6 @@ func TestScheduler_ModelRegistryEpochChangeSyncsExistingShards(t *testing.T) {
 		t.Fatalf("pickSingle(model-2) error = %v", err)
 	}
 
-	// Shard model-2 currently only has auth-2
 	manager.scheduler.mu.Lock()
 	shardModel2 := manager.scheduler.providers[provider].modelShards["model-2"]
 	_, hasAuth1Before := shardModel2.entries["auth-1"]
@@ -665,13 +629,11 @@ func TestScheduler_ModelRegistryEpochChangeSyncsExistingShards(t *testing.T) {
 		t.Fatalf("model-2 shard should not have auth-1 before registration change")
 	}
 
-	// Dynamically add model-2 to auth-1's registration in registry (increments epoch)
 	reg.RegisterClient("auth-1", provider, []*registry.ModelInfo{
 		{ID: "model-1"},
 		{ID: "model-2"},
 	})
 
-	// MarkResult occurs for auth-1 on model-1 (triggers epoch change detection in scheduler)
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   "auth-1",
 		Provider: provider,
@@ -679,7 +641,6 @@ func TestScheduler_ModelRegistryEpochChangeSyncsExistingShards(t *testing.T) {
 		Success:  true,
 	})
 
-	// Shard model-2 MUST now have auth-1 synced into it!
 	manager.scheduler.mu.Lock()
 	entryAuth1InShard2 := shardModel2.entries["auth-1"]
 	manager.scheduler.mu.Unlock()
@@ -715,14 +676,12 @@ func TestScheduler_CredentialLevelRecoveryViaModelSuccessUpdatesAllShards(t *tes
 		t.Fatalf("Register() error = %v", err)
 	}
 
-	// Warm up shards for both models
 	for _, m := range []string{"m-rec-a", "m-rec-b"} {
 		if _, err := manager.scheduler.pickSingle(context.Background(), provider, m, cliproxyexecutor.Options{}, nil); err != nil {
 			t.Fatalf("pickSingle(%s) error = %v", m, err)
 		}
 	}
 
-	// 1. Trigger credential-level 401 failure (no model / credential scoped)
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          authID,
 		Provider:        provider,
@@ -736,7 +695,6 @@ func TestScheduler_CredentialLevelRecoveryViaModelSuccessUpdatesAllShards(t *tes
 		},
 	})
 
-	// Verify both shards are blocked/cooldown
 	manager.scheduler.mu.Lock()
 	pState := manager.scheduler.providers[provider]
 	shardA := pState.modelShards["m-rec-a"]
@@ -750,7 +708,6 @@ func TestScheduler_CredentialLevelRecoveryViaModelSuccessUpdatesAllShards(t *tes
 		t.Fatalf("m-rec-b shard should not be ready after 401")
 	}
 
-	// 2. An in-flight request for m-rec-a completes successfully, recovering the credential!
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   authID,
 		Provider: provider,
@@ -758,7 +715,6 @@ func TestScheduler_CredentialLevelRecoveryViaModelSuccessUpdatesAllShards(t *tes
 		Success:  true,
 	})
 
-	// Verify m-rec-b shard ALSO transitioned back to ready because credential-level availability recovered!
 	manager.scheduler.mu.Lock()
 	entryB := shardB.entries[authID]
 	manager.scheduler.mu.Unlock()
@@ -767,7 +723,6 @@ func TestScheduler_CredentialLevelRecoveryViaModelSuccessUpdatesAllShards(t *tes
 		t.Fatalf("m-rec-b shard state = %v, want scheduledStateReady after credential-level recovery", entryB.state)
 	}
 
-	// Verify m-rec-b can be picked
 	pickedB, errPickB := manager.scheduler.pickSingle(context.Background(), provider, "m-rec-b", cliproxyexecutor.Options{}, nil)
 	if errPickB != nil || pickedB == nil || pickedB.ID != authID {
 		t.Fatalf("pickSingle(m-rec-b) failed after recovery: %v, %v", pickedB, errPickB)
@@ -804,27 +759,23 @@ func TestScheduler_CredentialLevelRecoveryViaModelSuccess_OutOfOrder(t *testing.
 	}
 
 	now := time.Now()
-	// Gen 1: 401 error snapshot (credential unavailable)
+
 	snap1 := auth.Clone()
 	snap1.Generation = 1
 	snap1.Status = StatusError
 	snap1.Unavailable = true
 	snap1.UpdatedAt = now
 
-	// Gen 2: Model A success snapshot (cleared unavailable, StatusActive)
 	snap2 := auth.Clone()
 	snap2.Generation = 2
 	snap2.Status = StatusActive
 	snap2.Unavailable = false
 	snap2.UpdatedAt = now.Add(time.Millisecond)
 
-	// Gen 2 arrives FIRST
 	manager.scheduler.upsertAuthResult(snap2, []string{"m-ooo-a"}, false)
 
-	// Gen 1 (stale 401) arrives SECOND
 	manager.scheduler.upsertAuthResult(snap1, nil, true)
 
-	// Verify Gen 1 did NOT clobber Gen 2! Both shards must remain ready!
 	manager.scheduler.mu.Lock()
 	pState := manager.scheduler.providers[provider]
 	shardA := pState.modelShards["m-ooo-a"]
@@ -863,7 +814,6 @@ func BenchmarkScheduler_TargetedMarkResultHighConcurrency(b *testing.B) {
 		}
 	}
 
-	// Warm up all shards
 	for m := 0; m < modelCount; m++ {
 		modelName := fmt.Sprintf("model-%d", m)
 		if _, err := manager.scheduler.pickSingle(context.Background(), provider, modelName, cliproxyexecutor.Options{}, nil); err != nil {
@@ -879,7 +829,6 @@ func BenchmarkScheduler_TargetedMarkResultHighConcurrency(b *testing.B) {
 			authName := fmt.Sprintf("bench-auth-%d", idx%authCount)
 			idx++
 
-			// Alternate picking and marking result
 			_, _ = manager.scheduler.pickSingle(context.Background(), provider, modelName, cliproxyexecutor.Options{}, nil)
 			manager.MarkResult(context.Background(), Result{
 				AuthID:   authName,

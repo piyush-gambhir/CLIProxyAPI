@@ -7,8 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/api/handlers/management"
 )
 
-// registerManagementV8Routes defines the v8 contract independently of v0.
-// Configuration paths mirror the v8 YAML tree; operational routes use its groups.
 func (s *Server) registerManagementV8Routes() {
 	const prefix = "/v8/management"
 	s.engine.GET(prefix+"/oauth/callback", s.managementAvailabilityMiddleware(), s.mgmt.GetOAuthCallbackV8)

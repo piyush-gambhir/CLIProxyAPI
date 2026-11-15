@@ -12,13 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DoClaudeLogin triggers the Claude OAuth flow through the shared authentication manager.
-// It initiates the OAuth authentication process for Anthropic Claude services and saves
-// the authentication tokens to the configured auth directory.
-//
-// Parameters:
-//   - cfg: The application configuration
-//   - options: Login options including browser behavior and prompts
 func DoClaudeLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {
 		options = &LoginOptions{}

@@ -65,7 +65,6 @@ func TestLookupStaticModelInfoDevinRefreshAndFallback(t *testing.T) {
 		}
 	}
 
-	// Preserve legacy models.json compatibility when the independent catalog is unavailable.
 	devinCatalogStore.mu.Lock()
 	devinCatalogStore.models = nil
 	devinCatalogStore.mu.Unlock()
@@ -73,7 +72,6 @@ func TestLookupStaticModelInfoDevinRefreshAndFallback(t *testing.T) {
 		t.Fatalf("legacy fallback = %+v, want %+v", got, legacy)
 	}
 
-	// Keep the hardcoded fallback only when both catalog sources are unavailable.
 	generalWithoutDevin := general
 	generalWithoutDevin.Devin = nil
 	modelsCatalogStore.mu.Lock()

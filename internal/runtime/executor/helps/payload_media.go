@@ -16,8 +16,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// ApplyMediaPayloadConfig exposes multipart fields as JSON business values. File
-// parts use {filename, content_type, data} with base64 data; framing stays opaque.
 func ApplyMediaPayloadConfig(cfg *config.Config, executor, model, protocol string, body []byte, contentType string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) ([]byte, string, error) {
 	view, multipartBody, errDecode := mediaPayloadJSON(body, contentType)
 	if errDecode != nil {

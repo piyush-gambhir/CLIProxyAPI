@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-// Issue #6720: an explicit per-minute rate-limit error carrying a short
-// Retry-After must not inherit a later unclassified unified reset when no
-// status header declares a quota window. Fixtures are synthetic.
-
 var claudePerMinuteMessages = []struct {
 	name     string
 	resource string
@@ -60,7 +56,7 @@ func TestClaudePerMinuteRateLimitHonorsShortRetryAfter_Issue6720(t *testing.T) {
 				headers.Set("Anthropic-Ratelimit-Unified-Reset", strconv.FormatInt(time.Now().Add(4*time.Hour).Unix(), 10))
 
 				got := classifyClaudeRateTestError(t, fast, headers, claudePerMinuteBody(msg.resource))
-				// 30s hint plus the existing 1-30s bounded grace; allow clock slack.
+
 				if got < 29*time.Second || got > 60*time.Second {
 					t.Fatalf("RetryAfter = %v, want between 29s and 60s (must not inherit the 4h unified reset)", got)
 				}

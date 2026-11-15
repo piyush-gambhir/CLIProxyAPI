@@ -27,13 +27,11 @@ import (
 )
 
 const (
-	// gcInterval defines minimum time between garbage collection runs.
 	gcInterval = 5 * time.Minute
-	// gcPruneGracePeriod keeps recently orphaned objects available for recovery.
+
 	gcPruneGracePeriod = 24 * time.Hour
 )
 
-// GitTokenStore persists token records and auth metadata using git as the backing storage.
 type GitTokenStore struct {
 	mu        sync.Mutex
 	dirLock   sync.RWMutex
@@ -54,9 +52,6 @@ type resolvedRemoteBranch struct {
 	hash plumbing.Hash
 }
 
-// NewGitTokenStore creates a token store that saves credentials to disk through the
-// TokenStorage implementation embedded in the token record.
-// When branch is non-empty, clone/pull/push operations target that branch instead of the remote default.
 func NewGitTokenStore(remote, username, password, branch string) *GitTokenStore {
 	return &GitTokenStore{
 		remote:   remote,
@@ -66,7 +61,6 @@ func NewGitTokenStore(remote, username, password, branch string) *GitTokenStore 
 	}
 }
 
-// SetBaseDir updates the default directory used for auth JSON persistence when no explicit path is provided.
 func (s *GitTokenStore) SetBaseDir(dir string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -95,12 +89,10 @@ func (s *GitTokenStore) SetBaseDir(dir string) {
 	s.dirLock.Unlock()
 }
 
-// AuthDir returns the directory used for auth persistence.
 func (s *GitTokenStore) AuthDir() string {
 	return s.baseDirSnapshot()
 }
 
-// ConfigPath returns the managed config file path.
 func (s *GitTokenStore) ConfigPath() string {
 	s.dirLock.RLock()
 	defer s.dirLock.RUnlock()
@@ -110,7 +102,6 @@ func (s *GitTokenStore) ConfigPath() string {
 	return filepath.Join(s.configDir, "config.yaml")
 }
 
-// EnsureRepository prepares the local git working tree by cloning or opening the repository.
 func (s *GitTokenStore) EnsureRepository() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -280,7 +271,7 @@ func (s *GitTokenStore) ensureRepositoryContextLocked(ctx context.Context) (errR
 				return errCheckout
 			}
 		} else {
-			// When branch is unset, ensure the working tree follows the remote default branch
+
 			if err := checkoutRemoteDefaultBranch(ctx, repo, worktree, authMethod); err != nil {
 				if !shouldFallbackToCurrentBranch(repo, err) {
 					s.dirLock.Unlock()
@@ -358,13 +349,13 @@ func (s *GitTokenStore) ensureRepositoryContextLocked(ctx context.Context) (errR
 				}
 			case errors.Is(errPull, transport.ErrAuthenticationRequired),
 				errors.Is(errPull, transport.ErrEmptyRemoteRepository):
-				// Ignore authentication prompts and empty remote references on initial sync.
+
 			case errors.Is(errPull, plumbing.ErrReferenceNotFound):
 				if s.branch != "" {
 					s.dirLock.Unlock()
 					return fmt.Errorf("git token store: pull: %w", errPull)
 				}
-				// Ignore missing references only when following the remote default branch.
+
 			case isRepositoryCorruptionError(errPull):
 				errRecover := s.recoverRepositoryContextLocked(ctx, repoDir, authMethod, repo, prePullTree, dirtyPaths, (*git.Repository).Close, os.Rename)
 				repo = nil
@@ -421,7 +412,6 @@ func (s *GitTokenStore) ensureRepositoryContextLocked(ctx context.Context) (errR
 	return nil
 }
 
-// Save persists token storage and metadata to the resolved auth file path.
 func (s *GitTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
 		return "", fmt.Errorf("auth filestore: auth is nil")
@@ -442,9 +432,6 @@ func (s *GitTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 		return "", fmt.Errorf("auth filestore: missing file path attribute for %s", auth.ID)
 	}
 
-	// Runtime updates must not recreate a disabled credential whose source file
-	// was deliberately removed. Login and migration callers explicitly mark the
-	// save when creating a missing disabled credential is intentional.
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
 			return "", nil
@@ -526,7 +513,6 @@ func (s *GitTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 	return path, nil
 }
 
-// List enumerates all auth JSON files under the configured directory.
 func (s *GitTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -564,7 +550,6 @@ func (s *GitTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error) {
 	return entries, nil
 }
 
-// Delete removes the auth file.
 func (s *GitTokenStore) Delete(_ context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -595,8 +580,6 @@ func (s *GitTokenStore) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-// PersistAuthFiles commits and pushes the provided paths to the remote repository.
-// It no-ops when the store is not fully configured or when there are no paths.
 func (s *GitTokenStore) PersistAuthFiles(_ context.Context, message string, paths ...string) error {
 	if len(paths) == 0 {
 		return nil
@@ -624,8 +607,6 @@ func (s *GitTokenStore) PersistAuthFiles(_ context.Context, message string, path
 		message = "Sync watcher updates"
 	}
 
-	// Inspect watcher removals before EnsureRepository restores missing tracked
-	// files so an unexpected filesystem event remains distinguishable from Delete.
 	if _, errStat := os.Stat(filepath.Join(s.repoDirSnapshot(), ".git")); errStat == nil {
 		if handled, errGuard := s.guardWatcherAuthRemovalLocked(message, filtered); handled || errGuard != nil {
 			return errGuard
@@ -700,8 +681,7 @@ func (s *GitTokenStore) guardWatcherAuthRemovalLocked(message string, relPaths [
 	if hasExistingPath {
 		return false, nil
 	}
-	// Explicit GitTokenStore.Delete already removed the path from HEAD. The
-	// subsequent filesystem watcher event is therefore redundant and safe to ignore.
+
 	return true, nil
 }
 
@@ -959,8 +939,6 @@ func syncRemoteReferences(ctx context.Context, repo *git.Repository, authMethod 
 	return nil
 }
 
-// resolveRemoteDefaultBranch queries the origin remote to determine the remote's default branch
-// (the target of HEAD) and returns the corresponding local branch reference name (e.g. refs/heads/master).
 func resolveRemoteDefaultBranch(ctx context.Context, repo *git.Repository, authMethod []client.Option) (resolvedRemoteBranch, error) {
 	if err := syncRemoteReferences(ctx, repo, authMethod); err != nil {
 		return resolvedRemoteBranch{}, fmt.Errorf("resolve remote default: sync remote refs: %w", err)
@@ -1101,8 +1079,6 @@ func reconcileRemoteWorktree(repo *git.Repository, worktree *git.Worktree, repoD
 		}
 	}
 
-	// Pull moves HEAD before reporting unstaged changes. Return to the pre-pull
-	// tree before applying only remote changes that do not overlap local edits.
 	if errRestore := restoreHeadAndIndex(repo, worktree, baseRef); errRestore != nil {
 		return fmt.Errorf("restore pre-pull head: %w", errRestore)
 	}
@@ -1632,28 +1608,25 @@ func shouldFallbackToCurrentBranch(repo *git.Repository, err error) bool {
 	return headErr == nil
 }
 
-// checkoutRemoteDefaultBranch ensures the working tree is checked out to the remote's default branch
-// (the branch target of origin/HEAD). If the local branch does not exist it will be created to track
-// the remote branch.
 func checkoutRemoteDefaultBranch(ctx context.Context, repo *git.Repository, worktree *git.Worktree, authMethod []client.Option) error {
 	resolved, err := resolveRemoteDefaultBranch(ctx, repo, authMethod)
 	if err != nil {
 		return err
 	}
 	branchRefName := resolved.name
-	// If HEAD already points to the desired branch, nothing to do.
+
 	headRef, errHead := repo.Head()
 	if errHead == nil && headRef.Name() == branchRefName {
 		return nil
 	}
-	// If local branch exists, attempt a checkout
+
 	if _, err := repo.Reference(branchRefName, true); err == nil {
 		if err := worktree.Checkout(&git.CheckoutOptions{Branch: branchRefName}); err != nil {
 			return fmt.Errorf("checkout branch %s: %w", branchRefName.String(), err)
 		}
 		return nil
 	}
-	// Try to find the corresponding remote tracking ref (refs/remotes/origin/<name>)
+
 	branchShort := strings.TrimPrefix(branchRefName.String(), "refs/heads/")
 	remoteRefName := plumbing.ReferenceName("refs/remotes/origin/" + branchShort)
 	hash := resolved.hash
@@ -1920,7 +1893,7 @@ func (s *GitTokenStore) pushRepositoryLocked(ctx context.Context, repo *git.Repo
 	case errRemote == nil:
 		pushOpts.ForceWithLease = &git.ForceWithLease{RefName: branchName, Hash: remoteRef.Hash()}
 	case errors.Is(errRemote, plumbing.ErrReferenceNotFound) && allowMissingRemote:
-		// A normal branch-creation push fails if another initializer wins the race.
+
 	case errors.Is(errRemote, plumbing.ErrReferenceNotFound):
 		return fmt.Errorf("git token store: remote tracking branch %s not found", remoteName)
 	default:
@@ -1944,7 +1917,6 @@ func (s *GitTokenStore) pushRepositoryLocked(ctx context.Context, repo *git.Repo
 	return nil
 }
 
-// rewriteHeadAsSingleCommit rewrites the current branch tip to a single-parentless commit and leaves history squashed.
 func (s *GitTokenStore) rewriteHeadAsSingleCommit(repo *git.Repository, branch plumbing.ReferenceName, commitHash plumbing.Hash, message string, signature *object.Signature) error {
 	commitObj, err := repo.CommitObject(commitHash)
 	if err != nil {
@@ -2002,7 +1974,6 @@ func (s *GitTokenStore) maybeRunGC(repoDir string) {
 	_ = repo.RepackObjects(&git.RepackConfig{})
 }
 
-// PersistConfig commits and pushes configuration changes to git.
 func (s *GitTokenStore) PersistConfig(_ context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

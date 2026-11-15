@@ -205,7 +205,7 @@ func TestClusterBalanceMigrationLogIncludesPlanAndAddresses(t *testing.T) {
 	if errExecute := client.executeClusterRebalance(context.Background(), payload); !errors.Is(errExecute, ErrRebalanceRequested) {
 		t.Fatal(errExecute)
 	}
-	// The message itself must carry these values, independently of formatter field allowlists.
+
 	line := strings.ReplaceAll(output.String(), `\"`, `"`)
 	for key, value := range map[string]string{"plan": request.ID, "from": origin, "to": clusterNodeAddress(request.Target)} {
 		if !strings.Contains(line, fmt.Sprintf("%s=%q", key, value)) {

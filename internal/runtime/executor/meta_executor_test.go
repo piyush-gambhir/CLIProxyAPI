@@ -73,7 +73,6 @@ func TestMetaExecutor_MetaCredsResolution(t *testing.T) {
 		_ = os.WriteFile(authPath, []byte(content), 0600)
 		t.Setenv("MUSE_AUTH_PATH", authPath)
 
-		// nil auth should NOT bleed to env or local file
 		baseURL, token := metaCreds(nil)
 		if token != "" {
 			t.Errorf("expected empty token for nil auth, got %s", token)
@@ -82,7 +81,6 @@ func TestMetaExecutor_MetaCredsResolution(t *testing.T) {
 			t.Errorf("expected default base URL, got %s", baseURL)
 		}
 
-		// empty auth should NOT bleed to env or local file
 		emptyAuth := &cliproxyauth.Auth{}
 		_, token = metaCreds(emptyAuth)
 		if token != "" {
@@ -112,12 +110,10 @@ func TestMetaExecutor_ParseRetryAfter(t *testing.T) {
 		t.Errorf("unexpected retryAfter duration: %v", *retryAfter)
 	}
 
-	// Non-429 status returns nil
 	if got := parseMetaRetryAfter(http.StatusOK, body, now); got != nil {
 		t.Errorf("expected nil for 200 OK")
 	}
 
-	// Past epoch returns nil
 	pastBody := []byte(mapToJSON(map[string]any{
 		"error": map[string]any{
 			"resets_at": now.Add(-10 * time.Minute).Unix(),
@@ -140,11 +136,11 @@ func TestMetaExecutor_ExecuteSuccessAndRateLimit(t *testing.T) {
 		}
 
 		if r.URL.Path == "/responses" {
-			// Check user agent
+
 			if ua := r.Header.Get("User-Agent"); ua != metaUserAgent() {
 				t.Errorf("expected User-Agent %s, got %s", metaUserAgent(), ua)
 			}
-			// Simulate 429 rate limit
+
 			w.WriteHeader(http.StatusTooManyRequests)
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"error": map[string]any{
@@ -315,7 +311,7 @@ func TestMetaExecutor_Refresh_RequiresManagerAcceptance(t *testing.T) {
 	if _, err := manager.UpdateRefreshedAuth(context.Background(), auth, refreshed); err != nil {
 		t.Fatal(err)
 	}
-	// Verify durable file persistence on disk
+
 	diskBytes, errRead := os.ReadFile(authFilePath)
 	if errRead != nil {
 		t.Fatalf("failed to read persisted file: %v", errRead)
@@ -330,7 +326,7 @@ func TestMetaExecutor_Refresh_RequiresManagerAcceptance(t *testing.T) {
 	if diskData["access_token"] != "LLM|persisted-minted-key" {
 		t.Errorf("expected persisted access_token LLM|persisted-minted-key, got %v", diskData["access_token"])
 	}
-	// Verify existing properties preserved
+
 	if diskData["request_retry"] != float64(3) {
 		t.Errorf("expected preserved request-retry: 3, got %v", diskData["request_retry"])
 	}
@@ -375,7 +371,6 @@ func TestMetaExecutor_PrepareConcurrentAccounts(t *testing.T) {
 	t.Setenv("META_MINT_URL", server.URL+"/key")
 	exec := NewMetaExecutor(&config.Config{})
 
-	// 10 concurrent refreshes for account 1
 	var wg sync.WaitGroup
 	auth1 := &cliproxyauth.Auth{
 		ID:       "meta-acct1",
@@ -411,15 +406,12 @@ func TestMetaExecutor_PrepareConcurrentAccounts(t *testing.T) {
 		}()
 	}
 
-	// Release all goroutines simultaneously.
 	entryWg.Wait()
 	close(ready)
 
-	// Wait until the singleflight mint request has arrived at the server.
 	<-serverStarted
 	inFlight.Wait()
 
-	// A second account must complete while the first account's mint is blocked.
 	auth2 := &cliproxyauth.Auth{ID: "meta-acct2", Provider: "meta", Metadata: map[string]any{"dca_token": "dca:acct2"}}
 	if _, err := manager.Register(context.Background(), auth2); err != nil {
 		t.Fatal(err)
@@ -469,7 +461,6 @@ func TestMetaExecutor_Execute_DCARecovery(t *testing.T) {
 	cfg := &config.Config{}
 	exec := NewMetaExecutor(cfg)
 
-	// Auth has ONLY a DCA token
 	auth := &cliproxyauth.Auth{
 		Provider: "meta",
 		Metadata: map[string]any{
@@ -1542,7 +1533,7 @@ func TestMetaExecutor_ExecuteStream_StripsSearchContentTypesFromWebSearch(t *tes
 	if err != nil {
 		t.Fatalf("ExecuteStream() error = %v", err)
 	}
-	// Consume stream chunks
+
 	for range streamResult.Chunks {
 	}
 
@@ -1686,7 +1677,6 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		]
 	}`)
 
-	// 1. With non-Codex User-Agent, tool types must remain unchanged (number).
 	gotBody = nil
 	_, errExecNonCodex := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "muse-spark-1.3",
@@ -1702,7 +1692,6 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		t.Fatalf("expected non-Codex UA to preserve number, got %q", gotType)
 	}
 
-	// 2. With nil headers, tool types must remain unchanged (number).
 	gotBody = nil
 	_, errExecNilHeaders := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "muse-spark-1.3",
@@ -1717,7 +1706,6 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		t.Fatalf("expected nil headers to preserve number, got %q", gotType)
 	}
 
-	// 3. With Codex User-Agent, specified fields must be normalized to integer.
 	gotBody = nil
 	_, errExec := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "muse-spark-1.3",
@@ -1757,12 +1745,10 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		}
 	}
 
-	// Verify input[].additional_tools is also normalized to integer
 	if gotType := ojson.GetBytes(gotBody, "input.#(type==\"additional_tools\").tools.0.parameters.properties.yield_time_ms.type").String(); gotType != "integer" {
 		t.Fatalf("Meta Execute additional_tools yield_time_ms type = %q, want integer", gotType)
 	}
 
-	// 4. Test ExecuteStream: verify both tools and additional_tools are normalized to integer
 	gotBody = nil
 	streamResult, errStream := exec.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "muse-spark-1.3",
@@ -1810,9 +1796,6 @@ func TestMetaExecutor_Execute_PreservesMuseReasoningEncryptedContent_Issue6450(t
 		},
 	}
 
-	// Shape-valid synthetic Meta envelope (observed header + 1 KiB bucket),
-	// so this exercises the positively recognized Meta branch end to end
-	// rather than the unknown-format fallback. No captured value is embedded.
 	museEncryptedContent := "Q-PaDgE"
 	for len(museEncryptedContent) < 1426 {
 		museEncryptedContent += "A"
@@ -1843,7 +1826,7 @@ func TestMetaExecutor_Execute_PreservesMuseReasoningEncryptedContent_Issue6450(t
 	if gotSummary := ojson.GetBytes(gotBody, "input.0.summary.0.text").String(); gotSummary != "thinking step" {
 		t.Fatalf("summary = %q, want 'thinking step'; body=%s", gotSummary, gotBody)
 	}
-	// Verify Claude signature stripped and id dropped when store=false
+
 	if ojson.GetBytes(gotBody, "input.1.encrypted_content").Exists() {
 		t.Fatalf("Claude signature should be stripped: %s", gotBody)
 	}

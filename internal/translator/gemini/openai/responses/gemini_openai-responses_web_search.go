@@ -12,14 +12,10 @@ import (
 	translatorcommon "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/common"
 )
 
-// ModelSupportsWebSearch checks whether the given model supports native web search,
-// checking both dynamic registry capability (SupportsWebSearch) and models.json
-// static definitions (native_capabilities.web_search). Explicit false wins as a veto.
 func ModelSupportsWebSearch(modelID string) bool {
 	info := registry.LookupModelInfo(modelID)
 	infoAG := registry.LookupModelInfo(modelID, "antigravity")
 
-	// 1. Explicit false in static definitions acts as an absolute veto.
 	if info != nil && info.NativeCapabilities != nil && info.NativeCapabilities.WebSearch != nil && !*info.NativeCapabilities.WebSearch {
 		return false
 	}
@@ -27,7 +23,6 @@ func ModelSupportsWebSearch(modelID string) bool {
 		return false
 	}
 
-	// 2. Explicit true in static definitions.
 	if info != nil && info.NativeCapabilities != nil && info.NativeCapabilities.WebSearch != nil && *info.NativeCapabilities.WebSearch {
 		return true
 	}
@@ -35,7 +30,6 @@ func ModelSupportsWebSearch(modelID string) bool {
 		return true
 	}
 
-	// 3. Dynamic capability checks via Antigravity probes and registry flags.
 	if registry.AntigravityWebSearchModelFor(modelID) != "" {
 		return true
 	}
@@ -45,9 +39,6 @@ func ModelSupportsWebSearch(modelID string) bool {
 	return false
 }
 
-// isResponsesWebSearchToolType checks whether a tool type matches OpenAI Responses web search tool.
-// Official OpenAI documentation supports "web_search", "web_search_2025_08_26", and legacy
-// "web_search_preview" / "web_search_preview_2025_03_11".
 func isResponsesWebSearchToolType(toolType string) bool {
 	switch toolType {
 	case "web_search", "web_search_2025_08_26", "web_search_preview", "web_search_preview_2025_03_11":
@@ -57,7 +48,6 @@ func isResponsesWebSearchToolType(toolType string) bool {
 	}
 }
 
-// HasResponsesWebSearchTool checks if the request tools array contains an OpenAI web search tool.
 func HasResponsesWebSearchTool(root ojson.Result) bool {
 	tools := root.Get("tools")
 	if !tools.IsArray() {
@@ -71,7 +61,6 @@ func HasResponsesWebSearchTool(root ojson.Result) bool {
 	return false
 }
 
-// HasOnlyResponsesWebSearchTools checks if every tool in the tools array is a web search tool.
 func HasOnlyResponsesWebSearchTools(root ojson.Result) bool {
 	tools := root.Get("tools")
 	if !tools.IsArray() {
@@ -88,7 +77,6 @@ func HasOnlyResponsesWebSearchTools(root ojson.Result) bool {
 	return hasSearch
 }
 
-// AllowsResponsesWebSearchToolChoice checks whether tool_choice permits web search execution.
 func AllowsResponsesWebSearchToolChoice(root ojson.Result) bool {
 	toolChoice := root.Get("tool_choice")
 	if !toolChoice.Exists() {
@@ -127,8 +115,6 @@ func AllowsResponsesWebSearchToolChoice(root ojson.Result) bool {
 	return false
 }
 
-// ExtractResponsesWebSearchQuery extracts the search query from OpenAI Responses input.
-// It handles simple string inputs, array of conversation messages, direct content part arrays, and instruction fallbacks.
 func ExtractResponsesWebSearchQuery(root ojson.Result) string {
 	input := root.Get("input")
 	if input.Type == ojson.String {
@@ -136,7 +122,7 @@ func ExtractResponsesWebSearchQuery(root ojson.Result) string {
 	}
 	if input.IsArray() {
 		items := input.Array()
-		// Check if input is a flat array of content parts (e.g. [{"type":"input_text",...}])
+
 		var flatParts []string
 		isFlatParts := true
 		for _, item := range items {
@@ -185,7 +171,6 @@ func ExtractResponsesWebSearchQuery(root ojson.Result) string {
 	return ""
 }
 
-// ExtractResponsesWebSearchAllowedDomains extracts allowed domains from tools[].filters.allowed_domains.
 func ExtractResponsesWebSearchAllowedDomains(root ojson.Result) []string {
 	tools := root.Get("tools")
 	if !tools.IsArray() {
@@ -210,7 +195,6 @@ func ExtractResponsesWebSearchAllowedDomains(root ojson.Result) []string {
 	return nil
 }
 
-// ExtractGroundingMetadata locates groundingMetadata in either direct or wrapped Gemini response.
 func ExtractGroundingMetadata(root ojson.Result) ojson.Result {
 	if gm := root.Get("candidates.0.groundingMetadata"); gm.Exists() {
 		return gm
@@ -221,7 +205,6 @@ func ExtractGroundingMetadata(root ojson.Result) ojson.Result {
 	return ojson.Result{}
 }
 
-// ExtractGroundingQueries retrieves the list of search queries from groundingMetadata.
 func ExtractGroundingQueries(groundingMetadata ojson.Result) []string {
 	var queries []string
 	if webSearchQueries := groundingMetadata.Get("webSearchQueries"); webSearchQueries.IsArray() {
@@ -234,7 +217,6 @@ func ExtractGroundingQueries(groundingMetadata ojson.Result) []string {
 	return queries
 }
 
-// ExtractGroundingSources converts groundingMetadata groundingChunks into OpenAI Responses source objects.
 func ExtractGroundingSources(groundingMetadata ojson.Result) [][]byte {
 	chunks := groundingMetadata.Get("groundingChunks").Array()
 	if len(chunks) == 0 {
@@ -255,7 +237,6 @@ func ExtractGroundingSources(groundingMetadata ojson.Result) [][]byte {
 	return sources
 }
 
-// BuildResponsesWebSearchCallItem formats an OpenAI Responses web_search_call output item.
 func BuildResponsesWebSearchCallItem(id string, query string, queries []string, sources [][]byte) []byte {
 	itemDoc := ojson.NewDocString(`{"id":"","type":"web_search_call","status":"completed","action":{"type":"search","query":""}}`)
 	_ = itemDoc.Set("id", id)
@@ -269,8 +250,6 @@ func BuildResponsesWebSearchCallItem(id string, query string, queries []string, 
 	return itemDoc.Bytes()
 }
 
-// HasValidWebGrounding checks whether groundingMetadata contains actual web search queries
-// or web grounding chunks with a valid non-empty URI.
 func HasValidWebGrounding(groundingMetadata ojson.Result) bool {
 	if !groundingMetadata.Exists() {
 		return false
@@ -292,8 +271,6 @@ func HasValidWebGrounding(groundingMetadata ojson.Result) bool {
 	return false
 }
 
-// MergeGroundingMetadata merges incremental groundingMetadata into existing groundingMetadata,
-// combining webSearchQueries, merging groundingChunks with index remapping, and merging groundingSupports.
 func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 	if (!existingGM.Exists() || len(strings.TrimSpace(existingGM.Raw)) == 0) &&
 		(!newGM.Exists() || len(strings.TrimSpace(newGM.Raw)) == 0) {
@@ -308,7 +285,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 
 	mergedDoc := ojson.NewDocString(existingGM.Raw)
 
-	// 1. Merge webSearchQueries (preserving order, avoiding duplicates)
 	existingQueries := ExtractGroundingQueries(existingGM)
 	newQueries := ExtractGroundingQueries(newGM)
 	if len(newQueries) > 0 {
@@ -329,11 +305,9 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 		_ = mergedDoc.Set("webSearchQueries", mergedQueries)
 	}
 
-	// 2. Merge groundingChunks with index remapping
 	existingChunks := existingGM.Get("groundingChunks").Array()
 	newChunks := newGM.Get("groundingChunks").Array()
 
-	// Load cumulative remap mapping and raw chunk count if previously saved
 	cumulativeRemap := make(map[int]int)
 	if remapJSON := existingGM.Get("_chunkIndexRemap"); remapJSON.Exists() && remapJSON.IsObject() {
 		for k, v := range remapJSON.Map() {
@@ -428,7 +402,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 		_ = mergedDoc.Set("_rawChunkCount", totalRawCount)
 	}
 
-	// 3. Merge groundingSupports with remapped chunk indices
 	existingSupports := existingGM.Get("groundingSupports").Array()
 	newSupports := newGM.Get("groundingSupports").Array()
 
@@ -451,8 +424,7 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 			oldIdx := int(idxRes.Int())
 			targetIdx := int64(oldIdx)
 			if isExisting {
-				// Existing supports hold cumulative raw stream indices.
-				// If unresolved (pending), resolve strictly using cumulativeRemap.
+
 				shouldRemap := existingChunkCount == 0 || oldIdx >= existingChunkCount
 				if shouldRemap {
 					if target, ok := cumulativeRemap[oldIdx]; ok {
@@ -463,9 +435,7 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 					}
 				}
 			} else {
-				// In Gemini's API, groundingChunkIndices in groundingSupports is always a cumulative,
-				// stream-wide raw chunk index. Unify resolution through cumulativeRemap so that chunks
-				// from both past frames and the current frame are correctly resolved without collision.
+
 				if target, ok := cumulativeRemap[oldIdx]; ok {
 					targetIdx = int64(target)
 					if targetIdx != int64(oldIdx) {
@@ -547,12 +517,10 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 		_ = mergedDoc.SetRaw("groundingSupports", supportsJSON)
 	}
 
-	// 4. Preserve/update searchEntryPoint if present
 	if sep := newGM.Get("searchEntryPoint"); sep.Exists() {
 		_ = mergedDoc.SetRaw("searchEntryPoint", sep.Raw)
 	}
 
-	// 5. Preserve/update retrievalQueries if present
 	if rq := newGM.Get("retrievalQueries"); rq.Exists() && !existingGM.Get("retrievalQueries").Exists() {
 		_ = mergedDoc.SetRaw("retrievalQueries", rq.Raw)
 	}
@@ -560,8 +528,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 	return ojson.Parse(mergedDoc.String())
 }
 
-// MergeCitationAnnotations merges two slices of URL citation annotations,
-// deduplicating by URL and rune offsets, and updating titles if the existing citation had an empty title.
 func MergeCitationAnnotations(existing, late [][]byte) [][]byte {
 	if len(existing) == 0 {
 		return late
@@ -600,7 +566,6 @@ func MergeCitationAnnotations(existing, late [][]byte) [][]byte {
 	return result
 }
 
-// byteOffsetToRuneOffset converts a UTF-8 byte offset in text to a 0-based rune (character) offset.
 func byteOffsetToRuneOffset(text string, byteOffset int64) int64 {
 	if byteOffset <= 0 {
 		return 0
@@ -612,7 +577,6 @@ func byteOffsetToRuneOffset(text string, byteOffset int64) int64 {
 	return int64(utf8.RuneCount(textBytes[:byteOffset]))
 }
 
-// GeminiPartMapping records the location of a Gemini content part within an OpenAI response message.
 type GeminiPartMapping struct {
 	PartIndex      int
 	MessageIndex   int
@@ -620,15 +584,12 @@ type GeminiPartMapping struct {
 	PartText       string
 }
 
-// MessageRuneRange represents a citation range within a specific message.
 type MessageRuneRange struct {
 	MessageIndex int
 	StartIndex   int64
 	EndIndex     int64
 }
 
-// mapByteOffsetsToRuneRanges translates startByte and endByte across a slice of GeminiPartMapping
-// using cumulative byte offsets, returning a slice of MessageRuneRange covering all affected messages.
 func mapByteOffsetsToRuneRanges(mappings []GeminiPartMapping, startByte, endByte int64) []MessageRuneRange {
 	if len(mappings) == 0 {
 		return nil
@@ -704,8 +665,6 @@ func mapByteOffsetsToRuneRanges(mappings []GeminiPartMapping, startByte, endByte
 	return ranges
 }
 
-// mapByteOffsetsToRuneRange translates startByte and endByte across a slice of GeminiPartMapping
-// using cumulative byte offsets, returning targetMsgIndex, startRune, endRune of the first matched range.
 func mapByteOffsetsToRuneRange(mappings []GeminiPartMapping, startByte, endByte int64) (int, int64, int64, bool) {
 	ranges := mapByteOffsetsToRuneRanges(mappings, startByte, endByte)
 	if len(ranges) == 0 {
@@ -714,9 +673,6 @@ func mapByteOffsetsToRuneRange(mappings []GeminiPartMapping, startByte, endByte 
 	return ranges[0].MessageIndex, ranges[0].StartIndex, ranges[0].EndIndex, true
 }
 
-// BuildResponsesURLCitationsForMessages extracts url_citation annotations from groundingMetadata,
-// correctly translating part-level byte offsets to message-level rune offsets based on GeminiPartMapping.
-// It returns a map from MessageIndex to the slice of citation items for that message.
 func BuildResponsesURLCitationsForMessages(groundingMetadata ojson.Result, mappings []GeminiPartMapping, messageTexts []string) map[int][][]byte {
 	chunks := groundingMetadata.Get("groundingChunks").Array()
 	supports := groundingMetadata.Get("groundingSupports").Array()
@@ -724,7 +680,6 @@ func BuildResponsesURLCitationsForMessages(groundingMetadata ojson.Result, mappi
 		return nil
 	}
 
-	// Coalesce adjacent mappings that share the same PartIndex and MessageIndex
 	var coalescedMappings []GeminiPartMapping
 	for _, m := range mappings {
 		n := len(coalescedMappings)
@@ -813,8 +768,6 @@ func BuildResponsesURLCitationsForMessages(groundingMetadata ojson.Result, mappi
 	return result
 }
 
-// BuildResponsesURLCitations extracts url_citation annotations from groundingMetadata groundingSupports.
-// Optional text parameter enables converting UTF-8 byte offsets to Unicode character (rune) offsets.
 func BuildResponsesURLCitations(groundingMetadata ojson.Result, text ...string) [][]byte {
 	var fullText string
 	if len(text) > 0 {

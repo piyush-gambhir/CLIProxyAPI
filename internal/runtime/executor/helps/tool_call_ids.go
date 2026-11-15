@@ -26,8 +26,6 @@ func isPortableToolCallID(id string) bool {
 	return true
 }
 
-// EncodeDevinToolCallID reserves a namespace so native IDs cannot collide with
-// encoded IDs. Empty deltas remain empty until upstream supplies the call ID.
 func EncodeDevinToolCallID(id string) string {
 	if id == "" || (isPortableToolCallID(id) && !strings.HasPrefix(id, devinToolIDPrefix)) {
 		return id
@@ -35,8 +33,6 @@ func EncodeDevinToolCallID(id string) string {
 	return devinToolIDPrefix + base64.RawURLEncoding.EncodeToString([]byte(id))
 }
 
-// DecodeDevinToolCallID removes exactly one canonical encoding layer. Ordinary
-// legal IDs, malformed encodings and arbitrary base64-looking IDs stay intact.
 func DecodeDevinToolCallID(id string) string {
 	if !strings.HasPrefix(id, devinToolIDPrefix) {
 		return id
@@ -52,8 +48,6 @@ func DecodeDevinToolCallID(id string) string {
 	return original
 }
 
-// RestoreDevinToolCallIDs runs before protobuf construction and user payload
-// rules, keeping assistant calls and tool results in the upstream namespace.
 func RestoreDevinToolCallIDs(prompts []DevinPrompt) {
 	for i := range prompts {
 		for j := range prompts[i].ToolCalls {
@@ -64,9 +58,6 @@ func RestoreDevinToolCallIDs(prompts []DevinPrompt) {
 	}
 }
 
-// NormalizeClaudeToolCallIDs repairs only client tool ID fields. Existing legal
-// IDs (including Devin encodings) are never re-encoded. Legacy collisions get
-// a deterministic underscore-prefixed alias, without a process-wide ledger.
 func NormalizeClaudeToolCallIDs(body []byte) []byte {
 	type idField struct {
 		start int
@@ -102,8 +93,7 @@ func NormalizeClaudeToolCallIDs(body []byte) []byte {
 		return body
 	}
 	mapped := make(map[string]string)
-	// Field offsets are in document order. Copy unchanged spans only once so
-	// repairing large transcripts does not copy the whole payload per ID.
+
 	out := make([]byte, 0, len(body))
 	offset := 0
 	for _, field := range fields {
@@ -123,7 +113,6 @@ func NormalizeClaudeToolCallIDs(body []byte) []byte {
 	return append(out, body[offset:]...)
 }
 
-// NormalizeClaudeToolCallIDsDoc repairs client tool ID fields in place on doc.
 func NormalizeClaudeToolCallIDsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false

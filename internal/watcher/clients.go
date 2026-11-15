@@ -1,5 +1,3 @@
-// clients.go implements watcher client lifecycle logic and persistence helpers.
-// It reloads clients, handles incremental auth file changes, and persists updates when supported.
 package watcher
 
 import (
@@ -133,7 +131,7 @@ func (w *Watcher) reloadClients(rescanAuth bool, affectedOAuthProviders []string
 					}
 					sum := sha256.Sum256(data)
 					newAuthHashes[normalizedPath] = hex.EncodeToString(sum[:])
-					// Parse and cache auth content for future diff comparisons (debug only).
+
 					if cacheAuthContents {
 						var auth coreauth.Auth
 						if errParse := json.Unmarshal(data, &auth); errParse == nil {
@@ -189,8 +187,7 @@ func (w *Watcher) reloadClients(rescanAuth bool, affectedOAuthProviders []string
 				newFileAuthsByPath[normalizedPath] = maps.Clone(prevAuths)
 			}
 		}
-		// Keep IDs that are still in currentAuths or pending provider reload indexed
-		// under their file path until refreshAuthState commits the new state.
+
 		for path, prevAuths := range w.fileAuthsByPath {
 			for id := range prevAuths {
 				_, stillCurrent := w.currentAuths[id]
@@ -330,7 +327,6 @@ func (w *Watcher) addOrUpdateClientLocked(path string) {
 	curHash := hex.EncodeToString(sum[:])
 	normalized := w.normalizeAuthPath(path)
 
-	// Parse new auth content for diff comparison
 	var newAuth coreauth.Auth
 	if errParse := json.Unmarshal(data, &newAuth); errParse != nil {
 		log.Errorf("failed to parse auth file %s: %v", filepath.Base(path), errParse)
@@ -357,7 +353,6 @@ func (w *Watcher) addOrUpdateClientLocked(path string) {
 		return
 	}
 
-	// Get old auth for diff comparison
 	var oldAuth *coreauth.Auth
 	if cacheAuthContents && w.lastAuthContents != nil {
 		if cached := w.lastAuthContents[normalized]; cached != nil {
@@ -366,7 +361,6 @@ func (w *Watcher) addOrUpdateClientLocked(path string) {
 	}
 	w.clientsMutex.Unlock()
 
-	// Compute and log field changes
 	if cacheAuthContents {
 		if changes := diff.BuildAuthChangeDetails(oldAuth, &newAuth); len(changes) > 0 {
 			log.Debugf("auth field changes for %s:", filepath.Base(path))
@@ -376,7 +370,6 @@ func (w *Watcher) addOrUpdateClientLocked(path string) {
 		}
 	}
 
-	// Build synthesized auth entries for this single file only.
 	sctx := &synthesizer.SynthesisContext{
 		Config:           cfg,
 		AuthDir:          authDir,
@@ -453,8 +446,7 @@ func (w *Watcher) removeClientLocked(path string) {
 	delete(w.fileAuthsByPath, normalized)
 
 	updates := w.computePerPathUpdatesLocked(oldByID, map[string]*coreauth.Auth{})
-	// Only the whole-file removal path gets this mark. Content diffs may drop
-	// individual plugin auth IDs while their source file still exists.
+
 	for index := range updates {
 		if updates[index].Action == AuthUpdateActionDelete {
 			updates[index].SetFileRemoval(true)

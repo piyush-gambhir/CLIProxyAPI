@@ -365,7 +365,6 @@ func TestBuildErrorResponseBodyWithError_TerminalAuthEnforcesContractOnJSONInput
 		HTTPStatus: http.StatusServiceUnavailable,
 	}, errors.New("upstream failed"))
 
-	// Valid JSON errText should NOT bypass terminal classification.
 	jsonErrText := `{"error":{"message":"token refresh failed: revoked","type":"server_error","code":"internal_server_error"}}`
 	body := BuildErrorResponseBodyWithError(http.StatusServiceUnavailable, jsonErrText, terminalErr)
 
@@ -393,7 +392,6 @@ func TestBuildErrorResponseBodyWithError_TerminalAuthEnforcesContractOnJSONInput
 		t.Fatalf("message = %q, want extracted upstream message", payload.Error.Message)
 	}
 
-	// Non-terminal error with JSON errText preserves original JSON.
 	normalBody := BuildErrorResponseBodyWithError(http.StatusInternalServerError, jsonErrText, errors.New("normal error"))
 	if string(normalBody) != jsonErrText {
 		t.Fatalf("expected untouched JSON for non-terminal error, got %s", string(normalBody))

@@ -180,7 +180,7 @@ func TestConvertGeminiRequestToCodex_DropsHiddenThoughtParts(t *testing.T) {
 }
 
 func testGeminiMetaThoughtSignature() string {
-	// Shape-valid synthetic Meta envelope; no captured value is embedded.
+
 	signature := "Q-PaDgE"
 	for len(signature) < 1426 {
 		signature += "A"
@@ -241,7 +241,7 @@ func testGeminiGPTThoughtSignature() string {
 func TestConvertGeminiRequestToCodex_NormalizesPrefixedAndCarrierSignatures(t *testing.T) {
 	gptSignature := testGeminiGPTThoughtSignature()
 	metaSignature := testGeminiMetaThoughtSignature()
-	// OpenRouter-appended suffix shape: one '.' plus 67 alphanumeric chars.
+
 	routedMetaSignature := metaSignature + "." + strings.Repeat("Ab3", 23)[:67]
 	cases := []struct {
 		name      string

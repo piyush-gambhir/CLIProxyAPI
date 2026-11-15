@@ -389,12 +389,6 @@ func TestExecutorAdapterExecuteStreamPublishesUsage(t *testing.T) {
 	}
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatStripsSSEFraming pins the contract
-// that same-format plugin executor streams are normalized like built-in
-// executor streams: SSE-framed chunks ("data: {...}\n\n") must reach callers
-// as bare JSON payloads without the "[DONE]" marker, because the HTTP handlers
-// add their own "data:" prefix and terminal marker. Forwarding the framed
-// chunks unchanged produced a doubled "data: data:" prefix on the wire.
 func TestExecutorAdapterExecuteStreamSameFormatStripsSSEFraming(t *testing.T) {
 	executorRecord := normalizeTestCapabilityRecord(capabilityRecord{id: "executor-plugin-stream-framing"})
 	host := newHostWithRecords(executorRecord)
@@ -542,7 +536,7 @@ func TestExecutorAdapterExecuteStreamTwoCompleteChunksWithoutNewline(t *testing.
 	host := newHostWithRecords(executorRecord)
 
 	streamChunks := make(chan pluginapi.ExecutorStreamChunk, 3)
-	// Two complete chunks without trailing \n
+
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}")}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: {\"choices\":[],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":22,\"total_tokens\":33}}")}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: [DONE]")}
@@ -595,7 +589,7 @@ func TestExecutorAdapterExecuteStreamSplitChunks(t *testing.T) {
 	host := newHostWithRecords(executorRecord)
 
 	streamChunks := make(chan pluginapi.ExecutorStreamChunk, 5)
-	// Split SSE frame across two chunks
+
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: {\"choices\":[],\"usage\":{\"prompt_tok")}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("ens\":18,\"completion_tokens\":22,\"total_tokens\":40}}\n\n")}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: [DONE]\n\n")}
@@ -792,7 +786,7 @@ func TestExecutorAdapterExecuteStreamSplitAcrossBraceBoundary(t *testing.T) {
 	host := newHostWithRecords(executorRecord)
 
 	streamChunks := make(chan pluginapi.ExecutorStreamChunk, 3)
-	// Split exactly before opening brace of usage object
+
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: {\"choices\":[],\"usage\":")}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("{\"prompt_tokens\":18,\"completion_tokens\":22,\"total_tokens\":40}}\n\n")}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte("data: [DONE]\n\n")}
@@ -880,7 +874,6 @@ func TestExecutorAdapterExecuteStreamErrorChunkImmediatePublishWithoutClose(t *t
 		t.Fatalf("ExecuteStream returned unexpected error: %v", err)
 	}
 
-	// Send error chunk but do NOT close the channel
 	go func() {
 		streamChunks <- pluginapi.ExecutorStreamChunk{Err: expectedErr}
 	}()
@@ -890,7 +883,6 @@ func TestExecutorAdapterExecuteStreamErrorChunkImmediatePublishWithoutClose(t *t
 		t.Fatalf("expected chunk error %v, got %v", expectedErr, chunk.Err)
 	}
 
-	// Verify that usage failure record was published immediately without channel close
 	rec := plugin.waitRecord(t, 200*time.Millisecond)
 	if !rec.Failed {
 		t.Errorf("rec.Failed = false, want true")
@@ -933,7 +925,6 @@ func TestUsageAdapterRecoversSessionHierarchyFromContext(t *testing.T) {
 		ParentSessionID: "parent-ctx-1",
 	})
 
-	// 1. Record has empty session fields, should recover from context
 	adapter.HandleUsage(ctx, coreusage.Record{
 		Provider: "test-provider",
 		Model:    "test-model",
@@ -943,7 +934,6 @@ func TestUsageAdapterRecoversSessionHierarchyFromContext(t *testing.T) {
 		t.Fatalf("recovered session = (%q, %q), want (sess-ctx-1, parent-ctx-1)", rec.SessionID, rec.ParentSessionID)
 	}
 
-	// 2. Self-referential loop protection in context
 	ctxLoop := logging.WithClientRequestMetadata(context.Background(), logging.ClientRequestMetadata{
 		SessionID:       "loop-sess",
 		ParentSessionID: "loop-sess",
@@ -971,7 +961,6 @@ func TestUsageAdapterPropagatesNativeKeyAndAccessProvider(t *testing.T) {
 		pluginID: "usage-native-key",
 	}
 
-	// 1. Direct record propagation
 	adapter.HandleUsage(context.Background(), coreusage.Record{
 		Provider:       "test-provider",
 		Model:          "test-model",
@@ -987,7 +976,6 @@ func TestUsageAdapterPropagatesNativeKeyAndAccessProvider(t *testing.T) {
 		t.Fatalf("rec.AccessProvider = %q, want %q", rec.AccessProvider, "config-inline")
 	}
 
-	// 2. Fallback to context values when record fields are omitted
 	ctx := coreusage.WithAPIKey(context.Background(), "sk-ctx-native")
 	ctx = coreusage.WithAccessProvider(ctx, "config-inline")
 	adapter.HandleUsage(ctx, coreusage.Record{
@@ -1079,8 +1067,6 @@ func TestExecutorAdapterExecuteStreamLargeSSELineKeepsUsage(t *testing.T) {
 	prefix := "event: response.created\ndata: {\"type\":\"response.created\"}\n\n"
 	whole := prefix + terminal
 
-	// The first read ends 66KB into the terminal data line: more than 64KB
-	// has accumulated and the newline has not arrived yet.
 	streamChunks := make(chan pluginapi.ExecutorStreamChunk, 4)
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte(whole[:66000])}
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte(whole[66000:])}
@@ -1234,14 +1220,13 @@ func TestSchedulerPickAndUsageRecordShareSelectionIDEndToEnd(t *testing.T) {
 			go func() {
 				<-streamRelease
 				close(ch)
-				// Delayed asynchronous usage publication after other requests have run.
+
 				reporter.Publish(context.Background(), coreusage.Detail{InputTokens: 20, OutputTokens: 10, TotalTokens: 30})
 			}()
 			return &coreexecutor.StreamResult{Chunks: ch}, nil
 		},
 	})
 
-	// 1. Single credential outer retry after 429: two Picks, two distinct SelectionIDs, each matching its UsageRecord.
 	traceCtx := logging.WithRequestID(context.Background(), "trace-429")
 	_, errExec := manager.Execute(traceCtx, []string{provider}, coreexecutor.Request{Model: model}, coreexecutor.Options{
 		Metadata: map[string]any{"mode": "retry-429-once"},
@@ -1267,7 +1252,6 @@ func TestSchedulerPickAndUsageRecordShareSelectionIDEndToEnd(t *testing.T) {
 		t.Fatalf("UsageRecord RequestIDs should remain distinct: %q", rec1.RequestID)
 	}
 
-	// 2. Concurrent requests and delayed asynchronous streaming usage keep their own SelectionIDs.
 	sharedOpts := coreexecutor.Options{Stream: true, Metadata: map[string]any{"shared": "true"}}
 	streamRes, errStream := manager.ExecuteStream(context.Background(), []string{provider}, coreexecutor.Request{Model: model}, sharedOpts)
 	if errStream != nil {
@@ -1275,7 +1259,6 @@ func TestSchedulerPickAndUsageRecordShareSelectionIDEndToEnd(t *testing.T) {
 	}
 	streamPickID := <-pickSelectionIDs
 
-	// Run a concurrent non-streaming request while the stream is still open and its usage has not been published.
 	if _, errConcurrent := manager.Execute(context.Background(), []string{provider}, coreexecutor.Request{Model: model}, coreexecutor.Options{Metadata: sharedOpts.Metadata}); errConcurrent != nil {
 		t.Fatalf("concurrent Execute() error = %v", errConcurrent)
 	}

@@ -89,8 +89,7 @@ func TestCodexClaudeOutputBudgetBoundariesAndPayloadRules(t *testing.T) {
 		{name: "fallback field", field: `,"max_output_tokens":1`, want: "16"},
 		{name: "zero remains invalid", field: `,"max_tokens":0`, want: "0"},
 		{name: "negative remains invalid", field: `,"max_tokens":-1`, want: "-1"},
-		// The Claude translator truncates 1.5 to the integer 1 before the executor
-		// sees it, so the translated payload carries a sub-minimum integer budget.
+
 		{name: "fractional input truncated by translator", field: `,"max_tokens":1.5`, want: "16"},
 		{name: "non-numeric input", field: `,"max_tokens":"1"`},
 		{

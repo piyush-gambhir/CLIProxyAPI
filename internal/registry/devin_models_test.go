@@ -178,11 +178,10 @@ func TestEmbeddedDevinModelsLoadedOnStartup(t *testing.T) {
 }
 
 func TestDevinModelsRemoteFetchFallback(t *testing.T) {
-	// Test remote failure maintains existing embedded data
+
 	origURLs := devinModelsURLs
 	defer func() { devinModelsURLs = origURLs }()
 
-	// Point to failing server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	}))
@@ -195,7 +194,6 @@ func TestDevinModelsRemoteFetchFallback(t *testing.T) {
 		t.Fatal("expected non-empty initial Devin models")
 	}
 
-	// Attempt refresh from failing remote
 	tryRefreshDevinModels(context.Background(), "test failing refresh")
 
 	afterCount := len(GetDevinModels())
@@ -203,7 +201,6 @@ func TestDevinModelsRemoteFetchFallback(t *testing.T) {
 		t.Fatalf("expected catalog to remain intact with %d models, got %d", initialCount, afterCount)
 	}
 
-	// Point to succeeding server with valid update
 	validUpdate := []byte(`{
 		"devin": [
 			{
@@ -241,7 +238,6 @@ func TestDevinModelsRemoteFetchFallback(t *testing.T) {
 		t.Fatalf("expected catalog to retain builtin swe-1-6-slow, got: %+v", updatedModels)
 	}
 
-	// Restore original embedded data for following tests
 	_, _ = loadDevinModelsFromBytes(embeddedDevinModelsJSON, "restore-embed")
 }
 
@@ -265,7 +261,7 @@ func TestFetchDevinModelsFromRemote_ContextNotCanceledBeforeRead_Issue6095(t *te
 
 	go func() {
 		<-headerFlushed
-		// Yield briefly to let client.Do return and advance to body reading before streaming body chunks.
+
 		time.Sleep(20 * time.Millisecond)
 		close(sendBody)
 	}()
@@ -287,7 +283,7 @@ func TestFetchDevinModelsFromRemote_ContextNotCanceledBeforeRead_Issue6095(t *te
 }
 
 func TestDevinSWE16Slow_Issue6111(t *testing.T) {
-	// Verify that devin/swe-1-6-slow is present in GetDevinModels
+
 	models := GetDevinModels()
 	var found *ModelInfo
 	for _, m := range models {
@@ -300,7 +296,6 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 		t.Fatalf("devin/swe-1-6-slow missing from GetDevinModels()")
 	}
 
-	// Verify LookupDevinModel with and without prefix
 	lookupWithPrefix := LookupDevinModel("devin/swe-1-6-slow")
 	if lookupWithPrefix == nil {
 		t.Errorf("LookupDevinModel(\"devin/swe-1-6-slow\") returned nil")
@@ -310,7 +305,6 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 		t.Errorf("LookupDevinModel(\"swe-1-6-slow\") returned nil")
 	}
 
-	// Verify model metadata
 	if lookupWithPrefix != nil {
 		if lookupWithPrefix.ID != "devin/swe-1-6-slow" {
 			t.Errorf("expected ID 'devin/swe-1-6-slow', got %q", lookupWithPrefix.ID)
@@ -326,13 +320,12 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 		}
 	}
 
-	// Verify persistence even if dynamic update loads payload without swe-1-6-slow
 	payloadWithoutSlow := []byte(`{"devin": [{"id": "devin/swe-2", "display_name": "SWE-2"}]}`)
 	if _, errUpdate := loadDevinModelsFromBytes(payloadWithoutSlow, "test-dynamic-update"); errUpdate != nil {
 		t.Fatalf("loadDevinModelsFromBytes failed: %v", errUpdate)
 	}
 	defer func() {
-		// Restore embedded models after test
+
 		if _, errRestore := loadDevinModelsFromBytes(embeddedDevinModelsJSON, "embed"); errRestore != nil {
 			t.Errorf("loadDevinModelsFromBytes restore failed: %v", errRestore)
 		}
@@ -355,7 +348,7 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 }
 
 func TestWithDevinBuiltins(t *testing.T) {
-	// Test WithDevinBuiltins with nil slice
+
 	builtins := WithDevinBuiltins(nil)
 	if len(builtins) != 1 {
 		t.Fatalf("expected 1 builtin model, got %d", len(builtins))
@@ -364,7 +357,6 @@ func TestWithDevinBuiltins(t *testing.T) {
 		t.Errorf("expected ID 'devin/swe-1-6-slow', got %q", builtins[0].ID)
 	}
 
-	// Test WithDevinBuiltins preserves existing models and injects swe-1-6-slow
 	existing := []*ModelInfo{
 		{ID: "devin/swe-2", DisplayName: "SWE-2"},
 	}
@@ -373,7 +365,6 @@ func TestWithDevinBuiltins(t *testing.T) {
 		t.Fatalf("expected 2 models, got %d", len(merged))
 	}
 
-	// Test WithDevinBuiltins replaces duplicate
 	duplicate := []*ModelInfo{
 		{ID: "devin/swe-1-6-slow", DisplayName: "Old Display Name"},
 	}

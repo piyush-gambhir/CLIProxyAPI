@@ -25,16 +25,13 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 	rawJSON := inputRawJSON
 	var drops translatorcommon.UserTurnDrops
 
-	// Note: stream parameter is part of the fixed method signature
 	useGeminiNativeReasoningLayout := sigcompat.SignatureProviderFromModelName(modelName) == sigcompat.SignatureProviderGemini
-	_ = stream // Unused but required by interface
+	_ = stream
 
-	// Base Gemini API template (do not include thinkingConfig by default)
 	outDoc := ojson.NewDocString(`{"contents":[]}`)
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Extract tools and forward map early so request contents and toolDeclarations use the exact same forward map
 	functionDeclarations, forwardMap, _ := util.BuildGeminiFunctionDeclarations(root)
 	var toolBlocks [][]byte
 	hasGoogleSearch := false
@@ -57,7 +54,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		_ = outDoc.SetRawBytes("tools", translatorcommon.JoinRawArray(toolBlocks))
 	}
 
-	// Handle tool_choice if present (only configure function calling when function declarations exist)
 	if len(functionDeclarations) > 0 {
 		if toolChoice := root.Get("tool_choice"); toolChoice.Exists() {
 			if toolConfig, ok := util.ConvertResponsesToolChoiceToGemini(toolChoice, forwardMap); ok {
@@ -65,13 +61,11 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 			}
 		}
 	}
-	// Gemini rejects built-in googleSearch combined with functionDeclarations
-	// unless server-side tool invocations are declared.
+
 	if hasGoogleSearch && len(functionDeclarations) > 0 {
 		_ = outDoc.Set("toolConfig.includeServerSideToolInvocations", true)
 	}
 
-	// Extract system instruction from OpenAI "instructions" field.
 	systemParts := make([][]byte, 0, 2)
 	if instructions := root.Get("instructions"); instructions.Exists() {
 		part := []byte(`{"text":""}`)
@@ -79,7 +73,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		systemParts = append(systemParts, part)
 	}
 
-	// Convert input messages to Gemini contents format
 	if input := root.Get("input"); input.Exists() && input.IsArray() {
 		inputItems, hasGeminiCarrier := normalizeGeminiResponsesCarriers(restoreGeminiResponsesTextSignatures(modelName, normalizeOpenAIResponsesToolSearchItems(input.Array(), forwardMap)))
 		if hasGeminiCarrier {
@@ -215,10 +208,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 					}
 				}
 
-				// Handle regular messages
-				// Note: In Responses format, model outputs may appear as content items with type "output_text"
-				// even when the message.role is "user". We split such items into distinct Gemini messages
-				// with roles derived from the content type to match docs/convert-2.md.
 				contentArray := item.Get("content")
 				var partsToProcess []ojson.Result
 				if contentArray.Exists() && contentArray.IsArray() {
@@ -241,7 +230,7 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 				if len(partsToProcess) > 0 {
 					currentRole := ""
 					currentParts := make([][]byte, 0)
-					// Counts the user parts this item really sends; an empty text part does not.
+
 					userSendable := 0
 
 					flush := func() {
@@ -297,8 +286,7 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 								partJSON = part
 								sendsContent = true
 							} else if effRole == "user" && isResponsesAttachmentPartType(contentType) {
-								// Gemini has no field for a bare file id and no way to fetch
-								// the bytes, so the attachment cannot be sent.
+
 								drops.Drop(contentType)
 							}
 						}
@@ -392,9 +380,7 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 
 				var standaloneOutputContents [][]byte
 				appendStandaloneOutput := func(out ojson.Result) {
-					// Orphan outputs (no matching function_call, e.g. Codex
-					// send_message_to_thread cards) must not become unpaired
-					// functionResponse parts. Surface them as user text instead.
+
 					if parts := buildOpenAIResponsesStandaloneToolOutputTextParts(out); len(parts) > 0 {
 						standaloneOutputContents = append(standaloneOutputContents, geminiContent("user", parts))
 					}
@@ -473,7 +459,7 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		contentItems = translatorcommon.MergeAdjacentGeminiUserContents(contentItems)
 		translatorcommon.SetRawArrayItemsDoc(outDoc, "contents", contentItems)
 	} else if input.Exists() && input.Type == ojson.String {
-		// Simple string input conversion to user message.
+
 		part := []byte(`{"text":""}`)
 		part, _ = ojson.SetBytes(part, "text", input.String())
 		translatorcommon.SetRawArrayItemsDoc(outDoc, "contents", [][]byte{geminiContent("user", [][]byte{part})})
@@ -482,24 +468,20 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		_ = outDoc.SetRawBytes("systemInstruction", geminiSystemInstruction(systemParts))
 	}
 
-	// Handle generation config from OpenAI format
 	if maxOutputTokens := root.Get("max_output_tokens"); maxOutputTokens.Exists() {
 		genConfig := []byte(`{"maxOutputTokens":0}`)
 		genConfig, _ = ojson.SetBytes(genConfig, "maxOutputTokens", maxOutputTokens.Int())
 		_ = outDoc.SetRawBytes("generationConfig", genConfig)
 	}
 
-	// Handle temperature if present
 	if temperature := root.Get("temperature"); temperature.Exists() {
 		_ = outDoc.Set("generationConfig.temperature", temperature.Float())
 	}
 
-	// Handle top_p if present
 	if topP := root.Get("top_p"); topP.Exists() {
 		_ = outDoc.Set("generationConfig.topP", topP.Float())
 	}
 
-	// Handle stop sequences
 	if stopSequences := root.Get("stop_sequences"); stopSequences.Exists() && stopSequences.IsArray() {
 		var sequences []string
 		stopSequences.ForEach(func(_, seq ojson.Result) bool {
@@ -511,8 +493,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 
 	applyOpenAIResponsesTextFormatToGeminiDoc(outDoc, root)
 
-	// Apply thinking configuration: convert OpenAI Responses API reasoning.effort to Gemini thinkingConfig.
-	// Inline translation-only mapping; capability checks happen later in ApplyThinking.
 	re := root.Get("reasoning.effort")
 	if re.Exists() {
 		effort := strings.ToLower(strings.TrimSpace(re.String()))
@@ -691,7 +671,7 @@ func openAIResponsesAssistantVisibleText(item ojson.Result) (string, bool) {
 	if !hasOutputText {
 		return "", false
 	}
-	// output_text marks model-visible content even when message.role is "user".
+
 	return strings.Join(textParts, "\n"), true
 }
 
@@ -729,9 +709,7 @@ func pairOpenAIResponsesReasoningWithFunctionCalls(items []ojson.Result) []ojson
 		for outputEnd < len(items) && isOpenAIResponsesToolOutput(items[outputEnd]) {
 			outputEnd++
 		}
-		// A run beginning with a carrier uses leading-carrier semantics. A run
-		// beginning with a call uses post-call semantics. This preserves both
-		// carrier,call,carrier,call and call,carrier,call,carrier histories.
+
 		if isOpenAIResponsesToolCall(items[groupStart]) {
 			for callIndex := groupStart; callIndex < groupEnd; callIndex++ {
 				item := items[callIndex]
@@ -986,8 +964,6 @@ func isResponsesContentPartType(itemType string) bool {
 	}
 }
 
-// isResponsesAttachmentPartType reports the content part types that carry a
-// file, image, audio or video rather than text.
 func isResponsesAttachmentPartType(itemType string) bool {
 	switch strings.ToLower(strings.TrimSpace(itemType)) {
 	case "input_image", "image_url", "image",
@@ -1094,15 +1070,12 @@ func openAIResponsesAudioFromBlock(block ojson.Result) (mimeType string, data st
 		block.Get("mime_type").String(),
 	)
 
-	// 1. Nested input_audio object (standard OpenAI Responses schema)
 	audioData := audioObj.Get("data").String()
 
-	// 2. Flat data
 	if audioData == "" {
 		audioData = block.Get("data").String()
 	}
 
-	// 3. audio_url / url
 	if audioData == "" {
 		audioURL := firstNonEmpty(
 			block.Get("audio_url.url").String(),
@@ -1135,7 +1108,6 @@ func openAIResponsesAudioFromBlock(block ojson.Result) (mimeType string, data st
 		}
 	}
 
-	// 4. Source object (base64)
 	if audioData == "" && block.Get("source.type").String() == "base64" {
 		audioData = block.Get("source.data").String()
 		if audioFormat == "" {
@@ -1189,7 +1161,6 @@ func openAIResponsesVideoFromBlock(block ojson.Result) (mimeType string, data st
 		block.Get("mime_type").String(),
 	)
 
-	// 1. video_url (string or { "url": "..." }) or url
 	videoURL := firstNonEmpty(
 		block.Get("video_url.url").String(),
 		block.Get("video_url").String(),
@@ -1220,15 +1191,12 @@ func openAIResponsesVideoFromBlock(block ojson.Result) (mimeType string, data st
 		}
 	}
 
-	// 2. Nested input_video or video object data
 	videoData := videoObj.Get("data").String()
 
-	// 3. Flat data
 	if videoData == "" {
 		videoData = block.Get("data").String()
 	}
 
-	// 4. Source object (base64)
 	if videoData == "" && block.Get("source.type").String() == "base64" {
 		videoData = block.Get("source.data").String()
 		if format == "" {
@@ -1382,7 +1350,6 @@ func openAIResponsesMediaFromBlock(block ojson.Result) (mimeType string, data st
 func openAIResponsesPartFromBlock(block ojson.Result) ([]byte, bool) {
 	bType := strings.ToLower(strings.TrimSpace(block.Get("type").String()))
 
-	// 1. Check for remote URLs (http://, https://, gs://)
 	rawURL := firstNonEmpty(
 		block.Get("video_url.url").String(),
 		block.Get("video_url").String(),
@@ -1465,7 +1432,6 @@ func openAIResponsesPartFromBlock(block ojson.Result) ([]byte, bool) {
 		return geminiResponsesFileDataPart(mimeType, rawURL), true
 	}
 
-	// 2. Check for inline base64 or data URL
 	if mimeType, data, ok := openAIResponsesMediaFromBlock(block); ok {
 		return geminiResponsesInlineDataPart(mimeType, data), true
 	}
@@ -1519,7 +1485,6 @@ func openAIResponsesImageFromBlock(block ojson.Result) (mimeType string, data st
 			block.Get("file.filename").String(),
 		)
 
-		// 1. image_url
 		imageURL := firstNonEmpty(
 			block.Get("image_url.url").String(),
 			block.Get("image_url").String(),
@@ -1540,7 +1505,6 @@ func openAIResponsesImageFromBlock(block ojson.Result) (mimeType string, data st
 			}
 		}
 
-		// 2. source object (base64)
 		imageData := ""
 		if block.Get("source.type").String() == "base64" {
 			imageData = block.Get("source.data").String()
@@ -1549,7 +1513,6 @@ func openAIResponsesImageFromBlock(block ojson.Result) (mimeType string, data st
 			}
 		}
 
-		// 3. direct data
 		if imageData == "" && block.Get("data").Exists() {
 			imageData = block.Get("data").String()
 		}
@@ -1737,8 +1700,7 @@ func buildOpenAIResponsesFunctionResponseParts(item ojson.Result, functionNamesB
 		if str == "" || str == "null" {
 			return [][]byte{frDoc.Bytes()}
 		}
-		// Keep it as a string instead of parsing it into JSON.
-		// Parsing it as JSON, similar to reading a JSON file with readFile, may trigger an upstream 400 error.
+
 		_ = frDoc.Set("functionResponse.response.result", str)
 		return [][]byte{frDoc.Bytes()}
 	}
@@ -1796,7 +1758,7 @@ func collectOpenAIResponsesFunctionCallOutputs(items []ojson.Result, start int, 
 			delete(pending, extractOpenAIResponsesCallID(item))
 			continue
 		}
-		// Keep one parallel result turn across notices; the caller preserves the notices.
+
 		role := item.Get("role").String()
 		if len(pending) > 0 && (itemType == "message" || itemType == "") &&
 			(strings.EqualFold(role, "developer") || strings.EqualFold(role, "system")) {

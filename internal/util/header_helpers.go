@@ -10,8 +10,6 @@ import (
 
 type sessionIDContextKey struct{}
 
-// WithSessionID returns a new context annotated with the internal session ID.
-// Passing an empty sessionID explicitly clears/overrides any previous session ID in parent contexts.
 func WithSessionID(ctx context.Context, sessionID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -19,7 +17,6 @@ func WithSessionID(ctx context.Context, sessionID string) context.Context {
 	return context.WithValue(ctx, sessionIDContextKey{}, strings.TrimSpace(sessionID))
 }
 
-// SessionIDFromContext retrieves the internal session ID from the context if present.
 func SessionIDFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -30,8 +27,6 @@ func SessionIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// HasExplicitSessionID returns true if ctx explicitly carries a session ID annotation
-// (including an explicit empty string used to clear it).
 func HasExplicitSessionID(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -40,11 +35,8 @@ func HasExplicitSessionID(ctx context.Context) bool {
 	return ok
 }
 
-// SessionIDResolver is a pluggable resolver for extracting the internal session ID.
 var SessionIDResolver func(ctx context.Context, clientHeaders http.Header) string
 
-// ResolveClientHeaders returns the client request headers from the provided slice
-// or falls back to the Gin request headers in r.Context() when available.
 func ResolveClientHeaders(r *http.Request, clientHeaders ...http.Header) http.Header {
 	if len(clientHeaders) > 0 && clientHeaders[0] != nil {
 		return clientHeaders[0]
@@ -61,14 +53,6 @@ func ResolveClientHeaders(r *http.Request, clientHeaders ...http.Header) http.He
 	return nil
 }
 
-// ApplyCustomHeadersFromAttrs applies user-defined headers stored in the provided attributes map.
-// Custom headers override built-in defaults when conflicts occur.
-// If clientHeaders is provided (or if the request context carries a Gin context), any custom header
-// whose value starts with "$" (e.g. "$ABC" or "$X-Claude-Code-Session-Id") is dynamically
-// resolved from the client's request headers. If the client did not provide that header,
-// the custom header is omitted from the outgoing request.
-// The magic variable $CPA-SESSION-ID expands to the internal session identifier used for
-// session-affinity (regardless of whether session-affinity is enabled).
 func ApplyCustomHeadersFromAttrs(r *http.Request, attrs map[string]string, clientHeaders ...http.Header) {
 	if r == nil {
 		return
@@ -211,11 +195,7 @@ func applyCustomHeaders(r *http.Request, headers map[string]string) {
 		if k == "" || v == "" {
 			continue
 		}
-		// net/http reads Host from req.Host (not req.Header) when writing
-		// a real request, so we must mirror it there. Some callers pass
-		// synthetic requests (e.g. &http.Request{Header: ...}) and only
-		// consume r.Header afterwards, so keep the value in the header
-		// map too.
+
 		if http.CanonicalHeaderKey(k) == "Host" {
 			r.Host = v
 		}

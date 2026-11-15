@@ -115,7 +115,6 @@ func TestCodexPerCredentialDisableCloaking_HTTP_ExplicitFalseOverridesGlobalTrue
 
 	applyCodexHeadersFromSources(req, auth, "test-token", false, cfg, nil)
 
-	// Since disable-codex-cloaking is explicitly false on the credential, cloaking should be enforced.
 	if got := req.Header.Get("User-Agent"); got != codexUserAgent {
 		t.Errorf("User-Agent = %q, want %q", got, codexUserAgent)
 	}
@@ -125,7 +124,7 @@ func TestCodexPerCredentialDisableCloaking_HTTP_ExplicitFalseOverridesGlobalTrue
 }
 
 func TestCodexPerCredentialDisableCloaking_HTTP_FallbackToGlobal(t *testing.T) {
-	// 1. Global true, credential nil -> cloaking disabled
+
 	cfgGlobalTrue := &config.Config{
 		Codex: config.CodexConfig{
 			DisableCodexCloaking: true,
@@ -157,7 +156,6 @@ func TestCodexPerCredentialDisableCloaking_HTTP_FallbackToGlobal(t *testing.T) {
 		t.Errorf("Global true fallback User-Agent = %q, want %q", got, "CustomAgent/1.0")
 	}
 
-	// 2. Global false, credential nil -> cloaking enabled
 	cfgGlobalFalse := &config.Config{
 		Codex: config.CodexConfig{
 			DisableCodexCloaking: false,
@@ -250,7 +248,6 @@ func TestCodexPerCredentialDisableCloaking_OAuthUnaffectedByAPIKeyOverride(t *te
 		},
 	}
 
-	// OAuth credential (does not match codex-api-key)
 	oauthAuth := &cliproxyauth.Auth{
 		Provider: "codex",
 		Attributes: map[string]string{
@@ -268,7 +265,6 @@ func TestCodexPerCredentialDisableCloaking_OAuthUnaffectedByAPIKeyOverride(t *te
 
 	applyCodexHeadersFromSources(req, oauthAuth, "oauth-token", false, cfg, nil)
 
-	// OAuth credential must remain cloaked with official Codex identity
 	if got := req.Header.Get("User-Agent"); got != codexUserAgent {
 		t.Errorf("OAuth User-Agent = %q, want %q", got, codexUserAgent)
 	}
@@ -291,7 +287,6 @@ func TestCodexPerCredentialDisableCloaking_ResolvedFromConfigWithoutAttribute(t 
 		},
 	}
 
-	// Auth object with only APIKey/BaseURL attributes (no pre-synthesized codex_disable_cloaking attribute)
 	authWithoutAttr := &cliproxyauth.Auth{
 		Provider: "codex",
 		Attributes: map[string]string{
@@ -308,7 +303,6 @@ func TestCodexPerCredentialDisableCloaking_ResolvedFromConfigWithoutAttribute(t 
 
 	applyCodexHeadersFromSources(req, authWithoutAttr, "lookup-key", false, cfg, nil)
 
-	// Since resolveCodexKeyConfig finds DisableCodexCloaking == true in cfg.CodexKey, cloaking must be disabled.
 	if got := req.Header.Get("User-Agent"); got != "CustomLookupAgent/1.0" {
 		t.Errorf("User-Agent = %q, want %q", got, "CustomLookupAgent/1.0")
 	}

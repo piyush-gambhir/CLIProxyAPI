@@ -18,12 +18,11 @@ import (
 const userAgent = "CLIProxyAPI"
 const maxPluginStoreRedirects = 10
 
-// HTTPDoer abstracts the HTTP client used to execute requests.
 type HTTPDoer = httpfetch.Doer
 
 type Client struct {
 	HTTPClient HTTPDoer
-	// NetworkScope distinguishes request state for different proxy/egress configurations.
+
 	NetworkScope          string
 	RateLimiter           *GitHubRateLimiter
 	RegistryURL           string
@@ -61,8 +60,6 @@ func (c Client) FetchRegistry(ctx context.Context) (Registry, error) {
 	return registry, nil
 }
 
-// FetchLatestRelease returns the latest published release of the plugin's
-// GitHub repository, mirroring the WebUI panel update check.
 func (c Client) FetchLatestRelease(ctx context.Context, plugin Plugin) (Release, error) {
 	owner, repo, errRepository := GitHubRepositoryParts(plugin.Repository)
 	if errRepository != nil {
@@ -84,7 +81,6 @@ func (c Client) FetchLatestRelease(ctx context.Context, plugin Plugin) (Release,
 	return release, nil
 }
 
-// FetchReleaseByTag returns a published release by its exact GitHub tag.
 func (c Client) FetchReleaseByTag(ctx context.Context, plugin Plugin, tag string) (Release, error) {
 	owner, repo, errRepository := GitHubRepositoryParts(plugin.Repository)
 	if errRepository != nil {
@@ -111,8 +107,6 @@ func (c Client) FetchReleaseByTag(ctx context.Context, plugin Plugin, tag string
 	return release, nil
 }
 
-// ReleaseVersion derives the plugin version from the release tag, stripping a
-// leading "v"/"V" and validating the result.
 func ReleaseVersion(release Release) (string, error) {
 	version := normalizeVersion(release.TagName)
 	if !validPluginVersion(version) {
@@ -279,7 +273,7 @@ func readPluginStoreResponse(resp *http.Response, maxSize int64, authenticated b
 		}
 	}()
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		// Apply header-based limits before reading a potentially slow body.
+
 		if errLimit := limiter.observe(rateKey, resp.StatusCode, resp.Header, nil); errLimit != nil {
 			return nil, errLimit
 		}

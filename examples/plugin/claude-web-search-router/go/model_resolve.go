@@ -7,15 +7,11 @@ import (
 )
 
 const (
-	// Default Codex model for Claude web_search → Codex Responses (override with codex_model).
 	defaultCodexWebSearchModel = "gpt-5.4-mini"
-	// Default xAI model for server-side web_search per https://docs.x.ai/developers/tools/web-search
+
 	defaultXAIWebSearchModel = "grok-4.3"
 )
 
-// resolveAntigravityWebSearchTargetModel picks an Antigravity model that can run native googleSearch.
-// Config antigravity_model wins; otherwise registry.AntigravityWebSearchModelFor(requested) or the
-// first available antigravity model with SupportsWebSearch.
 func resolveAntigravityWebSearchTargetModel(configured, requested string) string {
 	if m := strings.TrimSpace(configured); m != "" {
 		return m
@@ -34,7 +30,6 @@ func resolveAntigravityWebSearchTargetModel(configured, requested string) string
 	return ""
 }
 
-// resolveCodexWebSearchTargetModel never forwards the client Claude model to Codex.
 func resolveCodexWebSearchTargetModel(configured string) string {
 	if m := strings.TrimSpace(configured); m != "" {
 		return m
@@ -42,7 +37,6 @@ func resolveCodexWebSearchTargetModel(configured string) string {
 	return defaultCodexWebSearchModel
 }
 
-// resolveXAIWebSearchTargetModel never forwards the client Claude model to xAI Responses.
 func resolveXAIWebSearchTargetModel(configured string) string {
 	if m := strings.TrimSpace(configured); m != "" {
 		return m

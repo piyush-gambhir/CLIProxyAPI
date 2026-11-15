@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-// devinPatchFramesWithParseError mirrors task6DevinFrames and also sets Devin's
-// invalid-JSON parse error (tool call field 5).
 func devinPatchFramesWithParseError(args, parseErr, trailer string) []byte {
 	var tool []byte
 	tool = protowire.AppendTag(tool, 1, protowire.BytesType)
@@ -118,7 +116,6 @@ func TestDevinApplyPatchRejectionCarriesLogDiagnostic(t *testing.T) {
 					_, errPatch = exec.Execute(t.Context(), auth, req, opts)
 				}
 
-				// The client-facing contract is unchanged.
 				assertTask6PatchError(t, errPatch)
 				var diagnosticErr interface{ LogDiagnostic() string }
 				if !errors.As(errPatch, &diagnosticErr) {

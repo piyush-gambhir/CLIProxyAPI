@@ -24,7 +24,7 @@ func TestAntigravityPublishedCacheDoesNotReconcileEmptyRegistry(t *testing.T) {
 	antigravityCapabilityMu.Lock()
 	antigravityCapabilityCache[key] = antigravityCapabilityCacheEntry{hints: hints, probeRevision: 1, expiresAt: time.Now().Add(antigravityCapabilityCacheTTL)}
 	antigravityCapabilityMu.Unlock()
-	// Cache published, but the async publisher has not registered any model yet.
+
 	svc.reconcileRegisteredModelStates(t.Context(), auth)
 	current, _ := manager.GetByID(auth.ID)
 	if current.ModelStates[model] == nil || !current.ModelStates[model].NextRetryAfter.Equal(retry) {
@@ -53,7 +53,7 @@ func TestAntigravityRegistryPublicationFencesCacheRevision(t *testing.T) {
 	antigravityCapabilityMu.Lock()
 	antigravityCapabilityCache[key] = antigravityCapabilityCacheEntry{hints: newer, probeRevision: 2, expiresAt: time.Now().Add(antigravityCapabilityCacheTTL)}
 	antigravityCapabilityMu.Unlock()
-	// The old caller resumes after the newer cache publication, with the same registry epoch.
+
 	svc.applyAntigravityModelHints(t.Context(), auth, "antigravity", old, key, auth.RegistrationEpoch, epoch)
 	if GlobalModelRegistry().ClientRegistrationEpoch(auth.ID) != epoch {
 		t.Fatal("old hints advanced registry epoch")
@@ -62,8 +62,7 @@ func TestAntigravityRegistryPublicationFencesCacheRevision(t *testing.T) {
 	if len(GlobalModelRegistry().GetModelsForClient(auth.ID)) != 0 {
 		t.Fatal("new empty catalog not applied")
 	}
-	// A second successful catalog may lose CAS to another publisher. It must
-	// retry with a current auth/registry snapshot, never promote its old epoch.
+
 	newest := antigravityModelCapabilityHints{ModelIDs: map[string]struct{}{"gemini-3.1-flash-lite": {}}, revision: 3}
 	antigravityCapabilityMu.Lock()
 	entry := antigravityCapabilityCache[key]
@@ -80,7 +79,7 @@ func TestAntigravityRegistryPublicationFencesCacheRevision(t *testing.T) {
 	if len(GlobalModelRegistry().GetModelsForClient(auth.ID)) != 1 {
 		t.Fatal("periodic retry failed to publish the newer cached catalog")
 	}
-	// External removal must still win over a cached publication.
+
 	publishedEpoch := GlobalModelRegistry().ClientRegistrationEpoch(auth.ID)
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	svc.applyAntigravityModelHints(t.Context(), auth, "antigravity", newest, key, auth.RegistrationEpoch, publishedEpoch)

@@ -86,7 +86,6 @@ func TestAggregateModels_MergesThinkingVariants_Issue6141(t *testing.T) {
 		t.Fatalf("expected 2 aggregated models, got %d: %+v", len(aggregated), aggregated)
 	}
 
-	// Verify test-opus-model
 	opus := aggregated[0]
 	if opus.ID != "test-opus-model" {
 		t.Errorf("expected ID test-opus-model, got %q", opus.ID)
@@ -102,7 +101,6 @@ func TestAggregateModels_MergesThinkingVariants_Issue6141(t *testing.T) {
 		t.Errorf("test-opus-model levels = %v, want %v", opus.Thinking.Levels, wantOpusLevels)
 	}
 
-	// Verify test-astra-model
 	astra := aggregated[1]
 	if astra.ID != "test-astra-model" {
 		t.Errorf("expected ID test-astra-model, got %q", astra.ID)

@@ -360,7 +360,6 @@ func TestRefreshToken_CrossDomainIsolation(t *testing.T) {
 	clientAI := NewDeviceFlowClientWithDomain(nil, KimiAIDomain)
 	clientAI.httpClient = &http.Client{Transport: transportAI}
 
-	// Same refresh token used across both domains concurrently
 	const sharedToken = "shared-test-token"
 	resCom, errCom := clientCom.RefreshToken(context.Background(), sharedToken)
 	if errCom != nil {

@@ -11,8 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// pausedSearchChunks renders one Claude response: signed thinking, an optional
-// finished search, text, and a search left without a result by pause_turn.
 func pausedSearchChunks(t *testing.T, messageID, signature string, finishedID, pausedID, pausedQuery string) [][]byte {
 	t.Helper()
 	chunks := [][]byte{
@@ -46,7 +44,6 @@ func pausedSearchChunks(t *testing.T, messageID, signature string, finishedID, p
 	return chunks
 }
 
-// continuationChunks renders the response that finishes a paused search.
 func continuationChunks(messageID, pausedID string, stopReason string) [][]byte {
 	return [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"` + messageID + `","usage":{"input_tokens":10,"output_tokens":0}}}`),
@@ -60,7 +57,6 @@ func continuationChunks(messageID, pausedID string, stopReason string) [][]byte 
 	}
 }
 
-// streamTerminal returns the terminal event name and its response object.
 func streamTerminal(t *testing.T, chunks [][]byte) (string, ojson.Result) {
 	t.Helper()
 	var name string
@@ -78,16 +74,12 @@ func streamTerminal(t *testing.T, chunks [][]byte) (string, ojson.Result) {
 	return name, response
 }
 
-// codexHistoryRequest builds the next Responses request exactly as a client
-// would: the user prompt followed by the output items it received, without
-// re-adding anything the translator dropped.
 func codexHistoryRequest(t *testing.T, responses ...ojson.Result) []byte {
 	t.Helper()
 	requestDoc := ojson.NewDocString(`{"model":"claude-test","tools":[{"type":"web_search"}],"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"research"}]}]}`)
 	for _, response := range responses {
 		for _, item := range response.Get("output").Array() {
-			// Codex does not keep web_search_call results; the proxy cache restores
-			// them later, so the history carries none.
+
 			raw := []byte(item.Raw)
 			if item.Get("type").String() == "web_search_call" {
 				raw, _ = ojson.DeleteBytes(raw, "results")
@@ -191,7 +183,7 @@ func TestPauseTurnContinuationEmitsSinglePairUnderPausedID(t *testing.T) {
 func TestPauseTurnTwiceKeepsOnlyLatestSearchUnanswered(t *testing.T) {
 	signature := mustTestSignature(t)
 	_, first := streamTerminal(t, pausedSearchChunks(t, "msg_p1", signature, "", "srvtoolu_a", "query a"))
-	// The continuation answers search A and pauses again on search B.
+
 	second := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_p2","usage":{"input_tokens":10,"output_tokens":0}}}`),
 		[]byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_a","content":[{"type":"web_search_result","url":"https://example.com/a","title":"A","encrypted_content":"ENC_A"}]}}`),
@@ -239,8 +231,6 @@ func TestStopReasonErrorsKeepOutputEmittedBeforeTerminal(t *testing.T) {
 	runStopReasonErrorsKeepOutput(t)
 }
 
-// Repeated web_search_call ids outside a pause/continuation pair keep the
-// previous replay: one server_tool_use + result per item, in order.
 func TestRepeatedWebSearchIDsAcrossTurnsAreNotMerged(t *testing.T) {
 	for _, boundary := range []string{
 		`{"type":"message","role":"user","content":[{"type":"input_text","text":"again"}]}`,
@@ -274,8 +264,6 @@ func TestRepeatedWebSearchIDsAcrossTurnsAreNotMerged(t *testing.T) {
 	}
 }
 
-// A paused search followed by a user turn is not a continuation pair: the
-// later item with the same id is not merged into it.
 func TestPausedSearchContinuationRequiresSameAssistantRun(t *testing.T) {
 	paused := `{"id":"` + responsesWebSearchCallID("srvtoolu_p") + `","type":"web_search_call","status":"in_progress","action":{"type":"search","query":"paused"}}`
 	later := `{"id":"` + responsesWebSearchCallID("srvtoolu_p") + `","type":"web_search_call","status":"completed","action":{"type":"search","query":""}}`

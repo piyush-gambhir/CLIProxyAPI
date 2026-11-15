@@ -285,7 +285,7 @@ func (e *CodexExecutor) executeOpenAIImageStream(ctx context.Context, auth *clip
 		}
 
 		scanner := bufio.NewScanner(httpResp.Body)
-		scanner.Buffer(nil, 52_428_800) // 50MB
+		scanner.Buffer(nil, 52_428_800)
 		outputItemsByIndex := make(map[int64][]byte)
 		var outputItemsFallback [][]byte
 		for scanner.Scan() {
@@ -709,7 +709,7 @@ func codexOpenAIImageEditFormJSONPath(key string) string {
 }
 
 func codexDirectOpenAIImageRouteModel(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) string {
-	// Multipart handlers supply the requested model separately from the raw form.
+
 	requestedModel := helps.PayloadRequestedModel(opts, "")
 	payloadModel := ""
 	if json.Valid(req.Payload) {
@@ -734,7 +734,6 @@ func (e *CodexExecutor) directOpenAIImageModel(auth *cliproxyauth.Auth, req clip
 		return routeModel
 	}
 
-	// Explicit upstream names are not routing prefixes, even when their base is builtin.
 	if entry := e.resolveCodexConfig(auth); entry != nil {
 		for _, configured := range entry.Models {
 			name := strings.TrimSpace(configured.Name)
@@ -746,7 +745,7 @@ func (e *CodexExecutor) directOpenAIImageModel(auth *cliproxyauth.Auth, req clip
 			}
 		}
 	}
-	// Preserve legacy builtin route normalization only without an explicit upstream.
+
 	if baseModel := codexOpenAIImageBaseModel(model); codexIsDirectOpenAIImageModel(baseModel) {
 		return baseModel
 	}
@@ -1058,15 +1057,6 @@ func codexMultipartFileToDataURL(fileHeader *multipart.FileHeader) (string, erro
 	return base64.EncodeDataURL(mediaType, data), nil
 }
 
-// codexExtractImageResults extracts image generation results directly from the
-// completed event and the items collected from response.output_item.done events,
-// without rebuilding the full completed JSON.
-//
-// It prefers image_generation_call items already present in the completed event's
-// response.output and only falls back to the collected items when that output is
-// empty, mirroring the semantics of patchCodexCompletedOutput + the previous
-// extractor. Skipping the concatenate-and-reparse step avoids two large copies of
-// the base64 payload, which matters for multi-megabyte generated images.
 func codexExtractImageResults(completed []byte, itemsByIndex map[int64][]byte, fallback [][]byte) (results []codexImageCallResult, createdAt int64, usageRaw []byte, firstMeta codexImageCallResult, err error) {
 	if ojson.GetBytesNoCopy(completed, "type").String() != "response.completed" {
 		return nil, 0, nil, codexImageCallResult{}, fmt.Errorf("unexpected event type")
@@ -1103,14 +1093,13 @@ func codexExtractImageResults(completed []byte, itemsByIndex map[int64][]byte, f
 		outputItems = output.Array()
 	}
 	if len(outputItems) > 0 {
-		// Completed event already carries the output; extract from it in place.
+
 		results = make([]codexImageCallResult, 0, len(outputItems))
 		for _, item := range outputItems {
 			appendItem(item)
 		}
 	} else if len(itemsByIndex) > 0 || len(fallback) > 0 {
-		// Completed output was empty; extract directly from the collected items,
-		// preserving their original output_index ordering.
+
 		results = make([]codexImageCallResult, 0, len(itemsByIndex)+len(fallback))
 		if len(itemsByIndex) > 0 {
 			indexes := make([]int64, 0, len(itemsByIndex))

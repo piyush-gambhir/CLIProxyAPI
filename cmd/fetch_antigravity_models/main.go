@@ -1,17 +1,3 @@
-// Command fetch_antigravity_models connects to the Antigravity API using the
-// stored auth credentials and saves the dynamically fetched model list to a
-// JSON file for inspection or offline use.
-//
-// Usage:
-//
-//	go run ./cmd/fetch_antigravity_models [flags]
-//
-// Flags:
-//
-//	--auths-dir <path>  Directory containing auth JSON files (default: config auth-dir)
-//	--config    <path>  Config file path                 (default: "config.yaml")
-//	--output    <path>  Output JSON file path             (default: "antigravity_models.json")
-//	--pretty            Pretty-print the output JSON      (default: true)
 package main
 
 import (
@@ -50,12 +36,10 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 }
 
-// modelOutput wraps the fetched model list with fetch metadata.
 type modelOutput struct {
 	Models []modelEntry `json:"models"`
 }
 
-// modelEntry contains only the fields we want to keep for static model definitions.
 type modelEntry struct {
 	ID                  string `json:"id"`
 	Object              string `json:"object"`
@@ -128,7 +112,6 @@ func main() {
 
 	fmt.Printf("Scanning auth files in: %s\n", authsDir)
 
-	// Load all auth records from the directory.
 	fileStore := sdkauth.NewFileTokenStore()
 	fileStore.SetBaseDir(authsDir)
 
@@ -143,7 +126,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Find enabled antigravity auths.
 	var agAuths []*coreauth.Auth
 	for _, a := range auths {
 		if a == nil || a.Disabled {
@@ -167,7 +149,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Fetch models from the upstream Antigravity API using available auths.
 	var models []modelEntry
 	for _, chosen := range agAuths {
 		fmt.Printf("Using auth: id=%q label=%q\n", chosen.ID, chosen.Label)
@@ -187,12 +168,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "warning: no models returned from any auth (API may be unavailable or tokens expired)")
 	}
 
-	// Build the output payload.
 	out := modelOutput{
 		Models: models,
 	}
 
-	// Marshal to JSON.
 	var raw []byte
 	if pretty {
 		raw, err = json.MarshalIndent(out, "", "  ")
@@ -291,7 +270,7 @@ func fetchModelsFromBaseURLs(ctx context.Context, auth *coreauth.Auth, baseURLs 
 				if modelID == "" {
 					continue
 				}
-				// Skip internal/experimental models
+
 				switch modelID {
 				case "chat_20706", "chat_23310", "tab_flash_lite_preview", "tab_jump_flash_lite_preview", "gemini-2.5-flash-thinking", "gemini-2.5-pro":
 					continue

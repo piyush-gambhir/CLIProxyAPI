@@ -10,7 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// DiffOpenAICompatibility produces human-readable change descriptions.
 func DiffOpenAICompatibility(oldList, newList []config.OpenAICompatibility) []string {
 	changes := make([]string, 0)
 	oldMap := make(map[string]config.OpenAICompatibility, len(oldList))
@@ -233,7 +232,6 @@ func openAICompatSignature(entry config.OpenAICompatibility) string {
 		}
 	}
 
-	// Intentionally exclude API key material; only count non-empty entries.
 	if count := countAPIKeys(entry); count > 0 {
 		parts = append(parts, fmt.Sprintf("api_keys=%d", count))
 	}

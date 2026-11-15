@@ -16,8 +16,6 @@ func ConvertInteractionsRequestToCodex(modelName string, inputRawJSON []byte, st
 
 }
 
-// convertInteractionsRequestToCodex also reports a user turn that was left empty
-// because its only attachment has no Codex equivalent.
 func convertInteractionsRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	outDoc := ojson.NewDocString(`{"model":"","instructions":"","store":false,"input":[]}`)
@@ -198,8 +196,6 @@ func interactionsCodexReasoningSummary(cfg ojson.Result) string {
 	return ""
 }
 
-// appendInteractionsInputToCodex adds the input steps and reports a user turn that
-// was left with nothing to send because of an attachment Codex cannot carry.
 func appendInteractionsInputToCodex(items *[][]byte, input ojson.Result, modelName string) error {
 	if !input.Exists() {
 		return nil
@@ -228,8 +224,6 @@ func appendInteractionsInputToCodex(items *[][]byte, input ojson.Result, modelNa
 	return run.Err()
 }
 
-// interactionsCodexUserRun returns run for user content. Content of any other
-// role closes the open user turn and has no tracker.
 func interactionsCodexUserRun(run *translatorcommon.UserRun, role string) *translatorcommon.UserRun {
 	if role == "user" {
 		return run
@@ -257,7 +251,7 @@ func appendInteractionsStepToCodex(items *[][]byte, step ojson.Result, defaultRo
 		run.End()
 		appendInteractionsFunctionCallToCodex(items, step)
 	case "function_result", "function_call_output":
-		// A tool result is content the model reads, so it keeps the surrounding user turn.
+
 		run.Add()
 		appendInteractionsFunctionResultToCodex(items, step)
 	case "model_output", "assistant":
@@ -283,7 +277,6 @@ func appendInteractionsStepToCodex(items *[][]byte, step ojson.Result, defaultRo
 	}
 }
 
-// appendInteractionsRoleTextToCodex adds a text message; blank text does not keep a user turn alive.
 func appendInteractionsRoleTextToCodex(items *[][]byte, role, text string, run *translatorcommon.UserRun) {
 	appendInteractionsTextToCodex(items, role, text)
 	userRun := interactionsCodexUserRun(run, role)
@@ -313,9 +306,6 @@ func appendInteractionsContentToCodexItem(items *[][]byte, content ojson.Result,
 	}
 }
 
-// appendInteractionsContentPartToCodex adds one content part. run is nil for
-// content that is not user content; for user content it records what is sent and
-// what cannot be.
 func appendInteractionsContentPartToCodex(items *[][]byte, part ojson.Result, role string, run *translatorcommon.UserRun) {
 	item := interactionsCodexMessagePart(part, role)
 	if len(item) == 0 {
@@ -330,8 +320,6 @@ func appendInteractionsContentPartToCodex(items *[][]byte, part ojson.Result, ro
 	}
 }
 
-// interactionsCodexIsBlankText reports whether a Codex message part is a text part
-// holding only whitespace.
 func interactionsCodexIsBlankText(item []byte) bool {
 	parsed := util.ParseGJSONBytesNoCopy(item)
 	partType := parsed.Get("type").String()
@@ -448,9 +436,6 @@ func setInteractionsCodexRawIfDifferent(out []byte, path string, value ojson.Res
 	return updated
 }
 
-// ensureInteractionsCodexEncryptedContentIncludeDoc makes the outbound request
-// ask the upstream for encrypted reasoning content so a signature can come
-// back for replay.
 func ensureInteractionsCodexEncryptedContentIncludeDoc(doc *ojson.Doc, root ojson.Result) {
 	const reasoningEncryptedContent = "reasoning.encrypted_content"
 	include := root.Get("include")
@@ -469,16 +454,6 @@ func ensureInteractionsCodexEncryptedContentIncludeDoc(doc *ojson.Doc, root ojso
 	_ = doc.Set("include.-1", reasoningEncryptedContent)
 }
 
-// appendInteractionsThoughtToCodex adds a thought step. A client-echoed
-// signature that CodexReplaySignatureForTarget accepts for this request's
-// target model is restored as Responses reasoning encrypted_content, with
-// the thought text carried as a summary; identical signatures already
-// emitted in this request are replayed only once. The step id is
-// deliberately not copied onto replay items: replay is stateless and the
-// executor strips orphan ids. Every other thought step is dropped entirely:
-// a reasoning item without accepted encrypted_content carries no replayable
-// state, and the legacy text fallback shape is rejected by both the native
-// Meta upstream (missing summary) and routers (content expected array).
 func appendInteractionsThoughtToCodex(items *[][]byte, step ojson.Result, modelName string, emittedSignatures map[string]bool) {
 	text := interactionsCodexContentText(step.Get("content"))
 	if text == "" {
@@ -499,8 +474,6 @@ func appendInteractionsThoughtToCodex(items *[][]byte, step ojson.Result, modelN
 	}
 }
 
-// interactionsThoughtStepSignature extracts a thought step's signature under
-// any of the field spellings seen on the wire.
 func interactionsThoughtStepSignature(step ojson.Result) string {
 	for _, path := range []string{"signature", "thought_signature", "thoughtSignature"} {
 		if signature := strings.TrimSpace(step.Get(path).String()); signature != "" {
@@ -577,7 +550,7 @@ func interactionsCodexMessagePart(part ojson.Result, role string) []byte {
 }
 
 func interactionsCodexImagePart(part ojson.Result) []byte {
-	// uri is the Interactions spelling of file_uri.
+
 	if imageURL := firstNonBlankString(part, "url", "file_uri", "fileUri", "uri"); imageURL != "" {
 		item := []byte(`{"type":"input_image","image_url":""}`)
 		item, _ = ojson.SetBytes(item, "image_url", imageURL)
@@ -613,7 +586,7 @@ func interactionsCodexFilePart(part ojson.Result) []byte {
 		return itemDoc.Bytes()
 	}
 	mimeType := firstString(part, "mime_type", "mimeType")
-	// uri is the Interactions spelling of file_uri.
+
 	if fileURI := firstNonBlankString(part, "file_uri", "fileUri", "uri", "url"); fileURI != "" {
 		itemDoc := ojson.NewDocString(`{"type":"input_file","file_url":"","filename":""}`)
 		_ = itemDoc.Set("file_url", fileURI)
@@ -765,10 +738,6 @@ func interactionsCodexOutputString(value ojson.Result) string {
 	return ""
 }
 
-// interactionsCodexStepRole resolves the Codex role of a step. A step that
-// carries system or developer content, named by its role or by its type, is
-// developer content: it closes the open user turn and never keeps an emptied one
-// alive. Any other step uses its own role, then the role it inherits.
 func interactionsCodexStepRole(step ojson.Result, inherited string) string {
 	if translatorcommon.IsInteractionsInstructionStep(step, inherited == "developer") {
 		return "developer"
@@ -855,7 +824,6 @@ func shortenCodexToolNameIfNeeded(name string) string {
 	return name[:limit]
 }
 
-// firstNonBlankString returns the first non-blank string found at paths.
 func firstNonBlankString(root ojson.Result, paths ...string) string {
 	for _, path := range paths {
 		if value := strings.TrimSpace(root.Get(path).String()); value != "" {

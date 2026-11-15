@@ -13,8 +13,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-// Manager.Remove closes executor sessions after removing the runtime auth. Use
-// that boundary to verify the registry cannot expose a tombstone epoch first.
 type antigravityRemovalExecutor struct {
 	coreauth.ProviderExecutor
 	onClose func()
@@ -53,8 +51,7 @@ func TestAntigravityRemovalInvalidatesAuthBeforeRegistry(t *testing.T) {
 			if reg.ClientRegistrationEpoch(auth.ID) != initialEpoch {
 				t.Error("registry epoch advanced before runtime auth invalidation")
 			}
-			// Neither a new scan nor work queued with an old auth snapshot may
-			// publish from cache while the deletion is between its two stores.
+
 			svc.refreshAntigravityModels(t.Context())
 			svc.scheduleAntigravityModelRefresh(t.Context(), auth)
 			svc.WaitAntigravityProbes()
@@ -70,7 +67,7 @@ func TestAntigravityRemovalInvalidatesAuthBeforeRegistry(t *testing.T) {
 	if len(reg.GetModelsForClient(auth.ID)) != 0 || reg.ClientRegistrationEpoch(auth.ID) != initialEpoch+1 {
 		t.Fatal("removal did not leave a single final registry tombstone")
 	}
-	// A publisher that already validated its auth must still lose registry CAS.
+
 	if _, applied := reg.ReplaceClientModels(auth.ID, "antigravity", initialEpoch, []*ModelInfo{{ID: "gemini-3.1-flash-lite"}}); applied {
 		t.Fatal("pre-removal publisher overwrote the tombstone")
 	}
@@ -140,8 +137,7 @@ func TestAntigravityCachedRegistrationPreservesCooldownWhileProbePending(t *test
 			if reg.ApplyClientModelProjections(auth.ID, reg.ClientRegistrationEpoch(auth.ID), current.Generation-1, []registry.ClientModelProjection{{ModelID: model}}) {
 				t.Error("cached publication accepted a stale scheduling projection")
 			}
-			// A later authoritative empty response must still revoke the binding
-			// and prune its cooldown; preserving cached state cannot prevent updates.
+
 			unblock()
 			svc.WaitAntigravityProbes()
 			current, _ = svc.coreManager.GetByID(auth.ID)

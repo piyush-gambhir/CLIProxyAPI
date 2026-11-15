@@ -26,7 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PatchAuthFileStatus toggles the disabled state of an auth file
 func (h *Handler) PatchAuthFileStatus(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
@@ -70,8 +69,7 @@ func (h *Handler) PatchAuthFileStatus(c *gin.Context) {
 		return
 	}
 	if coreauth.IsPluginVirtualAuth(targetAuth) {
-		// Allow status changes only when targeting the source auth file name, matching delete semantics.
-		// Expanded virtual project auths still cannot be modified independently.
+
 		if !isPluginVirtualSourceDelete(name, targetAuth) {
 			c.JSON(http.StatusConflict, gin.H{"error": errPluginVirtualAuth.Error()})
 			return
@@ -150,8 +148,6 @@ func (h *Handler) PatchAuthFileStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "disabled": *req.Disabled})
 }
 
-// patchPluginVirtualSourceStatus toggles disabled on a plugin multi-auth source file and all
-// runtime auths expanded from it. Virtual project children cannot be toggled independently.
 func (h *Handler) patchPluginVirtualSourceStatus(ctx context.Context, targetAuth *coreauth.Auth, disabled bool) ([]*coreauth.Auth, error) {
 	if h == nil || h.authManager == nil || targetAuth == nil {
 		return nil, fmt.Errorf("core auth manager unavailable")
@@ -259,7 +255,6 @@ func applyAuthDisabledState(auth *coreauth.Auth, disabled bool) {
 	auth.Metadata["disabled"] = disabled
 }
 
-// PatchAuthFileFields updates arbitrary metadata fields of an auth file.
 func (h *Handler) PatchAuthFileFields(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
@@ -309,7 +304,6 @@ func (h *Handler) PatchAuthFileFields(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// Find auth by name or ID
 	var targetAuth *coreauth.Auth
 	if auth, ok := h.authManager.GetByID(name); ok {
 		targetAuth = auth
@@ -323,7 +317,6 @@ func (h *Handler) PatchAuthFileFields(c *gin.Context) {
 		}
 	}
 
-	// Config-sourced credentials are managed through config endpoints, not as auth files.
 	if targetAuth == nil || targetAuth.AuthSourceKind() == coreauth.AuthSourceConfig {
 		c.JSON(http.StatusNotFound, gin.H{"error": "auth file not found"})
 		return
@@ -446,11 +439,10 @@ func applyAuthFileFieldsPatch(targetAuth *coreauth.Auth, req map[string]json.Raw
 			if errExcluded != nil {
 				return &authFileFieldPatchError{message: errExcluded.Error()}
 			}
-			// ApplyAuthExcludedModelsMeta never clears attributes, so drop stale values first.
+
 			delete(targetAuth.Attributes, "excluded_models")
 			delete(targetAuth.Attributes, "excluded_models_hash")
-			// Store only the credential's own rules; global rules are resolved at model registration.
-			// An empty authKind keeps the existing auth_kind attribute unchanged.
+
 			synthesizer.ApplyAuthExcludedModelsMeta(targetAuth, excluded, "")
 		}
 	}
@@ -1047,19 +1039,11 @@ func (h *Handler) saveTokenRecord(ctx context.Context, record *coreauth.Auth) (s
 		metadataStringValue(record.Metadata, "sub") != "" &&
 		metadataStringValue(legacyXAICredential.Metadata, "email") != ""
 	if adoptXAICredential {
-		// The upstream stopped returning the email; keep the account on its
-		// richer email-named credential (richest-known name wins) so the next
-		// login that returns the email finds the same file again. Renaming is
-		// limited to stores that resolve the save path from the record name;
-		// every built-in backend (file, git, Postgres, object) exposes the
-		// SetBaseDir capability, so unknown stores keep the ordinary
-		// migration instead of risking a rename they cannot honor.
+
 		if _, isFileNameStore := store.(interface{ SetBaseDir(string) }); !isFileNameStore {
 			adoptXAICredential = false
 		} else if disabled, hasDisabled := record.Metadata["disabled"].(bool); hasDisabled && disabled {
-			// The destination file deliberately disables this credential; renaming
-			// would leave it disabled while the richer file gets deleted, losing
-			// the operator's opt-out and the saved credential on re-login.
+
 			adoptXAICredential = false
 		}
 	}
@@ -1146,12 +1130,6 @@ func metadataStringValue(metadata map[string]any, key string) string {
 	return strings.TrimSpace(value)
 }
 
-// adoptLegacyXAIFileName points a subject-only xAI record at the existing
-// email-named credential so the save refreshes that file in place. The token
-// storage email is backfilled because SaveTokenToFile merges the record
-// metadata over the serialized storage and would otherwise drop the email.
-// Path attributes pointing at the superseded subject-named file are cleared
-// so the store resolves the adopted name.
 func adoptLegacyXAIFileName(record, legacy *coreauth.Auth) {
 	legacyFileName := strings.TrimSpace(legacy.FileName)
 	if legacyFileName == "" {

@@ -17,7 +17,7 @@ type tavilyClient struct {
 	keys    []string
 	idx     atomic.Uint64
 	http    *http.Client
-	baseURL string // empty → https://api.tavily.com/search
+	baseURL string
 }
 
 func newTavilyClient(keys []string) *tavilyClient {

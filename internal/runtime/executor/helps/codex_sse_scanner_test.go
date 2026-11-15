@@ -13,8 +13,6 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
-// wellFormedCodexSSEStream is a Responses stream with one event per data line, comments, event
-// lines, events without a blank separator, and the [DONE] sentinel.
 func wellFormedCodexSSEStream() string {
 	var stream strings.Builder
 	stream.WriteString("event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\",\"model\":\"gpt-5.4\"}}\n\n")
@@ -181,7 +179,7 @@ func TestCodexSSEScannerAssemblesEventData(t *testing.T) {
 
 func TestCodexSSEScannerBoundsAnEventToTheLineLimit(t *testing.T) {
 	hook := captureCodexSSEWarnings(t)
-	// Each fragment fits the 64-byte limit; together they do not.
+
 	stream := "data: {\"a\":\"" + strings.Repeat("x", 40) + "\ndata: " + strings.Repeat("y", 40) + "\ndata: " + strings.Repeat("z", 40) + "\"}\n\ndata: {\"b\":2}\n\n"
 	scanner := NewCodexSSEScanner(context.Background(), strings.NewReader(stream), 64)
 	var got []string
@@ -191,7 +189,7 @@ func TestCodexSSEScannerBoundsAnEventToTheLineLimit(t *testing.T) {
 	if errScan := scanner.Err(); errScan != nil {
 		t.Fatalf("scan error: %v", errScan)
 	}
-	// The collected fragment is flushed as an invalid event; the lines after it are read as stock reads them.
+
 	want := []string{
 		"data: {\"a\":\"" + strings.Repeat("x", 40),
 		"data: " + strings.Repeat("y", 40),
@@ -209,9 +207,7 @@ func TestCodexSSEScannerBoundsAnEventToTheLineLimit(t *testing.T) {
 }
 
 func TestCodexSSEScannerAssemblesAnEventOfThousandsOfLinesQuickly(t *testing.T) {
-	// A 2 MB response.completed whose upstream wrapped it into 2,000 data lines between array
-	// elements. Every line ends with "}", so only nesting, not the last byte, tells the event apart
-	// from a finished one.
+
 	item := func(i int) string {
 		return fmt.Sprintf(`{"type":"message","content":[{"type":"output_text","text":"%s"}]}`, strings.Repeat(string(rune('a'+i%26)), 960))
 	}
@@ -241,7 +237,7 @@ func TestCodexSSEScannerAssemblesAnEventOfThousandsOfLinesQuickly(t *testing.T) 
 }
 
 func TestCodexSSEScannerHoldsAnEventInMemoryThatFollowsItsBytes(t *testing.T) {
-	// One valid event of 100,000 empty data lines: about 600 KB, well within the line limit.
+
 	stream := "data: [\n" + strings.Repeat("data:\n", 100_000) + "data: ]\n\n"
 	var got []string
 	allocs := testing.AllocsPerRun(1, func() {
@@ -254,7 +250,7 @@ func TestCodexSSEScannerHoldsAnEventInMemoryThatFollowsItsBytes(t *testing.T) {
 	if fmt.Sprintf("%q", got) != fmt.Sprintf("%q", []string{"data: []", ""}) {
 		t.Fatalf("lines = %q", got)
 	}
-	// Holding each line separately costs at least one allocation per line.
+
 	if allocs > 1000 {
 		t.Fatalf("assembling 100,002 data lines took %.0f allocations; holding an event must not allocate per line", allocs)
 	}
@@ -268,7 +264,7 @@ func TestCodexSSEScannerReadsLineByLineWhileAssemblyIsOff(t *testing.T) {
 	for scanner.Scan() {
 		got = append(got, string(scanner.Bytes()))
 		if len(got) == 3 {
-			// The first event has been read as bufio.Scanner reads it; assemble from here on.
+
 			scanner.SetAssembly(true)
 		}
 	}
@@ -278,7 +274,6 @@ func TestCodexSSEScannerReadsLineByLineWhileAssemblyIsOff(t *testing.T) {
 	}
 }
 
-// codexSSEChunkReader returns one chunk per Read and counts the reads.
 type codexSSEChunkReader struct {
 	chunks []string
 	reads  int
@@ -299,7 +294,7 @@ func TestCodexSSEScannerDeliversNonDataLinesAsTheyAreRead(t *testing.T) {
 	for scanner.Scan() {
 		got = append(got, fmt.Sprintf("%q@%d", scanner.Bytes(), reader.reads))
 	}
-	// Only the data lines wait for the rest of their event; the other lines are not held for it.
+
 	want := []string{`": keep-alive"@1`, `"id: 7"@1`, `"data: {\"a\":1}"@2`, `""@2`}
 	if fmt.Sprintf("%q", got) != fmt.Sprintf("%q", want) {
 		t.Fatalf("lines = %q\nwant    %q", got, want)
@@ -308,7 +303,7 @@ func TestCodexSSEScannerDeliversNonDataLinesAsTheyAreRead(t *testing.T) {
 
 func TestCodexSSEScannerDiagnosticDescribesFraming(t *testing.T) {
 	hook := captureCodexSSEWarnings(t)
-	// A split inside a string: each fragment is invalid on its own, and so is their SSE join.
+
 	scanCodexSSE(t, "data: {\"type\":\"response.completed\",\"t\":\"abc\ndata: def\"}\n\n")
 	entries := hook.AllEntries()
 	if len(entries) != 1 {

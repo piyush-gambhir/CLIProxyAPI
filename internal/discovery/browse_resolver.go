@@ -58,7 +58,7 @@ func newBrowseCache(ifaces []net.Interface, service, domain string) *browseCache
 	}
 	domain = dns.Fqdn(domain)
 	service = strings.TrimSuffix(service, ".")
-	// Accept both a service type and its fully qualified browse name.
+
 	service = strings.TrimSuffix(service, "."+strings.TrimSuffix(domain, "."))
 	base := service
 	if i := strings.Index(strings.ToLower(base), "._sub."); i >= 0 {
@@ -81,8 +81,6 @@ func newBrowseCache(ifaces []net.Interface, service, domain string) *browseCache
 	return c
 }
 
-// RFC 6762 section 11 permits off-subnet sources for multicast responses.
-// Unicast responses must originate on-link and be addressed to this interface.
 func (c *browseCache) validPeer(index int, src *net.UDPAddr, dst net.IP) bool {
 	l, ok := c.links[index]
 	if !ok || src == nil || src.Port != mdnsPort || src.IP == nil || src.IP.IsUnspecified() || src.IP.IsMulticast() || src.IP.IsLoopback() || dst == nil {
@@ -165,8 +163,6 @@ func (c *browseCache) admissible(rr dns.RR) bool {
 	return false
 }
 
-// SRV targets are hostnames, not URLs. They need not share the service's
-// browsing domain; the PTR owner still confines service membership.
 func validBrowseHost(host string) bool {
 	host = strings.TrimSuffix(host, ".")
 	if host == "" || len(host) > 253 {
@@ -200,8 +196,6 @@ func browseRecordKey(index int, rr dns.RR) browseRRKey {
 	return browseRRKey{index, h.Name, h.Rrtype, copyRR.String()}
 }
 
-// Only answers and additional records in responses enter the cache. Query known
-// answers and probe authorities must never manufacture a discovered service.
 func (c *browseCache) ingest(msg *dns.Msg, index int, src *net.UDPAddr, dst net.IP, now time.Time) {
 	c.prune(now)
 	if msg == nil || !msg.Response || msg.Opcode != dns.OpcodeQuery || msg.Rcode != dns.RcodeSuccess || msg.Id != 0 || !c.validPeer(index, src, dst) {
@@ -231,8 +225,7 @@ func (c *browseCache) ingest(msg *dns.Msg, index int, src *net.UDPAddr, dst net.
 		delete(flushVictims, oldest)
 		return true
 	}
-	// Apply flush before inserting anything, preserving all members of this packet
-	// and the one-second immunity for RRsets split across consecutive packets.
+
 	for _, rr := range records {
 		if !c.admissible(rr) || rr.Header().Ttl == 0 || rr.Header().Class&0x8000 == 0 || rr.Header().Rrtype == dns.TypePTR {
 			continue
@@ -315,8 +308,7 @@ func (c *browseCache) ingest(msg *dns.Msg, index int, src *net.UDPAddr, dst net.
 				if k.kind != dns.TypeSRV && k.kind != dns.TypeTXT {
 					continue
 				}
-				// Unique data changes must not be blocked by the bounded grace
-				// history when a peer publishes several rapid updates.
+
 				var oldest browseRRKey
 				sequence := ^uint64(0)
 				for key, value := range c.records {
@@ -405,7 +397,6 @@ func (c *browseCache) results(now time.Time) []DiscoveredService {
 	return out
 }
 
-// queries includes missing dependencies and refreshes records after 80% of TTL.
 func (c *browseCache) queries(index int, now time.Time) []dns.Question {
 	c.prune(now)
 	seen := make(map[string]bool)
@@ -457,8 +448,6 @@ type browsePacket struct {
 	dst   net.IP
 }
 
-// browseLAN has no private deadline. Closing sockets interrupts blocked readers;
-// the sole timer schedules queries, never ends the caller's browse window.
 func browseLAN(ctx context.Context, ifaces []net.Interface, serviceType, domain string) ([]DiscoveredService, error) {
 	if ctx == nil {
 		ctx = context.TODO()
@@ -472,7 +461,7 @@ func browseLAN(ctx context.Context, ifaces []net.Interface, serviceType, domain 
 	cache := newBrowseCache(ifaces, serviceType, domain)
 	conn4, err4 := openMDNSConn4(ifaces)
 	conn6, err6 := openMDNSConn6(ifaces)
-	// Interface and destination metadata are mandatory for receive isolation.
+
 	if conn4 != nil {
 		if err := conn4.SetControlMessage(ipv4.FlagInterface|ipv4.FlagDst, true); err != nil {
 			err4 = err
@@ -514,7 +503,7 @@ func browseLAN(ctx context.Context, ifaces []net.Interface, serviceType, domain 
 			}
 		})
 	}
-	// Cancellation interrupts reads and writes without installing socket deadlines.
+
 	stopClose := context.AfterFunc(ctx, closeSockets)
 	defer func() {
 		stopClose()

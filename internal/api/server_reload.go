@@ -33,18 +33,10 @@ func (s *Server) applyAccessConfig(oldCfg, newCfg *config.Config) bool {
 	return true
 }
 
-// UpdateClients updates the server's client list and configuration.
-// This method is called when the configuration or authentication tokens change.
-//
-// Parameters:
-//   - clients: The new slice of AI service clients
-//   - cfg: The new application configuration
 func (s *Server) UpdateClients(cfg *config.Config) {
 	s.UpdateClientsContext(context.Background(), cfg)
 }
 
-// UpdateClientsContext updates runtime clients while honoring cancellation between
-// short configuration and filesystem operations.
 func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) bool {
 	if s == nil || cfg == nil {
 		return false
@@ -56,7 +48,7 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 		return false
 	}
 	cfg = cfg.CloneForRuntime()
-	// Reconstruct old config from YAML snapshot to avoid reference sharing issues
+
 	var oldCfg *config.Config
 	s.cfgMu.RLock()
 	oldConfigYaml := append([]byte(nil), s.oldConfigYaml...)
@@ -65,7 +57,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 		_ = yaml.Unmarshal(oldConfigYaml, &oldCfg)
 	}
 
-	// Update request logger enabled state if it has changed
 	previousRequestLog := false
 	if oldCfg != nil {
 		previousRequestLog = oldCfg.RequestLog
@@ -129,7 +120,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 		s.handlers.AuthManager.SetRetryConfig(cfg.RequestRetry, time.Duration(cfg.MaxRetryInterval)*time.Second, cfg.MaxRetryCredentials)
 	}
 
-	// Update log level dynamically when debug flag changes
 	if oldCfg == nil || oldCfg.Debug != cfg.Debug {
 		util.SetLogLevel(cfg)
 	}
@@ -193,7 +183,7 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 	if errContext := ctx.Err(); errContext != nil {
 		return false
 	}
-	// Save YAML snapshot for next comparison
+
 	marshaledCfg, _ := yaml.Marshal(cfg)
 	s.cfgMu.Lock()
 	s.oldConfigYaml = marshaledCfg
@@ -213,7 +203,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 	}
 	s.refreshPluginManagementRoutes()
 
-	// Count client sources from configuration and auth store.
 	authEntries := 0
 	if cfg != nil && !cfg.Home.Enabled {
 		tokenStore := sdkAuth.GetTokenStore()
@@ -264,9 +253,6 @@ func (s *Server) SetWebsocketAuthChangeHandler(fn func(bool, bool)) {
 	s.wsAuthChanged = fn
 }
 
-// applyClaudeToolSearchConfig publishes upstream.claude.tool-search to the
-// Claude Responses translator, which the Claude executor and the Codex model
-// catalog also read so all three agree on it.
 func applyClaudeToolSearchConfig(cfg *config.Config) {
 	responsesclaude.SetClientToolSearchEnabled(cfg != nil && cfg.Claude.ToolSearch)
 }

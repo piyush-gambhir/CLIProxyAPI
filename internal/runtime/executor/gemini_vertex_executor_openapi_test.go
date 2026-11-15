@@ -180,7 +180,6 @@ func TestGeminiVertexOpenAPI_ModelNormalization_PublisherResourceAndExplicitOptI
 
 	exec := NewGeminiVertexExecutor(&config.Config{})
 
-	// 1. publishers/<pub>/models/<id> normalizes to <pub>/<id>
 	saAuth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-norm-1",
 		Provider: "vertex",
@@ -201,7 +200,6 @@ func TestGeminiVertexOpenAPI_ModelNormalization_PublisherResourceAndExplicitOptI
 		t.Fatalf("Execute(publishers/...) error = %v", errExec1)
 	}
 
-	// 2. Explicit openapi=true with bare model normalizes to google/<model>
 	explicitAuth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-norm-2",
 		Provider: "vertex",
@@ -481,7 +479,6 @@ func TestGeminiVertexOpenAPI_APIKey_ValidationAndThirdPartyRelay(t *testing.T) {
 
 	exec := NewGeminiVertexExecutor(&config.Config{})
 
-	// 1. Static API key targeting official Google Vertex host is rejected for endpoints/openapi
 	for _, googleBase := range []string{"", "https://aiplatform.googleapis.com/v1/projects/proxy-test/locations/global"} {
 		googleKeyAuth := &cliproxyauth.Auth{
 			ID:       "vertex-apikey-google",
@@ -503,7 +500,6 @@ func TestGeminiVertexOpenAPI_APIKey_ValidationAndThirdPartyRelay(t *testing.T) {
 		}
 	}
 
-	// 2. Third-party compatible gateway with custom base_url routes non-google publisher model to endpoints/openapi/chat/completions
 	customGatewayAuth := &cliproxyauth.Auth{
 		ID:       "vertex-apikey-custom-gateway",
 		Provider: "vertex",
@@ -536,7 +532,6 @@ func TestGeminiVertexOpenAPI_APIKey_ValidationAndThirdPartyRelay(t *testing.T) {
 		t.Fatalf("got response = %q, want key openapi ok", gotText)
 	}
 
-	// 3. google/ prefix on a relay base URL keeps native generateContent path
 	relayAuth := &cliproxyauth.Auth{
 		ID:       "vertex-apikey-relay",
 		Provider: "vertex",
@@ -687,7 +682,6 @@ func TestGeminiVertexOpenAPI_ExplicitOptIn_GeminiClientToolCallThoughtSignatureR
 		ResponseFormat: sdktranslator.FormatGemini,
 	}
 
-	// Turn 1: Gemini generateContent request -> Vertex OpenAPI tool call response with thought_signature
 	turn1Resp, errTurn1 := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model: "gemini-3-pro",
 		Payload: []byte(`{
@@ -703,7 +697,6 @@ func TestGeminiVertexOpenAPI_ExplicitOptIn_GeminiClientToolCallThoughtSignatureR
 		t.Fatalf("Turn 1 response thoughtSignature = %q, want SIG_VERTEX_OPENAPI; payload=%s", gotSig, string(turn1Resp.Payload))
 	}
 
-	// Turn 2: Gemini client replays the model functionCall part with thoughtSignature + functionResponse
 	_, errTurn2 := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model: "gemini-3-pro",
 		Payload: []byte(`{
@@ -923,7 +916,6 @@ func TestGeminiVertexOpenAPI_PerModelOptInAndOverride(t *testing.T) {
 		t.Fatalf("Execute(gemini-openapi) error = %v", errExec)
 	}
 
-	// Same upstream model requested without the openapi-enabled alias stays on native generateContent
 	if _, errExec := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model:   "gemini-2.5-flash",
 		Payload: []byte(`{"model":"gemini-2.5-flash","messages":[{"role":"user","content":"hi"}]}`),
@@ -934,7 +926,6 @@ func TestGeminiVertexOpenAPI_PerModelOptInAndOverride(t *testing.T) {
 		t.Fatalf("Execute(gemini-2.5-flash) error = %v", errExec)
 	}
 
-	// Explicit per-model openapi: false overrides automatic slash detection
 	if _, errExec := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model:   "deepseek-ai/deepseek-v4.1-flash-maas",
 		Payload: []byte(`{"model":"deepseek-ai/deepseek-v4.1-flash-maas","messages":[{"role":"user","content":"hi"}]}`),

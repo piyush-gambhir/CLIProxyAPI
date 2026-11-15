@@ -24,8 +24,6 @@ type homeSessionAliasEntry struct {
 	aliases   []string
 }
 
-// homeSessionAliasCache reconciles multiple client identifiers for one Home
-// session without changing Home's single-session-ID protocol.
 type homeSessionAliasCache struct {
 	mu               sync.Mutex
 	entries          map[string]homeSessionAliasEntry

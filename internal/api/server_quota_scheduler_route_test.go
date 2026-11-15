@@ -12,10 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// TestQuotaSchedulerStatusRouteIsRegisteredAndGated checks the status endpoint
-// exists under both management groups and is behind the management key like
-// every other management route. The v8 path is canonical; v0 is kept because the
-// external client that consumes this contract was written against it.
 func TestQuotaSchedulerStatusRouteIsRegisteredAndGated(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	path := filepath.Join(t.TempDir(), "config.yaml")

@@ -29,7 +29,7 @@ func TestExtractResponseModelMultiProvider(t *testing.T) {
 		wantModel    string
 		wantTerminal bool
 	}{
-		// Claude format tests
+
 		{
 			name:         "claude sse message_start",
 			provider:     "claude",
@@ -51,7 +51,7 @@ func TestExtractResponseModelMultiProvider(t *testing.T) {
 			wantModel:    "claude-3-5-haiku-20241022",
 			wantTerminal: true,
 		},
-		// Gemini format tests
+
 		{
 			name:         "gemini sse chunk with modelVersion",
 			provider:     "gemini",
@@ -108,7 +108,7 @@ func TestExtractResponseModelMultiProvider(t *testing.T) {
 			wantModel:    "gemini-3.1-flash-lite",
 			wantTerminal: true,
 		},
-		// OpenAI / OpenAICompat format tests
+
 		{
 			name:         "openai sse chat completion chunk",
 			provider:     "openai",
@@ -130,7 +130,7 @@ func TestExtractResponseModelMultiProvider(t *testing.T) {
 			wantModel:    "gpt-4o-2024-08-06",
 			wantTerminal: true,
 		},
-		// xAI format tests
+
 		{
 			name:         "xai sse chat completion chunk",
 			provider:     "xai",
@@ -138,7 +138,7 @@ func TestExtractResponseModelMultiProvider(t *testing.T) {
 			wantModel:    "grok-beta",
 			wantTerminal: false,
 		},
-		// Generic fallback tests
+
 		{
 			name:         "generic fallback with model",
 			provider:     "custom",
@@ -175,24 +175,21 @@ func TestIsModelSubstitutedMultiProvider(t *testing.T) {
 		served    string
 		want      bool
 	}{
-		// Claude models
+
 		{name: "claude dated alias match", requested: "claude-3-7-sonnet", served: "claude-3-7-sonnet-20250219", want: false},
 		{name: "claude latest alias match", requested: "claude-3-5-sonnet-latest", served: "claude-3-5-sonnet-20241022", want: false},
 		{name: "claude substitution opus to sonnet", requested: "claude-opus-5", served: "claude-sonnet-5", want: true},
 		{name: "claude thinking suffix match", requested: "claude-3-7-sonnet(high)", served: "claude-3-7-sonnet", want: false},
 
-		// Gemini models
 		{name: "gemini dated alias match", requested: "gemini-2.5-flash", served: "gemini-2.5-flash-2025-05-20", want: false},
 		{name: "gemini preview is substitution", requested: "gemini-2.5-flash", served: "gemini-2.5-flash-preview", want: true},
 		{name: "gemini numeric version alias match", requested: "gemini-1.5-pro", served: "gemini-1.5-pro-002", want: false},
 		{name: "gemini substitution pro to flash", requested: "gemini-2.5-pro", served: "gemini-2.5-flash", want: true},
 
-		// OpenAI models
 		{name: "openai dated alias match", requested: "gpt-4o", served: "gpt-4o-2024-08-06", want: false},
 		{name: "openai substitution gpt-4o to gpt-4o-mini", requested: "gpt-4o", served: "gpt-4o-mini", want: true},
 		{name: "openai provider prefix match", requested: "openai/gpt-4o", served: "gpt-4o", want: false},
 
-		// Devin models
 		{name: "devin provider prefix match", requested: "devin/swe-2", served: "swe-2", want: false},
 	}
 
@@ -268,7 +265,7 @@ func TestUsageReporterMultiProviderSubstitutionWarning(t *testing.T) {
 }
 
 func TestStreamUsageBufferMultiProviderResponseModelPropagation(t *testing.T) {
-	// OpenAI stream
+
 	var openAIBuffer StreamUsageBuffer
 	openAIBuffer.ObserveOpenAIStream([]byte(`data: {"id":"1","model":"gpt-4o-mini","choices":[{"delta":{"content":"x"}}]}`))
 	if got := openAIBuffer.ResponseModel(); got != "gpt-4o-mini" {
@@ -282,7 +279,6 @@ func TestStreamUsageBufferMultiProviderResponseModelPropagation(t *testing.T) {
 		t.Fatalf("openAIReporter.ResponseModel() = %q, want gpt-4o-mini", got)
 	}
 
-	// Claude stream
 	var claudeBuffer StreamUsageBuffer
 	claudeBuffer.ObserveClaudeStream([]byte(`data: {"type":"message_start","message":{"id":"msg_1","model":"claude-3-5-haiku-20241022"}}`))
 	if got := claudeBuffer.ResponseModel(); got != "claude-3-5-haiku-20241022" {

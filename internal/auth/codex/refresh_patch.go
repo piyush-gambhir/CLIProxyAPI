@@ -7,9 +7,6 @@ var codexSIWCCredentialKeys = []string{
 	"expired", "expires_at", "earliest_refresh_at", "last_refresh", "scope", "scopes",
 }
 
-// CredentialRefreshPatch is an immutable, partition-specific refresh result.
-// Its original token identities (both in-memory and on-disk baselines) act as versions,
-// independent of timestamp precision.
 type CredentialRefreshPatch struct {
 	outerBefore          map[string]any
 	outerDiskBefore      map[string]any
@@ -24,15 +21,12 @@ type CredentialRefreshPatch struct {
 	siwcErr              error
 }
 
-// NewCredentialRefreshPatch records only credential partitions actually refreshed.
 func NewCredentialRefreshPatch(before, after map[string]any, outer, siwc bool) *CredentialRefreshPatch {
 	patch := NewCredentialRefreshPatchWithDiskBaseline(before, nil, after, outer, siwc)
 	patch.upstreamRefreshed = outer || siwc
 	return patch
 }
 
-// NewCredentialRefreshPatchWithDiskBaseline records both the in-memory baseline (before)
-// and the on-disk baseline (diskBefore) observed under the file lock before refreshing to after.
 func NewCredentialRefreshPatchWithDiskBaseline(before, diskBefore, after map[string]any, outer, siwc bool) *CredentialRefreshPatch {
 	patch := &CredentialRefreshPatch{
 		upstreamRefreshed:    outer || siwc,
@@ -113,7 +107,7 @@ func matchesBaselineOrAfter(target, memBefore, diskBefore, after map[string]any)
 
 func applyCredentialFields(disk, before, after map[string]any) {
 	for key, value := range after {
-		// Preserve fields changed on disk that the refresh did not modify.
+
 		oldValue, existed := before[key]
 		if !existed || !reflect.DeepEqual(oldValue, value) {
 			disk[key] = value
@@ -128,8 +122,6 @@ func applyCredentialFields(disk, before, after map[string]any) {
 	}
 }
 
-// IsCodexCredentialKey reports whether key belongs to a Codex credential partition or switch
-// managed by CredentialRefreshPatch.
 func IsCodexCredentialKey(key string) bool {
 	if key == "siwc" || key == "use_siwc" {
 		return true
@@ -142,18 +134,14 @@ func IsCodexCredentialKey(key string) bool {
 	return false
 }
 
-// RefreshedOuter reports whether p carries a refreshed outer Codex credential partition.
 func (p *CredentialRefreshPatch) RefreshedOuter() bool {
 	return p != nil && p.outerAfter != nil
 }
 
-// RefreshedSIWC reports whether p carries a refreshed SIWC credential partition.
 func (p *CredentialRefreshPatch) RefreshedSIWC() bool {
 	return p != nil && p.siwcAfter != nil
 }
 
-// SetUpstreamRefreshed records whether an upstream OAuth token refresh actually succeeded
-// (as opposed to only adopting rotated credentials already present on disk).
 func (p *CredentialRefreshPatch) SetUpstreamRefreshed(refreshed bool) {
 	if p == nil {
 		return
@@ -161,7 +149,6 @@ func (p *CredentialRefreshPatch) SetUpstreamRefreshed(refreshed bool) {
 	p.upstreamRefreshed = refreshed
 }
 
-// UpstreamRefreshed reports whether p includes an upstream OAuth token refresh.
 func (p *CredentialRefreshPatch) UpstreamRefreshed() bool {
 	if p == nil {
 		return false
@@ -169,7 +156,6 @@ func (p *CredentialRefreshPatch) UpstreamRefreshed() bool {
 	return p.upstreamRefreshed
 }
 
-// SetPartitionErrors records any per-partition refresh failures that occurred alongside a partial refresh.
 func (p *CredentialRefreshPatch) SetPartitionErrors(outerErr, siwcErr error) {
 	if p == nil {
 		return
@@ -178,7 +164,6 @@ func (p *CredentialRefreshPatch) SetPartitionErrors(outerErr, siwcErr error) {
 	p.siwcErr = siwcErr
 }
 
-// OuterError returns any error encountered while refreshing the outer OAuth partition.
 func (p *CredentialRefreshPatch) OuterError() error {
 	if p == nil {
 		return nil
@@ -186,7 +171,6 @@ func (p *CredentialRefreshPatch) OuterError() error {
 	return p.outerErr
 }
 
-// SIWCError returns any error encountered while refreshing the SIWC partition.
 func (p *CredentialRefreshPatch) SIWCError() error {
 	if p == nil {
 		return nil
@@ -194,7 +178,6 @@ func (p *CredentialRefreshPatch) SIWCError() error {
 	return p.siwcErr
 }
 
-// FailedOuterRefreshToken returns the baseline outer refresh token that was submitted when OuterError occurred.
 func (p *CredentialRefreshPatch) FailedOuterRefreshToken() string {
 	if p == nil || p.outerErr == nil {
 		return ""
@@ -202,7 +185,6 @@ func (p *CredentialRefreshPatch) FailedOuterRefreshToken() string {
 	return p.baselineOuterRefresh
 }
 
-// FailedSIWCRefreshToken returns the baseline SIWC refresh token that was submitted when SIWCError occurred.
 func (p *CredentialRefreshPatch) FailedSIWCRefreshToken() string {
 	if p == nil || p.siwcErr == nil {
 		return ""
@@ -210,13 +192,11 @@ func (p *CredentialRefreshPatch) FailedSIWCRefreshToken() string {
 	return p.baselineSIWCRefresh
 }
 
-// PartitionRefreshError carries per-partition refresh errors when a credential refresh fails.
 type PartitionRefreshError struct {
 	outerErr error
 	siwcErr  error
 }
 
-// NewPartitionRefreshError returns a combined error carrying both outer and SIWC refresh errors when present.
 func NewPartitionRefreshError(outerErr, siwcErr error) error {
 	if outerErr == nil && siwcErr == nil {
 		return nil
@@ -274,7 +254,6 @@ func (e *PartitionRefreshError) SIWCRefreshError() error {
 	return e.siwcErr
 }
 
-// CanApplyTo reports whether at least one refreshed partition in p still matches disk's version.
 func (p *CredentialRefreshPatch) CanApplyTo(disk map[string]any) bool {
 	if p == nil {
 		return false
@@ -293,8 +272,6 @@ func (p *CredentialRefreshPatch) CanApplyTo(disk map[string]any) bool {
 	return false
 }
 
-// Apply overlays successful refreshes on the locked disk snapshot. A partition
-// rotated since refresh began is retained, without blocking the other partition.
 func (p *CredentialRefreshPatch) Apply(disk map[string]any) map[string]any {
 	merged := cloneStringAnyMap(disk)
 	if merged == nil {

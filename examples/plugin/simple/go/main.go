@@ -208,7 +208,7 @@ func handleMethod(method string, request []byte) ([]byte, error) {
 	case pluginabi.MethodCommandLineExecute:
 		return okEnvelope(pluginapi.CommandLineExecutionResponse{Stdout: []byte("plugin example command\n")})
 	case pluginabi.MethodManagementRegister:
-		// CPA exposes menu resources under /v0/resource/plugins/<plugin-id>/.
+
 		return okEnvelope(managementRegistrationResponse{Resources: []pluginapi.ResourceRoute{{
 			Path:        "/status",
 			Menu:        "Example Plugin",

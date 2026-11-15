@@ -15,8 +15,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// benchSSEEvents returns Responses-style SSE deltas whose text mixes common words and random
-// identifiers, so they compress like real model output.
 func benchSSEEvents(n int) []string {
 	r := rand.New(rand.NewSource(1))
 	words := strings.Fields("the function return error context request response model input output tool call result value index token cache stream event message content type text file path line")
@@ -52,7 +50,6 @@ func benchCompressionEngine(events []string, hold <-chan struct{}, started *sync
 	return engine
 }
 
-// BenchmarkResponseCompressionSSE serves whole compressed SSE responses concurrently.
 func BenchmarkResponseCompressionSSE(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	for _, n := range []int{20, 500} {
@@ -84,13 +81,10 @@ func BenchmarkResponseCompressionSSE(b *testing.B) {
 	}
 }
 
-// BenchmarkResponseCompressionOpenStreams measures open SSE streams with fresh encoders.
 func BenchmarkResponseCompressionOpenStreams(b *testing.B) {
 	benchmarkResponseCompressionOpenStreams(b, false)
 }
 
-// BenchmarkResponseCompressionOpenStreamsAfterShortResponse measures streams whose encoders
-// have already compressed a short non-streaming response.
 func BenchmarkResponseCompressionOpenStreamsAfterShortResponse(b *testing.B) {
 	benchmarkResponseCompressionOpenStreams(b, true)
 }
@@ -104,7 +98,7 @@ func benchmarkResponseCompressionOpenStreams(b *testing.B, afterShortResponse bo
 		b.Run(encoding, func(b *testing.B) {
 			if afterShortResponse {
 				original := responseCompressorPools[encoding]
-				// Prime each encoder before it is handed to a stream, independently of pool eviction.
+
 				responseCompressorPools[encoding] = &sync.Pool{New: func() any {
 					compressor, ok := original.Get().(responseCompressor)
 					if !ok || compressor == nil {
@@ -130,8 +124,7 @@ func benchmarkResponseCompressionOpenStreams(b *testing.B, afterShortResponse bo
 				hold := make(chan struct{})
 				var started, done sync.WaitGroup
 				engine := benchCompressionEngine(events, hold, &started)
-				// Two cycles empty sync.Pool: the first moves pooled encoders to the victim cache,
-				// the second frees them. Otherwise the baseline already counts them.
+
 				runtime.GC()
 				runtime.GC()
 				var before, during runtime.MemStats

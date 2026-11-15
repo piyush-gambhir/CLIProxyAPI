@@ -7,7 +7,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// IsCodexResponsesLiteRequest recognizes the native header and its websocket metadata mirror.
 func IsCodexResponsesLiteRequest(body []byte, headers http.Header) bool {
 	if strings.EqualFold(strings.TrimSpace(headers.Get("X-OpenAI-Internal-Codex-Responses-Lite")), "true") {
 		return true

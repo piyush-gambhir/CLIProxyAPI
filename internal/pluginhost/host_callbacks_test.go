@@ -1741,7 +1741,6 @@ func TestDecodeHostHTTPRequestWithWireProfile(t *testing.T) {
 		HeaderProfile:          []string{"host", "user-agent"},
 	}
 
-	// Flat rpcHostHTTPRequest
 	flatReq := rpcHostHTTPRequest{
 		HostCallbackID: "cb-1",
 		Method:         http.MethodPost,
@@ -1766,7 +1765,6 @@ func TestDecodeHostHTTPRequestWithWireProfile(t *testing.T) {
 		t.Fatalf("decoded header profile mismatch: %#v", decoded.WireProfile.HeaderProfile)
 	}
 
-	// Nested httpRequest
 	nestedReq := rpcHostHTTPRequest{
 		HostCallbackID: "cb-2",
 		Request: &httpRequest{
@@ -1790,7 +1788,6 @@ func TestDecodeHostHTTPRequestWithWireProfile(t *testing.T) {
 		t.Fatalf("decoded nested wire profile mismatch: %#v", decodedNested.WireProfile)
 	}
 
-	// Direct pluginapi.HTTPRequest JSON serialization (SDK contract)
 	sdkReq := pluginapi.HTTPRequest{
 		Method:      http.MethodPost,
 		URL:         "https://example.com/sdk",
@@ -1913,20 +1910,17 @@ func TestModelExecutionErrorPreservesHTTPStatus(t *testing.T) {
 		t.Fatal("expected errors.Is(err, baseErr) to be true")
 	}
 
-	// Verify status preservation when underlying error is nil
 	errNilBase := modelExecutionError(&interfaces.ErrorMessage{StatusCode: http.StatusServiceUnavailable})
 	if got := clienterror.HTTPStatusFromError(errNilBase); got != http.StatusServiceUnavailable {
 		t.Fatalf("clienterror.HTTPStatusFromError(nilBase) = %d, want %d", got, http.StatusServiceUnavailable)
 	}
 
-	// Verify status preservation when underlying error already matches status
 	matchingErr := testHostStatusError{error: errors.New("synthetic"), status: http.StatusTooManyRequests}
 	errMatching := modelExecutionError(&interfaces.ErrorMessage{StatusCode: http.StatusTooManyRequests, Error: matchingErr})
 	if errMatching != matchingErr {
 		t.Fatalf("expected errMatching to return original matchingErr, got %#v", errMatching)
 	}
 
-	// Verify explicit status overrides mismatched underlying status while preserving unwrap
 	errConflict := modelExecutionError(&interfaces.ErrorMessage{StatusCode: http.StatusServiceUnavailable, Error: matchingErr})
 	if got := clienterror.HTTPStatusFromError(errConflict); got != http.StatusServiceUnavailable {
 		t.Fatalf("clienterror.HTTPStatusFromError(errConflict) = %d, want %d", got, http.StatusServiceUnavailable)

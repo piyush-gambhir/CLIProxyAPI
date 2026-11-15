@@ -1,6 +1,3 @@
-// Package executor provides runtime execution capabilities for various AI service providers.
-// This file implements the AI Studio executor that routes requests through a websocket-backed
-// transport for the AI Studio provider.
 package executor
 
 import (
@@ -25,30 +22,18 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// AIStudioExecutor routes AI Studio requests through a websocket-backed transport.
 type AIStudioExecutor struct {
 	provider string
 	relay    *wsrelay.Manager
 	cfg      *config.Config
 }
 
-// NewAIStudioExecutor creates a new AI Studio executor instance.
-//
-// Parameters:
-//   - cfg: The application configuration
-//   - provider: The provider name
-//   - relay: The websocket relay manager
-//
-// Returns:
-//   - *AIStudioExecutor: A new AI Studio executor instance
 func NewAIStudioExecutor(cfg *config.Config, provider string, relay *wsrelay.Manager) *AIStudioExecutor {
 	return &AIStudioExecutor{provider: strings.ToLower(provider), relay: relay, cfg: cfg}
 }
 
-// Identifier returns the executor identifier.
 func (e *AIStudioExecutor) Identifier() string { return "aistudio" }
 
-// PrepareRequest prepares the HTTP request for execution.
 func (e *AIStudioExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -61,7 +46,6 @@ func (e *AIStudioExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.
 	return nil
 }
 
-// HttpRequest forwards an arbitrary HTTP request through the websocket relay.
 func (e *AIStudioExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("aistudio executor: request is nil")
@@ -122,7 +106,6 @@ func (e *AIStudioExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.A
 	return resp, nil
 }
 
-// Execute performs a non-streaming request to the AI Studio API.
 func (e *AIStudioExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	if opts.Alt == "responses/compact" {
 		return resp, statusErr{code: http.StatusNotImplemented, msg: "/responses/compact not supported"}
@@ -216,7 +199,6 @@ func (e *AIStudioExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth,
 	return resp, nil
 }
 
-// ExecuteStream performs a streaming request to the AI Studio API.
 func (e *AIStudioExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	if opts.Alt == "responses/compact" {
 		return nil, statusErr{code: http.StatusNotImplemented, msg: "/responses/compact not supported"}
@@ -528,7 +510,6 @@ func (e *AIStudioExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth
 	return &cliproxyexecutor.StreamResult{Headers: firstEvent.Headers.Clone(), Chunks: out}, nil
 }
 
-// CountTokens counts tokens for the given request using the AI Studio API.
 func (e *AIStudioExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	countReq := req
@@ -589,7 +570,6 @@ func (e *AIStudioExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.A
 	return cliproxyexecutor.Response{Payload: translated}, nil
 }
 
-// Refresh refreshes the authentication credentials (no-op for AI Studio).
 func (e *AIStudioExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
@@ -676,9 +656,6 @@ func (e *AIStudioExecutor) translateRequest(ctx context.Context, req cliproxyexe
 	}, nil
 }
 
-// normalizeAIStudioThinkingLevel normalizes thinking levels to Google's canonical uppercase enum values.
-// The AI Studio upstream validates generationConfig.thinkingConfig.thinkingLevel case-sensitively
-// and rejects lowercase values with a 400 invalid argument error.
 func normalizeAIStudioThinkingLevel(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !normalizeAIStudioThinkingLevelDoc(doc) {
@@ -724,11 +701,6 @@ func (e *AIStudioExecutor) buildEndpoint(model, action, alt string) string {
 	return base
 }
 
-// splitRelayFrames splits one relay stream chunk into the SSE frames it holds. A chunk that starts with an SSE field (data:, event:,
-// id:, retry: or a comment) is cut at its blank lines and each frame is reduced to its data: lines (the translators read data
-// lines; event:, id:, retry: and comment lines carry nothing they use, and a frame without data, a keep-alive comment, is dropped),
-// each frame ending with the blank line. A chunk that starts anything else (a bare or pretty-printed JSON value, "[DONE]") is one
-// frame as it is, never cut.
 func splitRelayFrames(payload []byte) [][]byte {
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 	if !startsWithSSEField(trimmed) {
@@ -760,8 +732,6 @@ func startsWithSSEField(b []byte) bool {
 	return false
 }
 
-// ensureColonSpacedJSON normalizes JSON objects so that colons are followed by a single space while
-// keeping the payload otherwise compact. Non-JSON inputs are returned unchanged.
 func ensureColonSpacedJSON(payload []byte) []byte {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) == 0 {
@@ -785,8 +755,7 @@ func ensureColonSpacedJSON(payload []byte) []byte {
 	for i := 0; i < len(indented); i++ {
 		ch := indented[i]
 		if ch == '"' {
-			// A quote is escaped only when preceded by an odd number of consecutive backslashes.
-			// For example: "\\\"" keeps the quote inside the string, but "\\\\" closes the string.
+
 			backslashes := 0
 			for j := i - 1; j >= 0 && indented[j] == '\\'; j-- {
 				backslashes++
@@ -815,5 +784,4 @@ func ensureColonSpacedJSON(payload []byte) []byte {
 	return compacted
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
 func (e *AIStudioExecutor) SupportsApplyPatch() bool { return e != nil }

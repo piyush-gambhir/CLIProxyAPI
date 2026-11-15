@@ -8,7 +8,6 @@ import (
 
 var yamlNodeType = reflect.TypeOf(yaml.Node{})
 
-// CloneForRuntime returns an independent in-memory snapshot of the full config.
 func (cfg *Config) CloneForRuntime() *Config {
 	if cfg == nil {
 		return nil

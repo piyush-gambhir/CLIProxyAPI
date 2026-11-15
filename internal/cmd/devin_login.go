@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DoDevinLogin triggers the OAuth PKCE or headless token flow for Devin / Cognition and saves credentials.
 func DoDevinLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {
 		options = &LoginOptions{}

@@ -46,9 +46,6 @@ func (codexEmptyIncompleteStreamError) IsRequestScoped() bool {
 	return true
 }
 
-// Streamed Codex responses may emit response.output_item.done events while leaving
-// response.completed.response.output empty. Keep the stream path aligned with the
-// already-patched non-stream path by reconstructing response.output from those items.
 func collectCodexOutputItemDone(eventData []byte, outputItemsByIndex map[int64][]byte, outputItemsFallback *[][]byte) {
 	itemResult := ojson.GetBytesNoCopy(eventData, "item")
 	if !itemResult.Exists() || itemResult.Type != ojson.JSON {
@@ -343,9 +340,7 @@ func newCodexStatusErrWithHeadersAndCooling(statusCode int, headers http.Header,
 	}
 	body = classifyCodexStatusError(errCode, body)
 	err := statusErr{code: errCode, msg: string(body), credentialScoped: credentialScoped, transientRateLimit: transientCapacity && errCode == http.StatusTooManyRequests}
-	// A usage_limit_reached body reset describes quota recovery and wins over
-	// the generic Retry-After header. Every other 429 honours the upstream
-	// header so per-turn admission limits cool until their real deadline.
+
 	if retryAfter := parseCodexRetryAfter(errCode, body, time.Now()); retryAfter != nil {
 		err.retryAfter = retryAfter
 	} else if errCode == http.StatusTooManyRequests {
@@ -402,13 +397,6 @@ func codexStatusErrorClassification(statusCode int, body []byte) (code string, e
 	}
 }
 
-// isCodexTurnRateLimitError reports whether the error body is Codex's
-// per-turn admission rejection (issue 7017): the upstream is at capacity for
-// this turn while the credential quota is not exhausted. The stable signal
-// is the dedicated error code; when the code is absent, a rate_limit_error
-// whose message says the service is at capacity is accepted. Generic
-// rate_limit_exceeded rejections are intentionally excluded: they keep their
-// existing generic 429 handling.
 func isCodexTurnRateLimitError(errorBody []byte) bool {
 	if len(errorBody) == 0 {
 		return false
@@ -429,8 +417,7 @@ func isCodexTurnRateLimitError(errorBody []byte) bool {
 		}
 		hasOtherCode = true
 	}
-	// The capacity-message fallback applies only when no dedicated error
-	// code is present; an explicit other code keeps its existing handling.
+
 	if hasOtherCode {
 		return false
 	}
@@ -462,8 +449,6 @@ func isCodexTurnRateLimitError(errorBody []byte) bool {
 	return false
 }
 
-// codexErrorCodeOf returns the dedicated error code across the layouts the
-// Codex upstream uses.
 func codexErrorCodeOf(errorBody []byte) string {
 	for _, path := range []string{"error.code", "code", "body.error.code"} {
 		if code := strings.TrimSpace(ojson.GetBytesNoCopy(errorBody, path).String()); code != "" {
@@ -473,11 +458,6 @@ func codexErrorCodeOf(errorBody []byte) string {
 	return ""
 }
 
-// isCodexTransientCapacityError covers every Codex capacity rejection that
-// is transient and model-scoped: the legacy model-at-capacity wording and
-// the per-turn admission rejection. An explicit error code other than the
-// capacity codes keeps its existing handling, so a generic
-// rate_limit_exceeded rejection is never downgraded by message text.
 func isCodexTransientCapacityError(errorBody []byte) bool {
 	if code := codexErrorCodeOf(errorBody); code != "" &&
 		!strings.EqualFold(code, "turn_rate_limit_exceeded") &&
@@ -512,12 +492,6 @@ func isCodexModelCapacityError(errorBody []byte) bool {
 	return false
 }
 
-// isCodexUsageLimitError reports whether the error body represents a Codex
-// quota/plan-limit exhaustion (error.type == "usage_limit_reached"). This is the
-// signal Codex emits when a credential's usage quota is depleted, and it carries
-// reset timing (resets_at/resets_in_seconds) parsed by parseCodexRetryAfter.
-// Transient per-minute rate limits (rate_limit_error/rate_limit_exceeded) are
-// intentionally excluded, as they should be retried rather than cooled down.
 func isCodexUsageLimitError(errorBody []byte) bool {
 	if len(errorBody) == 0 {
 		return false
@@ -558,7 +532,6 @@ func parseCodexRetryAfter(statusCode int, errorBody []byte, now time.Time) *time
 	return nil
 }
 
-// codexBootstrapNowMu protects codexBootstrapNow across concurrent tests and goroutines.
 var (
 	codexBootstrapNowMu sync.RWMutex
 	codexBootstrapNow   = time.Now
@@ -586,50 +559,17 @@ func setCodexBootstrapNowForTest(fn func() time.Time) func() {
 	}
 }
 
-// codexBootstrapMaxBufferedFrames bounds how many upstream frames may be held back while probing
-// for a rejection embedded in an HTTP 200 stream. It counts frames read from the upstream, not
-// chunks handed downstream: a frame the downstream translator does not recognise renders as zero
-// chunks, so a chunk count is a bound only for the formats that happen to render every frame.
-//
-// The two transports spend the budget differently: the SSE executor charges one unit per line it
-// holds, the websocket executor one per message it reads whether or not it holds it. So the same
-// number protects 15 heartbeats under the three-line event:/data:/blank shape a keepalive arrives
-// in - 45 lines, with the rejection frame's own event: line spending a 46th - and more under terser
-// framings; config.example.yaml lists the measured count for each. It is sized for that worst case
-// rather than for a fixed event count, because deriving the unit from the framing is what lets an
-// upstream evade the bound.
 const codexBootstrapMaxBufferedFrames = 48
 
-// codexBootstrapMaxBufferedBytes caps what a single bootstrap retains, counted over the upstream
-// frames and the chunks they translate into. A frame budget alone would not bound that: on SSE
-// scanner.Buffer allows 50MB per line, and the websocket dialer sets no read limit at all. The check
-// runs before the frame is taken, so one oversized frame cannot be admitted on the strength of an
-// empty buffer - but it bounds what is retained, not the peak: the transport has already
-// materialised the frame by the time it is consulted.
 const codexBootstrapMaxBufferedBytes = 1 << 20
 
-// isCodexBootstrapBufferableEvent reports whether a frame may be held back before the downstream
-// response headers are committed, i.e. whether nothing observable has happened yet.
-//
-// The list is closed on purpose. "Nothing has happened yet" cannot be derived from the absence of a
-// TTFT token: TTFT deliberately ignores server-side tool traffic such as
-// response.shell_call_output_content.delta and its .done counterpart, and holding one of those back
-// would let a later rejection replay a tool call, and its side effects, on another credential. An
-// unrecognised frame therefore releases the stream.
-//
-// Beyond the handshake preamble the list covers what upstream interleaves before the first token:
-// keepalive heartbeats, and the *.added frames that announce an item or part with no content yet.
 func isCodexBootstrapBufferableEvent(eventType string, payload []byte) bool {
-	// An empty data: frame is the SSE heartbeat idiom and carries nothing at all, which is how the
-	// websocket loop already treats an empty message. Without this it would fall through to the
-	// default and release the stream, turning the feature off for any upstream that sends one.
+
 	if len(bytes.TrimSpace(payload)) == 0 {
 		return true
 	}
 	switch eventType {
-	// response.metadata carries prompt-moderation flags, not generated output. Upstream now sends it
-	// between response.in_progress and a server_is_overloaded rejection, so releasing on it leaked
-	// the rejection to the client instead of failing over (issue #6856).
+
 	case "response.created", "response.in_progress", "codex.rate_limits", "codex.response.metadata", "response.metadata", "keepalive":
 		return true
 	case "response.output_item.added":
@@ -643,13 +583,6 @@ func isCodexBootstrapBufferableEvent(eventType string, payload []byte) bool {
 	}
 }
 
-// isCodexBufferableOutputItem reports whether an announced output item is one the model produces by
-// itself and has not started producing, so nothing is running upstream yet. The emptiness checks
-// cover message and reasoning text, tool arguments, and encrypted reasoning. Every other item type
-// is released, which covers the server-side operations that may already have been dispatched - a
-// web_search_call is announced with status "in_progress" and its searching event follows
-// immediately, and failing the attempt over after one would run it again on another credential - and
-// errs the same way for anything else this list has not been taught about.
 func isCodexBufferableOutputItem(payload []byte) bool {
 	item := ojson.GetBytesNoCopy(payload, "item")
 	switch item.Get("type").String() {
@@ -669,10 +602,6 @@ func isCodexBufferableOutputItem(payload []byte) bool {
 	}
 }
 
-// isCodexEmptyContentList reports whether every entry of an item's content or summary array is a
-// textual shape this list knows about and is still empty. An entry whose type is not on the list may
-// carry content in a field this check cannot see - an output_audio entry keeps it in "audio" - so it
-// is treated as already produced.
 func isCodexEmptyContentList(list ojson.Result) bool {
 	for _, entry := range list.Array() {
 		switch entry.Get("type").String() {
@@ -691,10 +620,6 @@ func isCodexEmptyContentList(list ojson.Result) bool {
 	return true
 }
 
-// isCodexEmptyPart reports whether an announced part is a textual one that is still empty. The part
-// type is matched against a closed list for the same reason the event type is: a part shape this
-// list has not been taught about may carry content in a field the emptiness check cannot see, so it
-// releases the stream instead.
 func isCodexEmptyPart(payload []byte) bool {
 	part := ojson.GetBytesNoCopy(payload, "part")
 	switch part.Get("type").String() {
@@ -707,27 +632,15 @@ func isCodexEmptyPart(payload []byte) bool {
 	}
 }
 
-// observeCodexTokenEvent inspects a stream payload, marks TTFT on the first substantive
-// token event, and records the model the upstream reports serving.
 func observeCodexTokenEvent(reporter *helps.UsageReporter, payload []byte) {
 	helps.ObserveResponsesTokenEvent(reporter, payload)
 	reporter.ObserveResponseModel(payload)
 }
 
-// newCodexBootstrapOverloadErr reports a buffered overload rejection with its real status.
-//
-// The status is deliberately produced here instead of in codexTerminalFailureStatus: that mapping
-// is shared with the unbuffered path, where the rejection is delivered in-stream and a status
-// change would alter cooldown classification and retry-after parsing for everyone. Keeping 503
-// scoped to this path means disabling the feature restores the previous behaviour exactly.
 func newCodexBootstrapOverloadErr(body []byte) statusErr {
 	return newCodexStatusErr(http.StatusServiceUnavailable, body)
 }
 
-// isCodexOverloadBootstrapFailure reports whether a terminal failure delivered inside an HTTP 200
-// stream is a transient capacity rejection that a different credential may be able to serve.
-// Only these failures justify replacing the whole attempt during bootstrap; every other terminal
-// failure keeps the original in-stream delivery semantics so downstream behaviour is unchanged.
 func isCodexOverloadBootstrapFailure(body []byte) bool {
 	if isCodexTransientCapacityError(body) {
 		return true

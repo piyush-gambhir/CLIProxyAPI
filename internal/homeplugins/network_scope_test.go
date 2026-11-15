@@ -36,7 +36,7 @@ func TestPluginStoreClientsShareProxyCooldown(t *testing.T) {
 	}}
 	expiresAt := time.Now().Add(time.Hour)
 	plugin := sdkpluginstore.Plugin{Repository: "https://github.com/test/home-network-scope"}
-	// Seed the same process-wide cooldown used by management and Home clients.
+
 	seed := sdkpluginstore.NewClientWithResolvedAuthExpiry(networkScopeDoer(func(*http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: http.StatusTooManyRequests, Header: http.Header{"Retry-After": {"3600"}}, Body: io.NopCloser(strings.NewReader("limited"))}, nil
 	}), "", auth, expiresAt).WithNetworkScope(proxy.URL)

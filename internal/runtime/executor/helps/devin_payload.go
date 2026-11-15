@@ -12,8 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-// Devin payload rules address the native business fields, never credentials or
-// Connect framing. Encoding after the barrier does not inject defaults or sanitize.
 type devinPayloadField struct {
 	name      string
 	kind      protowire.Type
@@ -60,8 +58,6 @@ var devinPayloadFields = map[protowire.Number]devinPayloadField{
 	21: {name: "model", kind: protowire.BytesType},
 }
 
-// DevinPayloadDefaultsSource maps caller field presence to the native business
-// view so defaults can replace built-in values without replacing caller values.
 func DevinPayloadDefaultsSource(native, interactions []byte) []byte {
 	doc := ojson.NewDocString("{}")
 	for target, sources := range map[string][]string{
@@ -95,8 +91,6 @@ func DevinPayloadDefaultsSource(native, interactions []byte) []byte {
 	return doc.Bytes()
 }
 
-// FinalizeDevinPayload projects the already-normalized protobuf business fields
-// to JSON for user rules, then replaces only those fields in the wire message.
 func FinalizeDevinPayload(wire []byte, finalize PayloadFinalizer) ([]byte, []byte, error) {
 	view, errDecode := decodeDevinPayload(wire, devinPayloadFields)
 	if errDecode != nil {
@@ -169,7 +163,7 @@ func decodeDevinPayload(wire []byte, fields map[protowire.Number]devinPayloadFie
 
 func encodeDevinPayload(original []byte, body ojson.Result, fields map[protowire.Number]devinPayloadField) ([]byte, error) {
 	var out []byte
-	// Credentials, device metadata, thread ordinals, and protocol flags stay opaque.
+
 	for len(original) > 0 {
 		num, kind, tagLen := protowire.ConsumeTag(original)
 		if tagLen < 0 {

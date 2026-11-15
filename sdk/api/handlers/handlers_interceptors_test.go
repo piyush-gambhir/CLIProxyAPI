@@ -29,9 +29,9 @@ type handlerInterceptorTestHost struct {
 	interceptStreamChunk          func(context.Context, pluginapi.StreamChunkInterceptRequest) pluginapi.StreamChunkInterceptResponse
 	observeWebSocketResponseEvent func(context.Context, pluginapi.WebSocketResponseEvent)
 	completeRequest               func(context.Context, pluginapi.RequestCompletion)
-	// includeStreamChunkRequestBodies simulates legacy schema_version < 3 plugins.
+
 	includeStreamChunkRequestBodies bool
-	// includeStreamChunkHistory simulates legacy schema_version < 5 plugins.
+
 	includeStreamChunkHistory bool
 }
 
@@ -101,8 +101,6 @@ func (h *handlerInterceptorTestHost) ObserveWebSocketResponseEvent(ctx context.C
 	}
 }
 
-// StreamChunkPayloadIncludesRequestBody implements streamChunkRequestBodyPolicy.
-// Default false simulates schema_version >= 3 (omit request bodies on payload chunks).
 func (h *handlerInterceptorTestHost) StreamChunkPayloadIncludesRequestBody() bool {
 	if h == nil {
 		return false
@@ -110,8 +108,6 @@ func (h *handlerInterceptorTestHost) StreamChunkPayloadIncludesRequestBody() boo
 	return h.includeStreamChunkRequestBodies
 }
 
-// StreamChunkPayloadIncludesHistory implements streamChunkHistoryPolicy.
-// Default false simulates schema_version >= 5 (omit history on payload chunks).
 func (h *handlerInterceptorTestHost) StreamChunkPayloadIncludesHistory() bool {
 	if h == nil {
 		return false
@@ -230,9 +226,6 @@ func contextWithHeaders(headers http.Header) context.Context {
 	return context.WithValue(context.Background(), "gin", c)
 }
 
-// contextWithQuery builds a context whose embedded gin request carries the given
-// query parameters, mirroring how plain HTTP requests expose inbound query to
-// queryFromContext.
 func contextWithQuery(query url.Values) context.Context {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
@@ -1101,7 +1094,7 @@ func TestHandlerStreamInterceptorLegacySchemaClonesRequestBodiesOnPayloadChunks(
 				if string(req.OriginalRequest) != `{"stage":"legacy-stream"}` || string(req.RequestBody) != `{"stage":"legacy-stream"}` {
 					t.Fatalf("header-init bodies = original:%q body:%q", req.OriginalRequest, req.RequestBody)
 				}
-				// Mutate delivered slices; later chunks must not observe this mutation.
+
 				req.OriginalRequest[0] = 'X'
 				req.RequestBody[0] = 'Y'
 				return pluginapi.StreamChunkInterceptResponse{}
@@ -1706,7 +1699,6 @@ func TestRequestAfterAuthCapture_ReadOnlyInterceptorDoesNotReallocatePayload_Iss
 		OriginalRequest: payload,
 	}
 
-	// Read-only after-auth response: Body is empty
 	capture.record(coreexecutor.RequestAfterAuthInterceptRequest{
 		Body: payload,
 	}, coreexecutor.RequestAfterAuthInterceptResponse{
@@ -1723,7 +1715,7 @@ func TestRequestAfterAuthCapture_ReadOnlyInterceptorDoesNotReallocatePayload_Iss
 }
 
 func TestApplyRequestInterceptors_ReadOnlyInterceptorDoesNotReallocatePayload_Issue6101(t *testing.T) {
-	// A read-only interceptor returns an empty/nil Body.
+
 	host := &handlerInterceptorTestHost{
 		interceptRequestBeforeAuth: func(ctx context.Context, req pluginapi.RequestInterceptRequest) pluginapi.RequestInterceptResponse {
 			return pluginapi.RequestInterceptResponse{

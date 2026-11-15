@@ -210,7 +210,7 @@ func TestApplyAuthExcludedModelsMeta_EmptyRulesKeepExistingAttributes(t *testing
 		if got := auth.Attributes["auth_kind"]; got != "oauth" {
 			t.Fatalf("rules=%v: auth_kind = %q, want unchanged oauth", rules, got)
 		}
-		// Callers that rebuild attributes on an existing auth must clear stale values themselves.
+
 		for _, key := range []string{"excluded_models", "excluded_models_hash"} {
 			if got := auth.Attributes[key]; got != "existing" {
 				t.Fatalf("rules=%v: %s = %q, want existing value kept", rules, key, got)

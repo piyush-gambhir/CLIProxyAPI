@@ -50,8 +50,6 @@ func TestIssue6825StreamToolIndicesAcrossChunks(t *testing.T) {
 	}
 }
 
-// issue6825Conversation keeps translation, request preparation and replay real;
-// only the remote Antigravity service is replaced with a local HTTP endpoint.
 type issue6825Conversation struct {
 	t        *testing.T
 	executor *AntigravityExecutor
@@ -306,7 +304,7 @@ func TestIssue6825PolicyReplayRejectsChangedContext(t *testing.T) {
 			case "arguments":
 				_ = followupDoc.Set("messages.1.tool_calls.0.function.arguments", `{"tz":"Asia/Tokyo"}`)
 			case "caller":
-				// Untrusted body metadata must not override the trusted execution scope.
+
 				_ = followupDoc.Set("tool_choice", "auto")
 				_ = followupDoc.Set("metadata.caller_scope", session.CallerScope("trusted-caller-A"))
 				opts.Metadata = map[string]any{cliproxyexecutor.CallerScopeMetadataKey: session.CallerScope("trusted-caller-B")}

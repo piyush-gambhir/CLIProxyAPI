@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ModelsRefreshInterval is the shared cadence for model catalogs and account entitlements.
 const ModelsRefreshInterval = 3 * time.Hour
 
 var modelsURLs = []string{
@@ -31,8 +30,6 @@ type modelStore struct {
 
 var modelsCatalogStore = &modelStore{}
 
-// ModelRefreshCallback is invoked when startup or periodic model refresh detects changes.
-// changedProviders contains the provider names whose model definitions changed.
 type ModelRefreshCallback func(changedProviders []string)
 
 var (
@@ -41,9 +38,6 @@ var (
 	pendingRefreshChanges []string
 )
 
-// SetModelRefreshCallback registers a callback that is invoked when startup or
-// periodic model refresh detects changes. Only one callback is supported;
-// subsequent calls replace the previous callback.
 func SetModelRefreshCallback(cb ModelRefreshCallback) {
 	refreshCallbackMu.Lock()
 	refreshCallback = cb
@@ -60,22 +54,16 @@ func SetModelRefreshCallback(cb ModelRefreshCallback) {
 }
 
 func init() {
-	// Load embedded data as fallback on startup.
+
 	if err := loadModelsFromBytes(embeddedModelsJSON, "embed"); err != nil {
 		log.Warnf("registry: failed to parse embedded models.json (embedded catalog may be incomplete or invalid; continuing startup and will rely on remote model refresh): %v", err)
 	}
 }
 
-// StartModelsUpdater starts a background updater that fetches models
-// immediately on startup and then refreshes the model catalog every 3 hours.
-// Safe to call multiple times; only one updater will run.
 func StartModelsUpdater(ctx context.Context) {
 	generalCatalogUpdater.configure(ctx, "")
 }
 
-// detectChangedProviders compares two model catalogs and returns provider names
-// whose model definitions differ. Gemini changes affect both Gemini protocols,
-// while Codex tiers (free/team/plus/pro) are grouped under one "codex" provider.
 func detectChangedProviders(oldData, newData *staticModelsJSON) []string {
 	if oldData == nil || newData == nil {
 		return nil
@@ -121,8 +109,6 @@ func detectChangedProviders(oldData, newData *staticModelsJSON) []string {
 	return changed
 }
 
-// modelSectionChanged reports whether two model slices differ, including
-// internal metadata that is intentionally omitted from normal JSON responses.
 func modelSectionChanged(a, b []*ModelInfo) bool {
 	if len(a) != len(b) {
 		return true

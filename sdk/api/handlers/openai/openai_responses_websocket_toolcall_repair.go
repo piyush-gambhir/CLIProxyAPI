@@ -83,9 +83,7 @@ func (c *websocketToolOutputCache) record(sessionKey string, callID string, item
 	if _, exists := session.outputs[callID]; !exists {
 		session.order = append(session.order, callID)
 	}
-	// Do not sanitize here: client-originated items also reach this method
-	// (repair first pass, turn commit) and must round-trip unchanged.
-	// Upstream items are sanitized at their recording entry points.
+
 	session.outputs[callID] = append(json.RawMessage(nil), item...)
 
 	for len(session.order) > c.maxPerSession {
@@ -280,8 +278,7 @@ func (t *responsesWebsocketToolCacheTurn) recordItem(payload []byte, item ojson.
 		return
 	}
 	if rawItem != nil {
-		// Upstream response items are sanitized once here; recordRawItem
-		// still owns the single detached copy for turn storage.
+
 		rawItem = responsesWebsocketReplaySanitizedBytes(rawItem)
 	}
 	t.recordRawItem(item.Get("type").String(), item.Get("call_id").String(), rawItem)
@@ -508,7 +505,6 @@ func repairResponsesToolCallItems(
 		return dedupeResponsesWebsocketInputItems(items), nil
 	}
 
-	// First pass: record tool outputs and remember which call_ids have outputs in this payload.
 	outputPresent := make(map[string]struct{}, len(items))
 	callPresent := make(map[string]struct{}, len(items))
 	for _, item := range items {
@@ -540,8 +536,7 @@ func repairResponsesToolCallItems(
 	for _, item := range items {
 		if isResponsesToolCallOutputType(item.itemType) {
 			if item.callID == "" {
-				// Codex sends standalone named results for heartbeat and delegation
-				// input. These intentionally have no preceding call or call_id.
+
 				name := ojson.GetBytesNoCopy(item.raw, "name")
 				if item.itemType == "function_call_output" && name.Type == ojson.String && strings.TrimSpace(name.String()) != "" {
 					filtered = append(filtered, item)
@@ -575,7 +570,6 @@ func repairResponsesToolCallItems(
 				}
 			}
 
-			// Drop orphaned function_call_output items; upstream rejects transcripts with missing calls.
 			continue
 		}
 		if !isResponsesToolCallType(item.itemType) {
@@ -584,7 +578,7 @@ func repairResponsesToolCallItems(
 		}
 
 		if item.callID == "" {
-			// Upstream rejects tool calls without a call_id; drop it.
+
 			continue
 		}
 
@@ -608,7 +602,6 @@ func repairResponsesToolCallItems(
 			continue
 		}
 
-		// Drop orphaned function_call items; upstream rejects transcripts with missing outputs.
 	}
 
 	return dedupeResponsesWebsocketInputItems(filtered), nil

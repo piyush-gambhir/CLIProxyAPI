@@ -9,12 +9,10 @@ import (
 	"strings"
 )
 
-// String escapes text before it is returned to browser-facing management clients.
 func String(value string) string {
 	return html.EscapeString(value)
 }
 
-// Strings escapes each string in values while preserving order.
 func Strings(values []string) []string {
 	out := make([]string, 0, len(values))
 	for _, value := range values {
@@ -23,7 +21,6 @@ func Strings(values []string) []string {
 	return out
 }
 
-// JSONBody escapes all string values in a JSON document.
 func JSONBody(body []byte) ([]byte, bool) {
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) == 0 {
@@ -50,7 +47,6 @@ func JSONBody(body []byte) ([]byte, bool) {
 	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), true
 }
 
-// JSONBodyIfLikely escapes JSON bodies when the content type or body shape indicates JSON.
 func JSONBodyIfLikely(body []byte, contentType string) ([]byte, bool) {
 	if IsJSONContentType(contentType) || LooksLikeJSON(body) {
 		return JSONBody(body)
@@ -58,7 +54,6 @@ func JSONBodyIfLikely(body []byte, contentType string) ([]byte, bool) {
 	return body, false
 }
 
-// JSONValue recursively escapes string values in JSON-compatible data.
 func JSONValue(value any) any {
 	switch typed := value.(type) {
 	case string:
@@ -80,7 +75,6 @@ func JSONValue(value any) any {
 	}
 }
 
-// IsJSONContentType reports whether contentType is application/json or a +json type.
 func IsJSONContentType(contentType string) bool {
 	mediaType, _, errParse := mime.ParseMediaType(strings.TrimSpace(contentType))
 	if errParse != nil {
@@ -90,7 +84,6 @@ func IsJSONContentType(contentType string) bool {
 	return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")
 }
 
-// LooksLikeJSON reports whether body starts with an object or array JSON marker.
 func LooksLikeJSON(body []byte) bool {
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) == 0 {

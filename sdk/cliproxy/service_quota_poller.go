@@ -13,18 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// quotaPollerRequestTimeout bounds a single usage read. Acquiring credential
-// state is the one place AGENTS.md allows a timeout.
 const quotaPollerRequestTimeout = 30 * time.Second
 
 var quotaPollerStart sync.Once
 
-// startQuotaPoller launches the usage poller when the active routing strategy
-// wants it. The poller keeps quota readings fresh for idle credentials, so
-// reset-soonest routing can rank a credential that has carried no traffic.
-//
-// It runs at most once per process: the poller re-reads the credential list and
-// the live routing settings on every pass, so a config reload needs no restart.
 func (s *Service) startQuotaPoller(ctx context.Context) {
 	if s == nil || s.coreManager == nil {
 		return
@@ -71,7 +63,6 @@ func (s *Service) quotaPollerEnabled() bool {
 	return s.routingStateSnapshot().quotaPollerEnabled
 }
 
-// routingStateSnapshot reads the routing settings from the current config.
 func (s *Service) routingStateSnapshot() routingRuntimeState {
 	if s == nil {
 		return normalizedRoutingRuntimeState(nil)
@@ -82,8 +73,6 @@ func (s *Service) routingStateSnapshot() routingRuntimeState {
 	return normalizedRoutingRuntimeState(cfg)
 }
 
-// quotaPollTargets snapshots the credentials the poller may read. Disabled
-// credentials and credentials with no access token are skipped by the poller.
 func (s *Service) quotaPollTargets() []quota.Target {
 	if s == nil || s.coreManager == nil {
 		return nil
@@ -115,9 +104,6 @@ func (s *Service) quotaPollTargets() []quota.Target {
 	return targets
 }
 
-// quotaPollClient builds the HTTP client for one credential, honouring the
-// credential proxy first and the global proxy second, exactly as the management
-// api-call passthrough does.
 func (s *Service) quotaPollClient(target quota.Target) quota.Doer {
 	client := &http.Client{Timeout: quotaPollerRequestTimeout}
 	proxyURL := strings.TrimSpace(target.ProxyURL)
@@ -147,8 +133,6 @@ func quotaPollAccessToken(auth *coreauth.Auth) string {
 	return metadataString(auth.Metadata, "accessToken")
 }
 
-// quotaPollAccountID resolves the ChatGPT account id Codex expects on the usage
-// read. The flat account_id wins, then the id_token claim the panel uses.
 func quotaPollAccountID(auth *coreauth.Auth) string {
 	if id := metadataString(auth.Metadata, "account_id"); id != "" {
 		return id

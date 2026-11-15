@@ -11,7 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// DeleteJSONField removes a top-level or nested JSON field from a payload.
 func DeleteJSONField(body []byte, key string) []byte {
 	if key == "" || len(body) == 0 {
 		return body
@@ -23,7 +22,6 @@ func DeleteJSONField(body []byte, key string) []byte {
 	return updated
 }
 
-// DeleteJSONFieldDoc removes a top-level or nested JSON field from doc in place.
 func DeleteJSONFieldDoc(doc *ojson.Doc, key string) bool {
 	if key == "" || doc == nil || doc.Len() == 0 {
 		return false
@@ -31,7 +29,6 @@ func DeleteJSONFieldDoc(doc *ojson.Doc, key string) bool {
 	return util.DeleteJSONDocIfExists(doc, key) == nil
 }
 
-// ParseRetryDelay extracts the retry delay from a Google API 429 error response.
 func ParseRetryDelay(errorBody []byte) (*time.Duration, error) {
 	details := ojson.GetBytesNoCopy(errorBody, "error.details")
 	if details.Exists() && details.IsArray() {

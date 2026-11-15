@@ -6,17 +6,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-// NativeToolSearchSupport optionally reports whether an executor can send Codex
-// tool_search to a credential as Anthropic native tool search. It does not
-// change ProviderExecutor or the plugin ABI.
 type NativeToolSearchSupport interface {
 	SupportsNativeToolSearch(auth *Auth, upstreamModel string) bool
 }
 
-// SupportsNativeToolSearchForModel requires native tool search support from
-// every enabled credential that serves the public model. A prefixed ID that no
-// credential registers exactly falls back to its unprefixed form. A model with
-// no serving credential is not supported.
 func (m *Manager) SupportsNativeToolSearchForModel(model string) bool {
 	model = strings.TrimSpace(model)
 	if m == nil || model == "" {

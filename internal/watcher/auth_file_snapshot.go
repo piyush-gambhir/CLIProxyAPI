@@ -10,8 +10,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// SnapshotAuthFile re-synthesizes one source file without consulting cached auth state.
-// Parse errors are surfaced so deletion reconciliation never relies on fallback auths.
 func (w *Watcher) SnapshotAuthFile(path string) ([]*coreauth.Auth, error) {
 	if w == nil {
 		return nil, fmt.Errorf("file auth snapshot is unavailable")
@@ -24,8 +22,7 @@ func (w *Watcher) SnapshotAuthFile(path string) ([]*coreauth.Auth, error) {
 	if cfg == nil || authDir == "" {
 		return nil, fmt.Errorf("file auth snapshot is not configured")
 	}
-	// Management uploads use absolute paths even when authDir is configured
-	// relatively. Keep both absolute so synthesis retains file-relative IDs.
+
 	absoluteAuthDir, errAbsAuthDir := filepath.Abs(authDir)
 	if errAbsAuthDir != nil {
 		return nil, fmt.Errorf("resolve auth directory: %w", errAbsAuthDir)

@@ -32,10 +32,6 @@ func testGeminiSignaturePayload() string {
 	return base64.StdEncoding.EncodeToString(payload)
 }
 
-// testFakeClaudeSignature returns a base64 string starting with 'E' that passes
-// the lightweight hasValidClaudeSignature check but has invalid protobuf content
-// (first decoded byte 0x12 is correct, but no valid protobuf field 2 follows),
-// so it fails deep validation in strict mode.
 func testFakeClaudeSignature() string {
 	return base64.StdEncoding.EncodeToString([]byte{0x12, 0xFF, 0xFE, 0xFD})
 }
@@ -44,9 +40,6 @@ func issue4959GeminiThoughtSignature() string {
 	return "EjQKMgEMOdbHO0Gd+c9Mxk4ELwPGbpCEcp2mFfYYLix2UVtBH3fL8GECc4+JITVnHF4qZDsA"
 }
 
-// issue4959ResponsesModelFirstPayload is the #4959 Responses history: a
-// next:function reasoning carrier, then function_call / function_call_output,
-// then trailing assistant turns. Trailing model turns are left for a follow-up.
 func issue4959ResponsesModelFirstPayload() []byte {
 	carrier := "cpa-gemini-responses-carrier-v1:next:function:" + base64.RawStdEncoding.EncodeToString([]byte(issue4959GeminiThoughtSignature()))
 	return []byte(`{"model":"gemini-3.7-flash-high","input":[` +

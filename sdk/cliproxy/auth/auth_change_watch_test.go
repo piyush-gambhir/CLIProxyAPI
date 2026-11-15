@@ -43,7 +43,7 @@ func TestAuthChangeWatchCoversNativeMutationsAndReload(t *testing.T) {
 		}
 		assertChanged()
 	}
-	// Slow subscribers never block manager mutations and receive a coalesced hint.
+
 	for range 100 {
 		auth, err = manager.Update(t.Context(), auth)
 		if err != nil {
@@ -56,7 +56,7 @@ func TestAuthChangeWatchCoversNativeMutationsAndReload(t *testing.T) {
 	assertChanged()
 	manager.Remove(t.Context(), auth.ID)
 	assertChanged()
-	// Reload invalidates all subscribed snapshots, including currently absent IDs.
+
 	if err = manager.Load(t.Context()); err != nil {
 		t.Fatal(err)
 	}

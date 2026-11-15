@@ -106,11 +106,11 @@ func (e *XAIExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth
 					case "response.output_item.done":
 						xaiCollectOutputItemDone(eventData, outputItemsByIndex, &outputItemsFallback)
 					case "response.completed", "response.incomplete":
-						// Reconstruct only after the bridge has restored dispatcher children.
+
 						eventData = xaiPatchCompletedOutput(eventData, outputItemsByIndex, outputItemsFallback)
 						eventData = xaiNormalizeReasoningSummaryData(eventData)
 						if ojson.GetBytesNoCopy(eventData, "type").String() == "response.completed" {
-							// Only completed responses carry replayable terminal state.
+
 							cacheXAIReasoningReplayFromCompleted(ctx, prepared.replayScope, eventData)
 						}
 						ending := line[len(bytes.TrimRight(line, "\r\n")):]

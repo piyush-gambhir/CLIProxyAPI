@@ -60,7 +60,6 @@ func (e *issue6819OuterOnlyRefreshExecutor) Refresh(_ context.Context, auth *Aut
 func TestIssue6819_CodexSIWCStatusEvaluation(t *testing.T) {
 	now := time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC)
 
-	// 1. use_siwc not enabled -> off
 	offAuth := &Auth{
 		ID:       "codex-off.json",
 		Provider: "codex",
@@ -79,7 +78,6 @@ func TestIssue6819_CodexSIWCStatusEvaluation(t *testing.T) {
 		t.Fatalf("CodexSIWCStatus(use_siwc=false) = %q, want %q", got, SIWCStatusOff)
 	}
 
-	// 2. use_siwc enabled, access_token missing -> invalid
 	missingTokAuth := &Auth{
 		ID:       "codex-missing.json",
 		Provider: "codex",
@@ -95,8 +93,6 @@ func TestIssue6819_CodexSIWCStatusEvaluation(t *testing.T) {
 		t.Fatalf("CodexSIWCStatus(missing access_token) = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 3. use_siwc enabled, within 3m SIWCExpiryMargin window:
-	// "expired" is already in the past (now - 1m), but real "expires_at" is in the future (now + 2m) -> valid!
 	marginWindowAuth := &Auth{
 		ID:       "codex-margin.json",
 		Provider: "codex",
@@ -113,12 +109,11 @@ func TestIssue6819_CodexSIWCStatusEvaluation(t *testing.T) {
 	if got := marginWindowAuth.CodexSIWCStatus(now); got != SIWCStatusValid {
 		t.Fatalf("CodexSIWCStatus(before real expires_at, after margin expired) = %q, want %q", got, SIWCStatusValid)
 	}
-	// Once real expires_at is reached -> invalid
+
 	if got := marginWindowAuth.CodexSIWCStatus(now.Add(2 * time.Minute)); got != SIWCStatusInvalid {
 		t.Fatalf("CodexSIWCStatus(at real expires_at) = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 4. Existing JWT without expires_at: reads exp from JWT, ignoring margin-deducted expired
 	jwtRealExp := now.Add(2 * time.Minute)
 	jwtToken := makeIssue6742JWT(jwtRealExp)
 	jwtAuth := &Auth{
@@ -140,7 +135,6 @@ func TestIssue6819_CodexSIWCStatusEvaluation(t *testing.T) {
 		t.Fatalf("CodexSIWCStatus(existing JWT at exp) = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 5. Non-JWT token with only pre-discounted "expired" and no "expires_at" -> invalid
 	onlyExpiredAuth := &Auth{
 		ID:       "codex-only-expired.json",
 		Provider: "codex",
@@ -201,7 +195,6 @@ func TestIssue6819_OuterRefreshDoesNotClearSIWCRejectedAccessToken(t *testing.T)
 		t.Fatalf("CodexSIWCStatus after 401 = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 1. Outer Codex OAuth refreshes alone while SIWC was not refreshed.
 	refreshed, errRefresh := m.ForceRefreshAuth(context.Background(), auth.ID)
 	if errRefresh != nil {
 		t.Fatalf("ForceRefreshAuth error: %v", errRefresh)
@@ -213,7 +206,6 @@ func TestIssue6819_OuterRefreshDoesNotClearSIWCRejectedAccessToken(t *testing.T)
 		t.Fatalf("CodexSIWCStatus after outer-only refresh = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 2. Outer Codex OAuth updated via Manager.Update (e.g. re-login preserving SIWC).
 	relogin := refreshed.Clone()
 	relogin.RejectedAccessToken = ""
 	relogin.Metadata["access_token"] = "outer-token-3"
@@ -229,7 +221,6 @@ func TestIssue6819_OuterRefreshDoesNotClearSIWCRejectedAccessToken(t *testing.T)
 		t.Fatalf("CodexSIWCStatus after outer-only Update = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 3. A refresh that returns the exact same rejected SIWC access_token must not clear the rejection.
 	exec.refreshSIWC = true
 	exec.nextSIWC = siwcToken
 	sameTokenRefresh, errSameRefresh := m.ForceRefreshAuth(context.Background(), auth.ID)
@@ -243,8 +234,6 @@ func TestIssue6819_OuterRefreshDoesNotClearSIWCRejectedAccessToken(t *testing.T)
 		t.Fatalf("CodexSIWCStatus after refresh returning same SIWC token = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 4. Concurrent dual-partition refresh started on an older SIWC token A:
-	// Outer partition still matches and applies, while SIWC partition conflicts with current rejected token B and is skipped.
 	staleBase := sameTokenRefresh.Clone()
 	staleBase.RejectedAccessToken = ""
 	staleBase.Metadata["access_token"] = "outer-token-3"
@@ -256,7 +245,7 @@ func TestIssue6819_OuterRefreshDoesNotClearSIWCRejectedAccessToken(t *testing.T)
 		"expires_at":    now.Add(30 * time.Minute).Format(time.RFC3339),
 		"expired":       now.Add(27 * time.Minute).Format(time.RFC3339),
 	}
-	// Ensure current live auth has outer-token-3 (matching staleBase's outer) and rejected siwcToken (conflicting with staleBase's SIWC).
+
 	liveBeforeStaleMerge := sameTokenRefresh.Clone()
 	liveBeforeStaleMerge.Metadata["access_token"] = "outer-token-3"
 	liveBeforeStaleMerge.Metadata["refresh_token"] = "outer-refresh-3"
@@ -294,7 +283,6 @@ func TestIssue6819_OuterRefreshDoesNotClearSIWCRejectedAccessToken(t *testing.T)
 		t.Fatalf("CodexSIWCStatus after skipped conflicting SIWC patch = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 5. Replacing the SIWC token via SIWC refresh clears the old rejection and restores valid status.
 	exec.refreshSIWC = true
 	exec.nextSIWC = "siwc-fresh-token-2"
 	refreshedSIWC, errRefreshSIWC := m.ForceRefreshAuth(context.Background(), auth.ID)
@@ -343,7 +331,6 @@ func TestIssue6819_FailedSIWCRefreshAndNonAuthErrorsPreserveValidityUntilRealExp
 		t.Fatalf("Register error: %v", errReg)
 	}
 
-	// 1. 429 and 503 request errors must not mark the SIWC credential as invalid.
 	for _, status := range []int{http.StatusTooManyRequests, http.StatusServiceUnavailable} {
 		m.MarkResult(context.Background(), Result{
 			AuthID:   auth.ID,
@@ -358,8 +345,6 @@ func TestIssue6819_FailedSIWCRefreshAndNonAuthErrorsPreserveValidityUntilRealExp
 		}
 	}
 
-	// 2. Refresh failure (even with invalid_grant on refresh_token) must not extend expiration
-	// and must keep status "valid" while the access token itself is unexpired and unrejected.
 	_, errRefresh := m.ForceRefreshAuth(context.Background(), auth.ID)
 	if errRefresh == nil {
 		t.Fatal("expected ForceRefreshAuth to fail")
@@ -372,12 +357,11 @@ func TestIssue6819_FailedSIWCRefreshAndNonAuthErrorsPreserveValidityUntilRealExp
 	if got := afterFailedRefresh.CodexSIWCStatus(now); got != SIWCStatusValid {
 		t.Fatalf("CodexSIWCStatus before real expiry after failed refresh = %q, want %q", got, SIWCStatusValid)
 	}
-	// Once real expiration is reached, status becomes "invalid".
+
 	if got := afterFailedRefresh.CodexSIWCStatus(realExp); got != SIWCStatusInvalid {
 		t.Fatalf("CodexSIWCStatus at real expiry = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 3. When a subsequent refresh succeeds and obtains a new token, status is re-evaluated as "valid".
 	exec.refreshErr = nil
 	exec.refreshSIWC = true
 	exec.nextSIWC = "siwc-recovered-token"
@@ -441,18 +425,15 @@ func TestIssue6819_InStream401RecordedAfterConcurrentOuterRefreshAndAcrossUseSIW
 		t.Fatalf("Register error: %v", errReg)
 	}
 
-	// 1. Start a streaming SIWC request using token A (captured at CredentialVersion 1).
 	streamRes, errStream := m.ExecuteStream(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-5.4"}, cliproxyexecutor.Options{})
 	if errStream != nil {
 		t.Fatalf("ExecuteStream error: %v", errStream)
 	}
 
-	// 2. While the stream is open, outer Codex OAuth refreshes alone (advancing CredentialVersion to 2), leaving SIWC token A unchanged.
 	if _, errOuterRefresh := m.ForceRefreshAuth(context.Background(), auth.ID); errOuterRefresh != nil {
 		t.Fatalf("ForceRefreshAuth (outer) error: %v", errOuterRefresh)
 	}
 
-	// 3. Deliver in-stream 401 on the SIWC stream and drain the stream channel.
 	chunks <- cliproxyexecutor.StreamChunk{Err: &Error{HTTPStatus: http.StatusUnauthorized, Code: "unauthorized", Message: "401 unauthorized"}}
 	close(chunks)
 	for range streamRes.Chunks {
@@ -463,7 +444,6 @@ func TestIssue6819_InStream401RecordedAfterConcurrentOuterRefreshAndAcrossUseSIW
 		t.Fatalf("CodexSIWCStatus after in-stream 401 following outer refresh = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 4. Disable use_siwc -> status is "off"; then outer token hits 401 and refreshes; then re-enable use_siwc with the same token A -> still "invalid"!
 	disabledSIWC := afterStream401.Clone()
 	disabledSIWC.Metadata["use_siwc"] = false
 	afterToggleOff, errToggleOff := m.Update(context.Background(), disabledSIWC)
@@ -474,14 +454,12 @@ func TestIssue6819_InStream401RecordedAfterConcurrentOuterRefreshAndAcrossUseSIW
 		t.Fatalf("CodexSIWCStatus when use_siwc=false = %q, want %q", got, SIWCStatusOff)
 	}
 
-	// Outer token hits 401 while use_siwc=false, then outer refreshes to outer-token-3.
 	m.markRejectedAccessToken(auth.ID, "outer-token-2")
 	exec.nextOuter = "outer-token-3"
 	if _, errOuterRef2 := m.ForceRefreshAuth(context.Background(), auth.ID); errOuterRef2 != nil {
 		t.Fatalf("ForceRefreshAuth (outer recovery) error: %v", errOuterRef2)
 	}
 
-	// Re-enable use_siwc while SIWC token is still the rejected token A.
 	reEnabled := afterToggleOff.Clone()
 	currentAfterOuter, _ := m.GetByID(auth.ID)
 	reEnabled = currentAfterOuter.Clone()
@@ -540,7 +518,7 @@ func TestIssue6819_ExecuteRetry401WithConcurrentOuterRefreshAndSameTokenRebind(t
 		},
 	}
 	exec.onRetry = func() {
-		// While retry with token B is in flight, an outer-only refresh advances CredentialVersion.
+
 		exec.refreshSIWC = false
 		exec.nextOuter = "outer-token-3"
 		_, _ = m.ForceRefreshAuth(context.Background(), "codex-retry-bind.json")
@@ -562,7 +540,6 @@ func TestIssue6819_ExecuteRetry401WithConcurrentOuterRefreshAndSameTokenRebind(t
 		t.Fatalf("Register error: %v", errReg)
 	}
 
-	// 1. Execute hits 401 on token A, refreshes to token B, outer refreshes concurrently during retry, and retry hits 401 on token B.
 	_, errExec := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-5.4"}, cliproxyexecutor.Options{})
 	if errExec == nil {
 		t.Fatal("expected Execute to fail with 401")
@@ -572,8 +549,6 @@ func TestIssue6819_ExecuteRetry401WithConcurrentOuterRefreshAndSameTokenRebind(t
 		t.Fatalf("CodexSIWCStatus after retry 401 on token B with concurrent outer refresh = %q, want %q", got, SIWCStatusInvalid)
 	}
 
-	// 2. Re-binding with the exact same rejected SIWC token B must keep status "invalid";
-	// re-binding with a different token C updates status to "valid".
 	diskWithB := afterRetry401.Metadata
 	if errWrite := codex.WriteJSONFileAtomic(path, diskWithB); errWrite != nil {
 		t.Fatalf("WriteJSONFileAtomic(diskWithB): %v", errWrite)
@@ -675,9 +650,6 @@ func TestCodexClient401OnSIWCAuthRejectsAndRefreshesOuterTokenOnly(t *testing.T)
 		t.Fatalf("RejectedSIWCAccessToken = %q, want empty", after.RejectedSIWCAccessToken)
 	}
 
-	// Simulate SIWC token rotation bumping CredentialVersion while outer token remains "outer-token-2".
-	// A result from a Codex client whose User-Agent was only in gin.Context (not Result.Options.Headers)
-	// and which used "outer-token-2" at the previous CredentialVersion must NOT be treated as stale.
 	prevVersion := after.CredentialVersion
 	siwcRotated := after.Clone()
 	siwcRotated.Metadata["siwc"].(map[string]any)["access_token"] = "siwc-rotated-token-v2"

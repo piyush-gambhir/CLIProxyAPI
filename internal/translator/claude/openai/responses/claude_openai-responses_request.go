@@ -23,60 +23,36 @@ const (
 	defaultFableResponsesMaxTokens  = 64000
 )
 
-// ConvertOpenAIResponsesRequestToClaude transforms an OpenAI Responses API request
-// into a Claude Messages API request using only gjson/sjson for JSON handling.
-// It supports:
-//   - instructions, input[].role==system and input[].role==developer -> separate
-//     top-level system blocks, in source order; text-only system and developer
-//     items after the first conversation item stay in place as role=system
-//     turns unless WithTopLevelSystemItems pins the top-level path
-//   - input[].type==message with input_text/output_text -> user/assistant messages
-//   - function_call/custom_tool_call -> assistant tool_use
-//   - function_call_output/custom_tool_call_output -> user tool_result
-//   - top-level tools and input[].additional_tools -> Claude tools[].input_schema
-//   - max_output_tokens -> max_tokens
-//   - stream passthrough via parameter
 func ConvertOpenAIResponsesRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToClaude(context.Background(), modelName, inputRawJSON, stream, false, ClientToolSearchEnabled())
 
 }
 
-// ConvertOpenAIResponsesRequestToClaudeWithCompat preserves reasoning items
-// whose encrypted content is empty for configured compatibility endpoints.
 func ConvertOpenAIResponsesRequestToClaudeWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToClaude(context.Background(), modelName, inputRawJSON, stream, true, ClientToolSearchEnabled())
 }
 
-// ConvertOpenAIResponsesRequestEnvelopeToClaude translates with the
-// upstream.claude.tool-search value pinned in ctx, if any.
 func ConvertOpenAIResponsesRequestEnvelopeToClaude(ctx context.Context, req sdktranslator.RequestEnvelope) sdktranslator.RequestEnvelope {
 	req.Body, req.Err = convertOpenAIResponsesRequestToClaude(ctx, req.Model, req.Body, req.Stream, false, ClientToolSearchEnabledFor(ctx))
 	return req
 }
 
-// ConvertOpenAIResponsesRequestToClaudeWithCompatContext is
-// ConvertOpenAIResponsesRequestToClaudeWithCompat with the
-// upstream.claude.tool-search value pinned in ctx, if any.
 func ConvertOpenAIResponsesRequestToClaudeWithCompatContext(ctx context.Context, modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToClaude(ctx, modelName, inputRawJSON, stream, true, ClientToolSearchEnabledFor(ctx))
 }
 
-// toolSearch carries upstream.claude.tool-search for the whole translation so
-// a config reload cannot mix the two behaviors within one request.
 func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string, inputRawJSON []byte, stream, preserveEmptyThinkingBlocks, toolSearch bool) ([]byte, error) {
 	rawJSON := normalizeCodexAgentMessages(inputRawJSON)
 	var drops common.UserTurnDrops
 
 	userID := common.DeriveClaudeUserID(rawJSON)
 
-	// Base Claude message payload
 	outDoc := ojson.NewDoc([]byte(`{"model":"","max_tokens":32000,"messages":[],"metadata":{}}`))
 	_ = outDoc.Set("metadata.user_id", userID)
 	_ = outDoc.Set("max_tokens", defaultClaudeResponsesMaxTokensForModel(modelName))
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Convert OpenAI Responses reasoning.effort to Claude thinking config.
 	if v := root.Get("reasoning.effort"); v.Exists() {
 		effort := strings.ToLower(strings.TrimSpace(v.String()))
 		if effort != "" {
@@ -84,9 +60,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			supportsAdaptive := mi != nil && mi.Thinking != nil && len(mi.Thinking.Levels) > 0
 			supportsMax := supportsAdaptive && thinking.HasLevel(mi.Thinking.Levels, string(thinking.LevelMax))
 
-			// Claude 4.6 supports adaptive thinking with output_config.effort.
-			// MapToClaudeEffort normalizes levels (e.g. minimal→low, xhigh→high) to avoid
-			// validation errors since validate treats same-provider unsupported levels as errors.
 			if supportsAdaptive {
 				switch effort {
 				case "none":
@@ -108,7 +81,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 					_ = outDoc.Set("output_config.effort", effort)
 				}
 			} else {
-				// Legacy/manual thinking (budget_tokens).
+
 				budget, ok := thinking.ConvertLevelToBudget(effort)
 				if ok {
 					switch budget {
@@ -127,10 +100,8 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		}
 	}
 
-	// Model
 	_ = outDoc.Set("model", modelName)
 
-	// Max tokens
 	if mot := root.Get("max_output_tokens"); mot.Exists() && mot.Type != ojson.Null {
 		val := mot.Int()
 		if info := registry.LookupModelInfo(modelName, "claude"); info != nil && info.MaxCompletionTokens > 0 && val > int64(info.MaxCompletionTokens) {
@@ -139,23 +110,12 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		_ = outDoc.Set("max_tokens", val)
 	}
 
-	// Stream
 	_ = outDoc.Set("stream", stream)
 
-	// Service Tier -> Speed
 	if st := root.Get("service_tier"); st.Type == ojson.String && st.String() == "priority" {
 		_ = outDoc.Set("speed", "fast")
 	}
 
-	// Instructions and leading system-level items become separate top-level
-	// Claude blocks in source order. Eligible later items keep their position in
-	// the conversation as role=system turns, because clients such as Codex append
-	// them on later turns and moving them ahead of the history would invalidate
-	// Claude's prompt-cache prefix. The executor pins every item to the top
-	// level before translation when model compatibility or wire policy requires
-	// it, and still owns the final placement of the leading blocks. Both paths
-	// keep source text, block boundaries and cache_control, and never downgrade
-	// system-level items to user text.
 	messageCapacity := root.Get("input.#").Int()
 	if messageCapacity == 0 && root.Get("input").Type == ojson.String {
 		messageCapacity = 1
@@ -203,19 +163,14 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 
 	names := buildClaudeToolNames(root, toolSearch)
 	winners := responsesToolWinners(root, toolSearch)
-	// Native tool search declares discovered tools as deferred and replays
-	// search results as tool_reference blocks, which keeps the cached prefix.
+
 	nativeToolSearch := responsesClientToolSearchWins(responsesToolDescriptors(root, toolSearch))
 
-	// input array processing
 	var pendingRole string
 	var pendingParts [][]byte
 	var pendingToolUseParts [][]byte
 	var turnHasEmptyWebSearchResult bool
-	// Anthropic accepts a role=system turn only after a user message and before
-	// an assistant message or the end of messages. Mid-session system items are
-	// therefore queued until a user message is emitted, which may be the user
-	// message still being accumulated or a later one, and placed right after it.
+
 	var pendingSystemEntryIndices []int
 	appendMessage := func(msg []byte) {
 		messageBlocks = append(messageBlocks, msg)
@@ -301,8 +256,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		}
 		pendingRole = "assistant"
 
-		// Client tool calls normally stay at the end of an assistant message, but
-		// a later reasoning item makes them a real separator between thinking blocks.
 		if len(pendingToolUseParts) > 0 {
 			pendingParts = append(pendingParts, pendingToolUseParts...)
 			pendingToolUseParts = nil
@@ -346,7 +299,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	webSearchHistory := scanResponsesWebSearchHistory(inputItems)
 
 	for itemIndex, item := range inputItems {
-		// System-level items are top-level blocks unless queued as in-place turns.
+
 		if isResponsesSystemLevelRole(item.Get("role").String()) {
 			if entryIdx, ok := systemInputEntryByIndex[itemIndex]; ok && systemInputEntries[entryIdx].eligible {
 				pendingSystemEntryIndices = append(pendingSystemEntryIndices, entryIdx)
@@ -359,7 +312,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		}
 		switch typ {
 		case "message":
-			// Determine role and construct Claude-compatible content parts.
+
 			var role string
 			var partsJSON [][]byte
 			var droppedPartType string
@@ -395,7 +348,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 							role = "assistant"
 						}
 					case "refusal":
-						// Claude has no refusal block; the text keeps the turn intact.
+
 						if t := part.Get("refusal"); t.Exists() {
 							txt := t.String()
 							if strings.TrimSpace(txt) != "" {
@@ -471,7 +424,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 							droppedPartType = ptype
 						}
 					case "input_audio":
-						// Claude has no audio block, so the part cannot be sent.
+
 						if droppedPartType == "" {
 							droppedPartType = ptype
 						}
@@ -484,7 +437,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 				partsJSON = append(partsJSON, contentPart)
 			}
 
-			// Fallback to given role if content types not decisive
 			if role == "" {
 				r := item.Get("role").String()
 				switch r {
@@ -514,8 +466,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			}
 
 		case "web_search_call":
-			// Rebuild the Claude server-side search pair so the replayed turn
-			// still shows the search and its hits.
+
 			if blocks := webSearchHistory.claudeBlocksWithContext(ctx, itemIndex, item); len(blocks) > 0 {
 				if claudeBlocksHaveEmptyWebSearchResult(blocks) {
 					turnHasEmptyWebSearchResult = true
@@ -527,8 +478,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			appendReasoning(convertResponsesReasoningToClaudeThinking(item, preserveEmptyThinkingBlocks))
 
 		case "function_call", "custom_tool_call":
-			// Map to assistant tool_use. Freeform custom input is wrapped in an
-			// object because Claude tool_use input must be a JSON object.
+
 			rawCallID := common.ExtractResponsesCallID(item)
 			callID := rawCallID
 			if callID == "" {
@@ -540,7 +490,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			}
 			name := item.Get("name").String()
 			if namespaceName := strings.TrimSpace(item.Get("namespace").String()); namespaceName != "" {
-				// Rebuild the qualified name emitted by the previous Responses turn.
+
 				name = qualifyResponsesNamespaceToolName(namespaceName, name)
 			}
 			isCustomToolCall := typ == "custom_tool_call"
@@ -563,7 +513,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			appendToolUse(toolUseDoc.Bytes())
 
 		case "function_call_output", "custom_tool_call_output":
-			// Map to user tool_result
+
 			rawID := common.ExtractResponsesCallID(item)
 			if rawID != "" {
 				if _, exists := emittedToolResults[rawID]; exists {
@@ -578,12 +528,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 				}
 			}
 			output := outputItem.Get("output")
-			// Standalone outputs (no call_id, or one that never paired with a
-			// function_call in this input, e.g. the create_thread delegation seed)
-			// have no tool_use to attach to. Claude rejects orphan tool_result
-			// blocks, so surface them as plain user text instead. Pairing is
-			// decided on the raw id so two distinct ids that sanitize to the
-			// same Claude id are not mistaken for the same call.
+
 			if _, paired := emittedRawToolUses[rawID]; rawID == "" || !paired {
 				appendParts("user", convertResponsesStandaloneToolOutputToClaudeText(output)...)
 				turnHasEmptyWebSearchResult = false
@@ -592,9 +537,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			callID := util.SanitizeClaudeToolID(rawID)
 			toolResultDoc := ojson.NewDoc([]byte(`{"type":"tool_result","tool_use_id":"","content":""}`))
 			_ = toolResultDoc.Set("tool_use_id", callID)
-			// Responses reports an unfinished tool output as status
-			// "incomplete"; Claude's only in-band equivalent is is_error
-			// on tool_result, so carry the signal over instead of dropping it.
+
 			if strings.EqualFold(strings.TrimSpace(outputItem.Get("status").String()), "incomplete") {
 				_ = toolResultDoc.Set("is_error", true)
 			}
@@ -640,28 +583,22 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			appendParts("user", toolResultDoc.Bytes())
 
 		default:
-			// Reachability guard: Claude only ever receives the item types this
-			// switch handles. A new one means the client gained a capability
-			// whose Claude counterpart still has to be decided, so make the gap
-			// visible instead of dropping the turn content in silence.
+
 			if typ := item.Get("type").String(); typ != "" && typ != "additional_tools" {
-				// additional_tools is consumed later when building tools[], so it
-				// is not dropped turn content and must not warn.
+
 				unmappedItemTypes[typ]++
 			}
 		}
 	}
 	flushPendingMessage()
-	// Every system-level input item that was not emitted as an in-place turn
-	// (leading items, ineligible items, and queued items with no following user
-	// message) becomes a top-level system block in its original source order.
+
 	for _, entry := range systemInputEntries {
 		if !entry.emitted {
 			systemBlocks = append(systemBlocks, entry.blocks...)
 		}
 	}
 	pendingSystemEntryIndices = nil
-	// The structured-output instruction stays the last system block.
+
 	formatResult := root.Get("text.format")
 	if !formatResult.Exists() {
 		formatResult = root.Get("response_format")
@@ -676,9 +613,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	if !preserveEmptyThinkingBlocks {
 		messageBlocks = stripTrailingClaudeThinkingBlocks(messageBlocks)
 	}
-	// Answer dangling tool_use blocks before the prefill check below so an
-	// interrupted turn ends with a synthesized user tool_result instead of a
-	// rejected assistant prefill on models that disallow it.
+
 	messageBlocks = repairClaudeToolPairing(messageBlocks)
 	if !preserveEmptyThinkingBlocks {
 		messageBlocks = dropUnsupportedClaudeAssistantPrefill(modelName, messageBlocks)
@@ -686,8 +621,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	if problems := claudeMessageInvariantProblems(messageBlocks); len(problems) > 0 {
 		log.Warnf("responses->claude: message invariants violated after repair (model=%s): %s", modelName, strings.Join(problems, "; "))
 	}
-	// Preserve a minimal conversational turn for system-only inputs or when messages became empty
-	// so downstream validation still sees a Claude-shaped request.
+
 	if len(messageBlocks) == 0 && (len(systemBlocks) > 0 || hadMessages) {
 		messageBlocks = append(messageBlocks, []byte(`{"role":"user","content":[{"type":"text","text":""}]}`))
 	}
@@ -699,12 +633,8 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	includedToolNames := map[string]struct{}{}
 	toolNameMap := map[string]string{}
 
-	// Responses Lite puts tool definitions in input[].additional_tools. Select
-	// one winner for each final name, while keeping the original order for the
-	// tools that survive conversion.
 	var toolItems [][]byte
-	// The deferred anchor goes between declared and discovered tools, so each
-	// discovery only appends to tools[].
+
 	anchorIndex := -1
 	for _, descriptor := range responsesToolDescriptors(root, toolSearch) {
 		winner, ok := winners[descriptor.name]
@@ -720,7 +650,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			if anchorIndex < 0 {
 				anchorIndex = len(toolItems)
 			}
-			// Anthropic rejects cache_control on deferred tools.
+
 			tDoc := ojson.NewDoc(tJSON)
 			_ = tDoc.Delete("cache_control")
 			_ = tDoc.Set("defer_loading", true)
@@ -746,7 +676,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		_ = outDoc.SetRawBytes("tools", common.JoinRawArray(toolItems))
 	}
 
-	// Map tool_choice similar to Chat Completions translator (optional in docs, safe to handle)
 	toolChoiceNone := false
 	forcedToolFilteredOut := false
 	if toolChoice := root.Get("tool_choice"); toolChoice.Exists() {
@@ -756,7 +685,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			case "auto":
 				_ = outDoc.SetRaw("tool_choice", `{"type":"auto"}`)
 			case "none":
-				// Leave unset; implies no tools
+
 				toolChoiceNone = true
 			case "required":
 				if len(includedToolNames) > 0 {
@@ -807,10 +736,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		}
 	}
 
-	// parallel_tool_calls=false maps to Anthropic's disable_parallel_tool_use,
-	// mirroring the Chat Completions translator. It is not added when the
-	// effective choice is none, when no tool survived conversion, or when a
-	// forced tool was filtered out (no tool_choice was produced for it).
 	if parallelToolCalls := root.Get("parallel_tool_calls"); parallelToolCalls.Type == ojson.False && !toolChoiceNone && !forcedToolFilteredOut && len(toolItems) > 0 {
 		if choice := outDoc.Get("tool_choice"); choice.Exists() {
 			if choice.Get("type").String() != "none" {
@@ -834,18 +759,13 @@ func defaultClaudeResponsesMaxTokensForModel(modelName string) int {
 	if info == nil || info.MaxCompletionTokens <= 0 {
 		return maxTokens
 	}
-	// Fable keeps its conservative omitted-field ceiling. Every other registered
-	// model uses its output limit, including when that limit is above the
-	// historical 32000 default.
+
 	if strings.Contains(normalized, "fable") && info.MaxCompletionTokens >= maxTokens {
 		return maxTokens
 	}
 	return info.MaxCompletionTokens
 }
 
-// isResponsesSystemLevelRole reports whether an input item carries system-level
-// authority. The Responses API ranks developer and system instructions above
-// user content, so both map to Claude's system slot rather than a user turn.
 func isResponsesSystemLevelRole(role string) bool {
 	switch strings.ToLower(strings.TrimSpace(role)) {
 	case "system", "developer":
@@ -857,12 +777,6 @@ func isResponsesSystemLevelRole(role string) bool {
 
 type topLevelSystemItemsContextKey struct{}
 
-// WithTopLevelSystemItems pins, for one request, whether every system-level
-// input item becomes a top-level system block. The executor sets it before
-// translation for upstreams where an in-place role=system turn cannot be used:
-// models that reject the turn, strict cloaking (which drops every caller system
-// instruction) and requests whose mid-conversation system turns are rebuilt
-// into the system field.
 func WithTopLevelSystemItems(ctx context.Context, topLevel bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -870,8 +784,6 @@ func WithTopLevelSystemItems(ctx context.Context, topLevel bool) context.Context
 	return context.WithValue(ctx, topLevelSystemItemsContextKey{}, topLevel)
 }
 
-// topLevelSystemItemsFor returns the value pinned in ctx or, when ctx carries
-// none, whether modelName rejects mid-conversation role=system turns.
 func topLevelSystemItemsFor(ctx context.Context, modelName string) bool {
 	if ctx != nil {
 		if topLevel, ok := ctx.Value(topLevelSystemItemsContextKey{}).(bool); ok {
@@ -881,11 +793,6 @@ func topLevelSystemItemsFor(ctx context.Context, modelName string) bool {
 	return util.IsClaudeLegacySystemReminderModel(modelName)
 }
 
-// responsesSystemItemToClaudeBlocks converts one system-level input item into
-// Claude system blocks: one text block per non-blank text part, a blank part's
-// cache_control moved to the preceding block, the item's cache_control on its
-// last block, and a typed marker for each unsupported part so the executor can
-// report it instead of dropping it.
 func responsesSystemItemToClaudeBlocks(item ojson.Result) [][]byte {
 	var blockDocs []*ojson.Doc
 	attachCacheControlToLast := func(source ojson.Result) {
@@ -959,15 +866,11 @@ func attachClaudeCacheControlDoc(doc *ojson.Doc, src ojson.Result) {
 	_ = doc.SetRaw("cache_control", cc.Raw)
 }
 
-// isResponsesMessageItem reports whether an input item is a message, which is
-// the only item shape that can become a role=system turn.
 func isResponsesMessageItem(item ojson.Result) bool {
 	typ := item.Get("type").String()
 	return typ == "" || typ == "message"
 }
 
-// claudeBlocksAreAllText reports whether blocks is non-empty and holds only
-// text blocks, the content a role=system turn can carry besides tool changes.
 func claudeBlocksAreAllText(blocks [][]byte) bool {
 	if len(blocks) == 0 {
 		return false
@@ -980,11 +883,6 @@ func claudeBlocksAreAllText(blocks [][]byte) bool {
 	return true
 }
 
-// dropUnsupportedClaudeAssistantPrefill removes a trailing assistant message for
-// Claude model families that reject assistant message prefill (e.g., Fable,
-// Opus 5, Sonnet 4.6, Haiku 5.5), except when the message ends on a server-tool
-// block (server_tool_use or web_search_tool_result) from a pause_turn response
-// that the continuation must send back.
 func dropUnsupportedClaudeAssistantPrefill(modelName string, messages [][]byte) [][]byte {
 	if !claudeModelRejectsAssistantPrefill(modelName) || len(messages) == 0 {
 		return messages
@@ -1016,10 +914,6 @@ func claudeAssistantMessageEndsWithPausedServerTool(message ojson.Result) bool {
 	}
 }
 
-// stripTrailingClaudeThinkingBlocks removes trailing thinking and
-// redacted_thinking blocks from the final assistant message. Anthropic rejects
-// requests whose final assistant content block is thinking. If no content
-// blocks remain after stripping, the assistant message itself is dropped.
 func stripTrailingClaudeThinkingBlocks(messages [][]byte) [][]byte {
 	if len(messages) == 0 {
 		return messages
@@ -1068,11 +962,9 @@ func stripTrailingClaudeThinkingBlocks(messages [][]byte) [][]byte {
 	return messages
 }
 
-// claudeModelRejectsAssistantPrefill reports whether a Claude model family
-// disallows trailing assistant prefill in its conversation history.
 func claudeModelRejectsAssistantPrefill(modelName string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(modelName))
-	// Provider namespaces are not part of the model family.
+
 	if index := strings.LastIndexByte(normalized, '/'); index >= 0 {
 		normalized = normalized[index+1:]
 	}
@@ -1085,7 +977,7 @@ func claudeModelRejectsAssistantPrefill(modelName string) bool {
 		return false
 	}
 	parseVersion := func(token string) int {
-		// Eight-digit snapshot dates must never be treated as versions.
+
 		if token == "" || len(token) >= 8 {
 			return -1
 		}
@@ -1107,15 +999,6 @@ func claudeModelRejectsAssistantPrefill(modelName string) bool {
 	return tokens[0] == "sonnet" && major == 4 && len(tokens) > 2 && parseVersion(tokens[2]) >= 6
 }
 
-// responsesSystemUnsupportedBlock represents a system-level content part that
-// Claude cannot carry. Anthropic accepts text only in the top-level system field
-// ("system.<i>.type: Input should be 'text'") and text, tool_addition and
-// tool_removal in a role=system message, so images, files and unknown part types
-// have no lossless mapping. The part is preserved as a typed marker instead of
-// being dropped: silently discarding operator instructions is worse than a
-// rejected request, and the marker lets the Claude executor fail the request with
-// the offending type named. The original payload is not copied because the
-// request can never succeed.
 func responsesSystemUnsupportedBlockDoc(part ojson.Result) *ojson.Doc {
 	partType := strings.TrimSpace(part.Get("type").String())
 	if partType == "" {
@@ -1126,15 +1009,6 @@ func responsesSystemUnsupportedBlockDoc(part ojson.Result) *ojson.Doc {
 	return blockDoc
 }
 
-// convertResponsesReasoningToClaudeThinking rebuilds one Claude thinking block
-// from a Responses reasoning item so a replayed conversation keeps its chain of
-// thought. Anthropic requires a signature on every thinking block and rejects an
-// absent or empty one, so an item whose encrypted_content is missing or belongs
-// to another provider is dropped rather than replayed as an unsigned block.
-// Compatibility mode explicitly keeps the original opaque value as the
-// signature for upstreams that use a provider-specific signature format.
-// Anthropic does not verify the text against the signature, which is what makes
-// the summarized text safe to restore alongside it.
 func convertResponsesReasoningToClaudeThinking(item ojson.Result, preserveEmptyThinkingBlocks ...bool) []byte {
 	encrypted := item.Get("encrypted_content").String()
 	preserveEmpty := len(preserveEmptyThinkingBlocks) > 0 && preserveEmptyThinkingBlocks[0]
@@ -1162,8 +1036,6 @@ func convertResponsesReasoningToClaudeThinking(item ojson.Result, preserveEmptyT
 	return thinkingPartDoc.Bytes()
 }
 
-// responsesRedactedThinkingData reports whether encrypted_content carries an
-// Anthropic redacted_thinking payload and returns that payload.
 func responsesRedactedThinkingData(encryptedContent string) (string, bool) {
 	trimmed := strings.TrimSpace(encryptedContent)
 	if !strings.HasPrefix(trimmed, ClaudeResponsesRedactedThinkingPrefix) {
@@ -1172,12 +1044,6 @@ func responsesRedactedThinkingData(encryptedContent string) (string, bool) {
 	return strings.TrimSpace(strings.TrimPrefix(trimmed, ClaudeResponsesRedactedThinkingPrefix)), true
 }
 
-// responsesReasoningText collects the reasoning text of a Responses item. OpenAI
-// splits it across summary[] parts of type summary_text and content[] parts of
-// type reasoning_text. Claude only ever produces summaries, but callers echo the
-// item back through whichever array their SDK models, so both are read. content[]
-// is only consulted when summary[] carried nothing, otherwise a client that
-// mirrors the text into both arrays would replay it twice.
 func responsesReasoningText(item ojson.Result) string {
 	if text := responsesReasoningPartsText(item.Get("summary")); text != "" {
 		return text
@@ -1201,12 +1067,6 @@ func responsesReasoningPartsText(parts ojson.Result) string {
 	return builder.String()
 }
 
-// claudeThinkingSeparatorForToolUse returns the most recent thinking block when
-// the buffered assistant content ends with a server tool result, so the
-// tool-use run that follows keeps a thinking block of its own. Upstreams that
-// enforce Anthropic's thinking replay rules reject a tool_use glued directly
-// onto a web_search_tool_result, while native Claude output always carries a
-// fresh thinking block before the continued segment.
 func claudeThinkingSeparatorForToolUse(parts [][]byte) []byte {
 	if len(parts) == 0 {
 		return nil
@@ -1266,10 +1126,6 @@ func applyResponsesToolResultContentDoc(toolResultDoc *ojson.Doc, output ojson.R
 	_ = toolResultDoc.Set("content", output.String())
 }
 
-// claudeMessageInvariantProblems reports shapes Anthropic rejects. It only
-// describes; repairClaudeToolPairing already fixes the cases it knows about,
-// so anything reported here is a new history shape worth investigating from
-// the proxy log instead of from an upstream 400.
 func claudeMessageInvariantProblems(messages [][]byte) []string {
 	var problems []string
 	if len(messages) > 0 && ojson.GetBytesNoCopy(messages[0], "role").String() != "user" {
@@ -1338,15 +1194,6 @@ func claudeMessageInvariantProblems(messages [][]byte) []string {
 	return problems
 }
 
-// repairClaudeToolPairing enforces the Anthropic invariant that every
-// assistant tool_use is answered by a tool_result at the start of the very
-// next user message, and that every tool_result references a tool_use in the
-// immediately preceding assistant message. Histories break it in practice
-// when a session dies while a tool runs (tool_use with no output), when
-// standalone context is injected ahead of a real tool output (text before
-// tool_result), or when a delayed output lands after an intervening
-// assistant message. Missing results are synthesized as errors and orphan
-// results fold into plain text so the model can carry on.
 func repairClaudeToolPairing(messages [][]byte) [][]byte {
 	if len(messages) == 0 {
 		return messages
@@ -1359,9 +1206,7 @@ func repairClaudeToolPairing(messages [][]byte) [][]byte {
 		content := ojson.GetBytesNoCopy(msg, "content")
 
 		if role == "user" {
-			// Fold tool_result blocks that do not answer a tool_use in the
-			// immediately preceding assistant message into plain text, and move
-			// the real ones ahead of any other content.
+
 			rebuilt, changed := normalizeClaudeToolResultMessage(msg, prevToolUseIDs)
 			if changed {
 				msg = rebuilt
@@ -1415,8 +1260,7 @@ func repairClaudeToolPairing(messages [][]byte) [][]byte {
 			}
 
 			if hasNextUser {
-				// Prepend the missing results so tool_result blocks still lead
-				// the existing user message.
+
 				next := messages[i+1]
 				nextContent := ojson.GetBytesNoCopy(next, "content")
 				parts := synthesized
@@ -1443,10 +1287,6 @@ func repairClaudeToolPairing(messages [][]byte) [][]byte {
 	return out
 }
 
-// normalizeClaudeToolResultMessage rebuilds a user message so tool_result
-// blocks lead the content and any tool_result that does not answer a tool_use
-// in the immediately preceding assistant message folds into plain text.
-// answeredIDs lists the ids allowed to stay tool_result blocks.
 func normalizeClaudeToolResultMessage(msg []byte, answeredIDs map[string]struct{}) ([]byte, bool) {
 	content := ojson.GetBytesNoCopy(msg, "content")
 	if !content.IsArray() {
@@ -1464,9 +1304,7 @@ func normalizeClaudeToolResultMessage(msg []byte, answeredIDs map[string]struct{
 				if textParts := toolResultTextParts(block); len(textParts) > 0 {
 					otherParts = append(otherParts, textParts...)
 				} else {
-					// An empty orphan result folds to nothing, so keep an
-					// explicit marker instead of producing an empty user
-					// message that Anthropic also rejects.
+
 					otherParts = append(otherParts, []byte(`{"type":"text","text":"Tool result was empty."}`))
 				}
 				return true
@@ -1492,11 +1330,6 @@ func normalizeClaudeToolResultMessage(msg []byte, answeredIDs map[string]struct{
 	return userMsg, true
 }
 
-// toolResultTextParts folds an orphan tool_result block into plain text parts
-// so it can ride along as ordinary user content. Empty text parts are
-// filtered out; when nothing visible remains it returns nil so the caller
-// can substitute a marker instead of emitting empty text blocks that
-// Anthropic rejects.
 func toolResultTextParts(block ojson.Result) [][]byte {
 	content := block.Get("content")
 	if content.IsArray() {
@@ -1526,15 +1359,12 @@ func toolResultTextParts(block ojson.Result) [][]byte {
 	return [][]byte{part}
 }
 
-// convertResponsesStandaloneToolOutputToClaudeText renders a tool output that
-// has no matching tool_use as ordinary user content blocks.
 func convertResponsesStandaloneToolOutputToClaudeText(output ojson.Result) [][]byte {
 	if output.Exists() && output.IsArray() {
 		var partsJSON [][]byte
 		output.ForEach(func(_, part ojson.Result) bool {
 			if partJSON := convertResponsesContentPartToClaude(part); len(partJSON) > 0 {
-				// Drop empty text parts so a mixed array never emits blocks
-				// Anthropic rejects; images and documents always count.
+
 				if !contentPartHasVisibleContent(partJSON) {
 					return true
 				}
@@ -1548,10 +1378,7 @@ func convertResponsesStandaloneToolOutputToClaudeText(output ojson.Result) [][]b
 	}
 	text := output.String()
 	if output.IsArray() || strings.TrimSpace(text) == "" {
-		// An empty standalone output still needs a block so the user message
-		// it joins never degenerates to an empty content array. The IsArray
-		// guard keeps the raw array dump from leaking in as literal text when
-		// every converted part was empty.
+
 		return [][]byte{[]byte(`{"type":"text","text":"Tool result was empty."}`)}
 	}
 	contentPart := []byte(`{"type":"text","text":""}`)
@@ -1559,14 +1386,12 @@ func convertResponsesStandaloneToolOutputToClaudeText(output ojson.Result) [][]b
 	return [][]byte{contentPart}
 }
 
-// contentPartHasVisibleContent reports whether a converted Claude content
-// block carries user-visible payload (non-empty text, image, or document).
 func contentPartHasVisibleContent(part []byte) bool {
 	switch ojson.GetBytesNoCopy(part, "type").String() {
 	case "text":
 		return strings.TrimSpace(ojson.GetBytesNoCopy(part, "text").String()) != ""
 	default:
-		// Non-text blocks (image, document, ...) always carry content.
+
 		return true
 	}
 }
@@ -1661,13 +1486,11 @@ func convertResponsesToolDescriptorToClaude(descriptor responsesToolDescriptor, 
 	}
 }
 
-// responsesDiscoveredToolPriority ranks tools loaded by a tool_search_output
-// after every declared tool, so they append to tools[] in discovery order.
 const responsesDiscoveredToolPriority = 2
 
 type responsesToolSource struct {
 	tools    ojson.Result
-	priority int // Top-level tools use 0, additional_tools 1, tool_search_output results 2.
+	priority int
 }
 
 func responsesToolSources(root ojson.Result, toolSearch bool) []responsesToolSource {
@@ -1707,8 +1530,7 @@ type responsesToolDescriptor struct {
 	sourcePriority int
 	direct         bool
 	order          int
-	// clientSearch marks the Codex client tool_search declaration, which only
-	// exists while upstream.claude.tool-search is on.
+
 	clientSearch bool
 }
 
@@ -1720,8 +1542,7 @@ func responsesToolDescriptors(root ojson.Result, toolSearch bool) []responsesToo
 	if !responsesClientToolSearchWins(descriptors) {
 		return descriptors
 	}
-	// With client tool search, declared defer_loading tools stay hidden until
-	// a tool_search_output in history loads them.
+
 	kept := descriptors[:0]
 	for _, descriptor := range descriptors {
 		if descriptor.sourcePriority != responsesDiscoveredToolPriority && descriptor.tool.Get("defer_loading").Bool() {
@@ -1733,9 +1554,6 @@ func responsesToolDescriptors(root ojson.Result, toolSearch bool) []responsesToo
 	return kept
 }
 
-// responsesClientToolSearchWins reports whether the client tool_search
-// declaration owns the tool_search name. A same-named function that wins
-// instead leaves no search tool, so deferred tools must stay declared.
 func responsesClientToolSearchWins(descriptors []responsesToolDescriptor) bool {
 	var winner *responsesToolDescriptor
 	for i := range descriptors {
@@ -1794,13 +1612,11 @@ func appendResponsesToolDescriptors(descriptors []responsesToolDescriptor, tools
 			appendNamespaceChildren(tool)
 		case responsesToolSearchType:
 			if !toolSearch {
-				// Without tool search support a declaration is a generic tool,
-				// as it was before tool_search was translated.
+
 				appendDescriptor(tool, strings.TrimSpace(tool.Get("name").String()), "", "", toolType, true)
 				return true
 			}
-			// Hosted search cannot run on Claude, and the raw declaration must
-			// never reach Claude, so only client search is kept.
+
 			if isResponsesClientToolSearch(tool) {
 				appendDescriptor(tool, responsesToolSearchType, "", "", responsesToolSearchType, true)
 				descriptors[len(descriptors)-1].clientSearch = true
@@ -1826,8 +1642,7 @@ func appendResponsesToolDescriptors(descriptors []responsesToolDescriptor, tools
 }
 
 func responsesToolDescriptorPrecedes(left, right responsesToolDescriptor) bool {
-	// Keep top-level tools ahead of additional_tools, then let direct
-	// declarations win over namespace children within the same source class.
+
 	if left.sourcePriority != right.sourcePriority {
 		return left.sourcePriority < right.sourcePriority
 	}
@@ -1853,8 +1668,6 @@ func responsesToolNameMap(root ojson.Result, acceptedToolNames map[string]struct
 	descriptors := responsesToolDescriptors(root, toolSearch)
 	winners := responsesToolWinners(root, toolSearch)
 
-	// Direct tool names are canonical aliases and must win over namespace
-	// child aliases, regardless of declaration order.
 	for _, descriptor := range descriptors {
 		winner, ok := winners[descriptor.name]
 		if !ok || winner.order != descriptor.order || !descriptor.direct {
@@ -1866,8 +1679,6 @@ func responsesToolNameMap(root ojson.Result, acceptedToolNames map[string]struct
 		toolNameMap[descriptor.name] = descriptor.name
 	}
 
-	// Namespace aliases fill only names that are not already owned by a
-	// winning direct function/custom tool.
 	for _, descriptor := range descriptors {
 		winner, ok := winners[descriptor.name]
 		if !ok || winner.order != descriptor.order || descriptor.direct || descriptor.childName == "" {
@@ -2116,10 +1927,6 @@ func isUnsupportedOpenAIBuiltinToolType(toolType string) bool {
 	}
 }
 
-// normalizeCodexAgentMessages rewrites Codex multi-agent v2 "agent_message"
-// input items into plain user "message" items so the Claude translator does
-// not drop the delegated task text. Encrypted content parts are surfaced as
-// input_text, mirroring the multi-agent v2 optimizer used for other upstreams.
 func normalizeCodexAgentMessages(payload []byte) []byte {
 	input := ojson.GetBytesNoCopy(payload, "input")
 	if !input.IsArray() {

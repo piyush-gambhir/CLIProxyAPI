@@ -166,7 +166,7 @@ func TestExchangeAndRefreshSIWCTokens(t *testing.T) {
 	if errExp != nil {
 		t.Fatalf("parse expire error: %v", errExp)
 	}
-	// 3600s minus 3m margin = 3420s
+
 	if expTime.Before(before.Add(3415*time.Second)) || expTime.After(time.Now().Add(3425*time.Second)) {
 		t.Fatalf("unexpected expire time with 3m margin: %v (before=%v)", expTime, before)
 	}
@@ -179,7 +179,6 @@ func TestExchangeAndRefreshSIWCTokens(t *testing.T) {
 		t.Fatalf("unexpected real expires_at time (want ~3600s without margin): %v (before=%v)", realExpTime, before)
 	}
 
-	// Missing direct token scope must fail
 	responseBody = map[string]any{
 		"access_token":  "siwc-access-1",
 		"refresh_token": "siwc-refresh-1",
@@ -191,7 +190,6 @@ func TestExchangeAndRefreshSIWCTokens(t *testing.T) {
 		t.Fatal("expected error when chatgpt.tokens.use.direct scope is missing")
 	}
 
-	// Refresh SIWC tokens
 	responseBody = map[string]any{
 		"access_token":  "siwc-access-2",
 		"refresh_token": "siwc-refresh-2",
@@ -251,7 +249,6 @@ func TestSaveTokenToFileReadModifyWriteUnderLock(t *testing.T) {
 
 	before := tokenStorageTestMap(t, initial)
 
-	// Concurrent outer-only update and siwc-only update must serialize under lock and preserve all fields
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
@@ -318,13 +315,11 @@ func TestSaveTokenToFileDoesNotOverwriteNewerDiskSIWC(t *testing.T) {
 	tmpDir := t.TempDir()
 	authPath := filepath.Join(tmpDir, "codex-newer-disk.json")
 
-	// Disk has a newly bound SIWC credential (last_refresh 12:00:00Z)
 	diskJSON := `{"type":"codex","access_token":"outer-old","refresh_token":"outer-ref-old","last_refresh":"2026-10-12T10:00:00Z","use_siwc":true,"siwc":{"access_token":"siwc-newer-on-disk","refresh_token":"siwc-ref-newer","client_id":"oaiapp_new","device_id":"e61bbe28-07ef-466d-8e5d-a344f94ab305","last_refresh":"2026-10-12T12:00:00Z","expired":"2026-10-12T12:57:00Z"}}`
 	if err := os.WriteFile(authPath, []byte(diskJSON), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	// Server process finishes refreshing outer token (last_refresh 12:01:00Z), but its in-memory SIWC snapshot is stale (last_refresh 10:00:00Z)
 	useSIWCFalse := false
 	staleSnapshot := &CodexTokenStorage{
 		AccessToken:  "outer-refreshed",

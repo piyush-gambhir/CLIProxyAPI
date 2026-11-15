@@ -1343,7 +1343,6 @@ func TestConvertClaudeResponseToOpenAIResponses_MaxTokensWithWebSearchEmitsIncom
 		t.Fatalf("response.output.0.status = %q, want incomplete", got)
 	}
 
-	// Non-stream
 	raw := []byte(strings.Join([]string{
 		`data: {"type":"message_start","message":{"id":"msg_ws_incomplete","usage":{"input_tokens":10,"output_tokens":0}}}`,
 		`data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"srv_1","name":"web_search"}}`,
@@ -2265,7 +2264,7 @@ func TestApplyPatchClaudeSnapshotAfterItemCompletion(t *testing.T) {
 		{"equivalent reencoded snapshot", ` { "input" : "\u0078" } `, false},
 		{"placeholder after item completion", `{}`, false},
 	} {
-		// Reproduce the six-step sequence with a second, still-open patch call.
+
 		chunks := [][]byte{
 			applyPatchClaudeStart(0, "c1", "apply_patch"),
 			applyPatchClaudeFragment(0, `{"input":"x"}`),
@@ -2427,10 +2426,6 @@ func TestApplyPatchClaudeSuccessfulTerminalSealsState(t *testing.T) {
 	}
 }
 
-// The request body is picked and validated once when the per-stream state is
-// created; later chunks reuse that pinned copy for tool metadata and the
-// completed event instead of re-picking (and re-validating) the full body on
-// every chunk. Regression test for issue #6665.
 func TestConvertClaudeResponseToOpenAIResponses_PinsRequestPerStream(t *testing.T) {
 	originalRequest := []byte(`{
 		"model":"gpt-test",
@@ -2450,9 +2445,7 @@ func TestConvertClaudeResponseToOpenAIResponses_PinsRequestPerStream(t *testing.
 	var param any
 	var added, completed ojson.Result
 	for i, chunk := range chunks {
-		// Only the first chunk carries the request copy; the pinned state
-		// must keep tool metadata and completed-event fields working even
-		// when later chunks do not carry the request again.
+
 		var requestForChunk []byte
 		if i == 0 {
 			requestForChunk = originalRequest
@@ -2485,7 +2478,7 @@ func TestConvertClaudeResponseToOpenAIResponses_PinsRequestPerStream(t *testing.
 }
 
 func BenchmarkConvertClaudeResponseToOpenAIResponses_TextDelta(b *testing.B) {
-	// A 64 KiB request body, as a Codex session with a long history sends.
+
 	request := []byte(`{"model":"claude-test","instructions":"` + strings.Repeat("x", 64*1024) + `","tools":[{"name":"shell","description":"run","input_schema":{"type":"object"}}]}`)
 	start := []byte(`data: {"type":"message_start","message":{"id":"msg_1"}}`)
 	blockStart := []byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`)
@@ -2505,7 +2498,6 @@ func BenchmarkConvertClaudeResponseToOpenAIResponses_TextDelta(b *testing.B) {
 func TestConvertClaudeResponseToOpenAIResponses_PreTokenAndMidStreamFallbackTransparency(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Pre-token fallback with requestRawJSON fallbacks: created, in_progress, completed, and non-stream all surface claude-opus-4-8 + fallback metadata.
 	originalReq := []byte(`{"model":"claude-opus-5-5","input":[{"role":"user","content":"hi"}]}`)
 	translatedReq := []byte(`{"model":"claude-opus-5-5","fallbacks":[{"model":"claude-opus-4-8"}],"messages":[{"role":"user","content":"hi"}]}`)
 	preEvents := [][]byte{
@@ -2551,7 +2543,6 @@ func TestConvertClaudeResponseToOpenAIResponses_PreTokenAndMidStreamFallbackTran
 		t.Fatalf("pre-token non-stream Responses fallback = %s, want from=5-5 to=4-8", fb.Raw)
 	}
 
-	// 2. Mid-stream fallback: output[0] closes at fallback boundary, response.in_progress announces fallback + output_index=1, and completed/non-stream preserve serving model + boundary.
 	midEvents := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_resp_mid","model":"claude-opus-5-5","usage":{"input_tokens":8,"output_tokens":0}}}`),
 		[]byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`),
@@ -2609,7 +2600,6 @@ func TestConvertClaudeResponseToOpenAIResponses_PreTokenAndMidStreamFallbackTran
 func TestConvertClaudeResponseToOpenAIResponses_DefaultStringFallbackAndStickyRouting(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. "fallbacks": "default" + sticky routing (upstream serves claude-opus-4-8 directly in message_start with no fallback block and no usage.iterations).
 	origReq := []byte(`{"model":"claude-opus-5-5","input":[{"role":"user","content":"turn 2"}]}`)
 	translatedDefaultReq := []byte(`{"model":"claude-opus-5-5","fallbacks":"default","messages":[{"role":"user","content":"turn 2"}]}`)
 	stickyEvents := [][]byte{
@@ -2651,7 +2641,6 @@ func TestConvertClaudeResponseToOpenAIResponses_DefaultStringFallbackAndStickyRo
 		t.Fatalf("sticky non-stream model = %q, want claude-opus-4-8", got)
 	}
 
-	// 2. Dated snapshot of the primary model (claude-opus-5-5-20260501) must NOT be misclassified as a fallback.
 	var snapParam any
 	snapStart := []byte(`data: {"type":"message_start","message":{"id":"msg_snap","model":"claude-opus-5-5-20260501","usage":{"input_tokens":4,"output_tokens":0}}}`)
 	for _, out := range ConvertClaudeResponseToOpenAIResponses(ctx, "claude-opus-5-5", origReq, translatedDefaultReq, snapStart, &snapParam) {

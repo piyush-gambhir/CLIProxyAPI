@@ -1,8 +1,3 @@
-// Package gemini provides request translation functionality for Antigravity to Gemini API compatibility.
-// It handles parsing and transforming Antigravity API requests into Gemini API format,
-// extracting model information, system instructions, message contents, and tool declarations.
-// The package performs JSON data transformation to ensure compatibility
-// between Antigravity API format and Gemini API's expected format.
 package gemini
 
 import (
@@ -18,22 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ConvertGeminiRequestToAntigravity parses and transforms a Antigravity API request into Gemini API format.
-// It extracts the model name, system instruction, message contents, and tool declarations
-// from the raw JSON request and returns them in the format expected by the Gemini API.
-// The function performs the following transformations:
-// 1. Extracts the model information from the request
-// 2. Restructures the JSON to match Gemini API format
-// 3. Converts system instructions to the expected format
-// 4. Fixes CLI tool response format and grouping
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request (unused in current implementation)
-//   - rawJSON: The raw JSON request data from the Antigravity API
-//   - stream: A boolean indicating if the request is for a streaming response (unused in current implementation)
-//
-// Returns:
-//   - []byte: The transformed request data in Gemini API format
 func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	if len(inputRawJSON) == 0 {
 		return []byte{}, nil
@@ -56,9 +35,6 @@ func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 
 	normalizeGeminiGenerationConfigResponseSchemaDocAt(reqDoc, "")
 
-	// Normalize roles in request.contents: default to valid values if missing/invalid.
-	// The contents array is only materialized when a role actually changes; copying
-	// every content up front duplicates the whole payload for large inline data.
 	contents := reqDoc.Get("contents")
 	if contents.IsArray() && geminiContentRolesNeedNormalization(contents) {
 		contentItems := translatorcommon.NewRawArrayItems(contents.Get("#").Int())
@@ -179,8 +155,6 @@ func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 	return out, nil
 }
 
-// normalizeGeminiGenerationConfigResponseSchema converts generationConfig.responseJsonSchema
-// (and snake_case response_json_schema) to generationConfig.responseSchema for Antigravity compatibility.
 func normalizeGeminiGenerationConfigResponseSchema(rawJSON []byte) []byte {
 	doc := ojson.NewDoc(rawJSON)
 	if normalizeGeminiGenerationConfigResponseSchemaDoc(doc) {
@@ -217,8 +191,6 @@ func normalizeGeminiGenerationConfigResponseSchemaDocAt(doc *ojson.Doc, prefix s
 	return changed
 }
 
-// geminiContentRolesNeedNormalization reports whether any content role is missing
-// or invalid and therefore requires rebuilding the contents array.
 func geminiContentRolesNeedNormalization(contents ojson.Result) bool {
 	needsNormalization := false
 	contents.ForEach(func(_, value ojson.Result) bool {
@@ -298,11 +270,8 @@ func removeEmptyGeminiSystemInstructionPartsDoc(doc *ojson.Doc) {
 	signature.SanitizeGeminiSystemInstructionDoc(doc, "request.contents")
 }
 
-// geminiFunctionNameFields lists the part fields that can carry a function name.
 var geminiFunctionNameFields = []string{"functionCall", "functionResponse", "function_call", "function_response"}
 
-// geminiFunctionNamesNeedRewrite reports whether any part carries a function name
-// that must be remapped or coerced to a string.
 func geminiFunctionNamesNeedRewrite(contents ojson.Result, functionNameMap map[string]string) bool {
 	needsRewrite := false
 	contents.ForEach(func(_, content ojson.Result) bool {
@@ -356,8 +325,7 @@ func rewriteGeminiFunctionNamesDocAt(doc *ojson.Doc, prefix string, functionName
 			return true
 		})
 	}
-	// Rebuilding the contents array copies every content and part, so only pay for
-	// it once a name actually needs rewriting.
+
 	if canBatchContents && geminiFunctionNamesNeedRewrite(contents, functionNameMap) {
 		contentItems := translatorcommon.NewRawArrayItems(contents.Get("#").Int())
 		contents.ForEach(func(_, content ojson.Result) bool {
@@ -769,11 +737,10 @@ func logAntigravityClaudeGeminiSignatureSanitize(modelName, action, reason strin
 	log.WithFields(fields).Debug("antigravity gemini translator: sanitized Claude target thoughtSignature before upstream")
 }
 
-// FunctionCallGroup represents a group of function calls and their responses
 type FunctionCallGroup struct {
 	ResponsesNeeded int
-	CallIDs         []string // ordered function call IDs for matching responses when extras exist
-	CallNames       []string // ordered function call names for backfilling empty response names
+	CallIDs         []string
+	CallNames       []string
 }
 
 func selectGroupResponses(collected []ojson.Result, group *FunctionCallGroup) ([]ojson.Result, []ojson.Result) {
@@ -793,7 +760,6 @@ func selectGroupResponses(collected []ojson.Result, group *FunctionCallGroup) ([
 		return collected[:needed], collected[needed:]
 	}
 
-	// Single O(M) pass over collected responses to index id and name once per part.
 	byID := make(map[string][]int, len(collected))
 	byName := make(map[string][]int, len(collected))
 	var emptyNameIdxs []int
@@ -903,7 +869,7 @@ func normalizeAntigravityInlineDataPart(part ojson.Result) ([]byte, bool) {
 		mimeType = inline.Get("mime_type").String()
 	}
 	if mimeType == "" {
-		// Cloud Code Assist ignores inlineData without mimeType.
+
 		mimeType = "image/png"
 	}
 	outDoc := ojson.NewDoc([]byte(`{"inlineData":{"mimeType":"","data":""}}`))
@@ -923,9 +889,6 @@ func attachInlineDataToFunctionResponse(response ojson.Result, images [][]byte) 
 	return util.ParseGJSONBytesNoCopy(targetDoc.Bytes())
 }
 
-// collectFunctionResponsesWithSiblingInlineData keeps functionResponse parts and
-// moves sibling inline_data/inlineData onto the nearest preceding functionResponse.
-// Leading images before the first functionResponse attach to that first response.
 func collectFunctionResponsesWithSiblingInlineData(parts ojson.Result) []ojson.Result {
 	responses := make([]ojson.Result, 0)
 	leadingImages := make([][]byte, 0)
@@ -954,9 +917,6 @@ func collectFunctionResponsesWithSiblingInlineData(parts ojson.Result) []ojson.R
 	return responses
 }
 
-// parseFunctionResponseRaw attempts to normalize a function response part into a JSON object string.
-// Falls back to a minimal "functionResponse" object when parsing fails.
-// fallbackName is used when the response's own name is empty.
 func parseFunctionResponseRaw(response ojson.Result, fallbackName string) string {
 	if response.IsObject() && ojson.Valid(response.Raw) {
 		raw := response.Raw
@@ -994,18 +954,6 @@ func parseFunctionResponseRaw(response ojson.Result, fallbackName string) string
 	return frDoc.String()
 }
 
-// fixCLIToolResponse performs sophisticated tool response format conversion and grouping.
-// This function transforms the CLI tool response format by intelligently grouping function calls
-// with their corresponding responses, ensuring proper conversation flow and API compatibility.
-// It converts from a linear format (1.json) to a grouped format (2.json) where function calls
-// and their responses are properly associated and structured.
-//
-// Parameters:
-//   - input: The input JSON string to be processed
-//
-// Returns:
-//   - string: The processed JSON string with grouped function calls and responses
-//   - error: An error if the processing fails
 func fixCLIToolResponse(input []byte) ([]byte, error) {
 	doc := ojson.NewDoc(input)
 	changed, err := fixCLIToolResponseDoc(doc)
@@ -1024,7 +972,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		return false, fmt.Errorf("contents not found in input")
 	}
 
-	// Extract the contents array which contains the conversation messages
 	contentsPath := prefix + "contents"
 	contents := doc.Get(contentsPath)
 	if !contents.Exists() {
@@ -1051,10 +998,9 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		return false, nil
 	}
 
-	// Initialize data structures for processing and grouping
 	contentItems := translatorcommon.NewRawArrayItems(contents.Get("#").Int())
-	var pendingGroups []*FunctionCallGroup // Groups awaiting completion with responses
-	var collectedResponses []ojson.Result  // Standalone responses to be matched
+	var pendingGroups []*FunctionCallGroup
+	var collectedResponses []ojson.Result
 	appendFunctionResponses := func(responses []ojson.Result, callNames []string) {
 		partItems := make([][]byte, 0, len(responses))
 		for responseIndex, response := range responses {
@@ -1070,40 +1016,32 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		}
 	}
 
-	// Process each content object in the conversation
-	// This iterates through messages and groups function calls with their responses
 	contents.ForEach(func(key, value ojson.Result) bool {
 		role := value.Get("role").String()
 		parts := value.Get("parts")
 
-		// Collect function responses and attach sibling inlineData to the nearest one.
 		responsePartsInThisContent := collectFunctionResponsesWithSiblingInlineData(parts)
 
-		// If this content has function responses, collect them
 		if len(responsePartsInThisContent) > 0 {
 			collectedResponses = append(collectedResponses, responsePartsInThisContent...)
 
-			// Check if pending groups can be satisfied (FIFO: oldest group first)
 			for len(pendingGroups) > 0 && len(collectedResponses) >= pendingGroups[0].ResponsesNeeded {
 				group := pendingGroups[0]
 				pendingGroups = pendingGroups[1:]
 
-				// Take the needed responses for this group
 				var groupResponses []ojson.Result
 				groupResponses, collectedResponses = selectGroupResponses(collectedResponses, group)
 
 				appendFunctionResponses(groupResponses, group.CallNames)
 			}
 			if len(pendingGroups) == 0 {
-				// Any remaining responses in this turn have no preceding functionCall group
-				// to match and must not leak into subsequent model turns.
+
 				collectedResponses = nil
 			}
 
-			return true // Skip adding this content, responses are merged
+			return true
 		}
 
-		// If this is a model with function calls, create a new group
 		if role == "model" {
 			var callIDs []string
 			var callNames []string
@@ -1116,14 +1054,13 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 			})
 
 			if len(callNames) > 0 {
-				// Add the model content
+
 				if !value.IsObject() {
 					log.Warnf("failed to parse model content")
 					return true
 				}
 				contentItems = append(contentItems, []byte(value.Raw))
 
-				// Create a new group for tracking responses
 				group := &FunctionCallGroup{
 					ResponsesNeeded: len(callNames),
 					CallIDs:         callIDs,
@@ -1131,7 +1068,7 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 				}
 				pendingGroups = append(pendingGroups, group)
 			} else {
-				// Regular model content without function calls
+
 				if !value.IsObject() {
 					log.Warnf("failed to parse content")
 					return true
@@ -1139,7 +1076,7 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 				contentItems = append(contentItems, []byte(value.Raw))
 			}
 		} else {
-			// Non-model content (user, etc.)
+
 			if !value.IsObject() {
 				log.Warnf("failed to parse content")
 				return true
@@ -1150,7 +1087,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		return true
 	})
 
-	// Handle any remaining pending groups with remaining responses
 	for _, group := range pendingGroups {
 		if len(collectedResponses) >= group.ResponsesNeeded {
 			groupResponses := collectedResponses[:group.ResponsesNeeded]
@@ -1160,7 +1096,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		}
 	}
 
-	// Update the document with the new contents
 	_ = doc.SetRawBytes(contentsPath, translatorcommon.JoinRawArray(contentItems))
 	return true, nil
 }

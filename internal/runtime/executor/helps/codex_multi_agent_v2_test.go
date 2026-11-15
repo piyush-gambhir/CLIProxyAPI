@@ -59,8 +59,6 @@ func geminiToolHistoryPayload(turns int) []byte {
 		strings.Join(contents, ",")))
 }
 
-// TestTranslateRequestPairMatchesSeparateTranslations pins the reuse fast path to
-// the behavior of translating both payloads independently.
 func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 	from := sdktranslator.FormatGemini
 	to := sdktranslator.FromString("antigravity")
@@ -69,7 +67,7 @@ func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 
 	for _, turns := range []int{0, 1, 5, 20} {
 		payload := geminiToolHistoryPayload(turns)
-		// Same bytes in a different backing array forces the translate-twice branch.
+
 		detached := append([]byte(nil), payload...)
 
 		want := TranslateRequestWithCodexMultiAgentV2(context.Background(), http.Header{}, cfg, from, to, model, payload, true)
@@ -94,7 +92,6 @@ func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 			t.Fatalf("turns=%d: working copy aliases the baseline; later in-place edits would corrupt it", turns)
 		}
 
-		// The caller mutates the working copy, so the baseline must stay intact.
 		baselineBefore := append([]byte(nil), reuseBase...)
 		reuseWork[0] = 'X'
 		if !bytes.Equal(baselineBefore, reuseBase) {
@@ -103,8 +100,6 @@ func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 	}
 }
 
-// TestTranslateRequestPairTranslatesDistinctPayloads guards the case where the
-// executor really does hand over two different requests.
 func TestTranslateRequestPairTranslatesDistinctPayloads(t *testing.T) {
 	from := sdktranslator.FormatGemini
 	to := sdktranslator.FromString("antigravity")
@@ -261,7 +256,7 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 		"claude-3-5-sonnet",
 		payload,
 		false,
-		true, // isCompat
+		true,
 	)
 
 	if hooks.calls != 1 {
@@ -270,12 +265,11 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 	if got := ojson.GetBytes(out, "plugin_call").Int(); got != 1 {
 		t.Fatalf("plugin_call = %d, want 1; output was %s", got, out)
 	}
-	// Assert summary config was applied to the body before invoking the normalizer hook
+
 	if summaryDisplayInHook != "summarized" {
 		t.Fatalf("expected thinking.display = summarized in body delivered to normalizer, got: %q", summaryDisplayInHook)
 	}
 
-	// Also verify that non-compat path invokes normalizers exactly once
 	hooks.calls = 0
 	outNonCompat := TranslateRequestWithAPIKeyModelCompatibility(
 		context.Background(),
@@ -286,7 +280,7 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 		"claude-3-5-sonnet",
 		payload,
 		false,
-		false, // non-compat
+		false,
 	)
 	if hooks.calls != 1 {
 		t.Fatalf("non-compat plugin hook calls = %d, want 1", hooks.calls)
@@ -295,7 +289,6 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 		t.Fatalf("non-compat plugin_call = %d, want 1; output was %s", got, outNonCompat)
 	}
 
-	// Also verify stream = true path
 	hooks.calls = 0
 	outStream := TranslateRequestWithAPIKeyModelCompatibility(
 		context.Background(),
@@ -305,8 +298,8 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 		sdktranslator.FormatOpenAI,
 		"claude-3-5-sonnet",
 		payload,
-		true, // stream
-		true, // isCompat
+		true,
+		true,
 	)
 	if hooks.calls != 1 {
 		t.Fatalf("stream compat plugin hook calls = %d, want 1", hooks.calls)
@@ -416,7 +409,6 @@ func TestTranslateRequestWithCodexMultiAgentV2_NormalizesCodexToolTypes(t *testi
 		false,
 	)
 
-	// In Claude format, tool is under tools[0].input_schema.properties
 	if got := ojson.GetBytes(out, "tools.0.input_schema.properties.yield_time_ms.type").String(); got != "integer" {
 		t.Errorf("translated Claude tool yield_time_ms type = %q, want integer; out=%s", got, out)
 	}
@@ -435,7 +427,6 @@ func TestTranslateRequestWithCodexMultiAgentV2_NormalizesCodexToolTypes(t *testi
 		false,
 	)
 
-	// In Gemini format, tool is under functionDeclarations with parameters or parametersJsonSchema
 	geminiParam := ojson.GetBytes(outGemini, "tools.0.functionDeclarations.0.parametersJsonSchema.properties")
 	if !geminiParam.Exists() {
 		geminiParam = ojson.GetBytes(outGemini, "tools.0.function_declarations.0.parameters.properties")

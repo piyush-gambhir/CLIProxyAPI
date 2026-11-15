@@ -7,16 +7,10 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// StripInvalidClaudeThinkingBlocks removes Claude thinking blocks whose
-// signatures are empty or not valid Claude thinking signatures after stripping
-// an optional cache prefix, unless the validation options allow an empty
-// thinking placeholder.
 func StripInvalidClaudeThinkingBlocks(payload []byte, opts ...ClaudeSignatureValidationOptions) []byte {
 	return stripInvalidClaudeThinkingBlocks(payload, false, opts...)
 }
 
-// StripInvalidClaudeThinkingBlocksAndEmptyMessages also removes messages whose
-// content becomes empty after invalid thinking blocks are removed.
 func StripInvalidClaudeThinkingBlocksAndEmptyMessages(payload []byte, opts ...ClaudeSignatureValidationOptions) []byte {
 	return stripInvalidClaudeThinkingBlocks(payload, true, opts...)
 }

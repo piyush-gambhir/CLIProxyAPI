@@ -9,10 +9,6 @@ import (
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/claude"
 )
 
-// claude-sonnet-5-5 rejects thinking.type="disabled" and requires "between_tools"
-// instead. That type accepts no extra thinking fields (display, budget_tokens,
-// block_binding) and only effort high or below, so turning thinking off must
-// emit {"type":"between_tools"} and remove output_config.effort.
 func TestApplyThinking_ClaudeSonnet55DisabledUsesBetweenTools(t *testing.T) {
 	const msgs = `"messages":[{"role":"user","content":"hi"}]`
 	tests := []struct {
@@ -75,11 +71,6 @@ func TestApplyThinking_ClaudeSonnet55DisabledUsesBetweenTools(t *testing.T) {
 	}
 }
 
-// Anthropic rejects thinking.type="disabled" on claude-opus-5-5, claude-fable-5,
-// and claude-fable-5-1. Turning thinking off must fall back to adaptive thinking
-// at the lowest supported effort ("low") with display="omitted", and keep an
-// explicit {"type":"disabled"} block (without display, budget_tokens, or
-// block_binding) on models that accept disabled.
 func TestApplyThinking_ClaudeDisabledFallsBackOnAdaptiveOnlyModels(t *testing.T) {
 	tests := []struct {
 		model        string
@@ -173,10 +164,6 @@ func TestApplyThinking_ClaudeDisabledFallbackInputs(t *testing.T) {
 	}
 }
 
-// Opus 4.7, Opus 4.8, Fable 5, and Fable 5.1 reject thinking.budget_tokens and
-// accept only adaptive thinking with output_config.effort. Numeric budgets must
-// map to the nearest effort level, and auto must stay plain adaptive without
-// a synthesized mid-range budget. Opus 4.6 and Sonnet 4.6 still accept budgets.
 func TestApplyThinking_ClaudeAdaptiveOnlyModelsConvertBudgetAndAuto(t *testing.T) {
 	adaptiveOnlyModels := []string{
 		"claude-opus-4-7",
@@ -256,8 +243,6 @@ func TestApplyThinking_ClaudeAdaptiveOnlyModelsConvertBudgetAndAuto(t *testing.T
 		})
 	}
 
-	// Configured routes with unordered levels or special "auto" token must still
-	// select the lowest canonical effort level ("low") when falling back from off.
 	t.Run("configured_unordered_or_auto_levels_select_lowest_canonical", func(t *testing.T) {
 		for _, levels := range [][]string{
 			{"high", "medium", "low"},

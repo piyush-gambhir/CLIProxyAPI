@@ -46,7 +46,7 @@ func (h *Host) callHostModelExecuteStream(ctx context.Context, request []byte) (
 	if callbackCtx == nil {
 		callbackCtx = context.Background()
 	}
-	// Detach request cancellation while preserving callback values; callback cleanup owns the model stream lifetime.
+
 	streamCtx, cancel := newStreamContext(context.WithoutCancel(callbackCtx))
 	inflightID, okBegin := h.modelStreams.begin(callerPluginID, callbackPluginID, callerInstance, callbackInstance, cancel)
 	if !okBegin {

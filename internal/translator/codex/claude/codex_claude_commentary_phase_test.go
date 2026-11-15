@@ -8,12 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// GPT-5.x models answer with two message output items: a "commentary" preamble
-// and the "final_answer". Only the final answer is a Claude text block; the
-// preamble travels as thinking so a text consumer (or a TTS client) gets the
-// answer once. The commentary thinking block carries the internal commentary
-// marker as its signature so the request translator can restore it on replay.
-
 type codexClaudeBlocks struct {
 	text, thinking []string
 	signatures     []string
@@ -92,7 +86,7 @@ func TestConvertCodexResponseToClaude_StreamCommentaryPhaseIsThinking(t *testing
 }
 
 func TestConvertCodexResponseToClaude_StreamCommentaryDoneFallbackIsThinking(t *testing.T) {
-	// No deltas at all: both items arrive whole on output_item.done.
+
 	chunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
 		[]byte(`data: {"type":"response.output_item.done","item":{"type":"message","role":"assistant","phase":"commentary","content":[{"type":"output_text","text":"On it."}]}}`),
@@ -109,8 +103,7 @@ func TestConvertCodexResponseToClaude_StreamCommentaryDoneFallbackIsThinking(t *
 }
 
 func TestConvertCodexResponseToClaude_StreamSecondMessageDoneFallbackAfterStreamedFirstMessage(t *testing.T) {
-	// First message streams deltas; second message arrives whole on output_item.done
-	// (both with and without a preceding output_item.added).
+
 	for _, includeSecondAdded := range []bool{true, false} {
 		chunks := [][]byte{
 			[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
@@ -136,9 +129,7 @@ func TestConvertCodexResponseToClaude_StreamSecondMessageDoneFallbackAfterStream
 }
 
 func TestConvertCodexResponseToClaude_StreamCommentaryDoesNotTakeReasoningSignature(t *testing.T) {
-	// reasoning item (with encrypted_content) -> commentary message -> final_answer:
-	// the reasoning signature belongs to the reasoning block; the commentary block
-	// carries only the internal commentary marker.
+
 	chunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
 		[]byte(`data: {"type":"response.output_item.added","item":{"type":"reasoning","encrypted_content":"pre"}}`),
@@ -165,8 +156,6 @@ func TestConvertCodexResponseToClaude_StreamCommentaryDoesNotTakeReasoningSignat
 		t.Fatalf("final_answer should be the only text block, got %q", got.text)
 	}
 
-	// Also verify when a reasoning item's output_item.added parked encrypted_content
-	// before any summary delta opened a block, a commentary block does not consume it.
 	parkedChunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
 		[]byte(`data: {"type":"response.output_item.added","item":{"type":"reasoning","encrypted_content":"parked_sig"}}`),
@@ -186,9 +175,7 @@ func TestConvertCodexResponseToClaude_StreamCommentaryDoesNotTakeReasoningSignat
 }
 
 func TestConvertCodexResponseToClaude_StreamUnclosedReasoningClosesBeforeCommentaryStarts(t *testing.T) {
-	// If a reasoning item never emitted output_item.done before a commentary message
-	// starts, its thinking block must still close (with its fallback signature)
-	// before the commentary thinking block opens.
+
 	chunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
 		[]byte(`data: {"type":"response.output_item.added","item":{"type":"reasoning","encrypted_content":"enc_fallback"}}`),

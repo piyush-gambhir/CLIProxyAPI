@@ -10,10 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// maxRefreshTimerWait caps the sleep duration for the refresh timer.
-// On Linux systems, CLOCK_MONOTONIC stops ticking during suspend/sleep.
-// Capping the timer ensures that when the system resumes, the loop wakes
-// up promptly to detect and refresh any credentials that expired during sleep.
 const maxRefreshTimerWait = 30 * time.Second
 
 type authAutoRefreshLoop struct {
@@ -35,7 +31,7 @@ type authRefreshJob struct {
 	registrationEpoch uint64
 	pendingUntil      time.Time
 	loop              *authAutoRefreshLoop
-	running           bool // guarded by manager.mu
+	running           bool
 }
 
 func newAuthAutoRefreshLoop(manager *Manager, interval time.Duration, concurrency int) *authAutoRefreshLoop {
@@ -321,7 +317,7 @@ func (l *authAutoRefreshLoop) handleDueAuth(ctx context.Context, now time.Time, 
 		default:
 		}
 	}
-	// A full queue must not hold the dispatcher or leave a phantom pending job.
+
 	retryAt := now.Add(l.interval)
 	manager.finishRefreshJob(job, retryAt, false)
 	l.upsert(authID, retryAt)
@@ -392,8 +388,6 @@ func (l *authAutoRefreshLoop) remove(authID string) {
 	delete(l.index, authID)
 }
 
-// nextRefreshCheckAt excludes local Codex credentials that cannot renew before
-// evaluating generic expiry-based scheduling. Home can renew without a local RT.
 func (m *Manager) nextRefreshCheckAt(now time.Time, auth *Auth, interval time.Duration) (time.Time, bool) {
 	if m.codexAutoRefreshUnavailable(auth, now) {
 		return time.Time{}, false
@@ -409,13 +403,8 @@ func nextRefreshCheckAt(now time.Time, auth *Auth, interval time.Duration) (time
 		return time.Time{}, false
 	}
 
-	// Quota-exhausted Devin credentials revalidate upstream status so early
-	// restoration can be detected (issue #6690); their tokens never expire,
-	// so the generic expiry/lead schedule below would drop them entirely.
-	// A custom RefreshEvaluator keeps precedence (matching shouldRefresh),
-	// otherwise an evaluator veto would reschedule an immediately-due entry.
 	if _, hasEvaluator := auth.Runtime.(RefreshEvaluator); hasEvaluator {
-		// Fall through to the evaluator branch below.
+
 	} else if next, due := devinQuotaRevalidateAt(auth, now); due {
 		if !auth.NextRefreshAfter.IsZero() && auth.NextRefreshAfter.After(next) {
 			next = auth.NextRefreshAfter

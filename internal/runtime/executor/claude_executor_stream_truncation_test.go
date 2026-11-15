@@ -19,9 +19,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Upstream closes the SSE stream after a partial message without ever sending
-// message_stop. The executor must surface a truncation error and record failed usage
-// instead of closing the channel silently.
 func TestClaudeExecutorStreamTruncationReportsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -33,7 +30,7 @@ func TestClaudeExecutorStreamTruncationReportsError(t *testing.T) {
 		if flusher != nil {
 			flusher.Flush()
 		}
-		// Abrupt clean EOF: no message_stop, no error event.
+
 	}))
 	defer server.Close()
 
@@ -95,8 +92,6 @@ func TestClaudeExecutorStreamTruncationReportsError(t *testing.T) {
 	}
 }
 
-// Translated stream path must also report a truncation error when upstream closes
-// before message_stop.
 func TestClaudeExecutorTranslatedStreamTruncationReportsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -166,7 +161,6 @@ func TestClaudeExecutorTranslatedStreamTruncationReportsError(t *testing.T) {
 	}
 }
 
-// A complete stream that ends with message_stop must not report any error.
 func TestClaudeExecutorStreamCompleteNoError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -210,8 +204,6 @@ func TestClaudeExecutorStreamCompleteNoError(t *testing.T) {
 	}
 }
 
-// OpenAICompatExecutor with ResponseFormat: FormatClaude must fail the stream on clean EOF
-// when no chunk carried finish_reason, rather than synthesizing [DONE] and emitting a fake message_stop.
 func TestOpenAICompatExecutorClaudeEOFBeforeFinishReasonFailsStream(t *testing.T) {
 	reply := "data: {\"id\":\"chatcmpl-truncated\",\"object\":\"chat.completion.chunk\",\"created\":1773896263,\"model\":\"test\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"partial\"},\"finish_reason\":null}]}\n\n"
 	exec, auth, _ := newApplyPatchCompatTestExecutor(t, reply)
@@ -247,8 +239,6 @@ func TestOpenAICompatExecutorClaudeEOFBeforeFinishReasonFailsStream(t *testing.T
 	}
 }
 
-// OpenAICompatExecutor with ResponseFormat: FormatClaude must still finalize the stream on clean EOF
-// when a chunk already carried a non-empty finish_reason (compatibility with providers omitting [DONE]).
 func TestOpenAICompatExecutorClaudeEOFAfterFinishReasonCompletesStream(t *testing.T) {
 	reply := strings.Join([]string{
 		`data: {"id":"chatcmpl-eof","object":"chat.completion.chunk","created":1773896263,"model":"test","choices":[{"index":0,"delta":{"role":"assistant","content":"done"},"finish_reason":null}]}`,
@@ -281,8 +271,6 @@ func TestOpenAICompatExecutorClaudeEOFAfterFinishReasonCompletesStream(t *testin
 	}
 }
 
-// GeminiExecutor with ResponseFormat: FormatClaude must fail the stream on clean EOF
-// when no chunk carried a finishReason, instead of synthesizing [DONE] and emitting a fake message_stop.
 func TestGeminiExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -329,8 +317,6 @@ func TestGeminiExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 	}
 }
 
-// GeminiVertexExecutor with ResponseFormat: FormatClaude must fail the stream on clean EOF
-// when no chunk carried a finishReason, instead of synthesizing [DONE] and emitting a fake message_stop.
 func TestGeminiVertexExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 	for _, authMode := range []string{"api_key", "service_account"} {
 		t.Run(authMode, func(t *testing.T) {
@@ -406,9 +392,6 @@ func TestGeminiVertexExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 	}
 }
 
-// Upstream SSE error event after message_start must not be treated as a completed
-// message for continuity/usage accounting: claudeMessageIDFromSSE must return empty
-// and ExecuteStream must surface a terminal chunk error and failed usage record.
 func TestClaudeExecutorStreamErrorEventDoesNotCommitContinuityAndMarksFailed(t *testing.T) {
 	sseWithError := "event: message_start\n" +
 		"data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_err_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-opus-5\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n" +
@@ -503,8 +486,6 @@ func (r *failingTailReader) Read(p []byte) (int, error) {
 
 func (r *failingTailReader) Close() error { return nil }
 
-// KimiExecutor.ExecuteStream must check scanner.Err() before synthesizing [DONE]
-// so a mid-stream read error does not emit a synthetic terminal completion chunk first.
 func TestKimiExecutorStreamReadErrorDoesNotSynthesizeDoneBeforeScanError(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", kimiRoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
@@ -553,8 +534,6 @@ func TestKimiExecutorStreamReadErrorDoesNotSynthesizeDoneBeforeScanError(t *test
 	}
 }
 
-// GeminiExecutor and GeminiVertexExecutor must still complete FormatClaude streams
-// when an upstream chunk carries finishReason or promptFeedback.blockReason.
 func TestGeminiAndVertexClaudeStreamWithFinishSignalCompletes(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
@@ -994,7 +973,7 @@ func TestClaudeExecutorStreamCancel499RecordsLastPacketUsage(t *testing.T) {
 			}
 
 			<-deltaFlushed
-			// Drain until the message_delta chunk has been processed, then cancel before message_stop.
+
 			for chunk := range result.Chunks {
 				if strings.Contains(string(chunk.Payload), "message_delta") || strings.Contains(string(chunk.Payload), "partial") {
 					cancel()

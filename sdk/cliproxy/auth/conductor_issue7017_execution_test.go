@@ -11,11 +11,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// End-to-end coverage for issue 7017 across Execute, ExecuteCount and
-// ExecuteStream: a typed transient capacity 429 cools only the reporting
-// model, and the terminal error carries the trusted Retry-After to clients
-// that do not opt into waiting locally.
-
 type issue7017HintError struct {
 	msg   string
 	hint  *time.Duration
@@ -127,8 +122,6 @@ func TestIssue7017ExecuteSingleCredentialTerminalRetryAfter(t *testing.T) {
 		t.Fatalf("model state must cool without quota, got %+v", state)
 	}
 
-	// A follow-up request inside the deadline advertises the locally computed
-	// remaining time, not the stale raw upstream header value.
 	_, errFollowUp := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6.1-sol"}, cliproxyexecutor.Options{})
 	if errFollowUp == nil {
 		t.Fatal("expected follow-up rejection while cooling")

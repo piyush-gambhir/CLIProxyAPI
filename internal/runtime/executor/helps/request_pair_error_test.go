@@ -29,8 +29,6 @@ func requireUnsupportedPart(t *testing.T, label string, err error, wantType stri
 	}
 }
 
-// Only the working payload reaches the upstream, so only its translation error
-// may reject the request. The baseline serves payload rules and is never sent.
 func TestPairTranslationReportsOnlyTheWorkingError(t *testing.T) {
 	file := []byte(pairFileOnlyClaude)
 	text := []byte(pairTextOnlyClaude)
@@ -80,7 +78,6 @@ func TestPairTranslationReportsOnlyTheWorkingError(t *testing.T) {
 	}
 }
 
-// A refused baseline never rejects or replaces the working payload that translated.
 func TestEnvelopePairKeepsTheWorkingPayloadWhenTheBaselineIsRefused(t *testing.T) {
 	file := []byte(pairFileOnlyClaude)
 	text := []byte(pairTextOnlyClaude)
@@ -94,8 +91,6 @@ func TestEnvelopePairKeepsTheWorkingPayloadWhenTheBaselineIsRefused(t *testing.T
 	}
 }
 
-// A Responses request whose only user content is an input_file file id must be
-// refused with a named 400 on the default envelope path and on the compat path.
 func TestResponsesFileIDOnlyReturns400OnEveryPath(t *testing.T) {
 	payload := []byte(`{"model":"claude-sonnet-4","input":[{"type":"message","role":"user","content":[{"type":"input_file","file_id":"file-1"}]}]}`)
 	for _, compat := range []bool{false, true} {
@@ -123,7 +118,6 @@ func TestResponsesAudioAndTextBesideFileIDOnCompatPath(t *testing.T) {
 	}
 }
 
-// Antigravity is reached through the same checked registry as every other target.
 func TestAntigravityTargetsReportUnsupportedParts(t *testing.T) {
 	claudeFile := []byte(`{"model":"m","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"container_upload","file_id":"file-1"}]}]}`)
 	_, err := TranslateRequestReturningError(context.Background(), nil, &config.Config{}, sdktranslator.FormatClaude, sdktranslator.FormatAntigravity, "m", claudeFile, false, false)

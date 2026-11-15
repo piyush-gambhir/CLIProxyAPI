@@ -69,7 +69,7 @@ func TestWeightedSchedulerAndLegacyShareCredits(t *testing.T) {
 				if !manager.useSchedulerFastPath() {
 					t.Fatal("bare weighted routing must retain the scheduler fast path")
 				}
-				// Normalize the four entrypoints to verify accounting across boundaries.
+
 				pick := func(ctx context.Context, legacy bool, opts cliproxyexecutor.Options) (*Auth, error) {
 					if mixed {
 						if legacy {
@@ -137,7 +137,7 @@ func BenchmarkManagerWeighted1000(b *testing.B) {
 			manager.SetSelector(&WeightedRoundRobinSelector{})
 			ctx := b.Context()
 			opts := cliproxyexecutor.Options{}
-			// Warm both the shard indexes and the pool state outside the timed loop.
+
 			if mixed {
 				if _, _, _, errWarm := manager.pickNextMixed(ctx, providers, model, opts, nil); errWarm != nil {
 					b.Fatal(errWarm)

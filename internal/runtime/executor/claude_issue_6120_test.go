@@ -14,15 +14,11 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120 verifies Option A for Issue #6120:
-// Direct Anthropic Messages requests using Claude OAuth credentials without explicit cloak configuration
-// must be cloaked by default to prevent Anthropic 429/400 rejections and credential cooldown.
 func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120(t *testing.T) {
 	ctx := directClaudeMessagesContext()
 	payload := []byte(`{"model":"claude-opus-5-5","system":[{"type":"text","text":"caller system"}],"messages":[{"role":"user","content":"hello"}]}`)
 	auth := directClaudeOAuthAuth()
 
-	// 1. Verify applyCloaking cloaks by default on direct Messages for unconfirmed OAuth caller
 	gotPayload, cloaked, err := applyCloaking(ctx, &config.Config{}, auth, payload, "sk-ant-oat-direct-messages-test", false, true)
 	if err != nil {
 		t.Fatalf("applyCloaking() error = %v", err)
@@ -34,7 +30,6 @@ func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120(t *testing.
 		t.Fatal("expected cloaked payload to contain Claude Code CLI identity system block")
 	}
 
-	// 2. Verify ClaudeExecutor.Execute applies CLI fingerprint and cloaked headers upstream
 	var seenHeaders http.Header
 	var seenBody []byte
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -82,9 +77,6 @@ func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120(t *testing.
 	}
 }
 
-// TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloakStream_Issue6120 verifies Option A for streaming:
-// Direct Anthropic Messages streaming requests using Claude OAuth credentials without explicit cloak configuration
-// must also be cloaked by default upstream.
 func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloakStream_Issue6120(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte

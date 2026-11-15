@@ -20,8 +20,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// A delayed control frame must not queue an error for the next create, nor
-// cancel its response when the old response ID is repeated during that turn.
 func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	var connections atomic.Int32
@@ -63,8 +61,7 @@ func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 				return
 			}
 			if id == "r2" {
-				// A valid active-r2 interrupt is a deterministic barrier proving
-				// preceding duplicate-r1 interrupts were consumed downstream.
+
 				_, interrupt, errInterrupt := conn.ReadMessage()
 				if errInterrupt != nil {
 					return
@@ -153,8 +150,7 @@ func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 	}
 	send(`{"type":"response.interrupt","response_id":"r2","mode":"discard_partial_items"}`)
 	expect("response.completed", "r2")
-	// Switching the next turn to HTTP leaves an idle websocket cached. A
-	// terminal r1 interrupt must be a no-op, while r-http must cancel locally.
+
 	auth, _ := manager.GetByID(authID)
 	auth.Attributes["websockets"] = "false"
 	if _, errUpdate := manager.Update(context.Background(), auth); errUpdate != nil {
@@ -189,8 +185,6 @@ func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 	}
 }
 
-// Interrupt diagnostics must exist even before the first create, and must not
-// copy private extension fields, credentials, or raw client-controlled IDs.
 func TestResponsesInterruptDiagnosticsAreSanitized(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cfg := &config.SDKConfig{RequestLog: true}

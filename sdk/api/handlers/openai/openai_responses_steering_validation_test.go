@@ -96,8 +96,7 @@ func TestResponsesSteeringLocalValidationRecovery(t *testing.T) {
 	}
 	create := fmt.Sprintf(`{"type":"response.create","model":%q,"input":[]}`, model)
 	send(create)
-	// Queue an invalid frame even before bootstrap finishes. response.created must
-	// still reach downstream before this recoverable local error.
+
 	send("{")
 	errorsSeen, accepted, completed := 0, false, false
 	for !completed {

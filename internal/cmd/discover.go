@@ -18,7 +18,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DiscoverOptions configures a one-shot LAN discovery scan.
 type DiscoverOptions struct {
 	Timeout     time.Duration
 	JSONOutput  bool
@@ -38,7 +37,6 @@ func newLANBrowser(include, exclude []string) (discovery.Browser, error) {
 	return discovery.NewZeroconfBrowser(ifaces...), nil
 }
 
-// ParseInterfaceList splits comma-separated interface names and drops blanks.
 func ParseInterfaceList(values ...string) []string {
 	var out []string
 	seen := make(map[string]struct{})
@@ -58,7 +56,6 @@ func ParseInterfaceList(values ...string) []string {
 	return out
 }
 
-// ResolveDiscoveryInterfaceFilters prefers explicit CLI filters over config filters.
 func ResolveDiscoveryInterfaceFilters(cliInclude, cliExclude, cfgInclude, cfgExclude []string) (include, exclude []string) {
 	if len(cliInclude) > 0 || len(cliExclude) > 0 {
 		return append([]string(nil), cliInclude...), append([]string(nil), cliExclude...)
@@ -66,8 +63,6 @@ func ResolveDiscoveryInterfaceFilters(cliInclude, cliExclude, cfgInclude, cfgExc
 	return append([]string(nil), cfgInclude...), append([]string(nil), cfgExclude...)
 }
 
-// LoadDiscoveryScanFilters reads discovery.interfaces from a config file.
-// Missing or invalid files yield empty filters so the default physical LAN allow-list is used.
 func defaultDiscoveryConfigPath() string {
 	wd, errGetwd := os.Getwd()
 	if errGetwd != nil {
@@ -99,18 +94,14 @@ func LoadDiscoveryScanFilters(configPath string) (include, exclude []string) {
 	return ParseInterfaceList(payload.Discovery.Interfaces.Include...), ParseInterfaceList(payload.Discovery.Interfaces.Exclude...)
 }
 
-// DoDiscover executes the LAN AI gateway discovery workflow and outputs results.
-// Returns 0 on success, 1 on error.
 func DoDiscover(timeout time.Duration, jsonOutput bool) int {
 	return DoDiscoverWithOptions(DiscoverOptions{Timeout: timeout, JSONOutput: jsonOutput})
 }
 
-// DoDiscoverWithServiceType executes LAN discovery for the requested DNS-SD service type.
 func DoDiscoverWithServiceType(timeout time.Duration, jsonOutput bool, serviceType string) int {
 	return DoDiscoverWithOptions(DiscoverOptions{Timeout: timeout, JSONOutput: jsonOutput, ServiceType: serviceType})
 }
 
-// DoDiscoverWithOptions executes LAN discovery with explicit scan options.
 func DoDiscoverWithOptions(opts DiscoverOptions) int {
 	include, exclude := ResolveDiscoveryInterfaceFilters(opts.Include, opts.Exclude, nil, nil)
 	return runDiscoverWithOptions(opts, os.Stdout, os.Stderr, func() (discovery.Browser, error) {
@@ -257,7 +248,7 @@ func runDiscoverWithOptions(opts DiscoverOptions, stdout, stderr io.Writer, newB
 						endpointScheme = "wss"
 					}
 				}
-				// RFC 6874 URI syntax escapes the zone separator, unlike host:port display.
+
 				urlHost := strings.ReplaceAll(hostPort, "%", "%25")
 				fmt.Fprintf(stdout, "      - %-16s %s://%s%s\n", sanitizeTerminal(protocol)+":", endpointScheme, urlHost, sanitizeTerminal(gw.Endpoints[protocol]))
 			}
@@ -340,8 +331,6 @@ func sanitizeDisplayHost(host string) string {
 	return host
 }
 
-// sanitizeTerminal strips control characters, ANSI escape sequences, Bidi overrides,
-// and invisible Unicode format characters to prevent terminal injection and spoofing.
 func sanitizeTerminal(s string) string {
 	var b strings.Builder
 	for _, r := range s {
@@ -349,7 +338,7 @@ func sanitizeTerminal(s string) string {
 			b.WriteRune(' ')
 			continue
 		}
-		// Allow safe printable runes; block Bidi controls, zero-width chars, and line/paragraph separators
+
 		if unicode.IsPrint(r) && !unicode.Is(unicode.Bidi_Control, r) {
 			if r != '\u2028' && r != '\u2029' && !(r >= 0x200B && r <= 0x200F) && r != '\uFEFF' && r != 0x00AD {
 				b.WriteRune(r)

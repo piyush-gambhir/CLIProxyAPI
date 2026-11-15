@@ -81,7 +81,6 @@ func TestServiceCatalogStartupAndConfigReload(t *testing.T) {
 		}
 	}()
 
-	// Exercise the startup hook used by Run without starting a listening server.
 	s.startModelCatalogUpdaters(ctx)
 	awaitCatalog(first)
 	updated := *cfg
@@ -91,7 +90,6 @@ func TestServiceCatalogStartupAndConfigReload(t *testing.T) {
 	}
 	awaitCatalog(second)
 
-	// The same source must restart under a new service lifetime after cancellation.
 	cancel()
 	if errWrite := os.WriteFile(updated.Models.DevinCatalog, first, 0600); errWrite != nil {
 		t.Fatal(errWrite)

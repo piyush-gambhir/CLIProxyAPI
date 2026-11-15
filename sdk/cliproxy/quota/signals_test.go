@@ -167,7 +167,7 @@ func TestSignalWindowsIgnoresUnpolledProviders(t *testing.T) {
 	if got := SignalWindows("claude", nil, signalBase); got != nil {
 		t.Fatalf("SignalWindows with no signals = %v, want nil", got)
 	}
-	// Anthropic is an alias for Claude so both spellings parse.
+
 	if got := SignalWindows("anthropic", signals, signalBase); len(got) != 1 {
 		t.Fatalf("SignalWindows(anthropic) = %v, want one window", got)
 	}
@@ -237,7 +237,6 @@ func TestParseUsageClaudeLimitsArray(t *testing.T) {
 func TestParseUsageClaudeFlatFallback(t *testing.T) {
 	t.Parallel()
 
-	// The flat shape names the Fable window "iguana_necktie".
 	body := []byte(`{
       "plan_type": "max",
       "five_hour": {"utilization": 10, "resets_at": "2026-10-03T14:00:00Z"},
@@ -307,9 +306,6 @@ func TestParseUsageRejectsBadInput(t *testing.T) {
 	}
 }
 
-// TestSignalWindowsClaudeLiveHeaders pins the header set a real Claude Max
-// response carried on 2026-10-03: utilization is a 0..1 fraction, resets are unix
-// seconds, and the extra unified headers must not create phantom windows.
 func TestSignalWindowsClaudeLiveHeaders(t *testing.T) {
 	t.Parallel()
 

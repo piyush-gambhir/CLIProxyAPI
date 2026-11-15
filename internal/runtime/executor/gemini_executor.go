@@ -1,6 +1,3 @@
-// Package executor provides runtime execution capabilities for various AI service providers.
-// It includes stateless executors that handle API requests, streaming responses,
-// token counting, and authentication refresh for different AI service providers.
 package executor
 
 import (
@@ -28,41 +25,26 @@ import (
 )
 
 const (
-	// glEndpoint is the base URL for the Google Generative Language API.
 	glEndpoint = "https://generativelanguage.googleapis.com"
 
-	// glAPIVersion is the API version used for Gemini requests.
 	glAPIVersion = "v1beta"
 
-	// streamScannerBuffer is the buffer size for SSE stream scanning.
 	streamScannerBuffer = helps.StreamScannerBuffer
 )
 
-// GeminiExecutor is a stateless executor for the official Gemini API using API keys.
-// It supports regular and streaming requests to the Google Generative Language API.
 type GeminiExecutor struct {
-	// cfg holds the application configuration.
 	cfg        *config.Config
 	identifier string
 }
 
-// NewGeminiExecutor creates a new Gemini executor instance.
-//
-// Parameters:
-//   - cfg: The application configuration
-//
-// Returns:
-//   - *GeminiExecutor: A new Gemini executor instance
 func NewGeminiExecutor(cfg *config.Config) *GeminiExecutor {
 	return &GeminiExecutor{cfg: cfg, identifier: "gemini"}
 }
 
-// NewGeminiInteractionsExecutor creates a Gemini executor bound to the native Interactions provider.
 func NewGeminiInteractionsExecutor(cfg *config.Config) *GeminiExecutor {
 	return &GeminiExecutor{cfg: cfg, identifier: "gemini-interactions"}
 }
 
-// Identifier returns the executor identifier.
 func (e *GeminiExecutor) Identifier() string {
 	if e == nil || strings.TrimSpace(e.identifier) == "" {
 		return "gemini"
@@ -70,7 +52,6 @@ func (e *GeminiExecutor) Identifier() string {
 	return e.identifier
 }
 
-// RequestToFormat reports the upstream request format used after auth selection.
 func (e *GeminiExecutor) RequestToFormat(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) sdktranslator.Format {
 	if strings.EqualFold(strings.TrimSpace(e.Identifier()), "gemini-interactions") && nativeInteractionsSourceFormat(opts.SourceFormat) {
 		return sdktranslator.FormatInteractions
@@ -78,7 +59,6 @@ func (e *GeminiExecutor) RequestToFormat(req cliproxyexecutor.Request, opts clip
 	return sdktranslator.FormatGemini
 }
 
-// PrepareRequest injects Gemini credentials into the outgoing HTTP request.
 func (e *GeminiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -95,7 +75,6 @@ func (e *GeminiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Au
 	return nil
 }
 
-// HttpRequest injects Gemini credentials into the request and executes it.
 func (e *GeminiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("gemini executor: request is nil")
@@ -111,19 +90,6 @@ func (e *GeminiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Aut
 	return httpClient.Do(httpReq)
 }
 
-// Execute performs a non-streaming request to the Gemini API.
-// It translates the request to Gemini format, sends it to the API, and translates
-// the response back to the requested format.
-//
-// Parameters:
-//   - ctx: The context for the request
-//   - auth: The authentication information
-//   - req: The request to execute
-//   - opts: Additional execution options
-//
-// Returns:
-//   - cliproxyexecutor.Response: The response from the API
-//   - error: An error if the request fails
 func (e *GeminiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
 	if opts.Alt == "responses/compact" {
@@ -139,7 +105,6 @@ func (e *GeminiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
 	defer reporter.TrackFailure(ctx, &err)
 
-	// Official Gemini API via API key.
 	from := opts.SourceFormat
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	to := sdktranslator.FromString("gemini")
@@ -289,7 +254,6 @@ func (e *GeminiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	return resp, nil
 }
 
-// ExecuteStream performs a streaming request to the Gemini API.
 func (e *GeminiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
 	if opts.Alt == "responses/compact" {
@@ -907,7 +871,6 @@ func (e *GeminiExecutor) executeInteractionsStream(ctx context.Context, auth *cl
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
 }
 
-// CountTokens counts tokens for the given request using the Gemini API.
 func (e *GeminiExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1013,7 +976,6 @@ func (e *GeminiExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Aut
 	return cliproxyexecutor.Response{Payload: translated, Headers: resp.Header.Clone()}, nil
 }
 
-// Refresh refreshes the authentication credentials (no-op for Gemini API key).
 func (e *GeminiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
@@ -1098,11 +1060,6 @@ func nativeInteractionsSourceFormat(format sdktranslator.Format) bool {
 	}
 }
 
-// sanitizeGeminiInteractionsUnsupportedInputIDs aligns input step IDs with the
-// official Gemini Interactions API schema:
-// - `function_call` (FunctionCallStep) requires `id` and rejects `call_id`
-// - `function_result` (FunctionResultStep) requires `call_id` and rejects `id`
-// - other steps and content parts do not support `id`
 func sanitizeGeminiInteractionsUnsupportedInputIDs(body []byte) []byte {
 	return helps.SanitizeGeminiInteractionsUnsupportedInputIDs(body, false)
 }
@@ -1115,12 +1072,6 @@ func translateGeminiInteractionsRequestBody(ctx context.Context, cfg *config.Con
 	return helps.TranslateGeminiInteractionsRequestBody(ctx, cfg, model, payload, opts, stream, isCompat)
 }
 
-// translateGeminiInteractionsRequestPair translates the working payload and the
-// payload-config baseline. Identical inputs are translated once, including plugin
-// hooks. The baseline is captured before model and thinking mutations, and the
-// working buffer is a separate copy so those mutations cannot change it. Distinct
-// inputs keep the existing order: working payload first, then the payload-config
-// source.
 func translateGeminiInteractionsRequestPair(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) (original, working []byte, err error) {
 	return helps.TranslateGeminiInteractionsRequestPair(ctx, cfg, model, payload, opts, stream, isCompat)
 }
@@ -1136,9 +1087,6 @@ func geminiInteractionsPayloadConfigInput(opts cliproxyexecutor.Options, payload
 	return opts.OriginalRequest
 }
 
-// geminiInteractionsSameByteSlice reports whether both slices describe the same
-// bytes of the same backing array. It compares identity rather than content so
-// the check stays constant time on large payloads.
 func geminiInteractionsSameByteSlice(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
@@ -1279,5 +1227,4 @@ func fixGeminiImageAspectRatioDoc(modelName string, doc *ojson.Doc) bool {
 	return true
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
 func (e *GeminiExecutor) SupportsApplyPatch() bool { return e != nil }

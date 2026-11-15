@@ -121,7 +121,7 @@ func TestShadowCopyPluginToDirSkipsTempWriteWhenShadowMatches(t *testing.T) {
 
 func TestShadowCopyPluginFallsBackToSharedCacheWhenLocalShadowDirUnavailable(t *testing.T) {
 	pluginDir := t.TempDir()
-	// Create a regular file named ".shadow" so creating the local .shadow directory fails.
+
 	blockerPath := filepath.Join(pluginDir, shadowPluginLocalDirName)
 	if errWrite := os.WriteFile(blockerPath, []byte("blocker"), 0o644); errWrite != nil {
 		t.Fatalf("WriteFile(blocker) error = %v", errWrite)
@@ -252,8 +252,6 @@ func TestShadowCopyPluginConcurrentPublishNeverUnlinksExistingTarget(t *testing.
 		t.Fatalf("hashPluginFile() error = %v", errHash)
 	}
 
-	// Simulate a racer that already wrote its temp file before winner published target,
-	// and now attempts publishShadowTempFile against the already-published target.
 	racerTmp := filepath.Join(dir, shadowPluginTempPrefix+"racer"+testPluginLibraryExtension())
 	if errWrite := os.WriteFile(racerTmp, content, 0o644); errWrite != nil {
 		t.Fatalf("WriteFile(racerTmp) error = %v", errWrite)
@@ -351,7 +349,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		t.Fatalf("shadowCopyPlugin(v1) error = %v", errV1)
 	}
 
-	// Simulate another process installing v2 and publishing its shadow file after keepNames was computed for v1.
 	v2Path := filepath.Join(platformDir, "alpha-v2.0.0"+ext)
 	if errWrite := os.WriteFile(v2Path, []byte("alpha-v2"), 0o644); errWrite != nil {
 		t.Fatalf("WriteFile(v2Path) error = %v", errWrite)
@@ -368,8 +365,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		t.Fatalf("Stat(v2Shadow %s) error = %v, want preserved because v2 exists in sourceDir", v2Shadow, errStat)
 	}
 
-	// Write v2 content to a separate temp source before removing v2Path from platformDir so we can
-	// also test the interleaving where v2 was removed from platformDir while another process holds a guard.
 	detachedV2Path := filepath.Join(t.TempDir(), "alpha-v2.0.0"+ext)
 	if errWrite := os.WriteFile(detachedV2Path, []byte("alpha-v2"), 0o644); errWrite != nil {
 		t.Fatalf("WriteFile(detachedV2Path) error = %v", errWrite)
@@ -394,8 +389,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		t.Fatalf("Stat(v2Shadow %s) after guard released error = %v, want not exist", v2Shadow, errStat)
 	}
 
-	// Verify deterministic interleaving: pruneShadowDirForSourceDir has already read directory entries,
-	// and before it acquires the coord lock to delete a candidate shadow file, another caller acquires a load guard.
 	v2ShadowRe, errV2Re := shadowCopyPluginToDir(v2File, shadowDir)
 	if errV2Re != nil {
 		t.Fatalf("shadowCopyPluginToDir(v2) error = %v", errV2Re)
@@ -423,8 +416,7 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 	if _, errStat := os.Stat(v2ShadowRe); errStat != nil {
 		t.Fatalf("Stat(v2ShadowRe %s) after interleaved guard acquisition error = %v, want preserved", v2ShadowRe, errStat)
 	}
-	// Even when keepNames is empty (e.g., all source files were removed or failed hashing),
-	// an active load guard must still prevent pruning shadow files.
+
 	pruneShadowDirForSourceDir(shadowDir, platformDir, nil)
 	if _, errStat := os.Stat(v2ShadowRe); errStat != nil {
 		t.Fatalf("Stat(v2ShadowRe %s) with empty keepNames while guard active error = %v, want preserved", v2ShadowRe, errStat)
@@ -434,8 +426,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		releaseInterleavedGuard = nil
 	}
 
-	// Verify that if a process crashes/exits abnormally while holding the OS coordination lock,
-	// the kernel automatically releases the lock so subsequent loads and pruning recover immediately.
 	cmd := exec.Command(os.Args[0], "-test.run=^TestShadowHelperHoldLockAndExit$")
 	cmd.Env = append(
 		os.Environ(),
@@ -672,8 +662,7 @@ func TestRemoveStaleShadowPluginDirsOnlyRemovesDeadProcesses(t *testing.T) {
 	liveDir := filepath.Join(base, shadowPluginProcessDirName(currentPID))
 	deadDir := filepath.Join(base, shadowPluginProcessDirName(deadPID))
 	otherDir := filepath.Join(base, "unrelated")
-	// A directory owned by a different live process must survive the
-	// liveness check itself, not just the current-pid shortcut.
+
 	liveOther, liveOtherPID := startWaitingProcess(t)
 	if liveOtherPID == currentPID || liveOtherPID == deadPID {
 		t.Skip("live helper process pid collided with another test pid")
@@ -798,7 +787,7 @@ func TestShadowHelperHoldLockAndExit(t *testing.T) {
 	if sourceDir == "" || shadowDir == "" {
 		os.Exit(2)
 	}
-	// Acquire an exclusive coordination lock and exit abnormally without unlocking.
+
 	if _, errLock := acquireShadowCoordLock(sourceDir, shadowDir, true, false); errLock != nil {
 		os.Exit(3)
 	}

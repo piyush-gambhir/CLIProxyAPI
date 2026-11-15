@@ -2,22 +2,15 @@ package util
 
 import "strings"
 
-// IsClaudeModel reports whether the model name identifies a Claude model.
 func IsClaudeModel(model string) bool {
 	return strings.Contains(strings.ToLower(model), "claude")
 }
 
-// IsClaudeThinkingModel checks if the model is a Claude thinking model
-// that requires the interleaved-thinking beta header.
 func IsClaudeThinkingModel(model string) bool {
 	lower := strings.ToLower(model)
 	return strings.Contains(lower, "claude") && strings.Contains(lower, "thinking")
 }
 
-// claudeLegacySystemReminderModels lists the official Anthropic model IDs and
-// aliases that reject a mid-conversation role=system message. Entries mirror the
-// "claude" provider in internal/registry/models/models.json plus Anthropic's own
-// bare and "-latest" aliases. Other providers' synthetic IDs do not belong here.
 var claudeLegacySystemReminderModels = map[string]struct{}{
 	"claude-3-5-haiku-20241022":  {},
 	"claude-3-5-haiku-latest":    {},
@@ -40,10 +33,6 @@ var claudeLegacySystemReminderModels = map[string]struct{}{
 	"claude-sonnet-4-6":          {},
 }
 
-// IsClaudeLegacySystemReminderModel reports whether model is a known Claude
-// model that rejects a mid-conversation role=system message. Matching ignores
-// case, surrounding whitespace and any provider prefix. Unknown and future IDs
-// are not listed, so callers treat them as accepting the turn.
 func IsClaudeLegacySystemReminderModel(model string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(model))
 	if slash := strings.LastIndexByte(normalized, '/'); slash >= 0 {

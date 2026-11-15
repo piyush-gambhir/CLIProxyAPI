@@ -103,7 +103,6 @@ func TestManager_Update_PreservesModelStates(t *testing.T) {
 func TestManager_Update_DisabledExistingDoesNotInheritModelStates(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 
-	// Register a disabled auth with existing ModelStates.
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-disabled",
 		Provider: "claude",
@@ -118,7 +117,6 @@ func TestManager_Update_DisabledExistingDoesNotInheritModelStates(t *testing.T) 
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// Update with empty ModelStates — should NOT inherit stale states.
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-disabled",
 		Provider: "claude",
@@ -140,7 +138,6 @@ func TestManager_Update_DisabledExistingDoesNotInheritModelStates(t *testing.T) 
 func TestManager_Update_ActiveToDisabledDoesNotInheritModelStates(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 
-	// Register an active auth with ModelStates (simulates existing live auth).
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-a2d",
 		Provider: "claude",
@@ -154,8 +151,6 @@ func TestManager_Update_ActiveToDisabledDoesNotInheritModelStates(t *testing.T) 
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// File watcher deletes config → synthesizes Disabled=true auth → Update.
-	// Even though existing is active, incoming auth is disabled → skip inheritance.
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-a2d",
 		Provider: "claude",
@@ -177,7 +172,6 @@ func TestManager_Update_ActiveToDisabledDoesNotInheritModelStates(t *testing.T) 
 func TestManager_Update_DisabledToActiveDoesNotInheritStaleModelStates(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 
-	// Register a disabled auth with stale ModelStates.
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-d2a",
 		Provider: "claude",
@@ -192,7 +186,6 @@ func TestManager_Update_DisabledToActiveDoesNotInheritStaleModelStates(t *testin
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// Re-enable: incoming auth is active, existing is disabled → skip inheritance.
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-d2a",
 		Provider: "claude",
@@ -216,7 +209,6 @@ func TestManager_Update_ActiveInheritsModelStates(t *testing.T) {
 	model := "active-model"
 	backoffLevel := 3
 
-	// Register an active auth with ModelStates.
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-active",
 		Provider: "claude",
@@ -230,7 +222,6 @@ func TestManager_Update_ActiveInheritsModelStates(t *testing.T) {
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// Update with empty ModelStates — both sides active → SHOULD inherit.
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-active",
 		Provider: "claude",
@@ -319,8 +310,6 @@ func TestManager_Update_FileSnapshotReadDoesNotHoldGlobalLock(t *testing.T) {
 		t.Fatal("timed out waiting for slow snapshot read to start")
 	}
 
-	// While slow.json is blocked reading its snapshot file, operations on other.json
-	// must not be blocked on m.mu.
 	otherDone := make(chan error, 1)
 	go func() {
 		if _, ok := m.GetByID("other.json"); !ok {

@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 )
 
-// UpstreamWebsocketReplayRequiredError indicates that an incremental request
-// cannot safely continue because its upstream websocket is no longer reusable.
 type UpstreamWebsocketReplayRequiredError struct{}
 
 func (*UpstreamWebsocketReplayRequiredError) Error() string {
@@ -19,31 +17,25 @@ func (*UpstreamWebsocketReplayRequiredError) StatusCode() int { return http.Stat
 
 func (*UpstreamWebsocketReplayRequiredError) IsRequestScoped() bool { return true }
 
-// NewUpstreamWebsocketReplayRequiredError creates a request-scoped replay signal.
 func NewUpstreamWebsocketReplayRequiredError() error {
 	return &UpstreamWebsocketReplayRequiredError{}
 }
 
-// IsUpstreamWebsocketReplayRequired reports whether err is the internal replay signal.
 func IsUpstreamWebsocketReplayRequired(err error) bool {
 	var replayErr *UpstreamWebsocketReplayRequiredError
 	return errors.As(err, &replayErr)
 }
 
-// UpstreamWebsocketTurnError ends one downstream websocket turn after the upstream
-// websocket was lost. The downstream socket stays open and the turn is never replayed.
-// Cause is kept for logging and is never sent to the client.
 type UpstreamWebsocketTurnError struct {
 	Cause error
-	// FullContextRequired marks a continuation (previous_response_id, append) that refers to
-	// the lost socket: nothing was sent, the client resends the full input.
+
 	FullContextRequired bool
-	// NotSent marks an operation that was never written upstream.
+
 	NotSent bool
 	EventID string
-	// Idle marks a loss with no running turn: only Abandoned is reported, if anything.
+
 	Idle bool
-	// Abandoned lists the other operations that lose their outcome with this turn.
+
 	Abandoned []*UpstreamWebsocketTurnError
 }
 
@@ -66,7 +58,6 @@ func (e *UpstreamWebsocketTurnError) StatusCode() int {
 }
 func (*UpstreamWebsocketTurnError) IsRequestScoped() bool { return true }
 
-// IsUpstreamWebsocketTurnError reports whether err is a recoverable upstream websocket loss.
 func IsUpstreamWebsocketTurnError(err error) bool {
 	var turnErr *UpstreamWebsocketTurnError
 	return errors.As(err, &turnErr)
@@ -79,9 +70,6 @@ type websocketInputLossState struct {
 
 type websocketInputLossContextKey struct{}
 
-// WithWebsocketInputEpoch attaches the session's loss epoch counter and the current
-// message's read epoch so executors can advance the epoch on upstream loss and reject
-// messages that were read before an upstream loss.
 func WithWebsocketInputEpoch(ctx context.Context, epoch *atomic.Uint64, messageEpoch uint64) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -92,7 +80,6 @@ func WithWebsocketInputEpoch(ctx context.Context, epoch *atomic.Uint64, messageE
 	})
 }
 
-// NotifyWebsocketInputLoss advances the session's loss epoch if present.
 func NotifyWebsocketInputLoss(ctx context.Context) {
 	if ctx == nil {
 		return
@@ -102,8 +89,6 @@ func NotifyWebsocketInputLoss(ctx context.Context) {
 	}
 }
 
-// WebsocketInputPredatesLoss reports whether the current turn's input was read before
-// an upstream websocket loss.
 func WebsocketInputPredatesLoss(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -112,8 +97,6 @@ func WebsocketInputPredatesLoss(ctx context.Context) bool {
 	return ok && state.epoch != nil && state.messageEpoch < state.epoch.Load()
 }
 
-// WebsocketInputLossError returns the turn error for a downstream websocket
-// frame whose input epoch predates the latest upstream connection loss.
 func WebsocketInputLossError(ctx context.Context) error {
 	if !WebsocketInputPredatesLoss(ctx) {
 		return nil

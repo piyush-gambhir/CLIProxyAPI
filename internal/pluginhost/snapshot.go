@@ -25,7 +25,6 @@ type Snapshot struct {
 	quotaSupportedProviders   map[string][]string
 }
 
-// RegisteredPluginInfo describes a plugin that is active in the current runtime snapshot.
 type RegisteredPluginInfo struct {
 	ID                   string
 	Priority             int
@@ -39,7 +38,6 @@ type RegisteredPluginInfo struct {
 	Menus                []RegisteredPluginMenu
 }
 
-// RegisteredPluginMenu describes a plugin-owned resource menu entry.
 type RegisteredPluginMenu struct {
 	Path        string
 	Menu        string
@@ -69,7 +67,6 @@ func (h *Host) activeRecordsFromSnapshot(snap *Snapshot) []capabilityRecord {
 	return out
 }
 
-// RegisteredPlugins returns a stable copy of plugin metadata in the current runtime snapshot.
 func (h *Host) RegisteredPlugins() []RegisteredPluginInfo {
 	records := h.activeRecords()
 	if len(records) == 0 {
@@ -112,7 +109,6 @@ func (h *Host) RegisteredPlugins() []RegisteredPluginInfo {
 	return out
 }
 
-// PluginRegistered reports whether a plugin is active in the current runtime snapshot.
 func (h *Host) PluginRegistered(id string) bool {
 	if h == nil {
 		return false

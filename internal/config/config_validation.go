@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// SanitizePayloadRules validates raw JSON payload rule params and drops invalid rules.
 func (cfg *Config) SanitizePayloadRules() {
 	if cfg == nil {
 		return
@@ -63,14 +62,12 @@ func payloadRawString(value any) ([]byte, bool) {
 	}
 }
 
-// looksLikeBcrypt returns true if the provided string appears to be a bcrypt hash.
 func looksLikeBcrypt(s string) bool {
 	return len(s) > 4 && (s[:4] == "$2a$" || s[:4] == "$2b$" || s[:4] == "$2y$")
 }
 
-// hashSecret hashes the given secret using bcrypt.
 func hashSecret(secret string) (string, error) {
-	// Use default cost for simplicity.
+
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err

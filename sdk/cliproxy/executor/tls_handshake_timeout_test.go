@@ -7,9 +7,6 @@ import (
 	"testing"
 )
 
-// TestConfiguredTLSHandshakeTimeoutErrorIdentity verifies that retry
-// classification can rely on the concrete configured-timeout type while
-// callers retain the original deadline through errors.Is.
 func TestConfiguredTLSHandshakeTimeoutErrorIdentity(t *testing.T) {
 	err := NewConfiguredTLSHandshakeTimeoutError(context.DeadlineExceeded)
 	if err == nil {
@@ -30,10 +27,6 @@ func TestConfiguredTLSHandshakeTimeoutErrorIdentity(t *testing.T) {
 	}
 }
 
-// contextIdentityError models an error whose own Is method reports a
-// caller context identity while Unwrap exposes an unrelated diagnostic
-// child. Classification must inspect that node's own identity, not only
-// terminal sentinels reached through Unwrap.
 type contextIdentityError struct {
 	target error
 	child  error
@@ -75,9 +68,6 @@ func (e *multiContextIdentityError) Unwrap() []error {
 	return e.children
 }
 
-// TestIsConfiguredTLSHandshakeTimeoutErrorCallerContextWins covers mixed
-// error trees. Matching text never substitutes for the typed identity,
-// and caller-owned context failures outside a configured subtree win.
 func TestIsConfiguredTLSHandshakeTimeoutErrorCallerContextWins(t *testing.T) {
 	configured := NewConfiguredTLSHandshakeTimeoutError(context.DeadlineExceeded)
 	tests := []struct {

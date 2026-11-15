@@ -21,17 +21,12 @@ type InstallOptions struct {
 	PluginsDir string
 	GOOS       string
 	GOARCH     string
-	// PluginLoaded reports whether the plugin's dynamic library is currently
-	// loaded by the running host. Windows installs are rejected only when they
-	// would overwrite an existing target file while it returns true.
+
 	PluginLoaded func() bool
-	// BeforeWrite runs after the archive has been downloaded and verified, but
-	// before an existing target plugin file is replaced.
+
 	BeforeWrite func() error
 }
 
-// ErrLoadedPluginLocked is returned when an install would overwrite a plugin
-// library that is loaded by the running process on Windows.
 var ErrLoadedPluginLocked = errors.New("loaded plugin library cannot be overwritten while the server is running")
 
 type InstallResult struct {
@@ -84,7 +79,6 @@ func (c Client) InstallManifest(ctx context.Context, manifest Manifest, options 
 	}
 }
 
-// InstallVersion installs a plugin artifact from a fixed release tag/version.
 func (c Client) InstallVersion(ctx context.Context, plugin Plugin, releaseTag string, version string, options InstallOptions) (InstallResult, error) {
 	if errValidate := ValidatePlugin(plugin); errValidate != nil {
 		return InstallResult{}, errValidate
@@ -286,8 +280,7 @@ func InstallArchive(archiveData []byte, plugin Plugin, options InstallOptions) (
 			}, nil
 		}
 	}
-	// Re-check immediately before replacing an existing file: the same version
-	// may have been loaded while the archive was being downloaded and verified.
+
 	if overwritten && options.BeforeWrite != nil {
 		if errBeforeWrite := options.BeforeWrite(); errBeforeWrite != nil {
 			return InstallResult{}, fmt.Errorf("prepare plugin write: %w", errBeforeWrite)

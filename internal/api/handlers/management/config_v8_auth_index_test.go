@@ -96,7 +96,6 @@ api-keys:
 	router.PUT("/v8/management/config/*path", h.ConfigV8)
 	router.PATCH("/v8/management/config", h.ConfigV8)
 
-	// 1. GET /v8/management/config/api-keys/codex
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v8/management/config/api-keys/codex", nil)
 	router.ServeHTTP(rec, req)
@@ -131,7 +130,6 @@ api-keys:
 		}
 	}
 
-	// 2. GET /v8/management/config/api-keys
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v8/management/config/api-keys", nil)
 	router.ServeHTTP(rec, req)
@@ -153,7 +151,6 @@ api-keys:
 		t.Fatalf("claude key auth_index = %q, want %q", got, expectedIndexes["claude:sk-claude-1"])
 	}
 
-	// Verify keyless openai-compatibility group has group-level auth_index
 	compatVal, ok := allAPIKeys["openai-compatibility"].([]any)
 	if !ok || len(compatVal) != 2 {
 		t.Fatalf("expected 2 openai-compatibility groups, got %#v", allAPIKeys["openai-compatibility"])
@@ -163,7 +160,6 @@ api-keys:
 		t.Fatalf("keyless group auth_index = %q, want %q", got, expectedIndexes["keyless-provider:keyless"])
 	}
 
-	// 3. GET /v8/management/config (root)
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v8/management/config", nil)
 	router.ServeHTTP(rec, req)
@@ -183,7 +179,6 @@ api-keys:
 		t.Fatalf("root config codex auth_index = %q, want %q", got, expectedIndexes["codex:sk-codex-1"])
 	}
 
-	// 4. GET /v8/management/config.yaml should not contain auth_index
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v8/management/config.yaml", nil)
 	router.ServeHTTP(rec, req)
@@ -194,7 +189,6 @@ api-keys:
 		t.Fatal("config.yaml output must not contain auth_index")
 	}
 
-	// 5. PUT round-trip with payload containing auth_index
 	codexJSON, _ := json.Marshal(codexGroups)
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPut, "/v8/management/config/api-keys/codex", strings.NewReader(string(codexJSON)))
@@ -204,7 +198,6 @@ api-keys:
 		t.Fatalf("PUT /v8/management/config/api-keys/codex with auth_index: status=%d body=%s", rec.Code, rec.Body.String())
 	}
 
-	// Verify disk config does not have auth_index
 	saved, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -213,7 +206,6 @@ api-keys:
 		t.Fatal("saved config.yaml must not contain auth_index")
 	}
 
-	// 6. PATCH on root containing auth_index in api-keys
 	patchBody := `{"api-keys":{"claude":[{"name":"claude-group","base-url":"https://api.anthropic.invalid","keys":[{"api-key":"sk-claude-1","auth_index":"arbitrary-ignore"}]}]}}`
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v8/management/config", strings.NewReader(patchBody))
@@ -231,7 +223,6 @@ api-keys:
 		t.Fatal("saved config.yaml after PATCH must not contain auth_index")
 	}
 
-	// 7. Fallback when authManager is nil
 	hNoManager := &Handler{cfg: cfg, configFilePath: path, authManager: nil}
 	routerNoManager := gin.New()
 	routerNoManager.GET("/v8/management/config/*path", hNoManager.ConfigV8)
@@ -251,7 +242,6 @@ api-keys:
 		t.Fatalf("fallback auth_index = %q, want %q", got, expectedIndexes["codex:sk-codex-1"])
 	}
 
-	// 8. Meta provider with omitted base-url defaults to https://api.meta.ai/v1 matching runtime
 	metaYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -301,7 +291,6 @@ api-keys:
 		t.Fatalf("meta key auth_index = %q, want %q", got, expectedMetaIndex)
 	}
 
-	// 9. Explicit empty proxy-url on key overrides group proxy-url
 	proxyYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -361,7 +350,6 @@ api-keys:
 		t.Fatalf("vertex key 1 auth_index = %q, want %q", got, wantExplicitEmptyIndex)
 	}
 
-	// 10. Plugin options and headers retaining auth_index outside of credential level
 	pluginYAML := `config-version: 8
 port: 8317
 plugins:
@@ -394,7 +382,6 @@ api-keys:
 	routerPlugin.GET("/v8/management/config/*path", hPlugin.ConfigV8)
 	routerPlugin.PUT("/v8/management/config/*path", hPlugin.ConfigV8)
 
-	// Fetch codex keys with auth_index injected
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v8/management/config/api-keys/codex", nil)
 	routerPlugin.ServeHTTP(rec, req)
@@ -406,7 +393,6 @@ api-keys:
 		t.Fatal(errDecode)
 	}
 
-	// PUT codex keys back (round-trip with auth_index)
 	codexBytes, _ := json.Marshal(pluginCodexGroups)
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPut, "/v8/management/config/api-keys/codex", strings.NewReader(string(codexBytes)))
@@ -416,7 +402,6 @@ api-keys:
 		t.Fatalf("PUT codex: status=%d body=%s", rec.Code, rec.Body.String())
 	}
 
-	// Read saved config on disk: plugin option auth_index and headers auth_index MUST be intact!
 	savedPluginData, errRead := os.ReadFile(pluginPath)
 	if errRead != nil {
 		t.Fatal(errRead)
@@ -432,7 +417,6 @@ api-keys:
 		t.Fatalf("key header auth_index was stripped! saved config:\n%s", savedPluginStr)
 	}
 
-	// 11. Duplicate Vertex keys in YAML map to the same deduplicated runtime auth_index
 	dupVertexYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -456,7 +440,7 @@ api-keys:
 		Now:         time.Now(),
 		IDGenerator: synthesizer.NewStableIDGenerator(),
 	})
-	// Runtime deduplicates identical vertex keys to 1 credential!
+
 	if errDupSynth != nil || len(dupAuths) != 1 {
 		t.Fatalf("synthesize dup vertex auth: %v, len=%d", errDupSynth, len(dupAuths))
 	}
@@ -491,7 +475,6 @@ api-keys:
 		t.Fatalf("dup key 1 auth_index = %q, want %q", got1, expectedDupVertexIndex)
 	}
 
-	// 12. Unnormalized prefix (prefix: /team/) matches live credential with normalized prefix
 	unnormalizedPrefixYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -543,7 +526,6 @@ api-keys:
 		t.Fatalf("prefix key auth_index = %q, want %q", got, expectedPrefixIndex)
 	}
 
-	// 13. Gemini with duplicate keys [A, A, B]: both A get A's index, B gets B's index
 	geminiDupYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -568,7 +550,7 @@ api-keys:
 		Now:         time.Now(),
 		IDGenerator: synthesizer.NewStableIDGenerator(),
 	})
-	// Runtime deduplicates identical gemini keys to 2 credentials: A and B
+
 	if errGeminiSynth != nil || len(geminiAuths) != 2 {
 		t.Fatalf("synthesize gemini dup auth: %v, len=%d", errGeminiSynth, len(geminiAuths))
 	}
@@ -617,7 +599,6 @@ api-keys:
 		t.Fatalf("gemini key 2 auth_index = %q, want %q", got2, wantGeminiB)
 	}
 
-	// 14. OpenAI-compatible with [empty_key, B] and invalid group without base-url
 	compatMixedYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -678,12 +659,12 @@ api-keys:
 	if errDecode := json.Unmarshal(rec.Body.Bytes(), &mixedGroups); errDecode != nil {
 		t.Fatal(errDecode)
 	}
-	// Group 0 had no base-url, so its key has no auth_index
+
 	invalidKeys := mixedGroups[0]["keys"].([]any)
 	if gotInvalid := invalidKeys[0].(map[string]any)["auth_index"]; gotInvalid != nil {
 		t.Fatalf("invalid group key auth_index = %v, want nil", gotInvalid)
 	}
-	// Group 1 has [empty_key, B]
+
 	validKeys := mixedGroups[1]["keys"].([]any)
 	if gotEmpty := validKeys[0].(map[string]any)["auth_index"]; gotEmpty != wantEmptyKeyIndex {
 		t.Fatalf("empty key auth_index = %q, want %q", gotEmpty, wantEmptyKeyIndex)
@@ -692,7 +673,6 @@ api-keys:
 		t.Fatalf("key B auth_index = %q, want %q", gotB, wantKeyBIndex)
 	}
 
-	// 15. Empty API key with valid base-url (Gemini base-url only) produces non-empty auth_index
 	emptyKeyGeminiYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -741,7 +721,6 @@ api-keys:
 		t.Fatalf("emulator auth_index = %q, want %q", got, wantEmulatorIndex)
 	}
 
-	// 16. Multiple OpenAI-compatible empty-key entries with different proxy-url
 	compatMultiEmptyYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -801,7 +780,6 @@ api-keys:
 		t.Fatalf("multi key 2 auth_index = %q, want %q", got2, wantMultiIdx2)
 	}
 
-	// 17. Gemini with empty API keys and proxies [P1, P1, P2]: key 0 and 1 get P1, key 2 gets P2
 	geminiProxyYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -829,7 +807,7 @@ api-keys:
 		Now:         time.Now(),
 		IDGenerator: synthesizer.NewStableIDGenerator(),
 	})
-	// Runtime deduplicates identical empty key + proxy entries to 2 credentials: P1 and P2
+
 	if errGProxySynth != nil || len(gProxyAuths) != 2 {
 		t.Fatalf("synthesize gemini proxy auths: %v, len=%d", errGProxySynth, len(gProxyAuths))
 	}
@@ -873,7 +851,6 @@ api-keys:
 		t.Fatalf("key 2 auth_index = %q, want %q", got2, wantGProxy2)
 	}
 
-	// 18. Two OpenAI-compatible groups with identical name and base-url: no cross-group collision
 	compatDupGroupYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -943,7 +920,6 @@ api-keys:
 		t.Fatalf("group 1 key auth_index = %q, want %q", gotGroup1KeyIndex, wantGroup1Index)
 	}
 
-	// 19. Gemini with empty API keys and different prefixes [A, A, B]: key 0 and 1 get A, key 2 gets B
 	geminiPrefixYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -1014,7 +990,6 @@ api-keys:
 		t.Fatalf("key 2 auth_index = %q, want %q", got2, wantGPrefixB)
 	}
 
-	// 20. Unnamed OpenAI-compatible groups (name omitted) expose correct auth_index
 	unnamedCompatYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -1078,7 +1053,6 @@ api-keys:
 		t.Fatalf("unnamed keyed auth_index = %q, want %q", gotKeyed, wantUnnamedKeyed)
 	}
 
-	// 21. Claude group with empty key entry [{}, {key-a}, {key-b}]: empty key has no index, A gets A, B gets B
 	claudeEmptyKeyYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -1102,7 +1076,7 @@ api-keys:
 		Now:         time.Now(),
 		IDGenerator: synthesizer.NewStableIDGenerator(),
 	})
-	// Empty Claude key with no base-url is skipped by synthesizeClaudeKeys, producing 2 auths: A and B
+
 	if errClaudeSynth != nil || len(claudeEmptyAuths) != 2 {
 		t.Fatalf("synthesize claude empty auths: %v, len=%d", errClaudeSynth, len(claudeEmptyAuths))
 	}
@@ -1136,20 +1110,19 @@ api-keys:
 	if len(emptyGroupKeys) != 3 {
 		t.Fatalf("expected 3 keys in claude response, got %d", len(emptyGroupKeys))
 	}
-	// Key 0 was empty, should have no auth_index
+
 	if gotEmpty := emptyGroupKeys[0].(map[string]any)["auth_index"]; gotEmpty != nil {
 		t.Fatalf("claude empty key auth_index = %v, want nil", gotEmpty)
 	}
-	// Key 1 is A
+
 	if gotA := emptyGroupKeys[1].(map[string]any)["auth_index"]; gotA != wantClaudeA {
 		t.Fatalf("claude key 1 auth_index = %q, want %q", gotA, wantClaudeA)
 	}
-	// Key 2 is B
+
 	if gotB := emptyGroupKeys[2].(map[string]any)["auth_index"]; gotB != wantClaudeB {
 		t.Fatalf("claude key 2 auth_index = %q, want %q", gotB, wantClaudeB)
 	}
 
-	// 22. Codex with multiple empty API keys in the same group with different models (non-deduplicated)
 	codexEmptyKeysYAML := `config-version: 8
 port: 8317
 api-keys:
@@ -1213,7 +1186,6 @@ api-keys:
 		t.Fatalf("codex key 1 auth_index = %q, want %q", got1, wantCodexModel1)
 	}
 
-	// 23. Meta with [empty key, dca key, valid A, valid B]: empty and dca skipped, A gets A, B gets B
 	metaFilteredYAML := `config-version: 8
 port: 8317
 api-keys:

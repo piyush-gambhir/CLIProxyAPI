@@ -44,12 +44,7 @@ var (
 	windowsHostCallbackEntries sync.Map
 	windowsHostCallCallback    = syscall.NewCallback(windowsHostCall)
 	windowsHostFreeCallback    = syscall.NewCallback(windowsHostFree)
-	// windowsResidentHostState pins the host context and host API blocks of
-	// every loaded plugin for the lifetime of the process. A resident
-	// plugin runtime may pass the context back into windowsHostCall at any
-	// time, long after its client was detached, and native pointers are
-	// not GC roots. Only these small blocks are pinned, never the client
-	// or the host.
+
 	windowsResidentHostState sync.Map
 )
 
@@ -93,8 +88,7 @@ func (dynamicLibraryLoader) Open(file pluginFile, host *Host) (pluginClient, err
 	}
 	proc, errProc := dll.FindProc("cliproxy_plugin_init")
 	if errProc != nil {
-		// Do not release the module: loading it may already have started
-		// the plugin runtime, which cannot be unloaded safely.
+
 		return nil, errProc
 	}
 	id := windowsHostCallbackID.Add(1)
@@ -209,13 +203,6 @@ func (c *dynamicLibraryClient) closeAfterOpenFailure() {
 	c.close()
 }
 
-// close detaches the client logically without unloading the plugin module.
-// Go plugin DLLs are not safe to hot-unload from the host process: the
-// plugin runtime, its threads and its signal handlers stay resident after
-// FreeLibrary. This also applies when initialization failed, because
-// loading the module may already have started the runtime. The plugin was
-// loaded from a shadow copy, so keeping the module mapped does not block
-// deleting or replacing the source artifact.
 func (c *dynamicLibraryClient) close() {
 	if c == nil {
 		return
@@ -231,10 +218,7 @@ func (c *dynamicLibraryClient) close() {
 	c.api.call = 0
 	c.api.freeBuffer = 0
 	if c.hostCtx != nil {
-		// Drop the callback registration so repeated reloads do not pin
-		// the host forever. The context and host API blocks stay pinned in
-		// windowsResidentHostState because the resident plugin runtime may
-		// still dereference them on late callbacks.
+
 		windowsHostCallbackEntries.Delete(*c.hostCtx)
 	}
 }

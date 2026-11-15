@@ -123,7 +123,7 @@ type responsesUsageCapture struct {
 }
 
 func (p *responsesUsageCapture) HandleUsage(_ context.Context, record usage.Record) {
-	// A previous streaming request may publish after this test has started.
+
 	if record.Provider != "commandcode" || record.Model != p.model {
 		return
 	}

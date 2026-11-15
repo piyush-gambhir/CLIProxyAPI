@@ -64,8 +64,6 @@ func (m *Manager) snapshotPluginScheduler() (PluginScheduler, bool) {
 	return scheduler, pluginSchedulerWantsAcrossPriorities(scheduler)
 }
 
-// PluginSchedulerWantsAcrossPriorities reports whether the configured plugin scheduler
-// opted into receiving candidates across all priority tiers.
 func (m *Manager) PluginSchedulerWantsAcrossPriorities() bool {
 	_, wants := m.snapshotPluginScheduler()
 	return wants
@@ -162,11 +160,6 @@ func (m *Manager) snapshotAuths() []*Auth {
 	return out
 }
 
-// RefreshSchedulerEntry re-upserts a single auth into the scheduler so that its
-// supportedModelSet is rebuilt from the current global model registry state.
-// This must be called after models have been registered for a newly added auth,
-// because the initial scheduler.upsertAuth during Register/Update runs before
-// registerModelsForAuth and therefore snapshots an empty model set.
 func (m *Manager) RefreshSchedulerEntry(authID string) {
 	if m == nil || m.scheduler == nil || authID == "" {
 		return
@@ -183,7 +176,6 @@ func (m *Manager) RefreshSchedulerEntry(authID string) {
 	m.scheduler.upsertAuth(snapshot)
 }
 
-// RefreshSchedulerAll rebuilds scheduler entries for every known auth.
 func (m *Manager) RefreshSchedulerAll() {
 	if m == nil {
 		return
@@ -199,14 +191,6 @@ func (m *Manager) RefreshSchedulerAll() {
 	}
 }
 
-// ReconcileRegistryModelStates aligns per-model runtime state with the current
-// registry snapshot for one auth.
-//
-// Active cooldown and quota states for supported models (including models
-// reachable via alias routes) are preserved, while stale/expired errors on
-// supported models are reset. ModelStates for models that are no longer
-// reachable either directly or via alias routes are pruned entirely so
-// renamed/removed models cannot keep auth-level status stale.
 func (m *Manager) ReconcileRegistryModelStates(ctx context.Context, authID string) {
 	if m == nil || authID == "" {
 		return
@@ -273,8 +257,7 @@ func (m *Manager) ReconcileRegistryModelStates(ctx context.Context, authID strin
 					lookupKey = strings.ToLower(strings.TrimSpace(modelKey))
 				}
 				if _, isSupported := supported[lookupKey]; !isSupported {
-					// Drop state for models that disappeared from the current registry
-					// snapshot and are not reachable via any alias route.
+
 					delete(candidateAuth.ModelStates, modelKey)
 					candidateChanged = true
 					continue
@@ -754,7 +737,6 @@ func (m *Manager) SetSelector(selector Selector) {
 	}
 }
 
-// Selector returns the current credential selector.
 func (m *Manager) Selector() Selector {
 	if m == nil {
 		return nil
@@ -764,8 +746,6 @@ func (m *Manager) Selector() Selector {
 	return m.selector
 }
 
-// LookupSessionAffinity observes the current session affinity binding without side effects.
-// It returns (auth, status) where status can be "bound", "unbound", "ambiguous", or "unsupported".
 func (m *Manager) LookupSessionAffinity(provider, model, sessionID string) (*Auth, string) {
 	if m == nil {
 		return nil, "unsupported"
@@ -829,14 +809,12 @@ func (m *Manager) LookupSessionAffinity(provider, model, sessionID string) (*Aut
 	return snapshot, "bound"
 }
 
-// SetStore swaps the underlying persistence store.
 func (m *Manager) SetStore(store Store) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.store = store
 }
 
-// SetCooldownStateStore swaps the independent runtime cooldown state store.
 func (m *Manager) SetCooldownStateStore(store CooldownStateStore) {
 	if m == nil {
 		return
@@ -848,7 +826,6 @@ func (m *Manager) SetCooldownStateStore(store CooldownStateStore) {
 	m.cooldownStore = store
 }
 
-// SetRoundTripperProvider register a provider that returns a per-auth RoundTripper.
 func (m *Manager) SetRoundTripperProvider(p RoundTripperProvider) {
 	m.mu.Lock()
 	m.rtProvider = p
@@ -932,15 +909,10 @@ func (m *Manager) availableAuthsForRouteModelForRequest(ctx context.Context, aut
 	return availableAuthsFromPriorityBuckets(availableByPriority, allPriorities), nil
 }
 
-// availableAuthsForSelector reports the candidates handed to priority-scoped consumers such as
-// the plugin scheduler, plus the candidates handed to the configured selector. Both are equal
-// unless session affinity or an across-priorities scheduler is active, in which case the selector
-// or scheduler additionally receives lower priority tiers.
 func (m *Manager) availableAuthsForSelector(ctx context.Context, selector Selector, auths []*Auth, provider, routeModel string, now time.Time, schedulerAcross bool, clientHeaders ...http.Header) (priorityAuths, selectorAuths []*Auth, err error) {
 	_, sessionAffinity := selector.(*SessionAffinitySelector)
 	if _, weighted := selector.(*WeightedRoundRobinSelector); weighted {
-		// Exclude zero-weight credentials before priority selection, just as the
-		// scheduler predicate does, including when only a lower tier has weight.
+
 		auths = positiveWeightAuths(auths)
 	}
 
@@ -953,8 +925,6 @@ func (m *Manager) availableAuthsForSelector(ctx context.Context, selector Select
 		return priorityAuths, priorityAuths, nil
 	}
 
-	// One availability pass and one clone pass serve both lists: the highest priority tier is a
-	// subset of the across-priority candidates, so it is narrowed from the same cloned auths.
 	allAuths, errAcross := m.availableAuthsForRouteModelForRequest(ctx, auths, provider, routeModel, now, true, clientHeaders...)
 	if errAcross != nil {
 		return nil, nil, errAcross
@@ -1400,12 +1370,6 @@ func (m *Manager) normalizeProviders(providers []string) []string {
 	return result
 }
 
-// AvailableProviders returns the set of provider keys that currently have at least one
-// registered auth record that is not disabled. It is a best-effort snapshot for routing
-// decisions and does not account for per-model cooldowns or transient runtime availability.
-// Disabled auths (Disabled flag or StatusDisabled) are excluded so routing does not target
-// providers that auth selection would refuse to use, which would otherwise cause execution
-// failures instead of falling back to lower-priority routers.
 func (m *Manager) AvailableProviders() []string {
 	if m == nil {
 		return nil
@@ -1431,9 +1395,6 @@ func (m *Manager) AvailableProviders() []string {
 	return out
 }
 
-// HasProviderAuth reports whether at least one non-disabled auth record is registered for
-// the provider. Disabled auths (Disabled flag or StatusDisabled) are excluded to match the
-// behavior of auth selection, which refuses to pick disabled credentials.
 func (m *Manager) HasProviderAuth(provider string) bool {
 	if m == nil {
 		return false
@@ -1538,11 +1499,6 @@ func retryRoundAvailabilityForAuthForRequest(ctx context.Context, auth *Auth, mo
 	return true, next
 }
 
-// hasLiveQuotaCooldown reports whether a quota deadline still gates the
-// requested model: a credential-wide quota whose deadline is in the future
-// (or unknown) always does, and so does the model's own live quota state.
-// A sibling model's quota and an expired quota marker are history, not a
-// live gate: the just-attempted failure's own deadline governs instead.
 func hasLiveQuotaCooldown(auth *Auth, model string, now time.Time) bool {
 	if auth == nil {
 		return false
@@ -1568,9 +1524,6 @@ func hasLiveQuotaCooldown(auth *Auth, model string, now time.Time) bool {
 	return false
 }
 
-// hasTransientZeroWaitEligibility reports whether the auth's last failure
-// for the model was a transient capacity rejection, which carries no quota
-// wait floor.
 func hasTransientZeroWaitEligibility(auth *Auth, model string) bool {
 	if auth == nil {
 		return false
@@ -1654,11 +1607,7 @@ func (m *Manager) closestCooldownWaitWithAttemptedForRequest(ctx context.Context
 			_, wasAttempted = attempted[auth.ID]
 		}
 		coolingDisabled := m.cooldownDisabledForAuth(auth)
-		// A transient capacity rejection cools only until its provider hint,
-		// so an attempted credential whose last failure was transient and
-		// which carries no live quota deadline for this model must schedule
-		// by its actual remaining cooldown (including an explicit zero
-		// hint) instead of gaining the quota wait floor.
+
 		transientZeroWait := !hasLiveQuotaCooldown(auth, checkModel, now) && hasTransientZeroWaitEligibility(auth, checkModel)
 		if !wasAttempted || coolingDisabled || status != http.StatusTooManyRequests || transientZeroWait {
 			if next.IsZero() {
@@ -1675,8 +1624,6 @@ func (m *Manager) closestCooldownWaitWithAttemptedForRequest(ctx context.Context
 			continue
 		}
 
-		// auth was already attempted in the round that just failed with 429,
-		// and cooling is enabled. It must not trigger an immediate zero-wait retry round.
 		var wait time.Duration
 		if next.IsZero() {
 			wait = minQuotaCooldownFloor
@@ -1758,11 +1705,6 @@ func (m *Manager) shouldRetryAfterError(err error, attempt int, providers []stri
 	return m.shouldRetryAfterErrorWithHomeRetryLimit(context.Background(), cliproxyexecutor.Options{}, err, attempt, providers, model, maxWait, -1, defaultRequestRetry)
 }
 
-// maxWait limits only positive cooldown waits between credential retry rounds.
-// A non-positive value means no waiting: it does not disable same-round
-// credential failover or an additional round that request-retry permits to start
-// immediately. If every eligible credential still needs a positive cooldown,
-// retry stops without waiting.
 func (m *Manager) shouldRetryAfterErrorWithHomeRetryLimit(ctx context.Context, opts cliproxyexecutor.Options, err error, attempt int, providers []string, model string, maxWait time.Duration, homeRetryLimit int, defaultRequestRetry int) (time.Duration, bool) {
 	return m.shouldRetryAfterErrorWithAttempted(ctx, opts, err, attempt, providers, model, maxWait, homeRetryLimit, defaultRequestRetry, nil)
 }
@@ -1802,8 +1744,7 @@ func (m *Manager) shouldRetryAfterErrorWithAttempted(ctx context.Context, opts c
 			}
 			return *retryAfter, true
 		}
-		// Home will provide a cooldown error on the next round if all
-		// credentials are still cooling down; otherwise retry immediately.
+
 		return 0, true
 	}
 	if m.HomeEnabled() {
@@ -1919,15 +1860,8 @@ func isRequestRetryRoundError(err error) bool {
 	return isCredentialRetryRoundStatus(statusCodeFromError(err)) || isTransientTransportError(err)
 }
 
-// cooldownWaitJitterCap bounds the random jitter added to cooldown waits so a
-// long wait is never extended by more than this amount.
 const cooldownWaitJitterCap = 2 * time.Second
 
-// jitteredCooldownWait adds a small random delay to a cooldown wait so
-// concurrent requests waiting on the same recovery deadline do not wake in
-// lockstep and stampede the first credential that recovers. The jitter never
-// pushes the total wait past maxWait, which callers have already enforced as
-// the retry ceiling; maxWait <= 0 is reserved for immediate retries.
 func jitteredCooldownWait(wait, maxWait time.Duration) time.Duration {
 	if wait <= 0 {
 		return wait
@@ -1959,7 +1893,6 @@ func waitForCooldown(ctx context.Context, wait, maxWait time.Duration) error {
 	}
 }
 
-// List returns all auth entries currently known by the manager.
 func (m *Manager) List() []*Auth {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -1970,7 +1903,6 @@ func (m *Manager) List() []*Auth {
 	return list
 }
 
-// GetByID retrieves an auth entry by its ID.
 func (m *Manager) GetByID(id string) (*Auth, bool) {
 	if id == "" {
 		return nil, false
@@ -1984,11 +1916,6 @@ func (m *Manager) GetByID(id string) (*Auth, bool) {
 	return auth.Clone(), true
 }
 
-// PublishIfRegistrationCurrent serializes the final model-registration
-// publication against identity mutations for this auth, then calls publish
-// only if the manager still holds auth with the same model-registration
-// inputs. It does not persist or clone auth state. publish must be fast and
-// must not re-enter the manager.
 func (m *Manager) PublishIfRegistrationCurrent(id string, registrationEpoch uint64, prefix, provider string, disabled bool, authKind string, attributes map[string]string, publish func() bool) bool {
 	if m == nil || id == "" || publish == nil {
 		return false
@@ -2005,11 +1932,6 @@ func (m *Manager) PublishIfRegistrationCurrent(id string, registrationEpoch uint
 	return publish()
 }
 
-// UpdateIfRegistrationCurrent applies a plugin-returned auth update only
-// while the manager still holds the exact registration inputs the plugin
-// computation started from. It prevents an old plugin result from adopting
-// a removed or re-registered identity merely because its zero registration
-// epoch would otherwise inherit the current epoch during Update.
 func (m *Manager) UpdateIfRegistrationCurrent(ctx context.Context, base *Auth, updated *Auth) (*Auth, bool, error) {
 	if m == nil || base == nil || updated == nil || base.ID == "" || updated.ID != base.ID {
 		return nil, false, nil
@@ -2047,7 +1969,6 @@ func modelRegistrationInputsMatch(current *Auth, registrationEpoch uint64, prefi
 		maps.Equal(current.Attributes, attributes)
 }
 
-// GetExecutionSessionAuthByID retrieves a Home runtime auth scoped to an execution session.
 func (m *Manager) GetExecutionSessionAuthByID(sessionID string, authID string) (*Auth, bool) {
 	sessionID = strings.TrimSpace(sessionID)
 	authID = strings.TrimSpace(authID)
@@ -2101,7 +2022,6 @@ func (m *Manager) executorLocked(provider string) (ProviderExecutor, bool) {
 	return executor, true
 }
 
-// Executor returns the registered provider executor for a provider key.
 func (m *Manager) Executor(provider string) (ProviderExecutor, bool) {
 	if m == nil {
 		return nil, false
@@ -2111,7 +2031,6 @@ func (m *Manager) Executor(provider string) (ProviderExecutor, bool) {
 	return m.executorLocked(provider)
 }
 
-// CloseExecutionSession asks all registered executors to release the supplied execution session.
 func (m *Manager) CloseExecutionSession(sessionID string) {
 	sessionID = strings.TrimSpace(sessionID)
 	if m == nil || sessionID == "" {
@@ -2169,7 +2088,7 @@ func (m *Manager) shouldRetrySchedulerPick(err error, beforeVersion uint64) bool
 	}
 	syncedVer := m.syncedVersion.Load()
 	if syncedVer > beforeVersion {
-		// A concurrent sync completed while this pick was in-flight; allow one bounded retry.
+
 		return true
 	}
 	currentVer := m.currentVersion()
@@ -2191,7 +2110,7 @@ func (m *Manager) checkAndSyncScheduler() bool {
 	defer m.syncSchedulerMu.Unlock()
 	currentVer := m.currentVersion()
 	if currentVer == m.syncedVersion.Load() {
-		// Another goroutine already completed sync for this version; allow retry.
+
 		return true
 	}
 	if !m.schedulerNeedsSync() {
@@ -2262,7 +2181,7 @@ func (m *Manager) pickNextLegacy(ctx context.Context, provider, model string, op
 	}
 	candidates := make([]*Auth, 0, len(m.auths))
 	modelKey := strings.TrimSpace(model)
-	// Always use base model name (without thinking suffix) for auth matching.
+
 	if modelKey != "" {
 		parsed := thinking.ParseSuffix(modelKey)
 		if parsed.ModelName != "" {
@@ -2296,7 +2215,7 @@ func (m *Manager) pickNextLegacy(ctx context.Context, provider, model string, op
 			continue
 		}
 		_, used := tried[candidate.ID]
-		// Pinning restricts selection, not the eligible pool used for accounting.
+
 		if trackPinnedAccounting && !used {
 			accountingCandidates = append(accountingCandidates, candidate)
 		}
@@ -2384,8 +2303,6 @@ func (m *Manager) pickNextLegacy(ctx context.Context, provider, model string, op
 	return authCopy, executor, nil
 }
 
-// SelectAuth selects one credential through the configured scheduling strategy.
-// It does not execute or alter the selected credential's result state.
 func (m *Manager) SelectAuth(ctx context.Context, provider, model string, opts cliproxyexecutor.Options) (*Auth, error) {
 	if m != nil && m.HomeEnabled() {
 		return nil, &Error{Code: "home_unavailable", Message: "legacy auth selection is unavailable while Home is enabled", HTTPStatus: http.StatusServiceUnavailable}
@@ -2400,8 +2317,6 @@ func (m *Manager) SelectAuth(ctx context.Context, provider, model string, opts c
 	return selected, nil
 }
 
-// SelectAuthByKind selects one credential of the required kind through the
-// configured scheduling strategy. Credentials of other kinds are skipped.
 func (m *Manager) SelectAuthByKind(ctx context.Context, provider, model, requiredKind string, opts cliproxyexecutor.Options) (*Auth, error) {
 	if m != nil && m.HomeEnabled() {
 		return nil, &Error{Code: "home_unavailable", Message: "legacy auth selection is unavailable while Home is enabled", HTTPStatus: http.StatusServiceUnavailable}
@@ -2425,7 +2340,6 @@ func (m *Manager) SelectAuthByKind(ctx context.Context, provider, model, require
 	return selected, nil
 }
 
-// SelectAuthWithCredentialPolicy selects one local credential allowed by a fixed policy.
 func (m *Manager) SelectAuthWithCredentialPolicy(ctx context.Context, provider, model, policy string, opts cliproxyexecutor.Options) (*Auth, error) {
 	if m != nil && m.HomeEnabled() {
 		return nil, &Error{Code: "home_unavailable", Message: "legacy auth selection is unavailable while Home is enabled", HTTPStatus: http.StatusServiceUnavailable}
@@ -2451,7 +2365,6 @@ func (m *Manager) SelectAuthWithCredentialPolicy(ctx context.Context, provider, 
 	return selected, nil
 }
 
-// SelectHomeAuthWithCredentialPolicy selects a policy-constrained Home dispatch while retaining its execution scope.
 func (m *Manager) SelectHomeAuthWithCredentialPolicy(ctx context.Context, provider, model, policy string, opts cliproxyexecutor.Options) (*HomeDispatchSelection, error) {
 	policy = normalizeCredentialPolicy(policy)
 	if policy == "" {
@@ -2501,7 +2414,6 @@ func (m *Manager) SelectHomeAuthWithCredentialPolicy(ctx context.Context, provid
 	}
 }
 
-// SelectHomeAuthByKind selects a Home dispatch while retaining its execution scope.
 func (m *Manager) SelectHomeAuthByKind(ctx context.Context, provider string, model string, requiredKind string, opts cliproxyexecutor.Options) (*HomeDispatchSelection, error) {
 	requiredKind = normalizeAuthKind(requiredKind)
 	if requiredKind == "" {
@@ -2611,8 +2523,6 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 	return authCopy, executor, nil
 }
 
-// HasAlternativeTargetForModel reports whether at least one eligible credential
-// other than excludedAuthID can serve model across providers.
 func (m *Manager) HasAlternativeTargetForModel(ctx context.Context, providers []string, model string, opts cliproxyexecutor.Options, excludedAuthID string) bool {
 	if m == nil {
 		return false
@@ -2708,7 +2618,7 @@ func (m *Manager) pickNextMixedLegacy(ctx context.Context, providers []string, m
 	opts.Metadata[cliproxyexecutor.SessionAffinityModelMetadataKey] = selectionArgForSelector(selector, model)
 	candidates := make([]*Auth, 0, len(m.auths))
 	modelKey := strings.TrimSpace(model)
-	// Always use base model name (without thinking suffix) for auth matching.
+
 	if modelKey != "" {
 		parsed := thinking.ParseSuffix(modelKey)
 		if parsed.ModelName != "" {
@@ -2751,7 +2661,7 @@ func (m *Manager) pickNextMixedLegacy(ctx context.Context, providers []string, m
 			continue
 		}
 		_, used := tried[candidate.ID]
-		// Pinning restricts selection, not the eligible pool used for accounting.
+
 		if trackPinnedAccounting && !used {
 			accountingCandidates = append(accountingCandidates, candidate)
 		}
@@ -2809,8 +2719,7 @@ func (m *Manager) pickNextMixedLegacy(ctx context.Context, providers []string, m
 			selectorCtx = context.WithValue(selectorCtx, weightedAccountingPoolKey{}, accountingAuths)
 		}
 		if _, bareWeighted := selector.(*WeightedRoundRobinSelector); bareWeighted {
-			// Match the scheduler's single-provider transport preference after
-			// excluding providers without an executor.
+
 			singleProvider := ""
 			for providerKey := range providerSet {
 				if _, okExecutor := m.Executor(providerKey); !okExecutor {

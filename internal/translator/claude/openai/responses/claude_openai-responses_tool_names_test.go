@@ -29,7 +29,6 @@ func TestBuildClaudeToolNames_RoundTripAndStability(t *testing.T) {
 	root := util.ParseGJSONBytesNoCopy(reqJSON)
 	names := buildClaudeToolNames(root, true)
 
-	// Verify all declared tools are unique and match pattern
 	seenClaudeNames := map[string]string{}
 	for id, claudeName := range names.toClaude {
 		if !claudeToolNamePattern.MatchString(claudeName) {
@@ -43,25 +42,21 @@ func TestBuildClaudeToolNames_RoundTripAndStability(t *testing.T) {
 		}
 		seenClaudeNames[claudeName] = id
 
-		// Verify reversibility
 		revID := names.identity(claudeName)
 		if revID != id {
 			t.Fatalf("identity(%q) = %q, want %q", claudeName, revID, id)
 		}
 	}
 
-	// Normal tool should keep its name
 	if names.claudeName("normal_tool") != "normal_tool" {
 		t.Fatalf("claudeName(normal_tool) = %q, want normal_tool", names.claudeName("normal_tool"))
 	}
 
-	// Namespace child qualified name
 	qualified := "mcp__my_server__get_something"
 	if names.claudeName(qualified) != qualified {
 		t.Fatalf("claudeName(%q) = %q, want %q", qualified, names.claudeName(qualified), qualified)
 	}
 
-	// Alpha and Beta long tools must not have the same claude name
 	alphaID := "very_long_tool_name_that_exceeds_sixty_four_characters_and_needs_truncation_alpha"
 	betaID := "very_long_tool_name_that_exceeds_sixty_four_characters_and_needs_truncation_beta"
 	if names.claudeName(alphaID) == names.claudeName(betaID) {
@@ -155,7 +150,6 @@ func TestBuildClaudeToolNames_CustomToolCollision(t *testing.T) {
 		t.Fatalf("identity(%q) = %q, want %q", cName2, names.identity(cName2), tool2)
 	}
 
-	// Verify non-stream response restores the custom tool call type and original name
 	claudeResp := []byte(strings.Join([]string{
 		`data: {"type":"message_start","message":{"id":"msg_test_custom","usage":{"input_tokens":10,"output_tokens":5}}}`,
 		fmt.Sprintf(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_custom_0","name":%q,"input":{"input":"query_payload"}}}`, cName1),
@@ -173,7 +167,7 @@ func TestBuildClaudeToolNames_CustomToolCollision(t *testing.T) {
 }
 
 func TestBuildClaudeToolNames_DeclaredToolsPrecedeHistory(t *testing.T) {
-	// A declared tool has a name that collides with a history tool
+
 	reqJSON := []byte(`{
 		"tools": [
 			{"type": "function", "name": "tool_x"}
@@ -185,12 +179,10 @@ func TestBuildClaudeToolNames_DeclaredToolsPrecedeHistory(t *testing.T) {
 
 	names := buildClaudeToolNames(util.ParseGJSONBytesNoCopy(reqJSON), true)
 
-	// tool_x must keep its exact name
 	if names.claudeName("tool_x") != "tool_x" {
 		t.Fatalf("declared tool_x was stolen: %q", names.claudeName("tool_x"))
 	}
 
-	// tool.x (which sanitizes to tool_x) must be disambiguated with hash because tool_x is taken
 	if names.claudeName("tool.x") == "tool_x" {
 		t.Fatalf("history tool.x unexpectedly got tool_x instead of disambiguated name")
 	}

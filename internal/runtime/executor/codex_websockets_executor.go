@@ -1,5 +1,3 @@
-// Package executor provides runtime execution capabilities for various AI service providers.
-// This file implements a Codex executor that uses the Responses API WebSocket transport.
 package executor
 
 import (
@@ -16,16 +14,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// CodexWebsocketsExecutor executes Codex Responses requests using a WebSocket transport.
-//
-// It preserves the existing CodexExecutor HTTP implementation as a fallback for endpoints
-// not available over WebSocket (e.g. /responses/compact) and for websocket upgrade failures.
 type CodexWebsocketsExecutor struct {
 	*CodexExecutor
 
 	store *codexWebsocketSessionStore
 
-	// Set before execution by concurrency tests; never mutated during a session.
 	duplexStateObserver func(event string, ready bool)
 }
 
@@ -36,11 +29,6 @@ func NewCodexWebsocketsExecutor(cfg *config.Config) *CodexWebsocketsExecutor {
 	}
 }
 
-// CodexAutoExecutor routes Codex requests to the websocket transport only when:
-//  1. The downstream transport is websocket, and
-//  2. The selected auth enables websockets.
-//
-// For non-websocket downstream requests, it always uses the legacy HTTP implementation.
 type CodexAutoExecutor struct {
 	httpExec *CodexExecutor
 	wsExec   *CodexWebsocketsExecutor
@@ -55,7 +43,6 @@ func NewCodexAutoExecutor(cfg *config.Config) *CodexAutoExecutor {
 
 func (e *CodexAutoExecutor) Identifier() string { return "codex" }
 
-// UsesConfig reports whether the executor was created for cfg.
 func (e *CodexAutoExecutor) UsesConfig(cfg *config.Config) bool {
 	return e != nil && e.httpExec != nil && e.httpExec.cfg == cfg
 }
@@ -174,13 +161,10 @@ func codexWebsocketsEnabled(auth *cliproxyauth.Auth) bool {
 	return false
 }
 
-// SupportsApplyPatch requires both selectable transports to support the tool.
 func (e *CodexAutoExecutor) SupportsApplyPatch() bool {
 	return e != nil && e.httpExec != nil && e.wsExec != nil && e.httpExec.SupportsApplyPatch() && e.wsExec.SupportsApplyPatch()
 }
 
-// InterruptExecutionSession forwards a response.interrupt control frame on the
-// current upstream socket. It does not dial, replay, or select another credential.
 func (e *CodexAutoExecutor) InterruptExecutionSession(ctx context.Context, sessionID string, payload []byte) error {
 	if e == nil || e.wsExec == nil {
 		return cliproxyexecutor.ErrNoActiveUpstreamWebsocket
@@ -188,9 +172,6 @@ func (e *CodexAutoExecutor) InterruptExecutionSession(ctx context.Context, sessi
 	return e.wsExec.InterruptExecutionSession(ctx, sessionID, payload)
 }
 
-// InterruptExecutionSession writes the original interrupt payload to the session
-// socket captured for this execution. Payload rules and response.create defaults
-// must not rewrite response_id, mode, or extension fields.
 func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context, sessionID string, payload []byte) error {
 	if e == nil {
 		return cliproxyexecutor.ErrNoActiveUpstreamWebsocket
@@ -221,8 +202,7 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 	if conn == nil {
 		return cliproxyexecutor.ErrNoActiveUpstreamWebsocket
 	}
-	// Account checks may call back into the auth manager; do not hold session
-	// locks across them. Take the lifecycle snapshot only after they finish.
+
 	authEnabled := cliproxyexecutor.WebsocketAuthEnabled(ctx, authID)
 	sess.connMu.Lock()
 	if sess.conn != conn {
@@ -233,11 +213,7 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 	targetID := ojson.GetBytesNoCopy(payload, "response_id").String()
 	_, alreadyTerminal := sess.terminalResponseIDs[targetID]
 	alreadyTerminal = alreadyTerminal && sess.responseStateConn == conn
-	// activeResponseID/Terminal track the running response at read-loop
-	// granularity: only its own id forwards while it runs, and its terminal
-	// event closes the window before teardown clears the channel. Before
-	// response.created the id is unknown, so the live channel alone
-	// authorizes forwarding and upstream validates the frame.
+
 	liveChannel := sess.activeConn == conn && sess.activeCh != nil
 	active := liveChannel && !sess.activeResponseTerminal &&
 		(sess.activeResponseID == "" || sess.activeResponseID == targetID)
@@ -245,8 +221,7 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 	if sess.terminalConn == conn {
 		disconnectErr = sess.terminalErr
 	}
-	// Terminal state and the active channel must belong to one snapshot:
-	// completion can otherwise land between the checks and produce a stale 400.
+
 	sess.activeMu.Unlock()
 	sess.connMu.Unlock()
 	if disconnectErr != nil {
@@ -256,14 +231,11 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 		log.WithField("outcome", "already_terminal").Debug("codex websockets: response.interrupt handled")
 		return nil
 	}
-	// A retained socket from an earlier turn is not the current upstream.
-	// HTTP turns must fall through to local cancellation instead.
+
 	if !liveChannel {
 		return cliproxyexecutor.ErrNoActiveUpstreamWebsocket
 	}
-	// The socket owns this turn, but the frame does not target its running
-	// response. Reject outright: a local HTTP fallback would fabricate an
-	// incomplete event and cancel the healthy websocket turn.
+
 	if !active {
 		return cliproxyexecutor.ErrUpstreamWebsocketInterruptRejected
 	}

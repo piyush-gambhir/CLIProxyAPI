@@ -287,8 +287,6 @@ func TestCodexClientModelsResponse_SearchToolRequiresRoutesThatCloseTheLoop(t *t
 	})
 }
 
-// Without a native tool search capability, Claude routes keep the
-// pre-tool-search catalog: only pure Codex template routes advertise search.
 func TestCodexClientModelsResponse_ClaudeSearchToolNeedsCapability(t *testing.T) {
 	resp := BuildResponseForClientWithToolCapabilities(searchToolAvailableModels(), func(id string) []string { return searchToolRouteProviders[id] }, nil, nil, nil, false, "")
 	assertSupportsSearchTool(t, resp, map[string]bool{
@@ -476,8 +474,7 @@ func TestApplyCodexClientModelMetadataPreservesMultiAgentVersionWhenDisabled(t *
 
 func TestCodexClientModelsResponseAppliesMaxContextLengthOverride(t *testing.T) {
 	const wantOverride = 1048576
-	// Non-template models inherit context windows from the catalog's
-	// default template (currently the gpt-5.5 entry).
+
 	_, defaultTemplate, errLoadTemplates := loadCodexClientModelTemplates()
 	if errLoadTemplates != nil || defaultTemplate == nil {
 		t.Fatalf("load codex client model templates: %v", errLoadTemplates)
@@ -807,7 +804,7 @@ func TestCodexClientModelsResponse_ExplicitRouteOverridesHonored(t *testing.T) {
 			DisplayName:      "Astra Without Ultra",
 			ExplicitThinking: true,
 			Thinking: &registry.ThinkingSupport{
-				// Levels equal registry default (low..max) but explicitly defined by user
+
 				Levels: []string{"low", "medium", "high", "xhigh", "max"},
 			},
 		},
@@ -870,7 +867,7 @@ func TestCodexClientModelsResponse_ExplicitRouteOverridesHonored(t *testing.T) {
 	if got := stringModelValue(entry, "comp_hash"); got != "3000" {
 		t.Errorf("comp_hash = %q, want 3000 (inherited from gpt-5.6-sol)", got)
 	}
-	// Assert reasoning levels were overridden to [low, high]
+
 	levels, okLevels := entry["supported_reasoning_levels"].([]any)
 	if !okLevels || len(levels) != 2 {
 		t.Fatalf("custom-sol supported_reasoning_levels = %#v, want [low, high]", entry["supported_reasoning_levels"])
@@ -879,7 +876,6 @@ func TestCodexClientModelsResponse_ExplicitRouteOverridesHonored(t *testing.T) {
 		t.Errorf("default_reasoning_level = %q, want low", got)
 	}
 
-	// Assert custom-astra-explicit-no-ultra has exactly the 5 explicit levels and NO ultra
 	astraNoUltra := entries["custom-astra-explicit-no-ultra"]
 	if astraNoUltra == nil {
 		t.Fatal("missing custom-astra-explicit-no-ultra")
@@ -895,7 +891,6 @@ func TestCodexClientModelsResponse_ExplicitRouteOverridesHonored(t *testing.T) {
 		}
 	}
 
-	// Assert direct canonical model gpt-6-astra also honors explicit thinking override
 	directAstra := entries["gpt-6-astra"]
 	if directAstra == nil {
 		t.Fatal("missing direct gpt-6-astra entry")
@@ -939,8 +934,7 @@ func TestCodexClientModelsResponse_UnrelatedCustomProviderRetainsFallback(t *tes
 	if got := stringModelValue(entry, "slug"); got != "my-unrelated-custom-model" {
 		t.Errorf("slug = %q, want my-unrelated-custom-model", got)
 	}
-	// The fallback clones the catalog's default template (currently the
-	// gpt-5.5 entry); comp_hash is inherited from it verbatim.
+
 	_, defaultTemplate, errLoadTemplates := loadCodexClientModelTemplates()
 	if errLoadTemplates != nil || defaultTemplate == nil {
 		t.Fatalf("load codex client model templates: %v", errLoadTemplates)
@@ -951,7 +945,7 @@ func TestCodexClientModelsResponse_UnrelatedCustomProviderRetainsFallback(t *tes
 	if got, _ := entry["supports_search_tool"].(bool); got {
 		t.Errorf("supports_search_tool = %v, want false for non-template fallback", got)
 	}
-	// Fallback model without explicit modalities retains generic gpt-5.5 fallback modalities
+
 	mods, okMods := entry["input_modalities"].([]any)
 	if !okMods || len(mods) != 2 {
 		t.Fatalf("unrelated model input_modalities = %#v, want generic [text image]", entry["input_modalities"])
@@ -969,7 +963,7 @@ func TestCodexClientModelsResponse_UnrelatedProviderCannotWidenSearchTool(t *tes
 			ID:              "custom-astra-on-openai-compat",
 			MetadataModelID: "gpt-6-astra",
 			DisplayName:     "Astra on OpenAI Compat",
-			// OpenAI compatibility models get low/medium/high registered without ExplicitThinking
+
 			Thinking: &registry.ThinkingSupport{
 				Levels: []string{"low", "medium", "high"},
 			},
@@ -996,14 +990,14 @@ func TestCodexClientModelsResponse_UnrelatedProviderCannotWidenSearchTool(t *tes
 	if got := stringModelValue(entry, "slug"); got != "custom-astra-on-openai-compat" {
 		t.Errorf("slug = %q, want custom-astra-on-openai-compat", got)
 	}
-	// Inherited model metadata from canonical gpt-6-astra
+
 	if got := stringModelValue(entry, "comp_hash"); got != "3000" {
 		t.Errorf("comp_hash = %q, want 3000", got)
 	}
 	if got := intModelValue(entry, "max_context_window"); got != 872000 {
 		t.Errorf("max_context_window = %d, want 872000", got)
 	}
-	// Protocol-level capabilities MUST be restricted for non-Codex providers
+
 	if got, _ := entry["supports_search_tool"].(bool); got {
 		t.Errorf("supports_search_tool = %v, want false because provider is openai-compatibility, not codex", got)
 	}
@@ -1027,7 +1021,7 @@ func TestCodexClientModelsResponse_UnrelatedProviderCannotWidenSearchTool(t *tes
 	}
 	assertCodexNullableFieldCleared(t, entry, "upgrade")
 	assertCodexNullableFieldCleared(t, entry, "availability_nux")
-	// Reasoning levels must NOT be widened beyond provider's registered capabilities
+
 	levels, okLevels := entry["supported_reasoning_levels"].([]any)
 	if !okLevels || len(levels) != 3 {
 		t.Fatalf("supported_reasoning_levels = %#v, want 3 levels restricted to provider", entry["supported_reasoning_levels"])
@@ -1101,14 +1095,14 @@ func TestCodexClientModelsResponse_MixedProvidersRestrictProtocolCapabilities(t 
 			}
 
 			entry := models[0]
-			// Inherited model metadata from canonical gpt-6-astra
+
 			if got := stringModelValue(entry, "comp_hash"); got != "3000" {
 				t.Errorf("comp_hash = %q, want 3000", got)
 			}
 			if got := intModelValue(entry, "max_context_window"); got != 872000 {
 				t.Errorf("max_context_window = %d, want 872000", got)
 			}
-			// Protocol-level capabilities MUST be restricted because providers are mixed (not pure Codex)
+
 			if got, _ := entry["supports_search_tool"].(bool); got {
 				t.Errorf("supports_search_tool = %v, want false for mixed provider", got)
 			}
@@ -1132,7 +1126,7 @@ func TestCodexClientModelsResponse_MixedProvidersRestrictProtocolCapabilities(t 
 			}
 			assertCodexNullableFieldCleared(t, entry, "upgrade")
 			assertCodexNullableFieldCleared(t, entry, "availability_nux")
-			// Reasoning levels must NOT be widened to ultra/max/xhigh regardless of registration order
+
 			levels, okLevels := entry["supported_reasoning_levels"].([]any)
 			if !okLevels || len(levels) != 3 {
 				t.Fatalf("supported_reasoning_levels = %#v, want 3 levels restricted to mixed provider", entry["supported_reasoning_levels"])
@@ -1170,7 +1164,7 @@ func TestCodexClientModelsResponse_MixedProvidersIntersectCodexExplicitRestricti
 						DisplayName:      "Astra Mixed Explicit",
 						ExplicitThinking: true,
 						Thinking: &registry.ThinkingSupport{
-							// Codex explicitly restricted to low, high
+
 							Levels: []string{"low", "high"},
 						},
 					},
@@ -1183,7 +1177,7 @@ func TestCodexClientModelsResponse_MixedProvidersIntersectCodexExplicitRestricti
 						MetadataModelID: "gpt-6-astra",
 						DisplayName:     "Astra Mixed Explicit",
 						Thinking: &registry.ThinkingSupport{
-							// Compat supports low, medium, high
+
 							Levels: []string{"low", "medium", "high"},
 						},
 					},
@@ -1214,7 +1208,7 @@ func TestCodexClientModelsResponse_MixedProvidersIntersectCodexExplicitRestricti
 			}
 
 			entry := models[0]
-			// The intersection of [low, high] and [low, medium, high] is exactly [low, high]
+
 			levels, okLevels := entry["supported_reasoning_levels"].([]any)
 			if !okLevels || len(levels) != 2 {
 				t.Fatalf("supported_reasoning_levels = %#v, want exactly 2 levels (low, high)", entry["supported_reasoning_levels"])
@@ -1237,7 +1231,6 @@ func TestCodexClientModelsResponse_DisjointModalitiesIntersectionDoesNotRestoreT
 	clientC := "modalities-client-c"
 	aliasName := "disjoint-modalities-alias"
 
-	// Provider A supports text only
 	modelRegistry.RegisterClient(clientA, "openai-compatibility", []*registry.ModelInfo{
 		{
 			ID:                       aliasName,
@@ -1245,7 +1238,7 @@ func TestCodexClientModelsResponse_DisjointModalitiesIntersectionDoesNotRestoreT
 			SupportedInputModalities: []string{"text"},
 		},
 	})
-	// Provider B supports image only
+
 	modelRegistry.RegisterClient(clientB, "custom-provider-b", []*registry.ModelInfo{
 		{
 			ID:                       aliasName,
@@ -1253,7 +1246,7 @@ func TestCodexClientModelsResponse_DisjointModalitiesIntersectionDoesNotRestoreT
 			SupportedInputModalities: []string{"image"},
 		},
 	})
-	// Provider C supports audio only (3-provider test)
+
 	modelRegistry.RegisterClient(clientC, "custom-provider-c", []*registry.ModelInfo{
 		{
 			ID:                       aliasName,
@@ -1278,7 +1271,7 @@ func TestCodexClientModelsResponse_DisjointModalitiesIntersectionDoesNotRestoreT
 	}
 
 	entry := models[0]
-	// Empty intersection must remain empty and NOT restore template's ["text", "image"]
+
 	mods, okMods := entry["input_modalities"].([]any)
 	if !okMods || len(mods) != 0 {
 		t.Fatalf("disjoint input_modalities = %#v, want empty array []", entry["input_modalities"])
@@ -1353,7 +1346,7 @@ func TestCodexClientModelsResponse_MixedProviderWithoutThinkingRestrictsReasonin
 						ID:              aliasName,
 						MetadataModelID: "gpt-6-astra",
 						DisplayName:     "Mixed Astra Alias",
-						// Compat provider does NOT support thinking (Thinking == nil)
+
 						Thinking: nil,
 					},
 				})
@@ -1383,7 +1376,7 @@ func TestCodexClientModelsResponse_MixedProviderWithoutThinkingRestrictsReasonin
 			}
 
 			entry := models[0]
-			// Because compat provider does not support thinking, mixed route must NOT advertise reasoning levels
+
 			levels, okLevels := entry["supported_reasoning_levels"].([]any)
 			if !okLevels || len(levels) != 0 {
 				t.Fatalf("supported_reasoning_levels = %#v, want empty array [] when one provider has no thinking support", entry["supported_reasoning_levels"])
@@ -1396,13 +1389,12 @@ func TestCodexClientModelsResponse_MixedProviderWithoutThinkingRestrictsReasonin
 }
 
 func TestCodexClientModelsResponse_OAuthAliasesInheritCompleteReasoningLevelsWithUltra(t *testing.T) {
-	// Look up real Astra definition from registry
+
 	realAstra := registry.LookupModelInfo("gpt-6-astra")
 	if realAstra == nil {
 		t.Fatal("expected gpt-6-astra in static/dynamic registry")
 	}
 
-	// Create alias and prefixed alias models that inherit real Astra's Thinking from registry
 	codexMain := *realAstra
 	codexMain.ID = "codex-main"
 	codexMain.MetadataModelID = "gpt-6-astra"
@@ -1428,7 +1420,6 @@ func TestCodexClientModelsResponse_OAuthAliasesInheritCompleteReasoningLevelsWit
 		{"id": "1/codex-main"},
 	}
 
-	// 1. Test for modern client version (0.153.4) which supports "ultra"
 	respModern := BuildResponseForClient(availableModels, modelRegistry.GetModelProviders, false, "0.153.4")
 	modelsModern, ok := respModern["models"].([]map[string]any)
 	if !ok {
@@ -1471,7 +1462,6 @@ func TestCodexClientModelsResponse_OAuthAliasesInheritCompleteReasoningLevelsWit
 		}
 	}
 
-	// 2. Test for older client version (0.137.0) which does not support "ultra" or "max"
 	respLegacy := BuildResponseForClient(availableModels, modelRegistry.GetModelProviders, false, "0.137.0")
 	modelsLegacy, ok := respLegacy["models"].([]map[string]any)
 	if !ok {
@@ -1565,63 +1555,63 @@ func assertCPAWebSearchCapability(t *testing.T, model map[string]any, want bool,
 
 func TestCodexClientModelsResponse_DevinDisplayName(t *testing.T) {
 	availableModels := []map[string]any{
-		// 1. Template Devin model with explicit display_name
+
 		{
 			"id":           "devin/gpt-6-astra",
 			"display_name": "GPT-6 Astra",
 		},
-		// 2. Template Devin model without display_name (inherits the template's display_name)
+
 		{
 			"id": "devin/gpt-5.5",
 		},
-		// 3. Non-template Devin model
+
 		{
 			"id":           "devin/swe-2",
 			"display_name": "SWE-2",
 		},
-		// 4. Non-Devin model (must NOT have (Devin) suffix)
+
 		{
 			"id":           "gpt-6-astra",
 			"display_name": "GPT 6.0 Astra",
 		},
-		// 5. Standard non-Devin model
+
 		{
 			"id": "gpt-5.5",
 		},
-		// 6. Devin model that already has (Devin) suffix
+
 		{
 			"id":           "devin/swe-1-7",
 			"display_name": "SWE-1.7 (Devin)",
 		},
-		// 7. Model identified via type: "devin"
+
 		{
 			"id":           "custom-devin-by-type",
 			"display_name": "Custom Model",
 			"type":         "devin",
 		},
-		// 8. Model identified via owned_by: "cognition"
+
 		{
 			"id":           "custom-devin-by-owned",
 			"display_name": "Cognition Model",
 			"owned_by":     "cognition",
 		},
-		// 9. Model identified via providersForModel
+
 		{
 			"id":           "provider-devin-model",
 			"display_name": "Provider Model",
 		},
-		// 10. Channel-prefixed Devin model
+
 		{
 			"id":           "1/devin/swe-2",
 			"display_name": "SWE-2",
 		},
-		// 11. Model with devin in substring but not a devin model
+
 		{
 			"id":           "my-devin-tool",
 			"display_name": "My Devin Tool",
 			"type":         "openai",
 		},
-		// 12. Channel prefixed model whose explicit provider is openai
+
 		{
 			"id":           "channel/swe-2",
 			"display_name": "Channel SWE-2",
@@ -1792,8 +1782,6 @@ func TestCodexClientModelsResponse_DoesNotLeakResponsesLiteOrCodeModeToNonCodexR
 		codexClientModelTemplatesMu.Unlock()
 	})
 
-	// Simulate a post-retirement catalog where the first/default template (gpt-6.1-sol)
-	// advertises code_mode_only, use_responses_lite, and supports_reasoning_effort_updates.
 	snapshot := []byte(`{"models":[{
 		"slug":"gpt-6.1-sol",
 		"display_name":"GPT-6.1-Sol",

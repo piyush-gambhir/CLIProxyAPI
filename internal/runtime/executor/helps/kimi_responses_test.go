@@ -275,7 +275,6 @@ func TestNormalizeKimiResponsesInput(t *testing.T) {
 			t.Fatalf("expected 9 items, got %d: %s", len(items), string(normalized))
 		}
 
-		// Batch 1: b1_c1, b1_c2 calls -> b1_c1 out, b1_c2 out -> dev1
 		if items[2].Get("call_id").String() != "b1_c1" || items[2].Get("type").String() != "function_call_output" {
 			t.Errorf("items[2] = %s, want b1_c1 output", items[2].Raw)
 		}
@@ -288,7 +287,7 @@ func TestNormalizeKimiResponsesInput(t *testing.T) {
 		if items[5].Get("role").String() != "assistant" {
 			t.Errorf("items[5] = %s, want assistant", items[5].Raw)
 		}
-		// Batch 2: b2_c1 call -> b2_c1 out -> dev2
+
 		if items[6].Get("call_id").String() != "b2_c1" || items[6].Get("type").String() != "function_call" {
 			t.Errorf("items[6] = %s, want b2_c1 call", items[6].Raw)
 		}

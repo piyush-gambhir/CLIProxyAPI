@@ -68,6 +68,6 @@ func TestEmitWebSocketResponseEvent(t *testing.T) {
 func TestEmitWebSocketResponseEventNilObserverNoOp(t *testing.T) {
 	opts := cliproxyexecutor.Options{}
 	payload := []byte(`{"type":"codex.rate_limits"}`)
-	// Should not panic
+
 	EmitWebSocketResponseEvent(context.Background(), opts, nil, "codex", "gpt-5.3-codex", payload)
 }

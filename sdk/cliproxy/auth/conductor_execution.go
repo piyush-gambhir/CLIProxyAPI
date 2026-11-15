@@ -145,7 +145,7 @@ func preferredExecutionAttemptError(fallback, upstream error) error {
 		if errors.As(upstream, &previousRound) && previousRound != nil && previousRound.cause != nil {
 			upstream = previousRound.cause
 		}
-		// Keep the current Home round marker because it owns authoritative retry timing.
+
 		preferred := *exhausted
 		preferred.cause = upstream
 		return markUpstreamExecutionAttempt(&preferred)
@@ -193,8 +193,6 @@ func (m *Manager) normalizeSessionAffinityNeverTerminalError(err error, provider
 	}
 }
 
-// Execute performs a non-streaming execution using the configured selector and executor.
-// It supports multiple providers for the same model and round-robins the starting provider per model.
 func isOpenAIImageExecutionOptions(opts cliproxyexecutor.Options) bool {
 	return strings.EqualFold(strings.TrimSpace(opts.SourceFormat.String()), "openai-image")
 }
@@ -270,7 +268,6 @@ func (m *Manager) Execute(ctx context.Context, providers []string, req cliproxye
 	return cliproxyexecutor.Response{}, &Error{Code: "auth_not_found", Message: "no auth available"}
 }
 
-// It supports multiple providers for the same model and round-robins the starting provider per model.
 func (m *Manager) ExecuteCount(ctx context.Context, providers []string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	ctx = cliproxyexecutor.WithRequestProxyURL(ctx, opts.ProxyURL)
 	req, opts = cliproxysession.Enrich(req, opts)
@@ -332,8 +329,6 @@ func (m *Manager) ExecuteCount(ctx context.Context, providers []string, req clip
 	return cliproxyexecutor.Response{}, &Error{Code: "auth_not_found", Message: "no auth available"}
 }
 
-// ExecuteStream performs a streaming execution using the configured selector and executor.
-// It supports multiple providers for the same model and round-robins the starting provider per model.
 func (m *Manager) ExecuteStream(ctx context.Context, providers []string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
 	ctx = cliproxyexecutor.WithRequestProxyURL(ctx, opts.ProxyURL)
 	req, opts = cliproxysession.Enrich(req, opts)
@@ -594,19 +589,11 @@ func executorForAuth(executor ProviderExecutor, auth *Auth) ProviderExecutor {
 	return executor
 }
 
-// syncPreferredUpstreamError refreshes the error that terminal selection
-// will prefer over the last local failure when the attempt error gained a
-// trusted retry annotation after its result was recorded.
 func syncPreferredUpstreamError(upstreamErr *error, errExec error) {
 	if upstreamErr == nil || errExec == nil || !hasUpstreamExecutionAttempt(errExec) {
 		return
 	}
-	// A stream bootstrap wrapper built from an earlier attempt already
-	// carries the response headers needed to hand that failure back as an
-	// error stream; keep that earlier failure preferred. When the wrapper
-	// was built from this same attempt, annotate that wrapper in place
-	// instead of replacing it (error values are compared by identity only
-	// through reflect here because dynamic types may be uncomparable).
+
 	var bootstrap *streamBootstrapError
 	if errors.As(*upstreamErr, &bootstrap) && bootstrap != nil {
 		if hint := trustedRetryAfterHint(errExec); hint != nil && *hint > 0 {
@@ -995,11 +982,7 @@ func (m *Manager) executeCountMixedOnce(ctx context.Context, providers []string,
 				}
 				action, okAction := matchRequestScopedErrorAction(auth, errExec, m.requestScopedErrorConfig(execCtx))
 				applyRequestScopedActionToResult(action, okAction, &result)
-				// Some Anthropic-compatible upstreams and plugin executors do not
-				// implement count_tokens and return a generic endpoint 404 or an
-				// explicit 501 / unsupported-capability error. Record the failure
-				// for hooks and metrics without suspending a model that remains
-				// usable through the messages endpoint.
+
 				if isCountTokensEndpointNotFoundError(errExec, execReq.Model) && (result.Error == nil || result.Error.Code != ErrorCodeForceCooldown) {
 					m.recordAvailabilityNeutralResult(execCtx, result)
 				} else {
@@ -1154,10 +1137,7 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 			homeSameAuthRetryPending = false
 		}
 		if selection != nil {
-			// A legacy Home may ignore excluded_auth_ids and return the same
-			// credential again. Reject credentials explicitly excluded from this
-			// round while retaining the explicit same-auth retry path, which
-			// intentionally leaves the credential out of homeExcludedAuthIDs.
+
 			if _, alreadyTried := tried[auth.ID]; alreadyTried {
 				if _, excluded := homeExcludedAuthIDs[auth.ID]; excluded {
 					if errEnd := m.endHomeSelectionBeforeRedispatch(ctx, selection, "repeated_excluded_auth"); errEnd != nil {
@@ -1170,9 +1150,7 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 				} else {
 					homeSameAuthRetries[auth.ID]++
 					if homeSameAuthRetries[auth.ID] > 1 {
-						// A fresh Home selection may retry the same auth once for
-						// connection lifecycle or authorization recovery. Repeated
-						// failures must still rotate away from this credential.
+
 						homeExcludedAuthIDs[auth.ID] = struct{}{}
 						if errEnd := m.endHomeSelectionBeforeRedispatch(ctx, selection, "repeated_same_auth"); errEnd != nil {
 							return nil, errEnd
@@ -1208,7 +1186,7 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
-		// Enrich before auth preparation so prepare-stage usage records observe the client request.
+
 		if homeMode {
 			clearSchedulerSelectionID(pickOpts.Metadata)
 			clearSchedulerSelectionID(opts.Metadata)
@@ -1222,7 +1200,7 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 		}
 		execCtx = m.newUpstreamAttemptContext(execCtx)
 		models, pooled, aliasResult, routing := m.executionModelCandidatesWithAlias(auth, routeModel)
-		// Home owns dispatched credential availability; only local selections need state filtering.
+
 		if selection == nil {
 			models = m.filterExecutionModelsForRequest(execCtx, auth, routeModel, models, pooled, pickOpts.Headers)
 		}
@@ -1344,8 +1322,7 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 			action, okAction := matchRequestScopedErrorAction(auth, errStream, m.requestScopedErrorConfig(execCtx))
 			stoppedByRule := isRequestStopError(errStream) || isRequestScopedStop(action, okAction)
 			if stoppedByRule || (!okAction && (isRequestInvalidError(errStream) || cliproxyexecutor.IsUpstreamWebsocketTurnError(errStream))) {
-				// Only redispatch needs a release acknowledgement. Preserve the final
-				// response even when Home cannot acknowledge the released admission.
+
 				if selection != nil {
 					releaseAttempt()
 					selection.End("request_stopped")
@@ -1408,8 +1385,7 @@ func shouldExcludeHomeAuthAfterStreamError(ctx context.Context, _ *Auth, err err
 	if err == nil || isConnectionLifecycleError(err) {
 		return false
 	}
-	// A 426 during a downstream websocket attempt is a transport fallback
-	// signal and may retry the same credential once.
+
 	if cliproxyexecutor.DownstreamWebsocket(ctx) && statusCodeFromError(err) == http.StatusUpgradeRequired {
 		return false
 	}
@@ -1640,7 +1616,6 @@ type requestAuthPrepareLock struct {
 	mu sync.Mutex
 }
 
-// prepareHomeRequestAuth prepares a dispatch auth without reading or updating local auth state.
 func (m *Manager) prepareHomeRequestAuth(ctx context.Context, executor ProviderExecutor, selection *HomeDispatchSelection) (*Auth, error) {
 	if selection == nil {
 		return nil, nil
@@ -1703,8 +1678,6 @@ func (m *Manager) prepareRequestAuth(ctx context.Context, executor ProviderExecu
 	return m.PrepareRequestAuth(ctx, preparer, auth)
 }
 
-// PrepareRequestAuth prepares a registered credential using the same serialization
-// and lifecycle checks as normal request execution. Management tools use this path too.
 func (m *Manager) PrepareRequestAuth(ctx context.Context, preparer RequestAuthPreparer, auth *Auth) (*Auth, error) {
 	if m == nil || preparer == nil || auth == nil || !preparer.ShouldPrepareRequestAuth(auth) {
 		return auth, nil
@@ -1717,7 +1690,7 @@ func (m *Manager) PrepareRequestAuth(ctx context.Context, preparer RequestAuthPr
 
 	var prepareMu *sync.Mutex
 	if strings.EqualFold(strings.TrimSpace(auth.Provider), "meta") {
-		// Meta also mints on 401 recovery. Serialize both paths per credential.
+
 		lockValue, _ := m.refreshLocks.LoadOrStore(id, &authRefreshLock{})
 		prepareMu = &lockValue.(*authRefreshLock).mu
 	} else {
@@ -1947,10 +1920,8 @@ func (m *Manager) executorFor(provider string) ProviderExecutor {
 	return exec
 }
 
-// roundTripperContextKey is an unexported context key type to avoid collisions.
 type roundTripperContextKey struct{}
 
-// roundTripperFor retrieves an HTTP RoundTripper for the given auth if a provider is registered.
 func (m *Manager) roundTripperFor(auth *Auth) http.RoundTripper {
 	m.mu.RLock()
 	p := m.rtProvider
@@ -1961,13 +1932,10 @@ func (m *Manager) roundTripperFor(auth *Auth) http.RoundTripper {
 	return p.RoundTripperFor(auth)
 }
 
-// RoundTripperProvider defines a minimal provider of per-auth HTTP transports.
 type RoundTripperProvider interface {
 	RoundTripperFor(auth *Auth) http.RoundTripper
 }
 
-// RequestPreparer is an optional interface that provider executors can implement
-// to mutate outbound HTTP requests with provider credentials.
 type RequestPreparer interface {
 	PrepareRequest(req *http.Request, auth *Auth) error
 }
@@ -2004,7 +1972,6 @@ func executorKeyFromAuth(auth *Auth) string {
 	}
 }
 
-// logEntryWithRequestID returns a logrus entry with request_id field if available in context.
 func logEntryWithRequestID(ctx context.Context) *log.Entry {
 	if ctx == nil {
 		return log.NewEntry(log.StandardLogger())
@@ -2041,13 +2008,12 @@ func formatOauthIdentity(auth *Auth, provider string, accountInfo string) string
 	if auth == nil {
 		return ""
 	}
-	// Prefer the auth's provider when available.
+
 	providerName := strings.TrimSpace(auth.Provider)
 	if providerName == "" {
 		providerName = strings.TrimSpace(provider)
 	}
-	// Only log the basename to avoid leaking host paths.
-	// FileName may be unset for some auth backends; fall back to ID.
+
 	authFile := strings.TrimSpace(auth.FileName)
 	if authFile == "" {
 		authFile = strings.TrimSpace(auth.ID)
@@ -2158,9 +2124,6 @@ func warnLogUpstreamFailure(ctx context.Context, entry *log.Entry, provider, mod
 	entry.Warnf("upstream execution failed: provider=%s model=%s auth=%s duration=%s err=%s", provider, model, authIdent, duration, errSummary)
 }
 
-// InjectCredentials delegates per-provider HTTP request preparation when supported.
-// If the registered executor for the auth provider implements RequestPreparer,
-// it will be invoked to modify the request (e.g., add headers).
 func (m *Manager) InjectCredentials(req *http.Request, authID string) error {
 	if req == nil || authID == "" {
 		return nil
@@ -2181,7 +2144,6 @@ func (m *Manager) InjectCredentials(req *http.Request, authID string) error {
 	return nil
 }
 
-// PrepareHttpRequest injects provider credentials into the supplied HTTP request.
 func (m *Manager) PrepareHttpRequest(ctx context.Context, auth *Auth, req *http.Request) error {
 	if m == nil {
 		return &Error{Code: "provider_not_found", Message: "manager is nil"}
@@ -2210,7 +2172,6 @@ func (m *Manager) PrepareHttpRequest(ctx context.Context, auth *Auth, req *http.
 	return preparer.PrepareRequest(req, auth)
 }
 
-// NewHttpRequest constructs a new HTTP request and injects provider credentials into it.
 func (m *Manager) NewHttpRequest(ctx context.Context, auth *Auth, method, targetURL string, body []byte, headers http.Header) (*http.Request, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -2236,7 +2197,6 @@ func (m *Manager) NewHttpRequest(ctx context.Context, auth *Auth, method, target
 	return httpReq, nil
 }
 
-// HttpRequest injects provider credentials into the supplied HTTP request and executes it.
 func (m *Manager) HttpRequest(ctx context.Context, auth *Auth, req *http.Request) (*http.Response, error) {
 	if m == nil {
 		return nil, &Error{Code: "provider_not_found", Message: "manager is nil"}
@@ -2349,9 +2309,6 @@ func syncMetadataSessionToContext(ctx context.Context, metadata map[string]any) 
 	return util.WithSessionID(ctx, clientMeta.SessionID)
 }
 
-// VerifyInference performs an operator-triggered, account-pinned inference verification
-// using an isolated session and minimal non-user prompt/token budget. It never falls back
-// to another credential and requires a completed response before marking InferenceVerified.
 func (m *Manager) VerifyInference(ctx context.Context, id, model string) (*Auth, error) {
 	if m == nil {
 		return nil, &Error{Code: "manager_unavailable", Message: "auth manager is not initialized", HTTPStatus: http.StatusServiceUnavailable}
@@ -2397,8 +2354,7 @@ func (m *Manager) VerifyInference(ctx context.Context, id, model string) (*Auth,
 	}
 
 	sessionID := fmt.Sprintf("verify-%s-%d", auth.ID, time.Now().UTC().UnixNano())
-	// Codex upstreams reject integer max_output_tokens below 16, so the minimal
-	// verification budget must sit at that floor.
+
 	payload := []byte(fmt.Sprintf(`{"model":%q,"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"ping"}]}],"max_output_tokens":16,"store":false}`, verifyModel))
 	req := cliproxyexecutor.Request{
 		Model:   verifyModel,

@@ -93,7 +93,6 @@ func TestRefreshAuthFiles_AllAndSpecific(t *testing.T) {
 	engine := gin.New()
 	engine.POST("/auth-files/refresh", h.RefreshAuthFiles)
 
-	// 1. Refresh all
 	req := httptest.NewRequest(http.MethodPost, "/auth-files/refresh?all=true", nil)
 	w := httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
@@ -109,20 +108,17 @@ func TestRefreshAuthFiles_AllAndSpecific(t *testing.T) {
 		t.Fatalf("expected ok=true, got %v", resp)
 	}
 
-	// Wait briefly for refresh to execute
 	time.Sleep(50 * time.Millisecond)
 
 	if cnt := exec.refreshCnt.Load(); cnt < 2 {
 		t.Fatalf("expected at least 2 refreshes, got %d", cnt)
 	}
 
-	// 2. Auth2 was in StatusError, now should be active/recovering
 	a2, exists := manager.GetByID("antigravity-2.json")
 	if !exists || a2.Status == coreauth.StatusError {
 		t.Fatalf("expected auth2 status to be recovered from error, got %+v", a2)
 	}
 
-	// 3. Refresh single file by name
 	prevCnt := exec.refreshCnt.Load()
 	reqSingle := httptest.NewRequest(http.MethodPost, "/auth-files/refresh?name=antigravity-1.json", nil)
 	wSingle := httptest.NewRecorder()
@@ -135,7 +131,6 @@ func TestRefreshAuthFiles_AllAndSpecific(t *testing.T) {
 		t.Fatalf("expected cnt to increment by 1, was %d now %d", prevCnt, newCnt)
 	}
 
-	// 4. Refresh nonexistent file
 	reqMissing := httptest.NewRequest(http.MethodPost, "/auth-files/refresh?name=nonexistent.json", nil)
 	wMissing := httptest.NewRecorder()
 	engine.ServeHTTP(wMissing, reqMissing)
@@ -144,7 +139,6 @@ func TestRefreshAuthFiles_AllAndSpecific(t *testing.T) {
 		t.Fatalf("expected status 404, got %d: %s", wMissing.Code, wMissing.Body.String())
 	}
 
-	// 5. Refresh via chunked JSON request body (ContentLength = -1)
 	chunkedBody := strings.NewReader(`{"name":"antigravity-1.json"}`)
 	reqChunked := httptest.NewRequest(http.MethodPost, "/auth-files/refresh", chunkedBody)
 	reqChunked.Header.Set("Content-Type", "application/json")
@@ -157,7 +151,6 @@ func TestRefreshAuthFiles_AllAndSpecific(t *testing.T) {
 		t.Fatalf("expected chunked request status 200, got %d: %s", wChunked.Code, wChunked.Body.String())
 	}
 
-	// 6. Malformed JSON request body returns 400
 	reqBadJSON := httptest.NewRequest(http.MethodPost, "/auth-files/refresh", strings.NewReader(`{invalid`))
 	reqBadJSON.Header.Set("Content-Type", "application/json")
 	wBadJSON := httptest.NewRecorder()
@@ -178,7 +171,7 @@ func TestRefreshAuthFiles_PreservesPathInList_Issue6119(t *testing.T) {
 	provider := &pluginRefreshSimProvider{
 		identifier: "custom-plugin",
 		refreshAuth: func(ctx context.Context, req pluginapi.AuthRefreshRequest) (pluginapi.AuthRefreshResponse, error) {
-			// Plugin returns custom attributes without repeating path
+
 			return pluginapi.AuthRefreshResponse{
 				Auth: pluginapi.AuthData{
 					Metadata:   map[string]any{"type": "custom-plugin", "token": "refreshed-token"},
@@ -216,7 +209,6 @@ func TestRefreshAuthFiles_PreservesPathInList_Issue6119(t *testing.T) {
 	engine.POST("/auth-files/refresh", h.RefreshAuthFiles)
 	engine.GET("/auth-files", h.ListAuthFiles)
 
-	// Refresh the auth file
 	reqRefresh := httptest.NewRequest(http.MethodPost, "/auth-files/refresh?name=custom-plugin.json", nil)
 	wRefresh := httptest.NewRecorder()
 	engine.ServeHTTP(wRefresh, reqRefresh)
@@ -224,7 +216,6 @@ func TestRefreshAuthFiles_PreservesPathInList_Issue6119(t *testing.T) {
 		t.Fatalf("expected status 200, got %d: %s", wRefresh.Code, wRefresh.Body.String())
 	}
 
-	// Verify it still appears in GET /auth-files
 	reqList := httptest.NewRequest(http.MethodGet, "/auth-files", nil)
 	wList := httptest.NewRecorder()
 	engine.ServeHTTP(wList, reqList)

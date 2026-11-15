@@ -102,8 +102,6 @@ func TestNormalizeClaudeToolPropertyNamesDocFallsBackForDeepSchemas(t *testing.T
 	}
 }
 
-// Keyword names are only interpreted at schema positions; named definitions,
-// dependent schemas, patterns and properties are classified by their role.
 func TestClaudeSchemaHasRejectedPropertyKeyFollowsSchemaPositions(t *testing.T) {
 	rejected := `{"type":"object","properties":{"not[labels]":{"type":"string"}}}`
 	accepted := `{"type":"object","properties":{"value":{"type":"string"}}}`

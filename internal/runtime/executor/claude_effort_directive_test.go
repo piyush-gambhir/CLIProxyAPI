@@ -100,7 +100,7 @@ func TestCaptureClaudeCodeSystemPlacement_EffortDirective(t *testing.T) {
 		`"messages":[{"role":"user","content":"summary"},` +
 		`{"role":"system","content":[],"output_config":{"effort":"low"}},` +
 		`{"role":"user","content":"next"}]}`)
-	// This literal fixture is independent of the insertion helper's decision.
+
 	after := []byte(`{"messages":[{"role":"user","content":"summary"},` +
 		`{"role":"system","content":[],"output_config":{"effort":"low"}},` +
 		`{"role":"user","content":"next"},` +

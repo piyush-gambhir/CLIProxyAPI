@@ -11,9 +11,6 @@ import (
 
 const claudeOAuthToolAliasStateLimit = 1024
 
-// claudeOAuthToolAliasStoreInitMu guards lazy allocation for executors built
-// without a constructor. It lives outside ClaudeExecutor because ForAPIKey
-// copies the executor by value, and a mutex field would be copied with it.
 var claudeOAuthToolAliasStoreInitMu sync.Mutex
 
 type claudeOAuthToolAliasStore struct {

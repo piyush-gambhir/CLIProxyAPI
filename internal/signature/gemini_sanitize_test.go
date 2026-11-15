@@ -373,7 +373,6 @@ func TestSanitizeGeminiRequestThoughtSignaturesInvalidSiblingStillLogsAtDebug(t 
 		`{"functionCall":{"name":"second","args":{}},"thoughtSignature":"invalid_sibling_signature"},` +
 		`{"functionCall":{"name":"third","args":{}},"thoughtSignature":"` + GeminiSkipThoughtSignatureValidator + `"}]}]}}`)
 
-	// Independent requests must not be suppressed by a process-wide deduplication cache.
 	for range 2 {
 		hook.Reset()
 		out := SanitizeGeminiRequestThoughtSignatures(input, "request.contents")
@@ -543,8 +542,7 @@ func TestSanitizeGeminiRequestThoughtSignatures_PreservesToolCallAndResponseSign
 }
 
 func TestSanitizeGeminiRequestThoughtSignatures_SkipsToolCallAndToolResponseParts(t *testing.T) {
-	// Server-side tool blocks (toolCall and toolResponse) carry their own signatures/envelopes
-	// that must be echoed back to the API untouched.
+
 	const arbitrarySig = "arbitrary_opaque_tool_sig_value"
 	input := []byte(`{"contents":[{"role":"model","parts":[
 		{"toolCall":{"toolType":"GOOGLE_SEARCH_WEB","args":{}},"thoughtSignature":"` + arbitrarySig + `"},
@@ -562,7 +560,7 @@ func TestSanitizeGeminiRequestThoughtSignatures_SkipsToolCallAndToolResponsePart
 }
 
 func TestSanitizeGeminiRequestThoughtSignatures_SkipsSnakeCaseToolCallAndResponseParts(t *testing.T) {
-	// Defensively ensure snake_case tool_call and tool_response variants are also skipped
+
 	const arbitrarySig = "arbitrary_snake_tool_sig"
 	input := []byte(`{"contents":[{"role":"model","parts":[
 		{"tool_call":{"tool_type":"GOOGLE_SEARCH_WEB","args":{}},"thought_signature":"` + arbitrarySig + `"},
@@ -580,8 +578,7 @@ func TestSanitizeGeminiRequestThoughtSignatures_SkipsSnakeCaseToolCallAndRespons
 }
 
 func TestSanitizeGeminiRequestThoughtSignatures_DropsForeignSignatureOnTextPart(t *testing.T) {
-	// An arbitrary unknown or foreign signature on a model text part must be dropped
-	// to prevent upstream Gemini 400 "Corrupted thought signature" errors.
+
 	const foreignSig = "claude_or_invalid_signature"
 	input := []byte(`{"contents":[{"role":"model","parts":[{"text":"answer","thoughtSignature":"` + foreignSig + `"}]}]}`)
 
@@ -593,8 +590,7 @@ func TestSanitizeGeminiRequestThoughtSignatures_DropsForeignSignatureOnTextPart(
 }
 
 func TestSanitizeGeminiRequestThoughtSignatures_MixedToolCallAndUnsignedFunctionCall(t *testing.T) {
-	// In a mixed turn with toolCall and unsigned functionCall, the toolCall signature
-	// must be preserved, and the first functionCall must receive the bypass sentinel.
+
 	const toolSig = "ErUDCrIDCAISrQMBEU0yD9ECvDhSY1DQJNUGafArdfd2mDfO8VQq7XjLx/91zESuo0QPSdkRFWkLeVIocSQmQULonYMOJcs6XDLV2LTRC9myb3MCCP9CUoWbEeqhAvXKTScyS3nwBDDVJYuDDbY3YvR4V86T/DnU3qufpaVZ3wQOiJVyBVZ515dYTN+XGq7SuUc3RpfAqVU06jgxaCM0WKV4Df5mGMJWb25e/aFG2Jc7upSqpf3n6aElj+4c/eWr4GdKd0TUIElXBZ0HEN/vNcWzD3F0S4MeVbk1LDakL6HG6oyaSS2gocxYNYxqm9mdMHaXYa4mIYqWqmqBEnbgcHp8H4fgqBxc3Cx8C3otV8IarO5OALaVDA3NaXB1zjLet1587kEpkCNr9OvrYOES2nCl/i4EgbPK01nlXo+Wwm5jsZU5nEG4/Z0bErzqC5TKwOsqpJ7afL2sPWI0IGrXhXL+QCumWCS5iUtwybSkL7CYSk9GC+iY+ev6FAmC4V5JEc4OaWOc9+m/29LniN/iPTSxtUQSZT94pUa3/irIIdH7ReAS3cpeM6OTvumR1PwNxXx3XM1mEGc="
 	input := []byte(`{"contents":[{"role":"model","parts":[
 		{"toolCall":{"toolType":"GOOGLE_SEARCH_WEB","id":"1"},"thoughtSignature":"` + toolSig + `"},

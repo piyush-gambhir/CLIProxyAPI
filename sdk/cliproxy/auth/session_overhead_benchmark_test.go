@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// 1. Explicit Header Fast Path (Pi, Claude Code, OpenCode)
 func BenchmarkSessionExplicitHeaderFastPath(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -35,14 +34,13 @@ func BenchmarkSessionExplicitHeaderFastPath(b *testing.B) {
 		Metadata:        map[string]any{},
 	}
 
-	// Warmup and bind
 	ctx := context.Background()
 	_, _ = selector.Pick(ctx, "openai", "gpt-5", opts, auths)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		// Clear transient metadata
+
 		delete(opts.Metadata, cliproxyexecutor.CanonicalSessionIDMetadataKey)
 		delete(opts.Metadata, cliproxyexecutor.ParentSessionIDMetadataKey)
 		delete(opts.Metadata, cliproxyexecutor.IsForkMetadataKey)
@@ -51,7 +49,6 @@ func BenchmarkSessionExplicitHeaderFastPath(b *testing.B) {
 	}
 }
 
-// 2. Codex Multi-Agent v2 Path (Header + JSON Turn Metadata + Subagent Isolation)
 func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -66,7 +63,6 @@ func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 		{ID: "auth-codex-2", Provider: "openai", Status: StatusActive},
 	}
 
-	// Parent binding
 	parentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"Session-Id": []string{"parent-session-100"},
@@ -76,7 +72,6 @@ func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 	ctx := context.Background()
 	_, _ = selector.Pick(ctx, "openai", "codex-5", parentOpts, auths)
 
-	// Child subagent request
 	childOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"Session-Id":               []string{"parent-session-100"},
@@ -102,7 +97,6 @@ func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 	}
 }
 
-// 3. Codex Fork Path (Header + Turn Metadata Fork Derivation)
 func BenchmarkSessionCodexForkPath(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -117,7 +111,6 @@ func BenchmarkSessionCodexForkPath(b *testing.B) {
 		{ID: "auth-codex-2", Provider: "openai", Status: StatusActive},
 	}
 
-	// Parent
 	parentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"Session-Id": []string{"parent-thread-alpha"},
@@ -149,7 +142,6 @@ func BenchmarkSessionCodexForkPath(b *testing.B) {
 	}
 }
 
-// 4. Body-Only Fallback Path (GJSON payload parsing for thread_id & forked_from_thread_id)
 func BenchmarkSessionBodyOnlyForkPath(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -163,7 +155,6 @@ func BenchmarkSessionBodyOnlyForkPath(b *testing.B) {
 		{ID: "auth-1", Provider: "openai", Status: StatusActive},
 	}
 
-	// Parent in body
 	parentOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{"thread_id":"body-parent-100","messages":[{"role":"user","content":"hello"}]}`),
 		Metadata:        map[string]any{},
@@ -187,12 +178,10 @@ func BenchmarkSessionBodyOnlyForkPath(b *testing.B) {
 	}
 }
 
-// 5. SessionCache Concurrent High QPS Stress (simulating multi-threaded worker pool)
 func BenchmarkSessionCacheConcurrentHighQPS(b *testing.B) {
 	cache := NewSessionCache(time.Hour)
 	defer cache.Stop()
 
-	// Pre-populate 1000 active sessions
 	for i := 0; i < 1000; i++ {
 		cache.Set(fmt.Sprintf("session-%04d", i), fmt.Sprintf("auth-%d", i%10))
 	}
@@ -203,7 +192,7 @@ func BenchmarkSessionCacheConcurrentHighQPS(b *testing.B) {
 		idx := 0
 		for pb.Next() {
 			key := fmt.Sprintf("session-%04d", idx%1000)
-			// 90% read/touch, 10% write
+
 			if idx%10 == 0 {
 				cache.Set(key, fmt.Sprintf("auth-%d", idx%10))
 			} else {
@@ -215,11 +204,9 @@ func BenchmarkSessionCacheConcurrentHighQPS(b *testing.B) {
 	})
 }
 
-// 6. MerklePrefixMatcher Concurrent High QPS (simulating parallel LCP lookups)
 func BenchmarkMerklePrefixMatcherConcurrentHighQPS(b *testing.B) {
 	matcher := cliproxysession.NewMerklePrefixMatcher(time.Hour)
 
-	// Pre-populate trunk conversation
 	texts := make([]string, 16)
 	for i := 0; i < 16; i++ {
 		texts[i] = fmt.Sprintf("system instruction turn %d", i)
@@ -244,7 +231,6 @@ func BenchmarkMerklePrefixMatcherConcurrentHighQPS(b *testing.B) {
 	})
 }
 
-// 7. Large Scale Memory & LRU Eviction Benchmark (Simulates continuous session churn)
 func BenchmarkSessionCacheScale100kEviction(b *testing.B) {
 	cache := NewSessionCacheWithCapacity(time.Hour, 10000)
 	defer cache.Stop()
@@ -257,7 +243,6 @@ func BenchmarkSessionCacheScale100kEviction(b *testing.B) {
 	}
 }
 
-// 8. MerklePrefixMatcher Large Scale LRU Eviction (Simulates continuous conversation churn with maxGroups=1000)
 func BenchmarkMerkleMatcherScaleLRUEviction(b *testing.B) {
 	matcher := cliproxysession.NewMerklePrefixMatcherWithConfig(cliproxysession.MerklePrefixMatcherConfig{
 		TTL:       time.Hour,

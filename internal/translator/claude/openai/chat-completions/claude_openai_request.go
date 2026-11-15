@@ -1,8 +1,3 @@
-// Package openai provides request translation functionality for OpenAI to Claude Code API compatibility.
-// It handles parsing and transforming OpenAI Chat Completions API requests into Claude Code API format,
-// extracting model information, system instructions, message contents, and tool declarations.
-// The package performs JSON data transformation to ensure compatibility
-// between OpenAI API format and Claude Code API's expected format.
 package chat_completions
 
 import (
@@ -20,30 +15,11 @@ const (
 	defaultFableChatMaxTokens  = 64000
 )
 
-// ConvertOpenAIRequestToClaude parses and transforms an OpenAI Chat Completions API request into Claude Code API format.
-// It extracts the model name, system instruction, message contents, and tool declarations
-// from the raw JSON request and returns them in the format expected by the Claude Code API.
-// The function performs comprehensive transformation including:
-// 1. Model name mapping and parameter extraction (max_tokens, top_p, etc.)
-// 2. Message content conversion from OpenAI to Claude Code format
-// 3. Tool call and tool result handling with proper ID mapping
-// 4. Image data conversion from OpenAI data URLs to Claude Code base64 format
-// 5. Stop sequence and streaming configuration handling
-//
-// Parameters:
-//   - modelName: The name of the model to use for the request
-//   - rawJSON: The raw JSON request data from the OpenAI API
-//   - stream: A boolean indicating if the request is for a streaming response
-//
-// Returns:
-//   - []byte: The transformed request data in Claude Code API format
 func ConvertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToClaude(modelName, inputRawJSON, stream, false)
 
 }
 
-// ConvertOpenAIRequestToClaudeWithCompat preserves assistant reasoning content
-// as an unsigned thinking block for configured compatibility endpoints.
 func ConvertOpenAIRequestToClaudeWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToClaude(modelName, inputRawJSON, stream, true)
 }
@@ -54,14 +30,12 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 
 	userID := common.DeriveClaudeUserID(rawJSON)
 
-	// Base Claude Code API template with default max_tokens value
 	outDoc := ojson.NewDoc([]byte(`{"model":"","max_tokens":32000,"messages":[],"metadata":{}}`))
 	_ = outDoc.Set("metadata.user_id", userID)
 	_ = outDoc.Set("max_tokens", defaultClaudeChatMaxTokensForModel(modelName))
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Convert OpenAI reasoning_effort to Claude thinking config.
 	if v := root.Get("reasoning_effort"); v.Exists() {
 		effort := strings.ToLower(strings.TrimSpace(v.String()))
 		if effort != "" {
@@ -69,9 +43,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 			supportsAdaptive := mi != nil && mi.Thinking != nil && len(mi.Thinking.Levels) > 0
 			supportsMax := supportsAdaptive && thinking.HasLevel(mi.Thinking.Levels, string(thinking.LevelMax))
 
-			// Claude 4.6 supports adaptive thinking with output_config.effort.
-			// MapToClaudeEffort normalizes levels (e.g. minimal→low, xhigh→high) to avoid
-			// validation errors since validate treats same-provider unsupported levels as errors.
 			if supportsAdaptive {
 				switch effort {
 				case "none":
@@ -93,7 +64,7 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 					_ = outDoc.Set("output_config.effort", effort)
 				}
 			} else {
-				// Legacy/manual thinking (budget_tokens).
+
 				budget, ok := thinking.ConvertLevelToBudget(effort)
 				if ok {
 					switch budget {
@@ -112,22 +83,16 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		}
 	}
 
-	// Model mapping to specify which Claude Code model to use
 	_ = outDoc.Set("model", modelName)
 
-	// Max tokens configuration with fallback to default value.
-	// OpenAI Chat Completions deprecated max_tokens in favor of
-	// max_completion_tokens, so accept either spelling.
 	if maxTokens := firstExisting(root.Get("max_tokens"), root.Get("max_completion_tokens")); maxTokens.Exists() {
 		_ = outDoc.Set("max_tokens", maxTokens.Int())
 	}
 
-	// Top P setting for nucleus sampling.
 	if topP := root.Get("top_p"); topP.Exists() {
 		_ = outDoc.Set("top_p", topP.Float())
 	}
 
-	// Stop sequences configuration for custom termination conditions
 	if stop := root.Get("stop"); stop.Exists() {
 		if stop.IsArray() {
 			var stopSequences []string
@@ -143,13 +108,11 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		}
 	}
 
-	// Stream configuration to enable or disable streaming responses
 	_ = outDoc.Set("stream", stream)
 
 	systemBlocks := make([][]byte, 0)
 	messageBlocks := make([][]byte, 0)
 
-	// Process messages and transform them to Claude Code format
 	if messages := root.Get("messages"); messages.Exists() && messages.IsArray() {
 		lastToolMessage := map[string]ojson.Result{}
 		messages.ForEach(func(_, message ojson.Result) bool {
@@ -169,10 +132,7 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 			contentResult := message.Get("content")
 
 			switch role {
-			// Developer messages rank with system messages in OpenAI's instruction
-			// hierarchy, so both become top-level Claude system blocks. Dropping the
-			// developer role, as this translator used to, silently removed operator
-			// instructions from the upstream request.
+
 			case "system", "developer":
 				systemStart := len(systemBlocks)
 				if contentResult.Exists() && contentResult.Type == ojson.String && strings.TrimSpace(contentResult.String()) != "" {
@@ -200,7 +160,7 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 						}
 						return true
 					})
-					// Message-level cache_control applies to the last system block from this message.
+
 					if message.Get("cache_control").Exists() && len(systemBlocks) > systemStart {
 						lastIdx := len(systemBlocks) - 1
 						if !ojson.GetBytesNoCopy(systemBlocks[lastIdx], "cache_control").Exists() {
@@ -218,7 +178,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 					}
 				}
 
-				// Handle content based on its type
 				if contentResult.Exists() && contentResult.Type == ojson.String && strings.TrimSpace(contentResult.String()) != "" {
 					part := []byte(`{"type":"text","text":""}`)
 					part, _ = ojson.SetBytes(part, "text", contentResult.String())
@@ -245,7 +204,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 					drops.EndTurn(len(contentBlocks))
 				}
 
-				// Handle tool calls (for assistant messages)
 				if toolCalls := message.Get("tool_calls"); toolCalls.Exists() && toolCalls.IsArray() && role == "assistant" {
 					toolCalls.ForEach(func(_, toolCall ojson.Result) bool {
 						if toolCall.Get("type").String() == "function" {
@@ -260,7 +218,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 							_ = toolUseDoc.Set("id", toolCallID)
 							_ = toolUseDoc.Set("name", util.SanitizeClaudeFunctionName(function.Get("name").String()))
 
-							// Parse arguments for the tool call
 							if args := function.Get("arguments"); args.Exists() {
 								argsStr := args.String()
 								if argsStr != "" && ojson.Valid(argsStr) {
@@ -290,7 +247,7 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 				messageAccumulator.Append(msg)
 
 			case "tool":
-				// Handle tool result messages conversion
+
 				rawID := message.Get("tool_call_id").String()
 				toolCallID := util.SanitizeClaudeToolID(rawID)
 				if rawID != "" {
@@ -316,9 +273,7 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 				} else {
 					_ = msgDoc.Set("content.0.content", toolResultContent)
 				}
-				// Anthropic rejects cache_control inside tool_result.content, so
-				// part-level or message-level cache_control is hoisted onto the
-				// tool_result block itself.
+
 				msg := common.AttachToolMessageCacheControl(msgDoc.Bytes(), targetMsg)
 				messageAccumulator.Append(msg)
 			}
@@ -334,11 +289,8 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		systemBlocks = append(systemBlocks, systemBlock)
 	}
 
-	// Decided per user turn, so neither a system prompt nor the blank turn added below hides an emptied turn.
 	nothingLeftErr := drops.Err()
 
-	// Preserve a minimal conversational turn for system-only inputs.
-	// Claude payloads with top-level system instructions but no messages are risky for downstream validation.
 	if len(messageBlocks) == 0 && len(systemBlocks) > 0 {
 		messageBlocks = append(messageBlocks, []byte(`{"role":"user","content":[{"type":"text","text":""}]}`))
 	}
@@ -350,7 +302,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		common.SetRawArrayItemsDoc(outDoc, "messages", messageBlocks)
 	}
 
-	// Tools mapping: OpenAI tools -> Claude Code tools
 	allowedToolNames := make(map[string]struct{})
 	isAllowedTools := false
 	allowedMode := "auto"
@@ -397,7 +348,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 				_ = toolDoc.Set("name", sanitizedFnName)
 				_ = toolDoc.Set("description", function.Get("description").String())
 
-				// Convert parameters schema for the tool
 				if parameters := function.Get("parameters"); parameters.Exists() {
 					_ = toolDoc.SetRawBytes("input_schema", util.NormalizeClaudeToolInputSchema([]byte(parameters.Raw)))
 				} else if parameters := function.Get("parametersJsonSchema"); parameters.Exists() {
@@ -433,7 +383,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		}
 	}
 
-	// Tool choice mapping from OpenAI format to Claude Code format
 	if isAllowedTools {
 		if len(anthropicTools) == 0 {
 			_ = outDoc.SetRaw("tool_choice", `{"type":"none"}`)
@@ -623,16 +572,13 @@ func defaultClaudeChatMaxTokensForModel(modelName string) int {
 	if info == nil || info.MaxCompletionTokens <= 0 {
 		return maxTokens
 	}
-	// Fable keeps its conservative omitted-field ceiling. Every other registered
-	// model uses its output limit, including when that limit is above the
-	// historical 32000 default.
+
 	if strings.Contains(normalized, "fable") && info.MaxCompletionTokens >= maxTokens {
 		return maxTokens
 	}
 	return info.MaxCompletionTokens
 }
 
-// firstExisting returns the first non-null result that exists, or an empty result.
 func firstExisting(values ...ojson.Result) ojson.Result {
 	for _, value := range values {
 		if value.Exists() && value.Type != ojson.Null {

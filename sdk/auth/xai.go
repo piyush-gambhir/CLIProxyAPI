@@ -13,26 +13,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// XAIAuthenticator implements the xAI Grok OAuth device-code flow.
 type XAIAuthenticator struct{}
 
-// NewXAIAuthenticator constructs a new xAI authenticator.
 func NewXAIAuthenticator() Authenticator {
 	return &XAIAuthenticator{}
 }
 
-// Provider returns the provider key for xAI.
 func (XAIAuthenticator) Provider() string {
 	return "xai"
 }
 
-// RefreshLead instructs the manager to refresh before token expiry.
 func (XAIAuthenticator) RefreshLead() *time.Duration {
 	lead := xaiauth.RefreshLead()
 	return &lead
 }
 
-// Login launches the OAuth device-code flow to obtain xAI tokens and persists them.
 func (a XAIAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("cliproxy auth: configuration is required")

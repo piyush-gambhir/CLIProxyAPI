@@ -28,7 +28,7 @@ func newExcludedModelsPatchTestHandler(t *testing.T, kind string) (*Handler, *co
 	if _, err := manager.Register(context.Background(), record); err != nil {
 		t.Fatal(err)
 	}
-	// Global rules must never be copied into the credential attributes.
+
 	h := NewHandlerWithoutConfigFilePath(&config.Config{OAuthExcludedModels: map[string][]string{"codex": {"global-*"}}}, manager)
 	return h, manager, record
 }
@@ -142,7 +142,6 @@ func TestUploadAuthFileRejectsInvalidExcludedModels(t *testing.T) {
 				}
 				h.UploadAuthFile(c)
 
-				// Invalid client input is a 400, not a server failure.
 				if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "excluded_models") || !strings.Contains(rec.Body.String(), "must be a string") {
 					t.Fatalf("status = %d body = %s, want 400 excluded_models validation error", rec.Code, rec.Body.String())
 				}
@@ -174,7 +173,6 @@ func TestPatchAuthFileFieldsRejectsConfigCredential(t *testing.T) {
 		return nil
 	}
 
-	// Config credentials are not auth files, so this endpoint must not find them.
 	rec := patchExcludedModelsFields(h, `"excluded_models":[]`)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d: %s, want 404", rec.Code, rec.Body.String())

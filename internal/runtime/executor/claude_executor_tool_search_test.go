@@ -15,8 +15,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// nativeToolSearchResponsesPayload is a Codex Responses turn after one client
-// tool_search discovered a namespaced MCP tool.
 const nativeToolSearchResponsesPayload = `{"model":"claude-sonnet-4-5","input":[` +
 	`{"type":"message","role":"user","content":[{"type":"input_text","text":"create a calendar event"}]},` +
 	`{"type":"tool_search_call","call_id":"call_search_1","status":"completed","execution":"client","arguments":{"query":"calendar"}},` +
@@ -30,7 +28,6 @@ const nativeToolSearchCalendar = "mcp__codex_apps__calendar_create_event"
 
 const nativeToolSearchGateway = "https://gateway.example.com"
 
-// enableClaudeToolSearchForTest sets upstream.claude.tool-search for one test.
 func enableClaudeToolSearchForTest(t *testing.T, enabled bool) {
 	t.Helper()
 	previous := responsesclaude.ClientToolSearchEnabled()
@@ -77,7 +74,6 @@ func sendNativeToolSearchCountTokens(t *testing.T, ex *ClaudeExecutor, ctx conte
 	return err
 }
 
-// captureNativeToolSearchBody sends one request and returns the upstream body.
 func captureNativeToolSearchBody(t *testing.T, cfg *config.Config, send nativeToolSearchSend, auth *cliproxyauth.Auth, model string, payload, original []byte) []byte {
 	t.Helper()
 	upstream := &midSystemUpstream{}
@@ -230,7 +226,7 @@ func TestClaudeExecutor_NativeToolSearchCountTokensLocalFallback(t *testing.T) {
 func TestClaudeExecutor_NativeToolSearchPayloadRuleIsFinal(t *testing.T) {
 	enableClaudeToolSearchForTest(t, true)
 	cfg := &config.Config{}
-	// tools: exec_command, tool_search, the constant deferred anchor, then the discovered calendar.
+
 	cfg.Payload.Override = []config.PayloadRule{{
 		Models: []config.PayloadModelRule{{Name: "*"}},
 		Params: map[string]any{"tools.3.defer_loading": false},
@@ -278,8 +274,6 @@ func TestClaudeExecutor_NativeToolSearchOAuthAliasesReferences(t *testing.T) {
 	}
 }
 
-// A discovered non-MCP tool is aliased on cloaked OAuth requests; its
-// tool_reference must carry the same alias as its deferred declaration.
 func TestClaudeExecutor_NativeToolSearchOAuthAliasesRenamedReferences(t *testing.T) {
 	enableClaudeToolSearchForTest(t, true)
 	payload := []byte(`{"model":"claude-sonnet-4-5","input":[` +
@@ -300,7 +294,7 @@ func TestClaudeExecutor_NativeToolSearchOAuthAliasesRenamedReferences(t *testing
 	}
 	var deferred []string
 	ojson.GetBytes(body, "tools").ForEach(func(_, tool ojson.Result) bool {
-		// The constant deferred anchor is aliased too but never referenced.
+
 		if tool.Get("defer_loading").Bool() && !strings.HasSuffix(tool.Get("name").String(), "tool_search_deferred_anchor") {
 			deferred = append(deferred, tool.Get("name").String())
 		}

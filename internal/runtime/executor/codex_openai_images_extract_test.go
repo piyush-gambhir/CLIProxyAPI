@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-// item builds a minimal image_generation_call item JSON.
 func imageGenItem(result, format string) []byte {
 	return []byte(`{"type":"image_generation_call","result":"` + result + `","output_format":"` + format + `"}`)
 }
@@ -29,7 +28,7 @@ func TestCodexExtractImageResults_FromCompletedOutput(t *testing.T) {
 }
 
 func TestCodexExtractImageResults_FallbackToCollectedItemsOrdered(t *testing.T) {
-	// Completed event has an empty output; images arrived via output_item.done.
+
 	completed := []byte(`{"type":"response.completed","response":{"created_at":222,"output":[]}}`)
 	itemsByIndex := map[int64][]byte{
 		2: imageGenItem("SECOND", "png"),
@@ -46,15 +45,14 @@ func TestCodexExtractImageResults_FallbackToCollectedItemsOrdered(t *testing.T) 
 	if len(results) != 2 {
 		t.Fatalf("expected 2 results, got %d: %+v", len(results), results)
 	}
-	// Ordering must follow output_index (0 before 2).
+
 	if results[0].Result != "FIRST" || results[1].Result != "SECOND" {
 		t.Fatalf("results out of order: %+v", results)
 	}
 }
 
 func TestCodexExtractImageResults_PrefersCompletedOutputOverItems(t *testing.T) {
-	// When the completed output is non-empty, collected items must be ignored
-	// (matches the original patchCodexCompletedOutput behaviour).
+
 	completed := []byte(`{"type":"response.completed","response":{"created_at":333,"output":[` +
 		string(imageGenItem("FROM_OUTPUT", "png")) + `]}}`)
 	itemsByIndex := map[int64][]byte{0: imageGenItem("FROM_ITEMS", "png")}
@@ -75,7 +73,7 @@ func TestCodexExtractImageResults_WrongEventType(t *testing.T) {
 }
 
 func TestCodexExtractImageResults_FallbackList(t *testing.T) {
-	// Items collected without an output_index land in the fallback slice.
+
 	completed := []byte(`{"type":"response.completed","response":{"created_at":444}}`)
 	fallback := [][]byte{imageGenItem("FB", "webp")}
 

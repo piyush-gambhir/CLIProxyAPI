@@ -17,8 +17,6 @@ const (
 	codexLoginModeDevice      = "device"
 )
 
-// DoCodexDeviceLogin triggers the Codex device-code flow while keeping the
-// existing codex-login OAuth callback flow intact.
 func DoCodexDeviceLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {
 		options = &LoginOptions{}

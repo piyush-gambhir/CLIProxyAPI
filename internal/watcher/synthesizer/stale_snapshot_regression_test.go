@@ -64,7 +64,7 @@ func TestFileSnapshotCannotOverwriteLaterPersistedPrefix(t *testing.T) {
 	if after.Prefix != "manual-edit" {
 		t.Fatal("legitimate file edit was lost")
 	}
-	// A deleted or unreadable source must not be replayed into live state.
+
 	deleted := snapshot(write("deleted-edit"))
 	if errRemove := os.Remove(path); errRemove != nil {
 		t.Fatal(errRemove)

@@ -13,8 +13,6 @@ type geminiFunctionCallCounter struct {
 	seenCallIDs       map[string]struct{}
 }
 
-// observePart counts logical Gemini/Vertex function calls, deduplicating streamed
-// partialArgs continuations, repeated call IDs, and empty separator objects.
 func (c *geminiFunctionCallCounter) observePart(candidateIdx int64, call ojson.Result) int64 {
 	if c == nil || !call.Exists() || !call.IsObject() {
 		return 0

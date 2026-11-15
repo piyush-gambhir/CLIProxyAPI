@@ -22,7 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ExecuteStream performs a streaming request to the Antigravity API.
 func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	if opts.Alt == "responses/compact" {
 		return nil, statusErr{code: http.StatusBadRequest, msg: "streaming not supported for /responses/compact"}
@@ -75,7 +74,7 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 		return nil, errValidate
 	}
 	req.Payload = originalPayload
-	// Observe a translation refusal before the token refresh or any upstream call.
+
 	modelInfo, _ := cliproxyauth.ResolvedModelInfo(req)
 	translationReq := sdktranslator.RequestEnvelope{Format: from, Model: baseModel, Stream: true, ModelInfo: modelInfo}
 	originalTranslated, translated, errTranslate := helps.TranslateRequestEnvelopePairWithCodexMultiAgentV2(ctx, opts.Headers, e.cfg, from, to, translationReq, originalPayload, req.Payload)
@@ -108,8 +107,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	httpClient = reporter.TrackHTTPClient(httpClient)
 
-	// Credential retry rounds are owned by the conductor. Perform one upstream
-	// request per credential so request-retry is not consumed twice.
 	if useCredits {
 		if injectEnabledCreditTypesDoc(doc) {
 			helps.MarkCreditsUsed(ctx)
@@ -183,19 +180,18 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				if useCredits && antigravityHasExplicitCreditsBalanceExhaustedReason(bodyBytes) && !antigravityCoolingDisabled(auth, e.cfg) {
 					markAntigravityCreditsPermanentlyDisabled(auth)
 				}
-				// No credits logic - just fall through to error return below
+
 			}
 		}
 
 		if errClear := clearAntigravityReasoningReplayOnInvalidSignature(ctx, replayScope, httpResp.StatusCode, bodyBytes); errClear != nil {
-			// Report the upstream failure rather than the cleanup failure.
+
 			logAntigravityReasoningReplayDegraded(replayScope, "invalidate", errClear)
 		}
 		err = newAntigravityStatusErr(httpResp.StatusCode, bodyBytes)
 		return nil, err
 	}
 
-	// Stream success
 	if useCredits {
 		clearAntigravityCreditsFailureState(auth)
 	}
@@ -233,8 +229,7 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				streamErr = statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
 				stopDeliverySupport()
 			}
-			// Replay is settled before forwarding completion; accounting still waits
-			// for the HTTP consumer, which may need EOF to acknowledge delivery.
+
 			if terminalDelivered {
 				commitReplay()
 			}
@@ -272,7 +267,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				replayAccumulator.ObserveSSELine(line)
 			}
 
-			// Capture accounting before the client-facing filter renames usage.
 			streamUsage.ObserveAntigravityStream(line)
 
 			payload := helps.JSONPayload(line)
@@ -312,8 +306,7 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				return
 			}
 			processPayload := func(p []byte) bool {
-				// Filter usage metadata for all models after block classification
-				// so only the terminal chunk retains client-visible usage statistics.
+
 				p = helps.JSONPayload(helps.FilterSSEUsageMetadata(append([]byte("data: "), p...)))
 				if len(p) == 0 {
 					return true
@@ -420,15 +413,10 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 			case <-ctx.Done():
 			}
 		} else if ctx.Err() == nil {
-			// Only a clean end of stream may produce a synthetic terminal event.
-			// Translating [DONE] after a read error would report a truncated
-			// stream as a successful completion. A clean EOF is a normal end
-			// even without finishReason: real Antigravity tool-call streams
-			// end that way (see antigravityNoFinishReasonSSE).
+
 			tail := helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, []byte("[DONE]"), &param, claudeInputTokens)
 			helps.RecordApplyPatchStreamFailure(ctx, param, reporter, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage})
-			// Commit upstream output before EOF-generated completion reaches interceptors.
-			// Commit itself rejects partial streams without an upstream terminal.
+
 			commitReplay()
 			for i := range tail {
 				select {

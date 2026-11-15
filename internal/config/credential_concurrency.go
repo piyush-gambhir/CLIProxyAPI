@@ -19,7 +19,6 @@ const (
 	maxCredentialConcurrencyLimit int64 = 1_000_000
 )
 
-// CredentialConcurrencyConfig controls the credential concurrency lifecycle managed by Home.
 type CredentialConcurrencyConfig struct {
 	LifecycleConfigRevision    int64         `yaml:"lifecycle-config-revision" json:"lifecycle-config-revision"`
 	ObservationBarrierRevision int64         `yaml:"observation-barrier-revision" json:"observation-barrier-revision"`
@@ -46,7 +45,6 @@ type CredentialConcurrencyConfig struct {
 	maxLimitPresent                   bool
 }
 
-// UnmarshalYAML preserves field presence so only absent lifecycle values receive legacy defaults.
 func (c *CredentialConcurrencyConfig) UnmarshalYAML(value *yaml.Node) error {
 	type rawCredentialConcurrencyConfig struct {
 		LifecycleConfigRevision    int64         `yaml:"lifecycle-config-revision"`
@@ -106,7 +104,6 @@ func credentialConcurrencyFieldPresent(value *yaml.Node, field string) bool {
 	return false
 }
 
-// WithDefaults applies the lifecycle defaults required for compatibility with older Home versions.
 func (c CredentialConcurrencyConfig) WithDefaults() CredentialConcurrencyConfig {
 	if !c.cpaHeartbeatTimeoutPresent && c.CPAHeartbeatTimeout == 0 {
 		c.CPAHeartbeatTimeout = defaultCPAHeartbeatTimeout
@@ -138,7 +135,6 @@ func (c CredentialConcurrencyConfig) WithDefaults() CredentialConcurrencyConfig 
 	return c
 }
 
-// ValidateCredentialConcurrency validates values intrinsic to a credential concurrency configuration.
 func ValidateCredentialConcurrency(cfg CredentialConcurrencyConfig) error {
 	if cfg.LifecycleConfigRevision < 0 || (cfg.lifecycleConfigRevisionPresent && cfg.LifecycleConfigRevision == 0) {
 		return fmt.Errorf("lifecycle configuration revision must be positive when present")
@@ -167,7 +163,6 @@ func ValidateCredentialConcurrency(cfg CredentialConcurrencyConfig) error {
 	return nil
 }
 
-// ValidateCredentialConcurrencyLifecycle verifies the Home lifecycle timing safety invariant.
 func ValidateCredentialConcurrencyLifecycle(nodeHeartbeatTimeout time.Duration, cfg CredentialConcurrencyConfig) error {
 	if nodeHeartbeatTimeout <= 0 {
 		return fmt.Errorf("credential concurrency lifecycle durations must be positive")

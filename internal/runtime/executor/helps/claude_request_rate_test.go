@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-// Issue #6720: ParseClaudeRateLimitResetForError narrows the cooldown only for an
-// exact explicit per-minute error with one usable Retry-After and no quota status
-// evidence. All other inputs keep the conservative header-only result.
-
 var claudePerMinuteBodyRequests = []byte(
 	`{"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed the requests per minute rate limit. Please try again later."}}`,
 )
@@ -56,8 +52,7 @@ func TestParseClaudeRateLimitResetForError_Issue6720(t *testing.T) {
 			h["Anthropic-Ratelimit-Unified-Status"] = []string{""}
 			h["anthropic-ratelimit-unified-status"] = []string{"", "rejected"}
 		}, wantMin: 4*time.Hour + time.Second, wantMax: 4*time.Hour + 30*time.Second},
-		// An allowed shared window already excludes the unified reset in the
-		// conservative parser, so the short retry wins with or without the exception.
+
 		{name: "allowed shared window already excludes unified reset", body: claudePerMinuteBodyRequests, mutate: func(h http.Header) {
 			h.Set("Anthropic-Ratelimit-Unified-5h-Status", "allowed")
 		}, wantMin: 31 * time.Second, wantMax: 60 * time.Second},
@@ -75,8 +70,7 @@ func TestParseClaudeRateLimitResetForError_Issue6720(t *testing.T) {
 			h["retry-after"] = []string{"30"}
 			h["anthropic-ratelimit-unified-reset"] = []string{unifiedReset}
 		}, wantMin: 31 * time.Second, wantMax: 60 * time.Second},
-		// The latest applicable deadline wins in the conservative parser: if a differently cased
-		// unified reset survived, its 2h deadline would beat the 30s retry.
+
 		{name: "differently cased unified resets all excluded", body: claudePerMinuteBodyRequests, mutate: func(h http.Header) {
 			h["anthropic-ratelimit-unified-reset"] = []string{strconv.FormatInt(now.Add(2*time.Hour).Unix(), 10)}
 		}, wantMin: 31 * time.Second, wantMax: 60 * time.Second},

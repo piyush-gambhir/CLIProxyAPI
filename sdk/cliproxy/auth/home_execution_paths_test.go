@@ -1264,7 +1264,6 @@ func TestHomeStreamWithoutSourceEndsSelection(t *testing.T) {
 	}
 }
 
-// homeRequestMetadataSnapshot captures the client request metadata a context carries.
 type homeRequestMetadataSnapshot struct {
 	requestedModel  string
 	reasoningEffort string
@@ -1281,12 +1280,11 @@ func homeRequestMetadataFromContext(ctx context.Context) homeRequestMetadataSnap
 	}
 }
 
-// homeRequestMetadataExecutor records the metadata visible at auth preparation and execution.
 type homeRequestMetadataExecutor struct {
 	mu              sync.Mutex
 	prepareMetadata homeRequestMetadataSnapshot
 	executeMetadata homeRequestMetadataSnapshot
-	// prepareErrOnce fails only the first preparation so Home redispatch still terminates.
+
 	prepareErrOnce error
 	executeErr     error
 }
@@ -1352,7 +1350,6 @@ func (*homeRequestMetadataExecutor) HttpRequest(context.Context, *Auth, *http.Re
 	return nil, nil
 }
 
-// homeRequestMetadataHook buffers every Home result so a synchronous OnResult never blocks execution.
 type homeRequestMetadataHook struct {
 	results chan homeRequestMetadataSnapshot
 }
@@ -1403,9 +1400,6 @@ func newHomeRequestMetadataManager(t *testing.T, executor *homeRequestMetadataEx
 	return manager
 }
 
-// homeRequestMetadataOptions mirrors handler-populated metadata. Handlers already derive the
-// OpenAI "auto" default for an omitted tier (see sdk/api/handlers metadata tests); this layer
-// only has to carry whatever the handler resolved.
 func homeRequestMetadataOptions(serviceTier string) cliproxyexecutor.Options {
 	return cliproxyexecutor.Options{Metadata: map[string]any{
 		cliproxyexecutor.RequestedModelMetadataKey:  "client-model",
@@ -1456,9 +1450,6 @@ func homeStreamMetadataPath() homeRequestMetadataPath {
 	}
 }
 
-// TestHomeExecutionPropagatesRequestMetadata covers the Home regression from issue #4791: the
-// executor context must carry the client request metadata at auth preparation, at execution, and
-// in the Home result usage record.
 func TestHomeExecutionPropagatesRequestMetadata(t *testing.T) {
 	paths := []homeRequestMetadataPath{homeExecuteMetadataPath(), homeCountMetadataPath(), homeStreamMetadataPath()}
 
@@ -1481,8 +1472,6 @@ func TestHomeExecutionPropagatesRequestMetadata(t *testing.T) {
 	}
 }
 
-// TestHomeExecutionFailureResultPreservesRequestMetadata keeps the requested tier authoritative in
-// the failure usage record instead of falling back to the upstream or default tier.
 func TestHomeExecutionFailureResultPreservesRequestMetadata(t *testing.T) {
 	paths := []homeRequestMetadataPath{homeExecuteMetadataPath(), homeCountMetadataPath()}
 
@@ -1502,8 +1491,6 @@ func TestHomeExecutionFailureResultPreservesRequestMetadata(t *testing.T) {
 	}
 }
 
-// TestHomePrepareFailureResultPreservesRequestMetadata covers the prepare_failed Home result paths,
-// which report usage before any executor call happens.
 func TestHomePrepareFailureResultPreservesRequestMetadata(t *testing.T) {
 	paths := []homeRequestMetadataPath{homeExecuteMetadataPath(), homeCountMetadataPath(), homeStreamMetadataPath()}
 

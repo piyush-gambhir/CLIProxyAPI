@@ -30,7 +30,6 @@ func TestBuilder_WithResultPolicy(t *testing.T) {
 		t.Fatal("expected service.ResultPolicy() to be non-nil")
 	}
 
-	// Test updating policy on Service
 	policy2 := coreauth.ResultPolicyFunc(func(ctx context.Context, result coreauth.Result) coreauth.Result {
 		result.CredentialScope = false
 		return result
@@ -40,7 +39,6 @@ func TestBuilder_WithResultPolicy(t *testing.T) {
 		t.Fatal("expected updated policy on service")
 	}
 
-	// Test clearing policy on Service
 	service.SetResultPolicy(nil)
 	if service.ResultPolicy() != nil {
 		t.Fatal("expected service.ResultPolicy() to be nil after clearing")

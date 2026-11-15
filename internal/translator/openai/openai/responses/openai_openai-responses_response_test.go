@@ -34,15 +34,14 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 	tests := []struct {
 		name           string
 		in             []string
-		doneInputIndex int // Index in tt.in where the terminal [DONE] chunk arrives and response.completed must be emitted.
+		doneInputIndex int
 		hasUsage       bool
 		inputTokens    int64
 		outputTokens   int64
 		totalTokens    int64
 	}{
 		{
-			// A provider may send finish_reason first and only attach usage in a later chunk (e.g. Vertex AI),
-			// so response.completed must wait for [DONE] to include that usage.
+
 			name: "late usage after finish reason",
 			in: []string{
 				`data: {"id":"resp_late_usage","object":"chat.completion.chunk","created":1773896263,"model":"model","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"call_late_usage","type":"function","function":{"name":"read","arguments":""}}]},"finish_reason":null}]}`,
@@ -57,8 +56,7 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 			totalTokens:    18,
 		},
 		{
-			// When usage arrives on the same chunk as finish_reason, we still expect a
-			// single response.completed event and it should remain deferred until [DONE].
+
 			name: "usage on finish reason chunk",
 			in: []string{
 				`data: {"id":"resp_usage_same_chunk","object":"chat.completion.chunk","created":1773896263,"model":"model","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"call_usage_same_chunk","type":"function","function":{"name":"read","arguments":""}}]},"finish_reason":null}]}`,
@@ -81,8 +79,7 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 			hasUsage:       false,
 		},
 		{
-			// An OpenAI-compatible streams from a buggy server might never send usage, so response.completed should
-			// still wait for [DONE] but omit the usage object entirely.
+
 			name: "no usage chunk",
 			in: []string{
 				`data: {"id":"resp_no_usage","object":"chat.completion.chunk","created":1773896263,"model":"model","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"call_no_usage","type":"function","function":{"name":"read","arguments":""}}]},"finish_reason":null}]}`,
@@ -102,11 +99,10 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 			var inProgressData ojson.Result
 			var completedData ojson.Result
 
-			// Reuse converter state across input lines to simulate one streaming response.
 			var param any
 
 			for i, line := range tt.in {
-				// One upstream chunk can emit multiple downstream SSE events.
+
 				for _, chunk := range ConvertOpenAIChatCompletionsResponseToOpenAIResponses(context.Background(), "model", request, request, []byte(line), &param) {
 					event, data := parseOpenAIResponsesSSEEvent(t, chunk)
 					if event == "response.created" {
@@ -143,7 +139,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 				t.Fatalf("response.in_progress models = %q, want gpt-5.4", got)
 			}
 
-			// Missing upstream usage should stay omitted in the final completed event.
 			if !tt.hasUsage {
 				if completedData.Get("response.usage").Exists() {
 					t.Fatalf("expected response.completed to omit usage when none was provided, got %s", completedData.Get("response.usage").Raw)
@@ -151,7 +146,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 				return
 			}
 
-			// When usage is present, the final response.completed event must preserve the usage values.
 			if got := completedData.Get("response.usage.input_tokens").Int(); got != tt.inputTokens {
 				t.Fatalf("unexpected response.usage.input_tokens: got %d want %d", got, tt.inputTokens)
 			}
@@ -711,7 +705,7 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_RestoresCappedNam
 			}
 		]
 	}`)
-	// The 66-char flattened name is capped to 64 chars.
+
 	chatName := capResponsesChatToolName("mcp__codex_apps__codex_document_control___execute_document_command")
 	chunks := []string{
 		`data: {"id":"chatcmpl_capped_stream","object":"chat.completion.chunk","created":1773896263,"model":"model","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_capped","type":"function","function":{"name":"` + chatName + `","arguments":""}}]},"finish_reason":null}]}`,
@@ -1594,7 +1588,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ChunkWithContentA
 		t.Fatalf("expected exactly 1 response.completed, got %d", completedCount)
 	}
 
-	// Verify strict event ordering: reasoning completes before message starts
 	wantOrder := []string{
 		"added:reasoning:0",
 		"done:reasoning:0",
@@ -1610,12 +1603,10 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ChunkWithContentA
 		}
 	}
 
-	// Verify item IDs are unique
 	if len(addedItemIDs) != 2 || addedItemIDs[0] == addedItemIDs[1] {
 		t.Fatalf("expected 2 distinct item IDs, got %v", addedItemIDs)
 	}
 
-	// Verify completed response contains both outputs in ascending order
 	if got := completedData.Get("response.output.0.summary.0.text").String(); got != "Thinking part 1, Just professional." {
 		t.Fatalf("unexpected completed reasoning: got %q", got)
 	}

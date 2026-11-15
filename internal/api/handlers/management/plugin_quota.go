@@ -41,7 +41,6 @@ func (r credentialQuotaRequest) resolveAuthIndex() string {
 	return ""
 }
 
-// GetQuotaProviders returns the list of registered quota providers.
 func (h *Handler) GetQuotaProviders(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusOK, gin.H{"providers": []any{}})
@@ -57,7 +56,6 @@ func (h *Handler) GetQuotaProviders(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"providers": host.QuotaProviders(c.Request.Context())})
 }
 
-// FetchCredentialQuota retrieves normalized quota for a credential via its quota provider or declarative probe.
 func (h *Handler) FetchCredentialQuota(c *gin.Context) {
 	var body credentialQuotaRequest
 	if errBind := c.ShouldBindJSON(&body); errBind != nil {
@@ -113,7 +111,6 @@ func (h *Handler) FetchCredentialQuota(c *gin.Context) {
 		}
 	}
 
-	// Fallback to declarative quota probe if configured in metadata
 	if auth.Metadata != nil {
 		if rawProbe, okProbe := auth.Metadata["quota_probe"]; okProbe && rawProbe != nil {
 			if probeMap, okMap := rawProbe.(map[string]any); okMap {
@@ -133,7 +130,6 @@ func (h *Handler) FetchCredentialQuota(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"error": "no quota provider available for credential"})
 }
 
-// ResetCredentialQuota resets quota or usage for a credential.
 func (h *Handler) ResetCredentialQuota(c *gin.Context) {
 	var body credentialQuotaRequest
 	if errBind := c.ShouldBindJSON(&body); errBind != nil {
@@ -235,7 +231,6 @@ func (h *Handler) ResetCredentialQuota(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// GetPluginQuota handles GET /v0/management/plugins/:id/quota?auth_index=...
 func (h *Handler) GetPluginQuota(c *gin.Context) {
 	pluginID := strings.TrimSpace(c.Param("id"))
 	authIndex := strings.TrimSpace(c.Query("auth_index"))
@@ -249,7 +244,6 @@ func (h *Handler) GetPluginQuota(c *gin.Context) {
 	h.fetchQuotaForPlugin(c, pluginID, authIndex)
 }
 
-// FetchPluginQuota handles POST /v0/management/plugins/:id/quota
 func (h *Handler) FetchPluginQuota(c *gin.Context) {
 	pluginID := strings.TrimSpace(c.Param("id"))
 	var body credentialQuotaRequest
@@ -299,7 +293,6 @@ func (h *Handler) fetchQuotaForPlugin(c *gin.Context, pluginID, authIndex string
 	c.JSON(http.StatusOK, quotaResp)
 }
 
-// ResetPluginQuota handles DELETE /v0/management/plugins/:id/quota and POST /v0/management/plugins/:id/quota/reset
 func (h *Handler) ResetPluginQuota(c *gin.Context) {
 	pluginID := strings.TrimSpace(c.Param("id"))
 	authIndex := strings.TrimSpace(c.Query("auth_index"))
@@ -492,14 +485,14 @@ func (h *Handler) executeQuotaProbe(c *gin.Context, auth *coreauth.Auth, probe m
 	if errRaw := json.Unmarshal(respBytes, &rawQuota); errRaw == nil {
 		for key := range rawQuota {
 			if strings.EqualFold(key, "summary") {
-				delete(rawQuota, key) // Optional plugin data must not invalidate core quota fields.
+				delete(rawQuota, key)
 			}
 		}
 		if coreQuotaJSON, errMarshal := json.Marshal(rawQuota); errMarshal == nil {
 			var quotaResp pluginapi.QuotaFetchResponse
 			if errJSON := json.Unmarshal(coreQuotaJSON, &quotaResp); errJSON == nil {
 				hasPlan := quotaResp.Subscription != nil && strings.TrimSpace(quotaResp.Subscription.Plan) != ""
-				// Filter groups to retain only buckets with an actual valid numeric remaining fraction in raw JSON
+
 				filteredGroups := make([]pluginapi.QuotaGroup, 0, len(quotaResp.Groups))
 				groupsRes := ojson.GetBytesNoCopy(respBytes, "groups")
 				if groupsRes.IsArray() {

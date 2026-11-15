@@ -985,7 +985,6 @@ func TestConvertInteractionsRequestToGeminiBuiltinTools(t *testing.T) {
 			t.Fatalf("expected urlContext preserved in composite tool, got %s", tools[0].Raw)
 		}
 
-		// Reverse conversion from Gemini composite tool
 		geminiReq := []byte(`{
 			"model":"gemini-3.5-flash",
 			"contents":[{"role":"user","parts":[{"text":"hello"}]}],
@@ -1291,7 +1290,6 @@ func TestConvertInteractionsRequestToGemini_ResponseToRequestRoundTrip(t *testin
 	respOut := ConvertGeminiResponseToInteractionsNonStream(context.Background(), "gemini-3.5-flash", nil, nil, upstreamResponse, nil)
 	steps := ojson.GetBytesNoCopy(respOut, "steps").Raw
 
-	// Build Turn 2 input: user question + Turn 1 steps + tool results
 	turn2Input := `{"model":"gemini-3.5-flash","input":[{"type":"user_input","content":[{"type":"text","text":"hello"}]}`
 	for _, s := range ojson.Get(steps, "@this").Array() {
 		turn2Input += "," + s.Raw

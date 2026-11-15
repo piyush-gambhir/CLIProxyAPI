@@ -9,7 +9,7 @@ import (
 
 var modelFieldPaths = []string{"model", "modelVersion", "response.model", "response.modelVersion", "message.model"}
 
-const maxPendingBufSize = 1 << 20 // 1MB limit for pending buffer
+const maxPendingBufSize = 1 << 20
 
 func rewriteSSEPayloadLines(payload []byte, targetModel string) []byte {
 	if targetModel == "" || len(payload) == 0 {
@@ -53,12 +53,10 @@ func rewriteModelInResponse(data []byte, targetModel string) []byte {
 	return doc.Bytes()
 }
 
-// StreamRewriteOptions configures the stream rewriter.
 type StreamRewriteOptions struct {
 	RewriteModel string
 }
 
-// StreamRewriter rewrites model names in streaming SSE responses.
 type StreamRewriter struct {
 	options         StreamRewriteOptions
 	pendingBuf      []byte
@@ -67,7 +65,6 @@ type StreamRewriter struct {
 	loggedFinished  bool
 }
 
-// NewStreamRewriter creates a new stream rewriter.
 func NewStreamRewriter(options StreamRewriteOptions) *StreamRewriter {
 	return &StreamRewriter{
 		options:     options,
@@ -135,7 +132,6 @@ func (r *StreamRewriter) logStreamFinishedOnce() {
 	log.Debugf("response rewriter: stream finished, successfully rewrote %d chunks to %s", r.rewrittenChunks, r.options.RewriteModel)
 }
 
-// RewriteChunk rewrites model names in a single SSE chunk.
 func (r *StreamRewriter) RewriteChunk(chunk []byte) []byte {
 	if r.options.RewriteModel == "" {
 		return chunk
@@ -157,7 +153,6 @@ func (r *StreamRewriter) RewriteChunk(chunk []byte) []byte {
 		return chunk
 	}
 
-	// Handle raw JSON chunks (Gemini/OpenAI format without SSE "data:" prefix)
 	trimmed := bytes.TrimSpace(chunk)
 	if len(trimmed) > 0 && trimmed[0] == '{' && ojson.ValidBytes(trimmed) {
 		rewritten := trimmed
@@ -280,13 +275,10 @@ func normalizeGluedSSEEvents(chunk []byte) []byte {
 	if len(chunk) == 0 {
 		return chunk
 	}
-	// Antigravity/Gemini translators emit event frames without trailing blank lines.
-	// When multiple frames are buffered back-to-back they can glue as "...}event:...".
-	// Only split when the bytes before the glue close a valid SSE data JSON object.
+
 	chunk = safeReplaceGlued(chunk, []byte("}event:"), []byte("}\n\nevent:"))
 	chunk = safeReplaceGlued(chunk, []byte("}\r\nevent:"), []byte("}\r\n\r\nevent:"))
-	// Codex executor emits one "data: {json}" chunk per SSE line without trailing newlines.
-	// Buffered chunks can glue as "...}data:...".
+
 	chunk = safeReplaceGlued(chunk, []byte("}data:"), []byte("}\ndata:"))
 	chunk = safeReplaceGlued(chunk, []byte("}\r\ndata:"), []byte("}\r\ndata:"))
 	return chunk
@@ -327,7 +319,6 @@ func safeReplaceGlued(chunk []byte, old, new []byte) []byte {
 	return result
 }
 
-// Finish flushes any buffered partial SSE data at the end of a stream.
 func (r *StreamRewriter) Finish() []byte {
 	if len(r.pendingBuf) == 0 {
 		return nil

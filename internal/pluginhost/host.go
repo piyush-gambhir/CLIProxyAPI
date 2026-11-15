@@ -50,7 +50,7 @@ type pluginUnloadTarget struct {
 type pluginLoadRequest struct {
 	result            chan pluginLoadResult
 	cleanupStarted    bool
-	closed            bool // Protected by Host.mu; rejects callbacks arriving after cleanup starts.
+	closed            bool
 	callbackInstances map[*hostCallbackInstance]struct{}
 }
 
@@ -76,7 +76,7 @@ type Host struct {
 	runtimeConfig            *config.Config
 	authManager              *coreauth.Manager
 	modelExecutor            modelExecutor
-	modelClientIDs           map[string]struct{} // Reserved for future use; catalog-only plugins do not populate it.
+	modelClientIDs           map[string]struct{}
 	executorModelClientIDs   map[string]struct{}
 	modelProviders           map[string]string
 	modelProviderSets        map[string][]string
@@ -98,11 +98,11 @@ type Host struct {
 	usageStates              map[string]*pluginUsageState
 	maxPendingUsageRecords   int
 	snapshot                 atomic.Value
-	// loadCleanupDoneHook, set by tests, runs after a late load cleanup dropped its load token.
+
 	loadCleanupDoneHook func()
-	// usageDrainWaitHook, set by tests, runs when beginUsageReplacement waits for admitted usage calls to drain.
+
 	usageDrainWaitHook func(pluginID string)
-	// usageBackpressureWaitHook, set by tests, runs when dispatchPluginUsageRecord blocks on a full pending queue.
+
 	usageBackpressureWaitHook func(pluginID string)
 }
 
@@ -179,7 +179,6 @@ func (h *Host) Snapshot() *Snapshot {
 	return emptySnapshot()
 }
 
-// PluginLoaded reports whether a plugin is still active in the host runtime.
 func (h *Host) PluginLoaded(id string) bool {
 	if h == nil {
 		return false
@@ -197,7 +196,6 @@ func (h *Host) PluginLoaded(id string) bool {
 	return len(h.retired[id]) > 0
 }
 
-// PluginBusy reports whether a plugin is active in the host runtime or being loaded.
 func (h *Host) PluginBusy(id string) bool {
 	if h == nil {
 		return false
@@ -593,8 +591,6 @@ func (h *Host) cleanupCanceledPluginLoadAndWait(id string, request *pluginLoadRe
 	h.clearLoadingRequest(id, request)
 }
 
-// cleanupPluginLoad retains the matching load token until the client has physically
-// shut down, preventing a replacement ApplyConfig from opening a second client.
 func (h *Host) cleanupPluginLoad(id string, request *pluginLoadRequest, loaded *loadedPlugin) {
 	if h == nil || request == nil {
 		return
@@ -699,14 +695,10 @@ func (h *Host) withLoadedPluginFallbacks(files []pluginFile, items map[string]ru
 	return files
 }
 
-// UnloadPlugin removes one plugin from the active runtime.
-// The plugin image itself stays mapped for the lifetime of the process.
 func (h *Host) UnloadPlugin(id string) bool {
 	return h.UnloadPluginContext(context.Background(), id)
 }
 
-// UnloadPluginContext detaches a plugin from the runtime before waiting for its
-// active calls. Physical client cleanup continues after cancellation if needed.
 func (h *Host) UnloadPluginContext(ctx context.Context, id string) bool {
 	if h == nil {
 		return false
@@ -719,7 +711,6 @@ func (h *Host) UnloadPluginContext(ctx context.Context, id string) bool {
 	return h.detachPlugin(ctx, id)
 }
 
-// detachPlugin shuts down one loaded plugin. Caller must hold the apply lock.
 func (h *Host) detachPlugin(ctx context.Context, id string) bool {
 	if h == nil {
 		return false
@@ -788,8 +779,6 @@ func (h *Host) detachPlugin(ctx context.Context, id string) bool {
 	return true
 }
 
-// detachUnselectedPlugins stops plugins that are no longer enabled. nil keeps none.
-// Caller must hold the apply lock.
 func (h *Host) detachUnselectedPlugins(ctx context.Context, selected map[string]struct{}) {
 	if h == nil {
 		return
@@ -840,14 +829,10 @@ func enabledPluginIDs(files []pluginFile, items map[string]runtimeItemConfig) ma
 	return ids
 }
 
-// ShutdownAll removes active plugin capabilities and detaches all plugins.
-// Plugin images stay mapped for the lifetime of the process.
 func (h *Host) ShutdownAll() {
 	h.ShutdownAllContext(context.Background())
 }
 
-// ShutdownAllContext detaches all plugin runtime state without waiting beyond ctx
-// for active plugin calls to complete.
 func (h *Host) ShutdownAllContext(ctx context.Context) {
 	if h == nil || !h.lockApply(ctx) {
 		return

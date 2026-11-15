@@ -9,9 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertCodexResponseToOpenAIResponses converts OpenAI Chat Completions streaming chunks
-// to OpenAI Responses SSE events (response.*).
-
 func ConvertCodexResponseToOpenAIResponses(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	originalEvent := rawJSON
 	sse := bytes.HasPrefix(rawJSON, []byte("data:"))
@@ -21,7 +18,7 @@ func ConvertCodexResponseToOpenAIResponses(_ context.Context, modelName string, 
 	updated := setResponsesModel(rawJSON, modelName, originalRequestRawJSON, requestRawJSON)
 	bridge := responsesBridge(param)
 	if bridge == nil {
-		// Native Codex never opts in, even when configuration supplies the bridge schema.
+
 		if bytes.Equal(updated, rawJSON) {
 			return [][]byte{originalEvent}
 		}
@@ -39,7 +36,6 @@ func ConvertCodexResponseToOpenAIResponses(_ context.Context, modelName string, 
 	return outputs
 }
 
-// Only an executor-owned param can enable bridging on this shared translator.
 func responsesBridge(param *any) *translatorcommon.ApplyPatchResponsesBridge {
 	if param != nil {
 		bridge, _ := (*param).(*translatorcommon.ApplyPatchResponsesBridge)
@@ -72,8 +68,6 @@ func setResponsesModel(rawJSON []byte, modelName string, originalRequestRawJSON,
 	return updated
 }
 
-// ConvertCodexResponseToOpenAIResponsesNonStream builds a single Responses JSON
-// from a non-streaming OpenAI Chat Completions response.
 func ConvertCodexResponseToOpenAIResponsesNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	bridge := responsesBridge(param)
 	converted := rawJSON
@@ -85,7 +79,7 @@ func ConvertCodexResponseToOpenAIResponsesNonStream(_ context.Context, _ string,
 		}
 	}
 	rootResult := util.ParseGJSONBytesNoCopy(converted)
-	// Verify this is a terminal response event.
+
 	responseType := rootResult.Get("type").String()
 	if responseType == "" && rootResult.Get("output").IsArray() {
 		return converted

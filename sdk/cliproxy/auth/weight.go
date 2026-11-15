@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/credentialweight"
 )
 
-// ValidateAuthWeight validates every explicit credential weight source.
 func ValidateAuthWeight(auth *Auth) error {
 	if auth == nil {
 		return nil
@@ -25,7 +24,6 @@ func ValidateAuthWeight(auth *Auth) error {
 	return nil
 }
 
-// ApplyAuthWeightMetadata validates the auth and applies a source metadata weight.
 func ApplyAuthWeightMetadata(auth *Auth, metadata map[string]any) error {
 	if errWeight := ValidateAuthWeight(auth); errWeight != nil {
 		return errWeight

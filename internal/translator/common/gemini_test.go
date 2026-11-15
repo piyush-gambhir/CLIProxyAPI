@@ -32,7 +32,6 @@ func TestMergeAdjacentGeminiContents(t *testing.T) {
 			t.Fatalf("expected 3 merged turns, got %d: %s", len(merged), JoinRawArray(merged))
 		}
 
-		// Turn 0: user with 3 parts
 		turn0 := util.ParseGJSONBytesNoCopy(merged[0])
 		if turn0.Get("role").String() != "user" {
 			t.Fatalf("expected role user, got %s", turn0.Get("role").String())
@@ -47,13 +46,11 @@ func TestMergeAdjacentGeminiContents(t *testing.T) {
 			t.Fatalf("unexpected parts in turn 0: %v", parts0)
 		}
 
-		// Turn 1: model with 1 part
 		turn1 := util.ParseGJSONBytesNoCopy(merged[1])
 		if turn1.Get("role").String() != "model" {
 			t.Fatalf("expected role model, got %s", turn1.Get("role").String())
 		}
 
-		// Turn 2: user with 1 part
 		turn2 := util.ParseGJSONBytesNoCopy(merged[2])
 		if turn2.Get("role").String() != "user" {
 			t.Fatalf("expected role user, got %s", turn2.Get("role").String())

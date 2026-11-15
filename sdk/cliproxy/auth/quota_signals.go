@@ -13,8 +13,6 @@ const (
 	maxQuotaSignalValue   = 512
 )
 
-// ProviderSupportsQuotaObservation reports whether the named provider emits a
-// passive credential-level quota snapshot understood by collectQuotaSignals.
 func ProviderSupportsQuotaObservation(provider string) bool {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "claude", "codex", "devin":
@@ -24,17 +22,6 @@ func ProviderSupportsQuotaObservation(provider string) bool {
 	}
 }
 
-// ObserveResponseHeadersForProvider replaces the passive quota snapshot with the
-// signals carried by the current upstream response.
-//
-// The snapshot is replaced rather than merged: a watermark such as Retry-After
-// or a "limit reached" flag only appears on the response that produced it, so
-// accumulating signals across responses would leave an expired value visible
-// indefinitely. Responses that carry no quota signal at all (transport
-// failures, 5xx, unrelated endpoints) leave the previous snapshot untouched.
-//
-// This function only ever touches ObservedAt and Signals. Cooldown and
-// scheduling fields are never read or written here.
 func (q *QuotaState) ObserveResponseHeadersForProvider(provider string, headers http.Header, observedAt time.Time) bool {
 	if q == nil {
 		return false
@@ -54,8 +41,6 @@ func (q *QuotaState) ObserveResponseHeadersForProvider(provider string, headers 
 	return true
 }
 
-// ClearObservationSignals removes only passive observation data. It leaves
-// cooldown and scheduler state untouched.
 func (q *QuotaState) ClearObservationSignals() bool {
 	if q == nil || (len(q.Signals) == 0 && q.ObservedAt.IsZero()) {
 		return false
@@ -65,8 +50,6 @@ func (q *QuotaState) ClearObservationSignals() bool {
 	return true
 }
 
-// cooldownFieldsOf copies only scheduler cooldown fields. Observation data is
-// omitted so cooldown persistence and restore cannot replace a live snapshot.
 func cooldownFieldsOf(q QuotaState) QuotaState {
 	return QuotaState{
 		Exceeded:      q.Exceeded,
@@ -76,9 +59,6 @@ func cooldownFieldsOf(q QuotaState) QuotaState {
 	}
 }
 
-// applyCooldownFields writes only scheduler cooldown fields. ObservedAt and
-// Signals are left untouched so a cooldown transition cannot erase the last
-// upstream watermark.
 func applyCooldownFields(dst *QuotaState, cooldown QuotaState) {
 	if dst == nil {
 		return
@@ -115,7 +95,6 @@ func sanitizePersistedClaudeCooldownSignals(raw map[string]string) map[string]st
 	return rejectedClaudeSignalsForCooldown("claude", headers)
 }
 
-// collectQuotaSignals builds the bounded snapshot for a single response.
 func collectQuotaSignals(provider string, headers http.Header) map[string]string {
 	if len(headers) == 0 {
 		return nil
@@ -139,8 +118,7 @@ func collectQuotaSignals(provider string, headers http.Header) map[string]string
 	if len(names) == 0 {
 		return nil
 	}
-	// Rank then sort so truncation is deterministic and keeps credential-level
-	// watermarks (plan, credits, primary) ahead of additional-limit namespaces.
+
 	sort.Slice(names, func(i, j int) bool {
 		ri, rj := quotaSignalRetentionRank(names[i]), quotaSignalRetentionRank(names[j])
 		if ri != rj {
@@ -158,9 +136,6 @@ func collectQuotaSignals(provider string, headers http.Header) map[string]string
 	return signals
 }
 
-// validQuotaSignalValue rejects empty, oversized, and control-character values.
-// Observed values reach the plain-text upstream request log, so a value
-// containing CR/LF could otherwise forge a header line there.
 func validQuotaSignalValue(value string) bool {
 	if value == "" || len(value) > maxQuotaSignalValue {
 		return false
@@ -204,10 +179,7 @@ func isQuotaSignalHeaderForProvider(provider, name string) bool {
 		return provider == "claude"
 	}
 	if strings.HasPrefix(name, "x-ratelimit-") {
-		// Observed Codex responses do not carry x-ratelimit-* headers; the only
-		// upstream seen emitting them is Grok, which is excluded from quota
-		// observation. The rule is kept so a future Codex rollout is captured
-		// without another change, but it is expected to be inert today.
+
 		return provider == "codex"
 	}
 	if !strings.HasPrefix(name, "x-codex-") {
@@ -220,10 +192,7 @@ func isQuotaSignalHeaderForProvider(provider, name string) bool {
 		strings.HasPrefix(name, "x-codex-credits-") {
 		return true
 	}
-	// Codex namespaces each additional limit by a short name on the HTTP path
-	// (x-codex-bengalfox-primary-used-percent) and by limit name on the
-	// websocket path (x-codex-additional-<limit>-primary-used-percent), so the
-	// suffix is matched instead of an exhaustive header list.
+
 	for _, marker := range []string{
 		"-allowed",
 		"-limit-reached",
@@ -241,9 +210,6 @@ func isQuotaSignalHeaderForProvider(provider, name string) bool {
 	return false
 }
 
-// mergeQuotaObservation keeps the newest observation snapshot instead of
-// unioning signals captured at different times, so merging an older snapshot
-// can never resurrect a stale watermark.
 func mergeQuotaObservation(target, source QuotaState) QuotaState {
 	if source.ObservedAt.IsZero() || source.ObservedAt.Before(target.ObservedAt) {
 		return target

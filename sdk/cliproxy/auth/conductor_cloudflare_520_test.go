@@ -19,12 +19,11 @@ func TestIsCloudflareChallengeErrorMessage_ExcludesOriginErrors(t *testing.T) {
 		t.Fatalf("expected minimal origin error not to be classified as cloudflare challenge")
 	}
 
-	// Legitimate challenge messages must still be recognized.
 	challenges := []string{
 		"cf-mitigated: challenge",
 		`<html><body><script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1"></script></body></html>`,
 		"cloudflare challenge required",
-		// Isolated "Just a moment..." challenge page test without "cloudflare challenge" phrase
+
 		`<html><head><title>Just a moment...</title></head><body>Checking your browser... cloudflare</body></html>`,
 	}
 	for _, ch := range challenges {
@@ -65,7 +64,6 @@ func TestManager_MarkResult_Cloudflare520OriginError_NotTreatedAsChallenge(t *te
 		t.Fatalf("expected model state to be present")
 	}
 
-	// Quota must not be marked as exceeded or challenged.
 	if state.Quota.Exceeded {
 		t.Fatalf("expected Quota.Exceeded to be false for 520 origin error")
 	}
@@ -79,12 +77,10 @@ func TestManager_MarkResult_Cloudflare520OriginError_NotTreatedAsChallenge(t *te
 		t.Fatalf("expected StatusMessage to preserve upstream error, got %q", state.StatusMessage)
 	}
 
-	// LastError must retain the 520 error.
 	if state.LastError == nil || state.LastError.HTTPStatus != 520 {
 		t.Fatalf("expected LastError to retain HTTP 520, got %#v", state.LastError)
 	}
 
-	// By default, transient errors apply a 1-minute retry window.
 	if !state.Unavailable {
 		t.Fatalf("expected model to be marked unavailable during transient cooldown")
 	}
@@ -346,7 +342,7 @@ func TestManager_MarkResult_AuthLevelCloudflare520_DisabledTransientCooldown_Ign
 }
 
 func TestManager_MarkResult_HTTP503_TransientCooldown_RespectsDisabledAndHint(t *testing.T) {
-	// 1. When disabled (-1), 503 with RetryAfter hint must NOT apply cooldown.
+
 	{
 		prevTransient := transientErrorCooldownSeconds.Load()
 		transientErrorCooldownSeconds.Store(-1)
@@ -389,7 +385,6 @@ func TestManager_MarkResult_HTTP503_TransientCooldown_RespectsDisabledAndHint(t 
 		}
 	}
 
-	// 2. When enabled (0 = default), 503 with RetryAfter hint must use hint.
 	{
 		prevTransient := transientErrorCooldownSeconds.Load()
 		transientErrorCooldownSeconds.Store(0)
@@ -482,7 +477,7 @@ func TestManager_MarkResult_AuthLevelCloudflare520_SetsTransientError(t *testing
 }
 
 func TestIsCloudflareChallengeResultError_Excludes5xx(t *testing.T) {
-	// Status >= 500 origin errors must not be classified as challenges even if containing challenge strings.
+
 	for _, status := range []int{500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526} {
 		err5xx := &Error{
 			HTTPStatus: status,
@@ -503,7 +498,7 @@ func TestIsCloudflareChallengeResultError_Excludes5xx(t *testing.T) {
 }
 
 func TestIsCloudflareChallengeError(t *testing.T) {
-	// 520 error wrapped in standard error interface must not be treated as challenge.
+
 	err520 := &Error{
 		HTTPStatus: 520,
 		Message:    "cf-error-details cf-error-520: Web server is returning an unknown error",
@@ -512,7 +507,6 @@ func TestIsCloudflareChallengeError(t *testing.T) {
 		t.Fatalf("expected 520 error not to be cloudflare challenge")
 	}
 
-	// 403 challenge error must be recognized.
 	err403 := &Error{
 		HTTPStatus: http.StatusForbidden,
 		Message:    "cf-mitigated: challenge",
@@ -521,13 +515,11 @@ func TestIsCloudflareChallengeError(t *testing.T) {
 		t.Fatalf("expected 403 challenge error to be recognized")
 	}
 
-	// Plain error without status but with challenge message must be recognized.
 	plainChallenge := errors.New("challenge-platform orchestrate script blocked")
 	if !isCloudflareChallengeError(plainChallenge) {
 		t.Fatalf("expected plain challenge error to be recognized")
 	}
 
-	// Plain origin error without challenge markers must not be recognized.
 	plainOrigin := errors.New("Web server is returning an unknown error between Cloudflare and origin")
 	if isCloudflareChallengeError(plainOrigin) {
 		t.Fatalf("expected plain origin error not to be recognized as challenge")

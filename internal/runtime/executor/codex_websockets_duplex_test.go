@@ -19,8 +19,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// The upstream deliberately cannot finish the initial response until it reads
-// steering. A serial request/response proxy deadlocks this test.
 func TestCodexDuplexSteeringLifecycle(t *testing.T) {
 	for _, boundary := range []string{"response.incomplete", "response.completed"} {
 		t.Run(boundary, func(t *testing.T) {
@@ -40,7 +38,7 @@ func TestCodexDuplexSteeringLifecycle(t *testing.T) {
 					return
 				}
 				defer func() { _ = conn.Close() }()
-				// Timeouts are test failure bounds only; no production network deadline is added.
+
 				_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 				read := func() []byte {
 					_, b, err := conn.ReadMessage()
@@ -82,13 +80,13 @@ func TestCodexDuplexSteeringLifecycle(t *testing.T) {
 				write([]byte(`{"type":"response.created","response":{"id":"r3","output":[]}}`))
 				write([]byte(`{"type":"response.output_item.done","output_index":0,"item":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"STEER_OK"}]}}`))
 				write([]byte(`{"type":"response.completed","response":{"id":"r3","output":[]}}`))
-				// Idle steering must also reach the same live upstream connection.
+
 				got = read()
 				if ojson.GetBytes(got, "previous_response_id").String() != "missing" {
 					t.Errorf("idle control missing: %s", got)
 				}
 				write(failed)
-				// Keep the socket alive until the client closes it; no automatic replay.
+
 				_, _, _ = conn.ReadMessage()
 			}))
 			defer server.Close()
@@ -203,7 +201,7 @@ func TestCodexDuplexSIWCSteerStripsConfigurationUpdates(t *testing.T) {
 			return
 		}
 		defer func() { _ = conn.Close() }()
-		// This deadline bounds test failures only.
+
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 		_, first, errRead := conn.ReadMessage()
 		if errRead != nil {
@@ -313,7 +311,6 @@ func TestCodexDuplexAppendInheritsContextAndInstructions(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-		// 1. Read initial create
 		_, first, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read first create: %v", err)
@@ -325,7 +322,6 @@ func TestCodexDuplexAppendInheritsContextAndInstructions(t *testing.T) {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp-1","output":[]}}`))
 
-		// 2. Read subsequent append (which client sent omitting previous_response_id, model, and instructions)
 		_, second, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read second create (from append): %v", err)
@@ -376,7 +372,7 @@ func TestCodexDuplexAppendInheritsContextAndInstructions(t *testing.T) {
 		eventType := ojson.GetBytes(chunk.Payload, "type").String()
 		eventID := ojson.GetBytes(chunk.Payload, "response.id").String()
 		if eventType == "response.completed" && eventID == "resp-1" {
-			// Client sends response.append omitting previous_response_id, model, instructions
+
 			appendPayload := []byte(`{"type":"response.append","input":[{"role":"user","content":"turn 2"}]}`)
 			input <- core.WebsocketInput{Payload: appendPayload}
 		}
@@ -405,7 +401,6 @@ func TestCodexDuplexStandaloneCreateDoesNotInheritParentID(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-		// 1. Read first create
 		_, _, err = conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read first create: %v", err)
@@ -414,7 +409,6 @@ func TestCodexDuplexStandaloneCreateDoesNotInheritParentID(t *testing.T) {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp-1","output":[]}}`))
 
-		// 2. Read second create (standalone / full history replacement without previous_response_id)
 		_, second, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read second create: %v", err)
@@ -459,7 +453,7 @@ func TestCodexDuplexStandaloneCreateDoesNotInheritParentID(t *testing.T) {
 		eventType := ojson.GetBytes(chunk.Payload, "type").String()
 		eventID := ojson.GetBytes(chunk.Payload, "response.id").String()
 		if eventType == "response.completed" && eventID == "resp-1" {
-			// Client sends standalone response.create without previous_response_id
+
 			standalonePayload := []byte(`{"type":"response.create","model":"gpt-6-astra","input":[{"role":"user","content":"turn 2 standalone"}]}`)
 			input <- core.WebsocketInput{Payload: standalonePayload}
 		}
@@ -488,7 +482,6 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-		// 1. Read first create
 		_, first, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read first create: %v", err)
@@ -499,7 +492,6 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		}
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r1","output":[]}}`))
 
-		// Read first steer for r1
 		_, steer1, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read steer1: %v", err)
@@ -511,11 +503,8 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.steer.accepted","steer":{"id":"s1","previous_response_id":"r1"}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[],"incomplete_details":{"reason":"steered"}}}`))
 
-		// Emit automatic successor (sets automaticActive = true)
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"auto-1","previous_response_id":"r1","output":[]}}`))
 
-		// Client will send next create (blocked by automaticActive) followed by steer for auto-1.
-		// Upstream expects steering to arrive NEXT, proving create did not block the steer!
 		_, steerFrame, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read steer: %v", err)
@@ -530,7 +519,6 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"auto-2","previous_response_id":"auto-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"auto-2","output":[]}}`))
 
-		// Now that automatic successor is completed, the queued create is delivered to upstream
 		_, nextCreate, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read queued create: %v", err)
@@ -575,7 +563,7 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 			input <- core.WebsocketInput{Payload: []byte(`{"type":"response.steer","previous_response_id":"r1","input":"steer 1"}`)}
 		}
 		if eventType == "response.created" && eventID == "auto-1" {
-			// During automatic successor generation, send a create first, followed by steer:
+
 			input <- core.WebsocketInput{Payload: []byte(`{"type":"response.create","model":"gpt-6-astra","previous_response_id":"auto-1","input":[{"role":"user","content":"queued next"}]}`)}
 			input <- core.WebsocketInput{Payload: []byte(`{"type":"response.steer","previous_response_id":"auto-1","input":"steer 2 in flight"}`)}
 		}

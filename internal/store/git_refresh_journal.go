@@ -20,9 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Refresh journals use immutable tags, not credential-branch writes. Ordinary
-// pulls, mirror recovery, and auth saves therefore cannot erase a claim. Each
-// claimant creates a different root commit; a non-force push can publish only one.
 func (s *GitTokenStore) RefreshClaim(ctx context.Context, key string) (claimed bool, errResult error) {
 	errResult = s.withRefreshRepository(ctx, func(repo *git.Repository) error {
 		ref := refreshGitRef("claim", key)
@@ -40,7 +37,7 @@ func (s *GitTokenStore) RefreshClaim(ctx context.Context, key string) (claimed b
 			claimed = true
 			return nil
 		}
-		// A conflicting or uncertain push never grants permission to send OAuth.
+
 		if hash, errLookup := s.refreshRemoteRef(ctx, repo, ref); errLookup == nil && !hash.IsZero() {
 			return nil
 		}
@@ -93,10 +90,7 @@ func (s *GitTokenStore) withRefreshRepository(ctx context.Context, run func(*git
 	if s == nil || strings.TrimSpace(s.remote) == "" {
 		return fmt.Errorf("git refresh journal is unavailable")
 	}
-	// Refresh can hold a credential file lock while Save holds s.mu waiting
-	// for that same file. Journal I/O must neither acquire s.mu nor touch the
-	// credential mirror. Its immutable remote records need only a temporary
-	// object database, not a checkout of the credential branch.
+
 	repo, errInit := git.Init(memory.NewStorage(), nil)
 	if errInit != nil {
 		return errInit
@@ -105,15 +99,13 @@ func (s *GitTokenStore) withRefreshRepository(ctx context.Context, run func(*git
 	if _, errRemote := repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{s.remote}}); errRemote != nil {
 		return errRemote
 	}
-	// go-git's in-process file receive-pack does not serialize competing
-	// reference updates. Lock on the shared remote itself for that transport.
+
 	endpoint, errParse := transport.ParseURL(s.remote)
 	if errParse != nil {
 		return errParse
 	}
 	if endpoint.Scheme == "file" {
-		// Use the transport's own resolution of bare repositories, .git
-		// directories and gitfiles so aliases share the same physical lock.
+
 		remoteStorage, errLoad := transport.DefaultLoader.Load(endpoint)
 		if errLoad != nil {
 			return errLoad
@@ -169,7 +161,7 @@ func (s *GitTokenStore) publishRefreshRecord(ctx context.Context, repo *git.Repo
 	if errStore != nil {
 		return errStore
 	}
-	// A unique local source avoids updating a tag fetched from another claimant.
+
 	localRef := plumbing.ReferenceName("refs/cliproxy-refresh-pending/" + hash.String())
 	if errReference := repo.Storer.SetReference(plumbing.NewHashReference(localRef, hash)); errReference != nil {
 		return errReference

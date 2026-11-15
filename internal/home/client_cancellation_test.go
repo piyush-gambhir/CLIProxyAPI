@@ -87,7 +87,7 @@ func TestManagedSubscriberReceiveFailureKeepsReleaseFenced(t *testing.T) {
 		case "GET":
 			return "$2\r\n{}\r\n"
 		case "SUBSCRIBE":
-			// A malformed RESP frame fails reception after the membership ACK.
+
 			return "*3\r\n$9\r\nsubscribe\r\n$6\r\nconfig\r\n:1\r\n?invalid\r\n"
 		default:
 			return balanceTestRedisReply(args)
@@ -103,7 +103,7 @@ func TestManagedSubscriberReceiveFailureKeepsReleaseFenced(t *testing.T) {
 	if errRun == nil || errors.Is(errRun, context.Canceled) {
 		t.Fatalf("receive failure = %v", errRun)
 	}
-	// Later graceful cancellation must not undo a fence installed by a receive failure.
+
 	cancel()
 	if client.HeartbeatOK() || !client.dispatchFenced.Load() {
 		t.Fatal("abnormal reception did not fence the lifetime")

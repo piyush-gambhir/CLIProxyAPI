@@ -1,6 +1,3 @@
-// Package executor provides runtime execution capabilities for various AI service providers.
-// This file implements the Vertex AI Gemini executor that talks to Google Vertex AI
-// endpoints using service account credentials or API keys.
 package executor
 
 import (
@@ -32,19 +29,14 @@ import (
 )
 
 const (
-	// vertexAPIVersion aligns with current public Vertex Generative AI API.
 	vertexAPIVersion = "v1"
 )
 
-// isImagenModel checks if the model name is an Imagen image generation model.
-// Imagen models use the :predict action instead of :generateContent.
 func isImagenModel(model string) bool {
 	lowerModel := strings.ToLower(model)
 	return strings.Contains(lowerModel, "imagen")
 }
 
-// getVertexAction returns the appropriate action for the given model.
-// Imagen models use "predict", while Gemini models use "generateContent".
 func getVertexAction(model string, isStream bool) string {
 	if isImagenModel(model) {
 		return "predict"
@@ -55,16 +47,12 @@ func getVertexAction(model string, isStream bool) string {
 	return "generateContent"
 }
 
-// convertImagenToGeminiResponse converts Imagen API response to Gemini format
-// so it can be processed by the standard translation pipeline.
-// This ensures Imagen models return responses in the same format as gemini-3-pro-image-preview.
 func convertImagenToGeminiResponse(data []byte, model string) []byte {
 	predictions := ojson.GetBytesNoCopy(data, "predictions")
 	if !predictions.Exists() || !predictions.IsArray() {
 		return data
 	}
 
-	// Build Gemini-compatible response with inlineData
 	parts := make([]map[string]any, 0)
 	for _, pred := range predictions.Array() {
 		imageData := pred.Get("bytesBase64Encoded").String()
@@ -82,7 +70,6 @@ func convertImagenToGeminiResponse(data []byte, model string) []byte {
 		}
 	}
 
-	// Generate unique response ID using timestamp
 	responseId := fmt.Sprintf("imagen-%d", time.Now().UnixNano())
 
 	response := map[string]any{
@@ -95,7 +82,7 @@ func convertImagenToGeminiResponse(data []byte, model string) []byte {
 		}},
 		"responseId":   responseId,
 		"modelVersion": model,
-		// Imagen API doesn't return token counts, set to 0 for tracking purposes
+
 		"usageMetadata": map[string]any{
 			"promptTokenCount":     0,
 			"candidatesTokenCount": 0,
@@ -110,19 +97,15 @@ func convertImagenToGeminiResponse(data []byte, model string) []byte {
 	return result
 }
 
-// convertToImagenRequest converts a Gemini-style request to Imagen API format.
-// Imagen API uses a different structure: instances[].prompt instead of contents[].
 func convertToImagenRequest(payload []byte) ([]byte, error) {
-	// Extract prompt from Gemini-style contents
+
 	prompt := ""
 
-	// Try to get prompt from contents[0].parts[0].text
 	contentsText := ojson.GetBytesNoCopy(payload, "contents.0.parts.0.text")
 	if contentsText.Exists() {
 		prompt = contentsText.String()
 	}
 
-	// If no contents, try messages format (OpenAI-compatible)
 	if prompt == "" {
 		messagesText := ojson.GetBytesNoCopy(payload, "messages.#.content")
 		if messagesText.Exists() && messagesText.IsArray() {
@@ -135,7 +118,6 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 		}
 	}
 
-	// If still no prompt, try direct prompt field
 	if prompt == "" {
 		directPrompt := ojson.GetBytesNoCopy(payload, "prompt")
 		if directPrompt.Exists() {
@@ -147,7 +129,6 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 		return nil, fmt.Errorf("imagen: no prompt found in request")
 	}
 
-	// Build Imagen API request
 	imagenReq := map[string]any{
 		"instances": []map[string]any{
 			{
@@ -159,7 +140,6 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 		},
 	}
 
-	// Extract optional parameters
 	if aspectRatio := ojson.GetBytesNoCopy(payload, "aspectRatio"); aspectRatio.Exists() {
 		imagenReq["parameters"].(map[string]any)["aspectRatio"] = aspectRatio.String()
 	}
@@ -173,26 +153,16 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 	return json.Marshal(imagenReq)
 }
 
-// GeminiVertexExecutor sends requests to Vertex AI Gemini endpoints using service account credentials.
 type GeminiVertexExecutor struct {
 	cfg *config.Config
 }
 
-// NewGeminiVertexExecutor creates a new Vertex AI Gemini executor instance.
-//
-// Parameters:
-//   - cfg: The application configuration
-//
-// Returns:
-//   - *GeminiVertexExecutor: A new Vertex AI Gemini executor instance
 func NewGeminiVertexExecutor(cfg *config.Config) *GeminiVertexExecutor {
 	return &GeminiVertexExecutor{cfg: cfg}
 }
 
-// Identifier returns the executor identifier.
 func (e *GeminiVertexExecutor) Identifier() string { return "vertex" }
 
-// PrepareRequest injects Vertex credentials into the outgoing HTTP request.
 func (e *GeminiVertexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -219,7 +189,6 @@ func (e *GeminiVertexExecutor) PrepareRequest(req *http.Request, auth *cliproxya
 	return nil
 }
 
-// HttpRequest injects Vertex credentials into the request and executes it.
 func (e *GeminiVertexExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("vertex executor: request is nil")
@@ -235,7 +204,6 @@ func (e *GeminiVertexExecutor) HttpRequest(ctx context.Context, auth *cliproxyau
 	return httpClient.Do(httpReq)
 }
 
-// Execute performs a non-streaming request to the Vertex AI API.
 func (e *GeminiVertexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
 	if opts.Alt == "responses/compact" {
@@ -247,10 +215,9 @@ func (e *GeminiVertexExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 	if shouldExecuteVertexInteractions(auth, opts) {
 		return e.executeInteractions(ctx, auth, req, opts)
 	}
-	// Try API key authentication first
+
 	apiKey, baseURL := vertexAPICreds(auth)
 
-	// If no API key found, fall back to service account authentication
 	if apiKey == "" {
 		projectID, location, saJSON, errCreds := vertexCreds(auth)
 		if errCreds != nil {
@@ -259,11 +226,9 @@ func (e *GeminiVertexExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 		return e.executeWithServiceAccount(ctx, auth, req, opts, projectID, location, saJSON)
 	}
 
-	// Use API key authentication
 	return e.executeWithAPIKey(ctx, auth, req, opts, apiKey, baseURL)
 }
 
-// ExecuteStream performs a streaming request to the Vertex AI API.
 func (e *GeminiVertexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
 	if opts.Alt == "responses/compact" {
@@ -275,10 +240,9 @@ func (e *GeminiVertexExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 	if shouldExecuteVertexInteractions(auth, opts) {
 		return e.executeInteractionsStream(ctx, auth, req, opts)
 	}
-	// Try API key authentication first
+
 	apiKey, baseURL := vertexAPICreds(auth)
 
-	// If no API key found, fall back to service account authentication
 	if apiKey == "" {
 		projectID, location, saJSON, errCreds := vertexCreds(auth)
 		if errCreds != nil {
@@ -287,20 +251,17 @@ func (e *GeminiVertexExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 		return e.executeStreamWithServiceAccount(ctx, auth, req, opts, projectID, location, saJSON)
 	}
 
-	// Use API key authentication
 	return e.executeStreamWithAPIKey(ctx, auth, req, opts, apiKey, baseURL)
 }
 
-// CountTokens counts tokens for the given request using the Vertex AI API.
 func (e *GeminiVertexExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	if helps.ShouldExecuteVertexOpenAPIForRequest(e.cfg, auth, req.Model, opts) {
 		normalizedReq, normalizedOpts := normalizeVertexOpenAPIRequest(req, opts)
 		return NewOpenAICompatExecutor(e.Identifier(), e.cfg).CountTokens(ctx, auth, normalizedReq, normalizedOpts)
 	}
-	// Try API key authentication first
+
 	apiKey, baseURL := vertexAPICreds(auth)
 
-	// If no API key found, fall back to service account authentication
 	if apiKey == "" {
 		projectID, location, saJSON, errCreds := vertexCreds(auth)
 		if errCreds != nil {
@@ -309,7 +270,6 @@ func (e *GeminiVertexExecutor) CountTokens(ctx context.Context, auth *cliproxyau
 		return e.countTokensWithServiceAccount(ctx, auth, req, opts, projectID, location, saJSON)
 	}
 
-	// Use API key authentication
 	return e.countTokensWithAPIKey(ctx, auth, req, opts, apiKey, baseURL)
 }
 
@@ -398,7 +358,6 @@ func (e *GeminiVertexExecutor) executeOpenAPIStream(ctx context.Context, auth *c
 	return NewOpenAICompatExecutor(e.Identifier(), e.cfg).executeStreamWithCredentials(ctx, auth, req, opts, openAPIBaseURL, token, nil)
 }
 
-// Refresh refreshes the authentication credentials (no-op for Vertex).
 func (e *GeminiVertexExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
@@ -406,8 +365,6 @@ func (e *GeminiVertexExecutor) Refresh(ctx context.Context, auth *cliproxyauth.A
 	return auth, nil
 }
 
-// executeWithServiceAccount handles authentication using service account credentials.
-// This method contains the original service account authentication logic.
 func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, projectID, location string, saJSON []byte) (resp cliproxyexecutor.Response, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -418,7 +375,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 	var originalTranslated []byte
 	var doc *ojson.Doc
 
-	// Handle Imagen models with special request format
 	if isImagenModel(baseModel) {
 		imagenBody, errImagen := convertToImagenRequest(req.Payload)
 		if errImagen != nil {
@@ -434,7 +390,7 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 		}
 		doc = ojson.NewDoc(body)
 	} else {
-		// Standard Gemini translation flow
+
 		from := opts.SourceFormat
 		to := sdktranslator.FromString("gemini")
 
@@ -565,8 +521,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 	}
 	reporter.ObserveResponseModel(data)
 
-	// For Imagen models, convert response to Gemini format before translation
-	// This ensures Imagen responses use the same format as gemini-3-pro-image-preview
 	if isImagenModel(baseModel) {
 		data = convertImagenToGeminiResponse(data, baseModel)
 	}
@@ -578,7 +532,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 		return cliproxyexecutor.Response{}, err
 	}
 
-	// Standard Gemini translation (works for both Gemini and converted Imagen responses)
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	to := sdktranslator.FromString("gemini")
 	var param any
@@ -601,7 +554,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 	return resp, nil
 }
 
-// executeWithAPIKey handles authentication using API key credentials.
 func (e *GeminiVertexExecutor) executeWithAPIKey(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, apiKey, baseURL string) (resp cliproxyexecutor.Response, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -656,10 +608,6 @@ func (e *GeminiVertexExecutor) executeWithAPIKey(ctx context.Context, auth *clip
 	}
 	helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc, from.String())
 
-	// For API key auth, use simpler URL format without project/location.
-	// The helper honors base URLs that already encode "/publishers/..." so
-	// configurations like ".../v1/projects/P/locations/L/publishers/google/models"
-	// keep working without a duplicated "/v1" segment.
 	url := vertexAPIKeyModelsURL(baseURL, baseModel, action)
 	if opts.Alt != "" && action != "countTokens" {
 		url = url + fmt.Sprintf("?$alt=%s", opts.Alt)
@@ -764,7 +712,6 @@ func (e *GeminiVertexExecutor) executeWithAPIKey(ctx context.Context, auth *clip
 	return resp, nil
 }
 
-// executeStreamWithServiceAccount handles streaming authentication using service account credentials.
 func (e *GeminiVertexExecutor) executeStreamWithServiceAccount(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, projectID, location string, saJSON []byte) (_ *cliproxyexecutor.StreamResult, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -812,7 +759,7 @@ func (e *GeminiVertexExecutor) executeStreamWithServiceAccount(ctx context.Conte
 	helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc, from.String())
 	baseURL := vertexBaseURL(location)
 	url := fmt.Sprintf("%s/%s/projects/%s/locations/%s/publishers/google/models/%s:%s", baseURL, vertexAPIVersion, projectID, location, baseModel, action)
-	// Imagen models don't support streaming, skip SSE params
+
 	if !isImagenModel(baseModel) {
 		if opts.Alt == "" {
 			url = url + "?alt=sse"
@@ -1055,7 +1002,6 @@ func (e *GeminiVertexExecutor) executeStreamWithServiceAccount(ctx context.Conte
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
 }
 
-// executeStreamWithAPIKey handles streaming authentication using API key credentials.
 func (e *GeminiVertexExecutor) executeStreamWithAPIKey(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, apiKey, baseURL string) (_ *cliproxyexecutor.StreamResult, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1101,9 +1047,9 @@ func (e *GeminiVertexExecutor) executeStreamWithAPIKey(ctx context.Context, auth
 		}
 	}
 	helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc, from.String())
-	// For API key auth, use simpler URL format without project/location
+
 	url := vertexAPIKeyModelsURL(baseURL, baseModel, action)
-	// Imagen models don't support streaming, skip SSE params
+
 	if !isImagenModel(baseModel) {
 		if opts.Alt == "" {
 			url = url + "?alt=sse"
@@ -1343,7 +1289,6 @@ func (e *GeminiVertexExecutor) executeStreamWithAPIKey(ctx context.Context, auth
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
 }
 
-// countTokensWithServiceAccount counts tokens using service account credentials.
 func (e *GeminiVertexExecutor) countTokensWithServiceAccount(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, projectID, location string, saJSON []byte) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1455,7 +1400,6 @@ func (e *GeminiVertexExecutor) countTokensWithServiceAccount(ctx context.Context
 	return cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}, nil
 }
 
-// countTokensWithAPIKey handles token counting using API key credentials.
 func (e *GeminiVertexExecutor) countTokensWithAPIKey(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, apiKey, baseURL string) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1492,7 +1436,6 @@ func (e *GeminiVertexExecutor) countTokensWithAPIKey(ctx context.Context, auth *
 	}
 	helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc, from.String())
 
-	// For API key auth, use simpler URL format without project/location
 	url := vertexAPIKeyModelsURL(baseURL, baseModel, "countTokens")
 
 	ctxWithFinalizer := helps.WithPayloadFinalizer(ctx, helps.NewPayloadFinalizer(e.cfg, e.Identifier(), baseModel, to.String(), "", originalTranslatedForPayload, req, opts))
@@ -1564,7 +1507,6 @@ func (e *GeminiVertexExecutor) countTokensWithAPIKey(ctx context.Context, auth *
 	return cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}, nil
 }
 
-// vertexCreds extracts project, location and raw service account JSON from auth metadata.
 func vertexCreds(a *cliproxyauth.Auth) (projectID, location string, serviceAccountJSON []byte, err error) {
 	if a == nil || a.Metadata == nil {
 		return "", "", nil, fmt.Errorf("vertex executor: missing auth metadata")
@@ -1573,7 +1515,7 @@ func vertexCreds(a *cliproxyauth.Auth) (projectID, location string, serviceAccou
 		projectID = strings.TrimSpace(v)
 	}
 	if projectID == "" {
-		// Some service accounts may use "project"; still prefer standard field
+
 		if v, ok := a.Metadata["project"].(string); ok {
 			projectID = strings.TrimSpace(v)
 		}
@@ -1604,7 +1546,6 @@ func vertexCreds(a *cliproxyauth.Auth) (projectID, location string, serviceAccou
 	return projectID, location, saJSON, nil
 }
 
-// vertexAPICreds extracts API key and base URL from auth attributes following the claudeCreds pattern.
 func vertexAPICreds(a *cliproxyauth.Auth) (apiKey, baseURL string) {
 	if a == nil {
 		return "", ""
@@ -1621,16 +1562,6 @@ func vertexAPICreds(a *cliproxyauth.Auth) (apiKey, baseURL string) {
 	return
 }
 
-// vertexAPIKeyModelsURL builds the API-key models endpoint URL.
-//
-// The configured base URL is treated as a full resource prefix when it
-// already contains a "/publishers/" segment (e.g. a real Vertex endpoint
-// such as "https://aiplatform.googleapis.com/v1/projects/{p}/locations/{l}/publishers/google/models"),
-// in which case only "/{model}:{action}" is appended. Otherwise the default
-// "/v1/publishers/google/models" segment is inserted so short third-party
-// hosts keep working; if the base already ends in a version segment such
-// as "/v1" or "/v1beta1", only "/publishers/google/models" is appended to
-// avoid producing a duplicated version path.
 func vertexAPIKeyModelsURL(baseURL, model, action string) string {
 	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if base == "" {
@@ -1645,8 +1576,6 @@ func vertexAPIKeyModelsURL(baseURL, model, action string) string {
 	return fmt.Sprintf("%s/publishers/google/models/%s:%s", base, model, action)
 }
 
-// vertexAPIVersionSuffix reports whether the trimmed base URL already ends
-// with a Google API version segment like "/v1" or "/v1beta1".
 func vertexAPIVersionSuffix(base string) bool {
 	if base == "" {
 		return false
@@ -1680,13 +1609,12 @@ func vertexBaseURL(location string) string {
 }
 
 func vertexAccessToken(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, saJSON []byte) (string, error) {
-	// Token exchange stays on the credential or global proxy. The execution proxy
-	// applies only to the model request that follows.
+
 	tokenCtx := cliproxyexecutor.WithoutRequestProxyURL(ctx)
 	if httpClient := helps.NewProxyAwareHTTPClient(tokenCtx, cfg, auth, 0); httpClient != nil {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	}
-	// Use cloud-platform scope for Vertex AI.
+
 	creds, errCreds := google.CredentialsFromJSON(ctx, saJSON, "https://www.googleapis.com/auth/cloud-platform")
 	if errCreds != nil {
 		return "", fmt.Errorf("vertex executor: parse service account json failed: %w", errCreds)
@@ -1698,12 +1626,10 @@ func vertexAccessToken(ctx context.Context, cfg *config.Config, auth *cliproxyau
 	return tok.AccessToken, nil
 }
 
-// resolveVertexConfig finds the matching vertex-api-key configuration entry for the given auth.
 func (e *GeminiVertexExecutor) resolveVertexConfig(auth *cliproxyauth.Auth) *config.VertexCompatKey {
 	return helps.ResolveVertexCompatConfig(e.cfg, auth)
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
 func (e *GeminiVertexExecutor) SupportsApplyPatch() bool { return e != nil }
 
 func shouldExecuteVertexInteractions(auth *cliproxyauth.Auth, opts cliproxyexecutor.Options) bool {

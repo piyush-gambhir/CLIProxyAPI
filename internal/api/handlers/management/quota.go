@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/clienterror"
 )
 
-// Quota exceeded toggles
 func (h *Handler) GetSwitchProject(c *gin.Context) {
 	c.JSON(200, gin.H{"switch-project": h.cfg.QuotaExceeded.SwitchProject})
 }
@@ -24,7 +23,6 @@ func (h *Handler) PutSwitchPreviewModel(c *gin.Context) {
 	h.updateBoolField(c, func(v bool) { h.cfg.QuotaExceeded.SwitchPreviewModel = v })
 }
 
-// ResetQuota clears quota/cooldown routing state for one auth index.
 func (h *Handler) ResetQuota(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})

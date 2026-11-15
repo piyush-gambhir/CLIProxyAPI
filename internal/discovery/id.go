@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	// DefaultInstancePrefix is the prefix used for default instance names.
 	DefaultInstancePrefix = "CPA-"
 	instanceIDFilename    = "instance_id"
 )
@@ -34,9 +33,6 @@ func isValidHex4(s string) bool {
 	return true
 }
 
-// GetOrGenerateInstanceID retrieves the persistent instance ID from stateDir,
-// or generates a new 4-character hex ID (e.g. "8F3B") and persists it atomically.
-// Thread-safe, cached per stateDir, and protected against race conditions.
 func GetOrGenerateInstanceID(stateDir string) string {
 	cleanDir := ""
 	if stateDir != "" {
@@ -46,7 +42,6 @@ func GetOrGenerateInstanceID(stateDir string) string {
 	idMu.Lock()
 	defer idMu.Unlock()
 
-	// If already resolved and cached in-process for this directory, return immediately
 	if id, ok := cachedIDs[cleanDir]; ok && isValidHex4(id) {
 		return id
 	}
@@ -62,15 +57,13 @@ func GetOrGenerateInstanceID(stateDir string) string {
 		}
 	}
 
-	// Generate random 2 bytes -> 4 hex chars with cryptographically secure PRNG
 	buf := make([]byte, 2)
 	if _, err := rand.Read(buf); err != nil {
-		// Defensive fallback if entropy source is temporarily unavailable
+
 		return fmt.Sprintf("%04X", os.Getpid()&0xFFFF)
 	}
 	id := strings.ToUpper(hex.EncodeToString(buf))
 
-	// Persist atomically if stateDir is specified
 	if cleanDir != "" {
 		if errDir := os.MkdirAll(cleanDir, 0700); errDir == nil {
 			idPath := filepath.Join(cleanDir, instanceIDFilename)
@@ -91,16 +84,12 @@ func GetOrGenerateInstanceID(stateDir string) string {
 	return id
 }
 
-// ResetCachedInstanceID resets in-memory cached IDs for test isolation.
 func ResetCachedInstanceID() {
 	idMu.Lock()
 	defer idMu.Unlock()
 	cachedIDs = make(map[string]string)
 }
 
-// FormatInstanceName returns a DNS-SD instance name that always includes the
-// persistent short ID, so LAN advertisements stay unique without a startup browse.
-// An empty custom name becomes CPA-<ShortID>; a custom name becomes <name>-<ShortID>.
 func FormatInstanceName(customName, instanceID string) string {
 	if !isValidHex4(instanceID) {
 		instanceID = "0001"

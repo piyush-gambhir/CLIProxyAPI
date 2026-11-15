@@ -218,7 +218,7 @@ func convertInteractionsEventToResponses(modelName string, originalRequestRawJSO
 	if len(payload) == 0 {
 		return nil
 	}
-	// A source sentinel remains legal after response completion, but only once.
+
 	isDone := bytes.Equal(bytes.TrimSpace(payload), []byte("[DONE]")) || (ojson.ValidBytes(payload) && ojson.GetBytesNoCopy(payload, "event_type").String() == "done")
 	if isDone {
 		events := interactionsFinishPatchCalls(st)
@@ -285,7 +285,7 @@ func convertInteractionsEventToResponses(modelName string, originalRequestRawJSO
 				return false
 			}
 			call := st.FunctionCalls[index]
-			// Patch-enabled unnamed functions retain evidence before final snapshot filtering.
+
 			if call == nil || (call.PatchCall == nil && !st.ToolIdentityMap[call.RawName].ApplyPatch && (!patchEnabled || call.RawName != "")) {
 				if step.Get("type").String() != "function_call" {
 					return true
@@ -400,7 +400,7 @@ func interactionsStepStartToResponses(modelName string, root ojson.Result, st *i
 		return interactionsPatchFailure(st, errResolveStepIndex)
 	}
 	stepType := step.Get("type").String()
-	// A repeated start must not overwrite a possible patch call's type evidence.
+
 	if call := st.FunctionCalls[index]; call != nil && (call.PatchCall != nil || st.ToolIdentityMap[call.RawName].ApplyPatch || (call.RawName == "" && interactionsHasPatchBridge(st))) {
 		return interactionsUpdateFunctionCall(index, step, st, true)
 	}
@@ -444,8 +444,7 @@ func interactionsStepDeltaToResponses(root ojson.Result, st *interactionsToRespo
 	if errResolveStepIndex != nil {
 		return interactionsPatchFailure(st, errResolveStepIndex)
 	}
-	// Check the source barrier before a same-event snapshot or identity update can
-	// replay fragments and publish completion. Unknown names retain the violation.
+
 	if call := st.FunctionCalls[index]; call != nil && call.SourceStopped && root.Get("delta.type").String() == "arguments_delta" && root.Get("delta.arguments").String() != "" {
 		errSourceStop := fmt.Errorf("apply_patch delta after source stop")
 		if call.PatchCall != nil || st.ToolIdentityMap[call.RawName].ApplyPatch || st.ToolIdentityMap[root.Get("step.name").String()].ApplyPatch {
@@ -460,8 +459,7 @@ func interactionsStepDeltaToResponses(root ojson.Result, st *interactionsToRespo
 		if st.Terminal {
 			return updates
 		}
-		// Process the same real delta after its late identity update, without
-		// replaying the update or turning its snapshot into parameter fragments.
+
 		rawDoc := ojson.NewDocString(root.Raw)
 		_ = rawDoc.Delete("step")
 		_ = rawDoc.Set("index", index)
@@ -565,8 +563,7 @@ func interactionsStepStopToResponses(root ojson.Result, st *interactionsToRespon
 	if errResolveStepIndex != nil {
 		return interactionsPatchFailure(st, errResolveStepIndex)
 	}
-	// Source completion is independent of downstream identity and publication,
-	// including candidates established by arguments before their first start.
+
 	if call := st.FunctionCalls[index]; call != nil {
 		call.SourceStopped = true
 		if call.RawName == "" {
@@ -1540,7 +1537,6 @@ func (st *responsesToInteractionsStreamState) hasSentFunctionArgs(keys []string)
 	return false
 }
 
-// Interactions uses qualified names directly, rather than Gemini's sanitized names.
 func interactionsToolIdentityMap(rawJSON []byte, forAntigravity bool) map[string]util.ResponsesToolIdentity {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	if request := root.Get("request"); request.Exists() {
@@ -1573,7 +1569,6 @@ func interactionsPatchDelta(st *interactionsToResponsesStreamState, call *intera
 	return [][]byte{emitResponsesEvent("response.custom_tool_call_input.delta", translatorcommon.ApplyPatchInputDelta(call.PatchCall, delta, nextResponsesSeq(st)))}
 }
 
-// Reconcile every supplied index and ID before snapshot types are inspected.
 func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int, st *interactionsToResponsesStreamState) (int, error) {
 	stepIndex := step.Get("index")
 	index, indexed := fallback, explicitIndex.Exists() || stepIndex.Exists()
@@ -1595,7 +1590,7 @@ func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int
 		}
 	}
 	if !indexed && len(matched) > 0 {
-		// The fallback array position is not evidence when a supplied alias matches.
+
 		first := true
 		for callIndex := range matched {
 			if first || callIndex < index {
@@ -1619,7 +1614,7 @@ func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int
 				index, found = itemIndex, true
 			}
 		}
-		// A final array position must not rebind an unrelated item with a different supplied ID.
+
 		if !found && (itemID != "" || callID != "") {
 			for st.FunctionCalls[index] != nil || st.ItemTypes[index] != "" {
 				index++
@@ -1654,7 +1649,7 @@ func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int
 		if st.PendingIdentityErrors == nil {
 			st.PendingIdentityErrors = make(map[int]error)
 		}
-		// Retain both sides even when an unnamed non-function snapshot is skipped.
+
 		for callIndex := range related {
 			if st.PendingIdentityErrors[callIndex] == nil {
 				st.PendingIdentityErrors[callIndex] = errIdentity
@@ -1664,8 +1659,7 @@ func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int
 			}
 		}
 	}
-	// Keep unmatched aliases even on conflicts or partial invalid snapshots, so
-	// later provenance through any supplied key cannot erase the contradiction.
+
 	if st.ItemIdentityIndexes == nil {
 		st.ItemIdentityIndexes = make(map[string]int)
 	}
@@ -1689,7 +1683,7 @@ func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int
 			}
 		}
 	}
-	// Ordinary functions retain their explicit-index behavior; only patch identities fail closed.
+
 	return index, nil
 }
 
@@ -1702,7 +1696,6 @@ func interactionsHasPatchBridge(st *interactionsToResponsesStreamState) bool {
 	return false
 }
 
-// Keep evidence even before the upstream name identifies the winning declaration.
 func interactionsUpdateFunctionCall(index int, step ojson.Result, st *interactionsToResponsesStreamState, initial bool) [][]byte {
 	call := st.FunctionCalls[index]
 	if call == nil {
@@ -1742,7 +1735,7 @@ func interactionsUpdateFunctionCall(index int, step ojson.Result, st *interactio
 	}
 	if args := step.Get("arguments"); args.Exists() && !(initial && !call.HasSnapshot && call.Arguments.Len() == 0 && !call.ItemDoneEmitted && strings.TrimSpace(jsonStringValue(args, "")) == "{}") {
 		arguments := jsonStringValue(args, "{}")
-		// A later complete snapshot is not a new prefix for already buffered fragments.
+
 		if !call.Added && call.InitialArguments == "" && call.Arguments.Len() == 0 {
 			call.InitialArguments = strings.Clone(arguments)
 		}
@@ -1785,8 +1778,7 @@ func interactionsUpdateFunctionCall(index int, step ojson.Result, st *interactio
 		if call.PendingError != nil {
 			return interactionsPatchFailure(st, call.PendingError)
 		}
-		// Upstream evidence and downstream readiness are independent. A first late
-		// ID may still be adopted; no provisional patch identity has escaped.
+
 		if !(call.ItemIDSeen && call.CallIDSeen) && !call.IdentityFinalized {
 			return nil
 		}
@@ -1801,7 +1793,7 @@ func interactionsUpdateFunctionCall(index int, step ojson.Result, st *interactio
 	}
 	st.ItemIDs[index] = call.ID
 	var events [][]byte
-	// Replay buffered ordinary arguments only when the item is first announced.
+
 	announced := !call.Added
 	if announced {
 		if !identity.ApplyPatch && call.InitialArguments != "" {
@@ -1864,9 +1856,7 @@ func interactionsFinishPatchCalls(st *interactionsToResponsesStreamState) [][]by
 	for _, index := range indexes {
 		call := st.FunctionCalls[index]
 		if call.PatchCall == nil {
-			// Interactions already maps an absent call_id to id (and an absent id
-			// to call_id or a per-response fallback item ID). Freeze that compatibility
-			// mapping only at the response terminal, after all supplied snapshot IDs were reconciled.
+
 			if !call.ItemIDSeen {
 				call.ID = firstNonEmpty(call.CallID, interactionsFallbackItemID(st, index))
 			}
@@ -1888,7 +1878,6 @@ func interactionsFinishPatchCalls(st *interactionsToResponsesStreamState) [][]by
 	return events
 }
 
-// FinalizeToolInput rejects a patch-enabled stream lacking its source terminator.
 func (st *interactionsToResponsesStreamState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.Terminal {
 		return nil

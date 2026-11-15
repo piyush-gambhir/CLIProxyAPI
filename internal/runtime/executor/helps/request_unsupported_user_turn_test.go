@@ -14,8 +14,6 @@ const (
 	responsesHistory = `{"type":"message","role":"user","content":[{"type":"input_text","text":"hello"}]},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"hi"}]}`
 )
 
-// Every executor reaches the translators through these helpers, so the refusal
-// must survive the registry, the multi-agent wrapper and the compat switch.
 func TestTranslateRequestReturningErrorRefusesEmptiedAttachmentTurns(t *testing.T) {
 	ctx := context.Background()
 	routes := []struct {

@@ -11,8 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// FileRefreshJournal stores immutable claims outside credential JSON files so
-// watcher reloads and credential replacement cannot erase unresolved outcomes.
 type FileRefreshJournal struct{ Dir string }
 
 func (j *FileRefreshJournal) path(key string) (string, error) {
@@ -101,9 +99,6 @@ func (j *FileRefreshJournal) RefreshComplete(ctx context.Context, key string, re
 	return syncRefreshDirectory(path)
 }
 
-// Sync every directory entry that can have been created by MkdirAll before
-// permitting an exchange. Canonicalize symlinks so newly-created target
-// ancestors, rather than just the spelling of the configured path, are durable.
 func syncRefreshClaimDirectories(path string) error {
 	canonical, errCanonical := filepath.EvalSymlinks(path)
 	if errCanonical != nil {
@@ -126,8 +121,7 @@ func syncRefreshClaimDirectories(path string) error {
 }
 
 func syncRefreshDirectory(path string) error {
-	// Windows does not support fsync on directory handles. Atomic directory
-	// creation still survives a process restart without a volatile sidecar.
+
 	if runtime.GOOS == "windows" {
 		return nil
 	}

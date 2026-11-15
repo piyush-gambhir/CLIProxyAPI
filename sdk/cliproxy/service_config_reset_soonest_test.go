@@ -19,7 +19,7 @@ func TestNormalizedRoutingRuntimeStateAcceptsResetSoonestAndItsAlias(t *testing.
 		if state.strategy != "reset-soonest" {
 			t.Fatalf("strategy for %q = %q, want reset-soonest", raw, state.strategy)
 		}
-		// The poller exists to feed this strategy, so it defaults on with it.
+
 		if !state.quotaPollerEnabled {
 			t.Fatalf("quota poller for %q should default on", raw)
 		}
@@ -63,7 +63,7 @@ func TestNormalizedRoutingRuntimeStateReadsResetSoonestSettings(t *testing.T) {
 	if state.fiveHourGuardPercent != 75 {
 		t.Fatalf("guard = %v, want 75", state.fiveHourGuardPercent)
 	}
-	// An explicit setting always wins over the strategy default.
+
 	if state.quotaPollerEnabled {
 		t.Fatal("an explicit enabled:false should disable the poller")
 	}
@@ -114,8 +114,6 @@ func TestNewRoutingSelectorBuildsResetSoonest(t *testing.T) {
 		t.Fatalf("guard = %v, want %v", resetSoonest.FiveHourGuardPercent, quota.DefaultFiveHourGuardPercent)
 	}
 
-	// With session affinity on, reset-soonest becomes the wrapper's fallback so
-	// an established binding keeps its credential.
 	cfg.Routing.SessionAffinity = true
 	wrapped := newRoutingSelector(normalizedRoutingRuntimeState(cfg))
 	affinity, ok := wrapped.(*coreauth.SessionAffinitySelector)
@@ -125,8 +123,6 @@ func TestNewRoutingSelectorBuildsResetSoonest(t *testing.T) {
 	defer affinity.Stop()
 }
 
-// TestRoutingRuntimeStateStaysComparable guards the != comparison in
-// applyManagerConfig: an uncomparable field there would panic at runtime.
 func TestRoutingRuntimeStateStaysComparable(t *testing.T) {
 	t.Parallel()
 

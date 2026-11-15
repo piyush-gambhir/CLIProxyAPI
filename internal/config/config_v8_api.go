@@ -6,9 +6,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ProjectV8ConfigAliases moves canonical fields into a requested historical
-// subtree. Moving, rather than copying, preserves PUT and DELETE semantics when
-// the subtree contains both shared settings and OAuth-only fields.
 func ProjectV8ConfigAliases(root *yaml.Node, path string) {
 	if path == "" {
 		return
@@ -22,8 +19,7 @@ func ProjectV8ConfigAliases(root *yaml.Node, path string) {
 		if value == nil {
 			continue
 		}
-		// Struct aliases only represent empty containers; their populated fields
-		// have individual mappings, sometimes with different nesting.
+
 		if value.Kind == yaml.MappingNode && len(value.Content) != 0 {
 			continue
 		}
@@ -33,18 +29,13 @@ func ProjectV8ConfigAliases(root *yaml.Node, path string) {
 	}
 }
 
-// NormalizeV8ConfigAliases accepts historical v8 paths without discarding
-// unknown fields. Callers still validate the canonical document before saving.
-// Normalize request bodies before merging so an alias update can replace a
-// canonical value already present in the stored configuration.
 func NormalizeV8ConfigAliases(root *yaml.Node) error {
 	var shape any
 	if err := root.Decode(&shape); err != nil {
 		return err
 	}
 	*root = *expandConfigAliases(root)
-	// A null historical container resets its fields. Represent the reset as
-	// null leaves so merging a root PATCH cannot turn it into an empty-map no-op.
+
 	for _, container := range v8SharedStructPaths {
 		value := yamlPath(root, container.old)
 		if value == nil || value.Tag != "!!null" {

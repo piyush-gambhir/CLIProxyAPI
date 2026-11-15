@@ -46,15 +46,14 @@ func codexTestAuth(baseURL string) *cliproxyauth.Auth {
 
 func codexTestRequest() (cliproxyexecutor.Request, cliproxyexecutor.Options) {
 	return cliproxyexecutor.Request{
-		Model:   "gpt-5.6-terra",
-		Payload: []byte(`{"model":"gpt-5.6-terra","input":"hello"}`),
-	}, cliproxyexecutor.Options{
-		SourceFormat: sdktranslator.FromString("openai-response"),
-		Stream:       true,
-	}
+			Model:   "gpt-5.6-terra",
+			Payload: []byte(`{"model":"gpt-5.6-terra","input":"hello"}`),
+		}, cliproxyexecutor.Options{
+			SourceFormat: sdktranslator.FromString("openai-response"),
+			Stream:       true,
+		}
 }
 
-// codexSSEServer streams the supplied event payloads as an HTTP 200 SSE response.
 func codexSSEServer(events ...string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -69,7 +68,6 @@ func codexSSEServer(events ...string) *httptest.Server {
 	}))
 }
 
-// codexWebsocketServer echoes the supplied frames after receiving the client request frame.
 func codexWebsocketServer(t *testing.T, frames ...string) *httptest.Server {
 	t.Helper()
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
@@ -92,14 +90,13 @@ func codexWebsocketServer(t *testing.T, frames ...string) *httptest.Server {
 
 func codexWebsocketRequest() (cliproxyexecutor.Request, cliproxyexecutor.Options) {
 	return cliproxyexecutor.Request{
-		Model:   "gpt-5.6-terra",
-		Payload: []byte(`{"model":"gpt-5.6-terra","input":[{"type":"message","role":"user","content":"hello"}]}`),
-	}, cliproxyexecutor.Options{
-		SourceFormat: sdktranslator.FromString("openai-response"),
-	}
+			Model:   "gpt-5.6-terra",
+			Payload: []byte(`{"model":"gpt-5.6-terra","input":[{"type":"message","role":"user","content":"hello"}]}`),
+		}, cliproxyexecutor.Options{
+			SourceFormat: sdktranslator.FromString("openai-response"),
+		}
 }
 
-// drainChunks collects every payload and the first error from a stream result.
 func drainChunks(result *cliproxyexecutor.StreamResult) (string, error) {
 	var payloads [][]byte
 	var streamErr error
@@ -115,9 +112,6 @@ func drainChunks(result *cliproxyexecutor.StreamResult) (string, error) {
 	return string(bytes.Join(payloads, []byte("\n"))), streamErr
 }
 
-// An overload rejection smuggled into an HTTP 200 stream must fail the whole attempt before any
-// downstream chunk escapes, so the conductor can retry on another credential. A nil StreamResult
-// is the invariant: with no channel there is no way for the buffered handshake to reach the client.
 func TestCodexExecutor_BootstrapBuffering_OverloadFailsAttemptWithoutLeakingHandshake(t *testing.T) {
 	server := codexSSEServer(codexCreatedEvent, codexInProgressEvent, codexOverloadEvent)
 	defer server.Close()
@@ -154,9 +148,6 @@ func TestCodexExecutor_BootstrapBuffering_CapacityFailsAttemptWithoutLeakingHand
 	}
 }
 
-// A non-overload terminal failure must keep the original in-stream delivery semantics: the
-// buffered handshake is flushed first and the error arrives as a stream chunk, so the conductor
-// sees a committed stream and does not burn another credential on a request-level fault.
 func TestCodexExecutor_BootstrapBuffering_NonOverloadStaysInStream(t *testing.T) {
 	server := codexSSEServer(codexCreatedEvent, codexInProgressEvent, codexInvalidEvent)
 	defer server.Close()
@@ -182,8 +173,6 @@ func TestCodexExecutor_BootstrapBuffering_NonOverloadStaysInStream(t *testing.T)
 	}
 }
 
-// Once the buffer limit is exceeded the stream is released and overload probing stops, which
-// bounds how long the downstream response headers can stay uncommitted.
 func TestCodexExecutor_BootstrapBuffering_BufferLimitReleasesStream(t *testing.T) {
 	events := make([]string, 0, codexBootstrapMaxBufferedFrames+2)
 	for i := 0; i < codexBootstrapMaxBufferedFrames+1; i++ {
@@ -208,8 +197,6 @@ func TestCodexExecutor_BootstrapBuffering_BufferLimitReleasesStream(t *testing.T
 	}
 }
 
-// codexWebsocketRawServer writes the supplied frames and then closes the connection, so a test can
-// drive an exact frame sequence rather than the canonical handshake.
 func codexWebsocketRawServer(t *testing.T, frames []string, tail ...string) *httptest.Server {
 	t.Helper()
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
@@ -233,7 +220,6 @@ func codexWebsocketRawServer(t *testing.T, frames []string, tail ...string) *htt
 	}))
 }
 
-// The websocket frame budget must bound allow-listed frames too, not only the skippable ones.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_FrameBudgetReleasesStream(t *testing.T) {
 	frames := make([]string, 0, codexBootstrapMaxBufferedFrames+1)
 	for i := 0; i < codexBootstrapMaxBufferedFrames+1; i++ {
@@ -253,7 +239,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_FrameBudgetReleasesStream(t 
 	drainChunks(result)
 }
 
-// The websocket budget is pinned on both sides, the same way the SSE one is.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_BudgetBoundaryIsExact(t *testing.T) {
 	send := func(n int) error {
 		frames := make([]string, n)
@@ -272,9 +257,7 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_BudgetBoundaryIsExact(t *tes
 	if err := send(codexBootstrapMaxBufferedFrames - 1); err == nil {
 		t.Fatalf("%d messages are inside the budget and must still fail over", codexBootstrapMaxBufferedFrames-1)
 	}
-	// The last message the window still admits. Without this case a budget one frame too small
-	// looks identical, since the overload is recognised before the window is consulted and so the
-	// max-1 case fails over either way.
+
 	if err := send(codexBootstrapMaxBufferedFrames); err == nil {
 		t.Fatalf("%d messages exactly fill the budget and must still fail over", codexBootstrapMaxBufferedFrames)
 	}
@@ -283,9 +266,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_BudgetBoundaryIsExact(t *tes
 	}
 }
 
-// The websocket byte budget has the same two properties as the SSE one: a message larger than the
-// cap is refused admission rather than taken on the strength of an empty buffer, and the budget is
-// seeded from the upstream message so it still advances for a downstream that renders nothing.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_ByteCapOrderingAndSeed(t *testing.T) {
 	t.Run("oversized message is not admitted", func(t *testing.T) {
 		oversized := `{"type":"response.in_progress","response":{"id":"` + strings.Repeat("q", codexBootstrapMaxBufferedBytes*2) + `"}}`
@@ -325,9 +305,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_ByteCapOrderingAndSeed(t *te
 	})
 }
 
-// The frame that trips the budget must still be delivered. Releasing the window is a decision about
-// what to do with later frames, not a licence to drop the one in hand: on a slow turn that frame is
-// the first token of the answer.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_BudgetFrameIsNotDropped(t *testing.T) {
 	frames := make([]string, 0, codexBootstrapMaxBufferedFrames+2)
 	for i := 0; i < codexBootstrapMaxBufferedFrames; i++ {
@@ -351,9 +328,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_BudgetFrameIsNotDropped(t *t
 	}
 }
 
-// The websocket bound must be enforced where the frame is counted. A peer that sends only frames the
-// bootstrap loop skips never reaches the buffering branch, so a release decided there would never
-// run and the downstream headers would stay uncommitted for as long as the peer keeps sending.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_SkippedFramesExhaustTheWindow(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -385,13 +359,8 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_SkippedFramesExhaustTheWindo
 	}
 }
 
-// The window only protects anything if it is small. Asserting it relative to itself, as the framing
-// tests below must, cannot catch a budget that has grown to a useless size.
 func TestCodexBootstrapBudgetsStaySmall(t *testing.T) {
-	// Pinned exactly, because the framing tests below express their expectations as multiples of
-	// these constants and so cannot notice the budgets growing.
-	// TestCodexExecutor_BootstrapBuffering_HeartbeatArithmeticPerFraming states the resulting
-	// heartbeat counts in absolute numbers, which is what config.example.yaml quotes to operators.
+
 	if codexBootstrapMaxBufferedFrames != 48 {
 		t.Fatalf("frame budget = %d, want 48; changing it changes how long the headers are held, so update config.example.yaml too", codexBootstrapMaxBufferedFrames)
 	}
@@ -400,9 +369,6 @@ func TestCodexBootstrapBudgetsStaySmall(t *testing.T) {
 	}
 }
 
-// In-stream delivery depends on the held frames rendering to at least one downstream chunk: the
-// conductor commits a stream only once it has seen a non-empty payload, so against a format that
-// renders the handshake as nothing there is nothing to commit and the attempt still fails over.
 func TestCodexExecutor_BootstrapBuffering_InStreamDeliveryNeedsRenderedFrames(t *testing.T) {
 	incomplete := `{"type":"response.incomplete","response":{"id":"resp_1","output":[],"usage":{"input_tokens":1,"output_tokens":0,"total_tokens":1}}}`
 	server := codexSSEServer(codexCreatedEvent, codexInProgressEvent, codexOutputAddedEvent, incomplete)
@@ -426,10 +392,6 @@ func TestCodexExecutor_BootstrapBuffering_InStreamDeliveryNeedsRenderedFrames(t 
 	}
 }
 
-// An empty response.incomplete is not an overload rejection, so it keeps its in-stream delivery:
-// the buffered frames are flushed and the error arrives as a chunk rather than burning another
-// credential. The websocket executor already routes this condition that way; both transports agree
-// on it. A truncated stream is deliberately left alone - both transports fail that one over.
 func TestCodexExecutor_BootstrapBuffering_NonOverloadTerminalStaysInStream(t *testing.T) {
 	cases := []struct{ name, tail string }{
 		{"empty incomplete", `{"type":"response.incomplete","response":{"id":"resp_1","output":[],"usage":{"input_tokens":1,"output_tokens":0,"total_tokens":1}}}`},
@@ -459,9 +421,6 @@ func TestCodexExecutor_BootstrapBuffering_NonOverloadTerminalStaysInStream(t *te
 	}
 }
 
-// The cap is consulted before a frame is taken, not after. A frame that alone exceeds it is refused
-// admission and released, so the rejection that follows it immediately - with no line in between to
-// trigger a late release - is delivered in-stream rather than failing the attempt over.
 func TestCodexExecutor_BootstrapBuffering_OversizedFrameIsNotAdmitted(t *testing.T) {
 	oversized := `{"type":"response.in_progress","response":{"id":"` + strings.Repeat("q", codexBootstrapMaxBufferedBytes*2) + `"}}`
 	body := "data: " + oversized + "\n" + "data: " + codexOverloadEvent + "\n\n"
@@ -479,10 +438,6 @@ func TestCodexExecutor_BootstrapBuffering_OversizedFrameIsNotAdmitted(t *testing
 	drainChunks(result)
 }
 
-// The byte budget is seeded from the upstream frame, not only from the chunks it translates into.
-// Against a Chat Completions downstream these frames render as zero chunks, so an accounting that
-// measured chunks alone would never advance and only the frame budget would remain - which these ten
-// frames stay well inside.
 func TestCodexExecutor_BootstrapBuffering_ByteCapCountsUpstreamFrames(t *testing.T) {
 	frame := `{"type":"response.in_progress","response":{"id":"` + strings.Repeat("w", codexBootstrapMaxBufferedBytes/8) + `"}}`
 	body := strings.Repeat("data: "+frame+"\n\n", 10) + "data: " + codexOverloadEvent + "\n\n"
@@ -501,8 +456,6 @@ func TestCodexExecutor_BootstrapBuffering_ByteCapCountsUpstreamFrames(t *testing
 	drainChunks(result)
 }
 
-// The websocket byte cap needs its own coverage: without it a handful of large frames would sit
-// inside the frame budget while retaining far more than the cap.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_ByteCapReleasesStream(t *testing.T) {
 	third := `{"type":"response.in_progress","response":{"id":"` + strings.Repeat("z", codexBootstrapMaxBufferedBytes/3) + `"}}`
 	server := codexWebsocketRawServer(t, []string{third, third, third, third}, codexOverloadEvent)
@@ -520,7 +473,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_ByteCapReleasesStream(t *tes
 	drainChunks(result)
 }
 
-// codexSSERawServer writes raw bytes, so a test can choose its own SSE framing.
 func codexSSERawServer(body string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -528,10 +480,6 @@ func codexSSERawServer(body string) *httptest.Server {
 	}))
 }
 
-// Pins the budget at its exact boundary. Comment heartbeats cost one scanned line each, so the
-// budget holds exactly codexBootstrapMaxBufferedFrames of them and the next one releases. Written
-// with absolute arithmetic on purpose: the framing cases below scale with the constant and so cannot
-// notice an off-by-one in the comparison.
 func TestCodexExecutor_BootstrapBuffering_BudgetBoundaryIsExact(t *testing.T) {
 	overload := "data: " + codexOverloadEvent + "\n\n"
 
@@ -576,10 +524,6 @@ func TestCodexExecutor_BootstrapBuffering_BudgetBoundaryIsExact(t *testing.T) {
 	})
 }
 
-// "data:\n\n" is the standard SSE heartbeat idiom and carries nothing, so it must not commit the
-// headers. Before this was handled it produced an empty event type, fell through the allow-list and
-// silently turned the feature off for the whole stream - while the websocket transport, which skips
-// an empty message, kept working.
 func TestCodexExecutor_BootstrapBuffering_EmptyDataFrameDoesNotReleaseStream(t *testing.T) {
 	for _, frame := range []string{"data:\n\n", "data: \n\n", "data:   \t\n\n"} {
 		body := frame + "data: " + codexOverloadEvent + "\n\n"
@@ -597,12 +541,6 @@ func TestCodexExecutor_BootstrapBuffering_EmptyDataFrameDoesNotReleaseStream(t *
 	}
 }
 
-// The bound must fire whatever framing the upstream picks. Each case uses a framing that a bound
-// derived from blank separators, from data: lines, or from translated chunks would fail to advance
-// on, and a Chat Completions downstream, which renders these frames as zero chunks. That last part
-// is why these cases cannot also assert what was flushed - there is nothing downstream to look at.
-// That the frames are held at all is covered by BufferLimitReleasesStream and the
-// NonContentFramesDoNotReleaseStream cases, which run against a passthrough downstream.
 func TestCodexExecutor_BootstrapBuffering_BoundHoldsForEverySSEFraming(t *testing.T) {
 	overload := "data: " + codexOverloadEvent + "\n\n"
 	handshake := `{"type":"response.in_progress","response":{"id":"resp_1"}}`
@@ -612,22 +550,22 @@ func TestCodexExecutor_BootstrapBuffering_BoundHoldsForEverySSEFraming(t *testin
 		body string
 	}{
 		{
-			// Comment heartbeats need no blank separator at all.
+
 			name: "comment heartbeats without blank separators",
 			body: strings.Repeat(": keepalive\n", codexBootstrapMaxBufferedFrames*4) + overload,
 		},
 		{
-			// A data: line is a complete frame; a blank line is optional between them.
+
 			name: "data frames without blank separators",
 			body: strings.Repeat("data: "+handshake+"\n", codexBootstrapMaxBufferedFrames*4) + overload,
 		},
 		{
-			// event:/data:/blank, the framing the canonical test server emits.
+
 			name: "three line framing",
 			body: strings.Repeat("event: response.in_progress\ndata: "+handshake+"\n\n", codexBootstrapMaxBufferedFrames*4) + overload,
 		},
 		{
-			// Extra blank separators are legal and must not be mistaken for extra frames.
+
 			name: "double blank separators",
 			body: strings.Repeat("data: "+handshake+"\n\n\n", codexBootstrapMaxBufferedFrames*4) + overload,
 		},
@@ -639,8 +577,7 @@ func TestCodexExecutor_BootstrapBuffering_BoundHoldsForEverySSEFraming(t *testin
 			defer server.Close()
 
 			req, _ := codexTestRequest()
-			// Chat Completions renders an unrecognised frame as zero chunks, so a bound derived from
-			// the downstream chunk count would never advance here.
+
 			opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FromString("openai"), Stream: true}
 			result, err := NewCodexExecutor(codexBufferingConfig(true)).ExecuteStream(context.Background(), codexTestAuth(server.URL), req, opts)
 
@@ -657,12 +594,8 @@ func TestCodexExecutor_BootstrapBuffering_BoundHoldsForEverySSEFraming(t *testin
 	}
 }
 
-// A single frame may be large: scanner.Buffer allows 50MB per line, so a frame budget alone is not a
-// memory bound. Measured against a passthrough downstream, where a held frame really does occupy
-// memory.
 func TestCodexExecutor_BootstrapBuffering_ByteCapReleasesStream(t *testing.T) {
-	// Frames that are individually well inside the cap but add up past it must still release, which
-	// is what makes this a cap on the buffer rather than a per-frame size limit.
+
 	third := `{"type":"response.in_progress","response":{"id":"` + strings.Repeat("y", codexBootstrapMaxBufferedBytes/3) + `"}}`
 	body := "data: " + third + "\n\n" + "data: " + third + "\n\n" + "data: " + third + "\n\n" +
 		"data: " + third + "\n\n" + "data: " + codexOverloadEvent + "\n\n"
@@ -681,9 +614,6 @@ func TestCodexExecutor_BootstrapBuffering_ByteCapReleasesStream(t *testing.T) {
 	drainChunks(result)
 }
 
-// Upstream interleaves keepalive heartbeats and item announcements while the model is still
-// thinking. Neither has reached the client, so a rejection arriving after one must still fail the
-// attempt over rather than surface in-stream.
 func TestCodexExecutor_BootstrapBuffering_NonContentFramesDoNotReleaseStream(t *testing.T) {
 	cases := []struct{ name, frame string }{
 		{"keepalive", codexKeepaliveEvent},
@@ -724,10 +654,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_NonContentFramesDoNotRelease
 	}
 }
 
-// The mirror image of the two tests above, and the reason the list is closed: a frame carrying
-// generated output, or announcing a server-side tool that may already be running, must commit the
-// downstream headers so a later rejection can no longer replay it on another credential. Without
-// this pair both call sites can stop consulting the allow-list altogether and the suite stays green.
 func TestCodexExecutor_BootstrapBuffering_ContentFrameReleasesBeforeOverload(t *testing.T) {
 	for _, tc := range codexReleasingFrameCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -770,8 +696,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_ContentFrameReleasesBeforeOv
 	}
 }
 
-// One frame the client has already seen, and one that means the upstream has dispatched work of its
-// own. Both must reach the client rather than be held.
 func codexReleasingFrameCases() []struct{ name, frame string } {
 	return []struct{ name, frame string }{
 		{"output text delta", codexOutputDeltaEvent},
@@ -779,12 +703,6 @@ func codexReleasingFrameCases() []struct{ name, frame string } {
 	}
 }
 
-// The existing cancellation test cancels before the request is sent; this one cancels mid-bootstrap,
-// with frames already held, which is the case the feature makes common. It pins the returned error
-// only. The guard it exercises also suppresses recording the cancellation as an upstream failure
-// against the credential, and that half is not observable from here: the scan error raised by a
-// cancelled read is the context.Canceled sentinel itself, so removing the guard leaves the returned
-// value unchanged and this test green.
 func TestCodexExecutor_BootstrapBuffering_CancelDuringBootstrapIsNotAnUpstreamFailure(t *testing.T) {
 	released := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -810,19 +728,12 @@ func TestCodexExecutor_BootstrapBuffering_CancelDuringBootstrapIsNotAnUpstreamFa
 	if result != nil {
 		drainChunks(result)
 	}
-	// Identity rather than errors.Is, so a transport error that merely wraps the cancellation cannot
-	// satisfy it.
+
 	if err != context.Canceled {
 		t.Fatalf("a cancelled caller must surface as context.Canceled itself, got %T: %v", err, err)
 	}
 }
 
-// The frame budget is a line count, so what it is worth to an operator depends on how the upstream
-// frames a heartbeat. These are the numbers config.example.yaml quotes, in absolute form: a test
-// that says "codexBootstrapMaxBufferedFrames heartbeats" would move with the constant and could
-// never catch the documented figure drifting. Each count is one short of the obvious division
-// because the rejection frame's own event: line is charged to the same budget before its data: line
-// is parsed.
 func TestCodexExecutor_BootstrapBuffering_HeartbeatArithmeticPerFraming(t *testing.T) {
 	overload := "event: error\ndata: " + codexOverloadEvent + "\n\n"
 	cases := []struct {
@@ -857,9 +768,6 @@ func TestCodexExecutor_BootstrapBuffering_HeartbeatArithmeticPerFraming(t *testi
 	}
 }
 
-// The byte budget is charged for the upstream frame *and* for the chunks it translates into, because
-// what is retained is the chunks. Both padded frames fit the cap on their upstream bytes alone, so
-// only a budget that also counts the translated chunks releases the stream here.
 func TestCodexExecutor_BootstrapBuffering_ByteCapCountsTranslatedChunks(t *testing.T) {
 	padded := `{"type":"response.in_progress","response":{"id":"` + strings.Repeat("p", 300<<10) + `"}}`
 	server := codexSSEServer(padded, padded, codexOverloadEvent)
@@ -896,8 +804,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_ByteCapCountsTranslatedChunk
 	}
 }
 
-// Anything the client has seen, anything a server-side tool has already started, and anything
-// unrecognised must release the stream. This is what keeps the list closed.
 func TestIsCodexBootstrapBufferableEvent(t *testing.T) {
 	hold := []string{
 		`{"type":"response.created"}`,
@@ -965,7 +871,6 @@ func TestIsCodexBootstrapBufferableEvent(t *testing.T) {
 	}
 }
 
-// Buffered handshake events must be replayed in upstream order ahead of the first generated event.
 func TestCodexExecutor_BootstrapBuffering_FlushesInOrderOnFirstOutput(t *testing.T) {
 	server := codexSSEServer(codexCreatedEvent, codexInProgressEvent, codexOutputAddedEvent, codexOutputDeltaEvent, codexCompletedEventBody)
 	defer server.Close()
@@ -980,12 +885,7 @@ func TestCodexExecutor_BootstrapBuffering_FlushesInOrderOnFirstOutput(t *testing
 	if streamErr != nil {
 		t.Fatalf("unexpected chunk error: %v", streamErr)
 	}
-	// Matched on the payload form throughout. The bare type name also appears in the `event:` line,
-	// and that line is held whatever the frame turns out to be, so an index on it would find a
-	// buffered chunk even if the released `data:` frame were dropped entirely.
-	// Pinned as a chain rather than a single held-before-released comparison: the released frame is
-	// always flushed after the whole held batch, so comparing against it alone cannot see the held
-	// frames permuted among themselves.
+
 	order := []string{`"type":"response.created"`, `"type":"response.in_progress"`, `"type":"response.output_item.added"`, `"type":"response.output_text.delta"`}
 	prev := -1
 	for _, marker := range order {
@@ -1005,7 +905,6 @@ func TestCodexExecutor_BootstrapBuffering_FlushesInOrderOnFirstOutput(t *testing
 	}
 }
 
-// With the feature disabled the overload rejection keeps its legacy in-stream delivery.
 func TestCodexExecutor_BootstrapBuffering_DefaultDisabledPassthrough(t *testing.T) {
 	server := codexSSEServer(codexCreatedEvent, codexOverloadEvent)
 	defer server.Close()
@@ -1022,16 +921,12 @@ func TestCodexExecutor_BootstrapBuffering_DefaultDisabledPassthrough(t *testing.
 	if streamErr == nil {
 		t.Fatal("expected stream error in chunks for default unbuffered mode")
 	}
-	// Disabling the feature must restore the previous behaviour exactly, status classification
-	// included: the 503 restoration is scoped to the buffered failover path, so an unbuffered
-	// overload still classifies as a bad gateway and keeps its old cooldown treatment.
+
 	if got := statusCodeFromTestError(t, streamErr); got != http.StatusBadGateway {
 		t.Fatalf("status code = %d, want %d while buffering is disabled", got, http.StatusBadGateway)
 	}
 }
 
-// A cancelled downstream request must surface the context error rather than being recorded as an
-// upstream failure that penalises the credential.
 func TestCodexExecutor_BootstrapBuffering_ContextCancelDuringBootstrap(t *testing.T) {
 	server := codexSSEServer(codexCreatedEvent)
 	defer server.Close()
@@ -1067,8 +962,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_OverloadFailsAttempt(t *test
 	}
 }
 
-// Captured from upstream on 2026-10-21: created, in_progress, a prompt-moderation response.metadata
-// frame, then server_is_overloaded. Nothing generated has been produced, so the attempt must fail over.
 const codexModerationMetadataEvent = `{"type":"response.metadata","response_id":"resp_1","sequence_number":2,"metadata":{"openai_chatgpt_moderation_metadata":{"prompt":{"omnimod":{"protection_type":"omnimod"}}}}}`
 
 func TestCodexExecutor_BootstrapBuffering_OverloadAfterModerationMetadataFailsAttempt(t *testing.T) {
@@ -1125,11 +1018,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_CapacityFailsAttempt(t *test
 	}
 }
 
-// The websocket transport prefixes response events with private metadata frames. Frame order
-// below matches live wire capture: codex.rate_limits and codex.response.metadata both arrive
-// *before* response.created, making the first generated event the fifth frame. They must be
-// treated as handshake events, otherwise a fixed 3-event window would release the stream at
-// response.created and never observe the rejection.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_PrivateHandshakeFramesDoNotExhaustWindow(t *testing.T) {
 	server := codexWebsocketServer(t,
 		`{"type":"codex.rate_limits","rate_limits":{"primary":{"used_percent":1}}}`,
@@ -1196,9 +1084,7 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_FlushesInOrderOnFirstOutput(
 	if streamErr != nil {
 		t.Fatalf("unexpected chunk error: %v", streamErr)
 	}
-	// Pinned as a chain rather than a single held-before-released comparison: the released frame is
-	// always flushed after the whole held batch, so comparing against it alone cannot see the held
-	// frames permuted among themselves. Mirrors the SSE assertions exactly.
+
 	order := []string{`"type":"response.created"`, `"type":"response.in_progress"`, `"type":"response.output_item.added"`, `"type":"response.output_text.delta"`}
 	prev := -1
 	for _, marker := range order {
@@ -1239,8 +1125,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_DefaultDisabledPassthrough(t
 	}
 }
 
-// The 503 restoration is scoped to the buffered failover path, so this only covers which
-// rejections are eligible to replace the whole attempt.
 func TestIsCodexOverloadBootstrapFailureRejectsRequestFaults(t *testing.T) {
 	notOverload := []string{
 		`{"error":{"type":"invalid_request_error","code":"invalid_value"}}`,
@@ -1274,11 +1158,6 @@ func TestIsCodexOverloadBootstrapFailureRejectsRequestFaults(t *testing.T) {
 	}
 }
 
-// codexWebsocketServerHoldingConnection behaves like codexWebsocketServer but keeps the upstream
-// connection open after writing the frames, so the executor's own teardown path is the only
-// source of session invalidation. With the plain helper the connection closes immediately, the
-// reader goroutine observes EOF first and reports upstream_disconnected, which both masks the
-// path under test and can make a disconnect assertion pass for the wrong reason.
 func codexWebsocketServerHoldingConnection(t *testing.T, frames ...string) *httptest.Server {
 	t.Helper()
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
@@ -1304,13 +1183,6 @@ func codexWebsocketServerHoldingConnection(t *testing.T, frames ...string) *http
 	}))
 }
 
-// executeWebsocketStreamInSession runs ExecuteStream bound to a named execution session and
-// reports whether the upstream teardown was signalled to the downstream handler.
-//
-// The downstream Responses WebSocket handler subscribes to UpstreamDisconnectChan and closes
-// the client connection as soon as a disconnect is published. A bootstrap overload is retried
-// on another credential, so publishing there would tear down the client connection before the
-// retry can deliver anything, and the client would observe an abnormal close with zero frames.
 func executeWebsocketStreamInSession(t *testing.T, frames ...string) (notified bool, err error) {
 	t.Helper()
 
@@ -1352,8 +1224,6 @@ func TestCodexWebsocketsExecutor_BootstrapOverload_DoesNotNotifyDownstreamDiscon
 	}
 }
 
-// A non-overload terminal failure is delivered in-stream and genuinely ends the session, so it
-// must keep signalling the disconnect exactly as it did before buffering existed.
 func TestCodexWebsocketsExecutor_BootstrapNonOverload_StillNotifiesDownstreamDisconnect(t *testing.T) {
 	notified, err := executeWebsocketStreamInSession(t, codexCreatedEvent, codexInProgressEvent, codexInvalidEvent)
 
@@ -1429,8 +1299,6 @@ func TestCodexConfig_StreamBootstrapTimeoutDuration(t *testing.T) {
 	}
 }
 
-// When bootstrap buffering is enabled, elapsed time exceeding the timeout must release the stream
-// so downstream headers are committed and in-stream delivery takes over rather than long hangs.
 func TestCodexExecutor_BootstrapBuffering_TimeBudgetReleasesStream(t *testing.T) {
 	t0 := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
 	clock := withMockClock(t, t0)
@@ -1509,7 +1377,7 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_TimeBudgetReleasesStream(t *
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(codexInProgressEvent))
 
 		<-bootstrapStarted
-		// Advance clock past default 10s timeout
+
 		clock.advance(11 * time.Second)
 
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(codexInProgressEvent))
@@ -1530,7 +1398,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_TimeBudgetReleasesStream(t *
 	}
 }
 
-// When stream-bootstrap-timeout is explicitly disabled with "none", time passing does not release the stream.
 func TestCodexExecutor_BootstrapBuffering_DisabledTimeBudget(t *testing.T) {
 	t0 := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
 	clock := withMockClock(t, t0)
@@ -1542,7 +1409,6 @@ func TestCodexExecutor_BootstrapBuffering_DisabledTimeBudget(t *testing.T) {
 			f.Flush()
 		}
 
-		// Advance clock by 100 seconds
 		clock.advance(100 * time.Second)
 
 		_, _ = w.Write([]byte("event: response.in_progress\ndata: " + codexInProgressEvent + "\n\n"))
@@ -1584,7 +1450,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_DisabledTimeBudget(t *testin
 		}
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(codexInProgressEvent))
 
-		// Advance clock by 100 seconds
 		clock.advance(100 * time.Second)
 
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(codexInProgressEvent))
@@ -1603,7 +1468,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_DisabledTimeBudget(t *testin
 	}
 }
 
-// When stream-bootstrap-timeout is unset (defaulting to 0/unlimited), time passing does not release the stream.
 func TestCodexExecutor_BootstrapBuffering_DefaultUnsetTimeoutIsUnlimited(t *testing.T) {
 	t0 := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
 	clock := withMockClock(t, t0)
@@ -1615,7 +1479,6 @@ func TestCodexExecutor_BootstrapBuffering_DefaultUnsetTimeoutIsUnlimited(t *test
 			f.Flush()
 		}
 
-		// Advance clock by 100 seconds
 		clock.advance(100 * time.Second)
 
 		_, _ = w.Write([]byte("event: response.in_progress\ndata: " + codexInProgressEvent + "\n\n"))
@@ -1631,7 +1494,7 @@ func TestCodexExecutor_BootstrapBuffering_DefaultUnsetTimeoutIsUnlimited(t *test
 	defer server.Close()
 
 	req, opts := codexTestRequest()
-	// Unset timeout config: defaults to 0 (unlimited time)
+
 	cfg := codexBufferingConfig(true)
 	result, err := NewCodexExecutor(cfg).ExecuteStream(context.Background(), codexTestAuth(server.URL), req, opts)
 	if err == nil {
@@ -1642,8 +1505,6 @@ func TestCodexExecutor_BootstrapBuffering_DefaultUnsetTimeoutIsUnlimited(t *test
 	}
 }
 
-// When the first message arriving after timeout is an overload rejection, it must be delivered
-// in-stream rather than triggering credential failover.
 func TestCodexExecutor_BootstrapBuffering_OverloadDirectlyAfterTimeoutDeliveredInStream(t *testing.T) {
 	t0 := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
 	clock := withMockClock(t, t0)
@@ -1667,7 +1528,7 @@ func TestCodexExecutor_BootstrapBuffering_OverloadDirectlyAfterTimeoutDeliveredI
 		}
 
 		<-bootstrapStarted
-		// Advance clock past 10s timeout before the first event arrives
+
 		clock.advance(11 * time.Second)
 
 		_, _ = w.Write([]byte("event: error\ndata: " + codexOverloadEvent + "\n\n"))
@@ -1717,7 +1578,7 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_OverloadDirectlyAfterTimeout
 		}
 
 		<-bootstrapStarted
-		// Advance clock past 10s timeout before writing any messages
+
 		clock.advance(11 * time.Second)
 
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(codexOverloadEvent))
@@ -1737,8 +1598,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_OverloadDirectlyAfterTimeout
 	}
 }
 
-// When a status-bearing websocket error (e.g. status: 429) arrives after timeout, it must be
-// delivered in-stream rather than failing over.
 func TestCodexWebsocketsExecutor_BootstrapBuffering_StatusBearingErrorAfterTimeoutDeliveredInStream(t *testing.T) {
 	t0 := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
 	clock := withMockClock(t, t0)
@@ -1768,7 +1627,7 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_StatusBearingErrorAfterTimeo
 		}
 
 		<-bootstrapStarted
-		// Advance clock past 10s timeout before writing error frame
+
 		clock.advance(11 * time.Second)
 
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(statusBearingError))
@@ -1788,10 +1647,6 @@ func TestCodexWebsocketsExecutor_BootstrapBuffering_StatusBearingErrorAfterTimeo
 	}
 }
 
-// The downstream handler closes the client connection as soon as the executor publishes an
-// upstream disconnect, which cancels the request context. When an upstream error arrives after
-// the stream has already emitted payload chunks, the error chunk must still reach the conductor
-// before the disconnect notification fires (issue 6503).
 func TestCodexWebsocketsExecutor_UnbufferedUpstreamErrorIsDeliveredBeforeDisconnectNotify(t *testing.T) {
 	frames := map[string]string{
 		"error frame":     `{"type":"error","status":429,"error":{"type":"usage_limit_reached","message":"The usage limit has been reached","resets_in_seconds":600}}`,
@@ -1827,7 +1682,6 @@ func TestCodexWebsocketsExecutor_UnbufferedUpstreamErrorIsDeliveredBeforeDisconn
 				t.Fatalf("ExecuteStream() error = %v", err)
 			}
 
-			// Give a premature disconnect notification time to cancel the context before the error is read.
 			select {
 			case <-canceled:
 			case <-time.After(200 * time.Millisecond):
@@ -1854,10 +1708,6 @@ func TestCodexWebsocketsExecutor_UnbufferedUpstreamErrorIsDeliveredBeforeDisconn
 	}
 }
 
-// When an upstream usage-limit error arrives before any downstream payload chunk is emitted
-// (or after buffered handshake events while bootstrap buffering is enabled), the executor must
-// not signal UpstreamDisconnectChan so the conductor can fail over to another credential on the
-// same downstream WebSocket connection (issue 7051).
 func TestCodexWebsocketsExecutor_PreOutputUpstreamErrorDoesNotNotifyDisconnect(t *testing.T) {
 	frames := map[string]string{
 		"error frame":     `{"type":"error","status":429,"error":{"type":"usage_limit_reached","message":"The usage limit has been reached","resets_in_seconds":600}}`,

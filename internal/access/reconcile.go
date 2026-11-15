@@ -12,10 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ReconcileProviders builds the desired provider list by reusing existing providers when possible
-// and creating or removing providers only when their configuration changed. It returns the final
-// ordered provider slice along with the identifiers of providers that were added, updated, or
-// removed compared to the previous configuration.
 func ReconcileProviders(oldCfg, newCfg *config.Config, existing []sdkaccess.Provider) (result []sdkaccess.Provider, added, updated, removed []string, err error) {
 	_ = oldCfg
 	if newCfg == nil {
@@ -76,9 +72,6 @@ func ReconcileProviders(oldCfg, newCfg *config.Config, existing []sdkaccess.Prov
 	return result, added, updated, removed, nil
 }
 
-// ApplyAccessProviders reconciles the configured access providers against the
-// currently registered providers and updates the manager. It logs a concise
-// summary of the detected changes and returns whether any provider changed.
 func ApplyAccessProviders(manager *sdkaccess.Manager, oldCfg, newCfg *config.Config) (bool, error) {
 	if manager == nil || newCfg == nil {
 		return false, nil

@@ -946,7 +946,7 @@ func TestConvertInteractionsResponseToOpenAIResponsesStreamRestoresAntigravityTo
 }
 
 func TestConvertInteractionsResponseToOpenAIResponsesPreservesNonCollidingAndNonAntigravityNames(t *testing.T) {
-	// 1. Antigravity model with non-colliding external_ name: external_lookup must NOT be stripped.
+
 	rawNonColliding := []byte(`{
 		"id":"interaction_1",
 		"model":"antigravity-preview-05-2026",
@@ -959,7 +959,6 @@ func TestConvertInteractionsResponseToOpenAIResponsesPreservesNonCollidingAndNon
 		t.Fatalf("output.0.name = %q, want external_lookup (preserved). Output: %s", got, string(outNonColliding))
 	}
 
-	// 2. Non-antigravity model with external_read_file: must NOT be stripped.
 	rawNonAnti := []byte(`{
 		"id":"interaction_2",
 		"model":"gemini-3.1-flash-lite",
@@ -976,7 +975,6 @@ func TestConvertInteractionsResponseToOpenAIResponsesPreservesNonCollidingAndNon
 func TestConvertInteractionsResponseToOpenAIResponses_PreservesHTMLCharactersInToolCallArguments(t *testing.T) {
 	command := `gh issue view 5802 --json number,title,body,url,state,labels,assignees 2>&1 | head -100`
 
-	// 1. Non-stream test: function_call with 2>&1
 	rawNonStream := []byte(fmt.Sprintf(`{
 		"id":"interaction_test",
 		"model":"devin/swe-2",
@@ -993,7 +991,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_PreservesHTMLCharactersInT
 		t.Fatalf("non-stream output should contain '2>&1': %s", outNonStreamStr)
 	}
 
-	// 2. Stream test: function_call delta and done with 2>&1
 	var param any
 	var outStream [][]byte
 	rawEvents := [][]byte{
@@ -1025,10 +1022,7 @@ func TestConvertInteractionsResponseToOpenAIResponses_PreservesHTMLCharactersInT
 }
 
 func TestConvertInteractionsResponseToOpenAIResponses_LogReplayTwoToolCalls(t *testing.T) {
-	// Replay the exact scenario from the log with separated tool calls:
-	// Step 0: thought
-	// Step 1: title_0 (title: Triage issue 5802)
-	// Step 2: bash_1 (gh issue view ... 2>&1 | head -100)
+
 	command := `gh issue view 5802 --json number,title,body,url,state,labels,assignees 2>&1 | head -100`
 
 	var param any
@@ -1038,11 +1032,11 @@ func TestConvertInteractionsResponseToOpenAIResponses_LogReplayTwoToolCalls(t *t
 		[]byte("event: step.start\ndata: {\"index\":0,\"step\":{\"type\":\"thought\"},\"event_type\":\"step.start\"}\n\n"),
 		[]byte("event: step.delta\ndata: {\"index\":0,\"delta\":{\"type\":\"thought_summary\",\"text\":\"I need to triage GitHub issue 5802.\"},\"event_type\":\"step.delta\"}\n\n"),
 		[]byte("event: step.stop\ndata: {\"index\":0,\"event_type\":\"step.stop\"}\n\n"),
-		// Tool call 1: title
+
 		[]byte("event: step.start\ndata: {\"index\":1,\"step\":{\"type\":\"function_call\",\"id\":\"title_0\",\"call_id\":\"title_0\",\"name\":\"title\"},\"event_type\":\"step.start\"}\n\n"),
 		[]byte("event: step.delta\ndata: {\"index\":1,\"delta\":{\"type\":\"arguments_delta\",\"arguments\":\"{\\\"title\\\": \\\"Triage issue 5802\\\"}\"},\"event_type\":\"step.delta\"}\n\n"),
 		[]byte("event: step.stop\ndata: {\"index\":1,\"event_type\":\"step.stop\"}\n\n"),
-		// Tool call 2: bash
+
 		[]byte("event: step.start\ndata: {\"index\":2,\"step\":{\"type\":\"function_call\",\"id\":\"bash_1\",\"call_id\":\"bash_1\",\"name\":\"bash\"},\"event_type\":\"step.start\"}\n\n"),
 		[]byte(fmt.Sprintf("event: step.delta\ndata: {\"index\":2,\"delta\":{\"type\":\"arguments_delta\",\"arguments\":\"{\\\"command\\\": \\\"%s\\\", \\\"timeout\\\": 60}\"},\"event_type\":\"step.delta\"}\n\n", command)),
 		[]byte("event: step.stop\ndata: {\"index\":2,\"event_type\":\"step.stop\"}\n\n"),
@@ -1089,7 +1083,7 @@ func TestConvertInteractionsResponseToOpenAIResponses_LogReplayTwoToolCalls(t *t
 }
 
 func TestConvertInteractionsResponseToOpenAIResponses_FunctionCallHasStatus(t *testing.T) {
-	// 1. Stream test: function_call added/done and response.completed items must carry status
+
 	var param any
 	rawEvents := [][]byte{
 		[]byte("event: interaction.created\ndata: {\"interaction\":{\"id\":\"i1\",\"model\":\"devin/swe-2\"},\"event_type\":\"interaction.created\"}\n\n"),
@@ -1129,7 +1123,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_FunctionCallHasStatus(t *t
 		t.Fatalf("completed response.output.0.status = %q, want completed. Payload: %s", got, string(completedPayload))
 	}
 
-	// 2. Non-stream test: function_call output item must carry status: completed
 	rawNonStream := []byte(`{
 		"id":"i1",
 		"model":"devin/swe-2",
@@ -1142,7 +1135,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_FunctionCallHasStatus(t *t
 		t.Fatalf("non-stream output.0.status = %q, want completed. Output: %s", got, string(outNonStream))
 	}
 
-	// 3. Truncation test: stream with incomplete/length produces response.incomplete
 	var paramTrunc any
 	rawTruncEvents := [][]byte{
 		[]byte("event: interaction.created\ndata: {\"interaction\":{\"id\":\"i2\",\"model\":\"devin/swe-2\"},\"event_type\":\"interaction.created\"}\n\n"),
@@ -1170,7 +1162,7 @@ func TestConvertInteractionsResponseToOpenAIResponses_FunctionCallHasStatus(t *t
 }
 
 func TestConvertInteractionsResponseToOpenAIResponses_ContentFilterIncomplete(t *testing.T) {
-	// 1. Stream
+
 	var param any
 	rawStream := [][]byte{
 		[]byte("event: interaction.created\ndata: {\"interaction\":{\"id\":\"i_cf\",\"model\":\"devin/swe-2\"},\"event_type\":\"interaction.created\"}\n\n"),
@@ -1192,7 +1184,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_ContentFilterIncomplete(t 
 		t.Fatalf("incomplete_details.reason = %q, want content_filter. Payload: %s", got, string(incompletePayload))
 	}
 
-	// 2. Non-stream
 	rawNonStream := []byte(`{
 		"id":"i_cf",
 		"model":"devin/swe-2",
@@ -1210,7 +1201,7 @@ func TestConvertInteractionsResponseToOpenAIResponses_ContentFilterIncomplete(t 
 }
 
 func TestConvertInteractionsResponseToOpenAIResponses_MissingUsageDefaultsToZeros(t *testing.T) {
-	// 1. Stream with no usage in interaction.completed
+
 	var param any
 	rawStream := [][]byte{
 		[]byte("event: interaction.created\ndata: {\"interaction\":{\"id\":\"i_nousage\",\"model\":\"devin/swe-2\"},\"event_type\":\"interaction.created\"}\n\n"),
@@ -1241,7 +1232,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_MissingUsageDefaultsToZero
 		t.Fatalf("expected usage.total_tokens to exist")
 	}
 
-	// 2. Non-stream with no usage
 	rawNonStream := []byte(`{
 		"id":"i_nousage",
 		"model":"devin/swe-2",
@@ -1281,7 +1271,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		]
 	}`)
 
-	// Test NonStream
 	rawNonStream := []byte(`{
 		"id": "resp_1",
 		"steps": [
@@ -1302,7 +1291,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 
 	outNonStream := ConvertInteractionsResponseToOpenAIResponsesNonStream(context.Background(), "devin/gemini-3-7-flash", origRequest, nil, rawNonStream, nil)
 
-	// Item 0: multi_agent_v1__close_agent -> name: "close_agent", namespace: "multi_agent_v1", type: "function_call"
 	if got := ojson.GetBytesNoCopy(outNonStream, "output.0.name").String(); got != "close_agent" {
 		t.Errorf("output.0.name = %q, want close_agent", got)
 	}
@@ -1313,7 +1301,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		t.Errorf("output.0.type = %q, want function_call", got)
 	}
 
-	// Item 1: functions__exec -> name: "exec", namespace: "functions", type: "custom_tool_call"
 	if got := ojson.GetBytesNoCopy(outNonStream, "output.1.name").String(); got != "exec" {
 		t.Errorf("output.1.name = %q, want exec", got)
 	}
@@ -1330,7 +1317,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		t.Errorf("output.1.arguments should not exist for custom_tool_call")
 	}
 
-	// Test Stream
 	var param any
 	streamChunk := []byte(`{"event_type":"step.start","index":0,"step":{"type":"function_call","call_id":"call_1","name":"multi_agent_v1__close_agent","arguments":"{\"target\":\"agent_1\"}"}}`)
 	events := ConvertInteractionsResponseToOpenAIResponses(context.Background(), "devin/gemini-3-7-flash", origRequest, nil, streamChunk, &param)
@@ -1355,7 +1341,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		t.Fatalf("expected response.output_item.added event in stream")
 	}
 
-	// Test Stream done
 	doneChunk := []byte(`{"event_type":"step.stop","index":0}`)
 	eventsDone := ConvertInteractionsResponseToOpenAIResponses(context.Background(), "devin/gemini-3-7-flash", origRequest, nil, doneChunk, &param)
 	foundDone := false
@@ -1376,7 +1361,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		t.Fatalf("expected response.output_item.done event in stream")
 	}
 
-	// Test Stream Custom Tool (start -> delta -> stop sequence)
 	var paramCustom any
 	streamCustomStart := []byte(`{"event_type":"step.start","index":0,"step":{"type":"function_call","call_id":"call_2","name":"functions__exec"}}`)
 	eventsStart := ConvertInteractionsResponseToOpenAIResponses(context.Background(), "devin/gemini-3-7-flash", origRequest, nil, streamCustomStart, &paramCustom)
@@ -1477,7 +1461,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_AntigravityCustomToolResto
 		t.Fatalf("output.0.arguments unexpectedly exists for custom_tool_call")
 	}
 
-	// Test Stream (start -> delta -> stop)
 	var param any
 	streamChunk := []byte(`{"event_type":"step.start","index":0,"step":{"type":"function_call","call_id":"call_1","name":"external_read_file"}}`)
 	eventsStart := ConvertInteractionsResponseToOpenAIResponses(context.Background(), "antigravity-preview-05-2026", origRequest, nil, streamChunk, &param)

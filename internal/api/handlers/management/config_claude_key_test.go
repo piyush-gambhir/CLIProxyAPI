@@ -20,7 +20,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: writeTestConfigFile(t)}
 
-	// Patch fingerprint-profile to claude-code-cli
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -35,7 +34,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 		t.Fatalf("FingerprintProfile = %q, want %q", got, "claude-code-cli")
 	}
 
-	// Patch fingerprint-profile back to empty
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -50,8 +48,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 		t.Fatalf("FingerprintProfile = %q, want empty", got)
 	}
 
-	// A legacy alias is stored in canonical form so the config file and the request
-	// path agree on one spelling.
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -67,8 +63,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 	}
 }
 
-// A typo must fail the write instead of reaching the request path, where it can
-// only be reported as a warning behind every later request.
 func TestPatchClaudeKeyRejectsUnknownFingerprintProfile(t *testing.T) {
 	cfg := &config.Config{
 		ClaudeKey: []config.ClaudeKey{
@@ -145,7 +139,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	*cfg.ClaudeKey[0].Cloak.CacheUserID = true
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// 1. Partial patch: only update strict-mode to false. mode: always and cache-user-id: true must be preserved.
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -169,7 +162,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Fatalf("Cloak.CacheUserID = %v, want preserved true", cfg.ClaudeKey[0].Cloak.CacheUserID)
 	}
 
-	// Verify disk persistence after partial patch
 	loadedCfg, errLoad := config.LoadConfigOptional(configFile, false)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
@@ -181,7 +173,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Errorf("persisted Mode = %q, want %q", loadedCfg.ClaudeKey[0].Cloak.Mode, "always")
 	}
 
-	// 2. Partial patch: update cache-user-id to false
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -196,7 +187,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Fatalf("Cloak.CacheUserID = %v, want false", cfg.ClaudeKey[0].Cloak.CacheUserID)
 	}
 
-	// Verify disk persistence
 	loadedCfg, errLoad = config.LoadConfigOptional(configFile, false)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
@@ -205,7 +195,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Errorf("persisted CacheUserID = %v, want false", loadedCfg.ClaudeKey[0].Cloak.CacheUserID)
 	}
 
-	// 3. Rejects invalid cloak JSON
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -216,7 +205,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Fatalf("status = %d, want 400 for invalid cloak JSON", rec.Code)
 	}
 
-	// 4. Patch cloak to null (clear cloak)
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -231,7 +219,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Fatalf("Cloak = %+v, want nil after clearing", cfg.ClaudeKey[0].Cloak)
 	}
 
-	// Verify disk persistence after null
 	loadedCfg, errLoad = config.LoadConfigOptional(configFile, false)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
@@ -322,7 +309,6 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT with updated cloak where mode is empty (preserves original mode), strict-mode is false, cache-user-id is false
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -339,11 +325,11 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
 	savedText := string(savedBytes)
-	// Empty mode preserves previous mode when left blank
+
 	if !strings.Contains(savedText, "mode: always") {
 		t.Fatalf("saved YAML lost preserved 'mode: always':\n%s", savedText)
 	}
-	// Switches: on is on, off is off (strict-mode: true is gone, cache-user-id: false is present)
+
 	if strings.Contains(savedText, "strict-mode: true") {
 		t.Fatalf("saved YAML still contains 'strict-mode: true':\n%s", savedText)
 	}
@@ -354,7 +340,6 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 		t.Fatalf("saved YAML missing 'cache-user-id: false':\n%s", savedText)
 	}
 
-	// Verify GET returns preserved mode and updated false values so the frontend continues to display the original value
 	getRec := httptest.NewRecorder()
 	getCtx, _ := gin.CreateTestContext(getRec)
 	getCtx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/claude-api-key", nil)
@@ -399,8 +384,6 @@ func TestPutClaudeKeysPreservesModeByCredentialIdentity(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// Submit PUT where key-a is removed, and key-b is sent with empty mode.
-	// key-b must retain its own "never" mode, not inherit key-a's "always".
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -459,8 +442,6 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// Real frontend PUT request when user clears mode and unchecks cache-user-id:
-	// mode is omitted, cache-user-id is omitted, strict-mode is false.
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -477,11 +458,11 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
 	savedText := string(savedBytes)
-	// Mode is preserved from previous config
+
 	if !strings.Contains(savedText, "mode: always") {
 		t.Fatalf("saved YAML lost preserved 'mode: always':\n%s", savedText)
 	}
-	// Disabled switches: strict-mode: true and cache-user-id: true must be pruned
+
 	if strings.Contains(savedText, "strict-mode: true") {
 		t.Fatalf("saved YAML still contains 'strict-mode: true':\n%s", savedText)
 	}
@@ -489,7 +470,6 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 		t.Fatalf("saved YAML still contains 'cache-user-id: true':\n%s", savedText)
 	}
 
-	// Verify GET response
 	getRec := httptest.NewRecorder()
 	getCtx, _ := gin.CreateTestContext(getRec)
 	getCtx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/claude-api-key", nil)
@@ -538,7 +518,6 @@ func TestPutClaudeKeysPreservesModeWithDifferentPrefix(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// Update team2 with empty mode. It must retain its own "never" mode and not team1's "always".
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -585,8 +564,6 @@ func TestPutClaudeKeysAuthIndexCannotBypassStrictTupleIsolation(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT sends key-b with key-a's auth-index and empty mode.
-	// Strict tuple isolation must ensure key-b preserves its own mode ("never") and does not inherit key-a's mode.
 	payload := `[{"api-key":"key-a","cloak":{"mode":"always"}},{"api-key":"key-b","auth-index":"index-a","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -629,8 +606,6 @@ func TestPutClaudeKeysDoesNotInheritModeForNewCredential(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT replaces old-key with completely new-key (without auth-index) and empty mode.
-	// new-key must NOT inherit old-key's "never" mode; its mode must remain empty.
 	payload := `[{"api-key":"new-key","base-url":"https://new.example.com","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -687,8 +662,6 @@ func TestPutClaudeKeysAmbiguousCredentialsDoNotInheritMode(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT sends one shared-key with empty mode and no auth-index.
-	// Since matching is ambiguous between the two duplicates, it must not guess or inherit.
 	payload := `[{"api-key":"shared-key","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -731,8 +704,6 @@ func TestPutClaudeKeysNewCredentialWithDifferentPrefixDoesNotInheritMode(t *test
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT retains team1 and adds a second credential for team2 with empty mode without auth-index.
-	// team1 must retain its "never" mode, and newly added team2 must NOT inherit team1's "never" mode.
 	payload := `[{"api-key":"shared-key","prefix":"team1","cloak":{"mode":""}},{"api-key":"shared-key","prefix":"team2","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -776,7 +747,6 @@ func TestPutClaudeKeysOmittedCloakPreservesExistingMode(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT sends the credential without a cloak block. Existing mode: always must be preserved.
 	payload := `[{"api-key":"sk-ant-test"}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -838,7 +808,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("saved YAML missing 'priority: 20':\n%s", savedText)
 	}
 
-	// Verify GET returns the updated priority with structured unmarshaling
 	getRec := httptest.NewRecorder()
 	getCtx, _ := gin.CreateTestContext(getRec)
 	getCtx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/claude-api-key", nil)
@@ -860,7 +829,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("GET response ClaudeKey[1].Priority = %d, want 20", resp.ClaudeKey[1].Priority)
 	}
 
-	// Omitting priority must preserve existing non-zero value (20)
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -878,7 +846,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("ClaudeKey[1].Prefix = %q, want %q", got, "team-test")
 	}
 
-	// Reset priority to 0 explicitly
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -893,7 +860,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("ClaudeKey[1].Priority = %d, want 0", got)
 	}
 
-	// Invalid priority type returns 400
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",

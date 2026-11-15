@@ -17,7 +17,6 @@ import (
 
 const trafficAuthFile = "claude.json"
 
-// takeQueuedAuthUpdate removes the queued update for id and drops the rest; the test is the consumer.
 func takeQueuedAuthUpdate(w *Watcher, id string) (AuthUpdate, bool) {
 	w.dispatchMu.Lock()
 	defer w.dispatchMu.Unlock()
@@ -36,8 +35,6 @@ func setTrafficConfig(w *Watcher, cfg *config.Config) {
 	w.clientsMutex.Unlock()
 }
 
-// reloadExcludedModels applies a config whose oauth-excluded-models for claude changed to
-// model, as the config reload does (no auth-dir rescan), and returns the queued update.
 func reloadExcludedModels(t *testing.T, w *Watcher, model string) AuthUpdate {
 	t.Helper()
 	setTrafficConfig(w, excludedModelsConfig(w.authDir, model))
@@ -49,9 +46,6 @@ func reloadExcludedModels(t *testing.T, w *Watcher, model string) AuthUpdate {
 	return update
 }
 
-// newTrafficWatcher loads one Claude auth file through a scan into a manager on a real
-// file store, with oauth-excluded-models old-model; persist registers it as a login does,
-// skip-persist as the queue consumer does.
 func newTrafficWatcher(t *testing.T, persist bool) (*Watcher, *coreauth.Manager, string) {
 	t.Helper()
 	dir := t.TempDir()
@@ -88,8 +82,6 @@ func trafficRequestResult(success bool) coreauth.Result {
 	return result
 }
 
-// applyQueuedSnapshot applies the queued update as the service's queue consumer does and
-// reports whether the manager committed it (false: discarded, the file changed since the read).
 func applyQueuedSnapshot(t *testing.T, manager *coreauth.Manager, update AuthUpdate) bool {
 	t.Helper()
 	if (update.Action != AuthUpdateActionModify && update.Action != AuthUpdateActionAdd) || update.Auth == nil {
@@ -103,7 +95,6 @@ func applyQueuedSnapshot(t *testing.T, manager *coreauth.Manager, update AuthUpd
 	return after.Generation > before.Generation
 }
 
-// requireNextScanKeeps runs the next unrelated scan: it must queue nothing for the auth.
 func requireNextScanKeeps(t *testing.T, w *Watcher) {
 	t.Helper()
 	w.refreshAuthState(false)
@@ -112,9 +103,6 @@ func requireNextScanKeeps(t *testing.T, w *Watcher) {
 	}
 }
 
-// A config reload changes oauth-excluded-models; a request on the auth completes between
-// the reload's scan and the apply of the scan's snapshot (its save leaves the file as is):
-// the snapshot applies and the next scan queues nothing.
 func TestRefreshAuthStateExcludedModelsReloadSurvivesRequestResult(t *testing.T) {
 	w, manager, _ := newTrafficWatcher(t, true)
 
@@ -129,8 +117,6 @@ func TestRefreshAuthStateExcludedModelsReloadSurvivesRequestResult(t *testing.T)
 	requireNextScanKeeps(t, w)
 }
 
-// A failed request lands between the config reload's scan and the apply: the snapshot
-// applies and keeps status, last error, cooldown, quota and model state.
 func TestRefreshAuthStateSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	w, manager, _ := newTrafficWatcher(t, true)
 
@@ -164,8 +150,6 @@ func TestRefreshAuthStateSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	}
 }
 
-// A request on the auth completes and the operator edits the auth file while a config
-// reload's scan runs, before it reads the file. The scan's snapshot carries the edit and applies.
 func TestRefreshAuthStateAppliesExternalEditAfterRequestResult(t *testing.T) {
 	w, manager, path := newTrafficWatcher(t, true)
 
@@ -199,8 +183,6 @@ func TestRefreshAuthStateAppliesExternalEditAfterRequestResult(t *testing.T) {
 	}
 }
 
-// The fsnotify variant: the auth-files PATCH writes the file and the watcher reads it under
-// the new config; a request completes before the queue applies the snapshot.
 func TestAddOrUpdateClientConfigChangeSurvivesRequestResult(t *testing.T) {
 	w, manager, path := newTrafficWatcher(t, true)
 
@@ -224,10 +206,6 @@ func TestAddOrUpdateClientConfigChangeSurvivesRequestResult(t *testing.T) {
 	requireNextScanKeeps(t, w)
 }
 
-// The queue consumer registered the auth without persisting, so the first request result's
-// save adds "disabled": false and changes the file after the reload's scan read it: the
-// reload's snapshot is discarded, and the file event of that write queues a snapshot that
-// applies; the next scan queues nothing.
 func TestRefreshAuthStateFirstResultSaveRecoveredByFileEvent(t *testing.T) {
 	w, manager, path := newTrafficWatcher(t, false)
 
@@ -264,8 +242,6 @@ func readJSONField(t *testing.T, path, key string) any {
 	return content[key]
 }
 
-// hostConfigParser parses claude auth files as an auth plugin does; its output depends on the
-// host config, which the plugin host sends with every parse request (here: *host).
 type hostConfigParser struct{ host *string }
 
 func (p hostConfigParser) ParseAuth(_ context.Context, req pluginapi.AuthParseRequest) (*coreauth.Auth, bool, error) {
@@ -276,10 +252,6 @@ func (p hostConfigParser) ParseAuth(_ context.Context, req pluginapi.AuthParseRe
 	return &coreauth.Auth{ID: req.FileName, Provider: "claude", Metadata: metadata, Attributes: map[string]string{"host_config": *p.host}}, true, nil
 }
 
-// An auth-files PATCH writes the file and the watcher reads that write; its persisted update
-// reaches the watcher only while a config reload's scan runs. The scan keeps the persisted
-// auth over its own snapshot and reads the file again afterwards, as a file event would, so
-// what the plugin parser derives from the new host config reaches the runtime.
 func TestRefreshAuthStateRereadsAuthPersistedDuringScan(t *testing.T) {
 	for _, kind := range []string{"runtime_patch", "login_snapshot"} {
 		t.Run(kind, func(t *testing.T) {

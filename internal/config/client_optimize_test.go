@@ -115,7 +115,7 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 					}
 				}
 			}
-			// Force an actual scoped copy while ensuring the client field survives.
+
 			cfg.Codex.ResponseSteering = true
 			cfg.CodexHeaderDefaults.UserAgent = "oauth-agent"
 			cfg.OAuthOnlyFields = map[string]bool{"codex.response-steering": true, "codex-header-defaults.user-agent": true}
