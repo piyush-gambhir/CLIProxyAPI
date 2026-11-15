@@ -38,7 +38,6 @@ func TestAuthManager_ConcurrentSuccessDoesNotClearActiveCredentialCooldown(t *te
 		t.Fatalf("register auth: %v", err)
 	}
 
-
 	sevenDayDuration := 7 * 24 * time.Hour
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          auth.ID,
@@ -50,14 +49,12 @@ func TestAuthManager_ConcurrentSuccessDoesNotClearActiveCredentialCooldown(t *te
 		Error:           &Error{HTTPStatus: http.StatusTooManyRequests, Message: "7d limit rejected"},
 	})
 
-
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: "claude",
 		Model:    "claude-3-opus-20240229",
 		Success:  true,
 	})
-
 
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
@@ -66,7 +63,6 @@ func TestAuthManager_ConcurrentSuccessDoesNotClearActiveCredentialCooldown(t *te
 	if !updatedAuth.Quota.Exceeded || !updatedAuth.Quota.NextRecoverAt.After(now.Add(6*24*time.Hour)) {
 		t.Fatalf("auth quota was cleared or shortened by concurrent success: quota=%+v", updatedAuth.Quota)
 	}
-
 
 	for _, m := range []string{"claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-7-sonnet-20250219"} {
 		blocked, reason, next := isAuthBlockedForModel(updatedAuth, m, time.Now())
@@ -114,7 +110,6 @@ func TestAuthManager_UpdatePreservesActiveCredentialCooldown(t *testing.T) {
 		CredentialScope: true,
 		Error:           &Error{HTTPStatus: http.StatusTooManyRequests, Message: "7d limit rejected"},
 	})
-
 
 	updatedAuth := &Auth{
 		ID:       auth.ID,
@@ -169,7 +164,6 @@ func TestAuthManager_DisableCoolingDoesNotPermanentlyBlock(t *testing.T) {
 		t.Fatalf("register auth: %v", err)
 	}
 
-
 	sevenDayDuration := 7 * 24 * time.Hour
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          auth.ID,
@@ -180,7 +174,6 @@ func TestAuthManager_DisableCoolingDoesNotPermanentlyBlock(t *testing.T) {
 		CredentialScope: true,
 		Error:           &Error{HTTPStatus: http.StatusTooManyRequests, Message: "7d limit rejected"},
 	})
-
 
 	for _, m := range []string{"claude-3-5-sonnet-20241022", "claude-3-opus-20240229"} {
 		updatedAuth, _ := manager.GetByID(auth.ID)
@@ -216,7 +209,6 @@ func TestAuthManager_NonClaudeProvider_Model429DoesNotBlockSiblingModels(t *test
 		t.Fatalf("register auth: %v", err)
 	}
 
-
 	manager.MarkResult(context.Background(), Result{
 		AuthID:          auth.ID,
 		Provider:        "openai",
@@ -226,13 +218,11 @@ func TestAuthManager_NonClaudeProvider_Model429DoesNotBlockSiblingModels(t *test
 		Error:           &Error{HTTPStatus: http.StatusTooManyRequests, Message: "rate limit"},
 	})
 
-
 	updatedAuth, _ := manager.GetByID(auth.ID)
 	blocked4o, _, _ := isAuthBlockedForModel(updatedAuth, "gpt-4o", time.Now())
 	if !blocked4o {
 		t.Fatal("gpt-4o should be blocked after 429")
 	}
-
 
 	blockedMini, _, _ := isAuthBlockedForModel(updatedAuth, "gpt-4o-mini", time.Now())
 	if blockedMini {
@@ -277,7 +267,6 @@ func TestAuthManager_CooldownPersistenceAcrossRestore(t *testing.T) {
 	if len(records) == 0 {
 		t.Fatal("expected cooldown state records to be captured")
 	}
-
 
 	newManager := NewManager(nil, nil, nil)
 	newAuth := &Auth{

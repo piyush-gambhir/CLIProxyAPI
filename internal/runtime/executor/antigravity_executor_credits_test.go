@@ -23,11 +23,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
-
 func resetAntigravityCreditsRetryState() {
 	antigravityCreditsFailureByAuth.Clear()
 	antigravityShortCooldownByAuth.Clear()
@@ -337,7 +332,6 @@ func TestAntigravityExecute_CreditsInjectedWhenConductorRequests(t *testing.T) {
 		},
 	}
 
-
 	ctx := cliproxyauth.WithAntigravityCredits(context.Background())
 
 	resp, err := exec.Execute(ctx, auth, cliproxyexecutor.Request{
@@ -399,7 +393,6 @@ func TestAntigravityExecute_NoCreditsWithoutConductorFlag(t *testing.T) {
 			"expired":      time.Now().Add(1 * time.Hour).Format(time.RFC3339),
 		},
 	}
-
 
 	_, err := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-6",
@@ -708,13 +701,10 @@ func TestMaybeRefreshAntigravityCreditsHint_RefreshesExpiredHintAndRecoversCredi
 		}, nil
 	}))
 
-
 	exec.maybeRefreshAntigravityCreditsHint(ctx, auth, "token")
 	if loadCodeAssistCalls != 0 {
 		t.Fatalf("loadCodeAssist calls for fresh hint = %d, want 0", loadCodeAssistCalls)
 	}
-
-
 
 	cliproxyauth.SetAntigravityCreditsHint(auth.ID, cliproxyauth.AntigravityCreditsHint{
 		Known:           true,
@@ -855,7 +845,6 @@ func TestAntigravityManagerExecuteAndStream_ToppedUpCreditsRecoverDuringQuotaCoo
 				ResponseFormat: sdktranslator.FormatAntigravity,
 			}
 
-
 			cliproxyauth.SetAntigravityCreditsHint(authID, cliproxyauth.AntigravityCreditsHint{
 				Known:           true,
 				Available:       true,
@@ -885,7 +874,6 @@ func TestAntigravityManagerExecuteAndStream_ToppedUpCreditsRecoverDuringQuotaCoo
 				t.Fatalf("hint after exhaustion = %#v (ok=%v), want Known=true Available=false", hint, ok)
 			}
 
-
 			toppedUp.Store(true)
 			callsBeforeTopUp := loadCodeAssistCalls.Load()
 			if value, ok := antigravityCreditsHintRefreshByID.Load(authID); ok {
@@ -902,7 +890,6 @@ func TestAntigravityManagerExecuteAndStream_ToppedUpCreditsRecoverDuringQuotaCoo
 				MinCreditAmount: 1,
 				UpdatedAt:       time.Now().Add(-antigravityCreditsHintRefreshInterval - time.Second),
 			})
-
 
 			if stream {
 				streamResult, errStream := manager.ExecuteStream(context.Background(), []string{"antigravity"}, req, opts)

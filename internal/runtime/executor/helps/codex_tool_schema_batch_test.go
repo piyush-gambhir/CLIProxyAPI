@@ -92,8 +92,6 @@ func BenchmarkNormalizeCodexToolSchemas(b *testing.B) {
 	}
 }
 
-
-
 func codexSequentialToolSchemas(body []byte) []byte {
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	if !tools.IsArray() {

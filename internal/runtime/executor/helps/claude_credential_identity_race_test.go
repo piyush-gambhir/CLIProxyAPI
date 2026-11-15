@@ -8,11 +8,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
-
 func TestApplyClaudeCredentialMetadataConcurrentSharedAuth(t *testing.T) {
 	auth := &cliproxyauth.Auth{
 		ID:       "shared-credential",
@@ -52,8 +47,6 @@ func TestApplyClaudeCredentialMetadataConcurrentSharedAuth(t *testing.T) {
 	}
 }
 
-
-
 func TestEnsureClaudeCredentialDevicePoolConcurrentSharedAuth(t *testing.T) {
 	auth := &cliproxyauth.Auth{ID: "shared-credential"}
 
@@ -88,8 +81,6 @@ func TestEnsureClaudeCredentialDevicePoolConcurrentSharedAuth(t *testing.T) {
 	for err := range errs {
 		t.Fatalf("EnsureClaudeCredentialDevicePoolRequired on shared auth: %v", err)
 	}
-
-
 
 	seen := make(map[string]struct{})
 	for deviceID := range results {

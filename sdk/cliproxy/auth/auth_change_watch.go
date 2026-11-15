@@ -1,10 +1,5 @@
 package auth
 
-
-
-
-
-
 func (m *Manager) WatchAuthChanges(authID string) (<-chan struct{}, func()) {
 	changes := make(chan struct{}, 1)
 	if m == nil || authID == "" {
@@ -34,7 +29,6 @@ func (m *Manager) WatchAuthChanges(authID string) (<-chan struct{}, func()) {
 		close(changes)
 	}
 }
-
 
 func (m *Manager) notifyAuthChangeLocked(authID string) {
 	for changes := range m.authChangeWatchers[authID] {

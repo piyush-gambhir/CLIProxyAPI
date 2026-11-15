@@ -147,7 +147,6 @@ func TestUsageQueuePluginPayloadDefaultsGenerateTrueWhenOmitted(t *testing.T) {
 		ctx := internallogging.WithResponseStatusHolder(context.Background())
 		internallogging.SetResponseStatus(ctx, http.StatusOK)
 
-
 		(&usageQueuePlugin{}).HandleUsage(ctx, coreusage.Record{
 			Provider: "openai",
 			Model:    "gpt-5.4",
@@ -695,7 +694,6 @@ func TestUsageQueuePluginPayloadSameOriginFallback(t *testing.T) {
 		internallogging.SetResponseStatus(ctx, http.StatusOK)
 
 		plugin := &usageQueuePlugin{}
-
 
 		plugin.HandleUsage(ctx, coreusage.Record{
 			Provider:        "openai",

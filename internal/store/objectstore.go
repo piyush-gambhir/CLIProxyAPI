@@ -28,7 +28,6 @@ const (
 	objectStoreAuthPrefix = "auths"
 )
 
-
 type ObjectStoreConfig struct {
 	Endpoint  string
 	Bucket    string
@@ -41,8 +40,6 @@ type ObjectStoreConfig struct {
 	PathStyle bool
 }
 
-
-
 type ObjectTokenStore struct {
 	client            *minio.Client
 	cfg               ObjectStoreConfig
@@ -54,7 +51,6 @@ type ObjectTokenStore struct {
 	refreshProbeMu    sync.Mutex
 	refreshProbeReady bool
 }
-
 
 func NewObjectTokenStore(cfg ObjectStoreConfig) (*ObjectTokenStore, error) {
 	cfg.Endpoint = strings.TrimSpace(cfg.Endpoint)
@@ -122,10 +118,7 @@ func NewObjectTokenStore(cfg ObjectStoreConfig) (*ObjectTokenStore, error) {
 	}, nil
 }
 
-
-
 func (s *ObjectTokenStore) SetBaseDir(string) {}
-
 
 func (s *ObjectTokenStore) ConfigPath() string {
 	if s == nil {
@@ -134,14 +127,12 @@ func (s *ObjectTokenStore) ConfigPath() string {
 	return s.configPath
 }
 
-
 func (s *ObjectTokenStore) AuthDir() string {
 	if s == nil {
 		return ""
 	}
 	return s.authDir
 }
-
 
 func (s *ObjectTokenStore) Bootstrap(ctx context.Context, exampleConfigPath string) error {
 	if s == nil {
@@ -159,7 +150,6 @@ func (s *ObjectTokenStore) Bootstrap(ctx context.Context, exampleConfigPath stri
 	return nil
 }
 
-
 func (s *ObjectTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
 		return "", fmt.Errorf("object store: auth is nil")
@@ -176,9 +166,6 @@ func (s *ObjectTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (s
 	if path == "" {
 		return "", fmt.Errorf("object store: missing file path attribute for %s", auth.ID)
 	}
-
-
-
 
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); errors.Is(statErr, fs.ErrNotExist) {
@@ -252,7 +239,6 @@ func (s *ObjectTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (s
 	return path, nil
 }
 
-
 func (s *ObjectTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error) {
 	dir := strings.TrimSpace(s.AuthDir())
 	if dir == "" {
@@ -285,7 +271,6 @@ func (s *ObjectTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error)
 	return entries, nil
 }
 
-
 func (s *ObjectTokenStore) Delete(ctx context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -307,7 +292,6 @@ func (s *ObjectTokenStore) Delete(ctx context.Context, id string) error {
 	}
 	return nil
 }
-
 
 func (s *ObjectTokenStore) PersistAuthFiles(ctx context.Context, _ string, paths ...string) error {
 	if len(paths) == 0 {
@@ -332,7 +316,6 @@ func (s *ObjectTokenStore) PersistAuthFiles(ctx context.Context, _ string, paths
 	}
 	return nil
 }
-
 
 func (s *ObjectTokenStore) PersistConfig(ctx context.Context) error {
 	s.mu.Lock()
@@ -398,8 +381,6 @@ func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example str
 			}
 		}
 
-
-
 		if errPrepare := config.PrepareConfigFileForUpload(s.configPath); errPrepare != nil {
 			return fmt.Errorf("object store: prepare local config for seeding: %w", errPrepare)
 		}
@@ -419,9 +400,6 @@ func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example str
 }
 
 func (s *ObjectTokenStore) syncAuthFromBucket(ctx context.Context) error {
-
-
-
 
 	if err := os.MkdirAll(s.authDir, 0o700); err != nil {
 		return fmt.Errorf("object store: create auth directory: %w", err)
@@ -579,7 +557,6 @@ func (s *ObjectTokenStore) resolveDeletePath(id string) (string, error) {
 	if filepath.IsAbs(id) {
 		return id, nil
 	}
-
 
 	clean := filepath.Clean(filepath.FromSlash(id))
 	if clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(os.PathSeparator)) {

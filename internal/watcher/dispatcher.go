@@ -1,5 +1,3 @@
-
-
 package watcher
 
 import (
@@ -253,7 +251,6 @@ func (w *Watcher) refreshAuthState(force bool) {
 		return w.normalizeAuthPath(path)
 	}
 
-
 	changedDuringScan := func(auth *coreauth.Auth) bool {
 		normalized := authPath(auth)
 		return previous[auth.ID] != w.authRevisions[auth.ID] ||
@@ -441,7 +438,6 @@ func (w *Watcher) prepareAuthUpdatesLocked(auths []*coreauth.Auth, force bool) [
 		}
 	}
 
-
 	for id := range w.currentAuths {
 		if _, ok := newState[id]; !ok {
 			updates = append(updates, AuthUpdate{Action: AuthUpdateActionDelete, ID: id})
@@ -469,8 +465,6 @@ func (w *Watcher) prepareAuthUpdatesLocked(auths []*coreauth.Auth, force bool) [
 	}
 	return updates
 }
-
-
 
 func (w *Watcher) stampAuthUpdatesLocked(updates []AuthUpdate) {
 	if len(updates) == 0 {

@@ -7,8 +7,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
 func StripVertexOpenAIResponsesToolCallIDs(payload []byte, sourceFormat string) []byte {
 	if len(payload) == 0 || !strings.EqualFold(strings.TrimSpace(sourceFormat), "openai-response") {
 		return payload
@@ -19,8 +17,6 @@ func StripVertexOpenAIResponsesToolCallIDs(payload []byte, sourceFormat string) 
 	}
 	return doc.Bytes()
 }
-
-
 
 func StripVertexOpenAIResponsesToolCallIDsDoc(doc *ojson.Doc, sourceFormat string) bool {
 	if doc == nil || doc.Len() == 0 || !strings.EqualFold(strings.TrimSpace(sourceFormat), "openai-response") {

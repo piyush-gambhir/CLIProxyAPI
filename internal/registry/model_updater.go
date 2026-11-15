@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 const ModelsRefreshInterval = 3 * time.Hour
 
 var modelsURLs = []string{
@@ -31,8 +30,6 @@ type modelStore struct {
 
 var modelsCatalogStore = &modelStore{}
 
-
-
 type ModelRefreshCallback func(changedProviders []string)
 
 var (
@@ -40,9 +37,6 @@ var (
 	refreshCallback       ModelRefreshCallback
 	pendingRefreshChanges []string
 )
-
-
-
 
 func SetModelRefreshCallback(cb ModelRefreshCallback) {
 	refreshCallbackMu.Lock()
@@ -66,15 +60,9 @@ func init() {
 	}
 }
 
-
-
-
 func StartModelsUpdater(ctx context.Context) {
 	generalCatalogUpdater.configure(ctx, "")
 }
-
-
-
 
 func detectChangedProviders(oldData, newData *staticModelsJSON) []string {
 	if oldData == nil || newData == nil {
@@ -120,8 +108,6 @@ func detectChangedProviders(oldData, newData *staticModelsJSON) []string {
 	}
 	return changed
 }
-
-
 
 func modelSectionChanged(a, b []*ModelInfo) bool {
 	if len(a) != len(b) {

@@ -8,11 +8,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type geminiSanitizeOptions struct {
 	rejectBareTink bool
 }
-
 
 func GeminiReplaySignatureOrBypass(rawSignature string, blockKind SignatureBlockKind) string {
 	return geminiReplaySignatureOrBypass(rawSignature, blockKind, geminiSanitizeOptions{})
@@ -42,31 +40,21 @@ func geminiSanitizeDecision(rawSignature string, blockKind SignatureBlockKind, o
 	return decision
 }
 
-
-
 func SanitizeGeminiRequestThoughtSignatures(payload []byte, contentsPath string) []byte {
 	return sanitizeGeminiRequestThoughtSignatures(payload, contentsPath, geminiSanitizeOptions{})
 }
-
 
 func SanitizeGeminiRequestThoughtSignaturesDoc(doc *ojson.Doc, contentsPath string) {
 	_ = sanitizeGeminiRequestThoughtSignaturesDoc(doc, contentsPath, geminiSanitizeOptions{})
 }
 
-
-
 func SanitizeNonVertexGeminiRequestThoughtSignatures(payload []byte, contentsPath string) []byte {
 	return sanitizeGeminiRequestThoughtSignatures(payload, contentsPath, geminiSanitizeOptions{rejectBareTink: true})
 }
 
-
-
 func SanitizeNonVertexGeminiRequestThoughtSignaturesDoc(doc *ojson.Doc, contentsPath string) {
 	_ = sanitizeGeminiRequestThoughtSignaturesDoc(doc, contentsPath, geminiSanitizeOptions{rejectBareTink: true})
 }
-
-
-
 
 func SanitizeGeminiSystemInstruction(payload []byte, contentsPath string) []byte {
 	if len(payload) == 0 {
@@ -78,8 +66,6 @@ func SanitizeGeminiSystemInstruction(payload []byte, contentsPath string) []byte
 	}
 	return doc.Bytes()
 }
-
-
 
 func SanitizeGeminiSystemInstructionDoc(doc *ojson.Doc, contentsPath string) {
 	_ = sanitizeGeminiSystemInstructionDoc(doc, contentsPath)

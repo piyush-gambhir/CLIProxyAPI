@@ -15,7 +15,6 @@ import (
 
 const redisChannelRebalance = "rebalance"
 
-
 var ErrRebalanceRequested = errors.New("home cluster rebalance requested")
 
 type rebalanceInstruction struct {
@@ -42,7 +41,6 @@ func (c *Client) canExecuteRebalanceLocked() bool {
 		!c.dispatchFenced.Load() && !c.ambiguousDispatch.Load() &&
 		recoveryState(c.recoveryState.Load()) == recoveryStateStable && !c.balance.moving
 }
-
 
 func (c *Client) rebalanceCommand(ctx context.Context, address string, args ...any) (string, error) {
 	if errContext := ctx.Err(); errContext != nil {
@@ -152,8 +150,6 @@ func (c *Client) syncClusterBalance(ctx context.Context) error {
 	return nil
 }
 
-
-
 func (c *Client) executeClusterRebalance(ctx context.Context, payload []byte) error {
 	var request rebalanceInstruction
 	if errJSON := json.Unmarshal(payload, &request); errJSON != nil {
@@ -239,7 +235,6 @@ func (c *Client) failClusterRebalance() {
 	c.balance.result = "failed"
 	c.switchToNodeLocked(c.balance.origin)
 }
-
 
 func (c *Client) chooseClusterNodeLocked(nodes []clusterNode, excludeCurrent bool, draw float64) (clusterNode, bool) {
 	var choices []clusterNode

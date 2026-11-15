@@ -15,7 +15,6 @@ import (
 )
 
 const (
-
 	MaxDeferredAPIRequestBodyBytes = 32 << 20
 
 	MaxDeferredAPIResponseBodyBytes = 64 << 10
@@ -23,7 +22,6 @@ const (
 	MaxDeferredAPIResponseHeaderBytes = 16 << 10
 
 	MaxDeferredAPIResponseErrorBytes = 16 << 10
-
 
 	MaxTotalDeferredAPIResponseBodyBytes = 512 << 10
 
@@ -35,10 +33,6 @@ const (
 type deferredAPIRequestCaptureDisabledKey struct{}
 type deferredAPICaptureKey struct{}
 
-
-
-
-
 func WithDeferredAPIRequestCaptureDisabled(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -49,7 +43,6 @@ func WithDeferredAPIRequestCaptureDisabled(ctx context.Context) context.Context 
 	return context.WithValue(ctx, deferredAPIRequestCaptureDisabledKey{}, true)
 }
 
-
 func DeferredAPIRequestCaptureDisabled(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -58,18 +51,11 @@ func DeferredAPIRequestCaptureDisabled(ctx context.Context) bool {
 	return disabled
 }
 
-
-
 type DeferredAPIResponse interface {
-
 	HasPayload() bool
-
 
 	RenderAPIResponse() []byte
 }
-
-
-
 
 func WithDeferredAPICapture(ctx context.Context, capture *DeferredAPICapture) context.Context {
 	if ctx == nil {
@@ -81,7 +67,6 @@ func WithDeferredAPICapture(ctx context.Context, capture *DeferredAPICapture) co
 	return context.WithValue(ctx, deferredAPICaptureKey{}, capture)
 }
 
-
 func DeferredAPICaptureFromContext(ctx context.Context) *DeferredAPICapture {
 	if ctx == nil {
 		return nil
@@ -89,8 +74,6 @@ func DeferredAPICaptureFromContext(ctx context.Context) *DeferredAPICapture {
 	capture, _ := ctx.Value(deferredAPICaptureKey{}).(*DeferredAPICapture)
 	return capture
 }
-
-
 
 func InheritDeferredCapture(dst, src context.Context) context.Context {
 	if dst == nil {
@@ -141,10 +124,6 @@ func (a *deferredResponseAttempt) hasContent() bool {
 	return a.status > 0 || a.headersRecorded || a.headersTruncated || a.bodyHasContent || a.bodyTruncated || len(a.errors) > 0 || a.errorsTruncated
 }
 
-
-
-
-
 type DeferredAPICapture struct {
 	mu              sync.Mutex
 	requests        []DeferredAPIRequest
@@ -155,11 +134,9 @@ type DeferredAPICapture struct {
 	closed          bool
 }
 
-
 func NewDeferredAPICapture() *DeferredAPICapture {
 	return &DeferredAPICapture{}
 }
-
 
 func (c *DeferredAPICapture) Close() {
 	if c == nil {
@@ -175,7 +152,6 @@ func (c *DeferredAPICapture) Close() {
 	c.responseBytes = 0
 }
 
-
 func (c *DeferredAPICapture) IsClosed() bool {
 	if c == nil {
 		return true
@@ -185,15 +161,9 @@ func (c *DeferredAPICapture) IsClosed() bool {
 	return c.closed
 }
 
-
-
 func (c *DeferredAPICapture) RecordRequest(body []byte, build func(index int, capturedAt time.Time, capturedBody []byte, bodyEmpty, bodyTruncated bool) DeferredAPIRequest) (DeferredAPIRequest, int, bool) {
 	return c.recordRequest(body, false, build)
 }
-
-
-
-
 
 func (c *DeferredAPICapture) RecordOrReplacePendingRequest(body []byte, build func(index int, capturedAt time.Time, capturedBody []byte, bodyEmpty, bodyTruncated bool) DeferredAPIRequest) (DeferredAPIRequest, int, bool, bool) {
 	fn, bytesUsed, replaced, ok := c.recordRequestWithReplace(body, true, build)
@@ -264,7 +234,6 @@ func (c *DeferredAPICapture) recordRequestWithReplace(body []byte, replacePendin
 	return fn, c.requestBytes, false, true
 }
 
-
 func (c *DeferredAPICapture) HasRequests() bool {
 	if c == nil {
 		return false
@@ -273,7 +242,6 @@ func (c *DeferredAPICapture) HasRequests() bool {
 	defer c.mu.Unlock()
 	return !c.closed && len(c.requests) > 0
 }
-
 
 func (c *DeferredAPICapture) RenderAPIRequests() []byte {
 	if c == nil {
@@ -327,7 +295,6 @@ func (c *DeferredAPICapture) latestAttemptLocked() *deferredResponseAttempt {
 	return c.attempts[len(c.attempts)-1]
 }
 
-
 func (c *DeferredAPICapture) RecordResponseMetadata(status int, headers http.Header) {
 	if c == nil {
 		return
@@ -356,7 +323,6 @@ func (c *DeferredAPICapture) RecordResponseMetadata(status int, headers http.Hea
 		}
 	}
 }
-
 
 func (c *DeferredAPICapture) RecordResponseError(err error) {
 	if c == nil || err == nil {
@@ -396,7 +362,6 @@ func (c *DeferredAPICapture) RecordResponseError(err error) {
 	c.responseBytes += len(cloned)
 	attempt.errors = append(attempt.errors, cloned)
 }
-
 
 func (c *DeferredAPICapture) AppendResponseChunk(chunk []byte) {
 	if c == nil {
@@ -457,7 +422,6 @@ func (c *DeferredAPICapture) AppendResponseChunk(chunk []byte) {
 	attempt.prevWasSSEEvent = currentChunkIsSSEEvent && !attempt.bodyTruncated
 }
 
-
 func (c *DeferredAPICapture) HasPayload() bool {
 	if c == nil {
 		return false
@@ -478,7 +442,6 @@ func (c *DeferredAPICapture) hasPayloadLocked() bool {
 	}
 	return false
 }
-
 
 func (c *DeferredAPICapture) RenderAPIResponse() []byte {
 	if c == nil {
@@ -549,7 +512,6 @@ func (c *DeferredAPICapture) RenderAPIResponse() []byte {
 	return []byte(builder.String())
 }
 
-
 func (c *DeferredAPICapture) AttemptCount() int {
 	if c == nil {
 		return 0
@@ -558,7 +520,6 @@ func (c *DeferredAPICapture) AttemptCount() int {
 	defer c.mu.Unlock()
 	return len(c.attempts)
 }
-
 
 func (c *DeferredAPICapture) AttemptCapturedAt(i int) time.Time {
 	if c == nil {
@@ -572,7 +533,6 @@ func (c *DeferredAPICapture) AttemptCapturedAt(i int) time.Time {
 	return c.attempts[i].capturedAt
 }
 
-
 func (c *DeferredAPICapture) AttemptBodyStats(i int) (length int, capacity int, truncated bool) {
 	if c == nil {
 		return 0, 0, false
@@ -585,7 +545,6 @@ func (c *DeferredAPICapture) AttemptBodyStats(i int) (length int, capacity int, 
 	attempt := c.attempts[i]
 	return len(attempt.body), cap(attempt.body), attempt.bodyTruncated
 }
-
 
 func (c *DeferredAPICapture) TotalResponseBodyBytes() int {
 	if c == nil {

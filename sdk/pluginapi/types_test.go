@@ -537,7 +537,6 @@ func TestSchedulerPickResponseUnmarshalJSONOverwritesExistingFields(t *testing.T
 		t.Fatalf("RejectReason = %q, want empty", resp.RejectReason)
 	}
 
-
 	resp2 := SchedulerPickResponse{
 		AuthID:  "keep-auth",
 		Handled: true,
@@ -979,7 +978,6 @@ func TestQuotaPayloadJSON(t *testing.T) {
 	if len(respCamel.Groups[0].Buckets) != 1 || respCamel.Groups[0].Buckets[0].RemainingFraction != 0.8 || respCamel.Groups[0].Buckets[0].ResetTime != "2026-09-13T00:00:00Z" {
 		t.Fatalf("unexpected camel bucket: %+v", respCamel.Groups[0].Buckets)
 	}
-
 
 	snakeJSON := []byte(`{
 		"subscription": {"plan":"Free","tier_name":"Tier Free","tier_id":"t-free"},

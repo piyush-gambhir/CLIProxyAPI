@@ -680,7 +680,6 @@ func TestNormalizeXAIImageRefsDocAvoidsLargePayloadCopy(t *testing.T) {
 	raw := []byte(`{"model":"grok-imagine-image","prompt":"` + largePrompt + `","image":{"image_url":"https://example.com/a.png"}}`)
 	doc := ojson.NewDoc(raw)
 
-
 	warmDoc := ojson.NewDoc([]byte(`{"model":"grok-imagine-image","image":{"image_url":"https://example.com/w.png"}}`))
 	normalizeXAIImageRefsDoc(warmDoc)
 

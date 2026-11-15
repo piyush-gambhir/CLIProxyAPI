@@ -1,8 +1,3 @@
-
-
-
-
-
 package chat_completions
 
 import (
@@ -20,29 +15,10 @@ const (
 	defaultFableChatMaxTokens  = 64000
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToClaude(modelName, inputRawJSON, stream, false)
 
 }
-
-
 
 func ConvertOpenAIRequestToClaudeWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToClaude(modelName, inputRawJSON, stream, true)
@@ -54,13 +30,11 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 
 	userID := common.DeriveClaudeUserID(rawJSON)
 
-
 	outDoc := ojson.NewDoc([]byte(`{"model":"","max_tokens":32000,"messages":[],"metadata":{}}`))
 	_ = outDoc.Set("metadata.user_id", userID)
 	_ = outDoc.Set("max_tokens", defaultClaudeChatMaxTokensForModel(modelName))
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
-
 
 	if v := root.Get("reasoning_effort"); v.Exists() {
 		effort := strings.ToLower(strings.TrimSpace(v.String()))
@@ -68,9 +42,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 			mi := registry.LookupModelInfo(modelName, "claude")
 			supportsAdaptive := mi != nil && mi.Thinking != nil && len(mi.Thinking.Levels) > 0
 			supportsMax := supportsAdaptive && thinking.HasLevel(mi.Thinking.Levels, string(thinking.LevelMax))
-
-
-
 
 			if supportsAdaptive {
 				switch effort {
@@ -112,21 +83,15 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		}
 	}
 
-
 	_ = outDoc.Set("model", modelName)
-
-
-
 
 	if maxTokens := firstExisting(root.Get("max_tokens"), root.Get("max_completion_tokens")); maxTokens.Exists() {
 		_ = outDoc.Set("max_tokens", maxTokens.Int())
 	}
 
-
 	if topP := root.Get("top_p"); topP.Exists() {
 		_ = outDoc.Set("top_p", topP.Float())
 	}
-
 
 	if stop := root.Get("stop"); stop.Exists() {
 		if stop.IsArray() {
@@ -143,12 +108,10 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		}
 	}
 
-
 	_ = outDoc.Set("stream", stream)
 
 	systemBlocks := make([][]byte, 0)
 	messageBlocks := make([][]byte, 0)
-
 
 	if messages := root.Get("messages"); messages.Exists() && messages.IsArray() {
 		lastToolMessage := map[string]ojson.Result{}
@@ -169,9 +132,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 			contentResult := message.Get("content")
 
 			switch role {
-
-
-
 
 			case "system", "developer":
 				systemStart := len(systemBlocks)
@@ -218,7 +178,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 					}
 				}
 
-
 				if contentResult.Exists() && contentResult.Type == ojson.String && strings.TrimSpace(contentResult.String()) != "" {
 					part := []byte(`{"type":"text","text":""}`)
 					part, _ = ojson.SetBytes(part, "text", contentResult.String())
@@ -245,7 +204,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 					drops.EndTurn(len(contentBlocks))
 				}
 
-
 				if toolCalls := message.Get("tool_calls"); toolCalls.Exists() && toolCalls.IsArray() && role == "assistant" {
 					toolCalls.ForEach(func(_, toolCall ojson.Result) bool {
 						if toolCall.Get("type").String() == "function" {
@@ -259,7 +217,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 							toolUseDoc := ojson.NewDoc([]byte(`{"type":"tool_use","id":"","name":"","input":{}}`))
 							_ = toolUseDoc.Set("id", toolCallID)
 							_ = toolUseDoc.Set("name", util.SanitizeClaudeFunctionName(function.Get("name").String()))
-
 
 							if args := function.Get("arguments"); args.Exists() {
 								argsStr := args.String()
@@ -317,8 +274,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 					_ = msgDoc.Set("content.0.content", toolResultContent)
 				}
 
-
-
 				msg := common.AttachToolMessageCacheControl(msgDoc.Bytes(), targetMsg)
 				messageAccumulator.Append(msg)
 			}
@@ -334,10 +289,7 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 		systemBlocks = append(systemBlocks, systemBlock)
 	}
 
-
 	nothingLeftErr := drops.Err()
-
-
 
 	if len(messageBlocks) == 0 && len(systemBlocks) > 0 {
 		messageBlocks = append(messageBlocks, []byte(`{"role":"user","content":[{"type":"text","text":""}]}`))
@@ -349,7 +301,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 	if len(messageBlocks) > 0 {
 		common.SetRawArrayItemsDoc(outDoc, "messages", messageBlocks)
 	}
-
 
 	allowedToolNames := make(map[string]struct{})
 	isAllowedTools := false
@@ -397,7 +348,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 				_ = toolDoc.Set("name", sanitizedFnName)
 				_ = toolDoc.Set("description", function.Get("description").String())
 
-
 				if parameters := function.Get("parameters"); parameters.Exists() {
 					_ = toolDoc.SetRawBytes("input_schema", util.NormalizeClaudeToolInputSchema([]byte(parameters.Raw)))
 				} else if parameters := function.Get("parametersJsonSchema"); parameters.Exists() {
@@ -432,7 +382,6 @@ func convertOpenAIRequestToClaude(modelName string, inputRawJSON []byte, stream,
 			_ = outDoc.Delete("tools")
 		}
 	}
-
 
 	if isAllowedTools {
 		if len(anthropicTools) == 0 {
@@ -624,14 +573,11 @@ func defaultClaudeChatMaxTokensForModel(modelName string) int {
 		return maxTokens
 	}
 
-
-
 	if strings.Contains(normalized, "fable") && info.MaxCompletionTokens >= maxTokens {
 		return maxTokens
 	}
 	return info.MaxCompletionTokens
 }
-
 
 func firstExisting(values ...ojson.Result) ojson.Result {
 	for _, value := range values {

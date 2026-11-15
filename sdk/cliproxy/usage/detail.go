@@ -2,7 +2,6 @@ package usage
 
 import "maps"
 
-
 type CacheDetails struct {
 	Mode                    string           `json:"mode,omitempty"`
 	TTL                     string           `json:"ttl,omitempty"`
@@ -13,7 +12,6 @@ type CacheDetails struct {
 	Ephemeral12hInputTokens *int64           `json:"ephemeral_12h_input_tokens,omitempty"`
 	ByTTL                   map[string]int64 `json:"by_ttl,omitempty"`
 }
-
 
 type ToolUsageDetails struct {
 	WebSearchCalls         *int64           `json:"web_search_calls,omitempty"`
@@ -35,7 +33,6 @@ type ToolUsageDetails struct {
 	Extra                  map[string]int64 `json:"extra,omitempty"`
 }
 
-
 type IterationUsage struct {
 	Type                     string        `json:"type,omitempty"`
 	Model                    string        `json:"model,omitempty"`
@@ -50,7 +47,6 @@ type IterationUsage struct {
 	CacheCreation            *CacheDetails `json:"cache_creation,omitempty"`
 }
 
-
 type ImageDetails struct {
 	Size           string `json:"size,omitempty"`
 	Resolution     string `json:"resolution,omitempty"`
@@ -64,7 +60,6 @@ type ImageDetails struct {
 	InputFidelity  string `json:"input_fidelity,omitempty"`
 }
 
-
 func (d *ImageDetails) Clone() *ImageDetails {
 	if d == nil {
 		return nil
@@ -73,14 +68,12 @@ func (d *ImageDetails) Clone() *ImageDetails {
 	return &out
 }
 
-
 type MediaCounts struct {
 	PromptMedia     *int64   `json:"prompt_media,omitempty"`
 	CompletionMedia *int64   `json:"completion_media,omitempty"`
 	PromptAudio     *int64   `json:"prompt_audio,omitempty"`
 	AudioSeconds    *float64 `json:"audio_seconds,omitempty"`
 }
-
 
 func (m *MediaCounts) Clone() *MediaCounts {
 	if m == nil {
@@ -94,7 +87,6 @@ func (m *MediaCounts) Clone() *MediaCounts {
 	}
 }
 
-
 type CostDetails struct {
 	Cost                             *float64 `json:"cost,omitempty"`
 	CostInUSDTicks                   *int64   `json:"cost_in_usd_ticks,omitempty"`
@@ -104,16 +96,13 @@ type CostDetails struct {
 	UpstreamInferenceCompletionsCost *float64 `json:"upstream_inference_completions_cost,omitempty"`
 }
 
-
 func Int64Ptr(v int64) *int64 {
 	return &v
 }
 
-
 func Float64Ptr(v float64) *float64 {
 	return &v
 }
-
 
 func BoolPtr(v bool) *bool {
 	return &v
@@ -143,11 +132,9 @@ func cloneBoolPtr(p *bool) *bool {
 	return &v
 }
 
-
 func CloneInt64Ptr(p *int64) *int64 {
 	return cloneInt64Ptr(p)
 }
-
 
 func (c *CacheDetails) Clone() *CacheDetails {
 	if c == nil {
@@ -168,7 +155,6 @@ func (c *CacheDetails) Clone() *CacheDetails {
 	return out
 }
 
-
 func (c *CacheDetails) SumTokens() (int64, bool) {
 	if c == nil || len(c.ByTTL) == 0 {
 		return 0, false
@@ -182,7 +168,6 @@ func (c *CacheDetails) SumTokens() (int64, bool) {
 	}
 	return sum, true
 }
-
 
 func (t *ToolUsageDetails) Clone() *ToolUsageDetails {
 	if t == nil {
@@ -212,7 +197,6 @@ func (t *ToolUsageDetails) Clone() *ToolUsageDetails {
 	return out
 }
 
-
 func (it IterationUsage) Clone() IterationUsage {
 	return IterationUsage{
 		Type:                     it.Type,
@@ -229,7 +213,6 @@ func (it IterationUsage) Clone() IterationUsage {
 	}
 }
 
-
 func CloneIterations(items []IterationUsage) []IterationUsage {
 	if len(items) == 0 {
 		return nil
@@ -241,7 +224,6 @@ func CloneIterations(items []IterationUsage) []IterationUsage {
 	return out
 }
 
-
 func IterationsPtr(items []IterationUsage) *[]IterationUsage {
 	cloned := CloneIterations(items)
 	if len(cloned) == 0 {
@@ -250,14 +232,12 @@ func IterationsPtr(items []IterationUsage) *[]IterationUsage {
 	return &cloned
 }
 
-
 func (d Detail) IterationSlice() []IterationUsage {
 	if d.Iterations == nil {
 		return nil
 	}
 	return CloneIterations(*d.Iterations)
 }
-
 
 func (c *CostDetails) Clone() *CostDetails {
 	if c == nil {

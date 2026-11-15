@@ -120,7 +120,6 @@ func TestRemoteStoresSaveDoesNotShortCircuitWhenLocalFileMatches(t *testing.T) {
 				Metadata: map[string]any{"type": "antigravity"},
 			}
 
-
 			if _, errSave := store.Save(context.Background(), auth); !errors.Is(errSave, errRemoteDown) {
 				t.Fatalf("first Save() error = %v, want %v", errSave, errRemoteDown)
 			}
@@ -131,7 +130,6 @@ func TestRemoteStoresSaveDoesNotShortCircuitWhenLocalFileMatches(t *testing.T) {
 			if errRead != nil || string(localBytes) != `{"disabled":false,"type":"antigravity"}` {
 				t.Fatalf("unexpected local mirror file after failed remote Save: %q (%v)", string(localBytes), errRead)
 			}
-
 
 			failRemote = false
 			if _, errSave := store.Save(context.Background(), auth); errSave != nil {

@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (e *XAIExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("xai executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {

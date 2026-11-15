@@ -9,8 +9,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestClaudeContainerUploadReturns400(t *testing.T) {
 	payload := []byte(`{"messages":[{"role":"user","content":[{"type":"container_upload","file_id":"file-example"}]}]}`)
 	for _, to := range []sdktranslator.Format{sdktranslator.FormatGemini, sdktranslator.FormatOpenAI, sdktranslator.FormatCodex, sdktranslator.FormatInteractions} {
@@ -25,8 +23,6 @@ func TestClaudeContainerUploadReturns400(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestByteWrappersKeepAJSONBodyForAnUnsendableFile(t *testing.T) {
 	payload := []byte(`{"model":"m","messages":[{"role":"user","content":[{"type":"container_upload","file_id":"file-absent"}]}]}`)

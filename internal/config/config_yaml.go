@@ -10,10 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
-
-
 func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...bool) error {
 	persistCfg := cfg
 	migrating := len(migrateV8) > 0 && migrateV8[0]
@@ -42,7 +38,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	layout = expandConfigAliases(layout)
 	migrating = migrating || IsV8ConfigLayout(layout)
 
-
 	rendered, err := yaml.Marshal((*legacyConfig)(persistCfg))
 	if err != nil {
 		return err
@@ -57,7 +52,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	if generated.Content[0].Kind != yaml.MappingNode {
 		return fmt.Errorf("expected generated root mapping node")
 	}
-
 
 	if !migrating {
 		removeLegacyAuthBlock(original.Content[0])
@@ -74,13 +68,11 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	pruneMappingToGeneratedKeys(original.Content[0], generated.Content[0], "devin", "sensitive-words-replace")
 	replacePluginConfigsSubtree(original.Content[0], generated.Content[0])
 
-
 	mergeMappingPreserve(original.Content[0], generated.Content[0])
 	if err = restoreV8Layout(original.Content[0], layout, data, generated.Content[0]); err != nil {
 		return err
 	}
 	if !migrating {
-
 
 		for _, alias := range v8ClientPaths {
 			if yamlPath(layout, alias.old) == nil || yamlPath(layout, alias.current) != nil || yamlPath(original.Content[0], alias.current) == nil {
@@ -92,7 +84,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 		}
 	}
 	NormalizeCollectionNodeStyles(original.Content[0])
-
 
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
@@ -126,8 +117,6 @@ func SaveConfigPreserveComments(configFile string, cfg *Config, migrateV8 ...boo
 	return nil
 }
 
-
-
 func SaveConfigPreserveCommentsUpdateNestedScalar(configFile string, path []string, value string) error {
 	data, err := os.ReadFile(configFile)
 	if err != nil {
@@ -140,8 +129,6 @@ func SaveConfigPreserveCommentsUpdateNestedScalar(configFile string, path []stri
 	return os.WriteFile(configFile, data, 0600)
 }
 
-
-
 func updateNestedScalarYAML(data []byte, path []string, value string) ([]byte, error) {
 	var root yaml.Node
 	if errUnmarshal := yaml.Unmarshal(data, &root); errUnmarshal != nil {
@@ -150,7 +137,6 @@ func updateNestedScalarYAML(data []byte, path []string, value string) ([]byte, e
 	if root.Kind != yaml.DocumentNode || len(root.Content) == 0 {
 		return nil, fmt.Errorf("invalid yaml document structure")
 	}
-
 
 	var decoded map[string]any
 	if errDecode := root.Decode(&decoded); errDecode != nil {
@@ -188,7 +174,6 @@ func updateNestedScalarYAML(data []byte, path []string, value string) ([]byte, e
 	return NormalizeCommentIndentation(buf.Bytes()), nil
 }
 
-
 func NormalizeCommentIndentation(data []byte) []byte {
 	lines := bytes.Split(data, []byte("\n"))
 	changed := false
@@ -209,8 +194,6 @@ func NormalizeCommentIndentation(data []byte) []byte {
 	return bytes.Join(lines, []byte("\n"))
 }
 
-
-
 func getOrCreateMapValue(mapNode *yaml.Node, key string) *yaml.Node {
 	if mapNode.Kind != yaml.MappingNode {
 		mapNode.Kind = yaml.MappingNode
@@ -230,9 +213,6 @@ func getOrCreateMapValue(mapNode *yaml.Node, key string) *yaml.Node {
 	return val
 }
 
-
-
-
 func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 	var currentPath []string
 	if len(path) > 0 {
@@ -243,7 +223,6 @@ func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 		return
 	}
 	if dst.Kind != yaml.MappingNode || src.Kind != yaml.MappingNode {
-
 
 		copyNodeShallow(dst, src)
 		return
@@ -271,9 +250,6 @@ func mergeMappingPreserve(dst, src *yaml.Node, path ...[]string) {
 		}
 	}
 }
-
-
-
 
 func mergeNodePreserve(dst, src *yaml.Node, path ...[]string) {
 	var currentPath []string
@@ -343,8 +319,6 @@ func mergeNodePreserve(dst, src *yaml.Node, path ...[]string) {
 	}
 }
 
-
-
 func findMapKeyIndex(mapNode *yaml.Node, key string) int {
 	if mapNode == nil || mapNode.Kind != yaml.MappingNode {
 		return -1
@@ -357,7 +331,6 @@ func findMapKeyIndex(mapNode *yaml.Node, key string) int {
 	return -1
 }
 
-
 func appendPath(path []string, key string) []string {
 	if len(path) == 0 {
 		return []string{key}
@@ -367,22 +340,6 @@ func appendPath(path []string, key string) []string {
 	newPath[len(path)] = key
 	return newPath
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func isSensitiveWordsReplaceEntryPath(path []string) bool {
 	for i, part := range path {
@@ -439,23 +396,17 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 		}
 	}
 
-
 	if len(path) > 0 && (path[len(path)-1] == "weight" || path[len(path)-1] == "request-retry") && node != nil && node.Kind == yaml.ScalarNode && node.Tag == "!!int" {
 		return false
 	}
-
-
 
 	if len(path) > 0 && path[len(path)-1] == "session-date-pin-days" && node != nil && node.Kind == yaml.ScalarNode && node.Tag == "!!int" && node.Value == "0" {
 		return false
 	}
 
-
 	if len(path) > 0 && (path[len(path)-1] == "cache-user-id" || path[len(path)-1] == "disable-cooling") && node != nil && node.Kind == yaml.ScalarNode && node.Tag == "!!bool" {
 		return false
 	}
-
-
 
 	if node != nil && node.Kind == yaml.MappingNode {
 		if pinIdx := findMapKeyIndex(node, "session-date-pin-days"); pinIdx >= 0 {
@@ -463,18 +414,15 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 		}
 	}
 
-
 	if isZeroValueNode(node) {
 		return true
 	}
-
 
 	if len(path) == 0 {
 		return false
 	}
 
 	fullPath := strings.Join(path, ".")
-
 
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" {
 		switch fullPath {
@@ -489,7 +437,6 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 		}
 	}
 
-
 	if node.Kind == yaml.ScalarNode && node.Tag == "!!int" {
 		switch fullPath {
 		case "error-logs-max-files":
@@ -501,8 +448,6 @@ func isKnownDefaultValue(path []string, node *yaml.Node) bool {
 
 	return false
 }
-
-
 
 func pruneKnownDefaultsInNewNode(path []string, node *yaml.Node) {
 	if node == nil || isPluginConfigsSubtreePath(path) || isSensitiveWordsReplaceEntryPath(path) {
@@ -542,9 +487,6 @@ func pruneKnownDefaultsInNewNode(path []string, node *yaml.Node) {
 		}
 	}
 }
-
-
-
 
 func isZeroValueNode(node *yaml.Node) bool {
 	if node == nil {
@@ -588,7 +530,6 @@ func isZeroValueNode(node *yaml.Node) bool {
 	return false
 }
 
-
 func deepCopyNode(n *yaml.Node) *yaml.Node {
 	return deepCopyNodeSeen(n, map[*yaml.Node]*yaml.Node{})
 }
@@ -613,8 +554,6 @@ func deepCopyNodeSeen(n *yaml.Node, seen map[*yaml.Node]*yaml.Node) *yaml.Node {
 	}
 	return &cp
 }
-
-
 
 func copyNodeShallow(dst, src *yaml.Node) {
 	if dst == nil || src == nil {
@@ -840,7 +779,6 @@ func pruneMappingToGeneratedKeys(dstRoot, srcRoot *yaml.Node, keyPath ...string)
 	srcIdx := findMapKeyIndex(srcRoot, key)
 	if srcIdx < 0 {
 
-
 		if key == "oauth-excluded-models" || key == "oauth-model-alias" || key == "oauth-request-scoped-errors" || key == "oauth-settings" {
 			dstRoot.Content[dstIdx+1] = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
 			return
@@ -899,16 +837,6 @@ func pruneMissingMapKeys(dstMap, srcMap *yaml.Node) {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 func shouldPruneNestedMappingKeys(path []string) bool {
 	if len(path) < 2 {
 		return false
@@ -927,10 +855,6 @@ func shouldPruneNestedMappingKeys(path []string) bool {
 		return false
 	}
 }
-
-
-
-
 
 func NormalizeCollectionNodeStyles(node *yaml.Node) {
 	if node == nil {

@@ -576,8 +576,6 @@ func TestSchedulerPickMixed_RetryTriedFilterPreservesSmoothWeightedDistribution(
 	scheduler := newSchedulerForTest(&WeightedRoundRobinSelector{}, auths...)
 	providers := []string{"provider-a", "provider-b", "provider-c", "provider-d"}
 
-
-
 	retryCounts := make(map[string]int)
 	tried := map[string]struct{}{"auth-a": {}}
 	for index := 0; index < 30; index++ {
@@ -2550,7 +2548,6 @@ func TestManagerPluginSchedulerUnhandledWithRejectFlagFallsBack(t *testing.T) {
 		t.Fatalf("Register(auth-a) error = %v", errRegister)
 	}
 
-
 	scheduler := &fakePluginScheduler{
 		resp:    pluginapi.SchedulerPickResponse{Handled: false, Reject: true},
 		handled: false,
@@ -2736,7 +2733,6 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 		if len(refreshSelIDs) != 2 || refreshSelIDs[0] != selID || refreshSelIDs[1] != selID {
 			t.Fatalf("refreshSelIDs = %v, want [%q, %q]", refreshSelIDs, selID, selID)
 		}
-
 
 		poolManager := NewManager(nil, &FillFirstSelector{}, nil)
 		poolManager.SetConfig(&internalconfig.Config{
@@ -2925,8 +2921,6 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 		if execCalled {
 			t.Fatal("executor was called after rejected Pick")
 		}
-
-
 
 		creditsManager := NewManager(nil, &FillFirstSelector{}, nil)
 		creditsManager.SetConfig(&internalconfig.Config{

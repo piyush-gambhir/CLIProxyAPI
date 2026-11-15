@@ -1,6 +1,3 @@
-// Package codex provides authentication and token management functionality
-// for OpenAI's Codex AI services. It handles OAuth2 token storage, serialization,
-// and retrieval for maintaining authenticated sessions with the Codex API.
 package codex
 
 import (
@@ -41,7 +38,6 @@ func canonicalLockPath(authFilePath string) string {
 	return cleaned
 }
 
-// WithFileLock executes fn while holding both an in-process mutex and an inter-process lockfile for authFilePath.
 func WithFileLock(authFilePath string, fn func() error) error {
 	mu := lockForFilePath(authFilePath)
 	mu.Lock()
@@ -59,7 +55,6 @@ func WithFileLock(authFilePath string, fn func() error) error {
 	return fn()
 }
 
-// WriteJSONFileAtomic writes data as JSON to authFilePath atomically via a temporary file in the same directory.
 func WriteJSONFileAtomic(authFilePath string, data map[string]any) error {
 	dir := filepath.Dir(authFilePath)
 	tmpFile, errTmp := os.CreateTemp(dir, filepath.Base(authFilePath)+".tmp.*")
@@ -133,8 +128,6 @@ func cloneStringAnyMap(src map[string]any) map[string]any {
 	return dst
 }
 
-// MergeWithDiskMap preserves disk credentials when saving a non-refresh snapshot.
-// Explicit login replacements and refresh patches are handled separately.
 func MergeWithDiskMap(diskMap, incomingMap map[string]any) map[string]any {
 	merged := cloneStringAnyMap(diskMap)
 	if merged == nil {
@@ -182,8 +175,6 @@ func hasDiskOAuthOuter(diskMap map[string]any) bool {
 	return false
 }
 
-// MergeCodexCredentialsFromDisk protects disk credentials during configuration
-// saves while allowing intentional changes or deletions of non-credential settings.
 func MergeCodexCredentialsFromDisk(diskMap, incomingMetadata map[string]any) map[string]any {
 	merged := cloneStringAnyMap(incomingMetadata)
 	if merged == nil {
@@ -224,51 +215,40 @@ func MergeCodexCredentialsFromDisk(diskMap, incomingMetadata map[string]any) map
 	return merged
 }
 
-// CodexTokenStorage stores OAuth2 token information for OpenAI Codex API authentication.
-// It maintains compatibility with the existing auth system while adding Codex-specific fields
-// for managing access tokens, refresh tokens, and user account information.
 type CodexTokenStorage struct {
-	// IDToken is the JWT ID token containing user claims and identity information.
 	IDToken string `json:"id_token"`
-	// AccessToken is the OAuth2 access token used for authenticating API requests.
+
 	AccessToken string `json:"access_token"`
-	// RefreshToken is used to obtain new access tokens when the current one expires.
+
 	RefreshToken string `json:"refresh_token"`
-	// AccountID is the OpenAI account identifier associated with this token.
+
 	AccountID string `json:"account_id"`
-	// LastRefresh is the timestamp of the last token refresh operation.
+
 	LastRefresh string `json:"last_refresh"`
-	// Email is the OpenAI account email address associated with this token.
+
 	Email string `json:"email"`
-	// Type indicates the authentication provider type, always "codex" for this storage.
+
 	Type string `json:"type"`
-	// Expire is the timestamp when the current access token expires.
+
 	Expire string `json:"expired"`
-	// PlanType indicates the ChatGPT subscription plan type, defaults to "free" if not present.
+
 	PlanType string `json:"plan_type,omitempty"`
-	// UseSIWC controls whether API requests use the Sign in with ChatGPT (SIWC) credential section.
+
 	UseSIWC *bool `json:"use_siwc,omitempty"`
-	// SIWC holds the Sign in with ChatGPT OAuth credential fields.
+
 	SIWC map[string]any `json:"siwc,omitempty"`
 
-	// ReplaceCredentials permits an explicit login to replace existing outer tokens.
 	ReplaceCredentials bool `json:"-"`
-	// RefreshPatch updates only refreshed partitions during a direct storage save.
+
 	RefreshPatch *CredentialRefreshPatch `json:"-"`
 
-	// Metadata holds arbitrary key-value pairs injected via hooks.
-	// It is not exported to JSON directly to allow flattening during serialization.
 	Metadata map[string]any `json:"-"`
 }
 
-// SetMetadata allows external callers to inject metadata into the storage before saving.
 func (ts *CodexTokenStorage) SetMetadata(meta map[string]any) {
 	ts.Metadata = meta
 }
 
-// applyWebsocketsDefault opts a new Codex credential into the Responses over
-// WebSocket transport. The key is only written when it is absent, so an
-// operator who set websockets to false keeps that choice.
 func (ts *CodexTokenStorage) applyWebsocketsDefault() {
 	if ts == nil {
 		return
@@ -282,8 +262,6 @@ func (ts *CodexTokenStorage) applyWebsocketsDefault() {
 	ts.Metadata["websockets"] = true
 }
 
-// SaveTokenToFile serializes the Codex token storage to a JSON file under a per-file and inter-process lock,
-// reading and merging any existing JSON on disk before atomically replacing the file.
 func (ts *CodexTokenStorage) SaveTokenToFile(authFilePath string) error {
 	misc.LogSavingCredentials(authFilePath)
 	ts.Type = "codex"

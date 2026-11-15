@@ -1,8 +1,3 @@
-
-
-
-
-
 package gemini
 
 import (
@@ -17,22 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	log "github.com/sirupsen/logrus"
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	if len(inputRawJSON) == 0 {
@@ -55,9 +34,6 @@ func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 	signature.SanitizeGeminiSystemInstructionDoc(reqDoc, "contents")
 
 	normalizeGeminiGenerationConfigResponseSchemaDocAt(reqDoc, "")
-
-
-
 
 	contents := reqDoc.Get("contents")
 	if contents.IsArray() && geminiContentRolesNeedNormalization(contents) {
@@ -179,8 +155,6 @@ func ConvertGeminiRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 	return out, nil
 }
 
-
-
 func normalizeGeminiGenerationConfigResponseSchema(rawJSON []byte) []byte {
 	doc := ojson.NewDoc(rawJSON)
 	if normalizeGeminiGenerationConfigResponseSchemaDoc(doc) {
@@ -216,8 +190,6 @@ func normalizeGeminiGenerationConfigResponseSchemaDocAt(doc *ojson.Doc, prefix s
 	}
 	return changed
 }
-
-
 
 func geminiContentRolesNeedNormalization(contents ojson.Result) bool {
 	needsNormalization := false
@@ -298,10 +270,7 @@ func removeEmptyGeminiSystemInstructionPartsDoc(doc *ojson.Doc) {
 	signature.SanitizeGeminiSystemInstructionDoc(doc, "request.contents")
 }
 
-
 var geminiFunctionNameFields = []string{"functionCall", "functionResponse", "function_call", "function_response"}
-
-
 
 func geminiFunctionNamesNeedRewrite(contents ojson.Result, functionNameMap map[string]string) bool {
 	needsRewrite := false
@@ -356,7 +325,6 @@ func rewriteGeminiFunctionNamesDocAt(doc *ojson.Doc, prefix string, functionName
 			return true
 		})
 	}
-
 
 	if canBatchContents && geminiFunctionNamesNeedRewrite(contents, functionNameMap) {
 		contentItems := translatorcommon.NewRawArrayItems(contents.Get("#").Int())
@@ -769,7 +737,6 @@ func logAntigravityClaudeGeminiSignatureSanitize(modelName, action, reason strin
 	log.WithFields(fields).Debug("antigravity gemini translator: sanitized Claude target thoughtSignature before upstream")
 }
 
-
 type FunctionCallGroup struct {
 	ResponsesNeeded int
 	CallIDs         []string
@@ -792,7 +759,6 @@ func selectGroupResponses(collected []ojson.Result, group *FunctionCallGroup) ([
 	if !hasCallID {
 		return collected[:needed], collected[needed:]
 	}
-
 
 	byID := make(map[string][]int, len(collected))
 	byName := make(map[string][]int, len(collected))
@@ -923,9 +889,6 @@ func attachInlineDataToFunctionResponse(response ojson.Result, images [][]byte) 
 	return util.ParseGJSONBytesNoCopy(targetDoc.Bytes())
 }
 
-
-
-
 func collectFunctionResponsesWithSiblingInlineData(parts ojson.Result) []ojson.Result {
 	responses := make([]ojson.Result, 0)
 	leadingImages := make([][]byte, 0)
@@ -953,9 +916,6 @@ func collectFunctionResponsesWithSiblingInlineData(parts ojson.Result) []ojson.R
 	})
 	return responses
 }
-
-
-
 
 func parseFunctionResponseRaw(response ojson.Result, fallbackName string) string {
 	if response.IsObject() && ojson.Valid(response.Raw) {
@@ -994,18 +954,6 @@ func parseFunctionResponseRaw(response ojson.Result, fallbackName string) string
 	return frDoc.String()
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 func fixCLIToolResponse(input []byte) ([]byte, error) {
 	doc := ojson.NewDoc(input)
 	changed, err := fixCLIToolResponseDoc(doc)
@@ -1023,7 +971,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 	if doc == nil {
 		return false, fmt.Errorf("contents not found in input")
 	}
-
 
 	contentsPath := prefix + "contents"
 	contents := doc.Get(contentsPath)
@@ -1051,7 +998,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		return false, nil
 	}
 
-
 	contentItems := translatorcommon.NewRawArrayItems(contents.Get("#").Int())
 	var pendingGroups []*FunctionCallGroup
 	var collectedResponses []ojson.Result
@@ -1070,24 +1016,18 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		}
 	}
 
-
-
 	contents.ForEach(func(key, value ojson.Result) bool {
 		role := value.Get("role").String()
 		parts := value.Get("parts")
 
-
 		responsePartsInThisContent := collectFunctionResponsesWithSiblingInlineData(parts)
-
 
 		if len(responsePartsInThisContent) > 0 {
 			collectedResponses = append(collectedResponses, responsePartsInThisContent...)
 
-
 			for len(pendingGroups) > 0 && len(collectedResponses) >= pendingGroups[0].ResponsesNeeded {
 				group := pendingGroups[0]
 				pendingGroups = pendingGroups[1:]
-
 
 				var groupResponses []ojson.Result
 				groupResponses, collectedResponses = selectGroupResponses(collectedResponses, group)
@@ -1096,13 +1036,11 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 			}
 			if len(pendingGroups) == 0 {
 
-
 				collectedResponses = nil
 			}
 
 			return true
 		}
-
 
 		if role == "model" {
 			var callIDs []string
@@ -1122,7 +1060,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 					return true
 				}
 				contentItems = append(contentItems, []byte(value.Raw))
-
 
 				group := &FunctionCallGroup{
 					ResponsesNeeded: len(callNames),
@@ -1150,7 +1087,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 		return true
 	})
 
-
 	for _, group := range pendingGroups {
 		if len(collectedResponses) >= group.ResponsesNeeded {
 			groupResponses := collectedResponses[:group.ResponsesNeeded]
@@ -1159,7 +1095,6 @@ func fixCLIToolResponseDocAt(doc *ojson.Doc, prefix string) (bool, error) {
 			appendFunctionResponses(groupResponses, group.CallNames)
 		}
 	}
-
 
 	_ = doc.SetRawBytes(contentsPath, translatorcommon.JoinRawArray(contentItems))
 	return true, nil

@@ -1,4 +1,3 @@
-
 package httpwire
 
 import (
@@ -14,13 +13,7 @@ import (
 
 const maxBufferedRequestHeader = 1 << 20
 
-
-
-
 type RequestHeaderOrder func(method, requestTarget string) []string
-
-
-
 
 func NewOrderedRequestConn(conn net.Conn, order RequestHeaderOrder) net.Conn {
 	if conn == nil || order == nil {
@@ -107,8 +100,6 @@ func (c *orderedRequestConn) Write(p []byte) (int, error) {
 
 		ordered, contentLength, chunked := orderRequestHeader(header, c.order)
 		if _, errWrite := writeAll(c.Conn, ordered); errWrite != nil {
-
-
 
 			return originalLength, errWrite
 		}

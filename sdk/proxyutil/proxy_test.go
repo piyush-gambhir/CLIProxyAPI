@@ -519,8 +519,6 @@ func TestBuildHTTPTransportHTTPSProxyH2Negotiation(t *testing.T) {
 			return
 		}
 
-
-
 		if tlsConn.ConnectionState().NegotiatedProtocol == "h2" {
 			proxyDone <- fmt.Errorf("proxy negotiated h2 ALPN: client must negotiate http/1.1 for CONNECT proxy leg")
 			return
@@ -566,7 +564,6 @@ func TestBuildHTTPTransportHTTPSProxyH2Negotiation(t *testing.T) {
 	if mode != ModeProxy {
 		t.Fatalf("mode = %d, want %d", mode, ModeProxy)
 	}
-
 
 	certPool := x509.NewCertPool()
 	certPool.AddCert(proxyCert.Leaf)

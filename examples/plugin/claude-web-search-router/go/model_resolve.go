@@ -7,14 +7,10 @@ import (
 )
 
 const (
-
 	defaultCodexWebSearchModel = "gpt-5.4-mini"
 
 	defaultXAIWebSearchModel = "grok-4.3"
 )
-
-
-
 
 func resolveAntigravityWebSearchTargetModel(configured, requested string) string {
 	if m := strings.TrimSpace(configured); m != "" {
@@ -34,14 +30,12 @@ func resolveAntigravityWebSearchTargetModel(configured, requested string) string
 	return ""
 }
 
-
 func resolveCodexWebSearchTargetModel(configured string) string {
 	if m := strings.TrimSpace(configured); m != "" {
 		return m
 	}
 	return defaultCodexWebSearchModel
 }
-
 
 func resolveXAIWebSearchTargetModel(configured string) string {
 	if m := strings.TrimSpace(configured); m != "" {

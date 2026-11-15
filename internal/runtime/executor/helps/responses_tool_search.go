@@ -13,8 +13,6 @@ const (
 	responsesToolSearchOutputType = "tool_search_output"
 )
 
-
-
 func ResponsesHasToolSearch(payload []byte) bool {
 	if hasClientToolSearchDeclaration(ojson.GetBytesNoCopy(payload, "tools")) {
 		return true
@@ -32,11 +30,6 @@ func ResponsesHasToolSearch(payload []byte) bool {
 	return found
 }
 
-
-
-
-
-
 func StripResponsesToolSearch(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -47,8 +40,6 @@ func StripResponsesToolSearch(payload []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func StripResponsesToolSearchDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -106,8 +97,6 @@ func hasClientToolSearchDeclaration(tools ojson.Result) bool {
 	})
 	return found
 }
-
-
 
 func withoutClientToolSearch(tools ojson.Result) ([]byte, bool) {
 	if !tools.IsArray() {

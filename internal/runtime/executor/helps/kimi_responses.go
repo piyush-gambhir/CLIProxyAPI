@@ -10,7 +10,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
 func ResolveKimiBaseURL(auth *cliproxyauth.Auth) string {
 	if auth != nil {
 		if auth.Attributes != nil {
@@ -30,7 +29,6 @@ func ResolveKimiBaseURL(auth *cliproxyauth.Auth) string {
 	return kimiauth.KimiAPIBaseURL
 }
 
-
 func ResolveKimiResponsesURL(auth *cliproxyauth.Auth) string {
 	baseURL := ResolveKimiBaseURL(auth)
 	if strings.HasSuffix(baseURL, "/v1") {
@@ -39,7 +37,6 @@ func ResolveKimiResponsesURL(auth *cliproxyauth.Auth) string {
 	return baseURL + "/v1/responses"
 }
 
-
 func ResolveKimiChatURL(auth *cliproxyauth.Auth) string {
 	baseURL := ResolveKimiBaseURL(auth)
 	if strings.HasSuffix(baseURL, "/v1") {
@@ -47,7 +44,6 @@ func ResolveKimiChatURL(auth *cliproxyauth.Auth) string {
 	}
 	return baseURL + "/v1/chat/completions"
 }
-
 
 func ResolveKimiClaudeBaseURL(auth *cliproxyauth.Auth) string {
 	baseURL := ResolveKimiBaseURL(auth)
@@ -64,11 +60,6 @@ func isResponsesToolOutput(item ojson.Result) bool {
 	return t == "function_call_output" || t == "custom_tool_call_output"
 }
 
-
-
-
-
-
 func NormalizeKimiResponsesInput(body []byte) ([]byte, error) {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body, nil
@@ -83,7 +74,6 @@ func NormalizeKimiResponsesInput(body []byte) ([]byte, error) {
 	}
 	return doc.Bytes(), nil
 }
-
 
 func NormalizeKimiResponsesInputDoc(doc *ojson.Doc) (bool, error) {
 	if doc == nil || doc.Len() == 0 {

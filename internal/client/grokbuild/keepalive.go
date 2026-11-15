@@ -13,17 +13,14 @@ import (
 
 var keepaliveSSEComment = []byte(": keepalive\n\n")
 
-
 func KeepaliveSSEComment() []byte {
 	return bytes.Clone(keepaliveSSEComment)
 }
-
 
 func IsGrokClientUserAgent(userAgent string) bool {
 	ua := strings.ToLower(userAgent)
 	return strings.Contains(ua, "grok-pager") || strings.Contains(ua, "grok-shell")
 }
-
 
 func IsGrokClientHeaders(headers http.Header) bool {
 	if headers == nil {
@@ -39,7 +36,6 @@ func IsGrokClientHeaders(headers http.Header) bool {
 	return false
 }
 
-
 func IsGrokClientContext(ctx context.Context, headers http.Header) bool {
 	if ctx != nil {
 		if ginCtx, ok := ctx.Value("gin").(*gin.Context); ok && ginCtx != nil && ginCtx.Request != nil {
@@ -51,11 +47,9 @@ func IsGrokClientContext(ctx context.Context, headers http.Header) bool {
 	return IsGrokClientHeaders(headers)
 }
 
-
 func IsKeepalivePayload(payload []byte) bool {
 	return ojson.GetBytesNoCopy(payload, "type").String() == "keepalive"
 }
-
 
 func IsKeepaliveSSELine(line []byte) bool {
 	trimmed := bytes.TrimSpace(line)
@@ -69,9 +63,6 @@ func IsKeepaliveSSELine(line []byte) bool {
 	}
 	return false
 }
-
-
-
 
 func TransformKeepaliveSSELine(line []byte, isGrokClient bool) ([]byte, bool) {
 	if !isGrokClient {

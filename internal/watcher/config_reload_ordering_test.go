@@ -22,8 +22,6 @@ func newIssue6631ConfigFile(t *testing.T) (configPath, authDir string) {
 	return filepath.Join(tmpDir, "config.yaml"), authDir
 }
 
-
-
 func writeIssue6631Config(configPath, authDir string, requestRetry int) error {
 	raw := fmt.Sprintf("auth-dir: %q\nrequest-retry: %d\n", filepath.ToSlash(authDir), requestRetry)
 	return os.WriteFile(configPath, []byte(raw), 0o600)
@@ -112,7 +110,6 @@ func TestReloadConfigIfChangedSerializesConcurrentReloads_Issue6631(t *testing.T
 		t.Fatal("first reload did not reach the reload callback")
 	}
 
-
 	if errWrite := writeIssue6631Config(configPath, authDir, 2); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -121,7 +118,6 @@ func TestReloadConfigIfChangedSerializesConcurrentReloads_Issue6631(t *testing.T
 		defer wg.Done()
 		w.ReloadConfigIfChanged()
 	}()
-
 
 	select {
 	case <-secondEntered:

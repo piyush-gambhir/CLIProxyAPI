@@ -81,8 +81,6 @@ func newBrowseCache(ifaces []net.Interface, service, domain string) *browseCache
 	return c
 }
 
-
-
 func (c *browseCache) validPeer(index int, src *net.UDPAddr, dst net.IP) bool {
 	l, ok := c.links[index]
 	if !ok || src == nil || src.Port != mdnsPort || src.IP == nil || src.IP.IsUnspecified() || src.IP.IsMulticast() || src.IP.IsLoopback() || dst == nil {
@@ -165,8 +163,6 @@ func (c *browseCache) admissible(rr dns.RR) bool {
 	return false
 }
 
-
-
 func validBrowseHost(host string) bool {
 	host = strings.TrimSuffix(host, ".")
 	if host == "" || len(host) > 253 {
@@ -200,8 +196,6 @@ func browseRecordKey(index int, rr dns.RR) browseRRKey {
 	return browseRRKey{index, h.Name, h.Rrtype, copyRR.String()}
 }
 
-
-
 func (c *browseCache) ingest(msg *dns.Msg, index int, src *net.UDPAddr, dst net.IP, now time.Time) {
 	c.prune(now)
 	if msg == nil || !msg.Response || msg.Opcode != dns.OpcodeQuery || msg.Rcode != dns.RcodeSuccess || msg.Id != 0 || !c.validPeer(index, src, dst) {
@@ -231,7 +225,6 @@ func (c *browseCache) ingest(msg *dns.Msg, index int, src *net.UDPAddr, dst net.
 		delete(flushVictims, oldest)
 		return true
 	}
-
 
 	for _, rr := range records {
 		if !c.admissible(rr) || rr.Header().Ttl == 0 || rr.Header().Class&0x8000 == 0 || rr.Header().Rrtype == dns.TypePTR {
@@ -315,7 +308,6 @@ func (c *browseCache) ingest(msg *dns.Msg, index int, src *net.UDPAddr, dst net.
 				if k.kind != dns.TypeSRV && k.kind != dns.TypeTXT {
 					continue
 				}
-
 
 				var oldest browseRRKey
 				sequence := ^uint64(0)
@@ -405,7 +397,6 @@ func (c *browseCache) results(now time.Time) []DiscoveredService {
 	return out
 }
 
-
 func (c *browseCache) queries(index int, now time.Time) []dns.Question {
 	c.prune(now)
 	seen := make(map[string]bool)
@@ -456,8 +447,6 @@ type browsePacket struct {
 	src   *net.UDPAddr
 	dst   net.IP
 }
-
-
 
 func browseLAN(ctx context.Context, ifaces []net.Interface, serviceType, domain string) ([]DiscoveredService, error) {
 	if ctx == nil {

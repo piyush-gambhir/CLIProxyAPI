@@ -373,7 +373,6 @@ func ValidatePlugin(plugin Plugin) error {
 		return fmt.Errorf("invalid plugin id %q", plugin.ID)
 	}
 
-
 	if version := strings.TrimSpace(plugin.Version); version != "" && !validPluginVersion(version) {
 		return fmt.Errorf("invalid plugin version %q", plugin.Version)
 	}

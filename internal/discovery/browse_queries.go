@@ -6,7 +6,6 @@ import (
 	"github.com/miekg/dns"
 )
 
-
 type browseQueryRetry struct {
 	next, last time.Time
 	interval   time.Duration
@@ -33,8 +32,6 @@ func (c *browseCache) queryDue(index int, q dns.Question, state browseQueryRetry
 		return false
 	}
 
-
-
 	for _, r := range c.rrset(index, q.Name, dns.TypePTR) {
 		ttl := time.Duration(r.rr.Header().Ttl) * time.Second
 		retry := max(time.Second, ttl/20)
@@ -44,9 +41,6 @@ func (c *browseCache) queryDue(index int, q dns.Question, state browseQueryRetry
 	}
 	return false
 }
-
-
-
 
 func (c *browseCache) queryMessages(index int, q dns.Question, now time.Time) []*dns.Msg {
 	const maxPayload = 1200

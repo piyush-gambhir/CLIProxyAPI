@@ -26,9 +26,6 @@ func parseIssue5093Config(t *testing.T, raw string) *config.Config {
 	return cfg
 }
 
-
-
-
 func TestApplyClaudeHeaders_OperatorBetaStripAndAppend(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -62,8 +59,6 @@ func TestApplyClaudeHeaders_OperatorBetaStripAndAppend(t *testing.T) {
 	}
 }
 
-
-
 func TestApplyClaudeHeaders_OperatorBetaOverridesStableAcrossReapplication(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -95,9 +90,6 @@ func TestApplyClaudeHeaders_OperatorBetaOverridesStableAcrossReapplication(t *te
 		t.Fatalf("caller-owned Anthropic-Beta = %q, want %q", got, want)
 	}
 }
-
-
-
 
 func TestApplyClaudeHeaders_CredentialHeadersKeepPrecedenceOverOperatorDefaults(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
@@ -139,8 +131,6 @@ func TestApplyClaudeHeaders_CredentialHeadersKeepPrecedenceOverOperatorDefaults(
 	}
 }
 
-
-
 func TestApplyClaudeHeaders_OperatorBetaStripAppliesToCallerOwnedBetas(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -159,8 +149,6 @@ func TestApplyClaudeHeaders_OperatorBetaStripAppliesToCallerOwnedBetas(t *testin
 		t.Fatalf("Anthropic-Beta = %q, want %q", got, claudeCodeBeta)
 	}
 }
-
-
 
 func TestApplyClaudeHeaders_OperatorBetaStripAllRemovesHeader(t *testing.T) {
 	body := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":"hi"}]}`)
@@ -184,8 +172,6 @@ func TestApplyClaudeHeaders_OperatorBetaStripAllRemovesHeader(t *testing.T) {
 		t.Fatalf("Anthropic-Beta = %q, want header removed", values)
 	}
 }
-
-
 
 func TestClaudeExecutor_InjectDiagnosticsDisabledOmitsDiagnosticsAndCacheDiagnosis(t *testing.T) {
 	disabled := parseIssue5093Config(t, "upstream: {claude: {header-defaults: {inject-diagnostics: false}}}\n")
@@ -263,9 +249,6 @@ func TestClaudeExecutor_InjectDiagnosticsDisabledOmitsDiagnosticsAndCacheDiagnos
 		t.Fatal("InjectDiagnostics = true, want false when inject-diagnostics is disabled")
 	}
 }
-
-
-
 
 func TestApplyClaudeHeaders_ClientRequestIDModes(t *testing.T) {
 	const callerRequestID = "caller-request-id-5093"

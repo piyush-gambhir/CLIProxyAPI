@@ -22,9 +22,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 const toolSearchExecutorGoldenPayload = `{"model":"claude-sonnet-4-5","input":[` +
 	`{"type":"message","role":"user","content":[{"type":"input_text","text":"create a calendar event"}]},` +
 	`{"type":"tool_search_call","call_id":"call_search_1","status":"completed","execution":"client","arguments":{"query":"calendar"}},` +
@@ -38,12 +35,7 @@ const toolSearchExecutorGoldenPayload = `{"model":"claude-sonnet-4-5","input":[`
 
 var toolSearchExecutorGoldenCCH = regexp.MustCompile(`cch=[0-9a-f]+;`)
 
-
-
-
 var toolSearchExecutorGoldenDate = time.Date(2026, time.October, 11, 12, 0, 0, 0, time.UTC)
-
-
 
 func renderToolSearchExecutorGolden(t *testing.T) map[string]string {
 	t.Helper()
@@ -89,17 +81,12 @@ func renderToolSearchExecutorGolden(t *testing.T) map[string]string {
 				t.Fatalf("%s %s: %v", authName, path, errSend)
 			}
 
-
 			body, _ := ojson.DeleteBytes(upstream.body, "metadata.user_id")
 			golden[authName+"/"+path] = toolSearchExecutorGoldenCCH.ReplaceAllString(string(body), "cch=0;")
 		}
 	}
 	return golden
 }
-
-
-
-
 
 func TestClaudeExecutor_ToolSearchDisabledMatchesDevGolden(t *testing.T) {
 	enableClaudeToolSearchForTest(t, false)
@@ -125,8 +112,6 @@ func TestClaudeExecutor_ToolSearchDisabledMatchesDevGolden(t *testing.T) {
 	}
 }
 
-
-
 func TestClaudeExecutor_ToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	enableClaudeToolSearchForTest(t, true)
 	raw, errRead := os.ReadFile(filepath.Join("testdata", "tool_search_disabled", "dev_executor_golden.json"))
@@ -141,9 +126,6 @@ func TestClaudeExecutor_ToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 		t.Fatal("official/execute matches dev with upstream.claude.tool-search on")
 	}
 }
-
-
-
 
 func toolSearchReloadContext(t *testing.T, flipTo bool) (context.Context, *[]byte) {
 	t.Helper()
@@ -177,8 +159,6 @@ func toolSearchReloadContext(t *testing.T, flipTo bool) (context.Context, *[]byt
 	ctx := context.WithValue(context.Background(), "gin", ginCtx)
 	return context.WithValue(ctx, "cliproxy.roundtripper", http.RoundTripper(transport)), &sent
 }
-
-
 
 func TestClaudeExecutor_ToolSearchSwitchIsPinnedPerRequest(t *testing.T) {
 	payload := []byte(nativeToolSearchResponsesPayload)
@@ -235,8 +215,6 @@ func TestClaudeExecutor_ToolSearchSwitchIsPinnedPerRequest(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestClaudeExecutor_ToolSearchFallbackPinsTranslation(t *testing.T) {
 	hosted := `{"type":"tool_search","name":"HostedSearch"}`

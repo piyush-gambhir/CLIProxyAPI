@@ -1,24 +1,9 @@
-
-
-
-
 package thinking
 
 import (
 	"strconv"
 	"strings"
 )
-
-
-
-
-
-
-
-
-
-
-
 
 func ParseSuffix(model string) SuffixResult {
 
@@ -27,11 +12,9 @@ func ParseSuffix(model string) SuffixResult {
 		return SuffixResult{ModelName: model, HasSuffix: false}
 	}
 
-
 	if !strings.HasSuffix(model, ")") {
 		return SuffixResult{ModelName: model, HasSuffix: false}
 	}
-
 
 	modelName := model[:lastOpen]
 	rawSuffix := model[lastOpen+1 : len(model)-1]
@@ -43,31 +26,10 @@ func ParseSuffix(model string) SuffixResult {
 	}
 }
 
-
 func HasThinkingSuffix(model string) bool {
 	result := ParseSuffix(model)
 	return result.HasSuffix && hasThinkingConfig(parseSuffixToConfig(result.RawSuffix, "", result.ModelName))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ParseNumericSuffix(rawSuffix string) (budget int, ok bool) {
 	if rawSuffix == "" {
@@ -79,8 +41,6 @@ func ParseNumericSuffix(rawSuffix string) (budget int, ok bool) {
 		return 0, false
 	}
 
-
-
 	if value < 0 {
 		return 0, false
 	}
@@ -88,19 +48,10 @@ func ParseNumericSuffix(rawSuffix string) (budget int, ok bool) {
 	return value, true
 }
 
-
-
-
-
-
-
-
-
 func ParseSpecialSuffix(rawSuffix string) (mode ThinkingMode, ok bool) {
 	if rawSuffix == "" {
 		return ModeBudget, false
 	}
-
 
 	switch strings.ToLower(rawSuffix) {
 	case "none":
@@ -112,28 +63,10 @@ func ParseSpecialSuffix(rawSuffix string) (mode ThinkingMode, ok bool) {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ParseLevelSuffix(rawSuffix string) (level ThinkingLevel, ok bool) {
 	if rawSuffix == "" {
 		return "", false
 	}
-
 
 	switch strings.ToLower(rawSuffix) {
 	case "minimal":

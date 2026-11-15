@@ -1,4 +1,3 @@
-
 package credentialweight
 
 import (
@@ -10,13 +9,10 @@ import (
 )
 
 const (
-
 	Default int64 = 1
 
 	Max int64 = 1_000_000
 )
-
-
 
 func Normalize(weight int64) (int64, error) {
 	if weight <= 0 {
@@ -27,7 +23,6 @@ func Normalize(weight int64) (int64, error) {
 	}
 	return weight, nil
 }
-
 
 func ParseString(raw string) (int64, error) {
 	raw = strings.TrimSpace(raw)
@@ -40,7 +35,6 @@ func ParseString(raw string) (int64, error) {
 	}
 	return Normalize(weight)
 }
-
 
 func ParseValue(value any) (int64, error) {
 	switch typed := value.(type) {

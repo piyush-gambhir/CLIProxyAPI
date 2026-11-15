@@ -23,7 +23,7 @@ func TestPKCEGeneration(t *testing.T) {
 	if len(pkce.CodeChallenge) == 0 {
 		t.Errorf("code_challenge is empty")
 	}
-	// Re-generation produces unique values
+
 	pkce2, _ := GeneratePKCECodes()
 	if pkce.CodeVerifier == pkce2.CodeVerifier {
 		t.Error("expected randomly unique code verifiers")
@@ -150,7 +150,7 @@ func TestBuildAuthorizationURLWhitespaceRedirectIsHeadless(t *testing.T) {
 }
 
 func TestExchangeCodeForTokenAndFetchSelf(t *testing.T) {
-	// Mock devin API backend
+
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/auth/cli/token":
@@ -198,7 +198,6 @@ func TestExchangeCodeForTokenAndFetchSelf(t *testing.T) {
 
 	ctx := context.Background()
 
-	// 1. Exchange code
 	token, err := svc.ExchangeCodeForToken(ctx, "valid-code", "valid-verifier")
 	if err != nil {
 		t.Fatalf("ExchangeCodeForToken failed: %v", err)
@@ -207,7 +206,6 @@ func TestExchangeCodeForTokenAndFetchSelf(t *testing.T) {
 		t.Errorf("token = %q, want eyJtest-jwt-token", token)
 	}
 
-	// 2. Fetch self profile
 	userName, userID, orgID, errSelf := svc.FetchSelfProfile(ctx, "devin-session-token$"+token)
 	if errSelf != nil {
 		t.Fatalf("FetchSelfProfile failed: %v", errSelf)
@@ -233,7 +231,6 @@ func TestOAuthServerCallback(t *testing.T) {
 		_ = server.Stop(context.Background())
 	}()
 
-	// Simulate browser redirect to /callback?code=mock-code&state=mock-state
 	client := &http.Client{}
 	callbackURL := fmt.Sprintf("http://127.0.0.1:%d/callback?code=mock-code&state=mock-state", port)
 

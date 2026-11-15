@@ -25,8 +25,6 @@ const (
 	AttributeWeight               = "weight"
 )
 
-
-
 func (a *Auth) AuthKind() string {
 	if a == nil {
 		return ""
@@ -48,7 +46,6 @@ func (a *Auth) AuthKind() string {
 	}
 	return ""
 }
-
 
 func (a *Auth) AuthSourceKind() string {
 	if a == nil {

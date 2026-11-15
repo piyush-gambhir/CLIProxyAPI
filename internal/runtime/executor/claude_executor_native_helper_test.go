@@ -251,10 +251,6 @@ func claudeNativeHelperHeaderValue(headers http.Header, name string) string {
 	return ""
 }
 
-
-
-
-
 func TestClaudeBodyNeedsBillingFallbackTracksSystemPresence(t *testing.T) {
 	tests := []struct {
 		name string
@@ -290,10 +286,6 @@ func TestClaudeBodyNeedsBillingFallbackTracksSystemPresence(t *testing.T) {
 		})
 	}
 }
-
-
-
-
 
 func TestApplyClaudeHeadersHelperRequestIDFollowsUpstreamBase(t *testing.T) {
 	const nativeRequestID = "66666666-7777-4888-8999-aaaaaaaaaaaa"

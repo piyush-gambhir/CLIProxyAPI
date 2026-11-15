@@ -5,10 +5,6 @@ import (
 	"testing"
 )
 
-
-
-
-
 const claudeCode2321MainBetas = "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14," +
 	"context-management-2025-06-27,prompt-caching-scope-2026-01-05,per-turn-control-2026-07-01," +
 	"mid-conversation-tool-changes-2026-07-01,inline-tools-2026-09-15,advisor-tool-2026-03-01," +
@@ -16,9 +12,6 @@ const claudeCode2321MainBetas = "claude-code-20250219,oauth-2025-04-20,interleav
 	"effort-2025-11-24,dangerous-tool-use-2026-09-03,thinking-binding-controls-2026-08-01," +
 	"thinking-display-updates-2026-08-18,afk-mode-2026-01-31,extended-cache-ttl-2025-04-11," +
 	"cache-diagnosis-2026-04-07,message-threads-2026-08-12"
-
-
-
 
 func claudeCode2321MainBody(model, display string) []byte {
 	return []byte(`{"model":"` + model + `","max_tokens":128000,` +
@@ -69,7 +62,6 @@ func TestClaudeCodeCLIBetas_MatchesClaudeCode2321Captures(t *testing.T) {
 				t.Fatalf("with native betas requested:\n got: %s\nwant: %s", got, tt.native)
 			}
 
-
 			want := withoutClaudeBeta(tt.native, claudeAFKModeBeta)
 			if got := claudeCodeCLIBetas(tt.body, nil, true); got != want {
 				t.Fatalf("with no betas requested:\n got: %s\nwant: %s", got, want)
@@ -77,7 +69,6 @@ func TestClaudeCodeCLIBetas_MatchesClaudeCode2321Captures(t *testing.T) {
 		})
 	}
 }
-
 
 func TestComputeFingerprintMatchesClaudeCode2321Capture(t *testing.T) {
 	if got := computeFingerprint("say ok", "2.1.321"); got != "20d" {

@@ -6,8 +6,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
 func claudeAssistantBlockTypes(t *testing.T, claudeReq []byte) []string {
 	t.Helper()
 	var kinds []string

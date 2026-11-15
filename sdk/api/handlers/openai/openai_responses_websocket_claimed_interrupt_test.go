@@ -4,10 +4,6 @@ import (
 	"testing"
 )
 
-
-
-
-
 func TestResponsesLocalInterruptRetainsClaimedFrameAfterEnd(t *testing.T) {
 	local := newResponsesLocalInterrupt()
 	local.begin(false)
@@ -35,9 +31,6 @@ func TestResponsesLocalInterruptRetainsClaimedFrameAfterEnd(t *testing.T) {
 	}
 }
 
-
-
-
 func TestResponsesLocalInterruptRejectsWhenQueueFull(t *testing.T) {
 	local := newResponsesLocalInterrupt()
 	local.begin(false)
@@ -55,11 +48,6 @@ func TestResponsesLocalInterruptRejectsWhenQueueFull(t *testing.T) {
 		t.Fatalf("unexpected second claimed frame: %s", frame)
 	}
 }
-
-
-
-
-
 
 func TestResponsesLocalInterruptWebsocketOwnershipIsAtomic(t *testing.T) {
 	local := newResponsesLocalInterrupt()

@@ -62,12 +62,6 @@ func newCodexWebsocketHintServer(t *testing.T, rec *codexWebsocketHintRecorder) 
 	}))
 }
 
-
-
-
-
-
-
 func TestCodexWebsocketsFastToggleKeepsIncrementalConnection(t *testing.T) {
 	var rec codexWebsocketHintRecorder
 	server := newCodexWebsocketHintServer(t, &rec)
@@ -115,10 +109,6 @@ func TestCodexWebsocketsFastToggleKeepsIncrementalConnection(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestCodexWebsocketsRoutingHintDynamicOperatorRule(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -165,10 +155,6 @@ func TestCodexWebsocketsRoutingHintDynamicOperatorRule(t *testing.T) {
 		})
 	}
 }
-
-
-
-
 
 func TestCodexWebsocketsRoutingHintOverridesForwardedClientHint(t *testing.T) {
 	var rec codexWebsocketHintRecorder

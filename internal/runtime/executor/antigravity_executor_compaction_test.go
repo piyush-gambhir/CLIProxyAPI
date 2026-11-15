@@ -31,7 +31,6 @@ func TestAntigravityCompactionTriggerStreamGemini(t *testing.T) {
 			}
 		}
 
-
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Summary of previous conversation"}],"role":"model"}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}}`))
 	}))
@@ -268,7 +267,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		},
 	}
 
-
 	compactPayload := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -294,7 +292,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		t.Fatalf("empty capsule: %s", string(compactResp.Payload))
 	}
 
-
 	nextPayload := []byte(fmt.Sprintf(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -318,7 +315,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 		t.Fatal("empty response on next turn")
 	}
 
-
 	foundContext := false
 	for _, content := range gotContents {
 		for _, part := range content.Get("parts").Array() {
@@ -336,7 +332,6 @@ func TestAntigravityCompactionReplayNextTurn(t *testing.T) {
 	if !foundContext {
 		t.Fatalf("expected context summary in upstream request, got body: %s", string(gotBody))
 	}
-
 
 	corruptedPayload := []byte(`{
 		"model": "gemini-3.7-flash",
@@ -388,7 +383,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 		},
 	}
 
-
 	compactPayload1 := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -408,7 +402,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 		t.Fatalf("first compaction: %v", err1)
 	}
 	capsule1 := ojson.GetBytes(resp1.Payload, "output.0.encrypted_content").String()
-
 
 	compactPayload2 := []byte(fmt.Sprintf(`{
 		"model": "gemini-3.7-flash",
@@ -438,7 +431,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 		}
 	}
 
-
 	if len(summaryRequestBodies) < 2 {
 		t.Fatalf("expected at least 2 summary requests, got %d", len(summaryRequestBodies))
 	}
@@ -446,7 +438,6 @@ func TestAntigravityCompactionSequentialCompactionPreservesContext(t *testing.T)
 	if !strings.Contains(secondReqBody, "Context summary from previous turns") {
 		t.Fatalf("second summary request to upstream did not preserve first compaction summary: %s", secondReqBody)
 	}
-
 
 	corruptedWithTrigger := []byte(`{
 		"model": "gemini-3.7-flash",

@@ -21,8 +21,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
-
 func waitForAntigravityClientModel(t *testing.T, clientID, modelID string) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
@@ -286,8 +284,6 @@ func TestAntigravityRestartSeedsPersistedHintsBeforeProbeAndAcrossProbeFailure(t
 		t.Fatal("initial probe did not register gemini-3-flash")
 	}
 
-
-
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	resetAntigravityCapabilityCache()
 	blockProbe.Store(true)
@@ -306,7 +302,6 @@ func TestAntigravityRestartSeedsPersistedHintsBeforeProbeAndAcrossProbeFailure(t
 	restartedSvc.registerModelsForAuth(t.Context(), loadedAuth)
 	<-probeStarted
 
-
 	models := GlobalModelRegistry().GetModelsForClient(loadedAuth.ID)
 	if len(models) != 2 || !GlobalModelRegistry().ClientSupportsModel(loadedAuth.ID, "gemini-3-flash") {
 		t.Fatalf("expected persisted models to be registered before startup probe answers, got %v", models)
@@ -322,13 +317,11 @@ func TestAntigravityRestartSeedsPersistedHintsBeforeProbeAndAcrossProbeFailure(t
 		t.Fatalf("expected gemini-3-flash web search capability to be restored before probe answers, got %+v", flashModel)
 	}
 
-
 	unblockProbe()
 	restartedSvc.WaitAntigravityProbes()
 	if !GlobalModelRegistry().ClientSupportsModel(loadedAuth.ID, "gemini-3-flash") {
 		t.Fatal("failed startup probe made previously routable account unroutable")
 	}
-
 
 	GlobalModelRegistry().UnregisterClient(loadedAuth.ID)
 	resetAntigravityCapabilityCache()
@@ -382,7 +375,6 @@ func TestAntigravityAuthUpdateWithSkipPersistStillPersistsHintsAcrossRestart(t *
 	}
 	t.Cleanup(func() { GlobalModelRegistry().UnregisterClient(auth.ID) })
 
-
 	svc.handleAuthUpdate(coreauth.WithSkipPersist(t.Context()), watcher.AuthUpdate{
 		Action: watcher.AuthUpdateActionAdd,
 		ID:     auth.ID,
@@ -392,7 +384,6 @@ func TestAntigravityAuthUpdateWithSkipPersistStillPersistsHintsAcrossRestart(t *
 	if !GlobalModelRegistry().ClientSupportsModel(auth.ID, "gemini-3-flash") {
 		t.Fatal("initial watcher auth update did not register gemini-3-flash")
 	}
-
 
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	resetAntigravityCapabilityCache()
@@ -531,7 +522,6 @@ func TestAntigravityPersistedHintsFencesStaleRevision(t *testing.T) {
 		revision: 2,
 	}
 
-
 	antigravityCapabilityMu.Lock()
 	antigravityCapabilityCache[key] = antigravityCapabilityCacheEntry{
 		hints:     oldHints.clone(),
@@ -547,7 +537,6 @@ func TestAntigravityPersistedHintsFencesStaleRevision(t *testing.T) {
 	}()
 	<-store.firstSaveIn
 
-
 	antigravityCapabilityMu.Lock()
 	antigravityCapabilityCache[key] = antigravityCapabilityCacheEntry{
 		hints:     newHints.clone(),
@@ -560,7 +549,6 @@ func TestAntigravityPersistedHintsFencesStaleRevision(t *testing.T) {
 	}()
 	close(store.releaseSave)
 	wg.Wait()
-
 
 	svc.persistAntigravityCapabilityHints(t.Context(), auth, key, "https://daily.invalid", oldHints)
 
@@ -615,17 +603,13 @@ func TestAntigravityPersistedHintsRetriesAfterTransientStoreFailure(t *testing.T
 	}
 	t.Cleanup(func() { GlobalModelRegistry().UnregisterClient(auth.ID) })
 
-
 	store.failSaves.Store(true)
 	svc.registerModelsForAuth(t.Context(), auth)
 	svc.WaitAntigravityProbes()
 
-
 	store.failSaves.Store(false)
 	svc.refreshAntigravityModels(t.Context())
 	svc.WaitAntigravityProbes()
-
-
 
 	if errRemove := os.RemoveAll(authDir); errRemove != nil {
 		t.Fatal(errRemove)
@@ -661,9 +645,6 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		if r.Header.Get("Authorization") == "Bearer token-slow-b" {
 			_, _ = w.Write([]byte(`{"models":{"gemini-3-flash":{}}}`))
 			authBProbed <- struct{}{}
-
-
-
 
 			time.Sleep(200 * time.Millisecond)
 			return
@@ -730,21 +711,17 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		GlobalModelRegistry().UnregisterClient(authB.ID)
 	})
 
-
 	store.blockAll.Store(true)
 	svc.registerModelsForAuth(t.Context(), authA)
 	if got := <-store.saveEntered; got != authA.ID {
 		t.Fatalf("first saveEntered = %q, want %q", got, authA.ID)
 	}
 
-
 	if !GlobalModelRegistry().ClientSupportsModel(authA.ID, "gemini-3-flash") {
 		cancelLifetime()
 		svc.WaitAntigravityProbes()
 		t.Fatal("blocked metadata persistence delayed model publication to registry")
 	}
-
-
 
 	keyA := svc.antigravityCapabilityKey(authA)
 	antigravityCapabilityMu.Lock()
@@ -770,11 +747,7 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		t.Fatal("stalled persistence on authA blocked subsequent probe for authA")
 	}
 
-
-
-
 	waitForAntigravityClientModel(t, authB.ID, "gemini-3-flash")
-
 
 	select {
 	case <-store.saveEntered:
@@ -783,7 +756,6 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		svc.WaitAntigravityProbes()
 		t.Fatal("subsequent persistence task did not start after registry publication")
 	}
-
 
 	store.blockAll.Store(false)
 	updateBDone := make(chan error, 1)
@@ -805,7 +777,6 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		svc.WaitAntigravityProbes()
 		t.Fatal("persisting Update on authB blocked while store Save was stalled on authA")
 	}
-
 
 	svc.WaitAntigravityProbes()
 	store.firstSaveIn = make(chan struct{})
@@ -854,7 +825,6 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		svc.WaitAntigravityProbes()
 		t.Fatal("authA updated models were not published while authA initial persistence was stalled")
 	}
-
 
 	cancelLifetime()
 	doneWait := make(chan struct{})
@@ -912,9 +882,7 @@ func TestAntigravityConcurrentAuthUpdatePreservesBothNewTokenAndPersistedHints(t
 	}
 	t.Cleanup(func() { GlobalModelRegistry().UnregisterClient(auth.ID) })
 
-
 	staleSnapshot := auth.Clone()
-
 
 	store.blockFirst.Store(true)
 	staleSnapshot.Metadata["access_token"] = "rotated-token-1"
@@ -949,9 +917,6 @@ func TestAntigravityConcurrentAuthUpdatePreservesBothNewTokenAndPersistedHints(t
 	<-persistDone
 	svc.WaitAntigravityProbes()
 
-
-
-
 	snapshotWithOldHints, _ := manager.GetByID(auth.ID)
 	snapshotWithOldHints = snapshotWithOldHints.Clone()
 	snapshotWithOldHints.Metadata["access_token"] = "rotated-token-2"
@@ -978,19 +943,15 @@ func TestAntigravityConcurrentAuthUpdatePreservesBothNewTokenAndPersistedHints(t
 	svc.queueAntigravityHintPersistence(t.Context(), auth, key, server.URL, newerHints)
 	<-store.firstSaveIn
 
-
-
 	if _, errUpdate := manager.Update(t.Context(), snapshotWithOldHints); errUpdate != nil {
 		t.Fatal(errUpdate)
 	}
 	svc.WaitAntigravityProbes()
 
-
 	snapshotWithOldHints.Metadata["access_token"] = "rotated-token-2"
 	if _, errUpdate := manager.Update(t.Context(), snapshotWithOldHints); errUpdate != nil {
 		t.Fatal(errUpdate)
 	}
-
 
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	resetAntigravityCapabilityCache()

@@ -691,7 +691,6 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			defer func() { _ = conn.Close() }()
 			_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-
 			_, first, errRead := conn.ReadMessage()
 			if errRead != nil {
 				t.Errorf("read initial create: %v", errRead)
@@ -699,7 +698,6 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			}
 			receivedFrames <- first
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r1","output":[]}}`))
-
 
 			_, second, errRead := conn.ReadMessage()
 			if errRead != nil {
@@ -709,7 +707,6 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			receivedFrames <- second
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.steer.accepted","steer":{"id":"s1","previous_response_id":"r1"}}`))
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"r1","status":"completed","output":[],"usage":{"input_tokens":5,"output_tokens":2,"total_tokens":7}}}`))
-
 
 			_, third, errRead := conn.ReadMessage()
 			if errRead == nil {
@@ -930,7 +927,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		}
 	}
 
-
 	streamResult, errStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: triggerPayload,
@@ -967,7 +963,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 	}
 	assertSummaryRequest(t, seenPaths[0], seenBodies[0], "ExecuteStream")
 
-
 	nonStreamResp, errExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: triggerPayload,
@@ -987,7 +982,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected single compaction item in non-stream response, got: %s", nonStreamResp.Payload)
 	}
 	assertSummaryRequest(t, seenPaths[1], seenBodies[1], "Execute")
-
 
 	wsResp, errWSExec := wsExecutor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
@@ -1027,7 +1021,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected single compaction item in ws stream response, got: %s", wsCompleted.Raw)
 	}
 
-
 	replayPayload := []byte(fmt.Sprintf(`{
 		"model": "deepseek-v4.1-flash",
 		"stream": true,
@@ -1063,7 +1056,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected expanded summary marker %q in replay upstream payload: %s", marker, replaySeen)
 	}
 
-
 	if _, errTokens := executor.CountTokens(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: replayPayload,
@@ -1073,7 +1065,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 	}); errTokens != nil {
 		t.Fatalf("CountTokens(replay) error = %v", errTokens)
 	}
-
 
 	secondTriggerPayload := []byte(fmt.Sprintf(`{
 		"model": "deepseek-v4.1-flash",
@@ -1106,7 +1097,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected prior summary marker %q in second summary request: %s", marker, secondSeen)
 	}
 
-
 	returnIncomplete = true
 	if _, errIncExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
@@ -1130,7 +1120,6 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatal("expected ExecuteStream(compaction_trigger) to fail on incomplete summary, got nil")
 	}
 	returnIncomplete = false
-
 
 	nativePayload := []byte(`{"model":"gpt-5.4","input":[{"type":"message","role":"user","content":"history"},{"type":"compaction_trigger"}]}`)
 	nativeResp, errNative := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
@@ -1210,7 +1199,6 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 		Attributes: map[string]string{"base_url": server.URL, "api_key": "test-compat-key"},
 	}
 
-
 	incTrigger := []byte(`{"model":"deepseek-v4.1-flash","event_id":"ev_inc","previous_response_id":"resp_real_1","input":[{"type":"compaction_trigger"}]}`)
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, ResponseFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: incTrigger}
 	if _, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "deepseek-v4.1-flash", Payload: incTrigger}, opts); err == nil {
@@ -1222,12 +1210,10 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 		t.Fatalf("expected UpstreamWebsocketTurnError on websocket incremental trigger, got %v", errWSInc)
 	}
 
-
 	emptyTrigger := []byte(`{"model":"deepseek-v4.1-flash","input":[{"type":"additional_tools","tools":[]},{"type":"compaction_trigger"}]}`)
 	if _, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "deepseek-v4.1-flash", Payload: emptyTrigger}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: emptyTrigger}); err == nil {
 		t.Fatal("expected empty-history compaction_trigger to fail")
 	}
-
 
 	synthCont := []byte(`{"model":"deepseek-v4.1-flash","previous_response_id":"resp_ag_compact_12345","input":[{"type":"message","role":"user","content":"hi"}]}`)
 	if _, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "deepseek-v4.1-flash", Payload: synthCont}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: synthCont}); err == nil {
@@ -1239,7 +1225,6 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 	if upstreamHits != 0 {
 		t.Fatalf("upstreamHits = %d, want 0 for rejected validation cases", upstreamHits)
 	}
-
 
 	capsule, errSeal := helps.SealAntigravityCompaction("Token count summary", "deepseek-v4.1-flash")
 	if errSeal != nil {
@@ -1258,7 +1243,6 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 	if string(gotCountResp.Payload) != string(wantCountResp.Payload) {
 		t.Fatalf("CountTokens mismatch: got %s, want %s", gotCountResp.Payload, wantCountResp.Payload)
 	}
-
 
 	validTrigger := []byte(`{"model":"deepseek-v4.1-flash","input":[{"type":"message","role":"user","content":"history"},{"type":"compaction_trigger"}]}`)
 	for _, tc := range []struct {
@@ -1390,7 +1374,6 @@ func TestCodexExecutor_IsCompatCompactionMatrix_Issue7406(t *testing.T) {
 		t.Fatalf("max_output_tokens = %d, want 1536; body=%s", gotMax, lastBody)
 	}
 
-
 	overrideResp, errOverride := executor.Execute(context.Background(), siwcAuth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: trigger,
@@ -1432,7 +1415,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			}()
 			_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-
 			_, frame1, errRead1 := conn.ReadMessage()
 			if errRead1 != nil {
 				return
@@ -1441,7 +1423,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp_ws_1","output":[]}}`))
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp_ws_1","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ack-1"}]}],"usage":{"input_tokens":5,"output_tokens":2,"total_tokens":7}}}`))
 
-
 			_, frame2, errRead2 := conn.ReadMessage()
 			if errRead2 != nil {
 				return
@@ -1449,7 +1430,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			wsFrames <- frame2
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp_ws_3","output":[]}}`))
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp_ws_3","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ack-3"}]}],"usage":{"input_tokens":8,"output_tokens":3,"total_tokens":11}}}`))
-
 
 			_, frame3, errRead3 := conn.ReadMessage()
 			if errRead3 != nil {
@@ -1554,9 +1534,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		}
 	}
 
-
 	_ = readNextEvent("response.completed")
-
 
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.steer","event_id":"ev_steer_bad","previous_response_id":"resp_ws_1","input":[{"type":"compaction_trigger"}]}`)}
 	steerErrEv := readNextEvent("error")
@@ -1564,13 +1542,11 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		t.Fatalf("unexpected steer error event: %s", steerErrEv.Raw)
 	}
 
-
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","event_id":"ev_inc_compact","previous_response_id":"resp_ws_1","input":[{"type":"compaction_trigger"}]}`)}
 	incErrEv := readNextEvent("error")
 	if incErrEv.Get("status").Int() != http.StatusConflict || incErrEv.Get("error.code").String() != "previous_response_not_found" || incErrEv.Get("error.event_id").String() != "ev_inc_compact" {
 		t.Fatalf("unexpected incremental compaction error event: %s", incErrEv.Raw)
 	}
-
 
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","model":"client-alias","instructions":"INSTRUCTIONS_B","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Remember ` + marker + `"}]},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ack-1"}]},{"type":"compaction_trigger"}]}`)}
 	compactCompleted := readNextEvent("response.completed")
@@ -1589,7 +1565,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		t.Fatalf("duplex HTTP summary body leaked compaction_trigger or tools: %s", summaryHTTPBody)
 	}
 
-
 	for _, invalid := range []string{`{}`, `42`, `true`, `null`} {
 		payload := fmt.Sprintf(`{"type":"response.create","event_id":"invalid-input","previous_response_id":%q,"input":%s}`, synthRespID, invalid)
 		inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(payload)}
@@ -1598,7 +1573,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			t.Fatalf("input %s: expected correlated 400, got %s", invalid, ev.Raw)
 		}
 	}
-
 
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.append","input":"What was the marker?"}`)}
 	turn3Completed := readNextEvent("response.completed")
@@ -1628,7 +1602,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		t.Fatalf("expected expanded summary marker without raw capsule on turn 3 WS frame: %s", wsTurn3)
 	}
 
-
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","model":"client-alias","previous_response_id":"resp_ws_3","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Follow up 4"}]}]}`)}
 	turn4Completed := readNextEvent("response.completed")
 	if turn4Completed.Get("response.id").String() != "resp_ws_4" {
@@ -1641,7 +1614,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 	if gotPrev := ojson.GetBytes(wsTurn4, "previous_response_id").String(); gotPrev != "resp_ws_3" {
 		t.Fatalf("turn 4 WS previous_response_id = %q, want resp_ws_3; frame=%s", gotPrev, wsTurn4)
 	}
-
 
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","event_id":"ev_stale_synth","previous_response_id":"resp_ag_compact_unknown","input":[{"type":"message","role":"user","content":"stale"}]}`)}
 	staleErrEv := readNextEvent("error")
@@ -1714,13 +1686,11 @@ func TestCodexExecutor_IsCompatCompactionDuplexEOFCancelsHTTP_Issue7406(t *testi
 		t.Fatalf("ExecuteStream error = %v", errStream)
 	}
 
-
 	for chunk := range streamRes.Chunks {
 		if ojson.GetBytes(bytes.TrimSpace(chunk.Payload), "type").String() == "response.completed" {
 			break
 		}
 	}
-
 
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","event_id":"ev_compact_eof","model":"deepseek-v4.1-flash","input":[{"type":"message","role":"user","content":"turn1"},{"type":"compaction_trigger"}]}`)}
 	select {
@@ -1836,14 +1806,10 @@ func TestCodexExecutor_IsCompatCompactionDuplexDeliveryOrder_Issue7406(t *testin
 		t.Fatalf("ExecuteStream error = %v", errStream)
 	}
 
-
 	firstChunk := <-streamRes.Chunks
 	if ojson.GetBytes(bytes.TrimSpace(firstChunk.Payload), "type").String() != "response.created" {
 		t.Fatalf("expected Turn 1 response.created first, got %s", firstChunk.Payload)
 	}
-
-
-
 
 	close(sendTurn1Complete)
 	select {
@@ -1866,7 +1832,6 @@ func TestCodexExecutor_IsCompatCompactionDuplexDeliveryOrder_Issue7406(t *testin
 		ojson.GetBytes(bytes.TrimSpace(secondChunk.Payload), "response.id").String() != "resp_turn1" {
 		t.Fatalf("expected Turn 1 response.completed before any Turn 2 synthetic event, got: %s", secondChunk.Payload)
 	}
-
 
 	var sawSynthCreated, sawSynthCompleted bool
 	for !sawSynthCompleted {

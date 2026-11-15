@@ -10,14 +10,11 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
 func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 	changes := make([]string, 0, 16)
 	if oldCfg == nil || newCfg == nil {
 		return changes
 	}
-
 
 	if oldCfg.Client.Codex.EnableApplyPatch != newCfg.Client.Codex.EnableApplyPatch {
 		changes = append(changes, fmt.Sprintf("client.codex.enable-apply-patch: %t -> %t", oldCfg.Client.Codex.EnableApplyPatch, newCfg.Client.Codex.EnableApplyPatch))
@@ -103,7 +100,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 	if oldCfg.NonStreamKeepAliveInterval != newCfg.NonStreamKeepAliveInterval {
 		changes = append(changes, fmt.Sprintf("nonstream-keepalive-interval: %d -> %d", oldCfg.NonStreamKeepAliveInterval, newCfg.NonStreamKeepAliveInterval))
 	}
-
 
 	if oldCfg.QuotaExceeded.SwitchProject != newCfg.QuotaExceeded.SwitchProject {
 		changes = append(changes, fmt.Sprintf("quota-exceeded.switch-project: %t -> %t", oldCfg.QuotaExceeded.SwitchProject, newCfg.QuotaExceeded.SwitchProject))
@@ -216,7 +212,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 		changes = appendPayloadConfigChanges(changes, oldCfg.Payload, newCfg.Payload)
 	}
 
-
 	if len(oldCfg.APIKeys) != len(newCfg.APIKeys) {
 		changes = append(changes, fmt.Sprintf("api-keys count: %d -> %d", len(oldCfg.APIKeys), len(newCfg.APIKeys)))
 	} else if !reflect.DeepEqual(trimStrings(oldCfg.APIKeys), trimStrings(newCfg.APIKeys)) {
@@ -295,7 +290,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 		}
 	}
 
-
 	if len(oldCfg.ClaudeKey) != len(newCfg.ClaudeKey) {
 		changes = append(changes, fmt.Sprintf("claude-api-key count: %d -> %d", len(oldCfg.ClaudeKey), len(newCfg.ClaudeKey)))
 	} else {
@@ -362,7 +356,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 		}
 	}
 
-
 	if len(oldCfg.CodexKey) != len(newCfg.CodexKey) {
 		changes = append(changes, fmt.Sprintf("codex-api-key count: %d -> %d", len(oldCfg.CodexKey), len(newCfg.CodexKey)))
 	} else {
@@ -407,7 +400,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 		}
 	}
 
-
 	if len(oldCfg.XAIKey) != len(newCfg.XAIKey) {
 		changes = append(changes, fmt.Sprintf("xai-api-key count: %d -> %d", len(oldCfg.XAIKey), len(newCfg.XAIKey)))
 	} else {
@@ -450,7 +442,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 			}
 		}
 	}
-
 
 	if len(oldCfg.MetaKey) != len(newCfg.MetaKey) {
 		changes = append(changes, fmt.Sprintf("meta-api-key count: %d -> %d", len(oldCfg.MetaKey), len(newCfg.MetaKey)))
@@ -505,7 +496,6 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 		changes = append(changes, entries...)
 	}
 
-
 	if oldCfg.RemoteManagement.AllowRemote != newCfg.RemoteManagement.AllowRemote {
 		changes = append(changes, fmt.Sprintf("remote-management.allow-remote: %t -> %t", oldCfg.RemoteManagement.AllowRemote, newCfg.RemoteManagement.AllowRemote))
 	}
@@ -536,14 +526,12 @@ func BuildConfigChangeDetails(oldCfg, newCfg *config.Config) []string {
 		}
 	}
 
-
 	if compat := DiffOpenAICompatibility(oldCfg.OpenAICompatibility, newCfg.OpenAICompatibility); len(compat) > 0 {
 		changes = append(changes, "openai-compatibility:")
 		for _, c := range compat {
 			changes = append(changes, "  "+c)
 		}
 	}
-
 
 	if len(oldCfg.VertexCompatAPIKey) != len(newCfg.VertexCompatAPIKey) {
 		changes = append(changes, fmt.Sprintf("vertex-api-key count: %d -> %d", len(oldCfg.VertexCompatAPIKey), len(newCfg.VertexCompatAPIKey)))

@@ -20,8 +20,6 @@ import (
 	translator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestCodexDuplexRejectedCreateMetadata(t *testing.T) {
 	for _, scenario := range []struct {
 		name                     string

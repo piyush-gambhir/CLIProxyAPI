@@ -99,7 +99,6 @@ func TestWeightedOverloadSustainedStickyTrafficDoesNotStarveOthers(t *testing.T)
 			state := weightedStateForTest(t, weighted, "codex:model", ids...)
 			t.Logf("fresh distribution after warmup: %v; committed=%v", counts, state.currentForTest())
 
-
 			peerWeight := 0
 			for _, weight := range weights[1:] {
 				peerWeight += weight
@@ -130,7 +129,6 @@ func TestWeightedOverloadFeasibleSustainedTraffic(t *testing.T) {
 			key := "codex::" + CanonicalSessionID(sticky.Headers, nil, nil) + "::model"
 			selector.cache.Set(key, auths[0].ID)
 			counts := map[string]int{}
-
 
 			for i := range total * 2000 {
 				opts := cliproxyexecutor.Options{}
@@ -253,7 +251,6 @@ func TestWeightedOverloadCommitAfterSpeculativeRepaymentRollsBack(t *testing.T) 
 	_, first := weighted.reserve(key, auths, "")
 	_, second := weighted.reserve(key, auths, "")
 	t.Cleanup(func() { first.finish(false); second.finish(false) })
-
 
 	picked, bound := weighted.reserve(key, auths, "b")
 	if picked == nil || picked.ID != "b" || bound == nil {
@@ -444,7 +441,6 @@ func TestWeightedOverloadConcurrentStickyAccounting(t *testing.T) {
 		counts[result.id]++
 	}
 	state := weightedStateForTest(t, weighted, "codex:model", "a", "b")
-
 
 	if state.currentForTest()["a"] != int64(64*3-counts["a"]*4) || state.currentForTest()["b"] != int64(64-counts["b"]*4) || len(state.pendingForTest()) != 0 {
 		t.Fatalf("concurrent accounting drifted: counts=%v committed=%v pending=%v", counts, state.currentForTest(), state.pendingForTest())

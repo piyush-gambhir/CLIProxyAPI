@@ -1062,7 +1062,6 @@ func TestExecuteStreamWithAuthManager_ForwardsOverloadErrorWhenAllAuthsOverloade
 
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, manager)
 
-
 	_, _, errChan := handler.ExecuteStreamWithAuthManager(context.Background(), "openai", "gpt-5.6-sol", []byte(`{"model":"gpt-5.6-sol"}`), "")
 	var gotErr *interfaces.ErrorMessage
 	for msg := range errChan {
@@ -1076,7 +1075,6 @@ func TestExecuteStreamWithAuthManager_ForwardsOverloadErrorWhenAllAuthsOverloade
 	if !strings.Contains(gotErr.Error.Error(), "Our servers are currently overloaded. Please try again later.") && !strings.Contains(gotErr.Error.Error(), "server_is_overloaded") {
 		t.Fatalf("expected error message to contain overload details, got: %q", gotErr.Error.Error())
 	}
-
 
 	_, _, errChan2 := handler.ExecuteStreamWithAuthManager(context.Background(), "openai", "gpt-5.6-sol", []byte(`{"model":"gpt-5.6-sol"}`), "")
 	var gotErr2 *interfaces.ErrorMessage

@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-
-
-
-
 func testMetaReasoningSignature(payloadLen int) string {
 	return base64.RawURLEncoding.EncodeToString(testMetaReasoningSignatureBytes(payloadLen, nil))
 }
@@ -25,8 +21,6 @@ func testMetaReasoningSignatureBytes(payloadLen int, mutate func([]byte)) []byte
 	}
 	return decoded
 }
-
-
 
 func testMetaRouterSuffix() string {
 	return strings.Repeat("Ab3", 23)[:67]
@@ -128,7 +122,6 @@ func TestInspectMetaReasoningSignature_RouterSuffixed(t *testing.T) {
 		t.Fatalf("CompatibleSignatureForProvider(Meta, routed) = (%q..., %v), want verbatim routed value", got[:16], ok)
 	}
 
-
 	decision := DecideSignatureCompatibility(SignatureProviderGPT, routed, SignatureBlockKindUnknown)
 	if decision.Compatible || decision.DetectedProvider != SignatureProviderMeta || decision.Action != SignatureActionDropBlock {
 		t.Fatalf("GPT target decision for routed = %+v, want detected Meta + drop_block", decision)
@@ -195,7 +188,6 @@ func TestSignatureProviderFromModelName_Meta(t *testing.T) {
 		}
 	}
 
-
 	for _, model := range []string{"museum-1", "amuse-model", "meta-llama-4"} {
 		if got := SignatureProviderFromModelName(model); got != SignatureProviderUnknown {
 			t.Errorf("SignatureProviderFromModelName(%q) = %q, want %q", model, got, SignatureProviderUnknown)
@@ -234,7 +226,6 @@ func TestSignatureProviderFromModelName_NamespacedTailWins(t *testing.T) {
 }
 
 func TestMetaCachePrefixUnsupported(t *testing.T) {
-
 
 	sig := testMetaReasoningSignature(1024)
 	for _, prefixed := range []string{"meta#" + sig, "muse#" + sig} {

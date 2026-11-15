@@ -483,7 +483,6 @@ func TestStartOAuthV8ParallelSessionsWithDifferentProxiesOutOfOrderCallbacks(t *
 	stateA := startWithProxy(proxyA.URL)
 	stateB := startWithProxy(proxyB.URL)
 
-
 	if _, errWrite := WriteOAuthCallbackFileForPendingSession(authDir, "codex", stateB, "b", ""); errWrite != nil {
 		t.Fatalf("write callback B: %v", errWrite)
 	}
@@ -691,7 +690,6 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 	router.GET("/status", h.GetAuthStatus)
 	router.DELETE("/session", h.CancelAuthSession)
 
-
 	agBody, _ := json.Marshal(map[string]string{"provider": "antigravity", "proxy_url": proxyServer.URL})
 	agRec := httptest.NewRecorder()
 	router.ServeHTTP(agRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(string(agBody))))
@@ -713,7 +711,6 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 	if proxyHits.Load() != 3 || directHits.Load() != 0 {
 		t.Fatalf("antigravity proxyHits=%d directHits=%d, want 3 and 0", proxyHits.Load(), directHits.Load())
 	}
-
 
 	agPath := filepath.Join(authDir, antigravity.CredentialFileName("ag-user@example.test"))
 	agRaw, errReadAg := os.ReadFile(agPath)
@@ -742,7 +739,6 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 		t.Fatalf("after runtime request: proxyHits=%d directHits=%d, want 4 and 0", proxyHits.Load(), directHits.Load())
 	}
 
-
 	pluginBody, _ := json.Marshal(map[string]string{"provider": "custom-sso", "proxy_url": proxyServer.URL})
 	pluginRec := httptest.NewRecorder()
 	router.ServeHTTP(pluginRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(string(pluginBody))))
@@ -766,7 +762,6 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 		t.Fatalf("plugin credential proxy_url = %v, want %q", pluginCredMap["proxy_url"], proxyServer.URL)
 	}
 
-
 	RegisterOAuthSessionWithProxy("cancel-proxy-state", "codex", proxyServer.URL)
 	if got := GetOAuthSessionProxyURL("cancel-proxy-state"); got != proxyServer.URL {
 		t.Fatalf("GetOAuthSessionProxyURL before cancel = %q, want %q", got, proxyServer.URL)
@@ -779,7 +774,6 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 	if got := GetOAuthSessionProxyURL("cancel-proxy-state"); got != "" {
 		t.Fatalf("GetOAuthSessionProxyURL after cancel = %q, want empty", got)
 	}
-
 
 	oauthSessions.mu.Lock()
 	oauthSessions.sessions["expired-proxy-state"] = oauthSession{
@@ -981,8 +975,6 @@ func TestStartOAuthV8PluginPollCancelRaceDoesNotDropProxyOrSaveCancelledSession(
 		t.Fatalf("expected cancelled plugin session not to save credential file, stat err = %v", errStat)
 	}
 
-
-
 	const commitState = "plugin-commit-barrier-state"
 	host.RegisterPluginForTest("commit-plugin", pluginapi.Plugin{
 		Capabilities: pluginapi.Capabilities{
@@ -1034,9 +1026,6 @@ func TestStartOAuthV8PluginPollCancelRaceDoesNotDropProxyOrSaveCancelledSession(
 	if cancelDuringCommitResult.Load() {
 		t.Fatal("expected CancelOAuthSession during in-flight commit to return false")
 	}
-
-
-
 
 	const interleaveState = "plugin-interleave-poll-state"
 	var pollCall atomic.Int32
@@ -1185,7 +1174,6 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/status", h.GetAuthStatus)
 
-
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"codex"}`)))
 	if rec.Code != http.StatusOK {
@@ -1215,7 +1203,6 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 			t.Fatalf("credential without session proxy should not contain proxy_url: %s", string(raw))
 		}
 	}
-
 
 	refreshProvider := &proxyRefreshTestAuthProvider{
 		identifier: "refresh-sso",
@@ -1298,7 +1285,6 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 		t.Fatalf("after refresh-sso login: proxyHits=%d directHits=%d, want 1 and 1", hitsAfterLogin, directHits.Load())
 	}
 
-
 	savedCredPath := filepath.Join(authDir, "refresh-sso-user.json")
 	rawSavedCred, errRead := os.ReadFile(savedCredPath)
 	if errRead != nil {
@@ -1321,7 +1307,6 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 	if synthAuths[0].ProxyURL != proxyServer.URL {
 		t.Fatalf("synthesized refresh-sso Auth.ProxyURL = %q, want %q", synthAuths[0].ProxyURL, proxyServer.URL)
 	}
-
 
 	refreshedAuth, handled, errRefresh := freshHost.RefreshAuth(context.Background(), synthAuths[0])
 	if errRefresh != nil || !handled {

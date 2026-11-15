@@ -8,13 +8,11 @@ import (
 	"github.com/MoeForge/moego/base64"
 )
 
-// PKCECodes contains the PKCE code verifier and code challenge pair.
 type PKCECodes struct {
 	CodeVerifier  string
 	CodeChallenge string
 }
 
-// GeneratePKCECodes generates a random code verifier and its S256 challenge.
 func GeneratePKCECodes() (*PKCECodes, error) {
 	bytes := make([]byte, 64)
 	if _, err := rand.Read(bytes); err != nil {

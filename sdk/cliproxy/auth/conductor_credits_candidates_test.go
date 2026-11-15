@@ -73,7 +73,6 @@ func TestFindAllAntigravityCreditsCandidateAuths_PrefersKnownCreditsThenUnknown(
 		t.Fatalf("pinned[0].auth.ID = %q, want %q", pinned[0].auth.ID, "aa-unknown")
 	}
 
-
 	SetAntigravityCreditsHint("mm-no", AntigravityCreditsHint{
 		Known:     true,
 		Available: false,

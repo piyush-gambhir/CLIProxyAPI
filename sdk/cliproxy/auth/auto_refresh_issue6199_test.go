@@ -49,7 +49,6 @@ func TestIssue6199AutoRefreshDoesNotRequeueQueuedAuth(t *testing.T) {
 		t.Fatalf("initial queued jobs = %d, want 1", got)
 	}
 
-
 	for i := 0; i < 3; i++ {
 		loop.applyDirty(now)
 		now = now.Add(refreshPendingBackoff)
@@ -127,7 +126,6 @@ func TestIssue6199AutoRefreshRunningAuthDoesNotStarveHealthyAuth(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("initial refresh did not enter the executor")
 	}
-
 
 	for i := 0; i < 3; i++ {
 		loop.applyDirty(now)

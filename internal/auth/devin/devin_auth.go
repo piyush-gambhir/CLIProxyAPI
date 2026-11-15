@@ -21,17 +21,15 @@ import (
 )
 
 const (
-	// DefaultAppBaseURL is the user-facing web app for Devin OAuth.
 	DefaultAppBaseURL = "https://app.devin.ai"
-	// DefaultAPIBaseURL is the API backend for token exchange and user status.
+
 	DefaultAPIBaseURL = "https://api.devin.ai"
-	// DefaultServerURL is the upstream Codeium/Devin reasoning backend.
+
 	DefaultServerURL = "https://server.codeium.com"
 
 	devinTokenPrefix = "devin-session-token$"
 )
 
-// DevinTokenBundle holds the completed authentication result.
 type DevinTokenBundle struct {
 	SessionToken string `json:"session_token"`
 	RawToken     string `json:"raw_token"`
@@ -41,7 +39,6 @@ type DevinTokenBundle struct {
 	BaseURL      string `json:"base_url,omitempty"`
 }
 
-// DevinAuthService coordinates Devin PKCE authorization and token exchange.
 type DevinAuthService struct {
 	client        *http.Client
 	appBaseURL    string
@@ -49,7 +46,6 @@ type DevinAuthService struct {
 	serverBaseURL string
 }
 
-// NewDevinAuthService creates a new Devin authentication service instance.
 func NewDevinAuthService(client *http.Client) *DevinAuthService {
 	if client == nil {
 		client = &http.Client{Timeout: 30 * time.Second}
@@ -62,30 +58,24 @@ func NewDevinAuthService(client *http.Client) *DevinAuthService {
 	}
 }
 
-// SetServerBaseURL overrides the upstream reasoning/seat management base URL (used in tests).
 func (s *DevinAuthService) SetServerBaseURL(url string) {
 	if s != nil && strings.TrimSpace(url) != "" {
 		s.serverBaseURL = strings.TrimRight(strings.TrimSpace(url), "/")
 	}
 }
 
-// SetAPIBaseURL overrides the token exchange and profile API base URL (used in tests).
 func (s *DevinAuthService) SetAPIBaseURL(url string) {
 	if s != nil && strings.TrimSpace(url) != "" {
 		s.apiBaseURL = strings.TrimRight(strings.TrimSpace(url), "/")
 	}
 }
 
-// SetAppBaseURL overrides the user-facing OAuth authorization base URL (used in tests).
 func (s *DevinAuthService) SetAppBaseURL(url string) {
 	if s != nil && strings.TrimSpace(url) != "" {
 		s.appBaseURL = strings.TrimRight(strings.TrimSpace(url), "/")
 	}
 }
 
-// BuildAuthorizationURL constructs the PKCE login URL. When redirectURI is empty,
-// it generates a headless manual code URL (with cli_pkce_marker=1) matching the exact
-// query parameter ordering of the official Devin CLI binary.
 func (s *DevinAuthService) BuildAuthorizationURL(redirectURI, codeChallenge, state string) string {
 	trimmedRedirect := strings.TrimSpace(redirectURI)
 	var queryParts []string
@@ -106,7 +96,6 @@ func (s *DevinAuthService) BuildAuthorizationURL(redirectURI, codeChallenge, sta
 	return fmt.Sprintf("%s/auth/cli/continue?%s", strings.TrimRight(s.appBaseURL, "/"), strings.Join(queryParts, "&"))
 }
 
-// ExchangeCodeForToken exchanges the authorization code for a session token.
 func (s *DevinAuthService) ExchangeCodeForToken(ctx context.Context, code, codeVerifier string) (string, error) {
 	reqBody := map[string]string{
 		"code":          strings.TrimSpace(code),
@@ -150,7 +139,6 @@ func (s *DevinAuthService) ExchangeCodeForToken(ctx context.Context, code, codeV
 	return token, nil
 }
 
-// FetchSelfProfile retrieves the authenticated user's profile from api.devin.ai/v3/self.
 func (s *DevinAuthService) FetchSelfProfile(ctx context.Context, sessionToken string) (userName, userID, orgID string, err error) {
 	endpoint := fmt.Sprintf("%s/v3/self", strings.TrimRight(s.apiBaseURL, "/"))
 	req, errReq := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -183,7 +171,6 @@ func (s *DevinAuthService) FetchSelfProfile(ctx context.Context, sessionToken st
 	return userName, userID, orgID, nil
 }
 
-// FormatSessionToken ensures the token carries the mandatory devin-session-token$ prefix.
 func FormatSessionToken(rawToken string) string {
 	t := strings.TrimSpace(rawToken)
 	if strings.HasPrefix(t, devinTokenPrefix) {
@@ -195,7 +182,6 @@ func FormatSessionToken(rawToken string) string {
 	return t
 }
 
-// OAuthServer handles local loopback HTTP callbacks for Devin authentication.
 type OAuthServer struct {
 	server     *http.Server
 	listener   net.Listener
@@ -206,14 +192,12 @@ type OAuthServer struct {
 	running    bool
 }
 
-// OAuthResult carries the authorization code from the browser callback.
 type OAuthResult struct {
 	Code  string
 	State string
 	Error string
 }
 
-// NewOAuthServer creates a local loopback server for Devin OAuth.
 func NewOAuthServer(port int) *OAuthServer {
 	return &OAuthServer{
 		port:       port,
@@ -222,7 +206,6 @@ func NewOAuthServer(port int) *OAuthServer {
 	}
 }
 
-// Start initiates the local HTTP server. If port is 0, an available ephemeral port is chosen.
 func (s *OAuthServer) Start() (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -270,7 +253,6 @@ func (s *OAuthServer) Start() (int, error) {
 	return s.port, nil
 }
 
-// Stop gracefully stops the server.
 func (s *OAuthServer) Stop(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -285,12 +267,10 @@ func (s *OAuthServer) Stop(ctx context.Context) error {
 	return nil
 }
 
-// WaitForCallback waits for the browser redirect or times out.
 func (s *OAuthServer) WaitForCallback(timeout time.Duration) (*OAuthResult, error) {
 	return s.WaitForCallbackWithContext(context.Background(), timeout)
 }
 
-// WaitForCallbackWithContext waits for the browser redirect, context cancellation, or times out.
 func (s *OAuthServer) WaitForCallbackWithContext(ctx context.Context, timeout time.Duration) (*OAuthResult, error) {
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()

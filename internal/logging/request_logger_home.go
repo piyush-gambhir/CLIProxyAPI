@@ -72,8 +72,6 @@ func (l *FileRequestLogger) forwardRequestLogToHome(ctx context.Context, headers
 	return client.RPushRequestLog(ctx, raw)
 }
 
-
-
 func (l *FileRequestLogger) SetHomeEnabled(enabled bool) {
 	if l == nil {
 		return

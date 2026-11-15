@@ -10,13 +10,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type Doer interface {
 	Do(*http.Request) (*http.Response, error)
 }
-
-
-
 
 func GetBytes(ctx context.Context, client Doer, requestURL string, headers map[string]string, maxSize int64) ([]byte, error) {
 	if client == nil {

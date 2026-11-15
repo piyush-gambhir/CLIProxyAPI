@@ -113,7 +113,6 @@ func TestIssue5190ModelDetailHomeVisibility(t *testing.T) {
 	}
 	server.cfg.Home.Enabled = true
 
-
 	engine = gin.New()
 	for _, route := range server.engine.Routes() {
 		if route.Method == http.MethodGet && route.Path == "/v1/models/*model" {

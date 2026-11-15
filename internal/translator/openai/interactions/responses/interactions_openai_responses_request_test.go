@@ -502,14 +502,12 @@ func TestConvertOpenAIResponsesRequestToInteractions_FlattensNamespaceTools(t *t
 		t.Fatalf("expected 4 flattened tools, got %d. Output: %s", len(tools), string(out))
 	}
 
-
 	if got := tools[0].Get("name").String(); got != "exec_command" {
 		t.Errorf("tools[0].name = %q, want exec_command", got)
 	}
 	if got := tools[0].Get("type").String(); got != "function" {
 		t.Errorf("tools[0].type = %q, want function", got)
 	}
-
 
 	if got := tools[1].Get("name").String(); got != "multi_agent_v1__close_agent" {
 		t.Errorf("tools[1].name = %q, want multi_agent_v1__close_agent", got)
@@ -521,11 +519,9 @@ func TestConvertOpenAIResponsesRequestToInteractions_FlattensNamespaceTools(t *t
 		t.Errorf("tools[1].parameters.properties.target.type = %q, want string", got)
 	}
 
-
 	if got := tools[2].Get("name").String(); got != "multi_agent_v1__resume_agent" {
 		t.Errorf("tools[2].name = %q, want multi_agent_v1__resume_agent", got)
 	}
-
 
 	if got := tools[3].Get("name").String(); got != "functions__exec" {
 		t.Errorf("tools[3].name = %q, want functions__exec", got)
@@ -533,7 +529,6 @@ func TestConvertOpenAIResponsesRequestToInteractions_FlattensNamespaceTools(t *t
 	if got := tools[3].Get("parameters.properties.input.type").String(); got != "string" {
 		t.Errorf("tools[3].parameters.properties.input.type = %q, want string", got)
 	}
-
 
 	if got := ojson.GetBytesNoCopy(out, "generation_config.tool_choice.name").String(); got != "multi_agent_v1__close_agent" {
 		t.Errorf("tool_choice.name = %q, want multi_agent_v1__close_agent", got)
@@ -575,7 +570,6 @@ func TestConvertOpenAIResponsesRequestToInteractions_HistoryNamespaceAndCustomTo
 
 	out, _ := ConvertOpenAIResponsesRequestToInteractions("devin/gemini-3-7-flash", raw, false)
 
-
 	if got := ojson.GetBytesNoCopy(out, "input.0.name").String(); got != "multi_agent_v1__close_agent" {
 		t.Errorf("input.0.name = %q, want multi_agent_v1__close_agent", got)
 	}
@@ -583,11 +577,9 @@ func TestConvertOpenAIResponsesRequestToInteractions_HistoryNamespaceAndCustomTo
 		t.Errorf("input.0.call_id = %q, want call_1", got)
 	}
 
-
 	if got := ojson.GetBytesNoCopy(out, "input.1.name").String(); got != "multi_agent_v1__close_agent" {
 		t.Errorf("input.1.name = %q, want multi_agent_v1__close_agent", got)
 	}
-
 
 	if got := ojson.GetBytesNoCopy(out, "input.2.name").String(); got != "functions__exec" {
 		t.Errorf("input.2.name = %q, want functions__exec", got)
@@ -595,7 +587,6 @@ func TestConvertOpenAIResponsesRequestToInteractions_HistoryNamespaceAndCustomTo
 	if got := ojson.GetBytesNoCopy(out, "input.2.arguments.input").String(); got != "ls -la" {
 		t.Errorf("input.2.arguments.input = %q, want ls -la", got)
 	}
-
 
 	if got := ojson.GetBytesNoCopy(out, "input.3.name").String(); got != "functions__exec" {
 		t.Errorf("input.3.name = %q, want functions__exec", got)
@@ -706,7 +697,6 @@ func TestConvertOpenAIResponsesRequestToInteractions_LogFilePayload(t *testing.T
 		t.Fatalf("expected tools in output, got 0")
 	}
 
-
 	for i, tool := range tools {
 		name := tool.Get("name").String()
 		if name == "" {
@@ -789,18 +779,15 @@ func TestConvertOpenAIResponsesRequestToInteractions_DevinToolsFilterAndObfuscat
 		toolDescs[name] = tool.Get("description").String()
 	}
 
-
 	for _, name := range toolNames {
 		if strings.Contains(name, "automation_update") {
 			t.Fatalf("unexpected automation_update tool found in devin tools: %q", name)
 		}
 	}
 
-
 	if _, exists := toolDescs["mcp__codex_app__read_resource"]; !exists {
 		t.Fatalf("expected mcp__codex_app__read_resource in devin tools, got %v", toolNames)
 	}
-
 
 	execDesc, ok := toolDescs["exec_command"]
 	if !ok {
@@ -811,7 +798,6 @@ func TestConvertOpenAIResponsesRequestToInteractions_DevinToolsFilterAndObfuscat
 		t.Fatalf("exec_command description = %q, want %q", execDesc, wantExecDesc)
 	}
 
-
 	stdinDesc, ok := toolDescs["write_stdin"]
 	if !ok {
 		t.Fatalf("expected write_stdin in devin tools, got %v", toolNames)
@@ -821,12 +807,10 @@ func TestConvertOpenAIResponsesRequestToInteractions_DevinToolsFilterAndObfuscat
 		t.Fatalf("write_stdin description = %q, want %q", stdinDesc, wantStdinDesc)
 	}
 
-
 	otherDesc, ok := toolDescs["other_func"]
 	if !ok || otherDesc != "Regular function description" {
 		t.Fatalf("other_func description = %q, want Regular function description", otherDesc)
 	}
-
 
 	if tc := ojson.GetBytesNoCopy(out, "generation_config.tool_choice"); tc.Exists() {
 		t.Fatalf("expected generation_config.tool_choice to be omitted for filtered tool, got %s", tc.Raw)
@@ -859,7 +843,6 @@ func TestConvertOpenAIResponsesRequestToInteractions_AntigravityDoesNotFilterDev
 	}`)
 
 	out, _ := ConvertOpenAIResponsesRequestToInteractions("antigravity-preview-05-2026", responsesPayload, false)
-
 
 	foundAuto := false
 	ojson.GetBytesNoCopy(out, "tools").ForEach(func(_, tool ojson.Result) bool {

@@ -111,8 +111,6 @@ func TestFileCooldownStateStore_StateRelativePath(t *testing.T) {
 	}
 }
 
-
-
 func TestFileCooldownStateStore_StateRelativePathRelativeAuthDir(t *testing.T) {
 	store := NewFileCooldownStateStoreWithAuthDir("auths", "auths")
 	cases := []struct {
@@ -297,7 +295,6 @@ func TestManager_Update_ClearsPersistedCooldownWhenCredentialsChange(t *testing.
 		t.Fatalf("Register() returned error: %v", errRegister)
 	}
 
-
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: "codex",
@@ -308,7 +305,6 @@ func TestManager_Update_ClearsPersistedCooldownWhenCredentialsChange(t *testing.
 	if len(store.savedRecords()) == 0 {
 		t.Fatal("expected cooldown record to be saved after unauthorized failure")
 	}
-
 
 	sameCredAuth := &Auth{
 		ID:       auth.ID,
@@ -325,7 +321,6 @@ func TestManager_Update_ClearsPersistedCooldownWhenCredentialsChange(t *testing.
 	if len(store.savedRecords()) == 0 {
 		t.Fatal("expected cooldown record to remain when credentials did not change")
 	}
-
 
 	newCredAuth := &Auth{
 		ID:       auth.ID,

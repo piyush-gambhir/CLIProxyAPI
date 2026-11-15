@@ -1,6 +1,5 @@
 package util
 
-
 func ByteCapacity(lengths ...int) int {
 	total := 0
 	for _, length := range lengths {

@@ -20,11 +20,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
-
 func TestResponsesUnknownInterruptDoesNotCancelWebsocketTurn(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	var connections atomic.Int32
@@ -136,11 +131,8 @@ func TestResponsesUnknownInterruptDoesNotCancelWebsocketTurn(t *testing.T) {
 	send(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[]}`, model))
 	expect("response.created", "r1")
 
-
 	send(`{"type":"response.interrupt","response_id":"unknown"}`)
 	expect("error", "")
-
-
 
 	if releaseOnce.CompareAndSwap(false, true) {
 		close(release)

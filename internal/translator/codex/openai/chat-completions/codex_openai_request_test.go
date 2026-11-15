@@ -45,9 +45,6 @@ func TestConvertOpenAIRequestToCodex_MaxOutputTokens(t *testing.T) {
 	}
 }
 
-
-
-
 func TestToolCallSimple(t *testing.T) {
 	input := []byte(`{
 		"model": "gpt-4o",
@@ -94,7 +91,6 @@ func TestToolCallSimple(t *testing.T) {
 		t.Fatalf("expected 4 input items, got %d: %s", len(items), ojson.Get(result, "input").Raw)
 	}
 
-
 	if items[0].Get("type").String() != "message" {
 		t.Errorf("item 0: expected type 'message', got '%s'", items[0].Get("type").String())
 	}
@@ -102,14 +98,12 @@ func TestToolCallSimple(t *testing.T) {
 		t.Errorf("item 0: expected role 'developer', got '%s'", items[0].Get("role").String())
 	}
 
-
 	if items[1].Get("type").String() != "message" {
 		t.Errorf("item 1: expected type 'message', got '%s'", items[1].Get("type").String())
 	}
 	if items[1].Get("role").String() != "user" {
 		t.Errorf("item 1: expected role 'user', got '%s'", items[1].Get("role").String())
 	}
-
 
 	if items[2].Get("type").String() != "function_call" {
 		t.Errorf("item 2: expected type 'function_call', got '%s'", items[2].Get("type").String())
@@ -124,7 +118,6 @@ func TestToolCallSimple(t *testing.T) {
 		t.Errorf("item 2: unexpected arguments: %s", items[2].Get("arguments").String())
 	}
 
-
 	if items[3].Get("type").String() != "function_call_output" {
 		t.Errorf("item 3: expected type 'function_call_output', got '%s'", items[3].Get("type").String())
 	}
@@ -135,8 +128,6 @@ func TestToolCallSimple(t *testing.T) {
 		t.Errorf("item 3: expected output 'sunny, 22C', got '%s'", items[3].Get("output").String())
 	}
 }
-
-
 
 func TestToolCallWithContent(t *testing.T) {
 	input := []byte(`{
@@ -187,7 +178,6 @@ func TestToolCallWithContent(t *testing.T) {
 	if items[0].Get("role").String() != "user" {
 		t.Errorf("item 0: expected role 'user', got '%s'", items[0].Get("role").String())
 	}
-
 
 	if items[1].Get("type").String() != "message" {
 		t.Errorf("item 1: expected type 'message', got '%s'", items[1].Get("type").String())
@@ -544,8 +534,6 @@ func TestConvertOpenAIRequestToCodexPreservesInputAudio(t *testing.T) {
 	}
 }
 
-
-
 func TestMultipleToolCalls(t *testing.T) {
 	input := []byte(`{
 		"model": "gpt-4o",
@@ -636,8 +624,6 @@ func TestMultipleToolCalls(t *testing.T) {
 	}
 }
 
-
-
 func TestNoSpuriousEmptyAssistantMessage(t *testing.T) {
 	input := []byte(`{
 		"model": "gpt-4o",
@@ -684,7 +670,6 @@ func TestNoSpuriousEmptyAssistantMessage(t *testing.T) {
 		}
 	}
 
-
 	if len(items) != 3 {
 		t.Fatalf("expected 3 input items (user + function_call + function_call_output), got %d: %s", len(items), ojson.Get(result, "input").Raw)
 	}
@@ -698,7 +683,6 @@ func TestNoSpuriousEmptyAssistantMessage(t *testing.T) {
 		t.Errorf("item 2: expected function_call_output, got %s", items[2].Get("type").String())
 	}
 }
-
 
 func TestMultiTurnToolCalling(t *testing.T) {
 	input := []byte(`{
@@ -749,7 +733,6 @@ func TestMultiTurnToolCalling(t *testing.T) {
 		}
 	}
 
-
 	if items[1].Get("type").String() != "function_call" {
 		t.Errorf("item 1: expected function_call, got %s", items[1].Get("type").String())
 	}
@@ -760,11 +743,9 @@ func TestMultiTurnToolCalling(t *testing.T) {
 		t.Errorf("item 2: expected function_call_output, got %s", items[2].Get("type").String())
 	}
 
-
 	if items[3].Get("type").String() != "message" || items[3].Get("role").String() != "assistant" {
 		t.Errorf("item 3: expected assistant message, got type=%s role=%s", items[3].Get("type").String(), items[3].Get("role").String())
 	}
-
 
 	if items[5].Get("type").String() != "function_call" {
 		t.Errorf("item 5: expected function_call, got %s", items[5].Get("type").String())
@@ -776,7 +757,6 @@ func TestMultiTurnToolCalling(t *testing.T) {
 		t.Errorf("item 6: expected function_call_output, got %s", items[6].Get("type").String())
 	}
 }
-
 
 func TestToolNameShortening(t *testing.T) {
 	longName := "a_very_long_tool_name_that_exceeds_sixty_four_characters_limit_here_test"
@@ -821,7 +801,6 @@ func TestToolNameShortening(t *testing.T) {
 
 	items := ojson.Get(result, "input").Array()
 
-
 	var funcCallItem ojson.Result
 	for _, item := range items {
 		if item.Get("type").String() == "function_call" {
@@ -834,11 +813,9 @@ func TestToolNameShortening(t *testing.T) {
 		t.Fatal("no function_call item found in output")
 	}
 
-
 	if funcCallItem.Get("call_id").String() != "call_long" {
 		t.Errorf("call_id changed: expected 'call_long', got '%s'", funcCallItem.Get("call_id").String())
 	}
-
 
 	translatedName := funcCallItem.Get("name").String()
 	if translatedName == longName {
@@ -1048,7 +1025,6 @@ func TestSameNameCustomAndFunctionDefaultsToFunctionFamily(t *testing.T) {
 	}
 }
 
-
 func TestEmptyStringContent(t *testing.T) {
 	input := []byte(`{
 		"model": "gpt-4o",
@@ -1092,12 +1068,10 @@ func TestEmptyStringContent(t *testing.T) {
 		}
 	}
 
-
 	if len(items) != 3 {
 		t.Errorf("expected 3 input items, got %d", len(items))
 	}
 }
-
 
 func TestCallIDsMatchBetweenCallAndOutput(t *testing.T) {
 	input := []byte(`{
@@ -1126,7 +1100,6 @@ func TestCallIDsMatchBetweenCallAndOutput(t *testing.T) {
 
 	items := ojson.Get(result, "input").Array()
 
-
 	callIDs := make(map[string]bool)
 	for _, item := range items {
 		if item.Get("type").String() == "function_call" {
@@ -1142,7 +1115,6 @@ func TestCallIDsMatchBetweenCallAndOutput(t *testing.T) {
 			}
 		}
 	}
-
 
 	funcCallCount := 0
 	funcOutputCount := 0
@@ -1488,7 +1460,6 @@ func TestOrphanAndDuplicateToolCallOutputsAreDropped(t *testing.T) {
 	}
 }
 
-
 func TestToolsDefinitionTranslated(t *testing.T) {
 	input := []byte(`{
 		"model": "gpt-4o",
@@ -1742,7 +1713,6 @@ func TestHistoricalToolCallCollisionWithDeclaredTool(t *testing.T) {
 		t.Fatalf("expected historical tool name and declared tool name not to collide, both got %q", toolDeclared)
 	}
 
-
 	rev := buildReverseMapFromOriginalOpenAI(input)
 	if got := rev[toolDeclared]; got != declaredName {
 		t.Fatalf("expected reverse map for declared %q to be %q, got %q", toolDeclared, declaredName, got)
@@ -1862,8 +1832,6 @@ func TestApplyPatchChatHistoryBoundary(t *testing.T) {
 	}
 }
 
-
-
 func TestOverLengthToolCallIDsAreShortenedConsistently(t *testing.T) {
 	sharedPrefix := strings.Repeat("a", 70)
 	longA := sharedPrefix + "_A"
@@ -1916,8 +1884,6 @@ func TestOverLengthToolCallIDsAreShortenedConsistently(t *testing.T) {
 		t.Fatalf("short call_id = %q, want unchanged", callIDs[2])
 	}
 }
-
-
 
 func TestShortenedToolCallIDCollisionWithLegalIDKeepsResultsMatched(t *testing.T) {
 	longA := strings.Repeat("a", 70) + "_A"

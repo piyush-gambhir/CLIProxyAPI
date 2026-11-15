@@ -131,9 +131,6 @@ func mapCodexWebsocketReadError(err error) error {
 	return err
 }
 
-
-
-
 func codexWebsocketTurnTransportError(err error) error {
 	if err == nil || cliproxyexecutor.IsUpstreamWebsocketTurnError(err) {
 		return err
@@ -155,7 +152,6 @@ func codexWebsocketTurnTransportError(err error) error {
 	}
 	return &cliproxyexecutor.UpstreamWebsocketTurnError{Cause: err}
 }
-
 
 func codexWebsocketTurnEventID(err error, payload []byte) error {
 	var turnErr *cliproxyexecutor.UpstreamWebsocketTurnError
@@ -185,7 +181,6 @@ func normalizeCodexWebsocketParallelToolCallsDoc(doc *ojson.Doc, headers http.He
 func buildCodexWebsocketRequestBody(body []byte) []byte {
 	return frameCodexWebsocketRequestBody(helps.SanitizeCodexInputItemIDs(body))
 }
-
 
 func frameCodexWebsocketRequestBody(body []byte) []byte {
 	if len(body) == 0 {

@@ -9,19 +9,9 @@ import (
 )
 
 const (
-
 	MaxGrokEncryptedContentLen = 8 * 1024 * 1024
 
-
-
-
-
-
-
-
-
 	MinGrokEncryptedContentDecodedLen = 32
-
 
 	MinGrokEncryptedContentEntropyRatio = 0.85
 )
@@ -30,20 +20,8 @@ type GrokEncryptedContentInfo struct {
 	RawLen     int
 	DecodedLen int
 
-
 	RouterSuffix string
 }
-
-
-
-
-
-
-
-
-
-
-
 
 func InspectGrokEncryptedContent(raw string) (*GrokEncryptedContentInfo, error) {
 	sig := strings.TrimSpace(raw)
@@ -75,13 +53,6 @@ func InspectGrokEncryptedContent(raw string) (*GrokEncryptedContentInfo, error) 
 		return nil, fmt.Errorf("invalid Grok encrypted_content: contains non-base64 character U+%04X at byte %d", r, index)
 	}
 
-
-
-
-
-
-
-
 	if maybeSelfDescribingSignatureEnvelope(native) {
 		if strings.HasPrefix(native, "gAAAA") {
 			return nil, fmt.Errorf("Grok encrypted_content looks like GPT/Codex reasoning signature")
@@ -99,11 +70,6 @@ func InspectGrokEncryptedContent(raw string) (*GrokEncryptedContentInfo, error) 
 			return nil, fmt.Errorf("Grok encrypted_content looks like Gemini thoughtSignature")
 		}
 	}
-
-
-
-
-
 
 	if IsValidKimiThinkingSignature(native) {
 		return nil, fmt.Errorf("Grok encrypted_content has a Kimi thinking signature length")
@@ -142,13 +108,7 @@ func decodeGrokEncryptedContent(sig string) ([]byte, error) {
 	return decoded, nil
 }
 
-
 var grokEncryptedContentCharSet = base64AlphabetSet("+/")
-
-
-
-
-
 
 func firstInvalidGrokEncryptedContentChar(sig string) (int, rune, bool) {
 	for index := 0; index < len(sig); index++ {

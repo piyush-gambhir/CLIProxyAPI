@@ -6,20 +6,11 @@ import (
 	"time"
 )
 
-
 type UsageReading struct {
-
 	Plan string
 
 	Windows map[string]Window
 }
-
-
-
-
-
-
-
 
 func ParseUsage(provider string, body []byte, learnedAt time.Time) (UsageReading, error) {
 	var raw map[string]any
@@ -35,12 +26,6 @@ func ParseUsage(provider string, body []byte, learnedAt time.Time) (UsageReading
 		return UsageReading{}, nil
 	}
 }
-
-
-
-
-
-
 
 func parseClaudeUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	out := UsageReading{Plan: stringField(raw, "plan_type"), Windows: make(map[string]Window)}
@@ -61,7 +46,6 @@ func parseClaudeUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 		if canonical == "" {
 			continue
 		}
-
 
 		if canonical == WindowSevenDay && scopeMentionsFable(entry) {
 			canonical = WindowFable
@@ -119,9 +103,6 @@ func parseClaudeUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	return out
 }
 
-
-
-
 func parseCodexUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	out := UsageReading{Plan: stringField(raw, "plan_type"), Windows: make(map[string]Window)}
 	limits := objectOf(raw["rate_limit"])
@@ -166,8 +147,6 @@ func parseCodexUsage(raw map[string]any, learnedAt time.Time) UsageReading {
 	return out
 }
 
-
-
 func mergeWindow(windows map[string]Window, canonical string, window Window) {
 	previous, exists := windows[canonical]
 	if !exists {
@@ -181,7 +160,6 @@ func mergeWindow(windows map[string]Window, canonical string, window Window) {
 		windows[canonical] = window
 	}
 }
-
 
 func scopeMentionsFable(entry map[string]any) bool {
 	scope := objectOf(entry["scope"])
@@ -249,7 +227,6 @@ func timeField(raw map[string]any, key string) (time.Time, bool) {
 	if raw == nil {
 		return time.Time{}, false
 	}
-
 
 	switch typed := raw[key].(type) {
 	case string:

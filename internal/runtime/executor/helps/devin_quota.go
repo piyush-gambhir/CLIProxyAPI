@@ -5,12 +5,9 @@ import (
 	"time"
 )
 
-
 type DevinQuotaPeriod int
 
 const (
-
-
 	DevinQuotaPeriodNone DevinQuotaPeriod = iota
 
 	DevinQuotaPeriodDaily
@@ -18,18 +15,7 @@ const (
 	DevinQuotaPeriodWeekly
 )
 
-
-
-
-
 const devinQuotaResetMaxDelay = 8 * 24 * time.Hour
-
-
-
-
-
-
-
 
 func DevinUsageQuotaExhaustionPeriod(message string) DevinQuotaPeriod {
 	lower := strings.ToLower(message)
@@ -44,11 +30,6 @@ func DevinUsageQuotaExhaustionPeriod(message string) DevinQuotaPeriod {
 	}
 	return DevinQuotaPeriodNone
 }
-
-
-
-
-
 
 func DevinQuotaRetryAfter(resetAtSignal string, now time.Time) *time.Duration {
 	resetAt, errParse := time.Parse(time.RFC3339, strings.TrimSpace(resetAtSignal))

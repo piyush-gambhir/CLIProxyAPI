@@ -1,6 +1,3 @@
-
-
-
 package executor
 
 import (
@@ -32,18 +29,13 @@ import (
 )
 
 const (
-
 	vertexAPIVersion = "v1"
 )
-
-
 
 func isImagenModel(model string) bool {
 	lowerModel := strings.ToLower(model)
 	return strings.Contains(lowerModel, "imagen")
 }
-
-
 
 func getVertexAction(model string, isStream bool) string {
 	if isImagenModel(model) {
@@ -55,15 +47,11 @@ func getVertexAction(model string, isStream bool) string {
 	return "generateContent"
 }
 
-
-
-
 func convertImagenToGeminiResponse(data []byte, model string) []byte {
 	predictions := ojson.GetBytesNoCopy(data, "predictions")
 	if !predictions.Exists() || !predictions.IsArray() {
 		return data
 	}
-
 
 	parts := make([]map[string]any, 0)
 	for _, pred := range predictions.Array() {
@@ -81,7 +69,6 @@ func convertImagenToGeminiResponse(data []byte, model string) []byte {
 			})
 		}
 	}
-
 
 	responseId := fmt.Sprintf("imagen-%d", time.Now().UnixNano())
 
@@ -110,18 +97,14 @@ func convertImagenToGeminiResponse(data []byte, model string) []byte {
 	return result
 }
 
-
-
 func convertToImagenRequest(payload []byte) ([]byte, error) {
 
 	prompt := ""
-
 
 	contentsText := ojson.GetBytesNoCopy(payload, "contents.0.parts.0.text")
 	if contentsText.Exists() {
 		prompt = contentsText.String()
 	}
-
 
 	if prompt == "" {
 		messagesText := ojson.GetBytesNoCopy(payload, "messages.#.content")
@@ -135,7 +118,6 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 		}
 	}
 
-
 	if prompt == "" {
 		directPrompt := ojson.GetBytesNoCopy(payload, "prompt")
 		if directPrompt.Exists() {
@@ -147,7 +129,6 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 		return nil, fmt.Errorf("imagen: no prompt found in request")
 	}
 
-
 	imagenReq := map[string]any{
 		"instances": []map[string]any{
 			{
@@ -158,7 +139,6 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 			"sampleCount": 1,
 		},
 	}
-
 
 	if aspectRatio := ojson.GetBytesNoCopy(payload, "aspectRatio"); aspectRatio.Exists() {
 		imagenReq["parameters"].(map[string]any)["aspectRatio"] = aspectRatio.String()
@@ -173,25 +153,15 @@ func convertToImagenRequest(payload []byte) ([]byte, error) {
 	return json.Marshal(imagenReq)
 }
 
-
 type GeminiVertexExecutor struct {
 	cfg *config.Config
 }
-
-
-
-
-
-
-
 
 func NewGeminiVertexExecutor(cfg *config.Config) *GeminiVertexExecutor {
 	return &GeminiVertexExecutor{cfg: cfg}
 }
 
-
 func (e *GeminiVertexExecutor) Identifier() string { return "vertex" }
-
 
 func (e *GeminiVertexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -219,7 +189,6 @@ func (e *GeminiVertexExecutor) PrepareRequest(req *http.Request, auth *cliproxya
 	return nil
 }
 
-
 func (e *GeminiVertexExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("vertex executor: request is nil")
@@ -235,7 +204,6 @@ func (e *GeminiVertexExecutor) HttpRequest(ctx context.Context, auth *cliproxyau
 	return httpClient.Do(httpReq)
 }
 
-
 func (e *GeminiVertexExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
 	if opts.Alt == "responses/compact" {
@@ -250,7 +218,6 @@ func (e *GeminiVertexExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 
 	apiKey, baseURL := vertexAPICreds(auth)
 
-
 	if apiKey == "" {
 		projectID, location, saJSON, errCreds := vertexCreds(auth)
 		if errCreds != nil {
@@ -259,10 +226,8 @@ func (e *GeminiVertexExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 		return e.executeWithServiceAccount(ctx, auth, req, opts, projectID, location, saJSON)
 	}
 
-
 	return e.executeWithAPIKey(ctx, auth, req, opts, apiKey, baseURL)
 }
-
 
 func (e *GeminiVertexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
@@ -278,7 +243,6 @@ func (e *GeminiVertexExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 
 	apiKey, baseURL := vertexAPICreds(auth)
 
-
 	if apiKey == "" {
 		projectID, location, saJSON, errCreds := vertexCreds(auth)
 		if errCreds != nil {
@@ -287,10 +251,8 @@ func (e *GeminiVertexExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 		return e.executeStreamWithServiceAccount(ctx, auth, req, opts, projectID, location, saJSON)
 	}
 
-
 	return e.executeStreamWithAPIKey(ctx, auth, req, opts, apiKey, baseURL)
 }
-
 
 func (e *GeminiVertexExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	if helps.ShouldExecuteVertexOpenAPIForRequest(e.cfg, auth, req.Model, opts) {
@@ -300,7 +262,6 @@ func (e *GeminiVertexExecutor) CountTokens(ctx context.Context, auth *cliproxyau
 
 	apiKey, baseURL := vertexAPICreds(auth)
 
-
 	if apiKey == "" {
 		projectID, location, saJSON, errCreds := vertexCreds(auth)
 		if errCreds != nil {
@@ -308,7 +269,6 @@ func (e *GeminiVertexExecutor) CountTokens(ctx context.Context, auth *cliproxyau
 		}
 		return e.countTokensWithServiceAccount(ctx, auth, req, opts, projectID, location, saJSON)
 	}
-
 
 	return e.countTokensWithAPIKey(ctx, auth, req, opts, apiKey, baseURL)
 }
@@ -398,15 +358,12 @@ func (e *GeminiVertexExecutor) executeOpenAPIStream(ctx context.Context, auth *c
 	return NewOpenAICompatExecutor(e.Identifier(), e.cfg).executeStreamWithCredentials(ctx, auth, req, opts, openAPIBaseURL, token, nil)
 }
 
-
 func (e *GeminiVertexExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
 	}
 	return auth, nil
 }
-
-
 
 func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, projectID, location string, saJSON []byte) (resp cliproxyexecutor.Response, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
@@ -417,7 +374,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 	var body []byte
 	var originalTranslated []byte
 	var doc *ojson.Doc
-
 
 	if isImagenModel(baseModel) {
 		imagenBody, errImagen := convertToImagenRequest(req.Payload)
@@ -565,8 +521,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 	}
 	reporter.ObserveResponseModel(data)
 
-
-
 	if isImagenModel(baseModel) {
 		data = convertImagenToGeminiResponse(data, baseModel)
 	}
@@ -577,7 +531,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 		reporter.PublishFailureWithDetail(ctx, helps.ParseGeminiUsage(data), err)
 		return cliproxyexecutor.Response{}, err
 	}
-
 
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	to := sdktranslator.FromString("gemini")
@@ -600,7 +553,6 @@ func (e *GeminiVertexExecutor) executeWithServiceAccount(ctx context.Context, au
 	resp = cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}
 	return resp, nil
 }
-
 
 func (e *GeminiVertexExecutor) executeWithAPIKey(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, apiKey, baseURL string) (resp cliproxyexecutor.Response, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
@@ -655,10 +607,6 @@ func (e *GeminiVertexExecutor) executeWithAPIKey(ctx context.Context, auth *clip
 		}
 	}
 	helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc, from.String())
-
-
-
-
 
 	url := vertexAPIKeyModelsURL(baseURL, baseModel, action)
 	if opts.Alt != "" && action != "countTokens" {
@@ -763,7 +711,6 @@ func (e *GeminiVertexExecutor) executeWithAPIKey(ctx context.Context, auth *clip
 	resp = cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}
 	return resp, nil
 }
-
 
 func (e *GeminiVertexExecutor) executeStreamWithServiceAccount(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, projectID, location string, saJSON []byte) (_ *cliproxyexecutor.StreamResult, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
@@ -1055,7 +1002,6 @@ func (e *GeminiVertexExecutor) executeStreamWithServiceAccount(ctx context.Conte
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
 }
 
-
 func (e *GeminiVertexExecutor) executeStreamWithAPIKey(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, apiKey, baseURL string) (_ *cliproxyexecutor.StreamResult, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1343,7 +1289,6 @@ func (e *GeminiVertexExecutor) executeStreamWithAPIKey(ctx context.Context, auth
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
 }
 
-
 func (e *GeminiVertexExecutor) countTokensWithServiceAccount(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, projectID, location string, saJSON []byte) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1455,7 +1400,6 @@ func (e *GeminiVertexExecutor) countTokensWithServiceAccount(ctx context.Context
 	return cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}, nil
 }
 
-
 func (e *GeminiVertexExecutor) countTokensWithAPIKey(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, apiKey, baseURL string) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1491,7 +1435,6 @@ func (e *GeminiVertexExecutor) countTokensWithAPIKey(ctx context.Context, auth *
 		}
 	}
 	helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc, from.String())
-
 
 	url := vertexAPIKeyModelsURL(baseURL, baseModel, "countTokens")
 
@@ -1564,7 +1507,6 @@ func (e *GeminiVertexExecutor) countTokensWithAPIKey(ctx context.Context, auth *
 	return cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}, nil
 }
 
-
 func vertexCreds(a *cliproxyauth.Auth) (projectID, location string, serviceAccountJSON []byte, err error) {
 	if a == nil || a.Metadata == nil {
 		return "", "", nil, fmt.Errorf("vertex executor: missing auth metadata")
@@ -1604,7 +1546,6 @@ func vertexCreds(a *cliproxyauth.Auth) (projectID, location string, serviceAccou
 	return projectID, location, saJSON, nil
 }
 
-
 func vertexAPICreds(a *cliproxyauth.Auth) (apiKey, baseURL string) {
 	if a == nil {
 		return "", ""
@@ -1621,16 +1562,6 @@ func vertexAPICreds(a *cliproxyauth.Auth) (apiKey, baseURL string) {
 	return
 }
 
-
-
-
-
-
-
-
-
-
-
 func vertexAPIKeyModelsURL(baseURL, model, action string) string {
 	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if base == "" {
@@ -1644,8 +1575,6 @@ func vertexAPIKeyModelsURL(baseURL, model, action string) string {
 	}
 	return fmt.Sprintf("%s/publishers/google/models/%s:%s", base, model, action)
 }
-
-
 
 func vertexAPIVersionSuffix(base string) bool {
 	if base == "" {
@@ -1681,7 +1610,6 @@ func vertexBaseURL(location string) string {
 
 func vertexAccessToken(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, saJSON []byte) (string, error) {
 
-
 	tokenCtx := cliproxyexecutor.WithoutRequestProxyURL(ctx)
 	if httpClient := helps.NewProxyAwareHTTPClient(tokenCtx, cfg, auth, 0); httpClient != nil {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
@@ -1698,11 +1626,9 @@ func vertexAccessToken(ctx context.Context, cfg *config.Config, auth *cliproxyau
 	return tok.AccessToken, nil
 }
 
-
 func (e *GeminiVertexExecutor) resolveVertexConfig(auth *cliproxyauth.Auth) *config.VertexCompatKey {
 	return helps.ResolveVertexCompatConfig(e.cfg, auth)
 }
-
 
 func (e *GeminiVertexExecutor) SupportsApplyPatch() bool { return e != nil }
 

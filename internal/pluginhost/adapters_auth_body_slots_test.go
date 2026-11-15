@@ -10,7 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
 func TestAccessAdapterDecodeWaitsForSlot(t *testing.T) {
 	saved := authDecodeSlots
 	authDecodeSlots = make(chan struct{}, 1)
@@ -23,8 +22,6 @@ func TestAccessAdapterDecodeWaitsForSlot(t *testing.T) {
 		t.Fatalf("err %v, plugin calls %d, slots held %d", authErr, calls, len(authDecodeSlots))
 	}
 }
-
-
 
 func TestAccessAdapterCanceledRPCKeepsSlotUntilInnerCallFinishes(t *testing.T) {
 	saved := authDecodeSlots

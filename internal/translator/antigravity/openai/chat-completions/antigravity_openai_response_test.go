@@ -12,10 +12,8 @@ func TestFinishReasonToolCallsNotOverwritten(t *testing.T) {
 	ctx := context.Background()
 	var param any
 
-
 	chunk1 := []byte(`{"response":{"candidates":[{"content":{"parts":[{"functionCall":{"name":"list_files","args":{"path":"."}}}]}}]}}`)
 	result1 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk1, &param)
-
 
 	if len(result1) != 1 {
 		t.Fatalf("Expected 1 result from chunk1, got %d", len(result1))
@@ -25,11 +23,8 @@ func TestFinishReasonToolCallsNotOverwritten(t *testing.T) {
 		t.Errorf("Expected finish_reason to be null in chunk1, got: %v", fr1.String())
 	}
 
-
-
 	chunk2 := []byte(`{"response":{"candidates":[{"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":20,"totalTokenCount":30}}}`)
 	result2 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk2, &param)
-
 
 	if len(result2) != 1 {
 		t.Fatalf("Expected 1 result from chunk2, got %d", len(result2))
@@ -38,7 +33,6 @@ func TestFinishReasonToolCallsNotOverwritten(t *testing.T) {
 	if fr2 != "tool_calls" {
 		t.Errorf("Expected finish_reason 'tool_calls', got: %s", fr2)
 	}
-
 
 	nfr2 := ojson.GetBytesNoCopy(result2[0], "choices.0.native_finish_reason").String()
 	if nfr2 != "stop" {
@@ -50,14 +44,11 @@ func TestFinishReasonStopForNormalText(t *testing.T) {
 	ctx := context.Background()
 	var param any
 
-
 	chunk1 := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Hello world"}]}}]}}`)
 	ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk1, &param)
 
-
 	chunk2 := []byte(`{"response":{"candidates":[{"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}}`)
 	result2 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk2, &param)
-
 
 	fr := ojson.GetBytesNoCopy(result2[0], "choices.0.finish_reason").String()
 	if fr != "stop" {
@@ -69,14 +60,11 @@ func TestFinishReasonMaxTokens(t *testing.T) {
 	ctx := context.Background()
 	var param any
 
-
 	chunk1 := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}]}}]}}`)
 	ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk1, &param)
 
-
 	chunk2 := []byte(`{"response":{"candidates":[{"finishReason":"MAX_TOKENS"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":100,"totalTokenCount":110}}}`)
 	result2 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk2, &param)
-
 
 	fr := ojson.GetBytesNoCopy(result2[0], "choices.0.finish_reason").String()
 	if fr != "max_tokens" {
@@ -88,14 +76,11 @@ func TestToolCallTakesPriorityOverMaxTokens(t *testing.T) {
 	ctx := context.Background()
 	var param any
 
-
 	chunk1 := []byte(`{"response":{"candidates":[{"content":{"parts":[{"functionCall":{"name":"test","args":{}}}]}}]}}`)
 	ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk1, &param)
 
-
 	chunk2 := []byte(`{"response":{"candidates":[{"finishReason":"MAX_TOKENS"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":100,"totalTokenCount":110}}}`)
 	result2 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk2, &param)
-
 
 	fr := ojson.GetBytesNoCopy(result2[0], "choices.0.finish_reason").String()
 	if fr != "tool_calls" {
@@ -107,20 +92,16 @@ func TestNoFinishReasonOnIntermediateChunks(t *testing.T) {
 	ctx := context.Background()
 	var param any
 
-
 	chunk1 := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}]}}]}}`)
 	result1 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk1, &param)
-
 
 	fr1 := ojson.GetBytesNoCopy(result1[0], "choices.0.finish_reason")
 	if fr1.Exists() && fr1.String() != "" && fr1.Type.String() != "Null" {
 		t.Errorf("Expected no finish_reason on intermediate chunk, got: %v", fr1)
 	}
 
-
 	chunk2 := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":" world"}]}}]}}`)
 	result2 := ConvertAntigravityResponseToOpenAI(ctx, "model", nil, nil, chunk2, &param)
-
 
 	fr2 := ojson.GetBytesNoCopy(result2[0], "choices.0.finish_reason")
 	if fr2.Exists() && fr2.String() != "" && fr2.Type.String() != "Null" {
@@ -173,8 +154,6 @@ func TestConvertAntigravityResponseToOpenAI_SynthesizesStopOnUsageChunkWhenFinis
 	ctx := context.Background()
 	var param any
 
-
-
 	chunk := []byte(`{"response":{"candidates":[{"content":{"parts":[{"thought":true,"text":"Analyzing..."}]}}],"usageMetadata":{"promptTokenCount":100,"totalTokenCount":150,"thoughtsTokenCount":50},"modelVersion":"gemini-3.7-flash","responseId":"resp-999"}}`)
 	result := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.7-flash", nil, nil, chunk, &param)
 	if len(result) != 1 {
@@ -183,7 +162,6 @@ func TestConvertAntigravityResponseToOpenAI_SynthesizesStopOnUsageChunkWhenFinis
 	if fr := ojson.GetBytesNoCopy(result[0], "choices.0.finish_reason").String(); fr != "" {
 		t.Fatalf("usage chunk without finishReason must not be terminal, got %q", fr)
 	}
-
 
 	done := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(done) != 1 {
@@ -197,9 +175,6 @@ func TestConvertAntigravityResponseToOpenAI_SynthesizesStopOnUsageChunkWhenFinis
 func TestConvertAntigravityResponseToOpenAI_PreservesFilteredUsageUntilDone(t *testing.T) {
 	ctx := context.Background()
 	var param any
-
-
-
 
 	filtered := []byte(`{"response":{"candidates":[{"content":{"parts":[{"thought":true,"text":"Thinking..."}]}}],"modelVersion":"gemini-3.7-flash","responseId":"resp-filtered","cpaUsageMetadata":{"promptTokenCount":100,"totalTokenCount":150,"thoughtsTokenCount":50}}}`)
 	result := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.7-flash", nil, nil, filtered, &param)
@@ -232,7 +207,6 @@ func TestConvertAntigravityResponseToOpenAI_SynthesizesStopOnDoneWhenFinishReaso
 	ctx := context.Background()
 	var param any
 
-
 	chunk := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Partial output"}]}}],"modelVersion":"gemini-3.7-flash","responseId":"resp-888"}}`)
 	result := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.7-flash", nil, nil, chunk, &param)
 	if len(result) != 1 {
@@ -242,7 +216,6 @@ func TestConvertAntigravityResponseToOpenAI_SynthesizesStopOnDoneWhenFinishReaso
 	if fr1.Exists() && fr1.String() != "" && fr1.Type.String() != "Null" {
 		t.Fatalf("expected finish_reason to be null on intermediate chunk, got %v", fr1)
 	}
-
 
 	done := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(done) != 1 {
@@ -264,8 +237,6 @@ func TestConvertAntigravityResponseToOpenAI_DoesNotFinalizeEmptyUpstreamStream(t
 	ctx := context.Background()
 	var param any
 
-
-
 	done := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(done) != 0 {
 		t.Fatalf("empty stream must not synthesize a terminal chunk, got %d results: %s", len(done), done[0])
@@ -275,8 +246,6 @@ func TestConvertAntigravityResponseToOpenAI_DoesNotFinalizeEmptyUpstreamStream(t
 func TestConvertAntigravityResponseToOpenAI_ResponseFreeEventDoesNotStartStream(t *testing.T) {
 	ctx := context.Background()
 	var param any
-
-
 
 	for _, chunk := range [][]byte{
 		[]byte(`{}`),
@@ -377,7 +346,6 @@ func TestConvertAntigravityResponseToOpenAI_OmitToolCallsWhenAbsentInStreamingDe
 	ctx := context.Background()
 	var param any
 
-
 	textChunk := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Hello world"}]}}]}}`)
 	textResults := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.5-flash-lite", nil, nil, textChunk, &param)
 	if len(textResults) != 1 {
@@ -387,7 +355,6 @@ func TestConvertAntigravityResponseToOpenAI_OmitToolCallsWhenAbsentInStreamingDe
 		t.Fatalf("choices.0.delta.tool_calls must not exist in text-only chunk, got: %s (type: %s)", tc.Raw, tc.Type)
 	}
 
-
 	thoughtChunk := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"thinking...","thought":true}]}}]}}`)
 	thoughtResults := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.5-flash-lite", nil, nil, thoughtChunk, &param)
 	if len(thoughtResults) != 1 {
@@ -396,7 +363,6 @@ func TestConvertAntigravityResponseToOpenAI_OmitToolCallsWhenAbsentInStreamingDe
 	if tc := ojson.GetBytesNoCopy(thoughtResults[0], "choices.0.delta.tool_calls"); tc.Exists() {
 		t.Fatalf("choices.0.delta.tool_calls must not exist in reasoning chunk, got: %s (type: %s)", tc.Raw, tc.Type)
 	}
-
 
 	toolChunk := []byte(`{"response":{"candidates":[{"content":{"parts":[{"functionCall":{"name":"get_weather","args":{"city":"Beijing"}}}]}}]}}`)
 	toolResults := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.5-flash-lite", nil, nil, toolChunk, &param)
@@ -414,7 +380,6 @@ func TestConvertAntigravityResponseToOpenAI_OmitToolCallsWhenAbsentInStreamingDe
 		t.Fatalf("function.arguments = %q, want {\"city\":\"Beijing\"}", gotArgs)
 	}
 
-
 	finalChunk := []byte(`{"response":{"candidates":[{"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}}`)
 	finalResults := ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.5-flash-lite", nil, nil, finalChunk, &param)
 	if len(finalResults) != 1 {
@@ -423,7 +388,6 @@ func TestConvertAntigravityResponseToOpenAI_OmitToolCallsWhenAbsentInStreamingDe
 	if tcFinal := ojson.GetBytesNoCopy(finalResults[0], "choices.0.delta.tool_calls"); tcFinal.Exists() {
 		t.Fatalf("choices.0.delta.tool_calls must not exist in final chunk, got: %s (type: %s)", tcFinal.Raw, tcFinal.Type)
 	}
-
 
 	var doneParam any
 	ConvertAntigravityResponseToOpenAI(ctx, "gemini-3.5-flash-lite", nil, nil, textChunk, &doneParam)

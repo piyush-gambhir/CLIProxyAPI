@@ -12,15 +12,10 @@ const (
 	claudeSystemReminderEnd   = "</system-reminder>"
 )
 
-// SystemReminderText wraps text in the <system-reminder> envelope so non-Claude
-// upstream formats treat demoted mid-session system or developer instructions
-// as system directives rather than user speech.
 func SystemReminderText(text string) string {
 	return claudeSystemReminderStart + "\n" + text + "\n" + claudeSystemReminderEnd
 }
 
-// ClaudeMessageSystemReminderText converts a Claude message-level system value
-// into ordinary user-visible reminder text for non-Claude upstream formats.
 func ClaudeMessageSystemReminderText(content ojson.Result) (string, bool) {
 	parts := claudeSystemTextParts(content)
 	if len(parts) == 0 {
@@ -62,9 +57,6 @@ func claudeSystemTextParts(content ojson.Result) []string {
 	return parts
 }
 
-// BuildClaudeStructuredOutputInstruction formats structured output settings
-// (from Chat Completions response_format or Responses text.format) as explicit
-// instructions to inject into Claude's system prompt.
 func BuildClaudeStructuredOutputInstruction(format ojson.Result) string {
 	if !format.Exists() {
 		return ""

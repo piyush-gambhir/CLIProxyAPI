@@ -1,4 +1,3 @@
-
 package models
 
 import (
@@ -17,14 +16,9 @@ type codexClientModelsPayload struct {
 	Models []map[string]any `json:"models"`
 }
 
-
 type ProvidersForModelFunc func(string) []string
 
-
-
 type WebSearchCapabilityForModelFunc func(string) *bool
-
-
 
 type ToolSearchCapabilityForModelFunc func(id string) bool
 
@@ -57,40 +51,27 @@ var codexClientLegacyAllowedReasoningLevels = map[string]struct{}{
 	"xhigh":   {},
 }
 
-
 func BuildResponse(availableModels []map[string]any, providersForModel ProvidersForModelFunc, optimizeMultiAgentV2 bool) map[string]any {
 	return BuildResponseForClient(availableModels, providersForModel, optimizeMultiAgentV2, "")
 }
-
-
 
 func BuildResponseForClient(availableModels []map[string]any, providersForModel ProvidersForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return BuildResponseForClientWithCPACapabilities(availableModels, providersForModel, registry.GetGlobalRegistry().GetResponsesWebSearchCapability, optimizeMultiAgentV2, clientVersion)
 }
 
-
-
 func BuildResponseForClientWithCPACapabilities(availableModels []map[string]any, providersForModel ProvidersForModelFunc, webSearchCapabilityForModel WebSearchCapabilityForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return BuildResponseForClientWithToolCapabilities(availableModels, providersForModel, webSearchCapabilityForModel, nil, nil, optimizeMultiAgentV2, clientVersion)
 }
 
-
-
 func BuildResponseForClientWithToolCapabilities(availableModels []map[string]any, providersForModel ProvidersForModelFunc, webSearchCapabilityForModel WebSearchCapabilityForModelFunc, applyPatchCapabilityForModel ApplyPatchCapabilityForModelFunc, toolSearchCapabilityForModel ToolSearchCapabilityForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return BuildResponseForClientWithSearchToolRoutes(availableModels, providersForModel, nil, webSearchCapabilityForModel, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, clientVersion)
 }
-
-
-
-
 
 func BuildResponseForClientWithSearchToolRoutes(availableModels []map[string]any, providersForModel, searchToolProvidersForModel ProvidersForModelFunc, webSearchCapabilityForModel WebSearchCapabilityForModelFunc, applyPatchCapabilityForModel ApplyPatchCapabilityForModelFunc, toolSearchCapabilityForModel ToolSearchCapabilityForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return map[string]any{
 		"models": buildCodexClientModelsWithToolCapabilities(availableModels, providersForModel, searchToolProvidersForModel, webSearchCapabilityForModel, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, clientVersion),
 	}
 }
-
-
 
 func MarshalCompact(payload any) ([]byte, error) {
 	var buf bytes.Buffer
@@ -567,8 +548,6 @@ func applyCodexClientProviderCapabilities(entry map[string]any, id string, provi
 	}
 }
 
-
-
 func nullCodexClientRequiredOptions(entry map[string]any) {
 	entry["apply_patch_tool_type"] = nil
 	entry["tool_mode"] = "direct"
@@ -582,8 +561,6 @@ func nullCodexClientRequiredOptions(entry map[string]any) {
 }
 
 const codexClientFallbackInstructions = "You are Codex, a coding agent. You and the user share one workspace."
-
-
 
 func useCompactCodexClientInstructions(entry map[string]any) {
 	entry["base_instructions"] = codexClientFallbackInstructions
@@ -605,8 +582,6 @@ func isPureCodexProvider(id string, providersForModel ProvidersForModelFunc) boo
 	return allCodexClientProvidersAre(codexClientModelProviders(id, providersForModel), "codex")
 }
 
-
-
 func codexClientModelProviders(id string, providersForModel ProvidersForModelFunc) []string {
 	providers := providersForModel(id)
 	if len(providers) == 0 && strings.Contains(id, "/") {
@@ -616,8 +591,6 @@ func codexClientModelProviders(id string, providersForModel ProvidersForModelFun
 	}
 	return providers
 }
-
-
 
 func allCodexClientProvidersAre(providers []string, name string) bool {
 	if len(providers) == 0 {
@@ -630,10 +603,6 @@ func allCodexClientProvidersAre(providers []string, name string) bool {
 	}
 	return true
 }
-
-
-
-
 
 func applyCodexClientSearchToolSupport(entry map[string]any, id string, templateModel bool, providersForModel ProvidersForModelFunc, toolSearchCapabilityForModel ToolSearchCapabilityForModelFunc) {
 	supportsSearch, _ := entry["supports_search_tool"].(bool)
@@ -718,8 +687,6 @@ func applyCodexClientModelMetadata(entry map[string]any, id string, model map[st
 		entry["available_in_plans"] = cloneCodexClientModelValue(plans)
 	}
 
-
-
 	useCompactCodexClientInstructions(entry)
 }
 
@@ -750,8 +717,6 @@ func applyCodexClientVisibilityOverride(entry map[string]any, id string) {
 		entry["visibility"] = "hide"
 	}
 }
-
-
 
 func isCodexClientImageOrVideoModel(id string) bool {
 	target := strings.TrimSpace(id)
@@ -898,9 +863,6 @@ func normalizeCodexClientReasoningLevel(rawLevel string, clientVersion string) s
 	}
 	return level
 }
-
-
-
 
 func supportsExtendedReasoningLevels(clientVersion string) bool {
 	clientVersion = strings.TrimSpace(clientVersion)

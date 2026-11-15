@@ -69,8 +69,6 @@ func TestFetchModelsRetryPerEndpoint(t *testing.T) {
 		},
 	}
 
-
-
 	models := fetchModelsFromBaseURLs(context.Background(), auth, []string{server1.URL, server2.URL}, server1.Client())
 	if len(models) != 1 || models[0].ID != "gemini-3.6-flash" {
 		t.Fatalf("expected 1 model (gemini-3.6-flash), got: %#v", models)
@@ -112,7 +110,6 @@ func TestFetchModelsFallbackAfterTwoAttempts(t *testing.T) {
 			"access_token": "test-token",
 		},
 	}
-
 
 	models := fetchModelsFromBaseURLs(context.Background(), auth, []string{server1.URL, server2.URL}, server1.Client())
 	if len(models) != 1 || models[0].ID != "gemini-2.5-flash" {

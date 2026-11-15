@@ -398,8 +398,6 @@ func TestClaudeMetadataIdentitiesNormalizesAgentID(t *testing.T) {
 func TestEnrich_ExplicitSessionPreferredOverExecutionSession(t *testing.T) {
 	t.Parallel()
 
-
-
 	wsPayload := []byte(`{"session_id":"explicit-ws-session"}`)
 	req1 := cliproxyexecutor.Request{
 		Payload: wsPayload,
@@ -421,7 +419,6 @@ func TestEnrich_ExplicitSessionPreferredOverExecutionSession(t *testing.T) {
 		t.Fatalf("execution session was not preserved: %q (ok=%v)", execID1, okExec1)
 	}
 	_ = enrichedReq1
-
 
 	req2 := cliproxyexecutor.Request{
 		Payload: []byte(`{"model":"test"}`),
@@ -445,8 +442,6 @@ func TestEnrich_ExplicitSessionPreferredOverExecutionSession(t *testing.T) {
 func TestEnrich_MetadataOnlyCanonicalAndParentSessionPreserved(t *testing.T) {
 	t.Parallel()
 
-
-
 	req := cliproxyexecutor.Request{
 		Payload: []byte(`{"model":"gpt-5.4"}`),
 	}
@@ -467,7 +462,6 @@ func TestEnrich_MetadataOnlyCanonicalAndParentSessionPreserved(t *testing.T) {
 		t.Fatalf("parent session = %q (ok=%v), want session:sdk-parent-999", parent, okParent)
 	}
 
-
 	optsLoop := cliproxyexecutor.Options{
 		Metadata: map[string]any{
 			cliproxyexecutor.CanonicalSessionIDMetadataKey: "session:same-loop",
@@ -482,7 +476,6 @@ func TestEnrich_MetadataOnlyCanonicalAndParentSessionPreserved(t *testing.T) {
 
 func TestNormalizeToCanonicalUUID(t *testing.T) {
 	t.Parallel()
-
 
 	if got := NormalizeToCanonicalUUID(""); got != "" {
 		t.Fatalf("NormalizeToCanonicalUUID(\"\") = %q, want empty", got)
@@ -508,7 +501,6 @@ func TestNormalizeToCanonicalUUID(t *testing.T) {
 		}
 	}
 
-
 	rawUUIDv4 := "b2839f64-668d-4dc3-a42a-64da829d1e33"
 	if got := NormalizeToCanonicalUUID(rawUUIDv4); got != rawUUIDv4 {
 		t.Fatalf("NormalizeToCanonicalUUID(rawUUIDv4) = %q, want %q", got, rawUUIDv4)
@@ -521,7 +513,6 @@ func TestNormalizeToCanonicalUUID(t *testing.T) {
 	if got := NormalizeToCanonicalUUID(rawUUIDv7); got != rawUUIDv7 {
 		t.Fatalf("NormalizeToCanonicalUUID(rawUUIDv7) = %q, want %q", got, rawUUIDv7)
 	}
-
 
 	prefixedCases := map[string]string{
 		"codex:01a07e72-c84d-7fd3-8207-d217b41cc649":         "01a07e72-c84d-7fd3-8207-d217b41cc649",
@@ -537,7 +528,6 @@ func TestNormalizeToCanonicalUUID(t *testing.T) {
 			t.Errorf("NormalizeToCanonicalUUID(%q) = %q, want %q", input, got, want)
 		}
 	}
-
 
 	nonUUIDCases := []string{
 		"lcp:v1:c28621bab78eacdb3ae128c0f6aaa0147842f063fda10ae9dc5473cc81d58985",
@@ -573,7 +563,6 @@ func TestNormalizeToCanonicalUUID(t *testing.T) {
 		}
 	}
 
-
 	id1 := NormalizeToCanonicalUUID("lcp:v1:hash-A")
 	id1Again := NormalizeToCanonicalUUID("lcp:v1:hash-A")
 	id2 := NormalizeToCanonicalUUID("lcp:v1:hash-B")
@@ -584,14 +573,12 @@ func TestNormalizeToCanonicalUUID(t *testing.T) {
 		t.Fatalf("NormalizeToCanonicalUUID collided for different inputs: %q == %q", id1, id2)
 	}
 
-
 	lcpPrefixed := "lcp:v1:c28621bab78eacdb3ae128c0f6aaa0147842f063fda10ae9dc5473cc81d58985"
 	lcpBare := "c28621bab78eacdb3ae128c0f6aaa0147842f063fda10ae9dc5473cc81d58985"
 	if NormalizeToCanonicalUUID(lcpPrefixed) != NormalizeToCanonicalUUID(lcpBare) {
 		t.Fatalf("lcp prefixed (%q) and bare (%q) produced different UUIDs",
 			NormalizeToCanonicalUUID(lcpPrefixed), NormalizeToCanonicalUUID(lcpBare))
 	}
-
 
 	ctxV1Prefixed := "ctx:v1:c28621bab78eacdb3ae128c0f6aaa0147842f063fda10ae9dc5473cc81d58985"
 	ctxShortPrefixed := "ctx:c28621bab78eacdb3ae128c0f6aaa0147842f063fda10ae9dc5473cc81d58985"
@@ -609,13 +596,11 @@ func TestNormalizeToCanonicalUUID(t *testing.T) {
 		t.Fatalf("NormalizeToCanonicalUUID(lcpBare) = %q, want golden %q", got, wantGoldenUUID)
 	}
 
-
 	derivedCtxPrefixed := "derived:ctx:v1:c28621bab78eacdb3ae128c0f6aaa0147842f063fda10ae9dc5473cc81d58985"
 	if got := NormalizeToCanonicalUUID(derivedCtxPrefixed); got != NormalizeToCanonicalUUID(lcpBare) {
 		t.Fatalf("derived:ctx:v1: prefixed (%q) produced %q, want %q",
 			derivedCtxPrefixed, got, NormalizeToCanonicalUUID(lcpBare))
 	}
-
 
 	derivedUUID := "derived:ctx:v1:01a07e72-c84d-7fd3-8207-d217b41cc649"
 	if got := NormalizeToCanonicalUUID(derivedUUID); got != "01a07e72-c84d-7fd3-8207-d217b41cc649" {
@@ -637,7 +622,6 @@ func TestEnrich_DoesNotClonePayloadWhenPopulatingOriginalRequest_Issue6101(t *te
 	if unsafe.SliceData(enrichedOpts.OriginalRequest) != unsafe.SliceData(req.Payload) {
 		t.Fatal("Enrich allocated a new copy of Payload instead of reusing the slice reference for OriginalRequest")
 	}
-
 
 	independentOriginal := []byte(`{"messages":[{"role":"user","content":"original"}]}`)
 	optsWithOriginal := cliproxyexecutor.Options{

@@ -17,10 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func TestAntigravityBuildRequestKeepsConnectionAlive(t *testing.T) {
 	e := &AntigravityExecutor{}
 	auth := &cliproxyauth.Auth{Metadata: map[string]any{"project_id": "project-1"}}
@@ -45,9 +41,6 @@ func TestAntigravityBuildRequestKeepsConnectionAlive(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestAntigravityExecuteStreamReusesUpstreamConnection(t *testing.T) {
 	var mu sync.Mutex
@@ -127,8 +120,6 @@ func TestAntigravityExecuteStreamReusesUpstreamConnection(t *testing.T) {
 	}
 }
 
-
-
 func TestAntigravityCountTokensReusesUpstreamConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -196,11 +187,6 @@ func TestAntigravityCountTokensReusesUpstreamConnection(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestAntigravityHTTPRequestReusesUpstreamConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -241,7 +227,6 @@ func TestAntigravityHTTPRequestReusesUpstreamConnection(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Connection", "close")
 
-
 		req.Close = true
 		resp, errDo := exec.HttpRequest(context.Background(), auth, req)
 		if errDo != nil {
@@ -268,9 +253,6 @@ func TestAntigravityHTTPRequestReusesUpstreamConnection(t *testing.T) {
 		t.Fatalf("expected %d raw requests to reuse one upstream connection, got %d connections", requests, distinct)
 	}
 }
-
-
-
 
 func TestAntigravityHTTPRequestConcurrentSessionsStayIsolated(t *testing.T) {
 	const sessions = 12
@@ -366,9 +348,6 @@ func TestAntigravityHTTPRequestConcurrentSessionsStayIsolated(t *testing.T) {
 	}
 }
 
-
-
-
 func TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -382,7 +361,6 @@ func TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections(t *testing.
 		_, _ = w.Write([]byte("ok"))
 	}))
 	defer server.Close()
-
 
 	exec := NewAntigravityExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
@@ -413,11 +391,9 @@ func TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections(t *testing.
 	headers := append([]string(nil), connectionHeaders...)
 	mu.Unlock()
 
-
 	if distinct != requests {
 		t.Fatalf("default disabled pool: expected %d distinct connections, got %d", requests, distinct)
 	}
-
 
 	for i, h := range headers {
 		if strings.Contains(strings.ToLower(h), "close") {

@@ -9,12 +9,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
-
-
-
 func TestInterleavedThinkingAndSearchSurvivesRoundTrip(t *testing.T) {
 	signature := mustTestSignature(t)
 	thinking := func(index int, text string) [][]byte {

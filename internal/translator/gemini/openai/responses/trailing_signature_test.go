@@ -172,7 +172,6 @@ func TestGeminiResponsesCacheRecoveryPreservesFallbackSignatureOrder(t *testing.
 	var completed ojson.Result
 	for index, line := range lines {
 
-
 		if index == 1 {
 			homekv.SetCurrent(&homekv.Client{})
 		} else {

@@ -11,7 +11,6 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
-
 type persistFailureStore struct{}
 
 func (s *persistFailureStore) List(context.Context) ([]*Auth, error) { return nil, nil }
@@ -21,8 +20,6 @@ func (s *persistFailureStore) Save(context.Context, *Auth) (string, error) {
 }
 
 func (s *persistFailureStore) Delete(context.Context, string) error { return nil }
-
-
 
 func assertWarnEntry(t *testing.T, hook *logtest.Hook, needle, authID, provider, errText string) {
 	t.Helper()
@@ -76,8 +73,6 @@ func assertWarnEntry(t *testing.T, hook *logtest.Hook, needle, authID, provider,
 	}
 }
 
-
-
 func TestRegisterPersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
 	m := NewManager(&persistFailureStore{}, nil, nil)
@@ -97,7 +92,6 @@ func TestRegisterPersistFailureLogsWarn(t *testing.T) {
 
 	assertWarnEntry(t, hook, "failed to persist registered auth", "auth-register-persist-1", "claude", "permission denied")
 }
-
 
 func TestUpdatePersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
@@ -119,9 +113,6 @@ func TestUpdatePersistFailureLogsWarn(t *testing.T) {
 
 	assertWarnEntry(t, hook, "failed to persist updated auth", "auth-update-persist-1", "claude", "permission denied")
 }
-
-
-
 
 func TestRefreshPersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
@@ -148,8 +139,6 @@ func TestRefreshPersistFailureLogsWarn(t *testing.T) {
 
 	assertWarnEntry(t, hook, "failed to persist updated auth", "auth-refresh-persist-1", "claude", "permission denied")
 }
-
-
 
 func TestMetaRefreshPersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)

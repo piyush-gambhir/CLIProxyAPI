@@ -16,10 +16,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailure(t *testing.T) {
 	const authID = "antigravity-term-disconnect-test"
 	capture := &antigravityUsageCapture{authID: authID, records: make(chan usage.Record, 4)}
@@ -39,7 +35,6 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 		if flusher, ok := w.(http.Flusher); ok {
 			flusher.Flush()
 		}
-
 
 		select {
 		case <-r.Context().Done():
@@ -80,7 +75,6 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 		t.Fatalf("ExecuteStream() error = %v", errExecute)
 	}
 
-
 	terminalReceived := false
 	for chunk := range result.Chunks {
 		if chunk.Err != nil {
@@ -111,8 +105,6 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 		t.Fatal("timed out waiting for usage record")
 	}
 }
-
-
 
 func TestAntigravityStream_ClientDisconnectPlainContextAfterTerminalChunkDoesNotReportFailure(t *testing.T) {
 	const authID = "antigravity-plain-cancel-test"
@@ -199,8 +191,6 @@ func TestAntigravityStream_ClientDisconnectPlainContextAfterTerminalChunkDoesNot
 		t.Fatal("timed out waiting for usage record")
 	}
 }
-
-
 
 func TestAntigravityStream_OpenAIChatCompletions_ClientDisconnectAfterStopChunkDoesNotReportFailure(t *testing.T) {
 	const authID = "antigravity-chat-disconnect-test"

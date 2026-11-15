@@ -17,9 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 func testVertexBareTinkSignature() string {
 	payload := []byte{0x01, 0x8f, 0x3d, 0x6b, 0x5f}
 	for len(payload) < 405 {

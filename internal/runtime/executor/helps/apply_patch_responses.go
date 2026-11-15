@@ -13,7 +13,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 func NormalizeApplyPatchResponsesRequest(body []byte, original ...[]byte) ([]byte, error) {
 	if !ojson.ValidBytes(body) {
 		return body, errors.New("invalid Responses request JSON")
@@ -24,7 +23,6 @@ func NormalizeApplyPatchResponsesRequest(body []byte, original ...[]byte) ([]byt
 	}
 	return doc.Bytes(), nil
 }
-
 
 func NormalizeApplyPatchResponsesRequestDoc(doc *ojson.Doc, original ...[]byte) error {
 	if doc == nil || doc.Len() == 0 {
@@ -150,8 +148,6 @@ func NormalizeApplyPatchResponsesRequestDoc(doc *ojson.Doc, original ...[]byte) 
 	return nil
 }
 
-
-
 type ApplyPatchResponsesState struct {
 	Bridge                 *translatorcommon.ApplyPatchResponsesBridge
 	tools                  map[string]util.ResponsesToolDescriptor
@@ -177,7 +173,6 @@ type patchDispatcherCall struct {
 	name      string
 	arguments string
 }
-
 
 func preferChatFunctionPatchTools(original, declarations []byte) []byte {
 	if len(declarations) == 0 {
@@ -239,9 +234,7 @@ func NewApplyPatchResponsesState(source sdktranslator.Format, original, declarat
 	return s
 }
 
-
 func (s *ApplyPatchResponsesState) Active() bool { return s.active }
-
 
 func (s *ApplyPatchResponsesState) AddDispatcher(name, namespace string) {
 	for _, d := range s.tools {
@@ -295,8 +288,6 @@ func (s *ApplyPatchResponsesState) newDispatcherCandidate(root ojson.Result) *pa
 	return call
 }
 
-
-
 func (s *ApplyPatchResponsesState) RememberDispatcherEvent(event []byte) {
 	if s.failed || s.closed || s.transportDone || len(s.dispatchers) == 0 {
 		return
@@ -304,8 +295,6 @@ func (s *ApplyPatchResponsesState) RememberDispatcherEvent(event []byte) {
 	s.upstream = bytes.Clone(event)
 	s.RememberDispatcherArguments(event)
 }
-
-
 
 func (s *ApplyPatchResponsesState) RememberDispatcherArguments(event []byte) {
 	if s.failed || s.closed || s.transportDone || len(s.dispatchers) == 0 || ojson.GetBytesNoCopy(event, "type").String() != "response.function_call_arguments.done" {
@@ -496,8 +485,6 @@ func (s *ApplyPatchResponsesState) expandDispatcher(event, original []byte) ([][
 			return nil, errors.New("conflicting apply_patch dispatcher arguments")
 		}
 	}
-
-
 
 	start := 0
 	if call.completed {
@@ -728,8 +715,6 @@ func (s *ApplyPatchResponsesState) isCustomPatchEvent(event []byte) bool {
 	return false
 }
 
-
-
 func (s *ApplyPatchResponsesState) HasPatchActivity() bool {
 	if s == nil || !s.active {
 		return false
@@ -739,8 +724,6 @@ func (s *ApplyPatchResponsesState) HasPatchActivity() bool {
 	}
 	return s.Bridge != nil && s.Bridge.Finish() != nil
 }
-
-
 
 func (s *ApplyPatchResponsesState) Finish() error {
 	if errFinish := s.Bridge.Finish(); errFinish != nil {
@@ -754,8 +737,6 @@ func (s *ApplyPatchResponsesState) Finish() error {
 	}
 	return errors.New("incomplete apply_patch source response received from upstream")
 }
-
-
 
 func (s *ApplyPatchResponsesState) Stream(line []byte) ([][]byte, error) {
 	if !s.active {
@@ -812,7 +793,6 @@ func (s *ApplyPatchResponsesState) Stream(line []byte) ([][]byte, error) {
 	s.eventLine = nil
 	return out, errTransform
 }
-
 
 func (s *ApplyPatchResponsesState) FinishStream() ([][]byte, error) {
 	if s.failed || s.transportDone {

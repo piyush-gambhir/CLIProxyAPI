@@ -22,15 +22,10 @@ type InstallOptions struct {
 	GOOS       string
 	GOARCH     string
 
-
-
 	PluginLoaded func() bool
-
 
 	BeforeWrite func() error
 }
-
-
 
 var ErrLoadedPluginLocked = errors.New("loaded plugin library cannot be overwritten while the server is running")
 
@@ -83,7 +78,6 @@ func (c Client) InstallManifest(ctx context.Context, manifest Manifest, options 
 		return InstallResult{}, fmt.Errorf("unsupported install type %q", manifest.Install.Type)
 	}
 }
-
 
 func (c Client) InstallVersion(ctx context.Context, plugin Plugin, releaseTag string, version string, options InstallOptions) (InstallResult, error) {
 	if errValidate := ValidatePlugin(plugin); errValidate != nil {
@@ -286,7 +280,6 @@ func InstallArchive(archiveData []byte, plugin Plugin, options InstallOptions) (
 			}, nil
 		}
 	}
-
 
 	if overwritten && options.BeforeWrite != nil {
 		if errBeforeWrite := options.BeforeWrite(); errBeforeWrite != nil {

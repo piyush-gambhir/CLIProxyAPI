@@ -15,13 +15,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
-
-
-
 func collectDeframerOutput(t *testing.T, input string, cuts []int) ([]string, string) {
 	t.Helper()
 	deframer := &executorSSEDeframer{}
@@ -68,7 +61,6 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("arbitrary splits", func(t *testing.T) {
-
 
 		var cuts []int
 		for i := 3; i < len(full); i += 7 {
@@ -147,8 +139,6 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 
 	t.Run("leading blank lines dropped after an sse start", func(t *testing.T) {
 
-
-
 		deframer := &executorSSEDeframer{}
 		if got := deframer.feed([]byte("data: {\"choices\":")); len(got) != 0 {
 			t.Fatalf("partial event emitted %q, want buffered", got)
@@ -165,8 +155,6 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 
 	t.Run("leading newline bare payload stays whole", func(t *testing.T) {
 
-
-
 		input := "\n{\n\"choices\":[]\n}\n"
 		got, tail := collectDeframerOutput(t, input, nil)
 		assertStringsEqual(t, "bare leading newline", got, []string{input})
@@ -176,9 +164,6 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("blank line between events across chunks", func(t *testing.T) {
-
-
-
 
 		deframer := &executorSSEDeframer{}
 		first := deframer.feed([]byte("data: {\"choices\":[]}\n\n"))
@@ -230,8 +215,6 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 
 	t.Run("data prefix without space is sse", func(t *testing.T) {
 
-
-
 		deframer := &executorSSEDeframer{}
 		if got := deframer.feed([]byte("data:{\"choices\":")); len(got) != 0 {
 			t.Fatalf("no-space partial event emitted %q, want buffered", got)
@@ -246,7 +229,6 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("bare lines in one chunk stay one payload", func(t *testing.T) {
-
 
 		input := "{\"a\":1}\n{\"b\":2}\n"
 		got, tail := collectDeframerOutput(t, input, nil)
@@ -361,12 +343,6 @@ func executeSameFormatStream(t *testing.T, adapter *executorAdapter, format sdkt
 	return collectStreamChunkPayloads(t, streamRes.Chunks)
 }
 
-
-
-
-
-
-
 func TestExecutorAdapterExecuteStreamSameFormatArbitrarySplits(t *testing.T) {
 	adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 		[]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Hel"),
@@ -402,14 +378,7 @@ func TestExecutorAdapterExecuteStreamSameFormatArbitrarySplits(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestExecutorAdapterExecuteStreamSameFormatBlankLineBetweenEvents(t *testing.T) {
-
-
 
 	adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 		[]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"),
@@ -427,8 +396,6 @@ func TestExecutorAdapterExecuteStreamSameFormatBlankLineBetweenEvents(t *testing
 }
 
 func TestExecutorAdapterExecuteStreamSameFormatNoSpaceDataPrefix(t *testing.T) {
-
-
 
 	adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 		[]byte("data:{\"choices\":"),
@@ -456,10 +423,6 @@ func TestExecutorAdapterExecuteStreamSameFormatMissingDoneIsSeededAndDropped(t *
 	})
 }
 
-
-
-
-
 func TestExecutorAdapterExecuteStreamGeminiSameFormatStripsSSEFraming(t *testing.T) {
 	adapter := streamAdapterForTest(t, sdktranslator.FormatGemini,
 		[]byte("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hi\"}]}}"),
@@ -476,9 +439,6 @@ func TestExecutorAdapterExecuteStreamGeminiSameFormatStripsSSEFraming(t *testing
 	assertStringsEqual(t, "gemini", got, want)
 }
 
-
-
-
 func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	t.Run("no trailing newline", func(t *testing.T) {
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI, []byte("plugin-example"))
@@ -490,8 +450,6 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 
 	t.Run("bare objects keep chunk boundaries without newlines", func(t *testing.T) {
-
-
 
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte(`{"choices":[{"delta":{"content":"Hi"}}]}`),
@@ -520,8 +478,6 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 
 	t.Run("partial sse prefix stays buffered", func(t *testing.T) {
 
-
-
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte("da"),
 			[]byte("ta: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"),
@@ -546,8 +502,6 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 
 	t.Run("leading newline bare payloads across chunks stay whole", func(t *testing.T) {
 
-
-
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte("\n{\"a\":1}"),
 			[]byte("\n{\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}"),
@@ -563,11 +517,6 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 
 	t.Run("bare lines with finish reason feed the handler", func(t *testing.T) {
-
-
-
-
-
 
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte("{\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n"),
@@ -595,11 +544,6 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 		}
 	})
 }
-
-
-
-
-
 
 func TestExecutorAdapterExecuteStreamSameFormatFramedPassthrough(t *testing.T) {
 	t.Run("claude event frames unchanged", func(t *testing.T) {
@@ -648,11 +592,6 @@ func TestExecutorAdapterExecuteStreamSameFormatFramedPassthrough(t *testing.T) {
 		})
 	})
 }
-
-
-
-
-
 
 func TestExecutorAdapterExecuteStreamCrossFormatKeepsUsageAndData(t *testing.T) {
 	plugin := newTestUsageCapturePlugin("plugin-provider-cross-split")
@@ -713,11 +652,6 @@ func TestExecutorAdapterExecuteStreamCrossFormatKeepsUsageAndData(t *testing.T) 
 	}
 }
 
-
-
-
-
-
 func TestExecutorAdapterExecuteStreamSameFormatHooksStillApplied(t *testing.T) {
 	hookRecord := normalizeTestCapabilityRecord(capabilityRecord{
 		id: "response-hook-plugin",
@@ -773,7 +707,6 @@ func TestExecutorAdapterExecuteStreamSameFormatHooksStillApplied(t *testing.T) {
 	})
 }
 
-
 type testResponseNormalizerFunc struct {
 	normalize func(ctx context.Context, req pluginapi.ResponseTransformRequest) (pluginapi.PayloadResponse, error)
 }
@@ -781,10 +714,6 @@ type testResponseNormalizerFunc struct {
 func (f *testResponseNormalizerFunc) NormalizeResponse(ctx context.Context, req pluginapi.ResponseTransformRequest) (pluginapi.PayloadResponse, error) {
 	return f.normalize(ctx, req)
 }
-
-
-
-
 
 func TestDeframeExecutorSSEChunksErrorFlushesPartial(t *testing.T) {
 	wantErr := errors.New("stream failed")
@@ -808,12 +737,6 @@ func TestDeframeExecutorSSEChunksErrorFlushesPartial(t *testing.T) {
 		t.Errorf("second chunk error = %v, want %v", got[1].Err, wantErr)
 	}
 }
-
-
-
-
-
-
 
 func TestExecutorAdapterExecuteStreamSameFormatHooksSeeTerminalOnce(t *testing.T) {
 	var bodies [][]byte
@@ -886,10 +809,6 @@ func TestExecutorAdapterExecuteStreamSameFormatHooksSeeTerminalOnce(t *testing.T
 		t.Errorf("wire = %q, want exactly one [DONE]", wire.String())
 	}
 }
-
-
-
-
 
 func TestDeframeExecutorSSEChunksNeverSynthesizesDone(t *testing.T) {
 	run := func(payload string) []string {

@@ -19,9 +19,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 func TestClaudeExecutorStreamTruncationReportsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -95,8 +92,6 @@ func TestClaudeExecutorStreamTruncationReportsError(t *testing.T) {
 	}
 }
 
-
-
 func TestClaudeExecutorTranslatedStreamTruncationReportsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -166,7 +161,6 @@ func TestClaudeExecutorTranslatedStreamTruncationReportsError(t *testing.T) {
 	}
 }
 
-
 func TestClaudeExecutorStreamCompleteNoError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -210,8 +204,6 @@ func TestClaudeExecutorStreamCompleteNoError(t *testing.T) {
 	}
 }
 
-
-
 func TestOpenAICompatExecutorClaudeEOFBeforeFinishReasonFailsStream(t *testing.T) {
 	reply := "data: {\"id\":\"chatcmpl-truncated\",\"object\":\"chat.completion.chunk\",\"created\":1773896263,\"model\":\"test\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"partial\"},\"finish_reason\":null}]}\n\n"
 	exec, auth, _ := newApplyPatchCompatTestExecutor(t, reply)
@@ -247,8 +239,6 @@ func TestOpenAICompatExecutorClaudeEOFBeforeFinishReasonFailsStream(t *testing.T
 	}
 }
 
-
-
 func TestOpenAICompatExecutorClaudeEOFAfterFinishReasonCompletesStream(t *testing.T) {
 	reply := strings.Join([]string{
 		`data: {"id":"chatcmpl-eof","object":"chat.completion.chunk","created":1773896263,"model":"test","choices":[{"index":0,"delta":{"role":"assistant","content":"done"},"finish_reason":null}]}`,
@@ -280,8 +270,6 @@ func TestOpenAICompatExecutorClaudeEOFAfterFinishReasonCompletesStream(t *testin
 		t.Fatalf("expected message_stop when finish_reason was received before clean EOF: %q", output.String())
 	}
 }
-
-
 
 func TestGeminiExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -328,8 +316,6 @@ func TestGeminiExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 		t.Fatalf("truncated Gemini-to-Claude stream must not synthesize message_stop: %q", output.String())
 	}
 }
-
-
 
 func TestGeminiVertexExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 	for _, authMode := range []string{"api_key", "service_account"} {
@@ -405,9 +391,6 @@ func TestGeminiVertexExecutorClaudeStreamTruncationReportsError(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestClaudeExecutorStreamErrorEventDoesNotCommitContinuityAndMarksFailed(t *testing.T) {
 	sseWithError := "event: message_start\n" +
@@ -503,8 +486,6 @@ func (r *failingTailReader) Read(p []byte) (int, error) {
 
 func (r *failingTailReader) Close() error { return nil }
 
-
-
 func TestKimiExecutorStreamReadErrorDoesNotSynthesizeDoneBeforeScanError(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", kimiRoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
@@ -552,8 +533,6 @@ func TestKimiExecutorStreamReadErrorDoesNotSynthesizeDoneBeforeScanError(t *test
 		t.Fatalf("KimiExecutor must not synthesize [DONE] (response.completed) when scanner.Err() != nil; output=%q", output.String())
 	}
 }
-
-
 
 func TestGeminiAndVertexClaudeStreamWithFinishSignalCompletes(t *testing.T) {
 	for _, tc := range []struct {

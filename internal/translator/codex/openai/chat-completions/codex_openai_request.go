@@ -1,9 +1,3 @@
-
-
-
-
-
-
 package chat_completions
 
 import (
@@ -18,24 +12,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToCodex(modelName, inputRawJSON, stream)
 
 }
-
-
 
 func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	rawJSON := inputRawJSON
@@ -46,7 +26,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 
 	outDoc := ojson.NewDocString(`{"instructions":""}`)
 
-
 	_ = outDoc.Set("stream", stream)
 
 	for _, path := range []string{"max_completion_tokens", "max_tokens", "max_output_tokens"} {
@@ -55,7 +34,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 			break
 		}
 	}
-
 
 	if v := root.Get("reasoning_effort"); v.Exists() {
 		_ = outDoc.Set("reasoning.effort", v.Value())
@@ -67,13 +45,9 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 	}
 	_ = outDoc.Set("parallel_tool_calls", root.Get("parallel_tool_calls").Type != ojson.False)
 
-
-
 	_ = outDoc.Set("include", []string{"reasoning.encrypted_content"})
 
-
 	_ = outDoc.Set("model", modelName)
-
 
 	originalToolNameMap := map[string]string{}
 	customToolNames := map[string]struct{}{}
@@ -88,7 +62,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 					customToolNames[customToolDefinition(tool).Get("name").String()] = struct{}{}
 				}
 			}
-
 
 			for name := range functionToolNames {
 				delete(customToolNames, name)
@@ -123,7 +96,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 		}
 	}
 
-
 	messages := root.Get("messages")
 	type pendingToolCall struct {
 		callID       string
@@ -133,7 +105,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 	}
 	var pendingToolCalls []pendingToolCall
 	ambiguousToolCallIDs := map[string]struct{}{}
-
 
 	inputItems := translatorcommon.NewRawArrayItems(messages.Get("#").Int())
 	if messages.IsArray() {
@@ -184,7 +155,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				pendingToolCalls = nil
 				ambiguousToolCallIDs = map[string]struct{}{}
 
-
 				msgDoc := ojson.NewDocString(`{}`)
 				_ = msgDoc.Set("type", "message")
 				if role == "system" {
@@ -196,7 +166,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				contentItems := make([][]byte, 0, 4)
 
 				turnSendable := 0
-
 
 				c := m.Get("content")
 				if c.Exists() && c.Type == ojson.String && c.String() != "" {
@@ -272,14 +241,10 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 					drops.EndTurn(turnSendable)
 				}
 
-
-
-
 				if role != "assistant" || len(contentItems) > 0 {
 					_ = msgDoc.SetRawBytes("content", translatorcommon.JoinRawArray(contentItems))
 					inputItems = append(inputItems, msgDoc.Bytes())
 				}
-
 
 				if role == "assistant" {
 					toolCalls := m.Get("tool_calls")
@@ -375,7 +340,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 	}
 	translatorcommon.SetRawArrayItemsDoc(outDoc, "input", inputItems)
 
-
 	rf := root.Get("response_format")
 	text := root.Get("text")
 	if rf.Exists() {
@@ -402,7 +366,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 			}
 		}
 
-
 		if text.Exists() {
 			if v := text.Get("verbosity"); v.Exists() {
 				_ = outDoc.Set("text.verbosity", v.Value())
@@ -415,7 +378,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 			_ = outDoc.Set("text.verbosity", v.Value())
 		}
 	}
-
 
 	if tools.IsArray() && len(toolResults) > 0 {
 		toolItems := make([][]byte, 0, len(toolResults))
@@ -441,8 +403,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 				toolItems = append(toolItems, itemDoc.Bytes())
 				continue
 			}
-
-
 
 			if toolType != "" && toolType != "function" && t.IsObject() {
 				toolItems = append(toolItems, []byte(t.Raw))
@@ -473,7 +433,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 						_ = itemDoc.Set("strict", v.Value())
 					} else {
 
-
 						_ = itemDoc.Set("strict", false)
 					}
 				}
@@ -482,9 +441,6 @@ func convertOpenAIRequestToCodex(modelName string, inputRawJSON []byte, stream b
 		}
 		_ = outDoc.SetRawBytes("tools", translatorcommon.JoinRawArray(toolItems))
 	}
-
-
-
 
 	if tc := root.Get("tool_choice"); tc.Exists() {
 		switch {
@@ -592,8 +548,6 @@ func toolOutputContentPart(item ojson.Result) []byte {
 	}
 }
 
-
-
 func codexInputFilePart(item ojson.Result) ([]byte, bool) {
 	fileID := item.Get("file.file_id").String()
 	fileData := item.Get("file.file_data").String()
@@ -648,8 +602,6 @@ func toolOutputFallbackPart(item ojson.Result) []byte {
 	return partDoc.Bytes()
 }
 
-
-
 func sanitizeToolName(name string) string {
 	if name == "" {
 		return ""
@@ -664,9 +616,6 @@ func sanitizeToolName(name string) string {
 	}
 	return sb.String()
 }
-
-
-
 
 func shortenNameIfNeeded(name string) string {
 	const limit = 64
@@ -688,15 +637,12 @@ func shortenNameIfNeeded(name string) string {
 	return sanitized[:limit]
 }
 
-
 func customToolDefinition(tool ojson.Result) ojson.Result {
 	if custom := tool.Get("custom"); custom.IsObject() {
 		return custom
 	}
 	return tool
 }
-
-
 
 func collectRequestToolNames(rawJSON []byte) []string {
 	var names []string
@@ -712,7 +658,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 		}
 	}
 
-
 	tools := ojson.GetBytesNoCopy(rawJSON, "tools")
 	if tools.IsArray() {
 		for _, tool := range tools.Array() {
@@ -724,7 +669,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 			}
 		}
 	}
-
 
 	tc := ojson.GetBytesNoCopy(rawJSON, "tool_choice")
 	if tc.IsObject() {
@@ -739,7 +683,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 			addName(customToolDefinition(tc).Get("name").String())
 		}
 	}
-
 
 	messages := ojson.GetBytesNoCopy(rawJSON, "messages")
 	if messages.IsArray() {
@@ -762,9 +705,6 @@ func collectRequestToolNames(rawJSON []byte) []string {
 
 	return names
 }
-
-
-
 
 func buildShortNameMap(names []string) map[string]string {
 	const limit = 64
@@ -820,8 +760,6 @@ func normalizeCodexServiceTier(result ojson.Result) string {
 		return ""
 	}
 }
-
-
 
 func shortenCodexCallIDIfNeeded(id string) string {
 	const limit = 64

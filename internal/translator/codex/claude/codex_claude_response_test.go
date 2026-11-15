@@ -173,8 +173,6 @@ func TestConvertCodexResponseToClaude_StreamThinkingWithoutReasoningItemStillInc
 	}
 }
 
-
-
 type codexThinkingStreamDigest struct {
 	Starts     int
 	Stops      int
@@ -275,10 +273,6 @@ func TestConvertCodexResponseToClaude_StreamThinkingEmitsSingleSignatureAcrossMu
 	}
 }
 
-
-
-
-
 func TestConvertCodexResponseToClaude_StreamThinkingNeverEmitsPreContentEncryptedContent(t *testing.T) {
 	digest := digestCodexThinkingStream(t, [][]byte{
 		[]byte("data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"reasoning\",\"encrypted_content\":\"enc_sig_pre_content_snapshot\"}}"),
@@ -307,8 +301,6 @@ func TestConvertCodexResponseToClaude_StreamThinkingNeverEmitsPreContentEncrypte
 		t.Fatalf("thinking text = %q, want %q", digest.Thinking, want)
 	}
 }
-
-
 
 func TestConvertCodexResponseToClaude_StreamThinkingEmitsOneBlockPerReasoningItem(t *testing.T) {
 	digest := digestCodexThinkingStream(t, [][]byte{
@@ -2049,7 +2041,6 @@ func TestExtractResponsesUsage(t *testing.T) {
 
 func TestConvertCodexResponseToClaude_RestoresLongMidConversationToolAdditionName(t *testing.T) {
 
-
 	topLongMCPTool := "mcp__alpha_very_long_server_name_for_testing__deliver_final_subagent_handback_report"
 	midLongMCPTool := "mcp__bravo_very_long_server_name_for_testing__deliver_final_subagent_handback_report"
 
@@ -2087,7 +2078,6 @@ func TestConvertCodexResponseToClaude_RestoresLongMidConversationToolAdditionNam
 		t.Fatalf("expected distinct shortened names for colliding MCP tools, got top=%q mid=%q", topShortName, midShortName)
 	}
 
-
 	var param any
 	addedEvent := []byte(fmt.Sprintf(`data: {"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":%q,"arguments":""}}`, midShortName))
 	chunks := ConvertCodexResponseToClaude(context.Background(), "gpt-6.1-sol", originalRequest, nil, addedEvent, &param)
@@ -2095,7 +2085,6 @@ func TestConvertCodexResponseToClaude_RestoresLongMidConversationToolAdditionNam
 	if !strings.Contains(joined, `"name":"`+midLongMCPTool+`"`) {
 		t.Fatalf("streaming response did not restore long mid-conversation tool name %q, got: %s", midLongMCPTool, joined)
 	}
-
 
 	completedEvent := []byte(fmt.Sprintf(`{"type":"response.completed","response":{"id":"resp_1","model":"gpt-6.1-sol","status":"completed","output":[{"type":"function_call","id":"fc_1","call_id":"call_1","name":%q,"arguments":"{}"},{"type":"function_call","id":"fc_2","call_id":"call_2","name":%q,"arguments":"{}"}],"usage":{"input_tokens":10,"output_tokens":5}}}`, topShortName, midShortName))
 	nonStreamOut := ConvertCodexResponseToClaudeNonStream(context.Background(), "gpt-6.1-sol", originalRequest, nil, completedEvent, nil)

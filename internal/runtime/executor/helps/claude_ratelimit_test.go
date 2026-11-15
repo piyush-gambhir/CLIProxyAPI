@@ -302,9 +302,6 @@ func TestClaudeHeadersIndicateUnifiedRateLimitRejection_AllowedWarning(t *testin
 
 func TestClaudeHeadersIndicateUnifiedRateLimitRejection_OverageRejection_Issue5915(t *testing.T) {
 
-
-
-
 	headers := http.Header{
 		"Anthropic-Ratelimit-Unified-Status":                  []string{"rejected"},
 		"Anthropic-Ratelimit-Unified-Representative-Claim":    []string{"seven_day_overage_included"},
@@ -370,8 +367,6 @@ func TestClaudeHeadersIndicateUnifiedRateLimitRejection_OverageRejection_Utiliza
 		})
 	}
 }
-
-
 
 func TestOverageClaimWithoutSharedWindowsDoesNotCoolUntilBillingReset_Issue6465(t *testing.T) {
 	now := time.Date(2026, 10, 7, 20, 46, 4, 0, time.UTC)

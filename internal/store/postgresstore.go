@@ -27,7 +27,6 @@ const (
 	defaultConfigKey     = "config"
 )
 
-
 type PostgresStoreConfig struct {
 	DSN           string
 	Schema        string
@@ -36,8 +35,6 @@ type PostgresStoreConfig struct {
 	CooldownTable string
 	SpoolDir      string
 }
-
-
 
 type PostgresStore struct {
 	db                 *sql.DB
@@ -51,7 +48,6 @@ type PostgresStore struct {
 	refreshSchemaMu    sync.Mutex
 	refreshSchemaReady bool
 }
-
 
 func NewPostgresStore(ctx context.Context, cfg PostgresStoreConfig) (*PostgresStore, error) {
 	trimmedDSN := strings.TrimSpace(cfg.DSN)
@@ -110,14 +106,12 @@ func NewPostgresStore(ctx context.Context, cfg PostgresStoreConfig) (*PostgresSt
 	return store, nil
 }
 
-
 func (s *PostgresStore) Close() error {
 	if s == nil || s.db == nil {
 		return nil
 	}
 	return s.db.Close()
 }
-
 
 func (s *PostgresStore) EnsureSchema(ctx context.Context) error {
 	if s == nil || s.db == nil {
@@ -168,7 +162,6 @@ func (s *PostgresStore) EnsureSchema(ctx context.Context) error {
 	return s.ensureRefreshSchema(ctx)
 }
 
-
 func (s *PostgresStore) Bootstrap(ctx context.Context, exampleConfigPath string) error {
 	if err := s.EnsureSchema(ctx); err != nil {
 		return err
@@ -182,14 +175,12 @@ func (s *PostgresStore) Bootstrap(ctx context.Context, exampleConfigPath string)
 	return nil
 }
 
-
 func (s *PostgresStore) ConfigPath() string {
 	if s == nil {
 		return ""
 	}
 	return s.configPath
 }
-
 
 func (s *PostgresStore) AuthDir() string {
 	if s == nil {
@@ -198,7 +189,6 @@ func (s *PostgresStore) AuthDir() string {
 	return s.authDir
 }
 
-
 func (s *PostgresStore) WorkDir() string {
 	if s == nil {
 		return ""
@@ -206,10 +196,7 @@ func (s *PostgresStore) WorkDir() string {
 	return s.spoolRoot
 }
 
-
-
 func (s *PostgresStore) SetBaseDir(string) {}
-
 
 func (s *PostgresStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
@@ -227,9 +214,6 @@ func (s *PostgresStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 	if path == "" {
 		return "", fmt.Errorf("postgres store: missing file path attribute for %s", auth.ID)
 	}
-
-
-
 
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); errors.Is(statErr, fs.ErrNotExist) {
@@ -307,7 +291,6 @@ func (s *PostgresStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 	return path, nil
 }
 
-
 func (s *PostgresStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error) {
 	query := fmt.Sprintf("SELECT id, content, created_at, updated_at FROM %s ORDER BY id", s.fullTableName(s.cfg.AuthTable))
 	rows, err := s.db.QueryContext(ctx, query)
@@ -379,7 +362,6 @@ func (s *PostgresStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error) 
 	return auths, nil
 }
 
-
 func (s *PostgresStore) Delete(ctx context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -402,7 +384,6 @@ func (s *PostgresStore) Delete(ctx context.Context, id string) error {
 	}
 	return s.deleteAuthRecord(ctx, relID)
 }
-
 
 func (s *PostgresStore) PersistAuthFiles(ctx context.Context, _ string, paths ...string) error {
 	if len(paths) == 0 {
@@ -437,7 +418,6 @@ func (s *PostgresStore) PersistAuthFiles(ctx context.Context, _ string, paths ..
 	return nil
 }
 
-
 func (s *PostgresStore) PersistConfig(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -451,7 +431,6 @@ func (s *PostgresStore) PersistConfig(ctx context.Context) error {
 	}
 	return s.persistConfig(ctx, data)
 }
-
 
 func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfigPath string) error {
 	query := fmt.Sprintf("SELECT content FROM %s WHERE id = $1", s.fullTableName(s.cfg.ConfigTable))
@@ -473,8 +452,6 @@ func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfi
 				}
 			}
 		}
-
-
 
 		if errPrepare := config.PrepareConfigFileForUpload(s.configPath); errPrepare != nil {
 			return fmt.Errorf("postgres store: prepare local config for seeding: %w", errPrepare)
@@ -499,7 +476,6 @@ func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfi
 	}
 	return nil
 }
-
 
 func (s *PostgresStore) syncAuthFromDatabase(ctx context.Context) error {
 	query := fmt.Sprintf("SELECT id, content FROM %s", s.fullTableName(s.cfg.AuthTable))

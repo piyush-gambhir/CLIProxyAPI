@@ -20,9 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 func (s *GitTokenStore) RefreshClaim(ctx context.Context, key string) (claimed bool, errResult error) {
 	errResult = s.withRefreshRepository(ctx, func(repo *git.Repository) error {
 		ref := refreshGitRef("claim", key)
@@ -94,9 +91,6 @@ func (s *GitTokenStore) withRefreshRepository(ctx context.Context, run func(*git
 		return fmt.Errorf("git refresh journal is unavailable")
 	}
 
-
-
-
 	repo, errInit := git.Init(memory.NewStorage(), nil)
 	if errInit != nil {
 		return errInit
@@ -106,13 +100,11 @@ func (s *GitTokenStore) withRefreshRepository(ctx context.Context, run func(*git
 		return errRemote
 	}
 
-
 	endpoint, errParse := transport.ParseURL(s.remote)
 	if errParse != nil {
 		return errParse
 	}
 	if endpoint.Scheme == "file" {
-
 
 		remoteStorage, errLoad := transport.DefaultLoader.Load(endpoint)
 		if errLoad != nil {

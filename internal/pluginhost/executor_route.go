@@ -11,14 +11,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
-
-
-
-
 func (h *Host) executorPluginReady(pluginID string, routeReq pluginapi.ModelRouteRequest) bool {
 	if h == nil {
 		return false
@@ -73,7 +65,6 @@ func (a *executorAdapter) supportsExecutorFormats(req coreexecutor.Request, opts
 	return errOutput == nil
 }
 
-
 func (h *Host) PluginExecutorRequestToFormat(pluginID string, req coreexecutor.Request, opts coreexecutor.Options) sdktranslator.Format {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
 	if errAdapter != nil {
@@ -81,7 +72,6 @@ func (h *Host) PluginExecutorRequestToFormat(pluginID string, req coreexecutor.R
 	}
 	return adapter.RequestToFormat(req, opts)
 }
-
 
 func (h *Host) ExecutePluginExecutor(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (coreexecutor.Response, error) {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
@@ -91,7 +81,6 @@ func (h *Host) ExecutePluginExecutor(ctx context.Context, pluginID string, req c
 	return adapter.Execute(ctx, (*coreauth.Auth)(nil), req, opts)
 }
 
-
 func (h *Host) ExecutePluginExecutorStream(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (*coreexecutor.StreamResult, error) {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
 	if errAdapter != nil {
@@ -99,7 +88,6 @@ func (h *Host) ExecutePluginExecutorStream(ctx context.Context, pluginID string,
 	}
 	return adapter.ExecuteStream(ctx, (*coreauth.Auth)(nil), req, opts)
 }
-
 
 func (h *Host) CountPluginExecutor(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (coreexecutor.Response, error) {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)

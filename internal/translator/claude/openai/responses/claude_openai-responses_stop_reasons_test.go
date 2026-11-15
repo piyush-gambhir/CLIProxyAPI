@@ -11,8 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
 func pausedSearchChunks(t *testing.T, messageID, signature string, finishedID, pausedID, pausedQuery string) [][]byte {
 	t.Helper()
 	chunks := [][]byte{
@@ -46,7 +44,6 @@ func pausedSearchChunks(t *testing.T, messageID, signature string, finishedID, p
 	return chunks
 }
 
-
 func continuationChunks(messageID, pausedID string, stopReason string) [][]byte {
 	return [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"` + messageID + `","usage":{"input_tokens":10,"output_tokens":0}}}`),
@@ -59,7 +56,6 @@ func continuationChunks(messageID, pausedID string, stopReason string) [][]byte 
 		[]byte(`data: {"type":"message_stop"}`),
 	}
 }
-
 
 func streamTerminal(t *testing.T, chunks [][]byte) (string, ojson.Result) {
 	t.Helper()
@@ -78,15 +74,11 @@ func streamTerminal(t *testing.T, chunks [][]byte) (string, ojson.Result) {
 	return name, response
 }
 
-
-
-
 func codexHistoryRequest(t *testing.T, responses ...ojson.Result) []byte {
 	t.Helper()
 	requestDoc := ojson.NewDocString(`{"model":"claude-test","tools":[{"type":"web_search"}],"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"research"}]}]}`)
 	for _, response := range responses {
 		for _, item := range response.Get("output").Array() {
-
 
 			raw := []byte(item.Raw)
 			if item.Get("type").String() == "web_search_call" {
@@ -239,8 +231,6 @@ func TestStopReasonErrorsKeepOutputEmittedBeforeTerminal(t *testing.T) {
 	runStopReasonErrorsKeepOutput(t)
 }
 
-
-
 func TestRepeatedWebSearchIDsAcrossTurnsAreNotMerged(t *testing.T) {
 	for _, boundary := range []string{
 		`{"type":"message","role":"user","content":[{"type":"input_text","text":"again"}]}`,
@@ -273,8 +263,6 @@ func TestRepeatedWebSearchIDsAcrossTurnsAreNotMerged(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestPausedSearchContinuationRequiresSameAssistantRun(t *testing.T) {
 	paused := `{"id":"` + responsesWebSearchCallID("srvtoolu_p") + `","type":"web_search_call","status":"in_progress","action":{"type":"search","query":"paused"}}`

@@ -1,4 +1,3 @@
-
 package executionregistry
 
 import (
@@ -19,7 +18,6 @@ var (
 	ErrExecutionResourceAlreadyBound = errors.New("execution resource is already bound")
 )
 
-
 type State uint32
 
 const (
@@ -27,7 +25,6 @@ const (
 	StateDraining
 	StateClosed
 )
-
 
 type Registry struct {
 	state atomic.Uint32
@@ -50,14 +47,12 @@ type Registry struct {
 	closeErr     error
 }
 
-
 type PendingDispatch struct {
 	id       uint64
 	registry *Registry
 	mu       sync.Mutex
 	once     sync.Once
 }
-
 
 type ScopeSpec struct {
 	RequestID    string
@@ -68,12 +63,10 @@ type ScopeSpec struct {
 	Accounted    bool
 }
 
-
 type ReleaseGroup struct {
 	CredentialID string
 	Model        string
 }
-
 
 type ReleaseTicket struct {
 	Group    ReleaseGroup
@@ -81,15 +74,12 @@ type ReleaseTicket struct {
 	done     <-chan struct{}
 }
 
-
-
 func NewReleaseTicket(group ReleaseGroup, sequence int64, done <-chan struct{}) *ReleaseTicket {
 	if sequence <= 0 || done == nil {
 		return nil
 	}
 	return &ReleaseTicket{Group: group, Sequence: sequence, done: done}
 }
-
 
 func (t *ReleaseTicket) Wait(ctx context.Context) error {
 	if t == nil || t.done == nil {
@@ -106,10 +96,7 @@ func (t *ReleaseTicket) Wait(ctx context.Context) error {
 	}
 }
 
-
-
 type ReleaseSink func(ReleaseGroup, int64) *ReleaseTicket
-
 
 type Scope struct {
 	id       uint64
@@ -124,7 +111,6 @@ type Scope struct {
 	ended         sync.Once
 }
 
-
 func New() *Registry {
 	registry := &Registry{
 		pending:          make(map[uint64]*PendingDispatch),
@@ -135,7 +121,6 @@ func New() *Registry {
 	registry.state.Store(uint32(StateAccepting))
 	return registry
 }
-
 
 func (r *Registry) BeginDispatch() (*PendingDispatch, error) {
 	if r == nil || State(r.state.Load()) != StateAccepting {
@@ -153,7 +138,6 @@ func (r *Registry) BeginDispatch() (*PendingDispatch, error) {
 	r.pending[pending.id] = pending
 	return pending, nil
 }
-
 
 func (r *Registry) WaitPending(ctx context.Context) error {
 	if r == nil {
@@ -178,7 +162,6 @@ func (r *Registry) WaitPending(ctx context.Context) error {
 	return nil
 }
 
-
 func (p *PendingDispatch) End() {
 	if p == nil || p.registry == nil {
 		return
@@ -193,7 +176,6 @@ func (p *PendingDispatch) End() {
 		p.registry.mu.Unlock()
 	})
 }
-
 
 func (r *Registry) Install(pending *PendingDispatch, spec ScopeSpec) (*Scope, error) {
 	if r == nil || pending == nil || pending.registry != r {
@@ -222,8 +204,6 @@ func (r *Registry) Install(pending *PendingDispatch, spec ScopeSpec) (*Scope, er
 	r.signalLocked()
 	return scope, nil
 }
-
-
 
 func (r *Registry) SetReleaseSink(rawSink any) {
 	if r == nil {
@@ -264,7 +244,6 @@ func (r *Registry) SetReleaseSink(rawSink any) {
 	}
 }
 
-
 func (s *Scope) Bind(closeFn func() error) error {
 	if s == nil || s.registry == nil || closeFn == nil {
 		return ErrInvalidExecutionResource
@@ -285,12 +264,9 @@ func (s *Scope) Bind(closeFn func() error) error {
 	return nil
 }
 
-
 func (s *Scope) End(reason string) {
 	_ = s.EndWithRelease(reason)
 }
-
-
 
 func (s *Scope) EndWithRelease(_ string) *ReleaseTicket {
 	if s == nil || s.registry == nil {
@@ -375,7 +351,6 @@ func (s *Scope) closeResource(closeFn func() error) {
 	}
 }
 
-
 func (r *Registry) Drain(ctx context.Context) error {
 	if r == nil {
 		return ErrRegistryClosed
@@ -414,7 +389,6 @@ func (r *Registry) Drain(ctx context.Context) error {
 	r.mu.Unlock()
 	return nil
 }
-
 
 func (r *Registry) Close() error {
 	if r == nil {

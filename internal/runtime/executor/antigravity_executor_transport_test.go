@@ -38,9 +38,6 @@ func antigravityAuthWithIDAndProxy(id, proxyURL string) *cliproxyauth.Auth {
 	}
 }
 
-
-
-
 func TestNewAntigravityHTTPClientSharesTransport(t *testing.T) {
 	enabled := true
 	poolCfg := func(sdkCfg ...config.SDKConfig) *config.Config {
@@ -114,9 +111,6 @@ func TestNewAntigravityHTTPClientSharesTransport(t *testing.T) {
 	}
 }
 
-
-
-
 func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 	enabled := true
 	poolCfg := &config.Config{
@@ -134,7 +128,6 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 	}
 	applyAntigravityPoolLimits(wide, poolCfg)
 
-
 	if wide.MaxIdleConnsPerHost != 256 || wide.MaxIdleConns != 512 {
 		t.Fatalf("larger connection limits must be preserved, got perHost=%d total=%d",
 			wide.MaxIdleConnsPerHost, wide.MaxIdleConns)
@@ -142,7 +135,6 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 	if wide.IdleConnTimeout != antigravityMaxAllowedIdleConnTimeout {
 		t.Fatalf("IdleConnTimeout = %v, want capped at %v", wide.IdleConnTimeout, antigravityMaxAllowedIdleConnTimeout)
 	}
-
 
 	unlimited := &http.Transport{MaxIdleConns: 0, IdleConnTimeout: 0}
 	applyAntigravityPoolLimits(unlimited, poolCfg)
@@ -153,14 +145,11 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 		t.Fatalf("IdleConnTimeout = %v, want default %v", unlimited.IdleConnTimeout, antigravityDefaultIdleConnTimeout)
 	}
 
-
-
 	disabled := &http.Transport{MaxIdleConnsPerHost: -1}
 	applyAntigravityPoolLimits(disabled, poolCfg)
 	if disabled.MaxIdleConnsPerHost != -1 {
 		t.Fatalf("MaxIdleConnsPerHost = %d, want -1 (pooling disabled) to be preserved", disabled.MaxIdleConnsPerHost)
 	}
-
 
 	defaulted := &http.Transport{}
 	applyAntigravityPoolLimits(defaulted, poolCfg)
@@ -171,7 +160,6 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 		t.Fatalf("IdleConnTimeout = %v, want %v", defaulted.IdleConnTimeout, antigravityDefaultIdleConnTimeout)
 	}
 
-
 	defaultDisabled := &http.Transport{}
 	applyAntigravityPoolLimits(defaultDisabled)
 	if defaultDisabled.MaxIdleConnsPerHost != -1 {
@@ -180,10 +168,6 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 
 	applyAntigravityPoolLimits(nil)
 }
-
-
-
-
 
 func TestNewAntigravityHTTPClientRejectsTypedNilContextTransport(t *testing.T) {
 	var typedNil *http.Transport
@@ -202,8 +186,6 @@ func TestNewAntigravityHTTPClientRejectsTypedNilContextTransport(t *testing.T) {
 	}
 }
 
-
-
 func TestNewAntigravityHTTPClientKeepsForeignRoundTripper(t *testing.T) {
 	foreign := roundTripperFunc(func(*http.Request) (*http.Response, error) {
 		return nil, errors.New("unused")
@@ -214,9 +196,6 @@ func TestNewAntigravityHTTPClientKeepsForeignRoundTripper(t *testing.T) {
 		t.Fatal("a non-*http.Transport RoundTripper must be preserved as-is")
 	}
 }
-
-
-
 
 func TestAntigravityConcurrentRequestsReusePooledConnections(t *testing.T) {
 	var mu sync.Mutex
@@ -276,21 +255,11 @@ func TestAntigravityConcurrentRequestsReusePooledConnections(t *testing.T) {
 	distinct := len(remotes)
 	mu.Unlock()
 
-
-
-
-
-
-
-
-
 	if distinct > 2*perWave {
 		t.Fatalf("%d waves of %d concurrent requests opened %d connections, want at most %d (unpooled worst case is %d)",
 			waves, perWave, distinct, 2*perWave, totalConns)
 	}
 }
-
-
 
 func TestAntigravityConcurrentRequestsDefaultPoolLimitsToTwo(t *testing.T) {
 	var mu sync.Mutex
@@ -348,13 +317,6 @@ func TestAntigravityConcurrentRequestsDefaultPoolLimitsToTwo(t *testing.T) {
 	distinct := len(remotes)
 	mu.Unlock()
 
-
-
-
-
-
-
-
 	if distinct >= totalConns {
 		t.Fatalf("expected connection reuse with the default pool: %d requests opened %d distinct connections (pooling absent?)",
 			totalConns, distinct)
@@ -391,10 +353,6 @@ func TestNewAntigravityHTTPClientScopesPoolsByAuthIdentity(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestAntigravityHTTP11TransportReusesPoolWithoutAuthID(t *testing.T) {
 	base := http.DefaultTransport.(*http.Transport)
 
@@ -411,8 +369,6 @@ func TestAntigravityHTTP11TransportReusesPoolWithoutAuthID(t *testing.T) {
 		t.Fatal("a nil auth carries no credential to isolate and must share the same pool")
 	}
 
-
-
 	tokenA := antigravityHTTP11Transport(&cliproxyauth.Auth{Metadata: map[string]any{"access_token": "token-a"}}, base)
 	tokenB := antigravityHTTP11Transport(&cliproxyauth.Auth{Metadata: map[string]any{"access_token": "token-b"}}, base)
 	if tokenA == first || tokenB == first {
@@ -424,7 +380,6 @@ func TestAntigravityHTTP11TransportReusesPoolWithoutAuthID(t *testing.T) {
 	if again := antigravityHTTP11Transport(&cliproxyauth.Auth{Metadata: map[string]any{"access_token": "token-a"}}, base); again != tokenA {
 		t.Fatal("the same access token must resolve to the same pool across requests")
 	}
-
 
 	identified := &cliproxyauth.Auth{ID: "stable-identity"}
 	if antigravityHTTP11Transport(identified, base) != antigravityHTTP11Transport(identified, base) {
@@ -463,7 +418,6 @@ func TestAntigravityTransportScopeFallsBackToStableMarkers(t *testing.T) {
 		},
 		{
 
-
 			"label alone is not an identity",
 			&cliproxyauth.Auth{Label: "account-c"},
 			antigravityAnonymousTransportScope,
@@ -488,9 +442,6 @@ func TestAntigravityTransportScopeFallsBackToStableMarkers(t *testing.T) {
 	}
 }
 
-
-
-
 func TestAntigravityTransportScopeIgnoresNonUniqueLabel(t *testing.T) {
 	first := &cliproxyauth.Auth{Label: "shared-label", Metadata: map[string]any{"refresh_token": "refresh-a"}}
 	second := &cliproxyauth.Auth{Label: "shared-label", Metadata: map[string]any{"refresh_token": "refresh-b"}}
@@ -503,9 +454,6 @@ func TestAntigravityTransportScopeIgnoresNonUniqueLabel(t *testing.T) {
 		t.Fatal("credentials sharing only a label must not share a connection pool")
 	}
 }
-
-
-
 
 func TestAntigravityTransportScopeSurvivesAccessTokenRotation(t *testing.T) {
 	refreshOnly := &cliproxyauth.Auth{Metadata: map[string]any{"refresh_token": "stable-refresh"}}
@@ -520,8 +468,6 @@ func TestAntigravityTransportScopeSurvivesAccessTokenRotation(t *testing.T) {
 		t.Fatalf("scope after rotation = %q, want %q (access token rotation must not churn pools)", got, want)
 	}
 }
-
-
 
 func TestAntigravityTransportScopeNeverLeaksToken(t *testing.T) {
 	const (
@@ -549,8 +495,6 @@ func TestAntigravityTransportScopeNeverLeaksToken(t *testing.T) {
 	}
 }
 
-
-
 func TestAntigravityTransportCacheEvictsStalePools(t *testing.T) {
 	original := antigravityTransports
 	antigravityTransports = helps.NewTransportCache[antigravityTransportKey](4)
@@ -570,8 +514,6 @@ func TestAntigravityTransportCacheEvictsStalePools(t *testing.T) {
 		t.Fatalf("cache holds %d pools, want at most the capacity of 4", got)
 	}
 
-
-
 	auth := antigravityAuthWithIDAndProxy("ctx-auth", "")
 	for i := 0; i < 40; i++ {
 		fresh := http.DefaultTransport.(*http.Transport).Clone()
@@ -584,8 +526,6 @@ func TestAntigravityTransportCacheEvictsStalePools(t *testing.T) {
 		t.Fatalf("cache holds %d pools after context transports, want at most 4", got)
 	}
 }
-
-
 
 func TestAntigravityProxiedHTTP11TransportRejectsInvalidProxy(t *testing.T) {
 	auth := antigravityAuthWithIDAndProxy("invalid-proxy", "ftp://127.0.0.1:1")
@@ -651,9 +591,6 @@ func TestAntigravityTransportMatchesNativeTLSProfile(t *testing.T) {
 	}
 }
 
-
-
-
 func TestAntigravityProxiedRequestsReuseOneConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -695,9 +632,6 @@ func TestAntigravityProxiedRequestsReuseOneConnection(t *testing.T) {
 		t.Fatalf("expected %d requests to share one connection, got %d connections", requests, distinct)
 	}
 }
-
-
-
 
 func TestAntigravityPoolConfigIdleTimeoutCustomAndCap(t *testing.T) {
 	enabledTrue := true
@@ -865,9 +799,6 @@ func TestAntigravityPoolConfigIdleTimeoutCustomAndCap(t *testing.T) {
 	}
 }
 
-
-
-
 func TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -904,7 +835,6 @@ func TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects(t *tes
 	headers := append([]string(nil), connectionHeaders...)
 	mu.Unlock()
 
-
 	if distinct != requests {
 		t.Fatalf("short mode: expected %d distinct connections, got %d", requests, distinct)
 	}
@@ -915,8 +845,6 @@ func TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects(t *tes
 		}
 	}
 }
-
-
 
 func TestCloseAntigravityAuthIdleTransportsEvictsIdlePool(t *testing.T) {
 	auth := antigravityAuthWithIDAndProxy("auth-to-close", "")
@@ -937,21 +865,16 @@ func TestCloseAntigravityAuthIdleTransportsEvictsIdlePool(t *testing.T) {
 		maxIdleConnsPerHost: settings.maxIdleConnsPerHost,
 	}
 
-
 	if !antigravityTransports.Contains(key) {
 		t.Fatal("expected transport to be in cache")
 	}
 
-
 	closeAntigravityAuthIdleTransports(auth)
-
 
 	if antigravityTransports.Contains(key) {
 		t.Fatal("expected transport to be removed from cache after closeAntigravityAuthIdleTransports")
 	}
 }
-
-
 
 func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -982,7 +905,6 @@ func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 	}
 	exec := NewAntigravityExecutor(cfg)
 
-
 	client := newAntigravityHTTPClient(context.Background(), cfg, auth, 0)
 	if client.Transport == nil {
 		t.Fatal("expected transport to be initialized")
@@ -1001,7 +923,6 @@ func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 		t.Fatal("expected transport to be in cache before count_tokens")
 	}
 
-
 	payload := []byte(`{"contents":[{"role":"user","parts":[{"text":"hello"}]}]}`)
 	_, _ = exec.CountTokens(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gemini-3.6-flash-high",
@@ -1010,22 +931,16 @@ func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 		SourceFormat: sdktranslator.FormatGemini,
 	})
 
-
 	if antigravityTransports.Contains(key) {
 		t.Fatal("expected transport to be evicted after 429 in CountTokens")
 	}
 }
 
-
-
-
 func TestAntigravityTransportKeySeparatesPoolSettingsAcrossReload(t *testing.T) {
 	auth := antigravityAuthWithIDAndProxy("auth-key-separation", "")
 
-
 	cfgShort := &config.Config{}
 	clientShort := newAntigravityHTTPClient(context.Background(), cfgShort, auth, 0)
-
 
 	enabledPool := true
 	cfgPooled := &config.Config{
@@ -1036,7 +951,6 @@ func TestAntigravityTransportKeySeparatesPoolSettingsAcrossReload(t *testing.T) 
 		},
 	}
 	clientPooled := newAntigravityHTTPClient(context.Background(), cfgPooled, auth, 0)
-
 
 	if clientShort.Transport == clientPooled.Transport {
 		t.Fatal("expected short mode and pooled mode to use distinct transports in cache")

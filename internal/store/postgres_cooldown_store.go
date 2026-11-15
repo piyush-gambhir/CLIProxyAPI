@@ -37,7 +37,6 @@ type postgresCooldownStateStore struct {
 	previous map[postgresCooldownStateKey]postgresCooldownStateVersion
 }
 
-
 func (s *PostgresStore) CooldownStateStore() cliproxyauth.CooldownStateStore {
 	if s == nil {
 		return nil

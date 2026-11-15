@@ -44,9 +44,6 @@ const sanitizeTestPayload = `{
   }
 }`
 
-
-
-
 func TestSanitizeAntigravityRequestSchemasPreservesHistory(t *testing.T) {
 	for _, tc := range []struct {
 		name                 string
@@ -84,8 +81,6 @@ func TestSanitizeAntigravityRequestSchemasPreservesHistory(t *testing.T) {
 	}
 }
 
-
-
 func TestSanitizeAntigravityRequestSchemasStillCleansSchemas(t *testing.T) {
 	got := sanitizeAntigravityRequestSchemas(sanitizeTestPayload, false)
 
@@ -113,8 +108,6 @@ func TestSanitizeAntigravityRequestSchemasStillCleansSchemas(t *testing.T) {
 	}
 }
 
-
-
 func TestSanitizeAntigravityRequestSchemasCleansResultSchemas(t *testing.T) {
 	payload := `{"request": {"tools": [{"functionDeclarations": [{
 	  "name": "t",
@@ -138,20 +131,8 @@ func TestSanitizeAntigravityRequestSchemasCleansResultSchemas(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 func TestAntigravitySchemaPathsCoverEverySchemaLocation(t *testing.T) {
 	const schema = `{"type":"object","$id":"drop","properties":{"a":{"type":"string"}}}`
-
-
 
 	for _, declContainer := range []string{"functionDeclarations", "function_declarations"} {
 		for _, genContainer := range antigravityGenerationConfigContainers {
@@ -189,7 +170,6 @@ func TestAntigravitySchemaPathsCoverEverySchemaLocation(t *testing.T) {
 				base := "request.tools.0." + declContainer + ".0."
 				for _, k := range antigravityDeclarationSchemaKeys {
 
-
 					if k == "parametersJsonSchema" {
 						if ojson.Get(got, base+k).Exists() {
 							t.Errorf("%s should have been renamed onto parameters: %s", k, got)
@@ -205,10 +185,6 @@ func TestAntigravitySchemaPathsCoverEverySchemaLocation(t *testing.T) {
 		}
 	}
 }
-
-
-
-
 
 func TestSanitizeAntigravityRequestSchemasMatchesWholePayloadCleaning(t *testing.T) {
 	shapes := map[string]string{
@@ -234,7 +210,6 @@ func TestSanitizeAntigravityRequestSchemasMatchesWholePayloadCleaning(t *testing
 			}
 		}
 	}
-
 
 	doc := `{"request":{"tools":[{"functionDeclarations":[{"name":"t","parameters":` + shapes["optionalOnly"] + `}]}]}}`
 	got := ojson.Get(sanitizeAntigravityRequestSchemas(doc, true), schemaPath)
@@ -432,7 +407,6 @@ func TestAntigravityBuildRequestSanitizesSnakeCaseGenerationResponseSchemas(t *t
 
 			base := "request.generationConfig."
 
-
 			schema := ojson.GetBytes(encoded, base+testCase.alias)
 			if !schema.Exists() {
 				t.Fatalf("snake_case response schema was renamed or dropped: %s", encoded)
@@ -449,8 +423,6 @@ func TestAntigravityBuildRequestSanitizesSnakeCaseGenerationResponseSchemas(t *t
 		})
 	}
 }
-
-
 
 func TestSanitizeAntigravityRequestSchemasCleansBothSpellingsInPlace(t *testing.T) {
 	payload := `{"request":{"generationConfig":{` +
@@ -477,12 +449,7 @@ func TestSanitizeAntigravityRequestSchemasCleansBothSpellingsInPlace(t *testing.
 	}
 }
 
-
-
 func TestSanitizeAntigravityRequestSchemasIsIdempotent(t *testing.T) {
-
-
-
 
 	payload := `{"request": {"tools": [{"functionDeclarations": [{
 	  "name": "manage_todo_list",
@@ -508,8 +475,6 @@ func TestSanitizeAntigravityRequestSchemasIsIdempotent(t *testing.T) {
 	}
 }
 
-
-
 var propertyNamesShapes = map[string]string{
 
 	"arrayItem": `{"type":"object","properties":{"records":{"type":"array","items":{"type":"object",` +
@@ -518,9 +483,6 @@ var propertyNamesShapes = map[string]string{
 	"propertyNamedProperties": `{"type":"object","properties":{"properties":{"type":"object",` +
 		`"propertyNames":{"type":"string"}}}}`,
 }
-
-
-
 
 func TestSanitizeAntigravityRequestSchemasStripsPropertyNamesEverywhere(t *testing.T) {
 	for shapeName, schema := range propertyNamesShapes {
@@ -554,9 +516,6 @@ func TestSanitizeAntigravityRequestSchemasStripsPropertyNamesEverywhere(t *testi
 	}
 }
 
-
-
-
 func TestSanitizeAntigravityRequestSchemasKeepsPropertyNamesInHistory(t *testing.T) {
 	payload := `{"request":{
 		"contents":[{"role":"model","parts":[{"functionCall":{"name":"t","args":{
@@ -588,8 +547,6 @@ func TestSanitizeAntigravityRequestSchemasKeepsPropertyNamesInHistory(t *testing
 	}
 }
 
-
-
 func TestAntigravityBuildRequestStripsPropertyNamesFromOutboundBody(t *testing.T) {
 	for shapeName, schema := range propertyNamesShapes {
 		for _, modelName := range []string{"gemini-3.1-pro", "claude-opus-4-6"} {
@@ -620,8 +577,6 @@ func TestAntigravityBuildRequestStripsPropertyNamesFromOutboundBody(t *testing.T
 	}
 }
 
-
-
 func TestSanitizeAntigravityRequestSchemasStripsEncryptedMetadata(t *testing.T) {
 	encryptedSchema := `{"type":"object","properties":{"key":{"type":"string","encrypted":true},"timeout":{"type":"integer","encrypted":false}},"required":["key"]}`
 
@@ -642,7 +597,6 @@ func TestSanitizeAntigravityRequestSchemasStripsEncryptedMetadata(t *testing.T) 
 }
 
 func TestSanitizeAntigravityRequestSchemasNormalizesTrueBooleanSubschemas(t *testing.T) {
-
 
 	payload := `{"request":{
 		"tools":[{"functionDeclarations":[{
@@ -693,21 +647,17 @@ func TestSanitizeAntigravityRequestSchemasNormalizesTrueBooleanSubschemas(t *tes
 			}
 		}
 
-
 		if val := params.Get("properties.disabled"); val.Type != ojson.False {
 			t.Errorf("useAntigravitySchema=%v: disabled should be false, got %s", useAntigravitySchema, val.Raw)
 		}
-
 
 		if val := params.Get("properties.metadata.properties.nested_flag"); val.Type != ojson.JSON || val.Raw != "{}" {
 			t.Errorf("useAntigravitySchema=%v: nested_flag should be {}, got %s", useAntigravitySchema, val.Raw)
 		}
 
-
 		if val := params.Get("properties.tags.items"); val.Type != ojson.JSON || val.Raw != "{}" {
 			t.Errorf("useAntigravitySchema=%v: tags.items should be {}, got %s", useAntigravitySchema, val.Raw)
 		}
-
 
 		if val := params.Get("properties.large_int"); val.Raw != "9007199254740993" {
 			t.Errorf("useAntigravitySchema=%v: large_int corrupted, got %s", useAntigravitySchema, val.Raw)
@@ -715,16 +665,7 @@ func TestSanitizeAntigravityRequestSchemasNormalizesTrueBooleanSubschemas(t *tes
 	}
 }
 
-
-
-
-
-
-
-
 func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(t *testing.T) {
-
-
 
 	payload := []byte(`{"request":{"tools":[{"functionDeclarations":[{"name":"diagnostic_union","parametersJsonSchema":{` +
 		`"type":"object",` +
@@ -783,14 +724,6 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 		}
 	})
 
-
-
-
-
-
-
-
-
 	t.Run("claude keeps unions in function return schemas", func(t *testing.T) {
 		unionSchema := `{"type":"object","properties":{"item":{"anyOf":[{"type":"string"},{"type":"object","properties":{"image":{"type":"string"}},"required":["image"]},{"type":"object","properties":{"audio":{"type":"string"}},"required":["audio"]}]}},"required":["item"]}`
 		decl := `{"name":"diagnostic_union"` +
@@ -823,10 +756,6 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 			}
 		}
 	})
-
-
-
-
 
 	t.Run("claude chain keeps nullable marker after flattening", func(t *testing.T) {
 		input := []byte(`{"model":"claude-opus-5-5-high","max_tokens":1024,"messages":[{"role":"user","content":"hi"}],"tools":[{"name":"diagnostic_union","input_schema":{"type":"object","properties":{"value":{"anyOf":[{"type":"string"},{"type":"integer"},{"type":"null"}]}},"required":["value"]}}]}`)
@@ -889,8 +818,6 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 
 	t.Run("gemini keeps preserved tool unions", func(t *testing.T) {
 
-
-
 		for _, modelName := range []string{"gemini-3.1-pro-low", "gemini-3.6-flash-high"} {
 			params := declParams(t, modelName)
 
@@ -907,11 +834,6 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 	})
 }
 
-
-
-
-
-
 func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *testing.T) {
 	const declCount = 256
 
@@ -924,12 +846,7 @@ func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *test
 			want.WriteByte(',')
 		}
 
-
-
-
-
 		fmt.Fprintf(&input, `{"name":"tool_%d","description":"%s","parametersJsonSchema":{"type":"object","$id":"drop","properties":{"q":{"type":"string"}}}}`, i, strings.Repeat("x", 4096))
-
 
 		fmt.Fprintf(&want, `{"name":"tool_%d","description":"%s","parameters":{"type":"object","properties":{"q":{"type":"string"},"_":{"type":"boolean"}},"required":["_"]}}`, i, strings.Repeat("x", 4096))
 	}
@@ -949,22 +866,12 @@ func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *test
 			ojson.Get(got, "request.tools.0.functionDeclarations.0").Raw)
 	}
 
-
-
-
-
 	const allowedCopies = 32
 	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > uint64(allowedCopies*len(payload)) {
 		t.Fatalf("sanitizing %d declarations allocated %d bytes for a %d byte payload, want at most %d (cost must be linear in the tools size, not per declaration)",
 			declCount, allocated, len(payload), allowedCopies*len(payload))
 	}
 }
-
-
-
-
-
-
 
 func TestSanitizeAntigravityRequestSchemasPreservesToolArrayWhitespace(t *testing.T) {
 	input := "{\n" +
@@ -979,13 +886,6 @@ func TestSanitizeAntigravityRequestSchemasPreservesToolArrayWhitespace(t *testin
 		"    ]\n" +
 		"  }\n" +
 		"}\n"
-
-
-
-
-
-
-
 
 	want := strings.Replace(input,
 		`{"name": "a", "parametersJsonSchema": {"type": "object", "$id": "drop", "properties": {"q": {"type": "string"}}}}`,

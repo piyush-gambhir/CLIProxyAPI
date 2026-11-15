@@ -10,8 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// NormalizeApplyPatchResponsesRequest adapts declarations and explicit custom patch history.
-// Winners are collected before rewriting: normalization must not change declaration precedence.
 func NormalizeApplyPatchResponsesRequest(raw []byte) ([]byte, error) {
 	if !ojson.ValidBytes(raw) {
 		return raw, errors.New("invalid Responses request JSON")
@@ -123,9 +121,6 @@ type responsesPatchRecord struct {
 	evidence                                 error
 }
 
-// ApplyPatchResponsesBridge handles JSON event payloads, without SSE framing.
-// Identity evidence is retained even before a call receives its name.
-// A bridge is local to one response and must not be shared between goroutines.
 type ApplyPatchResponsesBridge struct {
 	ApplyPatchErrorState
 	tools                               map[string]util.ResponsesToolDescriptor
@@ -138,7 +133,6 @@ type ApplyPatchResponsesBridge struct {
 	failed, terminal, active, converted bool
 }
 
-// NewApplyPatchResponsesBridge resolves original declarations before any normalization.
 func NewApplyPatchResponsesBridge(originalRequest []byte) *ApplyPatchResponsesBridge {
 	b := &ApplyPatchResponsesBridge{tools: util.CollectResponsesToolWinners(util.ParseGJSONBytesNoCopy(originalRequest)), byItemID: map[string]*responsesPatchRecord{}, byCallID: map[string]*responsesPatchRecord{}, byOutputIndex: map[int]*responsesPatchRecord{}}
 	for _, d := range b.tools {
@@ -159,7 +153,6 @@ func (b *ApplyPatchResponsesBridge) failure(err error) ([][]byte, error) {
 	return [][]byte{ApplyPatchFailure(b.responseID, b.next())}, err
 }
 
-// Fail terminates an executor-owned bridge with the same one-shot failure contract.
 func (b *ApplyPatchResponsesBridge) Fail(err error) ([][]byte, error) { return b.failure(err) }
 
 func (b *ApplyPatchResponsesBridge) descriptor(item ojson.Result) (util.ResponsesToolDescriptor, bool) {
@@ -168,8 +161,6 @@ func (b *ApplyPatchResponsesBridge) descriptor(item ojson.Result) (util.Response
 	return d, ok
 }
 
-// resolve checks every supplied identity, not just the first usable key. Conflicting
-// unmatched keys and multiple matched records retain evidence until patch provenance is known.
 func (b *ApplyPatchResponsesBridge) resolve(event, item ojson.Result) (*responsesPatchRecord, error) {
 	ids := []string{event.Get("item_id").String(), item.Get("id").String()}
 	calls := []string{event.Get("call_id").String(), item.Get("call_id").String()}
@@ -232,8 +223,7 @@ func (b *ApplyPatchResponsesBridge) resolve(event, item ojson.Result) (*response
 				incomingPatch = true
 			}
 		}
-		// Keep aliases for unmatched conflicting keys, too. Their later patch provenance
-		// must not create a fresh record and erase the earlier contradiction.
+
 		for _, id := range ids {
 			if id != "" && b.byItemID[id] == nil {
 				b.byItemID[strings.Clone(id)] = r
@@ -306,8 +296,6 @@ func (b *ApplyPatchResponsesBridge) resolve(event, item ojson.Result) (*response
 	return r, nil
 }
 
-// CheckIdentity retains every supplied key before a folded dispatcher reveals its child.
-// Names are deliberately withheld: a dispatcher name is not the selected child name.
 func (b *ApplyPatchResponsesBridge) CheckIdentity(event []byte) error {
 	root := util.ParseGJSONBytesNoCopy(event)
 	item := root.Get("item")
@@ -484,7 +472,7 @@ func (b *ApplyPatchResponsesBridge) transformItemEvent(raw []byte) ([][]byte, er
 	root := util.ParseGJSONBytesNoCopy(raw)
 	item := root.Get("item")
 	if !item.Exists() && root.Get("name").Exists() {
-		// Arguments events can supply late names and identities at the root.
+
 		identityDoc := ojson.NewDoc([]byte(`{"type":"function_call"}`))
 		for _, key := range []string{"name", "namespace", "call_id"} {
 			if value := root.Get(key); value.Exists() {
@@ -497,8 +485,7 @@ func (b *ApplyPatchResponsesBridge) transformItemEvent(raw []byte) ([][]byte, er
 	if errResolve != nil {
 		return nil, errResolve
 	}
-	// A known name is provenance, not readiness. Retain the real source events
-	// until both upstream IDs and the output index can identify every emitted event.
+
 	if (!r.named && (r.kind == "" || r.kind == "function_call")) || (r.patch && !r.identityReady()) {
 		if r.patch {
 			arguments := root.Get("arguments")
@@ -552,7 +539,7 @@ func (b *ApplyPatchResponsesBridge) envelope(raw []byte, stream bool) ([]byte, [
 	var items [][]byte
 	for i, item := range response.Get("output").Array() {
 		index := i
-		// A terminal snapshot may omit earlier completed items: array position is not identity.
+
 		known := b.byItemID[item.Get("id").String()]
 		if known == nil {
 			known = b.byCallID[item.Get("call_id").String()]
@@ -651,7 +638,6 @@ func patchEnvelopeItem(index int, item ojson.Result) []byte {
 	return outDoc.Bytes()
 }
 
-// Transform converts one payload. A failure is terminal and is emitted only once.
 func (b *ApplyPatchResponsesBridge) Transform(event []byte) ([][]byte, error) {
 	if b.failed || b.terminal {
 		return nil, nil
@@ -690,8 +676,7 @@ func (b *ApplyPatchResponsesBridge) Transform(event []byte) ([][]byte, error) {
 	}
 	for i, event := range out {
 		seq := int(ojson.GetBytesNoCopy(event, "sequence_number").Int())
-		// Native custom payloads are opaque. Only a stream that acquired a function
-		// patch call needs resequencing of its other compatibility events.
+
 		nativeCustom := strings.HasPrefix(kind, "response.custom_tool_call_input.") || root.Get("item.type").String() == "custom_tool_call"
 		if b.converted && !nativeCustom && seq <= b.lastSequence {
 			seq = b.next()
@@ -704,7 +689,6 @@ func (b *ApplyPatchResponsesBridge) Transform(event []byte) ([][]byte, error) {
 	return out, nil
 }
 
-// TransformNonStream accepts either a bare response or a terminal event envelope.
 func (b *ApplyPatchResponsesBridge) TransformNonStream(response []byte) ([]byte, error) {
 	if !b.active {
 		return response, nil
@@ -718,7 +702,6 @@ func (b *ApplyPatchResponsesBridge) TransformNonStream(response []byte) ([]byte,
 	return out, nil
 }
 
-// Finish rejects acquired calls whose final arguments have not been validated.
 func (b *ApplyPatchResponsesBridge) Finish() error {
 	if b.ToolInputError() != nil {
 		return b.ToolInputError()

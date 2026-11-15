@@ -81,7 +81,6 @@ func TestServiceCatalogStartupAndConfigReload(t *testing.T) {
 		}
 	}()
 
-
 	s.startModelCatalogUpdaters(ctx)
 	awaitCatalog(first)
 	updated := *cfg
@@ -90,7 +89,6 @@ func TestServiceCatalogStartupAndConfigReload(t *testing.T) {
 		t.Fatal("config update rejected")
 	}
 	awaitCatalog(second)
-
 
 	cancel()
 	if errWrite := os.WriteFile(updated.Models.DevinCatalog, first, 0600); errWrite != nil {

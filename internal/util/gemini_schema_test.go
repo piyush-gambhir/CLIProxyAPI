@@ -87,14 +87,12 @@ func TestCleanJSONSchemaForAntigravity_ConstraintsToDescription(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-
 	if strings.Contains(result, `"minItems"`) {
 		t.Errorf("minItems keyword should be removed")
 	}
 	if !strings.Contains(result, "minItems: 1") {
 		t.Errorf("minItems hint missing in description")
 	}
-
 
 	if !strings.Contains(result, "minLength: 3") {
 		t.Errorf("minLength hint missing in description")
@@ -218,8 +216,6 @@ func TestCleanJSONSchemaForAntigravity_RefHandling(t *testing.T) {
 			"customer": { "$ref": "#/definitions/User" }
 		}
 	}`
-
-
 
 	expected := `{
 		"type": "object",
@@ -658,10 +654,6 @@ func compareJSON(t *testing.T, expectedJSON, actualJSON string) {
 	}
 }
 
-
-
-
-
 func TestCleanJSONSchemaForAntigravity_EmptySchemaPlaceholder(t *testing.T) {
 
 	input := `{
@@ -669,7 +661,6 @@ func TestCleanJSONSchemaForAntigravity_EmptySchemaPlaceholder(t *testing.T) {
 	}`
 
 	result := CleanJSONSchemaForAntigravity(input)
-
 
 	if !strings.Contains(result, `"reason"`) {
 		t.Errorf("Empty schema should have 'reason' placeholder property, got: %s", result)
@@ -688,7 +679,6 @@ func TestCleanJSONSchemaForAntigravity_EmptyPropertiesPlaceholder(t *testing.T) 
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-
 	if !strings.Contains(result, `"reason"`) {
 		t.Errorf("Empty properties should have 'reason' placeholder, got: %s", result)
 	}
@@ -705,7 +695,6 @@ func TestCleanJSONSchemaForAntigravity_NonEmptySchemaUnchanged(t *testing.T) {
 	}`
 
 	result := CleanJSONSchemaForAntigravity(input)
-
 
 	if strings.Contains(result, `"reason"`) {
 		t.Errorf("Non-empty schema should NOT have 'reason' placeholder, got: %s", result)
@@ -732,8 +721,6 @@ func TestCleanJSONSchemaForAntigravity_NestedEmptySchema(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-
-
 	parsed := ojson.Parse(result)
 	nestedProps := parsed.Get("properties.items.items.properties")
 	if !nestedProps.Exists() || !nestedProps.Get("reason").Exists() {
@@ -749,7 +736,6 @@ func TestCleanJSONSchemaForAntigravity_EmptySchemaWithDescription(t *testing.T) 
 	}`
 
 	result := CleanJSONSchemaForAntigravity(input)
-
 
 	if !strings.Contains(result, `"An empty object"`) {
 		t.Errorf("Description should be preserved, got: %s", result)
@@ -837,23 +823,19 @@ func TestCleanJSONSchemaForAntigravityResponsePreservesAdditionalPropertiesFalse
 
 	result := ojson.Parse(CleanJSONSchemaForAntigravityResponse(input))
 
-
 	rootAP := result.Get("additionalProperties")
 	if !rootAP.Exists() || rootAP.Type != ojson.False {
 		t.Errorf("root additionalProperties = %v, want false; cleaned: %s", rootAP, result.Raw)
 	}
-
 
 	nestedAP := result.Get("properties.nested.additionalProperties")
 	if !nestedAP.Exists() || nestedAP.Type != ojson.False {
 		t.Errorf("nested additionalProperties = %v, want false; cleaned: %s", nestedAP, result.Raw)
 	}
 
-
 	if strings.Contains(result.Raw, "No extra properties allowed") {
 		t.Errorf("expected no description hint for additionalProperties:false, got: %s", result.Raw)
 	}
-
 
 	toolResult := CleanJSONSchemaForAntigravity(input)
 	if strings.Contains(toolResult, `"additionalProperties"`) {
@@ -862,7 +844,6 @@ func TestCleanJSONSchemaForAntigravityResponsePreservesAdditionalPropertiesFalse
 	if !strings.Contains(toolResult, "No extra properties allowed") {
 		t.Errorf("tool schema should have description hint: %s", toolResult)
 	}
-
 
 	nonFalseInput := `{
 		"type":"object",
@@ -912,10 +893,6 @@ func TestCleanJSONSchemaForAntigravityResponsePreservesEnumType(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestCleanJSONSchemaForAntigravity_FormatFieldRemoval(t *testing.T) {
 
 	input := `{
@@ -930,7 +907,6 @@ func TestCleanJSONSchemaForAntigravity_FormatFieldRemoval(t *testing.T) {
 	}`
 
 	result := CleanJSONSchemaForAntigravity(input)
-
 
 	if strings.Contains(result, `"format"`) {
 		t.Errorf("format field should be removed, got: %s", result)
@@ -959,7 +935,6 @@ func TestCleanJSONSchemaForAntigravity_FormatFieldNoDescription(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 
-
 	if strings.Contains(result, `"format"`) {
 		t.Errorf("format field should be removed, got: %s", result)
 	}
@@ -981,7 +956,6 @@ func TestCleanJSONSchemaForAntigravity_MultipleFormats(t *testing.T) {
 	}`
 
 	result := CleanJSONSchemaForAntigravity(input)
-
 
 	if strings.Contains(result, `"format"`) {
 		t.Errorf("All format fields should be removed, got: %s", result)
@@ -1010,8 +984,6 @@ func TestCleanJSONSchemaForAntigravity_ToolEnumsBecomeHints(t *testing.T) {
 
 	result := CleanJSONSchemaForAntigravity(input)
 	parsed := ojson.Parse(result)
-
-
 
 	for path, wantType := range map[string]string{
 		"properties.priority": "integer",
@@ -1240,7 +1212,6 @@ func TestRemoveExtensionFields(t *testing.T) {
 	}
 }
 
-
 func TestCleanJSONSchemaForAntigravity_UniqueItemsStripped(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1263,10 +1234,6 @@ func TestCleanJSONSchemaForAntigravity_UniqueItemsStripped(t *testing.T) {
 		t.Errorf("uniqueItems hint missing in description")
 	}
 }
-
-
-
-
 
 func TestIsPropertyDefinitionDistinguishesPropertyNamedProperties(t *testing.T) {
 	for path, want := range map[string]bool{
@@ -1293,9 +1260,6 @@ func TestIsPropertyDefinitionDistinguishesPropertyNamedProperties(t *testing.T) 
 		}
 	}
 }
-
-
-
 
 func TestCleanJSONSchemaStripsPropertyNamesUnderPropertyNamedProperties(t *testing.T) {
 	shapes := map[string]string{
@@ -1327,8 +1291,6 @@ func TestCleanJSONSchemaStripsPropertyNamesUnderPropertyNamedProperties(t *testi
 		}
 	}
 }
-
-
 
 func TestCleanJSONSchemaKeepsPropertiesNamedLikeKeywords(t *testing.T) {
 	input := `{"type":"object","properties":{
@@ -1391,7 +1353,6 @@ func TestCleanJSONSchema_ConditionalKeywords(t *testing.T) {
 		}
 	}
 
-
 	allOfInput := `{
 		"type": "object",
 		"properties": { "kind": { "type": "string", "enum": ["buy", "sell"] } },
@@ -1426,7 +1387,6 @@ func TestCleanJSONSchema_ConditionalKeywords(t *testing.T) {
 			t.Errorf("[%s] sell_reason description mismatch: %s", name, res.Raw)
 		}
 	}
-
 
 	nestedInput := `{
 		"type": "object",
@@ -1562,9 +1522,6 @@ func TestSortByDepthUsesSegmentsAndIsStable(t *testing.T) {
 	}
 }
 
-
-
-
 func TestCleanJSONSchemaStripsEncryptedMetadata(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1611,8 +1568,6 @@ func TestCleanJSONSchemaStripsEncryptedMetadata(t *testing.T) {
 	}
 }
 
-
-
 func TestCleanJSONSchemaKeepsPropertyNamedEncrypted(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1648,9 +1603,6 @@ func TestCleanJSONSchemaKeepsPropertyNamedEncrypted(t *testing.T) {
 	}
 }
 
-
-
-
 func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1674,7 +1626,6 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 	} {
 		got := clean(input)
 		parsed := ojson.Parse(got)
-
 
 		if parsed.Get("properties.data.type").String() != "object" {
 			t.Errorf("%s: properties.data.type = %q, want object; got schema: %s", cleaner, parsed.Get("properties.data.type").String(), got)
@@ -1701,7 +1652,6 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 			t.Errorf("%s: properties.data.properties.parent.required survived; got schema: %s", cleaner, got)
 		}
 
-
 		if parsed.Get("properties.opts.type").String() != "object" {
 			t.Errorf("%s: properties.opts.type = %q, want object; got schema: %s", cleaner, parsed.Get("properties.opts.type").String(), got)
 		}
@@ -1710,7 +1660,6 @@ func TestCleanJSONSchema_BarePropertyMapNormalized(t *testing.T) {
 		}
 	}
 }
-
 
 func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 	input := `{
@@ -1741,14 +1690,12 @@ func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 			t.Errorf("%s: properties.data.properties.workspace.type = %q, want string; got schema: %s", cleaner, parsed.Get("properties.data.properties.workspace.type").String(), got)
 		}
 
-
 		if parsed.Get("properties.data.properties.task.type").String() != "object" {
 			t.Errorf("%s: properties.data.properties.task.type = %q, want object; got schema: %s", cleaner, parsed.Get("properties.data.properties.task.type").String(), got)
 		}
 		if parsed.Get("properties.data.properties.task.properties.name.type").String() != "string" {
 			t.Errorf("%s: properties.data.properties.task.properties.name.type = %q, want string; got schema: %s", cleaner, parsed.Get("properties.data.properties.task.properties.name.type").String(), got)
 		}
-
 
 		var dataReq []string
 		for _, r := range parsed.Get("properties.data.required").Array() {
@@ -1767,8 +1714,6 @@ func TestCleanJSONSchema_NestedBarePropertyMap(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestCleanJSONSchema_BarePropertyMapWithKeywordNames(t *testing.T) {
 	input := `{
@@ -1814,7 +1759,6 @@ func TestCleanJSONSchema_BarePropertyMapWithKeywordNames(t *testing.T) {
 	}
 }
 
-
 func TestCleanJSONSchema_ArrayItemsBarePropertyMap(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1852,8 +1796,6 @@ func TestCleanJSONSchema_ArrayItemsBarePropertyMap(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestCleanJSONSchema_ToolArraysMissingItems(t *testing.T) {
 	input := `{
@@ -1898,8 +1840,6 @@ func TestCleanJSONSchema_ResponseArrayMissingItemsUnchanged(t *testing.T) {
 	}
 }
 
-
-
 func TestCleanJSONSchema_BooleanRequiredPromoted(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1941,7 +1881,6 @@ func TestCleanJSONSchema_BooleanRequiredPromoted(t *testing.T) {
 	}
 }
 
-
 func TestCleanJSONSchema_PreservesLargeNumberPrecision(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -1962,8 +1901,6 @@ func TestCleanJSONSchema_PreservesLargeNumberPrecision(t *testing.T) {
 		t.Errorf("large integer precision was lost: %s", result)
 	}
 }
-
-
 
 func TestCleanJSONSchema_BarePropertyMapWithRequestAndToolsNames(t *testing.T) {
 	input := `{
@@ -2017,8 +1954,6 @@ func TestCleanJSONSchema_BarePropertyMapWithRequestAndToolsNames(t *testing.T) {
 	}
 }
 
-
-
 func TestCleanJSONSchema_BarePropertyMapWithSiblingDescription(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2061,8 +1996,6 @@ func TestCleanJSONSchema_BarePropertyMapWithSiblingDescription(t *testing.T) {
 	}
 }
 
-
-
 func TestCleanJSONSchema_SingleKeySchemaWrapper(t *testing.T) {
 	inner := `{
 		"type": "object",
@@ -2094,8 +2027,6 @@ func TestCleanJSONSchema_SingleKeySchemaWrapper(t *testing.T) {
 		t.Errorf("schema.properties.data.required = %v, want 'parent'; got: %s", dataReq, result)
 	}
 }
-
-
 
 func TestCleanJSONSchema_BarePropertyMapWithExplicitTypeObject(t *testing.T) {
 	input := `{
@@ -2136,7 +2067,6 @@ func TestCleanJSONSchema_BarePropertyMapWithExplicitTypeObject(t *testing.T) {
 	}
 }
 
-
 func TestCleanJSONSchema_BarePropertyMapWithNullable(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2165,8 +2095,6 @@ func TestCleanJSONSchema_BarePropertyMapWithNullable(t *testing.T) {
 	}
 }
 
-
-
 func TestCleanJSONSchema_PreservesHTMLCharactersWithoutEscaping(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2186,8 +2114,6 @@ func TestCleanJSONSchema_PreservesHTMLCharactersWithoutEscaping(t *testing.T) {
 		t.Errorf("Original description with HTML characters was corrupted: %s", result)
 	}
 }
-
-
 
 func TestCleanJSONSchema_VendorExtensionOnEnumNotWrappedIntoProperties(t *testing.T) {
 	input := `{
@@ -2216,8 +2142,6 @@ func TestCleanJSONSchema_VendorExtensionOnEnumNotWrappedIntoProperties(t *testin
 	}
 }
 
-
-
 func TestCleanJSONSchema_ObjectDefaultNotWrappedIntoProperties(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2237,14 +2161,11 @@ func TestCleanJSONSchema_ObjectDefaultNotWrappedIntoProperties(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-
 		if parsed.Get("properties.settings.properties.default").Exists() {
 			t.Errorf("%s: default was converted to property: %s", cleaner, got)
 		}
 	}
 }
-
-
 
 func TestCleanJSONSchema_MixedPropertiesAndOrphanBareProperty(t *testing.T) {
 	input := `{
@@ -2285,8 +2206,6 @@ func TestCleanJSONSchema_MixedPropertiesAndOrphanBareProperty(t *testing.T) {
 	}
 }
 
-
-
 func TestCleanJSONSchema_PreservesAdditionalPropertiesObjectSchema(t *testing.T) {
 	input := `{
 		"additionalProperties": {
@@ -2306,9 +2225,6 @@ func TestCleanJSONSchema_PreservesAdditionalPropertiesObjectSchema(t *testing.T)
 		}
 	}
 }
-
-
-
 
 func TestCleanJSONSchemaForAntigravityResponse_AnyOfRequiredOnlyBranches(t *testing.T) {
 	input := `{
@@ -2345,8 +2261,6 @@ func TestCleanJSONSchemaForAntigravityResponse_AnyOfRequiredOnlyBranches(t *test
 	}
 }
 
-
-
 func TestCleanJSONSchemaForAntigravityResponse_ContainsKeywordStripped(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -2377,9 +2291,6 @@ func TestCleanJSONSchemaForAntigravityResponse_ContainsKeywordStripped(t *testin
 		}
 	}
 }
-
-
-
 
 func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.T) {
 
@@ -2415,7 +2326,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-
 		if parsed.Get("id").Exists() {
 			t.Errorf("%s: root 'id' was not removed: %s", cleaner, got)
 		}
@@ -2425,7 +2335,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 		if parsed.Get("$vocabulary").Exists() {
 			t.Errorf("%s: root '$vocabulary' was not removed: %s", cleaner, got)
 		}
-
 
 		if parsed.Get("properties.kind.id").Exists() {
 			t.Errorf("%s: 'properties.kind.id' was not removed: %s", cleaner, got)
@@ -2440,7 +2349,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 			t.Errorf("%s: 'properties.kind.$dynamicRef' was not removed: %s", cleaner, got)
 		}
 
-
 		if !parsed.Get("properties.id").Exists() {
 			t.Errorf("%s: property named 'id' was incorrectly removed: %s", cleaner, got)
 		}
@@ -2448,7 +2356,6 @@ func TestCleanJSONSchema_RemovesDraft04IdAndSchemaIdentifierKeywords(t *testing.
 			t.Errorf("%s: property named 'id' type corrupted: %s", cleaner, got)
 		}
 	}
-
 
 	refInput := `{
 		"definitions": {
@@ -2506,7 +2413,6 @@ func TestCleanJSONSchema_TrueBooleanSubschemas(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-
 		for _, prop := range []string{"screenshot_id", "filename", "file_size", "source_file_checksum"} {
 			val := parsed.Get("properties." + prop)
 			if !val.Exists() {
@@ -2516,7 +2422,6 @@ func TestCleanJSONSchema_TrueBooleanSubschemas(t *testing.T) {
 				t.Errorf("%s: property %q should be normalized to {}, got %s (type %v)", cleaner, prop, val.Raw, val.Type)
 			}
 		}
-
 
 		disabledVal := parsed.Get("properties.disabled_field")
 		if !disabledVal.Exists() {
@@ -2571,11 +2476,9 @@ func TestCleanJSONSchema_NestedTrueBooleanSubschemas(t *testing.T) {
 		got := clean(input)
 		parsed := ojson.Parse(got)
 
-
 		if val := parsed.Get("properties.tags.items"); val.Exists() && val.Type == ojson.True {
 			t.Errorf("%s: tags.items should not be boolean true: %s", cleaner, got)
 		}
-
 
 		if val := parsed.Get("properties.metadata.properties.nested_true"); !val.Exists() || val.Type != ojson.JSON || val.Raw != "{}" {
 			t.Errorf("%s: nested_true should be {}, got %s", cleaner, val.Raw)
@@ -2584,18 +2487,15 @@ func TestCleanJSONSchema_NestedTrueBooleanSubschemas(t *testing.T) {
 			t.Errorf("%s: nested_false should remain false, got %s", cleaner, val.Raw)
 		}
 
-
 		if val := parsed.Get("properties.tuple.items.0"); val.Exists() && val.Type == ojson.True {
 			t.Errorf("%s: tuple items[0] should not be boolean true: %s", cleaner, got)
 		}
-
 
 		if val := parsed.Get("properties.combination.properties.opt"); val.Exists() {
 			if val.Type == ojson.True {
 				t.Errorf("%s: combination.properties.opt should not be boolean true: %s", cleaner, got)
 			}
 		}
-
 
 		if val := parsed.Get("properties.large_int"); !val.Exists() || val.Raw != "9007199254740993" {
 			t.Errorf("%s: large_int corrupted, got %s", cleaner, val.Raw)
@@ -2615,7 +2515,6 @@ func TestCleanJSONSchema_RootAndWrappedTrue(t *testing.T) {
 		if got != "{}" {
 			t.Errorf("%s: root true should normalize to {}, got %s", cleaner, got)
 		}
-
 
 		wrapped := `{"schema": true}`
 		gotWrapped := clean(wrapped)
@@ -2715,7 +2614,6 @@ func TestCleanJSONSchemaForGeminiJSONSchema_PreservesAdditionalPropertiesAndPatt
 		t.Fatalf("required length = %d, want 2. Cleaned: %s", len(required), cleaned)
 	}
 
-
 	legacyCleaned := CleanJSONSchemaForGemini(input)
 	legacyParsed := ojson.Parse(legacyCleaned)
 	if legacyParsed.Get("additionalProperties").Exists() {
@@ -2759,19 +2657,13 @@ func TestCleanJSONSchemaForGeminiJSONSchema_PreservesSchemaValuedAdditionalPrope
 		t.Fatalf("additionalProperties pattern should not be converted to description hint: %s", cleaned)
 	}
 
-
 	legacyCleaned := CleanJSONSchemaForGemini(input)
 	if ojson.Get(legacyCleaned, "additionalProperties").Exists() {
 		t.Fatalf("legacy CleanJSONSchemaForGemini should strip additionalProperties schema: %s", legacyCleaned)
 	}
 }
 
-
-
-
-
 func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
-
 
 	inputMissingType := `{
 		"type": "object",
@@ -2817,7 +2709,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-
 	inputUnionType := `{
 		"type": "object",
 		"properties": {
@@ -2848,7 +2739,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 			}
 		})
 	}
-
 
 	inputNonArrayWithItems := `{
 		"type": "object",
@@ -2881,7 +2771,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-
 	inputPropertyNamedItems := `{
 		"type": "object",
 		"properties": {
@@ -2906,7 +2795,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-
 	inputRootArrayMissingType := `{
 		"items": {
 			"type": "string"
@@ -2926,7 +2814,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 		})
 	}
 
-
 	for name, clean := range cleaners {
 		t.Run(name+"_idempotent", func(t *testing.T) {
 			cleaned1 := clean(inputMissingType)
@@ -2936,7 +2823,6 @@ func TestCleanJSONSchema_ArrayItemsRequireArrayType_Issue6011(t *testing.T) {
 			}
 		})
 	}
-
 
 	t.Run("antigravity_response_schema", func(t *testing.T) {
 
@@ -3009,10 +2895,6 @@ func TestSanitizeArrayItems_PreservesItemsForUppercaseArrayType(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestCleanJSONSchema_EnforcesObjectTypeForProperties_Issue6394(t *testing.T) {
 	cleaners := map[string]func(string) string{
 		"Gemini":              CleanJSONSchemaForGemini,
@@ -3075,10 +2957,6 @@ func TestCleanJSONSchema_EnforcesObjectTypeForProperties_Issue6394(t *testing.T)
 		}
 	})
 }
-
-
-
-
 
 func TestCleanJSONSchema_RemovesDependentKeywords_Issue6539(t *testing.T) {
 	input := `{
@@ -3172,13 +3050,6 @@ func TestCleanJSONSchema_RemovesDependentKeywords_Issue6539(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
-
 func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -3218,7 +3089,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		t.Run(name, func(t *testing.T) {
 			got := clean(input)
 			compareJSON(t, input, got)
-
 
 			gotSecond := clean(got)
 			compareJSON(t, got, gotSecond)
@@ -3271,8 +3141,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		if !strings.Contains(geminiCleaned.Get("properties.item.description").String(), "(nullable)") {
 			t.Fatalf("GeminiJSONSchema missing (nullable) hint: %s", geminiCleaned.Raw)
 		}
-
-
 
 		for _, nestedNullable := range []string{
 			`{"type":"object","properties":{"item":{"anyOf":[{"type":"null"},{"anyOf":[{"type":"string"},{"type":"integer"}]}]}}}`,
@@ -3336,7 +3204,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			}
 		}
 
-
 		jsonSchemaParsed := ojson.Parse(CleanJSONSchemaForGeminiJSONSchema(oneOfInput))
 		if got := len(jsonSchemaParsed.Get("properties.item.oneOf").Array()); got != 3 {
 			t.Fatalf("[GeminiJSONSchema] oneOf branch count = %d, want 3: %s", got, jsonSchemaParsed.Raw)
@@ -3367,8 +3234,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 				compareJSON(t, parentPropsUnion, got)
 			})
 		}
-
-
 
 		mixedRequiredOnlyBranch := `{
 			"type": "object",
@@ -3420,7 +3285,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		}`
 		compareJSON(t, expectedMixedRequiredOnly, CleanJSONSchemaForAntigravity(mixedRequiredOnlyBranch))
 
-
 		pureRequiredOnlyUnion := `{
 			"type": "object",
 			"properties": {
@@ -3456,7 +3320,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 
 	t.Run("BooleanUnionBranchesAndSiblingAnyOfOneOf", func(t *testing.T) {
 
-
 		falseSingleBranch := `{"type":"object","properties":{"value":{"anyOf":[false,{"type":"string"}]}}}`
 		expectedFalseSingle := `{"type":"object","properties":{"value":{"type":"string"}}}`
 		compareJSON(t, expectedFalseSingle, CleanJSONSchemaForAntigravity(falseSingleBranch))
@@ -3465,12 +3328,9 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		expectedFalseMulti := `{"type":"object","properties":{"value":{"anyOf":[{"type":"string"},{"type":"integer"}]}}}`
 		compareJSON(t, expectedFalseMulti, CleanJSONSchemaForAntigravity(falseMultiBranch))
 
-
 		trueMultiBranch := `{"type":"object","properties":{"value":{"anyOf":[true,{"type":"string"},{"type":"integer"}]}}}`
 		expectedTrueMulti := `{"type":"object","properties":{"value":{"anyOf":[{},{"type":"string"},{"type":"integer"}]}}}`
 		compareJSON(t, expectedTrueMulti, CleanJSONSchemaForAntigravityTool(trueMultiBranch, false))
-
-
 
 		siblingUnions := `{
 			"type": "object",
@@ -3510,10 +3370,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			t.Fatalf("[GeminiJSONSchema] expected both anyOf and oneOf to be preserved: %s", jsonSchemaSibling.Raw)
 		}
 
-
-
-
-
 		t.Run("AntigravityClaudeToolFlattensNestedUnions", func(t *testing.T) {
 			flattened := ojson.Parse(CleanJSONSchemaForAntigravityClaudeTool(input, false))
 			item := flattened.Get("properties.item")
@@ -3530,20 +3386,12 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 				t.Fatalf("Antigravity Claude flattened item lost the dropped-branch hint: %s", flattened.Raw)
 			}
 
-
-
 			flattenedTwice := CleanJSONSchemaForAntigravityClaudeTool(flattened.Raw, false)
 			compareJSON(t, flattened.Raw, flattenedTwice)
-
-
 
 			recleaned := CleanJSONSchemaForAntigravityClaudeTool(CleanJSONSchemaForAntigravity(input), false)
 			compareJSON(t, flattened.Raw, recleaned)
 			compareJSON(t, flattened.Raw, CleanJSONSchemaForAntigravity(flattened.Raw))
-
-
-
-
 
 			nullableUnionInput := `{"type":"object","properties":{"value":{"anyOf":[{"type":"string"},{"type":"integer"},{"type":"null"}]}}}`
 			directFlattened := CleanJSONSchemaForAntigravityClaudeTool(nullableUnionInput, false)
@@ -3558,15 +3406,10 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			}
 			compareJSON(t, chainedFlattened, CleanJSONSchemaForAntigravityClaudeTool(chainedFlattened, false))
 
-
-
 			trueBranch := `{"type":"object","properties":{"value":{"anyOf":[true,{"type":"string"},{"type":"integer"}]}}}`
 			compareJSON(t, `{"type":"object","properties":{"value":{"type":"string","description":"Accepts: string | integer"}}}`, CleanJSONSchemaForAntigravityClaudeTool(trueBranch, false))
 			falseBranch := `{"type":"object","properties":{"value":{"oneOf":[false,{"type":"string"},{"type":"integer"}]}}}`
 			compareJSON(t, `{"type":"object","properties":{"value":{"type":"string","description":"Accepts: string | integer"}}}`, CleanJSONSchemaForAntigravityClaudeTool(falseBranch, false))
-
-
-
 
 			siblingClaude := ojson.Parse(CleanJSONSchemaForAntigravityClaudeTool(siblingUnions, false))
 			siblingValue := siblingClaude.Get("properties.value")
@@ -3576,7 +3419,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 			compareJSON(t, `{"type":"string","description":"Accepts: string | boolean"}`, siblingValue.Raw)
 			compareJSON(t, siblingClaude.Raw, CleanJSONSchemaForAntigravityClaudeTool(siblingClaude.Raw, false))
 		})
-
 
 		nullOnlyCleaners := map[string]func(string) string{
 			"Antigravity":           CleanJSONSchemaForAntigravity,
@@ -3603,12 +3445,6 @@ func TestCleanJSONSchema_PreservesMultiBranchAnyOfOneOf_Issue3662(t *testing.T) 
 		}
 	})
 }
-
-
-
-
-
-
 
 func TestCleanJSONSchema_RemovesDiscriminatorKeyword_Issue6639(t *testing.T) {
 	input := `{
@@ -3710,13 +3546,6 @@ func TestCleanJSONSchema_RemovesDiscriminatorKeyword_Issue6639(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
-
 func TestCleanJSONSchema_RemovesContentMediaTypeKeyword_Issue6699(t *testing.T) {
 	input := `{
 		"type": "object",
@@ -3795,8 +3624,6 @@ func TestCleanJSONSchema_RemovesContentMediaTypeKeyword_Issue6699(t *testing.T) 
 	}
 }
 
-
-
 func TestIssue6732_GeminiCleanersInlineLocalDefs(t *testing.T) {
 	input := `{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"}},"required":["person"],"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}`
 
@@ -3818,8 +3645,6 @@ func TestIssue6732_GeminiCleanersInlineLocalDefs(t *testing.T) {
 	}
 }
 
-
-
 func TestIssue6732_GeminiCleanersInlinePropertyReuse(t *testing.T) {
 	input := `{"type":"object","properties":{"billing":{"type":"object","properties":{"zip":{"type":"string"}}},"shipping":{"$ref":"#/properties/billing"}}}`
 
@@ -3834,9 +3659,6 @@ func TestIssue6732_GeminiCleanersInlinePropertyReuse(t *testing.T) {
 		}
 	}
 }
-
-
-
 
 func TestIssue6732_GeminiCleanersReuseSameDefinitionTwice(t *testing.T) {
 	input := `{"type":"object","properties":{"billing":{"$ref":"#/$defs/Address"},"shipping":{"$ref":"#/$defs/Address"}},"$defs":{"Address":{"type":"object","properties":{"zip":{"type":"string"}}}}}`
@@ -3855,9 +3677,6 @@ func TestIssue6732_GeminiCleanersReuseSameDefinitionTwice(t *testing.T) {
 	}
 }
 
-
-
-
 func TestIssue6732_WrappedSchemaResolvesAgainstInnerRoot(t *testing.T) {
 	inner := `{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"}},"required":["person"],"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}}}`
 	wrapped := `{"schema":` + inner + `}`
@@ -3875,8 +3694,6 @@ func TestIssue6732_WrappedSchemaResolvesAgainstInnerRoot(t *testing.T) {
 	}
 }
 
-
-
 func TestIssue6732_DefaultLiteralPreservedOnJSONSchemaRoute(t *testing.T) {
 	input := `{"type":"object","properties":{"report":{"type":"object","default":{"title":"Report","format":"pdf","id":7,"x-owner":"ops"}}}}`
 
@@ -3889,8 +3706,6 @@ func TestIssue6732_DefaultLiteralPreservedOnJSONSchemaRoute(t *testing.T) {
 		t.Errorf("default literal was rewritten, got %s: %s", def.Raw, got)
 	}
 }
-
-
 
 func TestIssue6732_ExampleLiteralsPreserved(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"type":"string","example":{"title":"Hi","x-owner":"ops","id":3},"examples":[{"title":"Hi2","x-owner":"ops","id":4}]}}}`
@@ -3906,8 +3721,6 @@ func TestIssue6732_ExampleLiteralsPreserved(t *testing.T) {
 		t.Errorf("examples literal was rewritten, got %s: %s", exampleItem.Raw, got)
 	}
 }
-
-
 
 func TestIssue6732_InlineLocalRefsLeavesLiteralRefs(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"type":"object","default":{"$ref":"#/$defs/Person"}}},"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}}}}}`
@@ -3925,9 +3738,6 @@ func TestIssue6732_InlineLocalRefsLeavesLiteralRefs(t *testing.T) {
 	}
 }
 
-
-
-
 func TestIssue6732_PropertiesNamedDefaultAndTypeRemainSchemas(t *testing.T) {
 	input := `{"type":"object","properties":{"default":{"$ref":"#/$defs/Person"},"type":{"type":"string","title":"Kind"}},"$defs":{"Person":{"type":"object","properties":{"name":{"type":"string"}}}}}`
 
@@ -3940,9 +3750,6 @@ func TestIssue6732_PropertiesNamedDefaultAndTypeRemainSchemas(t *testing.T) {
 		t.Errorf("property named \"type\" schema title should still be cleaned: %s", got)
 	}
 }
-
-
-
 
 func TestIssue6732_ExpansionBudgetBoundsSharedDefs(t *testing.T) {
 	input := geminiSchemaDiamondInput()
@@ -3961,9 +3768,6 @@ func TestIssue6732_ExpansionBudgetBoundsSharedDefs(t *testing.T) {
 		t.Errorf("diamond schema should not retain $defs: %s", got)
 	}
 }
-
-
-
 
 func TestIssue6732_UnusedDefinitionsDoNotConsumeExpansionBudget(t *testing.T) {
 	var sb strings.Builder
@@ -3994,8 +3798,6 @@ func TestIssue6732_UnusedDefinitionsDoNotConsumeExpansionBudget(t *testing.T) {
 	}
 }
 
-
-
 func TestIssue6732_BudgetFallbackDoesNotCopyLargeDescriptions(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{`)
@@ -4023,9 +3825,6 @@ func TestIssue6732_BudgetFallbackDoesNotCopyLargeDescriptions(t *testing.T) {
 	}
 }
 
-
-
-
 func TestIssue6732_NestedUnusedDefinitionsGraphDoesNotConsumeBudget(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{"person":{"$ref":"#/$defs/Person"},"a":{"type":"object","$defs":{"Leaf":{"type":"string","description":"` + strings.Repeat("x", 1024) + `"}`)
@@ -4044,8 +3843,6 @@ func TestIssue6732_NestedUnusedDefinitionsGraphDoesNotConsumeBudget(t *testing.T
 	}
 }
 
-
-
 func TestIssue6732_RefSiblingNameMapReferencesStillExpand(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"$ref":"#/$defs/Base","properties":{"x":{"$ref":"#/$defs/S"}}}},"$defs":{"Base":{"type":"object"},"S":{"type":"string"}}}`
 
@@ -4055,10 +3852,6 @@ func TestIssue6732_RefSiblingNameMapReferencesStillExpand(t *testing.T) {
 		t.Errorf("ref sibling name-map reference lost its type, got %q: %s", gotType, got)
 	}
 }
-
-
-
-
 
 func TestIssue6732_CleanInliningStripsDefinitionsFromIntermediate(t *testing.T) {
 	person := `{"type":"object","properties":{"name":{"type":"string"}},"$defs":{"Unused":{"type":"string","description":"` + strings.Repeat("x", 280*1024) + `"}}}`
@@ -4080,9 +3873,6 @@ func TestIssue6732_CleanInliningStripsDefinitionsFromIntermediate(t *testing.T) 
 	}
 }
 
-
-
-
 func TestIssue6732_ArrayRefWithExplicitTypeKeepsTargetItems(t *testing.T) {
 	input := `{"type":"object","properties":{"rows":{"type":"array","$ref":"#/$defs/Rows"}},"$defs":{"Rows":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"}}}}}}`
 
@@ -4092,9 +3882,6 @@ func TestIssue6732_ArrayRefWithExplicitTypeKeepsTargetItems(t *testing.T) {
 		t.Errorf("array ref target items were clobbered, name type = %q: %s", gotType, got)
 	}
 }
-
-
-
 
 func TestIssue6732_BudgetFallbackStillResolvesSiblings(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"$ref":"#/$defs/Big","properties":{"x":{"$ref":"#/$defs/S"}}}},"$defs":{"Big":{"type":"object","description":"` + strings.Repeat("x", 280*1024) + `"},"S":{"type":"string"}}}`
@@ -4109,9 +3896,6 @@ func TestIssue6732_BudgetFallbackStillResolvesSiblings(t *testing.T) {
 	}
 }
 
-
-
-
 func TestIssue6732_InlineLocalRefsDefinitionNamesKeepSchemaSemantics(t *testing.T) {
 	input := `{"$defs":{"S":{"type":"string"},"properties":{"type":"object","default":{"$ref":"#/$defs/S"}},"default":{"type":"object","properties":{"x":{"$ref":"#/$defs/S"}}}}}`
 
@@ -4124,8 +3908,6 @@ func TestIssue6732_InlineLocalRefsDefinitionNamesKeepSchemaSemantics(t *testing.
 		t.Errorf("definition named \"default\" was not resolved as a schema, x type = %q: %s", gotType, got)
 	}
 }
-
-
 
 func TestIssue6732_TargetNestedDefinitionsExemptFromBudget(t *testing.T) {
 	person := `{"type":"object","properties":{"name":{"type":"string"}},"$defs":{"Unused":{"type":"string","description":"` + strings.Repeat("x", 280*1024) + `"}}}`
@@ -4149,9 +3931,6 @@ func TestIssue6732_TargetNestedDefinitionsExemptFromBudget(t *testing.T) {
 	}
 }
 
-
-
-
 func TestIssue6732_ArrayRefWithoutTargetItemsGetsPlaceholder(t *testing.T) {
 	input := `{"type":"object","properties":{"rows":{"type":"array","$ref":"#/$defs/Common"}},"$defs":{"Common":{"description":"Rows"}}}`
 
@@ -4164,9 +3943,6 @@ func TestIssue6732_ArrayRefWithoutTargetItemsGetsPlaceholder(t *testing.T) {
 		t.Errorf("cleaning is not idempotent for array refs:\nfirst:  %s\nsecond: %s", first, second)
 	}
 }
-
-
-
 
 func TestIssue6732_SmallTargetFanOutStaysBounded(t *testing.T) {
 	var sb strings.Builder
@@ -4185,8 +3961,6 @@ func TestIssue6732_SmallTargetFanOutStaysBounded(t *testing.T) {
 	}
 }
 
-
-
 func TestIssue6732_EscapedDescriptionFanOutStaysBounded(t *testing.T) {
 	input := `{"type":"object","properties":{"p0":{"$ref":"#/$defs/Big"},"p1":{"$ref":"#/$defs/Big"},"p2":{"$ref":"#/$defs/Big"},"p3":{"$ref":"#/$defs/Big"},"p4":{"$ref":"#/$defs/Big"},"p5":{"$ref":"#/$defs/Big"},"p6":{"$ref":"#/$defs/Big"},"p7":{"$ref":"#/$defs/Big"}},"$defs":{"Big":{"type":"object","description":"` + strings.Repeat("<", 32*1024) + `","properties":{"name":{"type":"string"}}}}}`
 
@@ -4195,9 +3969,6 @@ func TestIssue6732_EscapedDescriptionFanOutStaysBounded(t *testing.T) {
 		t.Errorf("escaped-description fan-out output = %d bytes, want < %d", len(got), 512*1024)
 	}
 }
-
-
-
 
 func TestIssue6732_DependenciesNameMapKeepsSchemaSemantics(t *testing.T) {
 	input := `{"type":"object","dependencies":{"default":{"properties":{"x":{"$ref":"#/definitions/S"}}}},"definitions":{"S":{"type":"string"}}}`
@@ -4212,9 +3983,6 @@ func TestIssue6732_DependenciesNameMapKeepsSchemaSemantics(t *testing.T) {
 	}
 }
 
-
-
-
 func TestIssue6732_OmittedFallbackDescriptionNotCharged(t *testing.T) {
 	input := `{"type":"object","properties":{"a":{"$ref":"#/$defs/A"},"b":{"$ref":"#/$defs/B"}},"$defs":{"A":{"type":"string","description":"` + strings.Repeat("x", 262142) + `"},"B":{"type":"object","properties":{"name":{"type":"string"}}}}}`
 
@@ -4224,9 +3992,6 @@ func TestIssue6732_OmittedFallbackDescriptionNotCharged(t *testing.T) {
 		t.Errorf("small reference after omitted fallback description lost its fields, name type = %q: %s", gotType, got)
 	}
 }
-
-
-
 
 func TestIssue6732_SynthesizedTypeDoesNotOverrideRefTarget(t *testing.T) {
 	input := `{"$ref":"#/$defs/O","items":{"type":"integer"},"$defs":{"O":{"type":"object","properties":{"x":{"type":"string"}}}}}`
@@ -4247,8 +4012,6 @@ func TestIssue6732_SynthesizedTypeDoesNotOverrideRefTarget(t *testing.T) {
 	}
 }
 
-
-
 func TestIssue6732_PropertyNamedRefRemainsProperty(t *testing.T) {
 	input := `{"type":"object","properties":{"$ref":{"type":"string"}}}`
 
@@ -4261,8 +4024,6 @@ func TestIssue6732_PropertyNamedRefRemainsProperty(t *testing.T) {
 		t.Errorf("property named $ref was converted into a hint: %s", got)
 	}
 }
-
-
 
 func TestIssue6732_PropertyNamedConstRemainsProperty(t *testing.T) {
 	input := `{"type":"object","properties":{"const":{"type":"string"}}}`
@@ -4277,9 +4038,6 @@ func TestIssue6732_PropertyNamedConstRemainsProperty(t *testing.T) {
 	}
 }
 
-
-
-
 func geminiSchemaDiamondInput() string {
 	var sb strings.Builder
 	sb.WriteString(`{"type":"object","properties":{"leaf":{"$ref":"#/$defs/D12"}},"$defs":{"leaf0":{"type":"string","description":"leaf leaf leaf leaf leaf leaf leaf leaf leaf leaf"}`)
@@ -4293,11 +4051,6 @@ func geminiSchemaDiamondInput() string {
 	sb.WriteString(`}}`)
 	return sb.String()
 }
-
-
-
-
-
 
 func TestCleanJSONSchema_RemovesReadOnlyWriteOnlyKeywords_Issue6778(t *testing.T) {
 	input := `{
@@ -4410,9 +4163,6 @@ func TestCleanJSONSchema_RemovesReadOnlyWriteOnlyKeywords_Issue6778(t *testing.T
 		})
 	}
 }
-
-
-
 
 func TestIssue6950_ArrayItemsFromAllOfPreserved(t *testing.T) {
 	cleaners := map[string]struct {

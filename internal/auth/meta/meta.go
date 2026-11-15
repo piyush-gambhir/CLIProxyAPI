@@ -1,5 +1,3 @@
-// Package meta provides authentication and token management for Meta Muse (api.meta.ai).
-// It implements the RFC 8628 OAuth2 Device Authorization Grant flow for Meta accounts.
 package meta
 
 import (
@@ -23,27 +21,25 @@ import (
 )
 
 const (
-	// DefaultAPIBaseURL is the default official Meta API base URL.
 	DefaultAPIBaseURL = "https://api.meta.ai/v1"
-	// AuthHost is the Meta account OAuth authorization server.
+
 	AuthHost = "https://auth.meta.com"
-	// DeviceAuthorizationEndpoint is the device authorization request endpoint.
+
 	DeviceAuthorizationEndpoint = AuthHost + "/oidc/device/authorization/"
-	// TokenEndpoint is the token issuance and polling endpoint.
+
 	TokenEndpoint = AuthHost + "/oidc/device/token/"
-	// ClientID is Meta Muse CLI's official OAuth client ID.
+
 	ClientID = "1031625952748946"
-	// DeviceCodeGrantType is the RFC 8628 grant type parameter.
+
 	DeviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
-	// DefaultPollInterval is the default polling interval when unspecified.
+
 	DefaultPollInterval = 5 * time.Second
-	// MaxPollDuration is the upper bound for waiting on user authorization.
+
 	MaxPollDuration = 15 * time.Minute
-	// httpClientTimeout bounds credential-acquisition HTTP calls.
+
 	httpClientTimeout = 30 * time.Second
 )
 
-// DeviceCodeResponse represents Meta's device authorization response.
 type DeviceCodeResponse struct {
 	DeviceCode              string `json:"device_code"`
 	UserCode                string `json:"user_code"`
@@ -54,7 +50,6 @@ type DeviceCodeResponse struct {
 	TokenEndpoint           string `json:"-"`
 }
 
-// TokenData represents the token response from Meta's OAuth token endpoint.
 type TokenData struct {
 	AccessToken      string `json:"access_token"`
 	TokenType        string `json:"token_type"`
@@ -64,7 +59,6 @@ type TokenData struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// MintedKeyResponse represents the API key response minted from https://api.meta.ai/muse-code/key.
 type MintedKeyResponse struct {
 	APIKey           string `json:"api_key"`
 	BaseURL          string `json:"base_url"`
@@ -78,7 +72,6 @@ type MintedKeyResponse struct {
 	CanSubscribe     bool   `json:"can_subscribe"`
 }
 
-// MetaAuthBundle packages the token data, minted key, and user metadata.
 type MetaAuthBundle struct {
 	TokenData *TokenData
 	MintedKey *MintedKeyResponse
@@ -86,7 +79,6 @@ type MetaAuthBundle struct {
 	Name      string
 }
 
-// MetaTokenStorage represents persisted Meta OAuth tokens in auth files.
 type MetaTokenStorage struct {
 	Type         string `json:"type"`
 	AuthKind     string `json:"auth_kind"`
@@ -106,13 +98,10 @@ type MetaTokenStorage struct {
 	Metadata map[string]any `json:"-"`
 }
 
-// SetMetadata allows the token store to merge status fields before saving.
 func (ts *MetaTokenStorage) SetMetadata(meta map[string]any) {
 	ts.Metadata = meta
 }
 
-// metaCredentialFields identifies credential and lifecycle fields managed by MetaTokenStorage.
-// These fields must never be restored from disk or metadata when omitted from storage.
 var metaCredentialFields = map[string]struct{}{
 	"type":           {},
 	"auth_kind":      {},
@@ -127,7 +116,6 @@ var metaCredentialFields = map[string]struct{}{
 	"last_refresh":   {},
 }
 
-// SaveTokenToFile writes Meta credentials to a JSON auth file.
 func (ts *MetaTokenStorage) SaveTokenToFile(authFilePath string) error {
 	ts.Type = "meta"
 	ts.AuthKind = "oauth"
@@ -173,8 +161,7 @@ func (ts *MetaTokenStorage) SaveTokenToFile(authFilePath string) error {
 	if ts.Name != "" {
 		data["name"] = ts.Name
 	}
-	// Managed saves supply the current metadata, including deliberate deletions.
-	// Only login callers without a metadata snapshot inherit settings from disk.
+
 	metadata := ts.Metadata
 	if metadata == nil {
 		if raw, errRead := os.ReadFile(authFilePath); errRead == nil {
@@ -185,7 +172,7 @@ func (ts *MetaTokenStorage) SaveTokenToFile(authFilePath string) error {
 		if _, isCred := metaCredentialFields[k]; isCred {
 			continue
 		}
-		// Supplied settings take precedence over storage's older snapshot.
+
 		if _, exists := data[k]; !exists || ts.Metadata != nil {
 			data[k] = v
 		}
@@ -214,7 +201,6 @@ func (ts *MetaTokenStorage) SaveTokenToFile(authFilePath string) error {
 	return nil
 }
 
-// MetaAuth manages Meta OAuth operations.
 type MetaAuth struct {
 	cfg        *config.Config
 	httpClient *http.Client
@@ -222,17 +208,14 @@ type MetaAuth struct {
 	mintURL    string
 }
 
-// SetMintURL overrides the API key minting endpoint (primarily for unit tests).
 func (a *MetaAuth) SetMintURL(u string) {
 	a.mintURL = strings.TrimSpace(u)
 }
 
-// NewMetaAuth creates a new MetaAuth service instance.
 func NewMetaAuth(cfg *config.Config) *MetaAuth {
 	return NewMetaAuthWithProxyURL(cfg, "")
 }
 
-// NewMetaAuthWithProxyURL creates a MetaAuth service instance with an optional proxy URL.
 func NewMetaAuthWithProxyURL(cfg *config.Config, proxyURL string) *MetaAuth {
 	effectiveProxyURL := strings.TrimSpace(proxyURL)
 	var sdkCfg config.SDKConfig
@@ -250,12 +233,10 @@ func NewMetaAuthWithProxyURL(cfg *config.Config, proxyURL string) *MetaAuth {
 	}
 }
 
-// StartDeviceFlow initiates the device authorization flow with Meta.
 func (a *MetaAuth) StartDeviceFlow(ctx context.Context) (*DeviceCodeResponse, error) {
 	return a.StartDeviceFlowWithEndpoint(ctx, DeviceAuthorizationEndpoint)
 }
 
-// StartDeviceFlowWithEndpoint initiates the device authorization flow against a specific endpoint.
 func (a *MetaAuth) StartDeviceFlowWithEndpoint(ctx context.Context, endpoint string) (*DeviceCodeResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -306,7 +287,6 @@ func (a *MetaAuth) StartDeviceFlowWithEndpoint(ctx context.Context, endpoint str
 	return &dcr, nil
 }
 
-// WaitForAuthorization polls the token endpoint until the user approves the device code.
 func (a *MetaAuth) WaitForAuthorization(ctx context.Context, dcr *DeviceCodeResponse) (*MetaAuthBundle, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -422,7 +402,6 @@ func (a *MetaAuth) WaitForAuthorization(ctx context.Context, dcr *DeviceCodeResp
 	}
 }
 
-// MintAPIKey exchanges a Device Client Access token (dca:...) for an LLM API key via https://api.meta.ai/muse-code/key.
 func (a *MetaAuth) MintAPIKey(ctx context.Context, dcaToken string) (*MintedKeyResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -482,7 +461,6 @@ func (a *MetaAuth) MintAPIKey(ctx context.Context, dcaToken string) (*MintedKeyR
 	return &minted, nil
 }
 
-// CreateTokenStorage creates a serializable token storage record from the auth bundle.
 func (a *MetaAuth) CreateTokenStorage(bundle *MetaAuthBundle) *MetaTokenStorage {
 	if bundle == nil || bundle.TokenData == nil {
 		return nil
@@ -512,10 +490,9 @@ func (a *MetaAuth) CreateTokenStorage(bundle *MetaAuthBundle) *MetaTokenStorage 
 	expired := ""
 	if apiKey != "" {
 		accessToken = apiKey
-		// When an API key is minted, the usable credential is the API key, which does not expire on the DCA timer.
-		// Expired is left empty so selector does not block this credential.
+
 	} else {
-		// When only DCA token is available, expired is set to DCA expiry so manager tracks its deadline.
+
 		expired = dcaExpired
 	}
 
@@ -537,8 +514,6 @@ func (a *MetaAuth) CreateTokenStorage(bundle *MetaAuthBundle) *MetaTokenStorage 
 	}
 }
 
-// CredentialFileName keeps a readable account name and hashes the original identity
-// so distinct emails that sanitize identically cannot overwrite each other.
 func CredentialFileName(email, sub string) string {
 	clean := strings.TrimSpace(email)
 	if clean != "" {
@@ -548,7 +523,7 @@ func CredentialFileName(email, sub string) string {
 			}
 			return '_'
 		}, clean)
-		// Leave room for the prefix, identity hash and extension on common filesystems.
+
 		if len(sanitized) > 120 {
 			sanitized = sanitized[:120]
 		}

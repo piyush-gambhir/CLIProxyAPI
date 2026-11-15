@@ -1,8 +1,6 @@
-
 package tui
 
 import "github.com/charmbracelet/lipgloss"
-
 
 var (
 	colorPrimary   = lipgloss.Color("#7C3AED")
@@ -19,7 +17,6 @@ var (
 	colorBorder    = lipgloss.Color("#45475A")
 	colorHighlight = lipgloss.Color("#F5C2E7")
 )
-
 
 var (
 	tabActiveStyle = lipgloss.NewStyle().
@@ -38,7 +35,6 @@ var (
 			PaddingLeft(1).
 			PaddingBottom(0)
 )
-
 
 var (
 	titleStyle = lipgloss.NewStyle().
@@ -83,14 +79,12 @@ var (
 			Foreground(colorMuted)
 )
 
-
 var (
 	logDebugStyle = lipgloss.NewStyle().Foreground(colorMuted)
 	logInfoStyle  = lipgloss.NewStyle().Foreground(colorInfo)
 	logWarnStyle  = lipgloss.NewStyle().Foreground(colorWarning)
 	logErrorStyle = lipgloss.NewStyle().Foreground(colorError)
 )
-
 
 var (
 	tableHeaderStyle = lipgloss.NewStyle().

@@ -8,32 +8,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName, inputRawJSON, stream)
 
 }
-
-
-
 
 func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	rawJSON := inputRawJSON
@@ -49,19 +27,15 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 		messages = append(messages, message)
 	}
 
-
 	_ = outDoc.Set("model", modelName)
 
-
 	_ = outDoc.Set("stream", stream)
-
 
 	if textFormat := root.Get("text.format"); textFormat.Exists() {
 		if responseFormat := convertResponsesTextFormatToChatResponseFormat(textFormat); len(responseFormat) > 0 {
 			_ = outDoc.SetRawBytes("response_format", responseFormat)
 		}
 	}
-
 
 	if maxTokens := root.Get("max_output_tokens"); maxTokens.Exists() {
 		if maxTokens.Raw != "" {
@@ -71,7 +45,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 		}
 	}
 
-
 	if instructions := root.Get("instructions"); instructions.Exists() {
 		systemMessage := []byte(`{"role":"system","content":""}`)
 		systemMessage, _ = ojson.SetBytes(systemMessage, "content", instructions.String())
@@ -79,7 +52,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 	}
 
 	duplicateOutputIDs := make(map[string]struct{})
-
 
 	if input := root.Get("input"); input.Exists() && input.IsArray() {
 		rawInputArray := toolIndex.toolSearchHistory(toolIndex.shellHistory(input.Array()))
@@ -254,8 +226,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 
 				role := item.Get("role").String()
 
-
-
 				isUserTurn := role == "user"
 				mergeableAssistantIndex = -1
 				if role != "assistant" {
@@ -295,7 +265,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 							if processing := contentItem.Get("processing"); processing.Exists() {
 								_ = contentPartDoc.SetRaw("video_url.processing", processing.Raw)
 							}
-
 
 							contentItems = append(contentItems, contentPartDoc.Bytes())
 							turnSendable++
@@ -398,8 +367,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 				}
 				if _, awaiting := awaitingToolOutputs[callID]; !awaiting {
 
-
-
 					appendStandaloneResponsesToolOutputAsUser(item.Get("output"), setFunctionCallOutputContentDoc, appendRegularMessage)
 				} else {
 					toolMessageDoc := ojson.NewDocString(`{"role":"tool","tool_call_id":"","content":""}`)
@@ -417,8 +384,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 				if isUsableResponsesReasoning(rc) {
 					latestReasoningContent = rc
 				}
-
-
 
 				toolCallDoc := ojson.NewDocString(`{"id":"","type":"function","function":{"name":"","arguments":""}}`)
 				_ = toolCallDoc.Set("id", translatorcommon.ExtractResponsesCallID(item))
@@ -480,10 +445,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 		_ = outDoc.SetRawBytes("messages", translatorcommon.JoinRawArray(messages))
 	}
 
-
-
-
-
 	var chatCompletionsTools []interface{}
 	for _, chatTool := range toolIndex.chatTools() {
 		chatCompletionsTools = append(chatCompletionsTools, util.ParseGJSONBytesNoCopy(chatTool).Value())
@@ -508,9 +469,6 @@ func convertOpenAIResponsesRequestToOpenAIChatCompletions(modelName string, inpu
 	return outDoc.Bytes(), drops.Err()
 }
 
-
-
-
 func responsesInputFileToChatPart(contentItem ojson.Result) ([]byte, bool) {
 	fileID := contentItem.Get("file_id").String()
 	fileData := contentItem.Get("file_data").String()
@@ -529,8 +487,6 @@ func responsesInputFileToChatPart(contentItem ojson.Result) ([]byte, bool) {
 	}
 	return partDoc.Bytes(), true
 }
-
-
 
 func responsesInputAudioToChatPart(contentItem ojson.Result) ([]byte, bool) {
 	audio := contentItem.Get("input_audio")

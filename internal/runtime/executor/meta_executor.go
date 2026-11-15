@@ -25,9 +25,6 @@ var (
 
 var metaRefreshGroup singleflight.Group
 
-
-
-
 const (
 	metaClientVersion = "1.4.14"
 	metaClientBuild   = "dec7d7497fecdad135ec5835a8161dbc92e55b58"
@@ -49,21 +46,17 @@ func metaUserAgent() string {
 	return fmt.Sprintf("muse-build/%s (non-interactive; %s-%s; build %s)", metaClientVersion, goos, arch, metaClientBuild)
 }
 
-
 type MetaExecutor struct {
 	cfg *config.Config
 }
-
 
 func NewMetaExecutor(cfg *config.Config) *MetaExecutor {
 	return &MetaExecutor{cfg: cfg}
 }
 
-
 func (e *MetaExecutor) Identifier() string {
 	return "meta"
 }
-
 
 func (e *MetaExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -85,7 +78,6 @@ func (e *MetaExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth
 	return nil
 }
 
-
 func (e *MetaExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("meta executor: request is nil")
@@ -104,7 +96,6 @@ func (e *MetaExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth,
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, enriched, 0)
 	return httpClient.Do(httpReq)
 }
-
 
 func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("meta executor: refresh called")
@@ -180,8 +171,6 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	auth.Attributes["api_key"] = minted.APIKey
 	auth.Attributes["access_token"] = minted.APIKey
 
-
-
 	if existing, ok := auth.Storage.(*metaauth.MetaTokenStorage); ok && existing != nil {
 		storage := *existing
 		storage.APIKey = minted.APIKey
@@ -205,7 +194,6 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	return auth, nil
 }
 
-
 func (e *MetaExecutor) ShouldPrepareRequestAuth(auth *cliproxyauth.Auth) bool {
 	if auth == nil || cliproxyauth.IsConfigAPIKeyAuth(auth) {
 		return false
@@ -213,8 +201,6 @@ func (e *MetaExecutor) ShouldPrepareRequestAuth(auth *cliproxyauth.Auth) bool {
 	_, token := metaCreds(auth)
 	return token == "" && extractDCAToken(auth) != ""
 }
-
-
 
 func (e *MetaExecutor) PrepareRequestAuth(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if auth == nil || !e.ShouldPrepareRequestAuth(auth) {
@@ -405,6 +391,5 @@ func isMetaSubscriptionQuota(statusCode int, body []byte) bool {
 	}
 	return false
 }
-
 
 func (e *MetaExecutor) SupportsApplyPatch() bool { return e != nil }

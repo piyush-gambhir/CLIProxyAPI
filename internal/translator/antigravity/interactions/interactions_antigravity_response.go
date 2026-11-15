@@ -91,9 +91,6 @@ func ConvertAntigravityResponseToInteractions(ctx context.Context, modelName str
 			}
 		}
 
-
-
-
 		if st.UsageAfterSeen && st.Finished && !st.Completed {
 			out = appendAntigravityInteractionsCompleted(out, st, modelName, st.PendingUsage)
 			out = appendAntigravityInteractionsDone(out, st)
@@ -134,7 +131,6 @@ func ConvertAntigravityResponseToInteractionsNonStream(ctx context.Context, mode
 func antigravityStreamPayloads(rawJSON []byte) [][]byte {
 	trimmed := bytes.TrimSpace(rawJSON)
 	if bytes.Equal(trimmed, []byte("[DONE]")) {
-
 
 		return [][]byte{trimmed}
 	}

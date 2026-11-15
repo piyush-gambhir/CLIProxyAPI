@@ -598,7 +598,6 @@ func newCredentialRetryLimitTestManager(t *testing.T, maxRetryCredentials int) (
 	auth1 := &Auth{ID: baseID + "-auth-1", Provider: "claude"}
 	auth2 := &Auth{ID: baseID + "-auth-2", Provider: "claude"}
 
-
 	reg := registry.GetGlobalRegistry()
 	reg.RegisterClient(auth1.ID, "claude", []*registry.ModelInfo{{ID: "test-model"}})
 	reg.RegisterClient(auth2.ID, "claude", []*registry.ModelInfo{{ID: "test-model"}})
@@ -1259,8 +1258,6 @@ func TestManager_MarkResult_CloudflareChallenge_On403(t *testing.T) {
 		t.Fatalf("expected StatusMessage to be 'cloudflare challenge', got %s", state.StatusMessage)
 	}
 
-
-
 	if !reg.IsModelSuspendedForClient(auth.ID, model) {
 		t.Fatalf("expected model to be suspended in registry for cloudflare challenge")
 	}
@@ -1458,7 +1455,6 @@ func TestManager_RequestScopedErrorStopsCredentialFallbackWithoutSuspendingAuth(
 		HTTPStatus: http.StatusBadGateway,
 		Message:    `{"error":{"type":"invalid_request","code":"cyber_policy","message":"This content was flagged for possible cybersecurity risk."}}`,
 	}
-
 
 	tooLargeErr := &Error{
 		HTTPStatus: http.StatusRequestEntityTooLarge,
@@ -1899,11 +1895,6 @@ func TestManager_DeepSeekCredentialFailuresRotateCredential(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestManager_UnknownUpstreamErrorRotatesAndPenalizesModelOnly(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 	m.SetRetryConfig(3, 30*time.Second, 0)
@@ -2135,8 +2126,6 @@ func TestManager_ExecuteCount_NotImplementedDoesNotSuspendModelOrExtendCooldown(
 	if string(resp.Payload) != auth.ID {
 		t.Fatalf("execute payload = %q, want %q", string(resp.Payload), auth.ID)
 	}
-
-
 
 	var deadlineBefore time.Time
 	executor.mu.Lock()
@@ -2630,7 +2619,6 @@ func TestManager_MarkResult_RequestFaultBodyDoesNotCooldownModelOrAuth(t *testin
 		t.Fatalf("expected request-scoped 401 to avoid model cooldown state, got %#v", state)
 	}
 
-
 	explicitReqErr := NewRequestScopedError("explicit request fault", http.StatusUnauthorized)
 	if !explicitReqErr.IsRequestScoped() || explicitReqErr.Code != ErrorCodeRequestScoped {
 		t.Fatalf("NewRequestScopedError code = %q, want %q", explicitReqErr.Code, ErrorCodeRequestScoped)
@@ -2664,7 +2652,6 @@ func TestManager_MarkResult_RequestFaultBodyDoesNotCooldownModelOrAuth(t *testin
 		t.Fatalf("expected MarkRequestScoped error to keep auth available")
 	}
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: auth.Provider,
@@ -2680,7 +2667,6 @@ func TestManager_MarkResult_RequestFaultBodyDoesNotCooldownModelOrAuth(t *testin
 	if updated.Unavailable || !updated.NextRetryAfter.IsZero() {
 		t.Fatalf("expected custom code with request-fault message to keep auth available")
 	}
-
 
 	authEmptyModel := &Auth{
 		ID:       "auth-empty-model",
@@ -2706,7 +2692,6 @@ func TestManager_MarkResult_RequestFaultBodyDoesNotCooldownModelOrAuth(t *testin
 	if updatedEmptyModel.Unavailable || !updatedEmptyModel.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth-level request-fault 401 to keep auth available")
 	}
-
 
 	authFail := &Auth{
 		ID:       "auth-real-fail",

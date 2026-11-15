@@ -14,16 +14,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
 func (s *Service) registerModelsForAuth(ctx context.Context, a *coreauth.Auth) bool {
 	return s.registerModelsForAuthWithCache(ctx, a, nil)
 }
-
-
-
-
-
-
 
 func (s *Service) registerModelsForAuthWithCache(ctx context.Context, a *coreauth.Auth, compatCache *openAICompatibilityRegistrationCache) bool {
 	return s.registerModelsForAuthWithConfigAndCache(ctx, s.currentConfig(), a, compatCache)
@@ -39,8 +32,6 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	if ctx.Err() != nil {
 		return true
 	}
-
-
 
 	fence := newModelRegistrationFence(a, cfg)
 	s.cancelStaleAntigravityProbes(a.ID)
@@ -72,8 +63,6 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		provider = "openai-compatibility"
 	}
 	excluded := oauthExcludedModelsForConfig(cfg, provider, authKind)
-
-
 
 	if a.Attributes != nil {
 		if val, ok := a.Attributes["excluded_models"]; ok && strings.TrimSpace(val) != "" {
@@ -134,8 +123,6 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 			expectedKey := s.antigravityCapabilityKey(a)
 			hints := s.cachedAntigravityHints(a)
 			if hints.ModelIDs != nil {
-
-
 
 				s.applyAntigravityModelHints(ctx, a, provider, hints, expectedKey, a.RegistrationEpoch, expectedRegEpoch)
 				s.asyncProbeAntigravityCapabilities(ctx, a, provider)
@@ -345,13 +332,6 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	return published
 }
 
-
-
-
-
-
-
-
 func (s *Service) refreshModelRegistrationForAuth(current *coreauth.Auth) bool {
 	return s.refreshModelRegistrationForAuthWithContext(context.Background(), current, nil)
 }
@@ -383,19 +363,12 @@ func (s *Service) refreshModelRegistrationForAuthWithContext(ctx context.Context
 	if !ok || latest.Disabled {
 		if ok && latest != nil {
 
-
-
-
 			s.unregisterModelsForAuthFenced(latest, newModelRegistrationFence(latest, s.currentConfig()))
 		}
-
 
 		s.coreManager.RefreshSchedulerEntry(current.ID)
 		return false
 	}
-
-
-
 
 	s.ensureExecutorsForAuthWithContext(ctx, latest, false)
 	s.registerModelsForAuthWithCache(ctx, latest, compatCache)
@@ -406,9 +379,6 @@ func (s *Service) refreshModelRegistrationForAuthWithContext(ctx context.Context
 	s.coreManager.RefreshSchedulerEntry(current.ID)
 	return true
 }
-
-
-
 
 func (s *Service) latestAuthForModelRegistration(authID string) (*coreauth.Auth, bool) {
 	if s == nil || s.coreManager == nil || authID == "" {
@@ -752,12 +722,10 @@ func applyModelPrefixes(models []*ModelInfo, prefix string, forceModelPrefix boo
 	return out
 }
 
-
 func matchWildcard(pattern, value string) bool {
 	if pattern == "" {
 		return false
 	}
-
 
 	if !strings.Contains(pattern, "*") {
 		return pattern == value
@@ -772,14 +740,12 @@ func matchWildcard(pattern, value string) bool {
 		value = value[len(prefix):]
 	}
 
-
 	if suffix := parts[len(parts)-1]; suffix != "" {
 		if !strings.HasSuffix(value, suffix) {
 			return false
 		}
 		value = value[:len(value)-len(suffix)]
 	}
-
 
 	for i := 1; i < len(parts)-1; i++ {
 		segment := parts[i]

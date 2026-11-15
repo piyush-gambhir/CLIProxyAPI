@@ -3,7 +3,6 @@ package auth
 import "strings"
 
 const (
-
 	CredentialPolicyCodexAlphaSearchV1 = "codex_alpha_search_v1"
 )
 

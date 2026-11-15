@@ -183,8 +183,6 @@ func TestParseCodexQuotaEventHeadersNonQuotaEventDoesNotAllocate(t *testing.T) {
 	}
 }
 
-
-
 func TestParseCodexQuotaEventHeadersLargeNonQuotaFrameDoesNotAllocate(t *testing.T) {
 	big := strings.Repeat("x", 4096)
 	payload := []byte(`{"sequence_number":7,"type":"response.output_text.delta","delta":"` + big + `"}`)
@@ -197,7 +195,6 @@ func TestParseCodexQuotaEventHeadersLargeNonQuotaFrameDoesNotAllocate(t *testing
 		t.Fatalf("large non-quota frame allocations = %v, want 0", allocs)
 	}
 }
-
 
 func TestParseCodexQuotaEventHeadersLargeRateLimitsFrameIsParsed(t *testing.T) {
 	padding := strings.Repeat("p", 4096)
@@ -223,8 +220,6 @@ func TestParseCodexQuotaEventHeadersRejectsInvalidAndEmptyEvents(t *testing.T) {
 	}
 }
 
-
-
 func TestParseCodexQuotaEventHeadersKeepsWindowsWhenActiveLimitIsInvalid(t *testing.T) {
 	headers := ParseCodexQuotaEventHeaders([]byte(`{
 		"type":"codex.rate_limits",
@@ -241,8 +236,6 @@ func TestParseCodexQuotaEventHeadersKeepsWindowsWhenActiveLimitIsInvalid(t *test
 		t.Fatalf("malformed active limit was retained: %q", got)
 	}
 }
-
-
 
 func TestParseCodexQuotaEventHeadersObservedProductionEvent(t *testing.T) {
 	headers := ParseCodexQuotaEventHeaders([]byte(`{
@@ -277,8 +270,6 @@ func TestParseCodexQuotaEventHeadersObservedProductionEvent(t *testing.T) {
 	}
 }
 
-
-
 func TestParseCodexQuotaEventHeadersRejectsControlCharactersInLimitName(t *testing.T) {
 	headers := ParseCodexQuotaEventHeaders([]byte(`{
 		"type":"codex.rate_limits",
@@ -295,11 +286,6 @@ func TestParseCodexQuotaEventHeadersRejectsControlCharactersInLimitName(t *testi
 		}
 	}
 }
-
-
-
-
-
 
 func TestGenericWebsocketEntryPointDoesNotObserveCodexQuota(t *testing.T) {
 	frame := []byte(`{"type":"error","headers":{"x-ratelimit-remaining-requests":"0","retry-after":"60"}}`)

@@ -11,28 +11,18 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func APIKeyModelIsCompat(req cliproxyexecutor.Request) bool {
 	modelInfo, ok := cliproxyauth.ResolvedModelInfo(req)
 	return ok && modelInfo != nil && modelInfo.IsCompat
 }
 
-
-
 func ApplyRequestThinking(body []byte, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, fromFormat, toFormat, provider string, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return ApplyRequestThinkingWithModelInfo(body, req, opts, fromFormat, toFormat, provider, nil, normalizedUpdatesChanged...)
 }
 
-
-
-
 func ApplyRequestThinkingDoc(doc *ojson.Doc, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, fromFormat, toFormat, providerKey string, PreserveConfigurationUpdates ...bool) error {
 	return ApplyRequestThinkingWithModelInfoDoc(doc, req, opts, fromFormat, toFormat, providerKey, nil, PreserveConfigurationUpdates...)
 }
-
-
-
 
 func ApplyRequestThinkingWithModelInfo(body []byte, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, fromFormat, toFormat, provider string, fallbackModelInfo *registry.ModelInfo, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	originalSource := opts.OriginalRequest
@@ -62,9 +52,6 @@ func ApplyRequestThinkingWithModelInfo(body []byte, req cliproxyexecutor.Request
 	}
 	return out, nil
 }
-
-
-
 
 func ApplyRequestThinkingWithModelInfoDoc(doc *ojson.Doc, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, fromFormat, toFormat, provider string, fallbackModelInfo *registry.ModelInfo, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {

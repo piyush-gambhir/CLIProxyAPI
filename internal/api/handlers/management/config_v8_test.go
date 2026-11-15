@@ -700,7 +700,6 @@ plugins:
 	request(http.MethodDelete, "routing/retry/request-retry", http.StatusOK, "")
 	checkReload()
 
-
 	data, _ := read()
 	data = []byte(strings.Replace(string(data), "max-retry-interval: 30", "max-retry-interval: 30\n        max-retry-credentials: 7 # Keep new sibling", 1))
 	if err = os.WriteFile(file, data, 0600); err != nil {
@@ -716,7 +715,6 @@ plugins:
 		request(http.MethodGet, path, http.StatusNotFound, "")
 	}
 	request(http.MethodGet, "routing/retry/max-retry-credentials", http.StatusOK, "7")
-
 
 	expected := cloneConfigV8Node(original)
 	deleteConfigV8Path(expected, []string{"routing", "retry", "request-retry"})
@@ -792,7 +790,6 @@ api-keys:
 	router.PUT("/v8/management/config/*path", h.ConfigV8)
 	router.PATCH("/v8/management/config", h.ConfigV8)
 
-
 	jsonUpdate := `[{"name":"compat-provider","base-url":"https://api.example.com","headers":{"User-Agent":"$User-Agent"},"models":[{"alias":"coding","name":"gpt-4o"}],"keys":[{"api-key":"sk-compat-1"}]}]`
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, "/v8/management/config/api-keys/openai-compatibility", strings.NewReader(jsonUpdate))
@@ -808,7 +805,6 @@ api-keys:
 	}
 	savedStr := string(saved)
 
-
 	if strings.Contains(savedStr, "[{") || strings.Contains(savedStr, `headers: {`) || strings.Contains(savedStr, `models: [{`) {
 		t.Fatalf("config contains flow style / inline JSON collections:\n%s", savedStr)
 	}
@@ -818,7 +814,6 @@ api-keys:
 	if strings.Contains(savedStr, `"name":`) || strings.Contains(savedStr, `"base-url":`) {
 		t.Fatalf("expected keys to be unquoted in block YAML, got:\n%s", savedStr)
 	}
-
 
 	patchJSON := `{"api-keys":{"openai-compatibility":[{"name":"compat-provider-2","base-url":"https://api.example2.com","headers":{"User-Agent":"$User-Agent-2"},"models":[{"alias":"coding-2","name":"gpt-4o-mini"}],"keys":[{"api-key":"sk-compat-2"}]}]}}`
 	w = httptest.NewRecorder()
@@ -840,7 +835,6 @@ api-keys:
 		t.Fatalf("expected block style sequence after PATCH for openai-compatibility, got:\n%s", savedStr)
 	}
 
-
 	emptyJSON := `{"server":{"trusted-proxies":[]}}`
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v8/management/config", strings.NewReader(emptyJSON))
@@ -857,7 +851,6 @@ api-keys:
 	if !strings.Contains(savedStr, "trusted-proxies: []") {
 		t.Fatalf("expected empty sequence to retain flow style [], got:\n%s", savedStr)
 	}
-
 
 	rootPutJSON := `{"config-version":8,"server":{"port":8317},"api-keys":{"openai-compatibility":[{"name":"compat-provider-root","base-url":"https://api.example3.com","headers":{"User-Agent":"$User-Agent-3"},"models":[{"alias":"coding-3","name":"gpt-4o"}],"keys":[{"api-key":"sk-compat-3"}]}]}}`
 	w = httptest.NewRecorder()
@@ -881,7 +874,6 @@ api-keys:
 	if !strings.Contains(savedStr, "compat-provider-root") {
 		t.Fatalf("expected compat-provider-root in saved config, got:\n%s", savedStr)
 	}
-
 
 	loaded, errLoaded := config.LoadConfig(file)
 	if errLoaded != nil {

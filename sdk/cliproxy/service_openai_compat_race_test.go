@@ -172,8 +172,6 @@ func TestPutOpenAICompatConcurrentWithAuthFieldsPatch_Issue6559(t *testing.T) {
 	close(start)
 	wg.Wait()
 
-
-
 	service.reloadConfigFromWatcher()
 	service.registerConfigAPIKeyAuths(ctx, service.currentConfig())
 

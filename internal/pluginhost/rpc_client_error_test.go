@@ -657,8 +657,6 @@ func TestPluginExecutor429CredentialScopedCoolsEntireCredentialAndSiblingModels(
 				t.Fatalf("sibling modelB state = %+v, want unavailable with reason=credential_quota", stateB)
 			}
 
-
-
 			for _, siblingModel := range []string{modelB, modelC} {
 				_, errSibling := authMgr.Execute(context.Background(), []string{provider}, coreexecutor.Request{
 					Model:   siblingModel,

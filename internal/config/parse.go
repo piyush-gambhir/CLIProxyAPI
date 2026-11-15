@@ -9,8 +9,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
 func ParseConfigBytes(data []byte) (*Config, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("config payload is empty")
@@ -65,7 +63,6 @@ func ParseConfigBytes(data []byte) (*Config, error) {
 		cfg.Discovery.Subtypes = []string{"_chat-completions", "_responses", "_messages", "_generate-content", "_interactions"}
 	}
 
-
 	if cfg.RemoteManagement.SecretKey != "" && !looksLikeBcrypt(cfg.RemoteManagement.SecretKey) {
 		hashed, errHash := bcrypt.GenerateFromPassword([]byte(cfg.RemoteManagement.SecretKey), bcrypt.DefaultCost)
 		if errHash != nil {
@@ -110,7 +107,6 @@ func ParseConfigBytes(data []byte) (*Config, error) {
 	if errResolvePluginsDir := cfg.ResolvePluginsDir(); errResolvePluginsDir != nil && cfg.Plugins.Enabled {
 		return nil, errResolvePluginsDir
 	}
-
 
 	cfg.SanitizeGeminiKeys()
 	cfg.SanitizeInteractionsKeys()

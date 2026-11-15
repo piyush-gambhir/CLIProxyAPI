@@ -1,7 +1,3 @@
-
-
-
-
 package config
 
 import internalconfig "github.com/router-for-me/CLIProxyAPI/v8/internal/config"

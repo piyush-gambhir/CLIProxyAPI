@@ -98,27 +98,16 @@ func normalizeResponseSubsequentRequest(rawJSON []byte, lastRequest []byte, last
 		}
 	}
 
-
-
-
-
 	if shouldReplaceWebsocketTranscript(rawJSON, nextInput) {
 		normalized := normalizeResponseTranscriptReplacement(rawJSON, lastRequest)
 		return normalized, bytes.Clone(normalized), nil
 	}
-
-
-
-
-
 
 	prev := strings.TrimSpace(ojson.GetBytesNoCopy(rawJSON, "previous_response_id").String())
 	if prev == "" && !inputSatisfiesPendingToolCalls(nextInput, lastResponsePendingToolCallIDs) {
 		normalized := normalizeResponseTranscriptReplacement(rawJSON, lastRequest)
 		return normalized, bytes.Clone(normalized), nil
 	}
-
-
 
 	if allowIncrementalInputWithPreviousResponseID {
 		if prev == "" {
@@ -145,11 +134,6 @@ func normalizeResponseSubsequentRequest(rawJSON []byte, lastRequest []byte, last
 			return normalized, bytes.Clone(normalized), nil
 		}
 	}
-
-
-
-
-
 
 	var mergedInput []byte
 	if allowCompactionReplayBypass && inputContainsFullTranscript(nextInput) {
@@ -329,24 +313,13 @@ type responsesWebsocketInputItem struct {
 }
 
 type responsesWebsocketMergeInputItem struct {
-
-
-
 	raw      string
 	itemType string
 	id       string
 	callID   string
 }
 
-
-
 const responsesWebsocketReplayPassthroughPath = "internal_chat_message_metadata_passthrough"
-
-
-
-
-
-
 
 func responsesWebsocketReplaySanitizedItem(raw string) string {
 	if !responsesWebsocketReplayMayContainPassthroughKey(raw) || !json.Valid([]byte(raw)) {
@@ -363,9 +336,6 @@ func responsesWebsocketReplaySanitizedItem(raw string) string {
 	return string(cleaned)
 }
 
-
-
-
 func responsesWebsocketReplaySanitizedBytes(raw []byte) []byte {
 	if len(raw) == 0 || !json.Valid(raw) {
 		return raw
@@ -380,11 +350,6 @@ func responsesWebsocketReplaySanitizedBytes(raw []byte) []byte {
 	}
 	return cleaned
 }
-
-
-
-
-
 
 func responsesWebsocketReplayMayContainPassthroughKey(raw string) bool {
 	return strings.Contains(raw, "internal") ||
@@ -436,9 +401,6 @@ func responsesWebsocketSanitizeReplayResult(item ojson.Result) ([]byte, bool) {
 	out = append(out, '}')
 	return out, true
 }
-
-
-
 
 func responsesWebsocketSanitizePassthroughObject(passthrough ojson.Result) (string, bool, bool) {
 	members := make([]struct{ key, value string }, 0, len(passthrough.Map()))
@@ -502,8 +464,6 @@ func mergeResponsesWebsocketInput(lastRequest []byte, lastResponseOutput []byte,
 			return nil, fmt.Errorf("invalid previous response output: %w", errResponse)
 		}
 
-
-
 		for index := itemCountBeforeResponse; index < len(items); index++ {
 			items[index].raw = responsesWebsocketReplaySanitizedItem(items[index].raw)
 		}
@@ -539,9 +499,6 @@ func responsesWebsocketPreviousInputNoCopy(lastRequest []byte) (ojson.Result, er
 		if !strings.EqualFold(key.String(), "input") {
 			return true
 		}
-
-
-
 
 		inputFound = true
 		input = value
@@ -681,8 +638,6 @@ func marshalResponsesWebsocketMergeInputItems(items []responsesWebsocketMergeInp
 		outputLength += len(item.raw)
 	}
 
-
-
 	out := make([]byte, 0, outputLength)
 	out = append(out, '[')
 	for index, item := range items {
@@ -786,9 +741,6 @@ func dedupeResponsesWebsocketFunctionCalls(items []responsesWebsocketInputItem) 
 
 func dedupeResponsesWebsocketInputItems(items []responsesWebsocketInputItem) []responsesWebsocketInputItem {
 
-
-
-
 	referencedCallIDs := make(map[string]struct{}, len(items))
 	for _, item := range items {
 		switch item.itemType {
@@ -798,9 +750,6 @@ func dedupeResponsesWebsocketInputItems(items []responsesWebsocketInputItem) []r
 			}
 		}
 	}
-
-
-
 
 	keepIndexByID := make(map[string]int, len(items))
 	keepReferencedByID := make(map[string]bool, len(items))

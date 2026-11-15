@@ -10,7 +10,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
 func xaiVersionAtLeast(got, floor string) bool {
 	gotParts := strings.Split(got, ".")
 	floorParts := strings.Split(floor, ".")
@@ -30,7 +29,6 @@ func xaiVersionAtLeast(got, floor string) bool {
 }
 
 func TestXAIChatProxyClientVersionMeetsServerFloor(t *testing.T) {
-
 
 	const serverFloor = "1.0.13"
 	if !xaiVersionAtLeast(xaiClientVersionValue, serverFloor) {

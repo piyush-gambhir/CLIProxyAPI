@@ -18,7 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (e *AntigravityExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -35,8 +34,6 @@ func (e *AntigravityExecutor) CountTokens(ctx context.Context, auth *cliproxyaut
 		return cliproxyexecutor.Response{}, errValidate
 	}
 	req.Payload = originalPayloadSource
-
-
 
 	modelInfo, _ := cliproxyauth.ResolvedModelInfo(req)
 	translationReq := sdktranslator.RequestEnvelope{Format: from, Model: baseModel, Body: req.Payload, ModelInfo: modelInfo}

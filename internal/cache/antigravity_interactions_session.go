@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// InteractionsContinuation contains only upstream continuation identifiers.
 type InteractionsContinuation struct {
 	ID          string
 	Environment string
@@ -18,8 +17,6 @@ type interactionsContinuationEntry struct {
 	expires time.Time
 }
 
-// InteractionsSessionCache is a bounded, process-local cache. Keys must already
-// isolate the caller, credential, model, conversation, and pending call IDs.
 type InteractionsSessionCache struct {
 	mu      sync.Mutex
 	entries map[string]interactionsContinuationEntry
@@ -30,7 +27,6 @@ func NewInteractionsSessionCache() *InteractionsSessionCache {
 	return &InteractionsSessionCache{entries: make(map[string]interactionsContinuationEntry), now: time.Now}
 }
 
-// InteractionsCallKey rejects ambiguous or incomplete call sets.
 func InteractionsCallKey(ids []string) string {
 	ids = append([]string(nil), ids...)
 	sort.Strings(ids)

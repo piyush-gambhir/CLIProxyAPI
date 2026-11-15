@@ -100,7 +100,6 @@ func TestManagerExecuteOpenAIImageSelectsOuterTrackWhenSIWCExpiredOrRejected(t *
 		t.Fatalf("Register error: %v", err)
 	}
 
-
 	_, errNonImage := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{
 		Model:   "gpt-5.4",
 		Payload: []byte(`{"model":"gpt-5.4","input":"hi"}`),
@@ -111,7 +110,6 @@ func TestManagerExecuteOpenAIImageSelectsOuterTrackWhenSIWCExpiredOrRejected(t *
 	if errNonImage == nil {
 		t.Fatal("expected non-Codex non-image request to fail when SIWC token is expired/rejected")
 	}
-
 
 	_, errImage := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{
 		Model:   "gpt-image-2.6",
@@ -146,7 +144,6 @@ func TestManagerExecuteOpenAIImageBlocksWhenOuterExpiredEvenIfSIWCValid(t *testi
 			return cliproxyexecutor.Response{Payload: []byte(`{"ok":true}`)}, nil
 		},
 	})
-
 
 	authOuterExpired := &Auth{
 		ID:       "codex-1-outer-expired",
@@ -188,7 +185,6 @@ func TestManagerExecuteOpenAIImageBlocksWhenOuterExpiredEvenIfSIWCValid(t *testi
 	if _, err := manager.Register(context.Background(), authOuterValid); err != nil {
 		t.Fatalf("Register authOuterValid error: %v", err)
 	}
-
 
 	_, errImage := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{
 		Model:   "gpt-image-2.6",

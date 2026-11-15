@@ -11,32 +11,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/quota"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 type ResetSoonestSelector struct {
-
-
-
 	FiveHourGuardPercent float64
 
-
 	Store *quota.Store
-
 
 	Now func() time.Time
 
@@ -45,12 +23,9 @@ type ResetSoonestSelector struct {
 	pickCount atomic.Uint64
 }
 
-
 func NewResetSoonestSelector(fiveHourGuardPercent float64) *ResetSoonestSelector {
 	return &ResetSoonestSelector{FiveHourGuardPercent: fiveHourGuardPercent}
 }
-
-
 
 func (s *ResetSoonestSelector) Picks() uint64 {
 	if s == nil {
@@ -73,15 +48,10 @@ func (s *ResetSoonestSelector) now() time.Time {
 	return time.Now()
 }
 
-
 func (s *ResetSoonestSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	_ = opts
 	now := s.now()
 	store := s.store()
-
-
-
-
 
 	IngestAuthQuota(store, auths, now)
 
@@ -120,10 +90,6 @@ func (s *ResetSoonestSelector) Pick(ctx context.Context, provider, model string,
 		Now:                  now,
 	})
 
-
-
-
-
 	usable := make([]quota.Ranked, 0, len(ranked))
 	for _, entry := range ranked {
 		if entry.Usable {
@@ -135,7 +101,6 @@ func (s *ResetSoonestSelector) Pick(ctx context.Context, provider, model string,
 	}
 
 	chosen := usable[0]
-
 
 	if !chosen.Known {
 		if rotated, ok := s.rotateUnknown(provider, model, usable); ok {
@@ -150,7 +115,6 @@ func (s *ResetSoonestSelector) Pick(ctx context.Context, provider, model string,
 	s.logPick(ctx, provider, model, chosen, len(usable))
 	return auth, nil
 }
-
 
 func (s *ResetSoonestSelector) rotateUnknown(provider, model string, ordered []quota.Ranked) (quota.Ranked, bool) {
 	unknown := make([]quota.Ranked, 0, len(ordered))
@@ -184,7 +148,6 @@ func (s *ResetSoonestSelector) rotateUnknown(provider, model string, ordered []q
 	return chosen, true
 }
 
-
 func (s *ResetSoonestSelector) logPick(ctx context.Context, provider, model string, chosen quota.Ranked, candidates int) {
 	entry := selectorLogEntry(ctx)
 	if entry == nil {
@@ -193,13 +156,6 @@ func (s *ResetSoonestSelector) logPick(ctx context.Context, provider, model stri
 	entry.Debugf("reset-soonest: picked auth=%s provider=%s model=%s urgency=%.3f window=%s reason=%s known=%t guarded=%t candidates=%d picks=%d",
 		chosen.AuthID, provider, model, chosen.Urgency, chosen.RankingWindow, chosen.Reason, chosen.Known, chosen.Guarded, candidates, s.pickCount.Load())
 }
-
-
-
-
-
-
-
 
 func IngestAuthQuota(store *quota.Store, auths []*Auth, now time.Time) {
 	if store == nil {
@@ -226,15 +182,12 @@ func IngestAuthQuota(store *quota.Store, auths []*Auth, now time.Time) {
 			store.Observe(identity, windows, observedAt)
 		} else if identity.FileName != "" || identity.Provider != "" {
 
-
 			store.Observe(identity, nil, observedAt)
 		}
 		exceeded := auth.Quota.Exceeded && auth.Quota.NextRecoverAt.After(now)
 		store.MarkHardLimited(identity, exceeded, auth.Quota.NextRecoverAt)
 	}
 }
-
-
 
 func canonicalQuotaProvider(auth *Auth) string {
 	if auth == nil {

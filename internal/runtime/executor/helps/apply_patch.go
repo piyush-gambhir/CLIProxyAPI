@@ -10,10 +10,7 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 const ApplyPatchUpstreamErrorMessage = "Invalid apply_patch tool arguments received from upstream."
-
-
 
 func TranslatedClaudeErrorPayload(responseFormat sdktranslator.Format, out []byte) (string, bool) {
 	if responseFormat != sdktranslator.FormatClaude || len(out) == 0 {
@@ -24,8 +21,6 @@ func TranslatedClaudeErrorPayload(responseFormat sdktranslator.Format, out []byt
 	}
 	return string(out), true
 }
-
-
 
 func TranslatedClaudeStreamErrorPayload(responseFormat sdktranslator.Format, lines [][]byte) (string, bool) {
 	if responseFormat != sdktranslator.FormatClaude {
@@ -45,8 +40,6 @@ func TranslatedClaudeStreamErrorPayload(responseFormat sdktranslator.Format, lin
 	return "", false
 }
 
-
-
 func CaptureTranslatedClaudeStreamError(responseFormat sdktranslator.Format, lines [][]byte, retainedErr *error, buildErr func(string) error) {
 	if retainedErr == nil || *retainedErr != nil {
 		return
@@ -60,8 +53,6 @@ func CaptureTranslatedClaudeStreamError(responseFormat sdktranslator.Format, lin
 	}
 }
 
-
-
 func PublishTranslatedClaudeStreamFailure(ctx context.Context, retainedErr error, reporter *UsageReporter, streamUsage *StreamUsageBuffer) bool {
 	if retainedErr == nil {
 		return false
@@ -74,8 +65,6 @@ func PublishTranslatedClaudeStreamFailure(ctx context.Context, retainedErr error
 	}
 	return true
 }
-
-
 
 func StopTranslatedClaudeStream(ctx context.Context, retainedErr *error, reporter *UsageReporter, streamUsage *StreamUsageBuffer, out chan<- cliproxyexecutor.StreamChunk) bool {
 	if retainedErr == nil || *retainedErr == nil {
@@ -96,7 +85,6 @@ func StopTranslatedClaudeStream(ctx context.Context, retainedErr *error, reporte
 	return true
 }
 
-
 func ApplyPatchTranslationError(param any) error {
 	state, okState := param.(interface{ ToolInputError() error })
 	if !okState {
@@ -104,8 +92,6 @@ func ApplyPatchTranslationError(param any) error {
 	}
 	return state.ToolInputError()
 }
-
-
 
 func FinalizeApplyPatchStream(param any) [][]byte {
 	state, okState := param.(interface{ FinalizeToolInput() [][]byte })
@@ -115,17 +101,14 @@ func FinalizeApplyPatchStream(param any) [][]byte {
 	return state.FinalizeToolInput()
 }
 
-
 func CanFinalizeResponseStream(param any) bool {
 	state, okState := param.(interface{ CanFinalizeResponseStream() bool })
 	return okState && state.CanFinalizeResponseStream()
 }
 
-
 func RecordApplyPatchStreamFailure(ctx context.Context, param any, reporter *UsageReporter, gatewayErr error) bool {
 	return RecordApplyPatchStreamFailureWithUsage(ctx, param, reporter, nil, gatewayErr)
 }
-
 
 func RecordApplyPatchStreamFailureWithUsage(ctx context.Context, param any, reporter *UsageReporter, streamUsage *StreamUsageBuffer, gatewayErr error) bool {
 	if ApplyPatchTranslationError(param) == nil {
@@ -138,12 +121,9 @@ func RecordApplyPatchStreamFailureWithUsage(ctx context.Context, param any, repo
 	return true
 }
 
-
-
 func StopApplyPatchStream(ctx context.Context, param any, reporter *UsageReporter, out chan<- cliproxyexecutor.StreamChunk, gatewayErr error) bool {
 	return StopApplyPatchStreamWithUsage(ctx, param, reporter, nil, out, gatewayErr)
 }
-
 
 func StopApplyPatchStreamWithUsage(ctx context.Context, param any, reporter *UsageReporter, streamUsage *StreamUsageBuffer, out chan<- cliproxyexecutor.StreamChunk, gatewayErr error) bool {
 	if !RecordApplyPatchStreamFailureWithUsage(ctx, param, reporter, streamUsage, gatewayErr) {
@@ -155,7 +135,6 @@ func StopApplyPatchStreamWithUsage(ctx context.Context, param any, reporter *Usa
 	}
 	return true
 }
-
 
 func EndApplyPatchStream(ctx context.Context, param any, reporter *UsageReporter, out chan<- cliproxyexecutor.StreamChunk, gatewayErr error) bool {
 	chunks := FinalizeApplyPatchStream(param)
@@ -170,7 +149,6 @@ func EndApplyPatchStream(ctx context.Context, param any, reporter *UsageReporter
 	return StopApplyPatchStream(ctx, param, reporter, out, gatewayErr)
 }
 
-
 func ApplyPatchRequested(original []byte) bool {
 	for _, identity := range util.ResponsesToolReverseIdentityMap(original) {
 		if identity.ApplyPatch {
@@ -180,12 +158,9 @@ func ApplyPatchRequested(original []byte) bool {
 	return false
 }
 
-
 func IsApplyPatchUpstreamTool(original []byte, name string) bool {
 	return util.ResponsesToolReverseIdentityMap(original)[name].ApplyPatch
 }
-
-
 
 func InitializeApplyPatchStream(ctx context.Context, from, to sdktranslator.Format, model string, original, effective []byte, param *any) {
 	if to != sdktranslator.FormatOpenAIResponse || !ApplyPatchRequested(original) {
@@ -193,7 +168,6 @@ func InitializeApplyPatchStream(ctx context.Context, from, to sdktranslator.Form
 	}
 	_ = sdktranslator.TranslateStream(ctx, from, to, model, original, effective, nil, param)
 }
-
 
 func ApplyPatchOriginalRequest(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) []byte {
 	if len(opts.OriginalRequest) > 0 {

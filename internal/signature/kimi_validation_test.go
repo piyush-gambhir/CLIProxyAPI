@@ -11,11 +11,6 @@ import (
 	"testing"
 )
 
-
-
-
-
-
 func kimiSignatureCorpusPath() (string, bool) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
@@ -28,8 +23,6 @@ func kimiSignatureCorpusPath() (string, bool) {
 	}
 	return path, true
 }
-
-
 
 func masterSignatureCatalogPath() (string, bool) {
 	_, file, _, ok := runtime.Caller(0)
@@ -76,11 +69,6 @@ func loadKimiCorpus(t *testing.T) []string {
 	return out
 }
 
-
-
-
-
-
 func synthesizeKimiSignature(t *testing.T, decodedLen int, seed int64) string {
 	t.Helper()
 	buf := make([]byte, decodedLen)
@@ -90,11 +78,6 @@ func synthesizeKimiSignature(t *testing.T, decodedLen int, seed int64) string {
 	}
 	return base64.RawStdEncoding.EncodeToString(buf)
 }
-
-
-
-
-
 
 func TestKimiThinkingSignatureLengths_MatchDecodedSizes(t *testing.T) {
 	tests := []struct {
@@ -144,9 +127,6 @@ func TestInspectKimiThinkingSignature_ReportsMode(t *testing.T) {
 	}
 }
 
-
-
-
 func TestInspectKimiThinkingSignature_RejectsNeighbouringLengths(t *testing.T) {
 	for _, decodedLen := range []int{9709, 3255} {
 		native := synthesizeKimiSignature(t, decodedLen, 3)
@@ -189,9 +169,6 @@ func TestInspectKimiThinkingSignature_RejectsMalformedInput(t *testing.T) {
 	}
 }
 
-
-
-
 func TestInspectKimiThinkingSignature_RejectsLowEntropyFiller(t *testing.T) {
 	for _, length := range []int{KimiThinkingSignatureStreamingLen, KimiThinkingSignatureNonStreamingLen} {
 		if IsValidKimiThinkingSignature(strings.Repeat("A", length)) {
@@ -200,20 +177,11 @@ func TestInspectKimiThinkingSignature_RejectsLowEntropyFiller(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestInspectKimiThinkingSignature_RejectsSelfDescribingEnvelope(t *testing.T) {
 	if IsValidKimiThinkingSignature(observedFable5Sample) {
 		t.Errorf("Claude CAIS sample accepted as Kimi signature")
 	}
 }
-
-
-
-
-
 
 func TestDetectSignatureProvider_KimiRunsAfterEnvelopeProbes(t *testing.T) {
 	if got := DetectSignatureProvider(observedFable5Sample); got != SignatureProviderClaude {
@@ -269,10 +237,6 @@ func TestSignatureProviderFromModelName_Kimi(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestDecideSignatureCompatibility_KimiDropsSignatureNotBlock(t *testing.T) {
 	decision := DecideSignatureCompatibility(SignatureProviderKimi, observedFable5Sample, SignatureBlockKindClaudeThinking)
 	if decision.Compatible {
@@ -297,8 +261,6 @@ func TestDecideSignatureCompatibility_KimiPreservesNativeSignature(t *testing.T)
 	}
 }
 
-
-
 func TestInspectKimiThinkingSignature_NativeCorpus(t *testing.T) {
 	modes := map[KimiThinkingSignatureMode]int{}
 	for _, sig := range loadKimiCorpus(t) {
@@ -315,9 +277,6 @@ func TestInspectKimiThinkingSignature_NativeCorpus(t *testing.T) {
 		t.Fatalf("corpus does not cover both modes: %v", modes)
 	}
 }
-
-
-
 
 func TestDetectSignatureProvider_KimiProbeDoesNotDisturbCatalog(t *testing.T) {
 	path, ok := masterSignatureCatalogPath()
@@ -359,8 +318,6 @@ func TestDetectSignatureProvider_KimiProbeDoesNotDisturbCatalog(t *testing.T) {
 			t.Errorf("%d %s signatures captured by the Kimi size probe", captured, claimed)
 		}
 	}
-
-
 
 	for detected, count := range matrix["grok"] {
 		if detected != SignatureProviderUnknown {

@@ -15,7 +15,6 @@ type OAuthRequestScopedErrorsSummary struct {
 	count int
 }
 
-
 func SummarizeOAuthRequestScopedErrors(entries map[string][]config.RequestScopedErrorRule) map[string]OAuthRequestScopedErrorsSummary {
 	if len(entries) == 0 {
 		return nil
@@ -33,7 +32,6 @@ func SummarizeOAuthRequestScopedErrors(entries map[string][]config.RequestScoped
 	}
 	return out
 }
-
 
 func DiffOAuthRequestScopedErrorsChanges(oldMap, newMap map[string][]config.RequestScopedErrorRule) ([]string, []string) {
 	oldSummary := SummarizeOAuthRequestScopedErrors(oldMap)

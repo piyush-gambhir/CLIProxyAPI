@@ -44,7 +44,6 @@ func detectIncomingClaudeCodeRequest(ctx context.Context, incoming http.Header, 
 	return resolved, helps.DetectClaudeCodeRequest(resolved, payload, countTokens, cfg)
 }
 
-
 func getWorkloadFromContext(ctx context.Context) string {
 	if ginCtx, ok := ctx.Value("gin").(*gin.Context); ok && ginCtx != nil && ginCtx.Request != nil {
 		return strings.TrimSpace(ginCtx.GetHeader("X-CPA-Claude-Workload"))
@@ -52,17 +51,10 @@ func getWorkloadFromContext(ctx context.Context) string {
 	return ""
 }
 
-
-
-
-
 func getCloakConfigFromAuth(auth *cliproxyauth.Auth) (cloakMode string, strictMode bool, sensitiveWords []string, cacheUserID bool) {
 	if auth == nil {
 		return "", false, nil, false
 	}
-
-
-
 
 	lookupCloakAttr := func(key string) string {
 		if auth.Attributes != nil {
@@ -75,8 +67,6 @@ func getCloakConfigFromAuth(auth *cliproxyauth.Auth) (cloakMode string, strictMo
 		}
 		return ""
 	}
-
-
 
 	cloakMode = lookupCloakAttr("cloak_mode")
 
@@ -134,8 +124,6 @@ func getCloakReplacementsFromAuth(auth *cliproxyauth.Auth) map[string]string {
 	return nil
 }
 
-
-
 func injectFakeUserID(ctx context.Context, payload []byte, apiKey string, useCache bool) ([]byte, error) {
 	doc := ojson.NewDoc(payload)
 	changed, errInject := injectFakeUserIDDoc(ctx, doc, apiKey, useCache)
@@ -185,12 +173,7 @@ func injectFakeUserIDDoc(ctx context.Context, doc *ojson.Doc, apiKey string, use
 	return false, nil
 }
 
-
 const fingerprintSalt = "59cf53e54c78"
-
-
-
-
 
 func computeFingerprint(messageText, version string) string {
 	units := utf16.Encode([]rune(messageText))
@@ -205,8 +188,6 @@ func computeFingerprint(messageText, version string) string {
 	h := sha256.Sum256([]byte(input))
 	return hex.EncodeToString(h[:])[:3]
 }
-
-
 
 func generateBillingHeader(cchSigning bool, version, messageText, entrypoint, workload string, isSubagent bool, prevReq, promptID string, turnOrigin ...string) string {
 	if entrypoint == "" {
@@ -272,9 +253,6 @@ func resolveClaudeContinuityTags(
 	credIdentity := claudeDiagnosticsCredentialIdentity(auth)
 	isNewTurn := helps.IsClaudeNewPromptTurn(payload)
 	continuityKey, seq, prevMsgID, storedPrevReq, storedPromptID := helps.BeginClaudeContinuity(credIdentity, sessionID, isNewTurn, existingPromptID)
-
-
-
 
 	pinnedDate := resolveClaudeSessionPinnedDate(cfg, auth, payload, continuityKey, sessionID)
 
@@ -744,11 +722,6 @@ func checkSystemInstructionsWithModeDoc(doc *ojson.Doc, strictMode bool, keepCal
 	return checkSystemInstructionsWithSigningModeDoc(doc, strictMode, false, "2.1.321", "cli", "", keepAtTopLevel)
 }
 
-
-
-
-
-
 func checkSystemInstructionsWithSigningMode(payload []byte, strictMode bool, cchSigning bool, version, entrypoint, workload string, keepCallerSystemTopLevel ...bool) []byte {
 	keepAtTopLevel := len(keepCallerSystemTopLevel) > 0 && keepCallerSystemTopLevel[0]
 	return checkSystemInstructionsWithSigningModeAt(payload, strictMode, cchSigning, version, entrypoint, workload, claudeCodeLocalDate(time.Now()), false, "", "", keepAtTopLevel, "")
@@ -758,8 +731,6 @@ func checkSystemInstructionsWithSigningModeDoc(doc *ojson.Doc, strictMode bool, 
 	keepAtTopLevel := len(keepCallerSystemTopLevel) > 0 && keepCallerSystemTopLevel[0]
 	return checkSystemInstructionsWithSigningModeAtDoc(doc, strictMode, cchSigning, version, entrypoint, workload, claudeCodeLocalDate(time.Now()), false, "", "", keepAtTopLevel, "")
 }
-
-
 
 func isClaudeFable51Model(model string) bool {
 	m := strings.ToLower(strings.TrimSpace(model))
@@ -917,13 +888,6 @@ func checkSystemInstructionsWithSigningModeAtDoc(
 	return true
 }
 
-
-
-
-
-
-
-
 func relocateClaudeSystemPromptForCountTokens(payload []byte, strictMode bool, explicitCacheMode ...bool) []byte {
 	isExplicit := (len(explicitCacheMode) > 0 && explicitCacheMode[0]) || isExplicitPromptCacheMode(payload)
 	return relocateClaudeSystemPromptForCountTokensWithPolicy(payload, strictMode, isExplicit, false)
@@ -947,7 +911,6 @@ func relocateClaudeSystemPromptForCountTokensWithPolicyDoc(doc *ojson.Doc, stric
 	}
 	isExplicit := explicitCacheMode
 
-
 	var forwardedSystemBlocks []forwardedClaudeSystemPromptBlock
 	if !strictMode {
 		forwardedSystemBlocks = collectForwardedClaudeSystemPromptBlocksWithCache(system)
@@ -956,9 +919,6 @@ func relocateClaudeSystemPromptForCountTokensWithPolicyDoc(doc *ojson.Doc, stric
 		return doc.Delete("system") == nil
 	}
 	if claudeHistoryHasAdvisorCallOrResultDoc(doc) {
-
-
-
 
 		blocks := make([]string, 0, len(forwardedSystemBlocks))
 		for _, block := range forwardedSystemBlocks {
@@ -996,9 +956,6 @@ func claudeUsesLegacySystemReminderDoc(doc *ojson.Doc) bool {
 	return util.IsClaudeLegacySystemReminderModel(doc.Get("model").String())
 }
 
-
-
-
 type claudeCallerSystemBlockError struct {
 	statusErr
 }
@@ -1019,11 +976,6 @@ func newClaudeCallerSystemBlockError(index int, blockType string) error {
 	}}
 }
 
-
-
-
-
-
 type claudeMidSystemMessageModelError struct {
 	statusErr
 }
@@ -1031,11 +983,6 @@ type claudeMidSystemMessageModelError struct {
 func (claudeMidSystemMessageModelError) IsRequestScoped() bool {
 	return true
 }
-
-
-
-
-
 
 func newClaudeMidSystemMessageModelError(model string) error {
 	if model == "" {
@@ -1048,39 +995,6 @@ func newClaudeMidSystemMessageModelError(model string) error {
 			"stay in the top-level system field for it.", model),
 	}}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func validateClaudeMidSystemMessageModel(payload []byte, confirmedClaudeCode, firstPartyAnthropic bool) error {
 	if confirmedClaudeCode || !firstPartyAnthropic {
@@ -1101,14 +1015,6 @@ func validateClaudeMidSystemMessageModelDoc(doc *ojson.Doc, confirmedClaudeCode,
 	}
 	return newClaudeMidSystemMessageModelError(strings.Clone(doc.Get("model").String()))
 }
-
-
-
-
-
-
-
-
 
 func validateClaudeCallerSystemBlocks(system ojson.Result) error {
 	if !system.IsArray() {
@@ -1149,9 +1055,6 @@ func collectForwardedClaudeSystemPromptBlocks(system ojson.Result) []string {
 	}
 	return blocks
 }
-
-
-
 
 func buildTextBlock(text string, cacheControl *claudeCacheControl) string {
 	block := `{"type":"text","text":` + marshalJSONStringWithoutHTMLEscape(text)
@@ -1271,11 +1174,6 @@ func claudeCallerSystemReminder(text string) string {
 	return reminder.String()
 }
 
-
-
-
-
-
 func claudeHistoryHasAdvisorCallOrResult(payload []byte) bool {
 	return claudeMessagesHaveAdvisorCallOrResult(ojson.GetBytesNoCopy(payload, "messages"))
 }
@@ -1327,9 +1225,6 @@ func claudeMessagesHaveAdvisorCallOrResult(messages ojson.Result) bool {
 	}
 	return false
 }
-
-
-
 
 func claudeLeadingUserRunEnd(messageBlocks []ojson.Result, firstUserIdx int) int {
 	insertAt := firstUserIdx + 1
@@ -1463,10 +1358,6 @@ func claudeMessageContentText(content ojson.Result) string {
 	return strings.Join(parts, "\n\n")
 }
 
-
-
-
-
 type claudeCodeSystemPlacementState struct {
 	insertAt    int
 	insertedRaw []string
@@ -1532,10 +1423,6 @@ func captureClaudeCodeSystemPlacementAfterDoc(before claudeCodeSystemPlacementBe
 	}
 }
 
-
-
-
-
 func captureClaudeCodeSystemPlacement(before, after []byte, cloaked bool) claudeCodeSystemPlacementState {
 	if !cloaked || claudeUsesLegacySystemReminder(before) {
 		return claudeCodeSystemPlacementState{}
@@ -1573,12 +1460,6 @@ func captureClaudeCodeSystemPlacement(before, after []byte, cloaked bool) claude
 		texts:       append([]string(nil), texts...),
 	}
 }
-
-
-
-
-
-
 
 func reconcileClaudeCodeSystemPlacementAfterPayload(payload []byte, state claudeCodeSystemPlacementState) []byte {
 	doc := ojson.NewDoc(payload)
@@ -1690,9 +1571,6 @@ func captureClaudeCodeFableState(before, after []byte, cloaked bool) claudeCodeF
 	}
 }
 
-
-
-
 func reconcileClaudeCodeFableModelAfterPayload(
 	body []byte,
 	fableState claudeCodeFableState,
@@ -1723,7 +1601,6 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 		return false
 	}
 	changed := false
-
 
 	if isProbeOrHelper {
 		if fableState.injectedFallbacks && !payloadTouchedFallbacks {
@@ -1762,7 +1639,6 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	}
 	currentModel := strings.ToLower(strings.TrimSpace(doc.Get("model").String()))
 
-
 	if fableState.injectedFallbacks && !payloadTouchedFallbacks {
 		wantFallback := ""
 		switch {
@@ -1779,7 +1655,6 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	}
 
 	if isClaudeFable51Model(currentModel) {
-
 
 		if !doc.Get("fallbacks").Exists() && !payloadTouchedFallbacks {
 			_ = doc.SetRawBytes("fallbacks", []byte(`[{"model":"claude-opus-5"}]`))
@@ -1841,7 +1716,6 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	thinkingType := strings.ToLower(strings.TrimSpace(doc.Get("thinking.type").String()))
 	thinkingActive := thinkingType == "adaptive" || thinkingType == "enabled"
 
-
 	if fableState.injectedDisplay && !payloadTouchedDisplay && (!thinkingActive || !claudeModelUsesProgressDisplay(currentModel)) {
 		if doc.Delete("thinking.display") == nil {
 			changed = true
@@ -1852,7 +1726,6 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 			changed = true
 		}
 	}
-
 
 	if fableState.injectedReporting {
 		system := doc.Get("system")
@@ -1878,8 +1751,6 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	}
 	return changed
 }
-
-
 
 func claudeCodeLocalDate(now time.Time) string {
 	year, month, day := now.Date()
@@ -1978,8 +1849,6 @@ func isClaudeCodeCurrentDateReminder(text string) bool {
 	return strings.HasPrefix(text, claudeCodeCurrentDateReminderPrefix)
 }
 
-
-
 func claudeCodeCurrentDateReminderDate(text string) string {
 	rest, found := strings.CutPrefix(text, claudeCodeCurrentDateReminderPrefix)
 	if !found || len(rest) < len("2006-01-02.") || rest[len("2006-01-02")] != '.' {
@@ -2005,8 +1874,6 @@ func claudeSessionDatePinEnabled(cfg *config.Config) bool {
 	}
 	return claudeSessionDatePinRetention(cfg) > 0
 }
-
-
 
 func claudeCallerCurrentDateReminderDate(payload []byte) string {
 	firstUserIdx := firstClaudeUserMessageIndex(payload)
@@ -2045,9 +1912,6 @@ func claudeCallerCurrentDateReminderDateFromContent(content ojson.Result) string
 	return ""
 }
 
-
-
-
 func stripClaudeCodeCurrentDateReminder(text string) string {
 	if claudeCodeCurrentDateReminderDate(text) == "" {
 		return text
@@ -2058,9 +1922,6 @@ func stripClaudeCodeCurrentDateReminder(text string) string {
 	}
 	return strings.TrimLeft(text[end+len("</system-reminder>"):], "\n")
 }
-
-
-
 
 func stripFirstUserClaudeCodeCurrentDateReminder(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
@@ -2090,10 +1951,6 @@ func stripFirstUserClaudeCodeCurrentDateReminderDoc(doc *ojson.Doc) bool {
 	return doc.Set(contentPath, stripped) == nil
 }
 
-
-
-
-
 func resolveClaudeSessionPinnedDate(
 	cfg *config.Config,
 	auth *cliproxyauth.Auth,
@@ -2110,7 +1967,6 @@ func resolveClaudeSessionPinnedDate(
 		if helps.IsClaudeSessionDatePinKVActive() {
 			return existing
 		}
-
 
 		return helps.PinClaudeSessionDate(continuityKey, sessionID, existing, retention)
 	}
@@ -2143,10 +1999,6 @@ func resolveClaudeSessionPinnedDateDoc(
 	}
 	return helps.PinClaudeSessionDate(continuityKey, sessionID, candidate, retention)
 }
-
-
-
-
 
 func injectClaudeCodeCurrentDate(payload []byte, date string) []byte {
 	return injectClaudeCodeCurrentDateInternal(payload, date, false)
@@ -2207,9 +2059,6 @@ func injectClaudeCodeCurrentDateInternalDoc(doc *ojson.Doc, date string, isExpli
 		rawBlocks = append(rawBlocks, block.Raw)
 	}
 
-
-
-
 	insertAt := 0
 	for insertAt < len(rawBlocks) && ojson.Parse(rawBlocks[insertAt]).Get("type").String() == "tool_result" {
 		insertAt++
@@ -2220,21 +2069,7 @@ func injectClaudeCodeCurrentDateInternalDoc(doc *ojson.Doc, date string, isExpli
 	return doc.SetRawBytes(contentPath, []byte("["+strings.Join(rawBlocks, ",")+"]")) == nil
 }
 
-
-
-
-
-
 const claudeCodeContextManagement = `{"edits":[{"type":"clear_thinking_20251015","keep":"all"}]}`
-
-
-
-
-
-
-
-
-
 
 func claudeThinkingAcceptsClearThinking(payload []byte) bool {
 	switch ojson.GetBytesNoCopy(payload, "thinking.type").String() {
@@ -2257,10 +2092,6 @@ func claudeThinkingAcceptsClearThinkingDoc(doc *ojson.Doc) bool {
 	}
 }
 
-
-
-
-
 func injectClaudeCodeContextManagement(payload []byte) ([]byte, bool) {
 	doc := ojson.NewDoc(payload)
 	if !injectClaudeCodeContextManagementDoc(doc) {
@@ -2282,8 +2113,6 @@ type claudeCodeContextManagementState struct {
 	automaticallyInjected bool
 }
 
-
-
 func reconcileClaudeCodeContextManagement(payload []byte, state claudeCodeContextManagementState) []byte {
 	doc := ojson.NewDoc(payload)
 	if !reconcileClaudeCodeContextManagementDoc(doc, state) {
@@ -2297,10 +2126,6 @@ func reconcileClaudeCodeContextManagementDoc(doc *ojson.Doc, state claudeCodeCon
 		return false
 	}
 	contextManagement := doc.Get("context_management")
-
-
-
-
 
 	if !claudeThinkingAcceptsClearThinkingDoc(doc) {
 		if state.callerOwned || !state.automaticallyInjected {
@@ -2317,10 +2142,6 @@ func reconcileClaudeCodeContextManagementDoc(doc *ojson.Doc, state claudeCodeCon
 	}
 	return doc.SetRawBytes("context_management", []byte(claudeCodeContextManagement)) == nil
 }
-
-
-
-
 
 func withEphemeralCacheControl(rawBlock string) string {
 	updated, err := ojson.SetRawBytes([]byte(rawBlock), "cache_control", []byte(`{"type":"ephemeral"}`))
@@ -2515,7 +2336,6 @@ func resolveClaudeWirePolicy(cfg *config.Config, auth *cliproxyauth.Auth, apiKey
 	}
 	if confirmedClaudeCode {
 
-
 		policy.Cloak = false
 		return policy, settings
 	}
@@ -2526,13 +2346,9 @@ func resolveClaudeWirePolicy(cfg *config.Config, auth *cliproxyauth.Auth, apiKey
 		policy.Cloak = false
 	default:
 
-
-
 	}
 	return policy, settings
 }
-
-
 
 func applyCloaking(
 	ctx context.Context,
@@ -2592,7 +2408,6 @@ func applyCloakingInternalDoc(
 	}
 	isExplicit := (len(explicitCacheMode) > 0 && explicitCacheMode[0]) || isExplicitPromptCacheModeContext(ctx)
 
-
 	if !settings.strictMode {
 		if errSystem := validateClaudeCallerSystemBlocks(doc.Get("system")); errSystem != nil {
 			return false, false, errSystem
@@ -2624,12 +2439,10 @@ func applyCloakingInternalDoc(
 		}
 	}
 
-
 	if pinnedDate == "" {
 		pinnedDate = claudeCodeLocalDate(claudeCodeCurrentTime(cfg, auth))
 	}
 	if !isProbeOrHelper && claudeSessionDatePinEnabled(cfg) {
-
 
 		stripFirstUserClaudeCodeCurrentDateReminderDoc(doc)
 	}
@@ -2657,8 +2470,6 @@ func applyCloakingInternalDoc(
 		turnOriginArgs...,
 	)
 
-
-
 	if settings.serverSideFallback && !isProbeOrHelper && !doc.Get("fallbacks").Exists() {
 		model := strings.ToLower(strings.TrimSpace(doc.Get("model").String()))
 		if isClaudeOpus55Model(model) {
@@ -2671,22 +2482,15 @@ func applyCloakingInternalDoc(
 		applyClaudeCloakThinkingDisplayDoc(doc, false)
 	}
 
-
-
-
 	if !isExplicit && (isProbeOrHelper || (isSubagent && !claudeSubagentRequests1hDoc(incomingHeaders, doc))) {
 		stripClaudeCacheControlTTLDoc(doc)
 	}
-
-
-
 
 	if !policy.ProfileClaudeCodeCLI {
 		if _, errFakeUserID := injectFakeUserIDDoc(ctx, doc, apiKey, settings.cacheUserID); errFakeUserID != nil {
 			return false, false, errFakeUserID
 		}
 	}
-
 
 	if obfuscateSensitiveWords {
 		if matcher := settings.buildSensitiveWordMatcher(); matcher != nil {
@@ -2703,42 +2507,11 @@ type claudeCacheControl struct {
 	Scope string `json:"scope,omitempty"`
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 var claudeCodeCacheControl = claudeCacheControl{
 	Type: "ephemeral",
 }
 
-
 const claudeCacheControlTTL1h = "1h"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ensureCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
@@ -2791,10 +2564,6 @@ func applyTopLevelCacheControlToBlockDoc(doc *ojson.Doc, blockPath string, topCC
 	}
 	return doc.Delete("cache_control") == nil
 }
-
-
-
-
 
 func materializeTopLevelCacheControlDoc(doc *ojson.Doc) (bool, bool) {
 	if doc == nil || doc.Len() == 0 {
@@ -2869,10 +2638,6 @@ func materializeTopLevelCacheControlDoc(doc *ojson.Doc) (bool, bool) {
 	return false, false
 }
 
-
-
-
-
 func claudePayloadHasCacheableSystem(payload []byte) bool {
 	return claudeSystemHasCacheableBlocks(ojson.GetBytesNoCopy(payload, "system"))
 }
@@ -2921,23 +2686,6 @@ func lastCacheableClaudeSystemIndex(system ojson.Result) int {
 	return lastEligible
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func upgradeClaudeCacheControlTTL(payload []byte, ttl string) []byte {
 	if ttl == "" || len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -2977,7 +2725,6 @@ func upgradeClaudeCacheControlTTLDoc(doc *ojson.Doc, ttl string) bool {
 			return true
 		}
 
-
 		upgraded := `{"type":` + marshalJSONStringWithoutHTMLEscape(blockType.String()) +
 			`,"ttl":` + marshalJSONStringWithoutHTMLEscape(ttl)
 		if scope := cacheControl.Get("scope"); scope.Exists() {
@@ -2991,11 +2738,6 @@ func upgradeClaudeCacheControlTTLDoc(doc *ojson.Doc, ttl string) bool {
 	})
 	return changed
 }
-
-
-
-
-
 
 func stripClaudeCacheControlTTL(payload []byte) []byte {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
@@ -3762,9 +3504,6 @@ func (s *claudeStreamDocScanner) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-
-
-
 func forEachClaudeCacheControlPathDoc(doc *ojson.Doc, visit func(path string, cacheControl ojson.Result) bool) {
 	if doc == nil || doc.Len() == 0 {
 		return
@@ -3809,8 +3548,6 @@ func forEachClaudeCacheControlPathDoc(doc *ojson.Doc, visit func(path string, ca
 	}
 }
 
-
-
 func forEachClaudeCacheControlBlock(payload []byte, visit func(path string, block ojson.Result)) {
 	forEachClaudeCacheControlBlockResult(
 		ojson.GetBytesNoCopy(payload, "tools"),
@@ -3847,8 +3584,6 @@ func forEachClaudeCacheControlBlockResult(tools, system, messages ojson.Result, 
 		})
 	}
 }
-
-
 
 func isExplicitPromptCacheMode(payloads ...[]byte) bool {
 	for _, payload := range payloads {
@@ -3981,17 +3716,6 @@ func countCacheControlsResult(system, tools, messages ojson.Result) int {
 	return count
 }
 
-
-
-
-
-
-
-
-
-
-
-
 func normalizeCacheControlTTL(payload []byte) []byte {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -4029,22 +3753,6 @@ func normalizeCacheControlTTLDoc(doc *ojson.Doc) bool {
 	})
 	return modified
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func enforceCacheControlLimit(payload []byte, maxBlocks int) []byte {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
@@ -4137,22 +3845,6 @@ func enforceCacheControlLimitDoc(doc *ojson.Doc, maxBlocks int) bool {
 	deleteList(topPaths)
 	return changed
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func injectMessagesCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
@@ -4258,10 +3950,6 @@ func lastCacheableClaudeMessageContentBlockIndex(message ojson.Result) int {
 	return -1
 }
 
-
-
-
-
 func claudeMessageEligibleForRollingCache(message ojson.Result) bool {
 	content := message.Get("content")
 	if content.Type == ojson.String {
@@ -4269,8 +3957,6 @@ func claudeMessageEligibleForRollingCache(message ojson.Result) bool {
 	}
 	return lastCacheableClaudeMessageContentBlockIndex(message) >= 0
 }
-
-
 
 func injectClaudeFinalSystemCacheControl(payload []byte, messageIndex int, text string) []byte {
 	doc := ojson.NewDoc(payload)
@@ -4308,9 +3994,6 @@ func messageContentHasCacheControl(content ojson.Result) bool {
 	return false
 }
 
-
-
-
 func injectToolsCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !injectToolsCacheControlDoc(doc) {
@@ -4327,7 +4010,6 @@ func injectToolsCacheControlDoc(doc *ojson.Doc) bool {
 	if !tools.IsArray() {
 		return false
 	}
-
 
 	hasCacheControlInTools := false
 	lastEligibleToolIndex := -1
@@ -4355,9 +4037,6 @@ func injectToolsCacheControlDoc(doc *ojson.Doc) bool {
 
 	return true
 }
-
-
-
 
 func injectSystemCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
@@ -4392,7 +4071,6 @@ func injectSystemCacheControlDoc(doc *ojson.Doc) bool {
 			return false
 		}
 
-
 		lastSystemPath := fmt.Sprintf("system.%d.cache_control", lastEligibleSystemIndex)
 		if errSet := doc.Set(lastSystemPath, claudeCodeCacheControl); errSet != nil {
 			log.Warnf("failed to inject cache_control into system array: %v", errSet)
@@ -4404,8 +4082,6 @@ func injectSystemCacheControlDoc(doc *ojson.Doc) bool {
 		return false
 	}
 	if system.Type == ojson.String {
-
-
 
 		if strings.TrimSpace(system.String()) == "" {
 			return false

@@ -179,7 +179,6 @@ func (h *Host) Snapshot() *Snapshot {
 	return emptySnapshot()
 }
 
-
 func (h *Host) PluginLoaded(id string) bool {
 	if h == nil {
 		return false
@@ -196,7 +195,6 @@ func (h *Host) PluginLoaded(id string) bool {
 	}
 	return len(h.retired[id]) > 0
 }
-
 
 func (h *Host) PluginBusy(id string) bool {
 	if h == nil {
@@ -593,8 +591,6 @@ func (h *Host) cleanupCanceledPluginLoadAndWait(id string, request *pluginLoadRe
 	h.clearLoadingRequest(id, request)
 }
 
-
-
 func (h *Host) cleanupPluginLoad(id string, request *pluginLoadRequest, loaded *loadedPlugin) {
 	if h == nil || request == nil {
 		return
@@ -699,13 +695,9 @@ func (h *Host) withLoadedPluginFallbacks(files []pluginFile, items map[string]ru
 	return files
 }
 
-
-
 func (h *Host) UnloadPlugin(id string) bool {
 	return h.UnloadPluginContext(context.Background(), id)
 }
-
-
 
 func (h *Host) UnloadPluginContext(ctx context.Context, id string) bool {
 	if h == nil {
@@ -718,7 +710,6 @@ func (h *Host) UnloadPluginContext(ctx context.Context, id string) bool {
 	defer h.unlockApply()
 	return h.detachPlugin(ctx, id)
 }
-
 
 func (h *Host) detachPlugin(ctx context.Context, id string) bool {
 	if h == nil {
@@ -788,8 +779,6 @@ func (h *Host) detachPlugin(ctx context.Context, id string) bool {
 	return true
 }
 
-
-
 func (h *Host) detachUnselectedPlugins(ctx context.Context, selected map[string]struct{}) {
 	if h == nil {
 		return
@@ -840,13 +829,9 @@ func enabledPluginIDs(files []pluginFile, items map[string]runtimeItemConfig) ma
 	return ids
 }
 
-
-
 func (h *Host) ShutdownAll() {
 	h.ShutdownAllContext(context.Background())
 }
-
-
 
 func (h *Host) ShutdownAllContext(ctx context.Context) {
 	if h == nil || !h.lockApply(ctx) {

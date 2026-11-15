@@ -7,8 +7,6 @@ import (
 
 var emptyGeminiUserTurnJSON = []byte(`{"role":"user","parts":[{"text":""}]}`)
 
-
-
 func EnsureGeminiLeadingUserContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -19,8 +17,6 @@ func EnsureGeminiLeadingUserContent(payload []byte, path string) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func EnsureGeminiLeadingUserContentDoc(doc *ojson.Doc, path string) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -61,8 +57,6 @@ func contentHasFunctionResponse(content ojson.Result) bool {
 	return false
 }
 
-
-
 func contentHasFunctionResponseMedia(content ojson.Result) bool {
 	parts := content.Get("parts")
 	if !parts.IsArray() {
@@ -79,12 +73,6 @@ func contentHasFunctionResponseMedia(content ojson.Result) bool {
 	return false
 }
 
-
-
-
-
-
-
 func EnsureGeminiTrailingUserContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -95,8 +83,6 @@ func EnsureGeminiTrailingUserContent(payload []byte, path string) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func EnsureGeminiTrailingUserContentDoc(doc *ojson.Doc, path string) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -128,11 +114,6 @@ func EnsureGeminiTrailingUserContentDoc(doc *ojson.Doc, path string) bool {
 	return doc.SetRawBytes(path, translatorcommon.JoinRawArray(contentItems)) == nil
 }
 
-
-
-
-
-
 func DropGeminiTrailingThoughtOnlyContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -143,8 +124,6 @@ func DropGeminiTrailingThoughtOnlyContent(payload []byte, path string) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func DropGeminiTrailingThoughtOnlyContentDoc(doc *ojson.Doc, path string) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -187,8 +166,6 @@ func contentIsThoughtOnlyModelTurn(content ojson.Result) bool {
 	return true
 }
 
-
-
 func EnsureGeminiBoundaryUserContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -199,8 +176,6 @@ func EnsureGeminiBoundaryUserContent(payload []byte, path string) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func EnsureGeminiBoundaryUserContentDoc(doc *ojson.Doc, path string) bool {
 	leading := EnsureGeminiLeadingUserContentDoc(doc, path)

@@ -12,8 +12,6 @@ import (
 
 const homeResultExecutorType = "home-result"
 
-
-
 func (m *Manager) ReportHomeUnauthorized(ctx context.Context, auth *Auth, provider, model string, upstreamBody ...[]byte) {
 	failureBody := ""
 	if len(upstreamBody) > 0 {

@@ -254,12 +254,10 @@ func TestStartLoginPassesMetadataAndClonesMap(t *testing.T) {
 		t.Fatalf("receivedMetadata = %#v, want region=us-east-1", receivedMetadata)
 	}
 
-
 	meta["region"] = "mutated"
 	if receivedMetadata["region"] != "us-east-1" {
 		t.Fatalf("receivedMetadata was mutated when caller map changed: %#v", receivedMetadata)
 	}
-
 
 	called = false
 	receivedMetadata = nil
@@ -1036,7 +1034,6 @@ func TestAuthProviderMultiPortalRegistrationAndRouting(t *testing.T) {
 			},
 		})
 
-
 		pollOne, handled, errPoll := host.PollLogin(context.Background(), "portal-one", "state-1")
 		if errPoll != nil || !handled || pollOne.Status != pluginapi.AuthLoginStatusSuccess {
 			t.Fatalf("PollLogin(portal-one) = (%#v, %v, %v), want success", pollOne, handled, errPoll)
@@ -1100,7 +1097,6 @@ func TestAuthProviderMultiPortalRegistrationAndRouting(t *testing.T) {
 			},
 		})
 
-
 		if host.HasAuthProvider("vendor") {
 			t.Fatal("HasAuthProvider(vendor) = true for vendor-cn plugin, want false")
 		}
@@ -1118,7 +1114,6 @@ func TestAuthProviderMultiPortalRegistrationAndRouting(t *testing.T) {
 	})
 
 	t.Run("cold_start_parse_and_refresh_without_executor", func(t *testing.T) {
-
 
 		refreshed := false
 		host := newHostWithRecords(capabilityRecord{

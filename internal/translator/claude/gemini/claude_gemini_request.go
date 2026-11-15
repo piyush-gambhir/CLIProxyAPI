@@ -1,8 +1,3 @@
-
-
-
-
-
 package gemini
 
 import (
@@ -16,37 +11,16 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertGeminiRequestToClaude(modelName, inputRawJSON, stream)
 
 }
-
-
 
 func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	rawJSON := inputRawJSON
 	var drops translatorcommon.UserTurnDrops
 
 	userID := translatorcommon.DeriveClaudeUserID(rawJSON)
-
 
 	outDoc := ojson.NewDoc([]byte(`{"model":"","max_tokens":32000,"messages":[],"metadata":{}}`))
 	_ = outDoc.Set("metadata.user_id", userID)
@@ -73,19 +47,13 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 		return ids
 	}
 
-
-
-
-
 	var pendingToolIDs []string
 	toolCallCounter := 0
-
 
 	_ = outDoc.Set("model", modelName)
 	if serviceTier := root.Get("service_tier"); serviceTier.Exists() && serviceTier.Type == ojson.String {
 		_ = outDoc.Set("service_tier", serviceTier.String())
 	}
-
 
 	if genConfig := root.Get("generationConfig"); genConfig.Exists() {
 
@@ -108,14 +76,11 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 			}
 		}
 
-
 		if thinkingConfig := genConfig.Get("thinkingConfig"); thinkingConfig.Exists() && thinkingConfig.IsObject() {
 			mi := registry.LookupModelInfo(modelName, "claude")
 			supportsAdaptive := mi != nil && mi.Thinking != nil && len(mi.Thinking.Levels) > 0
 			supportsMax := supportsAdaptive && thinking.HasLevel(mi.Thinking.Levels, string(thinking.LevelMax))
 			supportsDynamic := supportsAdaptive && mi.Thinking.DynamicAllowed
-
-
 
 			thinkingLevel := thinkingConfig.Get("thinkingLevel")
 			if !thinkingLevel.Exists() {
@@ -208,7 +173,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-
 	sysInstr := root.Get("systemInstruction")
 	if !sysInstr.Exists() {
 		sysInstr = root.Get("system_instruction")
@@ -237,7 +201,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 			}
 		}
 	}
-
 
 	if contents := root.Get("contents"); contents.Exists() && contents.IsArray() {
 		previousRole := ""
@@ -279,7 +242,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 						return true
 					}
 
-
 					if text := part.Get("text"); text.Exists() {
 						textContent := []byte(`{"type":"text","text":""}`)
 						textContent, _ = ojson.SetBytes(textContent, "text", text.String())
@@ -290,11 +252,9 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 						return true
 					}
 
-
 					if fc := translatorcommon.GeminiPartFunctionCall(part); fc.Exists() && (role == "assistant" || hasFunctionResponse) {
 						switchRole("assistant")
 						toolUseDoc := ojson.NewDoc([]byte(`{"type":"tool_use","id":"","name":"","input":{}}`))
-
 
 						toolID := getGeminiToolID(fc)
 						if toolID == "" {
@@ -315,12 +275,9 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 						return true
 					}
 
-
 					if fr := translatorcommon.GeminiPartFunctionResponse(part); fr.Exists() {
 						switchRole("user")
 						toolResultDoc := ojson.NewDoc([]byte(`{"type":"tool_result","tool_use_id":"","content":""}`))
-
-
 
 						var toolID string
 						if customID := getGeminiToolID(fr); customID != "" {
@@ -337,7 +294,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 						}
 						_ = toolResultDoc.Set("tool_use_id", toolID)
 
-
 						if result := fr.Get("response.result"); result.Exists() {
 							_ = toolResultDoc.Set("content", result.String())
 						} else if response := fr.Get("response"); response.Exists() {
@@ -348,9 +304,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 						return true
 					}
 
-
-
-
 					if inlineData := geminiClaudeInlineData(part); inlineData.Exists() {
 						if contentPart, ok := claudeContentPartFromGeminiInlineData(inlineData, role == "assistant"); ok {
 							contentItems = append(contentItems, contentPart)
@@ -360,7 +313,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 						}
 						return true
 					}
-
 
 					if fileData := geminiClaudeFileData(part); fileData.Exists() {
 						if contentPart, ok := claudeContentPartFromGeminiFileData(fileData); ok {
@@ -384,7 +336,6 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 	messages := messageAccumulator.Messages()
 	orderGeminiClaudeToolResults(messages)
 	translatorcommon.SetRawArrayItemsDoc(outDoc, "messages", messages)
-
 
 	if tools := root.Get("tools"); tools.Exists() && tools.IsArray() {
 		var anthropicTools []interface{}
@@ -423,20 +374,16 @@ func convertGeminiRequestToClaude(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-
 	if toolConfig := root.Get("tool_config"); toolConfig.Exists() {
 		setClaudeToolChoiceFromGeminiToolConfigDoc(outDoc, toolConfig.Get("function_calling_config"))
 	} else if toolConfig := root.Get("toolConfig"); toolConfig.Exists() {
 		setClaudeToolChoiceFromGeminiToolConfigDoc(outDoc, toolConfig.Get("functionCallingConfig"))
 	}
 
-
 	_ = outDoc.Set("stream", stream)
 
 	return thinking.ApplyTranslatedSummaryToClaude(outDoc.Bytes(), rawJSON, "gemini", modelName), drops.Err()
 }
-
-
 
 func orderGeminiClaudeToolResults(messages [][]byte) {
 	for i, message := range messages {
@@ -542,9 +489,6 @@ func geminiClaudeFileData(part ojson.Result) ojson.Result {
 	}
 	return part.Get("file_data")
 }
-
-
-
 
 func claudeContentPartFromGeminiInlineData(inlineData ojson.Result, keepPlaceholder bool) ([]byte, bool) {
 	mimeType := inlineData.Get("mimeType").String()

@@ -18,12 +18,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/api/handlers"
 )
 
-
-
-
-
-
-
 func TestForwardResponsesWebsocketRejectsLocalInterruptAfterCompletion(t *testing.T) {
 	testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t,
 		`{"type":"response.completed","response":{"id":"resp-1","output":[]}}`, wsEventTypeCompleted, true)
@@ -67,9 +61,6 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		ctx.Request = r
 
-
-
-
 		testHandler := NewOpenAIResponsesAPIHandler(handlers.NewBaseAPIHandlers(nil, nil))
 		_, completedResponseID, _, errMsg, errForward := testHandler.forwardResponsesWebsocket(
 			ctx,
@@ -82,8 +73,6 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 			responsesWebsocketForwardOptions{localInterrupt: local},
 		)
 		if errForward != nil {
-
-
 
 			if errForward != context.Canceled && !errors.Is(errForward, websocket.ErrCloseSent) {
 				serverErrCh <- errForward
@@ -134,11 +123,9 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 		t.Fatalf("payload type = %s, want %s", got, terminalType)
 	}
 
-
 	if local.deliver([]byte(`{"type":"response.interrupt","response_id":"unknown"}`)) {
 		t.Fatal("local interrupt accepted after terminal event was written downstream")
 	}
-
 
 	closeStream()
 	if errClose := conn.Close(); errClose != nil {

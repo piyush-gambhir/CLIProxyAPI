@@ -100,7 +100,6 @@ func testManagerSavedFieldsPublished(t *testing.T, saveErr error) {
 	}
 }
 
-
 type blockingEnrichingAuthStore struct {
 	enrichingAuthStore
 	entered chan struct{}

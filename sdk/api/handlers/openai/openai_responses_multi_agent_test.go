@@ -313,7 +313,6 @@ func TestResponsesOrphanCodexDelegationCompatibility(t *testing.T) {
 		t.Fatalf("input.0.content.0.text = %q, want %q", text, wantText)
 	}
 
-
 	requestNoHeader := httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewBufferString(payload))
 	recorderNoHeader := httptest.NewRecorder()
 	router.ServeHTTP(recorderNoHeader, requestNoHeader)

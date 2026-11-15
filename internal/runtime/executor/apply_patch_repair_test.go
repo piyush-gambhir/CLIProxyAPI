@@ -26,7 +26,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 func task6RepairSource(mode string) [][]byte {
 	if mode == "empty" {
 		return nil

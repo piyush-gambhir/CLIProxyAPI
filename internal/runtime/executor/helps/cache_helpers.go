@@ -13,20 +13,14 @@ type CodexCache struct {
 	Expire time.Time
 }
 
-
-
 var (
 	codexCacheMap = make(map[string]CodexCache)
 	codexCacheMu  sync.RWMutex
 )
 
-
 const codexCacheCleanupInterval = 15 * time.Minute
 
-
 var codexCacheCleanupOnce sync.Once
-
-
 
 func startCodexCacheCleanup() {
 	go func() {
@@ -37,7 +31,6 @@ func startCodexCacheCleanup() {
 		}
 	}()
 }
-
 
 func purgeExpiredCodexCache() {
 	now := time.Now()
@@ -50,7 +43,6 @@ func purgeExpiredCodexCache() {
 	}
 }
 
-
 func GetCodexCache(key string) (CodexCache, bool) {
 	cache, ok, err := GetCodexCacheRequired(context.Background(), key)
 	if err == nil {
@@ -58,7 +50,6 @@ func GetCodexCache(key string) (CodexCache, bool) {
 	}
 	return CodexCache{}, false
 }
-
 
 func GetCodexCacheRequired(ctx context.Context, key string) (CodexCache, bool, error) {
 	var homeCache CodexCache
@@ -84,11 +75,9 @@ func GetCodexCacheRequired(ctx context.Context, key string) (CodexCache, bool, e
 	return cache, true, nil
 }
 
-
 func SetCodexCache(key string, cache CodexCache) {
 	SetCodexCacheBestEffort(context.Background(), key, cache)
 }
-
 
 func SetCodexCacheRequired(ctx context.Context, key string, cache CodexCache) error {
 	ttl := time.Until(cache.Expire)
@@ -106,7 +95,6 @@ func SetCodexCacheRequired(ctx context.Context, key string, cache CodexCache) er
 	return nil
 }
 
-
 func SetCodexCacheBestEffort(ctx context.Context, key string, cache CodexCache) bool {
 	ttl := time.Until(cache.Expire)
 	if ttl <= 0 {
@@ -121,7 +109,6 @@ func SetCodexCacheBestEffort(ctx context.Context, key string, cache CodexCache) 
 	codexCacheMu.Unlock()
 	return true
 }
-
 
 func CodexPromptCacheKey(modelName string, userScope string) string {
 	return "cpa:codex:prompt-cache:" + homekv.HashKeyPart(modelName) + ":" + homekv.HashKeyPart(userScope)

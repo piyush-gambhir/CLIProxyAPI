@@ -16,7 +16,6 @@ import (
 )
 
 const (
-
 	oauthSessionTTL          = 30 * time.Minute
 	oauthCompletedSessionTTL = time.Minute
 	maxOAuthStateLength      = 128
@@ -33,7 +32,6 @@ var (
 	errOAuthSessionNotPending = errors.New("oauth session is not pending")
 	errOAuthSessionExists     = errors.New("oauth session already exists")
 )
-
 
 var ErrSIWCCallbackRequiresV8 = fmt.Errorf("%w: SIWC callbacks require /v8/management/oauth/callback", errOAuthSessionNotPending)
 
@@ -437,14 +435,11 @@ func (s *oauthSessionStore) claimCommit(state, provider string) bool {
 	return true
 }
 
-
-
 func (s *oauthSessionStore) Cancel(state string) bool {
 	state = strings.TrimSpace(state)
 	if state == "" {
 		return false
 	}
-
 
 	if session, ok := s.Get(state); ok && session.SIWC != nil {
 		session.SIWC.mu.Lock()
@@ -573,10 +568,6 @@ func IsOAuthSessionPending(state, provider string) bool {
 	return oauthSessions.IsPending(state, provider)
 }
 
-
-
-
-
 func guardOAuthSessionPendingForSave(state, provider string) error {
 	if IsOAuthSessionPending(state, provider) {
 		return nil
@@ -584,17 +575,12 @@ func guardOAuthSessionPendingForSave(state, provider string) error {
 	return errOAuthSessionNotPending
 }
 
-
-
-
 func claimOAuthSessionCommit(state, provider string) error {
 	if oauthSessions.claimCommit(state, provider) {
 		return nil
 	}
 	return errOAuthSessionNotPending
 }
-
-
 
 func CancelOAuthSession(state string) bool {
 	return oauthSessions.Cancel(state)

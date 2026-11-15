@@ -12,12 +12,9 @@ import (
 
 const pluginStatusReportTimeout = 10 * time.Second
 
-
 type PluginStatusClient interface {
 	RPushPluginStatus(ctx context.Context, payload []byte) error
 }
-
-
 
 func ReportPluginStatus(ctx context.Context, client PluginStatusClient, nodeID string, report homeplugins.SyncReport) error {
 	if client == nil {

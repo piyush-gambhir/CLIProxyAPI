@@ -15,7 +15,6 @@ type OAuthSettingsSummary struct {
 	count int
 }
 
-
 func SummarizeOAuthSettings(entries map[string][]config.OAuthModelSetting) map[string]OAuthSettingsSummary {
 	if len(entries) == 0 {
 		return nil
@@ -33,7 +32,6 @@ func SummarizeOAuthSettings(entries map[string][]config.OAuthModelSetting) map[s
 	}
 	return out
 }
-
 
 func DiffOAuthSettingsChanges(oldMap, newMap map[string][]config.OAuthModelSetting) ([]string, []string) {
 	oldSummary := SummarizeOAuthSettings(oldMap)

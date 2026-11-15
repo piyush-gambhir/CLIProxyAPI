@@ -10,11 +10,7 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
 func TestIssue6193_Sonnet55ToolChangeBeta(t *testing.T) {
-
 
 	sonnet55Variants := []string{
 		"claude-sonnet-5-5",
@@ -57,9 +53,6 @@ func TestIssue6193_Sonnet55ToolChangeBeta(t *testing.T) {
 			t.Fatalf("claudeModelUsesProgressDisplay(%q) = false, want true", model)
 		}
 	}
-
-
-
 
 	body := []byte(`{
 		"model": "claude-sonnet-5-5",

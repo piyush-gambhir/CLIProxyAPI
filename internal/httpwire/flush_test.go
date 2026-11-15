@@ -77,7 +77,6 @@ func (w *bufferedFlushWriter) Flush() {
 	w.ResponseWriter.(http.Flusher).Flush()
 }
 
-
 type bufferedGinFlushWriter struct {
 	gin.ResponseWriter
 	buffered *bufferedFlushWriter

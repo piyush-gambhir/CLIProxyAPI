@@ -1,8 +1,3 @@
-
-
-
-
-
 package gemini
 
 import (
@@ -20,13 +15,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/api/handlers"
 )
 
-
-
 type GeminiAPIHandler struct {
 	*handlers.BaseAPIHandler
 }
-
-
 
 func NewGeminiAPIHandler(apiHandlers *handlers.BaseAPIHandler) *GeminiAPIHandler {
 	return &GeminiAPIHandler{
@@ -34,19 +25,15 @@ func NewGeminiAPIHandler(apiHandlers *handlers.BaseAPIHandler) *GeminiAPIHandler
 	}
 }
 
-
 func (h *GeminiAPIHandler) HandlerType() string {
 	return Gemini
 }
-
 
 func (h *GeminiAPIHandler) Models() []map[string]any {
 
 	modelRegistry := registry.GetGlobalRegistry()
 	return modelRegistry.GetAvailableModels("gemini")
 }
-
-
 
 func (h *GeminiAPIHandler) GeminiModels(c *gin.Context) {
 	rawModels := h.Models()
@@ -78,8 +65,6 @@ func (h *GeminiAPIHandler) GeminiModels(c *gin.Context) {
 	})
 }
 
-
-
 func (h *GeminiAPIHandler) GeminiGetHandler(c *gin.Context) {
 	var request struct {
 		Action string `uri:"action" binding:"required"`
@@ -94,7 +79,6 @@ func (h *GeminiAPIHandler) GeminiGetHandler(c *gin.Context) {
 		return
 	}
 	action := strings.TrimPrefix(request.Action, "/")
-
 
 	availableModels := h.Models()
 	var targetModel map[string]any
@@ -124,8 +108,6 @@ func (h *GeminiAPIHandler) GeminiGetHandler(c *gin.Context) {
 		},
 	})
 }
-
-
 
 func (h *GeminiAPIHandler) GeminiHandler(c *gin.Context) {
 	var request struct {
@@ -173,18 +155,8 @@ func (h *GeminiAPIHandler) GeminiHandler(c *gin.Context) {
 	}
 }
 
-
-
-
-
-
-
-
-
-
 func (h *GeminiAPIHandler) handleStreamGenerateContent(c *gin.Context, modelName string, rawJSON []byte) {
 	alt := h.GetAlt(c)
-
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
@@ -236,7 +208,6 @@ func (h *GeminiAPIHandler) handleStreamGenerateContent(c *gin.Context, modelName
 		return
 	}
 	upstreamHeaders = resolvedHeaders
-
 
 	for {
 		select {
@@ -291,10 +262,8 @@ func (h *GeminiAPIHandler) handleStreamGenerateContent(c *gin.Context, modelName
 				return
 			}
 
-
 			stopKeepAlive()
 			commitHeaders()
-
 
 			if alt == "" {
 				_, _ = c.Writer.Write([]byte("data: "))
@@ -305,7 +274,6 @@ func (h *GeminiAPIHandler) handleStreamGenerateContent(c *gin.Context, modelName
 			}
 			flusher.Flush()
 
-
 			h.forwardGeminiStream(c, flusher, alt, func(err error) { cliCancel(err) }, dataChan, errChan)
 			return
 		case <-keepAliveC:
@@ -313,14 +281,6 @@ func (h *GeminiAPIHandler) handleStreamGenerateContent(c *gin.Context, modelName
 		}
 	}
 }
-
-
-
-
-
-
-
-
 
 func (h *GeminiAPIHandler) handleCountTokens(c *gin.Context, modelName string, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
@@ -336,15 +296,6 @@ func (h *GeminiAPIHandler) handleCountTokens(c *gin.Context, modelName string, r
 	_, _ = c.Writer.Write(resp)
 	cliCancel()
 }
-
-
-
-
-
-
-
-
-
 
 func (h *GeminiAPIHandler) handleGenerateContent(c *gin.Context, modelName string, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")

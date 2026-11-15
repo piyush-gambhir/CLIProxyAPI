@@ -229,7 +229,6 @@ func TestOrderedRequestConnBypassesNonHTTPHandshakeBytes(t *testing.T) {
 		return []string{"User-Agent", "Host"}
 	})
 
-
 	socksGreeting := []byte{0x05, 0x01, 0x00}
 	if n, errWrite := conn.Write(socksGreeting); errWrite != nil || n != len(socksGreeting) {
 		t.Fatalf("write socks greeting: %d, %v", n, errWrite)
@@ -237,7 +236,6 @@ func TestOrderedRequestConnBypassesNonHTTPHandshakeBytes(t *testing.T) {
 	if !bytes.Equal(underlying.Bytes(), socksGreeting) {
 		t.Fatalf("socks bytes not passed through immediately: got %v", underlying.Bytes())
 	}
-
 
 	httpRequest := []byte("GET / HTTP/1.1\r\nHost: target.com\r\nUser-Agent: curl/8.0\r\n\r\n")
 	if n, errWrite := conn.Write(httpRequest); errWrite != nil || n != len(httpRequest) {
@@ -258,7 +256,6 @@ func TestOrderedRequestConnSupportsCustomAndLowercaseHTTPMethods(t *testing.T) {
 	conn := NewOrderedRequestConn(mockConn, func(_, _ string) []string {
 		return []string{"Man", "Host"}
 	})
-
 
 	input := []byte("M-SEARCH * HTTP/1.1\r\nHost: 239.255.255.250:1900\r\nMan: \"ssdp:discover\"\r\n\r\n")
 	if _, errWrite := conn.Write(input); errWrite != nil {
@@ -283,7 +280,6 @@ func TestOrderedRequestConnSupportsLongAndChunkedHTTPMethods(t *testing.T) {
 	longMethod := strings.Repeat("M", 70)
 	requestText := longMethod + " /resource HTTP/1.1\r\nHost: example.com\r\nx-a: 1\r\nx-b: 2\r\n\r\n"
 	input := []byte(requestText)
-
 
 	for i := 0; i < len(input); i += 10 {
 		end := i + 10

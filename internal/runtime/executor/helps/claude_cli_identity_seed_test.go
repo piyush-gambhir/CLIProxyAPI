@@ -28,7 +28,6 @@ func TestEnsureClaudeCLIFingerprintIdentitySynthesizesStableSources(t *testing.T
 		t.Fatalf("device pool = %#v, want stable single device", deviceIDs)
 	}
 
-
 	if err := EnsureClaudeCLIFingerprintIdentity(auth, "key-a", true); err != nil {
 		t.Fatalf("second EnsureClaudeCLIFingerprintIdentity() error = %v", err)
 	}

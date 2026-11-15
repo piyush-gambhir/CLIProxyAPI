@@ -6,10 +6,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-
-
-
-
 var claudeToolSearchLegacyPrefixes = []string{"claude-3", "claude-2", "claude-instant"}
 
 var claudeToolSearchLegacyModels = map[string]struct{}{
@@ -22,8 +18,6 @@ var claudeToolSearchLegacyModels = map[string]struct{}{
 	"claude-sonnet-4-0":        {},
 	"claude-sonnet-4-20250514": {},
 }
-
-
 
 func ClaudeModelLacksToolSearch(model string) bool {
 	model = strings.ToLower(strings.TrimSpace(thinking.ParseSuffix(model).ModelName))

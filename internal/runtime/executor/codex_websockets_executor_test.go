@@ -948,7 +948,6 @@ func TestMapCodexWebsocketWriteErrorDoesNotReusePriorConnectionClose(t *testing.
 
 	sess.resetUpstreamDisconnectError(replacementConn)
 
-
 	sess.setUpstreamDisconnectError(priorConn, &websocket.CloseError{Code: websocket.CloseMessageTooBig})
 	sess.setUpstreamDisconnectError(replacementConn, &websocket.CloseError{Code: websocket.CloseNormalClosure})
 	replacementErr := mapCodexWebsocketWriteError(sess, replacementConn, websocket.ErrCloseSent)
@@ -2387,7 +2386,6 @@ func TestCodexWebsocketsExecuteStreamObservesWebSocketResponseEvents(t *testing.
 		t.Fatalf("ExecuteStream() error = %v", err)
 	}
 
-
 	for chunk := range streamResult.Chunks {
 		if chunk.Err != nil {
 			t.Fatalf("stream chunk error: %v", chunk.Err)
@@ -2609,7 +2607,6 @@ func TestCodexWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 	sess := &codexWebsocketSession{sessionID: "test-keepalive"}
 	sess.configureConn(clientConn)
 
-
 	go func() {
 		for {
 			if _, _, errRead := clientConn.ReadMessage(); errRead != nil {
@@ -2618,16 +2615,13 @@ func TestCodexWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 		}
 	}()
 
-
 	sess.writeMu.Lock()
 	defer sess.writeMu.Unlock()
-
 
 	errPing := serverConn.WriteControl(websocket.PingMessage, []byte("keepalive-ping"), time.Now().Add(time.Second))
 	if errPing != nil {
 		t.Fatalf("failed to send ping: %v", errPing)
 	}
-
 
 	select {
 	case got := <-pongReceived:
@@ -2673,7 +2667,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return nil
 		})
 
-
 		readErrCh := make(chan error, 1)
 		payloadReceived := make(chan struct{})
 		go func() {
@@ -2690,7 +2683,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			}
 		}()
 
-
 		select {
 		case <-inWriteHook:
 		case <-time.After(5 * time.Second):
@@ -2698,9 +2690,7 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-
 		_ = conn.WriteControl(websocket.PingMessage, []byte("session-ping"), time.Now().Add(5*time.Second))
-
 
 		select {
 		case got := <-serverPongCh:
@@ -2713,15 +2703,12 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-
-
 		select {
 		case <-payloadReceived:
 		case <-time.After(5 * time.Second):
 			t.Errorf("timed out waiting for client payload after pong")
 			return
 		}
-
 
 		respPayload := []byte(`{"type":"response.completed","response":{"id":"resp-1","status":"completed","output":[]}}`)
 		_ = conn.WriteMessage(websocket.TextMessage, respPayload)
@@ -2806,7 +2793,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 			}
 		}()
 
-
 		select {
 		case <-inWriteHook:
 		case <-time.After(5 * time.Second):
@@ -2814,9 +2800,7 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 			return
 		}
 
-
 		_ = conn.WriteControl(websocket.PingMessage, []byte("sessionless-ping"), time.Now().Add(5*time.Second))
-
 
 		select {
 		case got := <-serverPongCh:
@@ -2916,7 +2900,6 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_NonstreamSessionless(t *testi
 			}
 		}()
 
-
 		select {
 		case <-inWriteHook:
 		case <-time.After(5 * time.Second):
@@ -2924,9 +2907,7 @@ func TestCodexWebsockets_KeepalivePingDuringUpload_NonstreamSessionless(t *testi
 			return
 		}
 
-
 		_ = conn.WriteControl(websocket.PingMessage, []byte("nonstream-sessionless-ping"), time.Now().Add(5*time.Second))
-
 
 		select {
 		case got := <-serverPongCh:
@@ -2991,15 +2972,12 @@ func TestCodexWebsockets_SessionlessBufferingImmediateTerminalClosesConnection(t
 			close(serverClosed)
 		}()
 
-
 		if _, _, errRead := conn.ReadMessage(); errRead != nil {
 			return
 		}
 
-
 		respPayload := []byte(`{"type":"response.completed","response":{"id":"resp-1","status":"completed","output":[]}}`)
 		_ = conn.WriteMessage(websocket.TextMessage, respPayload)
-
 
 		for {
 			if _, _, errRead := conn.ReadMessage(); errRead != nil {
@@ -3025,7 +3003,6 @@ func TestCodexWebsockets_SessionlessBufferingImmediateTerminalClosesConnection(t
 	opts := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FromString("openai-response"),
 		ResponseFormat: sdktranslator.FromString("openai-response"),
-
 	}
 
 	result, errStream := exec.ExecuteStream(context.Background(), auth, req, opts)
@@ -3039,7 +3016,6 @@ func TestCodexWebsockets_SessionlessBufferingImmediateTerminalClosesConnection(t
 		}
 	}
 
-
 	select {
 	case <-serverClosed:
 	case <-time.After(2 * time.Second):
@@ -3052,12 +3028,10 @@ func TestCodexWebsockets_LastEventAndTerminalTracking(t *testing.T) {
 	conn2 := &websocket.Conn{}
 	sess := &codexWebsocketSession{sessionID: "track-session"}
 
-
 	sess.resetUpstreamDisconnectError(conn1)
 	if got := sess.getLastEventType(conn1); got != "" {
 		t.Fatalf("initial lastEventType = %q, want empty", got)
 	}
-
 
 	sess.setLastEventType(conn1, "response.output_item.added")
 	if got := sess.getLastEventType(conn1); got != "response.output_item.added" {
@@ -3067,7 +3041,6 @@ func TestCodexWebsockets_LastEventAndTerminalTracking(t *testing.T) {
 		t.Fatalf("output_item.added should not be terminal")
 	}
 
-
 	sess.setLastEventType(conn1, "response.completed")
 	if got := sess.getLastEventType(conn1); got != "response.completed" {
 		t.Fatalf("lastEventType = %q, want response.completed", got)
@@ -3075,7 +3048,6 @@ func TestCodexWebsockets_LastEventAndTerminalTracking(t *testing.T) {
 	if !isTerminalEvent(sess.getLastEventType(conn1)) {
 		t.Fatalf("response.completed must be terminal")
 	}
-
 
 	sess.resetUpstreamDisconnectError(conn2)
 	if got := sess.getLastEventType(conn2); got != "" {
@@ -3098,7 +3070,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 	testWebsocketWriteChunkHook = func(chunkIndex int, totalChunks int) {
 		if chunkIndex == 1 {
 
-
 			select {
 			case <-firstChunkReadOnServer:
 			case <-time.After(5 * time.Second):
@@ -3110,7 +3081,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 		}
 	}
 	defer func() { testWebsocketWriteChunkHook = nil }()
-
 
 	largeContent := strings.Repeat("A", 128*1024)
 
@@ -3126,7 +3096,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			serverPongCh <- appData
 			return nil
 		})
-
 
 		msgType, reader, errNext := conn.NextReader()
 		if errNext != nil {
@@ -3145,12 +3114,9 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			return
 		}
 
-
 		close(firstChunkReadOnServer)
 
-
 		_ = conn.WriteControl(websocket.PingMessage, []byte("chunked-interleaved-ping"), time.Now().Add(time.Second))
-
 
 		readDone := make(chan struct{})
 		var totalMsg []byte
@@ -3161,7 +3127,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			totalMsg = append(firstChunk, rest...)
 			close(readDone)
 		}()
-
 
 		select {
 		case got := <-serverPongCh:
@@ -3175,7 +3140,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			close(allowRemainingChunks)
 			return
 		}
-
 
 		select {
 		case <-readDone:
@@ -3192,7 +3156,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 			t.Errorf("total received payload too short: %d bytes", len(totalMsg))
 			return
 		}
-
 
 		respPayload := []byte(`{"type":"response.completed","response":{"id":"resp-1","status":"completed","output":[]}}`)
 		_ = conn.WriteMessage(websocket.TextMessage, respPayload)
@@ -3211,7 +3174,6 @@ func TestCodexWebsockets_ChunkedWriteAllowsPongInterleaving(t *testing.T) {
 	_ = sess.activate(clientConn)
 	exec := NewCodexWebsocketsExecutor(&config.Config{})
 	go exec.readUpstreamLoop(sess, clientConn)
-
 
 	payload := []byte(largeContent)
 	errWrite := sess.writeMessage(clientConn, websocket.TextMessage, payload)
@@ -3306,7 +3268,6 @@ func TestCodexWebsockets_SendErrorLogsSessionObject(t *testing.T) {
 	}))
 	defer server.Close()
 
-
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
 		_ = conn.SetWriteDeadline(time.Now().Add(-time.Second))
 	}
@@ -3325,7 +3286,6 @@ func TestCodexWebsockets_SendErrorLogsSessionObject(t *testing.T) {
 	opts := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FromString("openai-response"),
 		ResponseFormat: sdktranslator.FromString("openai-response"),
-
 	}
 
 	result, err := exec.ExecuteStream(context.Background(), auth, req, opts)

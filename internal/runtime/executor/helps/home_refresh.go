@@ -87,9 +87,6 @@ var currentHomeRefreshClient = func() homeRefreshClient {
 	return home.Current()
 }
 
-
-
-
 func RefreshAuthViaHome(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, bool, error) {
 	if cfg == nil || !cfg.Home.Enabled {
 		return nil, false, nil

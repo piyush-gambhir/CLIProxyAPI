@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-
-
 func AccessTokenSHA256(auth *Auth) string {
 	accessToken := accessTokenForFingerprint(auth)
 	if accessToken == "" {
@@ -29,9 +27,6 @@ func withAccessTokenFingerprintObserver(ctx context.Context, observer func(*Auth
 	}
 	return context.WithValue(ctx, accessTokenFingerprintObserverContextKey{}, observer)
 }
-
-
-
 
 func NotifyAccessTokenFingerprint(ctx context.Context, auth *Auth) {
 	if ctx == nil || auth == nil || AccessTokenSHA256(auth) == "" {

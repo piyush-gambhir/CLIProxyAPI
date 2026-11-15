@@ -17,7 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func newDefaultAuthManager() *sdkAuth.Manager {
 	return sdkAuth.NewManager(
 		sdkAuth.GetTokenStore(),
@@ -102,8 +101,6 @@ func (s *Service) handleAuthUpdates(ctx context.Context, updates []watcher.AuthU
 	if s == nil {
 		return
 	}
-
-
 
 	s.authUpdateMu.Lock()
 	locked := true
@@ -214,8 +211,6 @@ func (s *Service) handleAuthUpdates(ctx context.Context, updates []watcher.AuthU
 					continue
 				}
 
-
-
 				if update.Auth == nil && update.IsFileRemoval() {
 					path := existing.Attributes[coreauth.AttributePath]
 					switch existing.AuthSourceKind() {
@@ -251,7 +246,6 @@ func (s *Service) handleAuthUpdates(ctx context.Context, updates []watcher.AuthU
 	waitAuthRegistrations(skippedWaits)
 }
 
-
 func (s *Service) shouldSkipFileAuthDelete(path, id string) bool {
 	_, errStat := os.Stat(path)
 	if os.IsNotExist(errStat) {
@@ -261,7 +255,6 @@ func (s *Service) shouldSkipFileAuthDelete(path, id string) bool {
 		log.Debugf("skipping auth delete for %s: backing file is not confirmed missing", id)
 		return true
 	}
-
 
 	auths, errSnapshotAuthFile := s.currentWatcher().SnapshotAuthFile(path)
 	if errSnapshotAuthFile != nil || len(auths) == 0 {
@@ -274,7 +267,6 @@ func (s *Service) shouldSkipFileAuthDelete(path, id string) bool {
 			continue
 		}
 		hasAuth = true
-
 
 		if authIDMatches(auth.ID, id, runtime.GOOS == "windows") {
 			log.Debugf("skipping auth delete for %s: auth ID is present in the re-created file", id)
@@ -419,9 +411,6 @@ func (s *Service) prepareCoreAuthForModelRegistration(ctx context.Context, auth 
 	auth = auth.Clone()
 	s.ensureExecutorsForAuthWithContext(ctx, auth, false)
 
-
-
-
 	op := "register"
 	var err error
 	if existing, ok := s.coreManager.GetByID(auth.ID); ok {
@@ -565,8 +554,6 @@ func (s *Service) shouldSkipModelRegistration(authID string, expectedGeneration 
 	return current.Disabled != expectedDisabled
 }
 
-
-
 func isStaleCoreAuth(existing, incoming *coreauth.Auth) bool {
 	if existing == nil || incoming == nil {
 		return false
@@ -575,7 +562,6 @@ func isStaleCoreAuth(existing, incoming *coreauth.Auth) bool {
 	if incoming.RegistrationEpoch > 0 && incoming.RegistrationEpoch < existing.RegistrationEpoch {
 		return true
 	}
-
 
 	if incoming.Generation > 0 && incoming.Generation < existing.Generation {
 		return true
@@ -604,16 +590,6 @@ func (s *Service) completeModelRegistrationForAuthWithCache(ctx context.Context,
 	}
 	if !published {
 
-
-
-
-
-
-
-
-
-
-
 		if latest, ok := s.latestAuthForModelRegistration(auth.ID); ok && latest != nil {
 			targetAuth = latest
 			if latest.Disabled {
@@ -629,10 +605,6 @@ func (s *Service) completeModelRegistrationForAuthWithCache(ctx context.Context,
 		}
 	}
 	s.reconcileRegisteredModelStates(ctx, targetAuth)
-
-
-
-
 
 	s.coreManager.RefreshSchedulerEntry(targetAuth.ID)
 	return targetAuth.Generation
@@ -650,8 +622,6 @@ func (s *Service) applyCoreAuthRemoval(ctx context.Context, id string) {
 	if existing, ok := s.coreManager.GetByID(id); ok && existing != nil {
 		provider = strings.TrimSpace(existing.Provider)
 	}
-
-
 
 	s.coreManager.Remove(ctx, id)
 	GlobalModelRegistry().UnregisterClient(id)

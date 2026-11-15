@@ -24,8 +24,6 @@ type homeSessionAliasEntry struct {
 	aliases   []string
 }
 
-
-
 type homeSessionAliasCache struct {
 	mu               sync.Mutex
 	entries          map[string]homeSessionAliasEntry

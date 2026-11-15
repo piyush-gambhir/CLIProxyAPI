@@ -169,16 +169,13 @@ func TestNormalizeCodexToolIntegerTypes(t *testing.T) {
 			}
 		}
 
-
 		if got := toolMap["exec_command"].Get("parameters.properties.cmd.type").String(); got != "string" {
 			t.Errorf("exec_command cmd type = %q, want string", got)
 		}
 
-
 		if got := toolMap["unrelated_tool"].Get("parameters.properties.timeout_ms.type").String(); got != "number" {
 			t.Errorf("unrelated_tool timeout_ms type = %q, want number", got)
 		}
-
 
 		addToolType := ojson.GetBytesNoCopy(out, "input.0.tools.0.parameters.properties.yield_time_ms.type").Array()
 		if len(addToolType) != 2 || addToolType[0].String() != "integer" || addToolType[1].String() != "null" {

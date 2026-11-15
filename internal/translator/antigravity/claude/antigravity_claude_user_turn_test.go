@@ -99,8 +99,6 @@ func TestClaudeToAntigravityRegistryCarriesTheRefusal(t *testing.T) {
 	}
 }
 
-
-
 func claudeImageTurnToAntigravity(finalContent string) sdktranslator.RequestEnvelope {
 	input := `{"model":"m","messages":[{"role":"user","content":"a"},{"role":"assistant","content":"b"},{"role":"user","content":[` + finalContent + `]}]}`
 	return sdktranslator.TranslateRequestEnvelope(context.Background(), sdktranslator.FormatClaude, sdktranslator.FormatAntigravity, sdktranslator.RequestEnvelope{

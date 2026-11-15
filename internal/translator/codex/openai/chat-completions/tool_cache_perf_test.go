@@ -61,9 +61,6 @@ func tcCases() []struct {
 	}
 }
 
-
-
-
 var codexChatGoldenHashes = map[string][2]string{
 	"nil":          {"c5fffafcda772cf06a22d1fbf63663c423973cd09e26948a97120e03277cae3a", "d49a496d7bd81d73a3f5fc3e2b181518b4d012fe87d26adb630f168cc4e727ab"},
 	"malformed":    {"c5fffafcda772cf06a22d1fbf63663c423973cd09e26948a97120e03277cae3a", "d49a496d7bd81d73a3f5fc3e2b181518b4d012fe87d26adb630f168cc4e727ab"},
@@ -117,7 +114,6 @@ func BenchmarkCodexChatToolStreamLongHistory(b *testing.B) {
 		}
 	}
 }
-
 
 func TestCodexChatToolMetadataEquivalence(t *testing.T) {
 

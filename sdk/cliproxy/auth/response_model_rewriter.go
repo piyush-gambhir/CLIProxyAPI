@@ -53,11 +53,9 @@ func rewriteModelInResponse(data []byte, targetModel string) []byte {
 	return doc.Bytes()
 }
 
-
 type StreamRewriteOptions struct {
 	RewriteModel string
 }
-
 
 type StreamRewriter struct {
 	options         StreamRewriteOptions
@@ -66,7 +64,6 @@ type StreamRewriter struct {
 	rewrittenChunks int
 	loggedFinished  bool
 }
-
 
 func NewStreamRewriter(options StreamRewriteOptions) *StreamRewriter {
 	return &StreamRewriter{
@@ -135,7 +132,6 @@ func (r *StreamRewriter) logStreamFinishedOnce() {
 	log.Debugf("response rewriter: stream finished, successfully rewrote %d chunks to %s", r.rewrittenChunks, r.options.RewriteModel)
 }
 
-
 func (r *StreamRewriter) RewriteChunk(chunk []byte) []byte {
 	if r.options.RewriteModel == "" {
 		return chunk
@@ -156,7 +152,6 @@ func (r *StreamRewriter) RewriteChunk(chunk []byte) []byte {
 	if len(chunk) > maxPendingBufSize {
 		return chunk
 	}
-
 
 	trimmed := bytes.TrimSpace(chunk)
 	if len(trimmed) > 0 && trimmed[0] == '{' && ojson.ValidBytes(trimmed) {
@@ -281,11 +276,8 @@ func normalizeGluedSSEEvents(chunk []byte) []byte {
 		return chunk
 	}
 
-
-
 	chunk = safeReplaceGlued(chunk, []byte("}event:"), []byte("}\n\nevent:"))
 	chunk = safeReplaceGlued(chunk, []byte("}\r\nevent:"), []byte("}\r\n\r\nevent:"))
-
 
 	chunk = safeReplaceGlued(chunk, []byte("}data:"), []byte("}\ndata:"))
 	chunk = safeReplaceGlued(chunk, []byte("}\r\ndata:"), []byte("}\r\ndata:"))
@@ -326,7 +318,6 @@ func safeReplaceGlued(chunk []byte, old, new []byte) []byte {
 	}
 	return result
 }
-
 
 func (r *StreamRewriter) Finish() []byte {
 	if len(r.pendingBuf) == 0 {

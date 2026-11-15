@@ -1,6 +1,3 @@
-
-
-
 package claude
 
 import (
@@ -9,9 +6,7 @@ import (
 	"net/http"
 )
 
-
 type OAuthError struct {
-
 	Code string `json:"error"`
 
 	Description string `json:"error_description,omitempty"`
@@ -21,14 +16,12 @@ type OAuthError struct {
 	StatusCode int `json:"-"`
 }
 
-
 func (e *OAuthError) Error() string {
 	if e.Description != "" {
 		return fmt.Sprintf("OAuth error %s: %s", e.Code, e.Description)
 	}
 	return fmt.Sprintf("OAuth error: %s", e.Code)
 }
-
 
 func NewOAuthError(code, description string, statusCode int) *OAuthError {
 	return &OAuthError{
@@ -38,9 +31,7 @@ func NewOAuthError(code, description string, statusCode int) *OAuthError {
 	}
 }
 
-
 type AuthenticationError struct {
-
 	Type string `json:"type"`
 
 	Message string `json:"message"`
@@ -50,7 +41,6 @@ type AuthenticationError struct {
 	Cause error `json:"-"`
 }
 
-
 func (e *AuthenticationError) Error() string {
 	if e.Cause != nil {
 		return fmt.Sprintf("%s: %s (caused by: %v)", e.Type, e.Message, e.Cause)
@@ -58,21 +48,12 @@ func (e *AuthenticationError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
-
 var (
-
-
-
-
-
-
-
 	ErrInvalidState = &AuthenticationError{
 		Type:    "invalid_state",
 		Message: "OAuth state parameter is invalid",
 		Code:    http.StatusBadRequest,
 	}
-
 
 	ErrCodeExchangeFailed = &AuthenticationError{
 		Type:    "code_exchange_failed",
@@ -80,13 +61,11 @@ var (
 		Code:    http.StatusBadRequest,
 	}
 
-
 	ErrServerStartFailed = &AuthenticationError{
 		Type:    "server_start_failed",
 		Message: "Failed to start OAuth callback server",
 		Code:    http.StatusInternalServerError,
 	}
-
 
 	ErrPortInUse = &AuthenticationError{
 		Type:    "port_in_use",
@@ -94,14 +73,12 @@ var (
 		Code:    13,
 	}
 
-
 	ErrCallbackTimeout = &AuthenticationError{
 		Type:    "callback_timeout",
 		Message: "Timeout waiting for OAuth callback",
 		Code:    http.StatusRequestTimeout,
 	}
 )
-
 
 func NewAuthenticationError(baseErr *AuthenticationError, cause error) *AuthenticationError {
 	return &AuthenticationError{
@@ -112,20 +89,17 @@ func NewAuthenticationError(baseErr *AuthenticationError, cause error) *Authenti
 	}
 }
 
-
 func IsAuthenticationError(err error) bool {
 	var authenticationError *AuthenticationError
 	ok := errors.As(err, &authenticationError)
 	return ok
 }
 
-
 func IsOAuthError(err error) bool {
 	var oAuthError *OAuthError
 	ok := errors.As(err, &oAuthError)
 	return ok
 }
-
 
 func GetUserFriendlyMessage(err error) string {
 	switch {

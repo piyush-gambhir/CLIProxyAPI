@@ -6,15 +6,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
-
-
-
-
-
-
 func ClaudeEffortDirective(body []byte) string {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return ""

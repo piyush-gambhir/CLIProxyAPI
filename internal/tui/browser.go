@@ -5,7 +5,6 @@ import (
 	"runtime"
 )
 
-
 func openBrowser(url string) error {
 	switch runtime.GOOS {
 	case "darwin":

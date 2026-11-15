@@ -44,7 +44,6 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 		}
 	}()
 
-
 	cchSigning := claudeCCHSigningEnabled(apiKey, claudeCCHUpstreamAnthropic, fp.ProfileClaudeCodeCLI, url)
 
 	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
@@ -107,8 +106,6 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 		rebuildMidSystemMessagesToTopLevelDoc(doc)
 	}
 
-
-
 	isProbeOrHelper := isClaudeProbeOrHelperRequestDoc(doc)
 	explicitCacheMode := isExplicitPromptCacheModeDoc(doc, originalPayload, req.Payload)
 	if explicitCacheMode {
@@ -129,7 +126,6 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 	if err != nil {
 		return nil, err
 	}
-
 
 	diagnosticsState := claudeDiagnosticsRequestState{}
 	if !isProbeOrHelper {
@@ -159,40 +155,17 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 
 	ensureModelMaxTokensDoc(doc, baseModel)
 
-
 	disableThinkingIfToolChoiceForcedDoc(doc)
 	reconcileClaudeCodeContextManagementDoc(doc, contextManagementState)
 	normalizeClaudeSamplingForUpstreamDoc(doc, confirmedClaudeCode)
-
-
-
-
-
-
 
 	cpaOwnsCacheControl := shouldEnsureCacheControlDoc(doc, cloaked, confirmedClaudeCode, originalPayload, req.Payload)
 	if cpaOwnsCacheControl {
 		ensureCacheControlDoc(doc)
 	}
 
-
-
-
 	enforceCacheControlLimitDoc(doc, 4)
 	stripPromptCacheOptionsDoc(doc)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	isSubagent := isClaudeSubagentRequestDoc(incomingHeaders, doc)
 	subagent1h := isSubagent && claudeSubagentRequests1hDoc(incomingHeaders, doc)
@@ -202,11 +175,9 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 		stripClaudeCacheControlTTLDoc(doc)
 	}
 
-
 	if !explicitCacheMode {
 		normalizeCacheControlTTLDoc(doc)
 	}
-
 
 	var extraBetas []string
 	var oauthToolNamesReverseMap map[string]string
@@ -310,8 +281,6 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 	helps.RecordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
 
-
-
 		errBody, decErr := decodeResponseBody(httpResp.Body, claudeResponseContentEncoding(httpResp.Header))
 		if decErr != nil {
 			helps.RecordAPIResponseError(ctx, e.cfg, decErr)
@@ -392,7 +361,6 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 			}
 		}
 
-
 		if responseFormat == to {
 			scanner := bufio.NewScanner(decodedBody)
 			scanner.Buffer(nil, 52_428_800)
@@ -470,7 +438,6 @@ func (e *ClaudeExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.A
 			}
 			return
 		}
-
 
 		scanner := bufio.NewScanner(decodedBody)
 		scanner.Buffer(nil, 52_428_800)

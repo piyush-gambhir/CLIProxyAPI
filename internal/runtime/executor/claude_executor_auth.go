@@ -170,7 +170,6 @@ func (e *ClaudeExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (
 	claudeauth.StoreMetadataValue(&auth.Metadata, "access_token", td.AccessToken)
 	claudeauth.StoreMetadataString(&auth.Metadata, "refresh_token", td.RefreshToken)
 
-
 	claudeauth.StoreMetadataString(&auth.Metadata, "email", td.Email)
 	claudeauth.StoreMetadataString(&auth.Metadata, "account_uuid", td.AccountUUID)
 	claudeauth.StoreMetadataString(&auth.Metadata, "organization_uuid", td.OrganizationUUID)

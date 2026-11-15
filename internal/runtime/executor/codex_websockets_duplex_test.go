@@ -19,8 +19,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestCodexDuplexSteeringLifecycle(t *testing.T) {
 	for _, boundary := range []string{"response.incomplete", "response.completed"} {
 		t.Run(boundary, func(t *testing.T) {
@@ -313,7 +311,6 @@ func TestCodexDuplexAppendInheritsContextAndInstructions(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-
 		_, first, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read first create: %v", err)
@@ -324,7 +321,6 @@ func TestCodexDuplexAppendInheritsContextAndInstructions(t *testing.T) {
 		}
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp-1","output":[]}}`))
-
 
 		_, second, err := conn.ReadMessage()
 		if err != nil {
@@ -405,7 +401,6 @@ func TestCodexDuplexStandaloneCreateDoesNotInheritParentID(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-
 		_, _, err = conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read first create: %v", err)
@@ -413,7 +408,6 @@ func TestCodexDuplexStandaloneCreateDoesNotInheritParentID(t *testing.T) {
 		}
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp-1","output":[]}}`))
-
 
 		_, second, err := conn.ReadMessage()
 		if err != nil {
@@ -488,7 +482,6 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		defer func() { _ = conn.Close() }()
 		_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-
 		_, first, err := conn.ReadMessage()
 		if err != nil {
 			t.Errorf("read first create: %v", err)
@@ -498,7 +491,6 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 			t.Errorf("expected response.create: %s", first)
 		}
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r1","output":[]}}`))
-
 
 		_, steer1, err := conn.ReadMessage()
 		if err != nil {
@@ -511,10 +503,7 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.steer.accepted","steer":{"id":"s1","previous_response_id":"r1"}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[],"incomplete_details":{"reason":"steered"}}}`))
 
-
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"auto-1","previous_response_id":"r1","output":[]}}`))
-
-
 
 		_, steerFrame, err := conn.ReadMessage()
 		if err != nil {
@@ -529,7 +518,6 @@ func TestCodexDuplexQueuedCreateDoesNotBlockSubsequentSteer(t *testing.T) {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"auto-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"auto-2","previous_response_id":"auto-1","output":[]}}`))
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"auto-2","output":[]}}`))
-
 
 		_, nextCreate, err := conn.ReadMessage()
 		if err != nil {

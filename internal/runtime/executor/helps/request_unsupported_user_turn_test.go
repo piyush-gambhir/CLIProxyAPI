@@ -14,8 +14,6 @@ const (
 	responsesHistory = `{"type":"message","role":"user","content":[{"type":"input_text","text":"hello"}]},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"hi"}]}`
 )
 
-
-
 func TestTranslateRequestReturningErrorRefusesEmptiedAttachmentTurns(t *testing.T) {
 	ctx := context.Background()
 	routes := []struct {

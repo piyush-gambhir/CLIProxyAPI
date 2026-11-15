@@ -88,10 +88,6 @@ func TestFixCLIToolResponsePreservesObjectNormalization(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestConvertGeminiRequestToAntigravityBoundsLargePayloadCopies(t *testing.T) {
 	const inlineDataSize = 4 << 20
 	input := []byte(`{"contents":[{"role":"user","parts":[{"inlineData":{"mimeType":"image/png","data":"` +
@@ -112,8 +108,6 @@ func TestConvertGeminiRequestToAntigravityBoundsLargePayloadCopies(t *testing.T)
 	if got := ojson.GetBytesNoCopy(output, "request.safetySettings"); !got.IsArray() {
 		t.Fatalf("request.safetySettings = %s, want array", got.Raw)
 	}
-
-
 
 	const allowedCopies = 2
 	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > allowedCopies*inlineDataSize {

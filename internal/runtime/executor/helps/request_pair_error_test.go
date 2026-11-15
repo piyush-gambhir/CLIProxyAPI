@@ -29,8 +29,6 @@ func requireUnsupportedPart(t *testing.T, label string, err error, wantType stri
 	}
 }
 
-
-
 func TestPairTranslationReportsOnlyTheWorkingError(t *testing.T) {
 	file := []byte(pairFileOnlyClaude)
 	text := []byte(pairTextOnlyClaude)
@@ -80,7 +78,6 @@ func TestPairTranslationReportsOnlyTheWorkingError(t *testing.T) {
 	}
 }
 
-
 func TestEnvelopePairKeepsTheWorkingPayloadWhenTheBaselineIsRefused(t *testing.T) {
 	file := []byte(pairFileOnlyClaude)
 	text := []byte(pairTextOnlyClaude)
@@ -93,8 +90,6 @@ func TestEnvelopePairKeepsTheWorkingPayloadWhenTheBaselineIsRefused(t *testing.T
 		t.Fatalf("working = %s", working)
 	}
 }
-
-
 
 func TestResponsesFileIDOnlyReturns400OnEveryPath(t *testing.T) {
 	payload := []byte(`{"model":"claude-sonnet-4","input":[{"type":"message","role":"user","content":[{"type":"input_file","file_id":"file-1"}]}]}`)
@@ -122,7 +117,6 @@ func TestResponsesAudioAndTextBesideFileIDOnCompatPath(t *testing.T) {
 		t.Fatalf("text was lost: %s", body)
 	}
 }
-
 
 func TestAntigravityTargetsReportUnsupportedParts(t *testing.T) {
 	claudeFile := []byte(`{"model":"m","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"container_upload","file_id":"file-1"}]}]}`)

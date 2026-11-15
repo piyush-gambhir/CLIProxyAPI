@@ -39,7 +39,6 @@ func TestSanitizeMetaWebSearchTools_StripsSearchContentTypesFromWebSearch(t *tes
 
 	got := SanitizeMetaWebSearchTools(input)
 
-
 	tool1 := ojson.GetBytes(got, "tools.1")
 	if tool1.Get("type").String() != "web_search" {
 		t.Fatalf("tools.1 type = %q, want web_search", tool1.Get("type").String())
@@ -51,7 +50,6 @@ func TestSanitizeMetaWebSearchTools_StripsSearchContentTypesFromWebSearch(t *tes
 		t.Fatalf("tools.1 external_web_access was lost: %s", tool1.Raw)
 	}
 
-
 	tool2 := ojson.GetBytes(got, "tools.2")
 	if tool2.Get("type").String() != "web_search_preview" {
 		t.Fatalf("tools.2 type = %q, want web_search_preview", tool2.Get("type").String())
@@ -60,7 +58,6 @@ func TestSanitizeMetaWebSearchTools_StripsSearchContentTypesFromWebSearch(t *tes
 		t.Fatalf("tools.2 search_content_types missing: %s", tool2.Raw)
 	}
 
-
 	nestedTool := ojson.GetBytes(got, "tools.3.tools.0")
 	if nestedTool.Get("type").String() != "web_search" {
 		t.Fatalf("tools.3.tools.0 type = %q, want web_search", nestedTool.Get("type").String())
@@ -68,7 +65,6 @@ func TestSanitizeMetaWebSearchTools_StripsSearchContentTypesFromWebSearch(t *tes
 	if nestedTool.Get("search_content_types").Exists() {
 		t.Fatalf("tools.3.tools.0 still has search_content_types: %s", nestedTool.Raw)
 	}
-
 
 	tool0 := ojson.GetBytes(got, "tools.0")
 	if tool0.Get("name").String() != "lookup" {

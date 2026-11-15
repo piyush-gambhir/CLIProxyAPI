@@ -210,7 +210,6 @@ func (h *Host) HasAuthProvider(provider string) bool {
 	return h.authProviderRecord(provider) != nil
 }
 
-
 func (h *Host) HasMultipleAuthProviders(provider string) bool {
 	record := h.authProviderRecord(provider)
 	return record != nil && h.recordHasMultipleAuthProviders(*record)
@@ -223,7 +222,6 @@ func (h *Host) recordHasMultipleAuthProviders(record capabilityRecord) bool {
 	identifiers, okIdentifiers := h.callRecordAuthProviderIdentifiers(record)
 	return okIdentifiers && len(identifiers) > 1
 }
-
 
 func (h *Host) SameAuthProvider(providerA, providerB string) bool {
 	providerA = normalizeProviderID(providerA)
@@ -725,7 +723,6 @@ func pluginAuthParseResponseAuths(resp pluginapi.AuthParseResponse) []pluginapi.
 
 type oauthProxyURLContextKey struct{}
 
-
 func WithOAuthProxyURL(ctx context.Context, proxyURL string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -1050,7 +1047,6 @@ func (h *Host) RefreshAuth(ctx context.Context, auth *coreauth.Auth) (refreshed 
 	next.UpdatedAt = auth.UpdatedAt
 	return next, true, nil
 }
-
 
 func preserveAuthOAuthProviderMetadata(data *pluginapi.AuthData, auth *coreauth.Auth, explicitPortalHint string) {
 	if data == nil || auth == nil {

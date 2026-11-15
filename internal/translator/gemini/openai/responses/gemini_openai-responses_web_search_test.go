@@ -73,7 +73,6 @@ func TestConvertOpenAIResponsesRequestToGemini_WebSearchCapabilityGate(t *testin
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	capableOut, _ := ConvertOpenAIResponsesRequestToGemini(capableModel, req, false)
 	toolsCapable := ojson.GetBytesNoCopy(capableOut, "tools").Array()
 	foundGoogleSearch := false
@@ -86,7 +85,6 @@ func TestConvertOpenAIResponsesRequestToGemini_WebSearchCapabilityGate(t *testin
 	if !foundGoogleSearch {
 		t.Fatalf("expected googleSearch tool for capable model, got: %s", capableOut)
 	}
-
 
 	incapableOut, _ := ConvertOpenAIResponsesRequestToGemini(incapableModel, req, false)
 	toolsIncapable := ojson.GetBytesNoCopy(incapableOut, "tools")
@@ -180,12 +178,10 @@ func TestConvertGeminiResponseToOpenAIResponsesNonStream_GroundingMetadata(t *te
 	out := ConvertGeminiResponseToOpenAIResponsesNonStream(context.Background(), "gemini-test", nil, nil, geminiResp, nil)
 	parsed := util.ParseGJSONBytesNoCopy(out)
 
-
 	outputs := parsed.Get("output").Array()
 	if len(outputs) != 2 {
 		t.Fatalf("expected 2 output items, got %d: %s", len(outputs), out)
 	}
-
 
 	wsCall := outputs[0]
 	if wsCall.Get("type").String() != "web_search_call" {
@@ -201,7 +197,6 @@ func TestConvertGeminiResponseToOpenAIResponsesNonStream_GroundingMetadata(t *te
 	if len(sources) != 1 || sources[0].Get("url").String() != "https://go.dev/dl/" {
 		t.Fatalf("unexpected sources: %s", wsCall.Get("action.sources").Raw)
 	}
-
 
 	msg := outputs[1]
 	if msg.Get("type").String() != "message" {
@@ -224,7 +219,6 @@ func TestConvertGeminiResponseToOpenAIResponsesNonStream_GroundingMetadata(t *te
 	if citation.Get("start_index").Int() != 0 || citation.Get("end_index").Int() != 7 {
 		t.Fatalf("expected start_index=0, end_index=7, got start=%d end=%d", citation.Get("start_index").Int(), citation.Get("end_index").Int())
 	}
-
 
 	if parsed.Get("tool_usage.web_search.num_requests").Int() != 1 {
 		t.Fatalf("expected tool_usage.web_search.num_requests = 1, got %d", parsed.Get("tool_usage.web_search.num_requests").Int())
@@ -279,7 +273,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_WebSearch(t *testing.T) {
 			}
 		}
 	}
-
 
 	expectedEvents := []string{
 		"response.created",
@@ -355,8 +348,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_NoGroundingDoesNotEmitWebS
 func TestBuildResponsesURLCitations_RuneOffsetConversion(t *testing.T) {
 	fullText := "Go语言的最新版本是Go 1.27。"
 
-
-
 	rawJSON := `{
 		"groundingChunks": [{"web": {"uri": "https://go.dev", "title": "Go"}}],
 		"groundingSupports": [
@@ -402,7 +393,6 @@ func TestConvertOpenAIResponsesRequestToGemini_WebSearchOnlyToolChoiceRequiredNo
 
 	out, _ := ConvertOpenAIResponsesRequestToGemini(modelID, req, false)
 	parsed := util.ParseGJSONBytesNoCopy(out)
-
 
 	if !parsed.Get("tools.0.googleSearch").Exists() {
 		t.Fatalf("expected googleSearch in tools, got: %s", out)
@@ -493,7 +483,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateGroundingMetadataAndCJ
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_late_1",
 		"candidates": [{
@@ -503,11 +492,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateGroundingMetadataAndCJ
 			}
 		}]
 	}`)
-
-
-
-
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_late_1",
@@ -568,8 +552,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateGroundingMetadataAndCJ
 		}
 	}
 
-
-
 	wsAddedIdx := -1
 	wsDoneIdx := -1
 	msgAddedIdx := -1
@@ -599,14 +581,12 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateGroundingMetadataAndCJ
 		t.Fatalf("expected both web_search_call and message output items, got events: %v", eventTypes)
 	}
 
-
 	if wsDoneIdx >= msgAddedIdx {
 		t.Fatalf("expected web_search_call to complete (idx=%d) before message added (idx=%d), events=%v", wsDoneIdx, msgAddedIdx, eventTypes)
 	}
 	if msgDoneIdx >= completedIdx {
 		t.Fatalf("expected message done (idx=%d) before completed (idx=%d)", msgDoneIdx, completedIdx)
 	}
-
 
 	if !partDoneJSON.Exists() {
 		t.Fatalf("expected content_part.done with annotations, got none. Events: %v", eventTypes)
@@ -620,11 +600,9 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateGroundingMetadataAndCJ
 		t.Fatalf("annotation end_index = %d, want 17", endRune)
 	}
 
-
 	if itemDoneJSON.Get("item.content.0.annotations.0.start_index").Int() != 10 {
 		t.Fatalf("item.content annotations start_index != 10")
 	}
-
 
 	outputs := completedJSON.Get("response.output").Array()
 	if len(outputs) < 2 {
@@ -637,12 +615,10 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateGroundingMetadataAndCJ
 		t.Fatalf("output[1].type = %q, want message", outputs[1].Get("type").String())
 	}
 
-
 	wsID := outputs[0].Get("id").String()
 	if !strings.HasPrefix(wsID, "ws_") || strings.HasPrefix(wsID, "ws_resp_") {
 		t.Fatalf("expected web_search_call id format ws_<id> without resp_ prefix, got %q", wsID)
 	}
-
 
 	if completedJSON.Get("response.tool_usage.web_search.num_requests").Int() != 1 {
 		t.Fatalf("tool_usage num_requests = %d, want 1", completedJSON.Get("response.tool_usage.web_search.num_requests").Int())
@@ -662,7 +638,6 @@ func TestAllowsResponsesWebSearchToolChoice_AllowedTools(t *testing.T) {
 		t.Fatalf("expected allowed_tools containing web_search to allow search")
 	}
 
-
 	withoutSearch := ojson.Parse(`{
 		"tool_choice": {
 			"type": "allowed_tools",
@@ -673,7 +648,6 @@ func TestAllowsResponsesWebSearchToolChoice_AllowedTools(t *testing.T) {
 	if AllowsResponsesWebSearchToolChoice(withoutSearch) {
 		t.Fatalf("expected allowed_tools without web_search to disallow search")
 	}
-
 
 	withPreview := ojson.Parse(`{
 		"tool_choice": {
@@ -732,7 +706,6 @@ func TestExtractResponsesWebSearchQuery_MultipleTextParts(t *testing.T) {
 		t.Fatalf("flat input query = %q, want %q", got, want)
 	}
 
-
 	nestedInput := ojson.Parse(`{
 		"input": [
 			{
@@ -756,14 +729,12 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_ModelAliasUsesEffectiveReq
 	resolvedModel := "gemini-3.7-flash-high"
 	registerTestWebSearchModel(t, "client-alias-test", "antigravity", resolvedModel, true)
 
-
 	clientAlias := "my-unregistered-alias"
 	originalReq := []byte(`{
 		"model": "` + clientAlias + `",
 		"input": "Search latest news",
 		"tools": [{"type": "web_search"}]
 	}`)
-
 
 	effectiveReq := []byte(`{
 		"model": "` + resolvedModel + `",
@@ -838,7 +809,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndFunction
 		"input": "search and calc",
 		"tools": [{"type": "web_search"}, {"type": "function", "function": {"name": "calculate"}}]
 	}`)
-
 
 	chunk1 := []byte(`data: {
 		"responseId": "stream_interleaved_1",
@@ -940,7 +910,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_OutputIndexMatchesComplete
 		"tools": [{"type": "web_search"}, {"type": "function", "function": {"name": "query_db"}}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_late_order_1",
 		"candidates": [{
@@ -970,7 +939,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_OutputIndexMatchesComplete
 			}
 		}]
 	}`)
-
 
 	chunk4 := []byte(`data: {
 		"responseId": "stream_late_order_1",
@@ -1150,11 +1118,9 @@ func TestConvertGeminiResponseToOpenAIResponses_CitationsRespectPartIndexAndMess
 			t.Fatalf("expected two messages, got: %s", out)
 		}
 
-
 		if len(firstMsg.Get("content.0.annotations").Array()) != 0 {
 			t.Fatalf("first message should have 0 annotations, got: %s", firstMsg.Get("content.0.annotations").Raw)
 		}
-
 
 		secondCitations := secondMsg.Get("content.0.annotations").Array()
 		if len(secondCitations) != 1 {
@@ -1203,8 +1169,6 @@ func TestConvertGeminiResponseToOpenAIResponses_CitationsRespectPartIndexAndMess
 		if len(citations) != 1 {
 			t.Fatalf("expected 1 citation, got %d: %s", len(citations), msg.Raw)
 		}
-
-
 
 		startIdx := citations[0].Get("start_index").Int()
 		endIdx := citations[0].Get("end_index").Int()
@@ -1484,7 +1448,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_DisablesBufferingWhenSearc
 			"tools": [{"type": "web_search"}, {"type": "function", "function": {"name": "func1"}}]
 		}`)
 
-
 		upstreamReq := []byte(`{
 			"model": "gemini-search-nobuffer",
 			"contents": [{"role": "user", "parts": [{"text": "test query"}]}],
@@ -1550,7 +1513,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_MultiChunkCitationsAndExpl
 				}
 			}]
 		}`)
-
 
 		chunk3 := []byte(`data: {
 			"responseId": "stream_mc_1",
@@ -1646,7 +1608,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_MultiChunkCitationsAndExpl
 			}]
 		}`)
 
-
 		chunk3 := []byte(`data: {
 			"responseId": "stream_mc_1b",
 			"candidates": [{
@@ -1736,7 +1697,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_MultiChunkCitationsAndExpl
 				}
 			}]
 		}`)
-
 
 		chunk3 := []byte(`data: {
 			"responseId": "stream_mc_2",
@@ -2016,7 +1976,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 			"tools": [{"type": "web_search"}]
 		}`)
 
-
 		chunk1 := []byte(`data: {
 			"responseId": "stream_it_1",
 			"candidates": [{
@@ -2027,7 +1986,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 			}]
 		}`)
 
-
 		chunk2 := []byte(`data: {
 			"responseId": "stream_it_1",
 			"candidates": [{
@@ -2037,7 +1995,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 				}
 			}]
 		}`)
-
 
 		chunk3 := []byte(`data: {
 			"responseId": "stream_it_1",
@@ -2148,7 +2105,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 			}]
 		}`)
 
-
 		chunk3 := []byte(`data: {
 			"responseId": "stream_it_2",
 			"candidates": [{
@@ -2230,7 +2186,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 			}
 		}
 
-
 		if len(addedItems) != 4 {
 			t.Fatalf("expected 4 added items (message A, reasoning, web_search_call, message B), got %d: %+v", len(addedItems), addedItems)
 		}
@@ -2258,7 +2213,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 			t.Fatalf("unexpected outputs[3]: %s", outputs[3].Raw)
 		}
 
-
 		citationsA := outputs[0].Get("content.0.annotations").Array()
 		if len(citationsA) != 1 {
 			t.Fatalf("expected 1 citation on Message A, got %d: %s", len(citationsA), outputs[0].Raw)
@@ -2266,7 +2220,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_InterleavedTextAndThought(
 		if citationsA[0].Get("url").String() != "https://example.com/a" {
 			t.Fatalf("expected citation url 'https://example.com/a', got %q", citationsA[0].Get("url").String())
 		}
-
 
 		citationsB := outputs[3].Get("content.0.annotations").Array()
 		if len(citationsB) != 1 {
@@ -2929,7 +2882,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 			"webSearchQueries": ["test query"]
 		}`)
 
-
 		gm2 := ojson.Parse(`{
 			"groundingChunks": [
 				{"web": {"uri": "https://example.com/A", "title": "Title A1"}},
@@ -2946,7 +2898,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 		if chunks1[0].Get("web.uri").String() != "https://example.com/A" || chunks1[1].Get("web.uri").String() != "https://example.com/B" {
 			t.Fatalf("unexpected chunks order: %s", merged1.Get("groundingChunks").Raw)
 		}
-
 
 		gm3 := ojson.Parse(`{
 			"groundingSupports": [
@@ -2967,12 +2918,10 @@ func TestMergeGroundingMetadata(t *testing.T) {
 			t.Fatalf("expected 2 supports, got %d: %s", len(supports), merged2.Get("groundingSupports").Raw)
 		}
 
-
 		indices0 := supports[0].Get("groundingChunkIndices").Array()
 		if len(indices0) != 1 || indices0[0].Int() != 1 {
 			t.Fatalf("expected support 0 remapped to chunk index 1 (B), got: %s", supports[0].Get("groundingChunkIndices").Raw)
 		}
-
 
 		indices1 := supports[1].Get("groundingChunkIndices").Array()
 		if len(indices1) != 1 || indices1[0].Int() != 0 {
@@ -3005,7 +2954,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 			]
 		}`)
 
-
 		gm2 := ojson.Parse(`{
 			"groundingChunks": [
 				{"web": {"uri": "https://example.com/B", "title": "Chunk B"}},
@@ -3030,7 +2978,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 		if len(supports) != 1 {
 			t.Fatalf("expected 1 support, got %d: %s", len(supports), merged2.Get("groundingSupports").Raw)
 		}
-
 
 		indices0 := supports[0].Get("groundingChunkIndices").Array()
 		if len(indices0) != 1 || indices0[0].Int() != 1 {
@@ -3060,7 +3007,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 			]
 		}`)
 
-
 		gm2 := ojson.Parse(`{
 			"groundingChunks": [
 				{"web": {"uri": "https://example.com/B", "title": "Chunk B"}},
@@ -3082,12 +3028,10 @@ func TestMergeGroundingMetadata(t *testing.T) {
 			t.Fatalf("expected 2 supports, got %d: %s", len(supports), merged2.Get("groundingSupports").Raw)
 		}
 
-
 		indices0 := supports[0].Get("groundingChunkIndices").Array()
 		if len(indices0) != 1 || indices0[0].Int() != 1 {
 			t.Fatalf("expected existing support 0 to resolve to chunk index 1 (B), got %s", supports[0].Get("groundingChunkIndices").Raw)
 		}
-
 
 		indices1 := supports[1].Get("groundingChunkIndices").Array()
 		if len(indices1) != 1 || indices1[0].Int() != 1 {
@@ -3114,7 +3058,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 				{"web": {"uri": "https://example.com/A", "title": "Chunk A"}}
 			]
 		}`)
-
 
 		gm2 := ojson.Parse(`{
 			"groundingChunks": [
@@ -3145,8 +3088,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 			t.Fatalf("expected 1 support, got %d: %s", len(supports), merged2.Get("groundingSupports").Raw)
 		}
 
-
-
 		indices0 := supports[0].Get("groundingChunkIndices").Array()
 		if len(indices0) != 1 || indices0[0].Int() != 0 {
 			t.Fatalf("expected support to resolve to chunk index 0 (A), got %s", supports[0].Get("groundingChunkIndices").Raw)
@@ -3169,7 +3110,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 				{"web": {"uri": "https://example.com/A", "title": "Chunk A"}}
 			]
 		}`)
-
 
 		gm2 := ojson.Parse(`{
 			"groundingChunks": [
@@ -3201,8 +3141,6 @@ func TestMergeGroundingMetadata(t *testing.T) {
 		if len(supports) != 1 {
 			t.Fatalf("expected 1 support, got %d: %s", len(supports), merged2.Get("groundingSupports").Raw)
 		}
-
-
 
 		indices0 := supports[0].Get("groundingChunkIndices").Array()
 		if len(indices0) != 1 || indices0[0].Int() != 0 {
@@ -3468,7 +3406,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_IncrementalGroundingQuerie
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_incr_qsc_1",
 		"candidates": [{
@@ -3481,7 +3418,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_IncrementalGroundingQuerie
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_incr_qsc_1",
@@ -3496,7 +3432,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_IncrementalGroundingQuerie
 			}
 		}]
 	}`)
-
 
 	chunk3 := []byte(`data: {
 		"responseId": "stream_incr_qsc_1",
@@ -3592,7 +3527,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateSourcesAfterInterleave
 		"tools": [{"type": "web_search"}, {"type": "function", "name": "lookup"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_late_src_fc_1",
 		"candidates": [{
@@ -3609,7 +3543,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateSourcesAfterInterleave
 		}]
 	}`)
 
-
 	chunk2 := []byte(`data: {
 		"responseId": "stream_late_src_fc_1",
 		"candidates": [{
@@ -3619,7 +3552,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateSourcesAfterInterleave
 			}
 		}]
 	}`)
-
 
 	chunk3 := []byte(`data: {
 		"responseId": "stream_late_src_fc_1",
@@ -3715,7 +3647,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_CitationsSpanAcrossMessage
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_span_1",
 		"candidates": [{
@@ -3725,7 +3656,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_CitationsSpanAcrossMessage
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_span_1",
@@ -3737,7 +3667,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_CitationsSpanAcrossMessage
 		}]
 	}`)
 
-
 	chunk3 := []byte(`data: {
 		"responseId": "stream_span_1",
 		"candidates": [{
@@ -3747,7 +3676,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_CitationsSpanAcrossMessage
 			}
 		}]
 	}`)
-
 
 	chunk4 := []byte(`data: {
 		"responseId": "stream_span_1",
@@ -3837,7 +3765,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SupportsArriveFirstThenDup
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_dup_dedup_1",
 		"candidates": [{
@@ -3847,7 +3774,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SupportsArriveFirstThenDup
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_dup_dedup_1",
@@ -3862,7 +3788,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SupportsArriveFirstThenDup
 			}
 		}]
 	}`)
-
 
 	chunk3 := []byte(`data: {
 		"responseId": "stream_dup_dedup_1",
@@ -3929,7 +3854,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SignatureBoundaryContinuat
 		"input": "test query"
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_sbc_1",
 		"candidates": [{
@@ -3939,7 +3863,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SignatureBoundaryContinuat
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_sbc_1",
@@ -3951,7 +3874,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SignatureBoundaryContinuat
 		}]
 	}`)
 
-
 	chunk3 := []byte(`data: {
 		"responseId": "stream_sbc_1",
 		"candidates": [{
@@ -3961,7 +3883,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_SignatureBoundaryContinuat
 			}
 		}]
 	}`)
-
 
 	chunk4 := []byte(`data: {
 		"responseId": "stream_sbc_1",
@@ -4051,7 +3972,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_Frame2DuplicateChunksThenF
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_f2_f3_1",
 		"candidates": [{
@@ -4065,7 +3985,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_Frame2DuplicateChunksThenF
 		}]
 	}`)
 
-
 	chunk2 := []byte(`data: {
 		"responseId": "stream_f2_f3_1",
 		"candidates": [{
@@ -4078,7 +3997,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_Frame2DuplicateChunksThenF
 			}
 		}]
 	}`)
-
 
 	chunk3 := []byte(`data: {
 		"responseId": "stream_f2_f3_1",
@@ -4151,7 +4069,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_PendingSupportResolvesToCu
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_pend_1",
 		"candidates": [{
@@ -4173,7 +4090,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_PendingSupportResolvesToCu
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_pend_1",
@@ -4244,7 +4160,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_DeduplicatedChunksResolveF
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_dedup_f2_1",
 		"candidates": [{
@@ -4261,7 +4176,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_DeduplicatedChunksResolveF
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_dedup_f2_1",
@@ -4337,7 +4251,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_DeduplicatedFrame1ChunksFr
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_dedup_f1_f2_1",
 		"candidates": [{
@@ -4354,7 +4267,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_DeduplicatedFrame1ChunksFr
 			}
 		}]
 	}`)
-
 
 	chunk2 := []byte(`data: {
 		"responseId": "stream_dedup_f1_f2_1",
@@ -4629,7 +4541,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateCitations_AnnotationAd
 		e1 := ConvertGeminiResponseToOpenAIResponses(context.Background(), modelID, req, req, chunk1, &param)
 		e2 := ConvertGeminiResponseToOpenAIResponses(context.Background(), modelID, req, req, chunk2, &param)
 
-
 		foundMsgDoneWithoutCitations := false
 		for _, ev := range e2 {
 			lines := strings.Split(string(ev), "\n")
@@ -4712,7 +4623,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateCitations_AnnotationAd
 			t.Fatalf("expected span [0, 5), got [%d, %d)", ann.Get("start_index").Int(), ann.Get("end_index").Int())
 		}
 
-
 		annIdx := -1
 		completedIdx := -1
 		for i, evType := range eventSequence {
@@ -4726,7 +4636,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateCitations_AnnotationAd
 		if annIdx == -1 || completedIdx == -1 || annIdx >= completedIdx {
 			t.Fatalf("expected response.output_text.annotation.added (idx=%d) before response.completed (idx=%d), events=%v", annIdx, completedIdx, eventSequence)
 		}
-
 
 		msgOutput := completedJSON.Get("response.output.0")
 		if msgOutput.Get("type").String() != "message" {
@@ -4847,7 +4756,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateCitations_AnnotationAd
 			t.Fatalf("expected 2 response.output_text.annotation.added events, got %d. All events: %v", len(annotationAddedEvents), eventSequence)
 		}
 
-
 		ev0 := annotationAddedEvents[0]
 		if ev0.Get("annotation_index").Int() != 0 {
 			t.Fatalf("expected annotation_index 0 for first event, got %d", ev0.Get("annotation_index").Int())
@@ -4859,7 +4767,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateCitations_AnnotationAd
 			t.Fatalf("expected url https://example.com/alpha, got %q", ev0.Get("annotation.url").String())
 		}
 
-
 		ev1 := annotationAddedEvents[1]
 		if ev1.Get("annotation_index").Int() != 1 {
 			t.Fatalf("expected annotation_index 1 for second event, got %d", ev1.Get("annotation_index").Int())
@@ -4870,7 +4777,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_LateCitations_AnnotationAd
 		if ev1.Get("annotation.url").String() != "https://example.com/beta" {
 			t.Fatalf("expected url https://example.com/beta, got %q", ev1.Get("annotation.url").String())
 		}
-
 
 		outputs := completedJSON.Get("response.output").Array()
 		var msgOutput ojson.Result
@@ -4909,7 +4815,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_WebSearchBufferingSignatur
 		"tools": [{"type": "web_search"}]
 	}`)
 
-
 	chunk1 := []byte(`data: {
 		"responseId": "stream_sb_buf_1",
 		"candidates": [{
@@ -4920,7 +4825,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_WebSearchBufferingSignatur
 		}]
 	}`)
 
-
 	chunk2 := []byte(`data: {
 		"responseId": "stream_sb_buf_1",
 		"candidates": [{
@@ -4930,7 +4834,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_WebSearchBufferingSignatur
 			}
 		}]
 	}`)
-
 
 	chunk3 := []byte(`data: {
 		"responseId": "stream_sb_buf_1",
@@ -4995,8 +4898,6 @@ func TestConvertGeminiResponseToOpenAIResponsesStream_WebSearchBufferingSignatur
 	if got := messages[1].Get("content.0.text").String(); got != "unsigned chunk B" {
 		t.Fatalf("expected message 1 text 'unsigned chunk B', got %q", got)
 	}
-
-
 
 	replayReq := []byte(`{"model":"gemini-search-sig-boundary-buffering","input":[]}`)
 	replayReq, _ = ojson.SetRawBytes(replayReq, "input", []byte(completedJSON.Get("response.output").Raw))

@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// A known name does not make either missing downstream ID safe to publish.
 func TestApplyPatchResponsesNamedLateIdentity(t *testing.T) {
 	for _, first := range []string{"item", "call", "neither", "neither-item-first", "neither-call-first"} {
 		for _, boundary := range []string{"item", "terminal"} {

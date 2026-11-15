@@ -54,9 +54,6 @@ func TestModelRegistrationRejectsSupersededPrefix(t *testing.T) {
 	}
 }
 
-
-
-
 func TestModelRegistrationIgnoresExecutionOnlyGenerationChange(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-synthetic", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}
 	manager := coreauth.NewManager(nil, &coreauth.RoundRobinSelector{}, nil)
@@ -86,9 +83,6 @@ func TestModelRegistrationIgnoresExecutionOnlyGenerationChange(t *testing.T) {
 		t.Fatal("execution-only generation change rejected a current model registration")
 	}
 }
-
-
-
 
 func TestModelRegistrationDoesNotResurrectRemovedAuth(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-synthetic", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}
@@ -122,10 +116,6 @@ func TestModelRegistrationDoesNotResurrectRemovedAuth(t *testing.T) {
 		t.Fatalf("superseded registration resurrected removed auth: old=%v", reg.ClientSupportsModel(id, "prefix-old/alias"))
 	}
 }
-
-
-
-
 
 func TestModelRegistrationRejectsPreReregisterSnapshot(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-synthetic", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}

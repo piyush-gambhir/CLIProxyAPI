@@ -1,4 +1,3 @@
-
 package claude
 
 import (
@@ -13,8 +12,6 @@ import (
 
 const (
 	maxBypassSignatureLen = signature.MaxClaudeThinkingSignatureLen
-
-
 
 	geminiClaudeCarrierPrefix     = "cpa-gemini-carrier-v1:"
 	geminiClaudeCarrierNext       = "next"
@@ -223,15 +220,9 @@ func geminiClaudePrecomputeCarrierContext(blocks []ojson.Result) geminiClaudeCar
 	return ctx
 }
 
-
-
-
 func StripEmptySignatureThinkingBlocks(payload []byte) []byte {
 	return signature.StripInvalidClaudeThinkingBlocks(payload, signature.ClaudeSignatureValidationOptions{PrefixOnly: true})
 }
-
-
-
 
 func StripInvalidGeminiSignatureThinkingBlocks(payload []byte) []byte {
 	messages := ojson.GetBytesNoCopy(payload, "messages")

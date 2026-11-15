@@ -180,7 +180,6 @@ func TestGeminiVertexOpenAPI_ModelNormalization_PublisherResourceAndExplicitOptI
 
 	exec := NewGeminiVertexExecutor(&config.Config{})
 
-
 	saAuth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-norm-1",
 		Provider: "vertex",
@@ -200,7 +199,6 @@ func TestGeminiVertexOpenAPI_ModelNormalization_PublisherResourceAndExplicitOptI
 	if errExec1 != nil {
 		t.Fatalf("Execute(publishers/...) error = %v", errExec1)
 	}
-
 
 	explicitAuth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-norm-2",
@@ -481,7 +479,6 @@ func TestGeminiVertexOpenAPI_APIKey_ValidationAndThirdPartyRelay(t *testing.T) {
 
 	exec := NewGeminiVertexExecutor(&config.Config{})
 
-
 	for _, googleBase := range []string{"", "https://aiplatform.googleapis.com/v1/projects/proxy-test/locations/global"} {
 		googleKeyAuth := &cliproxyauth.Auth{
 			ID:       "vertex-apikey-google",
@@ -502,7 +499,6 @@ func TestGeminiVertexOpenAPI_APIKey_ValidationAndThirdPartyRelay(t *testing.T) {
 			t.Fatalf("Execute(googleBase=%q) error = %v, want requires service account credentials", googleBase, errGoogleKey)
 		}
 	}
-
 
 	customGatewayAuth := &cliproxyauth.Auth{
 		ID:       "vertex-apikey-custom-gateway",
@@ -535,7 +531,6 @@ func TestGeminiVertexOpenAPI_APIKey_ValidationAndThirdPartyRelay(t *testing.T) {
 	if gotText := ojson.GetBytes(resp.Payload, "choices.0.message.content").String(); gotText != "key openapi ok" {
 		t.Fatalf("got response = %q, want key openapi ok", gotText)
 	}
-
 
 	relayAuth := &cliproxyauth.Auth{
 		ID:       "vertex-apikey-relay",
@@ -687,7 +682,6 @@ func TestGeminiVertexOpenAPI_ExplicitOptIn_GeminiClientToolCallThoughtSignatureR
 		ResponseFormat: sdktranslator.FormatGemini,
 	}
 
-
 	turn1Resp, errTurn1 := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model: "gemini-3-pro",
 		Payload: []byte(`{
@@ -702,7 +696,6 @@ func TestGeminiVertexOpenAPI_ExplicitOptIn_GeminiClientToolCallThoughtSignatureR
 	if gotSig != "SIG_VERTEX_OPENAPI" {
 		t.Fatalf("Turn 1 response thoughtSignature = %q, want SIG_VERTEX_OPENAPI; payload=%s", gotSig, string(turn1Resp.Payload))
 	}
-
 
 	_, errTurn2 := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model: "gemini-3-pro",
@@ -923,7 +916,6 @@ func TestGeminiVertexOpenAPI_PerModelOptInAndOverride(t *testing.T) {
 		t.Fatalf("Execute(gemini-openapi) error = %v", errExec)
 	}
 
-
 	if _, errExec := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model:   "gemini-2.5-flash",
 		Payload: []byte(`{"model":"gemini-2.5-flash","messages":[{"role":"user","content":"hi"}]}`),
@@ -933,7 +925,6 @@ func TestGeminiVertexOpenAPI_PerModelOptInAndOverride(t *testing.T) {
 	}); errExec != nil {
 		t.Fatalf("Execute(gemini-2.5-flash) error = %v", errExec)
 	}
-
 
 	if _, errExec := exec.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model:   "deepseek-ai/deepseek-v4.1-flash-maas",

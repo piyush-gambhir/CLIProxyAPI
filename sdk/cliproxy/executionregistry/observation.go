@@ -2,7 +2,6 @@ package executionregistry
 
 import "time"
 
-
 type Observation struct {
 	RequestID    string
 	CredentialID string
@@ -12,13 +11,11 @@ type Observation struct {
 	Accounted    bool
 }
 
-
 type Freeze struct {
 	Revision        int64
 	BarrierRevision int64
 	Executions      []Observation
 }
-
 
 func (r *Registry) ObserveBarrier(revision int64) {
 	if r == nil || revision <= 0 {
@@ -32,7 +29,6 @@ func (r *Registry) ObserveBarrier(revision int64) {
 		r.pendingBarrierSequence = r.next
 	}
 }
-
 
 func (r *Registry) FreezeInFlight(_ time.Time) Freeze {
 	if r == nil {

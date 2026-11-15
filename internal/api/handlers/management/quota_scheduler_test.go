@@ -13,8 +13,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/quota"
 )
 
-
-
 func useIsolatedQuotaStore(t *testing.T, now time.Time) *quota.Store {
 	t.Helper()
 	store := quota.NewStore(func() time.Time { return now })
@@ -39,10 +37,6 @@ func requestQuotaSchedulerStatus(t *testing.T, h *Handler) map[string]any {
 	}
 	return payload
 }
-
-
-
-
 
 func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "")
@@ -81,7 +75,6 @@ func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 
 	h := NewHandlerWithoutConfigFilePath(cfg, manager)
 	payload := requestQuotaSchedulerStatus(t, h)
-
 
 	if payload["strategy"] != "reset-soonest" {
 		t.Fatalf("strategy = %v, want reset-soonest", payload["strategy"])
@@ -129,7 +122,6 @@ func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 		}
 	}
 
-
 	if _, present := claude["weekly"]; present {
 		t.Fatalf("claude account should not carry a weekly window: %v", claude)
 	}
@@ -147,7 +139,6 @@ func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 	if _, present := codex["fable"]; present {
 		t.Fatalf("codex account should not carry a fable window: %v", codex)
 	}
-
 
 	ranking, ok := payload["ranking"].([]any)
 	if !ok || len(ranking) != 2 {
@@ -237,7 +228,6 @@ func TestQuotaSchedulerStatusWithNoCredentials(t *testing.T) {
 		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
 	}
 
-
 	var raw struct {
 		Accounts map[string]any `json:"accounts"`
 		Ranking  []any          `json:"ranking"`
@@ -303,13 +293,11 @@ func TestRoutingStrategyNameAndGuardDefaults(t *testing.T) {
 		t.Fatalf("fiveHourGuardPercent() = %v, want 75", got)
 	}
 
-
 	outOfRange := 150.0
 	cfg.Routing.ResetSoonest.FiveHourGuardPercent = &outOfRange
 	if got := h.fiveHourGuardPercent(); got != quota.DefaultFiveHourGuardPercent {
 		t.Fatalf("fiveHourGuardPercent() = %v, want the default", got)
 	}
-
 
 	cfg.Routing.Strategy = "mystery"
 	if got := h.routingStrategyName(); got != "mystery" {

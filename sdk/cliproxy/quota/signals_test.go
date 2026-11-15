@@ -237,7 +237,6 @@ func TestParseUsageClaudeLimitsArray(t *testing.T) {
 func TestParseUsageClaudeFlatFallback(t *testing.T) {
 	t.Parallel()
 
-
 	body := []byte(`{
       "plan_type": "max",
       "five_hour": {"utilization": 10, "resets_at": "2026-10-03T14:00:00Z"},
@@ -306,9 +305,6 @@ func TestParseUsageRejectsBadInput(t *testing.T) {
 		t.Fatalf("windows = %+v, want none for an unpolled provider", reading.Windows)
 	}
 }
-
-
-
 
 func TestSignalWindowsClaudeLiveHeaders(t *testing.T) {
 	t.Parallel()

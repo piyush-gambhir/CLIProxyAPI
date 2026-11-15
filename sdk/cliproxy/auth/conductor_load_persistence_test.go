@@ -11,7 +11,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
 type reloadAuthStore struct {
 	mu          sync.Mutex
 	records     map[string]*Auth

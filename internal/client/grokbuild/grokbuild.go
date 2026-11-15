@@ -2,7 +2,6 @@ package grokbuild
 
 import "strings"
 
-
 type ModelInfo struct {
 	ID              string
 	DisplayName     string
@@ -10,11 +9,9 @@ type ModelInfo struct {
 	ReasoningLevels []string
 }
 
-
 type ReasoningEffort struct {
 	Value string `json:"value"`
 }
-
 
 type ModelEntry struct {
 	ID               string            `json:"id"`
@@ -26,17 +23,14 @@ type ModelEntry struct {
 	ReasoningEfforts []ReasoningEffort `json:"reasoning_efforts,omitempty"`
 }
 
-
 type Response struct {
 	Object string       `json:"object"`
 	Data   []ModelEntry `json:"data"`
 }
 
-
 func IsGrokShellUserAgent(userAgent string) bool {
 	return strings.Contains(strings.ToLower(userAgent), "grok-shell")
 }
-
 
 func BuildResponse(models []ModelInfo) Response {
 	entries := make([]ModelEntry, 0, len(models))

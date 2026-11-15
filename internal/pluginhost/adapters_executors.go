@@ -51,8 +51,6 @@ func (h *Host) RegisterExecutors(manager executorManager, modelRegistry modelPro
 		}
 		appendModelsForProvider(providerModels, registration.provider, registration.models)
 
-
-
 		if h.providerHasNativeExecutor(manager, registration.provider) {
 			for _, model := range registration.models {
 				if model != nil {
@@ -435,7 +433,6 @@ func (h *Host) HasExecutorCandidateProvider(provider string) bool {
 	return false
 }
 
-
 func (h *Host) OwnsExecutor(executor coreauth.ProviderExecutor) bool {
 	return h.ownsExecutor(executor)
 }
@@ -572,8 +569,6 @@ func (a *executorAdapter) prepareExecutorCall(req coreexecutor.Request, opts cor
 			return preparedExecutorCall{}, errThinking
 		}
 	}
-
-
 
 	if a.host != nil {
 		if cfg := a.host.currentRuntimeConfig(); cfg != nil {
@@ -715,11 +710,6 @@ func (h *Host) hasResponseTranslator() bool {
 	return false
 }
 
-
-
-
-
-
 func (h *Host) hasResponseTranslationHooks() bool {
 	if h == nil {
 		return false
@@ -774,21 +764,6 @@ func (a *executorAdapter) translateExecutorResponse(ctx context.Context, prepare
 
 func (a *executorAdapter) translateExecutorStreamChunks(ctx context.Context, prepared preparedExecutorCall, in <-chan pluginapi.ExecutorStreamChunk) <-chan pluginapi.ExecutorStreamChunk {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	if prepared.requestedFormat == "" {
 		return in
 	}
@@ -796,7 +771,6 @@ func (a *executorAdapter) translateExecutorStreamChunks(ctx context.Context, pre
 		return nil
 	}
 	sameFormat := prepared.outputFormat == prepared.requestedFormat
-
 
 	if sameFormat && prepared.requestedFormat != sdktranslator.FormatOpenAIResponse && !sdktranslator.HasStreamResponseTransformer(prepared.outputFormat, prepared.requestedFormat) && !a.host.hasResponseTranslationHooks() {
 		return in
@@ -860,8 +834,6 @@ func executorStreamTranslationFellBack(prepared preparedExecutorCall, payload []
 	if len(frames) != 1 || !bytes.Equal(frames[0], payload) {
 		return false
 	}
-
-
 
 	return executorNativeStreamResponseTranslatorExists(prepared.outputFormat, prepared.requestedFormat)
 }
@@ -1227,7 +1199,6 @@ func (a *executorAdapter) CountTokens(ctx context.Context, auth *coreauth.Auth, 
 	var payload []byte
 	translatedTokenCount := false
 	if prepared.outputFormat != prepared.requestedFormat {
-
 
 		if count, okCount := pluginExecutorTokenCount(prepared.outputFormat, pluginResp.Payload); okCount {
 			if sdktranslator.HasTokenCountTransformer(prepared.outputFormat, prepared.requestedFormat) {

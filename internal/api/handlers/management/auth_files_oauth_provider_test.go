@@ -157,7 +157,6 @@ func TestAuthFilesOAuthProvider_LoginLifecycle(t *testing.T) {
 					t.Fatalf("HasMultipleAuthProviders(%q) = %t", tc.portal, got)
 				}
 
-
 				rawResp, errPoll := provider.PollLogin(context.Background(), pluginapi.AuthLoginPollRequest{Provider: tc.portal})
 				if errPoll != nil {
 					t.Fatalf("plugin poll: %v", errPoll)

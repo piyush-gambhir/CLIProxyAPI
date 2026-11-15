@@ -286,7 +286,6 @@ func TestHandlerPluginExecutorPublishesUsageStreamClaude(t *testing.T) {
 
 	originalModel := "claude-3-5-sonnet"
 
-
 	chunks := make(chan coreexecutor.StreamChunk, 4)
 	chunks <- coreexecutor.StreamChunk{Payload: []byte("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":100,\"cache_read_input_tokens\":50,\"cache_creation_input_tokens\":20,\"output_tokens\":1}}}\n\n")}
 	chunks <- coreexecutor.StreamChunk{Payload: []byte("event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n")}
@@ -560,8 +559,6 @@ func TestHandlerPluginExecutorPublishesStreamCancellation(t *testing.T) {
 
 	dataChan, _, _ := handler.ExecuteStreamWithAuthManager(ctx, "openai", originalModel, []byte(fmt.Sprintf(`{"model":%q,"stream":true}`, originalModel)), "")
 
-
-
 	<-dataChan
 	cancel()
 	for range dataChan {
@@ -598,7 +595,6 @@ func TestHandlerPluginExecutorSkipsUsageForNestedExecution(t *testing.T) {
 
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, nil)
 	handler.SetModelRouterHost(mockHost)
-
 
 	resp, errMsg := handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol: "openai",
@@ -683,7 +679,6 @@ func TestHandlerPluginExecutorSkipsOuterUsageWhenPluginCallsHostModelExecute(t *
 		t.Fatal("empty response body")
 	}
 
-
 	plugin.assertNoRecord(t)
 }
 
@@ -745,7 +740,6 @@ func TestHandlerPluginExecutorSkipsOuterFailureWhenPluginCallsHostModelExecute(t
 	if errMsg == nil {
 		t.Fatal("expected failure")
 	}
-
 
 	plugin.assertNoRecord(t)
 }

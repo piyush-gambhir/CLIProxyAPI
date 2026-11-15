@@ -27,7 +27,6 @@ func TestAntigravityConstantsAndURLBuilder(t *testing.T) {
 		t.Fatalf("expected default callback URI %q, got %q", expectedDefaultURI, got)
 	}
 
-
 	customURI := "https://admin.example.com/oauth/antigravity/callback"
 	authURL := auth.BuildAntigravityAuthURL("state-123", customURI)
 	parsed, err := url.Parse(authURL)
@@ -53,7 +52,6 @@ func TestAntigravityConstantsAndURLBuilder(t *testing.T) {
 	if !strings.Contains(q.Get("scope"), "cloud-platform") {
 		t.Fatalf("scope should include cloud-platform: %s", q.Get("scope"))
 	}
-
 
 	authURLDefault := auth.BuildAntigravityAuthURL("state-456", "")
 	parsedDefault, err := url.Parse(authURLDefault)
@@ -257,7 +255,6 @@ func TestExchangeAntigravityCodeDefaultRedirectAndErrors(t *testing.T) {
 		t.Fatalf("expected default redirect %q in body: %s", expectedRedirect, capturedBody)
 	}
 
-
 	errorClient := &http.Client{
 		Transport: mockRoundTripper(func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
@@ -271,7 +268,6 @@ func TestExchangeAntigravityCodeDefaultRedirectAndErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on upstream 400 response")
 	}
-
 
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -299,7 +295,6 @@ func TestFetchAntigravityUserInfoErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error with empty access token")
 	}
-
 
 	errorClient := &http.Client{
 		Transport: mockRoundTripper(func(req *http.Request) (*http.Response, error) {

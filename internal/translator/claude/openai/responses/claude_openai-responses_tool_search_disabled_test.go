@@ -13,9 +13,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 type toolSearchGoldenCase struct {
 	Name    string          `json:"name"`
 	Request json.RawMessage `json:"request"`
@@ -34,8 +31,6 @@ type toolSearchGoldenOutput struct {
 }
 
 var toolSearchGoldenCreatedAt = regexp.MustCompile(`"created_at":\d+`)
-
-
 
 func renderToolSearchGolden(fixtures toolSearchGoldenFixtures, c toolSearchGoldenCase) toolSearchGoldenOutput {
 	normalize := func(raw []byte) string {
@@ -99,8 +94,6 @@ func TestToolSearchDisabledMatchesDevGolden(t *testing.T) {
 	}
 }
 
-
-
 func TestToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	setClientToolSearchEnabledForTest(t, true)
 	fixtures, golden := loadToolSearchGolden(t)
@@ -115,9 +108,6 @@ func TestToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	}
 	t.Fatal("codex_session fixture missing")
 }
-
-
-
 
 func TestToolSearchPinnedContextWinsOverSwitch(t *testing.T) {
 	fixtures, golden := loadToolSearchGolden(t)
@@ -181,7 +171,6 @@ func TestToolSearchPinnedContextWinsOverSwitch(t *testing.T) {
 	}
 }
 
-
 func sseData(event []byte) []byte {
 	for _, line := range strings.Split(string(event), "\n") {
 		if strings.HasPrefix(line, "data: ") {
@@ -190,8 +179,6 @@ func sseData(event []byte) []byte {
 	}
 	return nil
 }
-
-
 
 func TestToolSearchCompatContextFollowsPin(t *testing.T) {
 	request := codexToolSearchRequest(codexUserTurn, codexSearchCall1, codexSearchOutput1)

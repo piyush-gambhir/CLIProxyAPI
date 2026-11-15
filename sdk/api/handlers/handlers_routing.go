@@ -17,8 +17,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-
-
 type PluginModelRouterHost interface {
 	RouteModel(context.Context, pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, bool)
 }
@@ -122,9 +120,6 @@ func nativeInteractionsExecutionError() *interfaces.ErrorMessage {
 	}
 }
 
-
-
-
 func (h *BaseAPIHandler) providersForExecution(modelName, originalRequestedModel string, allowImageModel bool, routeDecision modelRouteDecision, execOptions modelExecutionOptions) ([]string, string, *interfaces.ErrorMessage) {
 	forcedProvider := strings.ToLower(strings.TrimSpace(execOptions.ForcedProvider))
 	if forcedProvider != "" {
@@ -200,21 +195,11 @@ func (h *BaseAPIHandler) getRequestDetailsWithOptions(modelName string, allowIma
 
 	providers = util.GetProviderName(baseModel)
 
-
-
-
-
 	if len(providers) == 0 && baseModel != resolvedModelName {
 		providers = util.GetProviderName(resolvedModelName)
 	}
 
 	if len(providers) == 0 {
-
-
-
-
-
-
 
 		body := `{"error":{"message":"","type":"invalid_request_error","code":"model_not_found","param":"model"}}`
 		body, errSet := ojson.Set(body, "error.message", "unknown provider for model "+modelName)
@@ -226,8 +211,6 @@ func (h *BaseAPIHandler) getRequestDetailsWithOptions(modelName string, allowIma
 			Error:      errors.New(body),
 		}
 	}
-
-
 
 	return providers, resolvedModelName, nil
 }
@@ -254,8 +237,6 @@ func isOpenAIImageOnlyModel(model string) bool {
 		return false
 	}
 }
-
-
 
 func (h *BaseAPIHandler) validateSpeechOnlyModel(modelName string, allowSpeechModel bool) *interfaces.ErrorMessage {
 	baseModel := strings.TrimSpace(thinking.ParseSuffix(modelName).ModelName)
@@ -354,7 +335,6 @@ func modelRoutersEnabled(host PluginModelRouterHost, skipPluginID string) bool {
 	if detector, ok := host.(modelRouterDetector); ok {
 		return detector.HasModelRouters()
 	}
-
 
 	return false
 }

@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-
-
-
-
 var claudePerMinuteMessages = []struct {
 	name     string
 	resource string

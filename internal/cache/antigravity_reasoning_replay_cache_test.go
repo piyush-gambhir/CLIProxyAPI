@@ -401,9 +401,7 @@ func TestAntigravityReasoningReplayHomeGenerationRejectsSuccessfulValueABA(t *te
 }
 
 func TestAntigravityReasoningReplayHomeReportsCASErrors(t *testing.T) {
-	// The cache layer keeps reporting CAS failures honestly. Deciding that a
-	// replay failure must not fail the request is the executor's job, so this
-	// layer must not start swallowing errors.
+
 	client := newFakeAntigravityReasoningReplayKVClient()
 	client.casErr = fmt.Errorf("ERR unknown command 'cas'")
 	useFakeAntigravityReasoningReplayKVClient(t, client, true)
@@ -511,7 +509,6 @@ func TestAntigravityReasoningReplayHomeWritesUnwrappedJSONArrayAndReadsLegacyBas
 		t.Fatalf("unwrapped Home array malformed: %s", raw)
 	}
 
-	// Verify backward-compatible decoding of legacy base64-encoded [][]byte arrays.
 	legacyRaw := []byte(`["` + base64.StdEncoding.EncodeToString(item) + `"]`)
 	client.values[antigravityReasoningReplayKVKey(model, session)] = legacyRaw
 	gotLegacy, _, foundLegacy, errLegacy := GetAntigravityReasoningReplayItemsWithSnapshotRequired(context.Background(), model, session)

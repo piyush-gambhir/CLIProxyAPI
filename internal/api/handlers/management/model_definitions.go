@@ -10,7 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
 func (h *Handler) RefreshModelDefinitions(c *gin.Context) {
 	var sources registry.CatalogSources
 	home := false
@@ -57,8 +56,6 @@ func (h *Handler) RefreshModelDefinitions(c *gin.Context) {
 		"changed_providers": result.ChangedProviders,
 	})
 }
-
-
 
 func (h *Handler) GetStaticModelDefinitions(c *gin.Context) {
 	channel := strings.TrimSpace(c.Param("channel"))

@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-
-
 var claudeInstructionSteps = map[string]string{
 	"developer user_input":     `{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}`,
 	"system user_input":        `{"type":"user_input","role":"system","content":[{"type":"text","text":"note"}]}`,
@@ -16,7 +14,6 @@ var claudeInstructionSteps = map[string]string{
 	"developer native parts":   `{"role":"developer","parts":[{"text":"note"}]}`,
 	"developer wrapper":        `{"role":"developer","steps":[{"type":"user_input","content":[{"type":"text","text":"note"}]}]}`,
 }
-
 
 const claudeEmptiedStep = `{"type":"user_input","content":[{"type":"video","mime_type":"video/mp4","uri":"https://example.test/a.mp4"}]}`
 

@@ -6,15 +6,11 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 func IsResponsesTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
-
 
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
@@ -44,16 +40,13 @@ func IsResponsesTokenEvent(payload []byte) bool {
 		"response.audio.transcript.delta":
 		return len(ojson.GetBytesNoCopy(payload, "delta").String()) > 0
 
-
 	case "response.audio.delta":
 		return len(ojson.GetBytesNoCopy(payload, "delta").String()) > 0 || len(ojson.GetBytesNoCopy(payload, "data").String()) > 0
 	case "response.image_generation_call.partial_image":
 		return len(ojson.GetBytesNoCopy(payload, "partial_image_b64").String()) > 0
 
-
 	case "response.shell_call_command.added":
 		return len(ojson.GetBytesNoCopy(payload, "command").String()) > 0
-
 
 	case "response.reasoning_summary_text.done",
 		"response.reasoning_text.done",
@@ -99,7 +92,6 @@ func IsResponsesTokenEvent(payload []byte) bool {
 		}
 		return false
 
-
 	case "response.completed",
 		"response.done",
 		"response.incomplete",
@@ -107,14 +99,10 @@ func IsResponsesTokenEvent(payload []byte) bool {
 		"error":
 		return true
 
-
 	default:
 		return false
 	}
 }
-
-
-
 
 func ObserveResponsesTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {

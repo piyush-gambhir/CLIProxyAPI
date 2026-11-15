@@ -509,7 +509,6 @@ func TestHomeStreamingLogWriter_CloseTerminatesWhenClientUnhealthy(t *testing.T)
 
 	hw.WriteChunkAsync([]byte("chunk-1"))
 
-
 	stub.heartbeatOK = false
 
 	done := make(chan struct{})
@@ -531,7 +530,6 @@ func TestHomeStreamingLogWriter_CloseTerminatesWhenClientUnhealthy(t *testing.T)
 func TestFileRequestLogger_UsesShortRequestIDForLocalAndFullForHome(t *testing.T) {
 	fullUUID := "018f3a5b-1234-7abc-def0-12345678abcd"
 	expectedShortID := "5678abcd"
-
 
 	logsDir := t.TempDir()
 	logger := NewFileRequestLogger(true, logsDir, "", 0)
@@ -572,7 +570,6 @@ func TestFileRequestLogger_UsesShortRequestIDForLocalAndFullForHome(t *testing.T
 	if strings.Contains(filename, fullUUID) {
 		t.Fatalf("filename %q should not contain full UUID", filename)
 	}
-
 
 	original := currentHomeRequestLogClient
 	defer func() {

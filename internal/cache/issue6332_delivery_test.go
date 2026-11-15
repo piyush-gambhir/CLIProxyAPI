@@ -121,7 +121,7 @@ func TestIssue6332ReplayCommitPrecedesCompletion(t *testing.T) {
 			if !functionCall.Exists() {
 				t.Fatalf("no completed tool call: %s", downstream)
 			}
-			// Deliberately omit encrypted reasoning: restoration must come from the session ledger.
+
 			second, _ := ojson.Set(first, "input.-1", map[string]any{"type": "function_call", "call_id": functionCall.Get("call_id").String(), "name": "lookup", "arguments": `{"key":"value"}`})
 			second, _ = ojson.Set(second, "input.-1", map[string]any{"type": "function_call_output", "call_id": functionCall.Get("call_id").String(), "output": "found"})
 			call(second)

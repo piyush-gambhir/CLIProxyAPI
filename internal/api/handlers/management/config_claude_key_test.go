@@ -20,7 +20,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: writeTestConfigFile(t)}
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -34,7 +33,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 	if got := cfg.ClaudeKey[0].FingerprintProfile; got != "claude-code-cli" {
 		t.Fatalf("FingerprintProfile = %q, want %q", got, "claude-code-cli")
 	}
-
 
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
@@ -50,8 +48,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 		t.Fatalf("FingerprintProfile = %q, want empty", got)
 	}
 
-
-
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -66,8 +62,6 @@ func TestPatchClaudeKeyFingerprintProfile(t *testing.T) {
 		t.Fatalf("FingerprintProfile = %q, want canonical %q", got, "claude-code-cli")
 	}
 }
-
-
 
 func TestPatchClaudeKeyRejectsUnknownFingerprintProfile(t *testing.T) {
 	cfg := &config.Config{
@@ -145,7 +139,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	*cfg.ClaudeKey[0].Cloak.CacheUserID = true
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -169,7 +162,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Fatalf("Cloak.CacheUserID = %v, want preserved true", cfg.ClaudeKey[0].Cloak.CacheUserID)
 	}
 
-
 	loadedCfg, errLoad := config.LoadConfigOptional(configFile, false)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
@@ -180,7 +172,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	if loadedCfg.ClaudeKey[0].Cloak.Mode != "always" {
 		t.Errorf("persisted Mode = %q, want %q", loadedCfg.ClaudeKey[0].Cloak.Mode, "always")
 	}
-
 
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
@@ -196,7 +187,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 		t.Fatalf("Cloak.CacheUserID = %v, want false", cfg.ClaudeKey[0].Cloak.CacheUserID)
 	}
 
-
 	loadedCfg, errLoad = config.LoadConfigOptional(configFile, false)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
@@ -204,7 +194,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	if loadedCfg.ClaudeKey[0].Cloak.CacheUserID == nil || *loadedCfg.ClaudeKey[0].Cloak.CacheUserID != false {
 		t.Errorf("persisted CacheUserID = %v, want false", loadedCfg.ClaudeKey[0].Cloak.CacheUserID)
 	}
-
 
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
@@ -215,7 +204,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400 for invalid cloak JSON", rec.Code)
 	}
-
 
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
@@ -230,7 +218,6 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	if cfg.ClaudeKey[0].Cloak != nil {
 		t.Fatalf("Cloak = %+v, want nil after clearing", cfg.ClaudeKey[0].Cloak)
 	}
-
 
 	loadedCfg, errLoad = config.LoadConfigOptional(configFile, false)
 	if errLoad != nil {
@@ -322,7 +309,6 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -353,7 +339,6 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 	if !strings.Contains(savedText, "cache-user-id: false") {
 		t.Fatalf("saved YAML missing 'cache-user-id: false':\n%s", savedText)
 	}
-
 
 	getRec := httptest.NewRecorder()
 	getCtx, _ := gin.CreateTestContext(getRec)
@@ -398,8 +383,6 @@ func TestPutClaudeKeysPreservesModeByCredentialIdentity(t *testing.T) {
 		},
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
-
-
 
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -459,8 +442,6 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -488,7 +469,6 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 	if strings.Contains(savedText, "cache-user-id: true") {
 		t.Fatalf("saved YAML still contains 'cache-user-id: true':\n%s", savedText)
 	}
-
 
 	getRec := httptest.NewRecorder()
 	getCtx, _ := gin.CreateTestContext(getRec)
@@ -538,7 +518,6 @@ func TestPutClaudeKeysPreservesModeWithDifferentPrefix(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/v0/management/claude-api-key",
@@ -585,8 +564,6 @@ func TestPutClaudeKeysAuthIndexCannotBypassStrictTupleIsolation(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-
-
 	payload := `[{"api-key":"key-a","cloak":{"mode":"always"}},{"api-key":"key-b","auth-index":"index-a","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -628,8 +605,6 @@ func TestPutClaudeKeysDoesNotInheritModeForNewCredential(t *testing.T) {
 		},
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
-
-
 
 	payload := `[{"api-key":"new-key","base-url":"https://new.example.com","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
@@ -687,8 +662,6 @@ func TestPutClaudeKeysAmbiguousCredentialsDoNotInheritMode(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-
-
 	payload := `[{"api-key":"shared-key","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -730,8 +703,6 @@ func TestPutClaudeKeysNewCredentialWithDifferentPrefixDoesNotInheritMode(t *test
 		},
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
-
-
 
 	payload := `[{"api-key":"shared-key","prefix":"team1","cloak":{"mode":""}},{"api-key":"shared-key","prefix":"team2","cloak":{"mode":""}}]`
 	rec := httptest.NewRecorder()
@@ -775,7 +746,6 @@ func TestPutClaudeKeysOmittedCloakPreservesExistingMode(t *testing.T) {
 		},
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
-
 
 	payload := `[{"api-key":"sk-ant-test"}]`
 	rec := httptest.NewRecorder()
@@ -838,7 +808,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("saved YAML missing 'priority: 20':\n%s", savedText)
 	}
 
-
 	getRec := httptest.NewRecorder()
 	getCtx, _ := gin.CreateTestContext(getRec)
 	getCtx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/claude-api-key", nil)
@@ -860,7 +829,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("GET response ClaudeKey[1].Priority = %d, want 20", resp.ClaudeKey[1].Priority)
 	}
 
-
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -878,7 +846,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("ClaudeKey[1].Prefix = %q, want %q", got, "team-test")
 	}
 
-
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -892,7 +859,6 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 	if got := cfg.ClaudeKey[1].Priority; got != 0 {
 		t.Fatalf("ClaudeKey[1].Priority = %d, want 0", got)
 	}
-
 
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)

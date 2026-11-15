@@ -80,8 +80,7 @@ func TestFindMatchingLegacyCredential(t *testing.T) {
 		targetSubject string
 		legacyEmail   string
 		legacySubject string
-		// legacyFileName overrides the default colliding legacy filename so a
-		// fixture can carry the exact predecessor name it claims to exercise.
+
 		legacyFileName string
 		wantMatch      bool
 	}{
@@ -179,8 +178,6 @@ func TestFindMatchingLegacyCredential(t *testing.T) {
 			targetSubject: "sub-first",
 			legacyEmail:   "a+b@example.com",
 			legacySubject: "sub-first",
-			// Default fixture name is the hashed name, identical to the
-			// target's own destination on an ordinary re-login.
 		},
 		{
 			name:          "custom-named credential is never claimed",
@@ -188,8 +185,7 @@ func TestFindMatchingLegacyCredential(t *testing.T) {
 			targetSubject: "sub-first",
 			legacyEmail:   "a+b@example.com",
 			legacySubject: "sub-first",
-			// Same stored identity, but the file was renamed or imported;
-			// migration must not merge or delete a file it does not own.
+
 			legacyFileName: "my-xai.json",
 		},
 		{
@@ -198,8 +194,7 @@ func TestFindMatchingLegacyCredential(t *testing.T) {
 			targetSubject: "sub-first",
 			legacyEmail:   "a+b@example.com",
 			legacySubject: "sub-first",
-			// Hashed subject-only name; the stored identity gained the email
-			// when an earlier migration merged it into this file.
+
 			legacyFileName: CredentialFileName("", "sub-first"),
 			wantMatch:      true,
 		},
@@ -218,8 +213,7 @@ func TestFindMatchingLegacyCredential(t *testing.T) {
 			targetSubject: "sub-first",
 			legacyEmail:   "a+b@example.com",
 			legacySubject: "sub-first",
-			// The filename was derived from a different subject than the stored
-			// identity, so the file is not one the login flow produced for it.
+
 			legacyFileName: CredentialFileName("", "sub-other"),
 		},
 		{
@@ -250,9 +244,7 @@ func TestFindMatchingLegacyCredential(t *testing.T) {
 			}
 			legacyFileName := tt.legacyFileName
 			if legacyFileName == "" {
-				// Default to the predecessor filename the stored identity itself
-				// would have produced; fixtures that need the ambiguous
-				// colliding name set legacyFileName explicitly.
+
 				legacyFileName = CredentialFileName(tt.legacyEmail, tt.legacySubject)
 			}
 			legacy := &coreauth.Auth{

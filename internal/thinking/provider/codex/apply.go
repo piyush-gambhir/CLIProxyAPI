@@ -1,4 +1,3 @@
-
 package codex
 
 import (
@@ -7,11 +6,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
-
 
 func NewApplier() *Applier {
 	return &Applier{}
@@ -20,7 +17,6 @@ func NewApplier() *Applier {
 func init() {
 	thinking.RegisterProvider("codex", NewApplier())
 }
-
 
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	effort, ok := resolveCodexEffort(config, modelInfo)
@@ -33,7 +29,6 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	result, _ := ojson.SetBytes(body, "reasoning.effort", effort)
 	return result, nil
 }
-
 
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {

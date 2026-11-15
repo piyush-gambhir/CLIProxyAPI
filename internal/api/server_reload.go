@@ -33,17 +33,9 @@ func (s *Server) applyAccessConfig(oldCfg, newCfg *config.Config) bool {
 	return true
 }
 
-
-
-
-
-
-
 func (s *Server) UpdateClients(cfg *config.Config) {
 	s.UpdateClientsContext(context.Background(), cfg)
 }
-
-
 
 func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) bool {
 	if s == nil || cfg == nil {
@@ -64,7 +56,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 	if len(oldConfigYaml) > 0 {
 		_ = yaml.Unmarshal(oldConfigYaml, &oldCfg)
 	}
-
 
 	previousRequestLog := false
 	if oldCfg != nil {
@@ -128,7 +119,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 	if s.handlers != nil && s.handlers.AuthManager != nil {
 		s.handlers.AuthManager.SetRetryConfig(cfg.RequestRetry, time.Duration(cfg.MaxRetryInterval)*time.Second, cfg.MaxRetryCredentials)
 	}
-
 
 	if oldCfg == nil || oldCfg.Debug != cfg.Debug {
 		util.SetLogLevel(cfg)
@@ -213,7 +203,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 	}
 	s.refreshPluginManagementRoutes()
 
-
 	authEntries := 0
 	if cfg != nil && !cfg.Home.Enabled {
 		tokenStore := sdkAuth.GetTokenStore()
@@ -263,9 +252,6 @@ func (s *Server) SetWebsocketAuthChangeHandler(fn func(bool, bool)) {
 	}
 	s.wsAuthChanged = fn
 }
-
-
-
 
 func applyClaudeToolSearchConfig(cfg *config.Config) {
 	responsesclaude.SetClientToolSearchEnabled(cfg != nil && cfg.Claude.ToolSearch)

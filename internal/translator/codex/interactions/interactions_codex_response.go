@@ -30,7 +30,6 @@ type codexToInteractionsStreamState struct {
 	FunctionCallName     string
 	FunctionCallID       string
 
-
 	SeenReasoningSignatures map[[32]byte]bool
 }
 
@@ -435,8 +434,6 @@ func appendCodexReasoningItemToInteractionsStream(out [][]byte, st *codexToInter
 		_ = signatureDeltaDoc.Set("delta.signature", sig)
 		out = append(out, translatorcommon.SSEEventData("step.delta", signatureDeltaDoc.Bytes()))
 	}
-
-
 
 	st.HasThoughtSummary = false
 	return out

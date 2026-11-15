@@ -1,6 +1,3 @@
-
-
-
 package cmd
 
 import (
@@ -17,18 +14,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
-
-
 func StartService(cfg *config.Config, configPath string, localPassword string) {
 	StartServiceWithPluginHost(cfg, configPath, localPassword, nil)
 }
-
 
 func StartServiceWithPluginHost(cfg *config.Config, configPath string, localPassword string, host *pluginhost.Host, serverOptions ...api.ServerOption) {
 	builder := cliproxy.NewBuilder().
@@ -67,12 +55,9 @@ func StartServiceWithPluginHost(cfg *config.Config, configPath string, localPass
 	}
 }
 
-
-
 func StartServiceBackground(cfg *config.Config, configPath string, localPassword string) (cancel func(), done <-chan struct{}) {
 	return StartServiceBackgroundWithPluginHost(cfg, configPath, localPassword, nil)
 }
-
 
 func StartServiceBackgroundWithPluginHost(cfg *config.Config, configPath string, localPassword string, host *pluginhost.Host, serverOptions ...api.ServerOption) (cancel func(), done <-chan struct{}) {
 	builder := cliproxy.NewBuilder().
@@ -106,15 +91,12 @@ func StartServiceBackgroundWithPluginHost(cfg *config.Config, configPath string,
 	return cancelFn, doneCh
 }
 
-
-
 func WaitForCloudDeploy() {
 
 	log.Info("Cloud deploy mode: No config found; standing by for configuration. API server is not started. Press Ctrl+C to exit.")
 
 	ctxSignal, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-
 
 	<-ctxSignal.Done()
 	log.Info("Cloud deploy mode: Shutdown signal received; exiting")

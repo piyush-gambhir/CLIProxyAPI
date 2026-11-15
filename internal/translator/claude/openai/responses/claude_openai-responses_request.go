@@ -23,45 +23,23 @@ const (
 	defaultFableResponsesMaxTokens  = 64000
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertOpenAIResponsesRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToClaude(context.Background(), modelName, inputRawJSON, stream, false, ClientToolSearchEnabled())
 
 }
 
-
-
 func ConvertOpenAIResponsesRequestToClaudeWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToClaude(context.Background(), modelName, inputRawJSON, stream, true, ClientToolSearchEnabled())
 }
-
-
 
 func ConvertOpenAIResponsesRequestEnvelopeToClaude(ctx context.Context, req sdktranslator.RequestEnvelope) sdktranslator.RequestEnvelope {
 	req.Body, req.Err = convertOpenAIResponsesRequestToClaude(ctx, req.Model, req.Body, req.Stream, false, ClientToolSearchEnabledFor(ctx))
 	return req
 }
 
-
-
-
 func ConvertOpenAIResponsesRequestToClaudeWithCompatContext(ctx context.Context, modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIResponsesRequestToClaude(ctx, modelName, inputRawJSON, stream, true, ClientToolSearchEnabledFor(ctx))
 }
-
-
 
 func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string, inputRawJSON []byte, stream, preserveEmptyThinkingBlocks, toolSearch bool) ([]byte, error) {
 	rawJSON := normalizeCodexAgentMessages(inputRawJSON)
@@ -69,13 +47,11 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 
 	userID := common.DeriveClaudeUserID(rawJSON)
 
-
 	outDoc := ojson.NewDoc([]byte(`{"model":"","max_tokens":32000,"messages":[],"metadata":{}}`))
 	_ = outDoc.Set("metadata.user_id", userID)
 	_ = outDoc.Set("max_tokens", defaultClaudeResponsesMaxTokensForModel(modelName))
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
-
 
 	if v := root.Get("reasoning.effort"); v.Exists() {
 		effort := strings.ToLower(strings.TrimSpace(v.String()))
@@ -83,9 +59,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			mi := registry.LookupModelInfo(modelName, "claude")
 			supportsAdaptive := mi != nil && mi.Thinking != nil && len(mi.Thinking.Levels) > 0
 			supportsMax := supportsAdaptive && thinking.HasLevel(mi.Thinking.Levels, string(thinking.LevelMax))
-
-
-
 
 			if supportsAdaptive {
 				switch effort {
@@ -127,9 +100,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		}
 	}
 
-
 	_ = outDoc.Set("model", modelName)
-
 
 	if mot := root.Get("max_output_tokens"); mot.Exists() && mot.Type != ojson.Null {
 		val := mot.Int()
@@ -139,22 +110,11 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		_ = outDoc.Set("max_tokens", val)
 	}
 
-
 	_ = outDoc.Set("stream", stream)
-
 
 	if st := root.Get("service_tier"); st.Type == ojson.String && st.String() == "priority" {
 		_ = outDoc.Set("speed", "fast")
 	}
-
-
-
-
-
-
-
-
-
 
 	messageCapacity := root.Get("input.#").Int()
 	if messageCapacity == 0 && root.Get("input").Type == ojson.String {
@@ -204,17 +164,12 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	names := buildClaudeToolNames(root, toolSearch)
 	winners := responsesToolWinners(root, toolSearch)
 
-
 	nativeToolSearch := responsesClientToolSearchWins(responsesToolDescriptors(root, toolSearch))
-
 
 	var pendingRole string
 	var pendingParts [][]byte
 	var pendingToolUseParts [][]byte
 	var turnHasEmptyWebSearchResult bool
-
-
-
 
 	var pendingSystemEntryIndices []int
 	appendMessage := func(msg []byte) {
@@ -300,8 +255,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			flushPendingMessage()
 		}
 		pendingRole = "assistant"
-
-
 
 		if len(pendingToolUseParts) > 0 {
 			pendingParts = append(pendingParts, pendingToolUseParts...)
@@ -484,7 +437,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 				partsJSON = append(partsJSON, contentPart)
 			}
 
-
 			if role == "" {
 				r := item.Get("role").String()
 				switch r {
@@ -515,7 +467,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 
 		case "web_search_call":
 
-
 			if blocks := webSearchHistory.claudeBlocksWithContext(ctx, itemIndex, item); len(blocks) > 0 {
 				if claudeBlocksHaveEmptyWebSearchResult(blocks) {
 					turnHasEmptyWebSearchResult = true
@@ -527,7 +478,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			appendReasoning(convertResponsesReasoningToClaudeThinking(item, preserveEmptyThinkingBlocks))
 
 		case "function_call", "custom_tool_call":
-
 
 			rawCallID := common.ExtractResponsesCallID(item)
 			callID := rawCallID
@@ -579,11 +529,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			}
 			output := outputItem.Get("output")
 
-
-
-
-
-
 			if _, paired := emittedRawToolUses[rawID]; rawID == "" || !paired {
 				appendParts("user", convertResponsesStandaloneToolOutputToClaudeText(output)...)
 				turnHasEmptyWebSearchResult = false
@@ -592,8 +537,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 			callID := util.SanitizeClaudeToolID(rawID)
 			toolResultDoc := ojson.NewDoc([]byte(`{"type":"tool_result","tool_use_id":"","content":""}`))
 			_ = toolResultDoc.Set("tool_use_id", callID)
-
-
 
 			if strings.EqualFold(strings.TrimSpace(outputItem.Get("status").String()), "incomplete") {
 				_ = toolResultDoc.Set("is_error", true)
@@ -641,19 +584,13 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 
 		default:
 
-
-
-
 			if typ := item.Get("type").String(); typ != "" && typ != "additional_tools" {
-
 
 				unmappedItemTypes[typ]++
 			}
 		}
 	}
 	flushPendingMessage()
-
-
 
 	for _, entry := range systemInputEntries {
 		if !entry.emitted {
@@ -677,8 +614,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		messageBlocks = stripTrailingClaudeThinkingBlocks(messageBlocks)
 	}
 
-
-
 	messageBlocks = repairClaudeToolPairing(messageBlocks)
 	if !preserveEmptyThinkingBlocks {
 		messageBlocks = dropUnsupportedClaudeAssistantPrefill(modelName, messageBlocks)
@@ -686,7 +621,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	if problems := claudeMessageInvariantProblems(messageBlocks); len(problems) > 0 {
 		log.Warnf("responses->claude: message invariants violated after repair (model=%s): %s", modelName, strings.Join(problems, "; "))
 	}
-
 
 	if len(messageBlocks) == 0 && (len(systemBlocks) > 0 || hadMessages) {
 		messageBlocks = append(messageBlocks, []byte(`{"role":"user","content":[{"type":"text","text":""}]}`))
@@ -699,11 +633,7 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	includedToolNames := map[string]struct{}{}
 	toolNameMap := map[string]string{}
 
-
-
-
 	var toolItems [][]byte
-
 
 	anchorIndex := -1
 	for _, descriptor := range responsesToolDescriptors(root, toolSearch) {
@@ -745,7 +675,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 	if len(toolItems) > 0 {
 		_ = outDoc.SetRawBytes("tools", common.JoinRawArray(toolItems))
 	}
-
 
 	toolChoiceNone := false
 	forcedToolFilteredOut := false
@@ -807,10 +736,6 @@ func convertOpenAIResponsesRequestToClaude(ctx context.Context, modelName string
 		}
 	}
 
-
-
-
-
 	if parallelToolCalls := root.Get("parallel_tool_calls"); parallelToolCalls.Type == ojson.False && !toolChoiceNone && !forcedToolFilteredOut && len(toolItems) > 0 {
 		if choice := outDoc.Get("tool_choice"); choice.Exists() {
 			if choice.Get("type").String() != "none" {
@@ -835,16 +760,11 @@ func defaultClaudeResponsesMaxTokensForModel(modelName string) int {
 		return maxTokens
 	}
 
-
-
 	if strings.Contains(normalized, "fable") && info.MaxCompletionTokens >= maxTokens {
 		return maxTokens
 	}
 	return info.MaxCompletionTokens
 }
-
-
-
 
 func isResponsesSystemLevelRole(role string) bool {
 	switch strings.ToLower(strings.TrimSpace(role)) {
@@ -857,20 +777,12 @@ func isResponsesSystemLevelRole(role string) bool {
 
 type topLevelSystemItemsContextKey struct{}
 
-
-
-
-
-
-
 func WithTopLevelSystemItems(ctx context.Context, topLevel bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, topLevelSystemItemsContextKey{}, topLevel)
 }
-
-
 
 func topLevelSystemItemsFor(ctx context.Context, modelName string) bool {
 	if ctx != nil {
@@ -880,11 +792,6 @@ func topLevelSystemItemsFor(ctx context.Context, modelName string) bool {
 	}
 	return util.IsClaudeLegacySystemReminderModel(modelName)
 }
-
-
-
-
-
 
 func responsesSystemItemToClaudeBlocks(item ojson.Result) [][]byte {
 	var blockDocs []*ojson.Doc
@@ -959,14 +866,10 @@ func attachClaudeCacheControlDoc(doc *ojson.Doc, src ojson.Result) {
 	_ = doc.SetRaw("cache_control", cc.Raw)
 }
 
-
-
 func isResponsesMessageItem(item ojson.Result) bool {
 	typ := item.Get("type").String()
 	return typ == "" || typ == "message"
 }
-
-
 
 func claudeBlocksAreAllText(blocks [][]byte) bool {
 	if len(blocks) == 0 {
@@ -979,11 +882,6 @@ func claudeBlocksAreAllText(blocks [][]byte) bool {
 	}
 	return true
 }
-
-
-
-
-
 
 func dropUnsupportedClaudeAssistantPrefill(modelName string, messages [][]byte) [][]byte {
 	if !claudeModelRejectsAssistantPrefill(modelName) || len(messages) == 0 {
@@ -1015,10 +913,6 @@ func claudeAssistantMessageEndsWithPausedServerTool(message ojson.Result) bool {
 		return false
 	}
 }
-
-
-
-
 
 func stripTrailingClaudeThinkingBlocks(messages [][]byte) [][]byte {
 	if len(messages) == 0 {
@@ -1068,8 +962,6 @@ func stripTrailingClaudeThinkingBlocks(messages [][]byte) [][]byte {
 	return messages
 }
 
-
-
 func claudeModelRejectsAssistantPrefill(modelName string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(modelName))
 
@@ -1107,15 +999,6 @@ func claudeModelRejectsAssistantPrefill(modelName string) bool {
 	return tokens[0] == "sonnet" && major == 4 && len(tokens) > 2 && parseVersion(tokens[2]) >= 6
 }
 
-
-
-
-
-
-
-
-
-
 func responsesSystemUnsupportedBlockDoc(part ojson.Result) *ojson.Doc {
 	partType := strings.TrimSpace(part.Get("type").String())
 	if partType == "" {
@@ -1125,15 +1008,6 @@ func responsesSystemUnsupportedBlockDoc(part ojson.Result) *ojson.Doc {
 	_ = blockDoc.Set("type", partType)
 	return blockDoc
 }
-
-
-
-
-
-
-
-
-
 
 func convertResponsesReasoningToClaudeThinking(item ojson.Result, preserveEmptyThinkingBlocks ...bool) []byte {
 	encrypted := item.Get("encrypted_content").String()
@@ -1162,8 +1036,6 @@ func convertResponsesReasoningToClaudeThinking(item ojson.Result, preserveEmptyT
 	return thinkingPartDoc.Bytes()
 }
 
-
-
 func responsesRedactedThinkingData(encryptedContent string) (string, bool) {
 	trimmed := strings.TrimSpace(encryptedContent)
 	if !strings.HasPrefix(trimmed, ClaudeResponsesRedactedThinkingPrefix) {
@@ -1171,12 +1043,6 @@ func responsesRedactedThinkingData(encryptedContent string) (string, bool) {
 	}
 	return strings.TrimSpace(strings.TrimPrefix(trimmed, ClaudeResponsesRedactedThinkingPrefix)), true
 }
-
-
-
-
-
-
 
 func responsesReasoningText(item ojson.Result) string {
 	if text := responsesReasoningPartsText(item.Get("summary")); text != "" {
@@ -1200,12 +1066,6 @@ func responsesReasoningPartsText(parts ojson.Result) string {
 	})
 	return builder.String()
 }
-
-
-
-
-
-
 
 func claudeThinkingSeparatorForToolUse(parts [][]byte) []byte {
 	if len(parts) == 0 {
@@ -1265,10 +1125,6 @@ func applyResponsesToolResultContentDoc(toolResultDoc *ojson.Doc, output ojson.R
 	}
 	_ = toolResultDoc.Set("content", output.String())
 }
-
-
-
-
 
 func claudeMessageInvariantProblems(messages [][]byte) []string {
 	var problems []string
@@ -1338,15 +1194,6 @@ func claudeMessageInvariantProblems(messages [][]byte) []string {
 	return problems
 }
 
-
-
-
-
-
-
-
-
-
 func repairClaudeToolPairing(messages [][]byte) [][]byte {
 	if len(messages) == 0 {
 		return messages
@@ -1359,8 +1206,6 @@ func repairClaudeToolPairing(messages [][]byte) [][]byte {
 		content := ojson.GetBytesNoCopy(msg, "content")
 
 		if role == "user" {
-
-
 
 			rebuilt, changed := normalizeClaudeToolResultMessage(msg, prevToolUseIDs)
 			if changed {
@@ -1416,7 +1261,6 @@ func repairClaudeToolPairing(messages [][]byte) [][]byte {
 
 			if hasNextUser {
 
-
 				next := messages[i+1]
 				nextContent := ojson.GetBytesNoCopy(next, "content")
 				parts := synthesized
@@ -1443,10 +1287,6 @@ func repairClaudeToolPairing(messages [][]byte) [][]byte {
 	return out
 }
 
-
-
-
-
 func normalizeClaudeToolResultMessage(msg []byte, answeredIDs map[string]struct{}) ([]byte, bool) {
 	content := ojson.GetBytesNoCopy(msg, "content")
 	if !content.IsArray() {
@@ -1464,8 +1304,6 @@ func normalizeClaudeToolResultMessage(msg []byte, answeredIDs map[string]struct{
 				if textParts := toolResultTextParts(block); len(textParts) > 0 {
 					otherParts = append(otherParts, textParts...)
 				} else {
-
-
 
 					otherParts = append(otherParts, []byte(`{"type":"text","text":"Tool result was empty."}`))
 				}
@@ -1491,11 +1329,6 @@ func normalizeClaudeToolResultMessage(msg []byte, answeredIDs map[string]struct{
 	userMsg, _ = ojson.SetRawBytes(userMsg, "content", common.JoinRawArray(parts))
 	return userMsg, true
 }
-
-
-
-
-
 
 func toolResultTextParts(block ojson.Result) [][]byte {
 	content := block.Get("content")
@@ -1526,14 +1359,11 @@ func toolResultTextParts(block ojson.Result) [][]byte {
 	return [][]byte{part}
 }
 
-
-
 func convertResponsesStandaloneToolOutputToClaudeText(output ojson.Result) [][]byte {
 	if output.Exists() && output.IsArray() {
 		var partsJSON [][]byte
 		output.ForEach(func(_, part ojson.Result) bool {
 			if partJSON := convertResponsesContentPartToClaude(part); len(partJSON) > 0 {
-
 
 				if !contentPartHasVisibleContent(partJSON) {
 					return true
@@ -1549,17 +1379,12 @@ func convertResponsesStandaloneToolOutputToClaudeText(output ojson.Result) [][]b
 	text := output.String()
 	if output.IsArray() || strings.TrimSpace(text) == "" {
 
-
-
-
 		return [][]byte{[]byte(`{"type":"text","text":"Tool result was empty."}`)}
 	}
 	contentPart := []byte(`{"type":"text","text":""}`)
 	contentPart, _ = ojson.SetBytes(contentPart, "text", text)
 	return [][]byte{contentPart}
 }
-
-
 
 func contentPartHasVisibleContent(part []byte) bool {
 	switch ojson.GetBytesNoCopy(part, "type").String() {
@@ -1661,8 +1486,6 @@ func convertResponsesToolDescriptorToClaude(descriptor responsesToolDescriptor, 
 	}
 }
 
-
-
 const responsesDiscoveredToolPriority = 2
 
 type responsesToolSource struct {
@@ -1708,7 +1531,6 @@ type responsesToolDescriptor struct {
 	direct         bool
 	order          int
 
-
 	clientSearch bool
 }
 
@@ -1721,7 +1543,6 @@ func responsesToolDescriptors(root ojson.Result, toolSearch bool) []responsesToo
 		return descriptors
 	}
 
-
 	kept := descriptors[:0]
 	for _, descriptor := range descriptors {
 		if descriptor.sourcePriority != responsesDiscoveredToolPriority && descriptor.tool.Get("defer_loading").Bool() {
@@ -1732,9 +1553,6 @@ func responsesToolDescriptors(root ojson.Result, toolSearch bool) []responsesToo
 	}
 	return kept
 }
-
-
-
 
 func responsesClientToolSearchWins(descriptors []responsesToolDescriptor) bool {
 	var winner *responsesToolDescriptor
@@ -1795,11 +1613,9 @@ func appendResponsesToolDescriptors(descriptors []responsesToolDescriptor, tools
 		case responsesToolSearchType:
 			if !toolSearch {
 
-
 				appendDescriptor(tool, strings.TrimSpace(tool.Get("name").String()), "", "", toolType, true)
 				return true
 			}
-
 
 			if isResponsesClientToolSearch(tool) {
 				appendDescriptor(tool, responsesToolSearchType, "", "", responsesToolSearchType, true)
@@ -1827,7 +1643,6 @@ func appendResponsesToolDescriptors(descriptors []responsesToolDescriptor, tools
 
 func responsesToolDescriptorPrecedes(left, right responsesToolDescriptor) bool {
 
-
 	if left.sourcePriority != right.sourcePriority {
 		return left.sourcePriority < right.sourcePriority
 	}
@@ -1853,8 +1668,6 @@ func responsesToolNameMap(root ojson.Result, acceptedToolNames map[string]struct
 	descriptors := responsesToolDescriptors(root, toolSearch)
 	winners := responsesToolWinners(root, toolSearch)
 
-
-
 	for _, descriptor := range descriptors {
 		winner, ok := winners[descriptor.name]
 		if !ok || winner.order != descriptor.order || !descriptor.direct {
@@ -1865,8 +1678,6 @@ func responsesToolNameMap(root ojson.Result, acceptedToolNames map[string]struct
 		}
 		toolNameMap[descriptor.name] = descriptor.name
 	}
-
-
 
 	for _, descriptor := range descriptors {
 		winner, ok := winners[descriptor.name]
@@ -2115,10 +1926,6 @@ func isUnsupportedOpenAIBuiltinToolType(toolType string) bool {
 		return false
 	}
 }
-
-
-
-
 
 func normalizeCodexAgentMessages(payload []byte) []byte {
 	input := ojson.GetBytesNoCopy(payload, "input")

@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-
 type dashboardModel struct {
 	client   *Client
 	viewport viewport.Model
@@ -19,7 +18,6 @@ type dashboardModel struct {
 	width    int
 	height   int
 	ready    bool
-
 
 	lastConfig    map[string]any
 	lastAuthFiles []map[string]any
@@ -125,12 +123,10 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 	sb.WriteString(helpStyle.Render(T("dashboard_help")))
 	sb.WriteString("\n\n")
 
-
 	connStyle := lipgloss.NewStyle().Bold(true).Foreground(colorSuccess)
 	sb.WriteString(connStyle.Render(T("connected")))
 	sb.WriteString(fmt.Sprintf("  %s", m.client.baseURL))
 	sb.WriteString("\n\n")
-
 
 	cardWidth := 25
 	if m.width > 0 {
@@ -147,14 +143,12 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 		Width(cardWidth).
 		Height(2)
 
-
 	keyCount := len(apiKeys)
 	card1 := cardStyle.Render(fmt.Sprintf(
 		"%s\n%s",
 		lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("111")).Render(fmt.Sprintf("🔑 %d", keyCount)),
 		lipgloss.NewStyle().Foreground(colorMuted).Render(T("mgmt_keys")),
 	))
-
 
 	authCount := len(authFiles)
 	activeAuth := 0
@@ -171,7 +165,6 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 
 	sb.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, card1, " ", card2))
 	sb.WriteString("\n\n")
-
 
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Foreground(colorHighlight).Render(T("current_config")))
 	sb.WriteString("\n")
@@ -206,13 +199,11 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 			}{T("proxy_url"), proxyURL})
 		}
 
-
 		for _, item := range configItems {
 			sb.WriteString(fmt.Sprintf("  %s %s\n",
 				labelStyle.Render(item.label+":"),
 				valueStyle.Render(item.value)))
 		}
-
 
 		strategy := "round-robin"
 		if routing, ok := cfg["routing"].(map[string]any); ok {

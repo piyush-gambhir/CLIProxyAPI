@@ -90,8 +90,6 @@ func TestWrapStreamResultDoesNotReadReusedGinContext(t *testing.T) {
 		t.Fatalf("expected bootstrap chunk, got ok=%v chunk=%+v", ok, firstChunk)
 	}
 
-
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {

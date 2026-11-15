@@ -19,7 +19,6 @@ const (
 	maxCredentialConcurrencyLimit int64 = 1_000_000
 )
 
-
 type CredentialConcurrencyConfig struct {
 	LifecycleConfigRevision    int64         `yaml:"lifecycle-config-revision" json:"lifecycle-config-revision"`
 	ObservationBarrierRevision int64         `yaml:"observation-barrier-revision" json:"observation-barrier-revision"`
@@ -45,7 +44,6 @@ type CredentialConcurrencyConfig struct {
 	busyRetryMaxPresent               bool
 	maxLimitPresent                   bool
 }
-
 
 func (c *CredentialConcurrencyConfig) UnmarshalYAML(value *yaml.Node) error {
 	type rawCredentialConcurrencyConfig struct {
@@ -106,7 +104,6 @@ func credentialConcurrencyFieldPresent(value *yaml.Node, field string) bool {
 	return false
 }
 
-
 func (c CredentialConcurrencyConfig) WithDefaults() CredentialConcurrencyConfig {
 	if !c.cpaHeartbeatTimeoutPresent && c.CPAHeartbeatTimeout == 0 {
 		c.CPAHeartbeatTimeout = defaultCPAHeartbeatTimeout
@@ -138,7 +135,6 @@ func (c CredentialConcurrencyConfig) WithDefaults() CredentialConcurrencyConfig 
 	return c
 }
 
-
 func ValidateCredentialConcurrency(cfg CredentialConcurrencyConfig) error {
 	if cfg.LifecycleConfigRevision < 0 || (cfg.lifecycleConfigRevisionPresent && cfg.LifecycleConfigRevision == 0) {
 		return fmt.Errorf("lifecycle configuration revision must be positive when present")
@@ -166,7 +162,6 @@ func ValidateCredentialConcurrency(cfg CredentialConcurrencyConfig) error {
 	}
 	return nil
 }
-
 
 func ValidateCredentialConcurrencyLifecycle(nodeHeartbeatTimeout time.Duration, cfg CredentialConcurrencyConfig) error {
 	if nodeHeartbeatTimeout <= 0 {

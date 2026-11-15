@@ -11,7 +11,6 @@ import (
 	cliproxysession "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/session"
 )
 
-
 func DerivedSessionID(metadataSets ...map[string]any) string {
 	for _, metadata := range metadataSets {
 		if derivedID := cliproxysession.DerivedID(metadata); derivedID != "" {
@@ -21,11 +20,9 @@ func DerivedSessionID(metadataSets ...map[string]any) string {
 	return ""
 }
 
-
 func DerivedSessionUUID(provider string, metadataSets ...map[string]any) string {
 	return stableProviderSessionUUID(provider, "derived-session", DerivedSessionID(metadataSets...))
 }
-
 
 func ProviderSessionUUID(provider string, metadataSets ...map[string]any) string {
 	for _, metadata := range metadataSets {
@@ -45,7 +42,6 @@ func stableProviderSessionUUID(provider string, kind string, identityValue strin
 	identity := strings.Join([]string{"cli-proxy-api", provider, kind, identityValue}, "\x00")
 	return uuid.NewSHA1(uuid.NameSpaceOID, []byte(identity)).String()
 }
-
 
 func DerivedAntigravitySessionID(metadataSets ...map[string]any) string {
 	derivedID := DerivedSessionID(metadataSets...)

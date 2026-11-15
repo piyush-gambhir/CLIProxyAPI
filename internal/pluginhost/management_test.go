@@ -165,7 +165,6 @@ func TestServeManagementPreservesRawJSONOnSchemaVersion6(t *testing.T) {
 	)
 	host.RegisterManagementRoutes(context.Background(), nil)
 
-
 	req := httptest.NewRequest(http.MethodGet, "/v0/management/plugins/raw-json/config", nil)
 	rec := httptest.NewRecorder()
 	if !host.ServeManagementHTTP(rec, req) {
@@ -177,7 +176,6 @@ func TestServeManagementPreservesRawJSONOnSchemaVersion6(t *testing.T) {
 	if rec.Body.String() != rawJSON {
 		t.Fatalf("body = %q, want raw %q", rec.Body.String(), rawJSON)
 	}
-
 
 	req = httptest.NewRequest(http.MethodGet, "/v0/management/plugins/legacy-json/config", nil)
 	rec = httptest.NewRecorder()
@@ -239,7 +237,6 @@ func TestServeManagementGetPutRoundTripPreservesImmutableField(t *testing.T) {
 	})
 	host.RegisterManagementRoutes(context.Background(), nil)
 
-
 	reqGet := httptest.NewRequest(http.MethodGet, "/v0/management/plugins/roundtrip-plugin/config", nil)
 	recGet := httptest.NewRecorder()
 	if !host.ServeManagementHTTP(recGet, reqGet) {
@@ -248,7 +245,6 @@ func TestServeManagementGetPutRoundTripPreservesImmutableField(t *testing.T) {
 	if recGet.Code != http.StatusOK {
 		t.Fatalf("GET code = %d, want 200", recGet.Code)
 	}
-
 
 	reqPut := httptest.NewRequest(http.MethodPut, "/v0/management/plugins/roundtrip-plugin/config", recGet.Body)
 	reqPut.Header.Set("Content-Type", "application/json")

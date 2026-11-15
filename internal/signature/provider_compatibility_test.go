@@ -30,9 +30,6 @@ func testClaudeThinkingSignature() string {
 	return base64.StdEncoding.EncodeToString(payload)
 }
 
-
-
-
 func TestBase64AlphabetSet_MatchesEncoderAlphabets(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -57,9 +54,6 @@ func TestBase64AlphabetSet_MatchesEncoderAlphabets(t *testing.T) {
 	}
 }
 
-
-
-
 func replaySafeEnvelopeFixtures(t *testing.T) map[string]struct {
 	sig  string
 	want SignatureProvider
@@ -79,12 +73,6 @@ func replaySafeEnvelopeFixtures(t *testing.T) map[string]struct {
 	}
 }
 
-
-
-
-
-
-
 func TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope(t *testing.T) {
 	for name, fixture := range replaySafeEnvelopeFixtures(t) {
 		if !maybeSelfDescribingSignatureEnvelope(fixture.sig) {
@@ -92,8 +80,6 @@ func TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope(t *testing.T
 				name, string(fixture.sig[0]), selfDescribingSignatureFirstChars)
 		}
 	}
-
-
 
 	for _, sig := range []string{
 		"K1ZAIbzDbO",
@@ -105,12 +91,6 @@ func TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope(t *testing.T
 		}
 	}
 }
-
-
-
-
-
-
 
 func TestGeminiASCIIUUIDIsGateIndependent(t *testing.T) {
 
@@ -133,9 +113,6 @@ func TestGeminiASCIIUUIDIsGateIndependent(t *testing.T) {
 	}
 }
 
-
-
-
 func TestDetectSignatureProviderForBlock_ClassifiesEveryKnownEnvelope(t *testing.T) {
 	for name, fixture := range replaySafeEnvelopeFixtures(t) {
 		if got := DetectSignatureProvider(fixture.sig); got != fixture.want {
@@ -143,13 +120,6 @@ func TestDetectSignatureProviderForBlock_ClassifiesEveryKnownEnvelope(t *testing
 		}
 	}
 }
-
-
-
-
-
-
-
 
 func TestGeminiEnvelopeNeverClaimsClaudeSignatures(t *testing.T) {
 	for name, sig := range map[string]string{
@@ -191,7 +161,6 @@ func TestDetectSignatureProvider_RejectsMisleadingClaudePrefix(t *testing.T) {
 }
 
 func TestDetectSignatureProvider_Gemini3EPrefixDoesNotLookClaude(t *testing.T) {
-
 
 	geminiSig := testGemini3ThoughtSignature([]byte{0x01, 0x0c, 0x39, 0xd6, 0xc7, 0x34})
 	if !strings.HasPrefix(geminiSig, "E") {

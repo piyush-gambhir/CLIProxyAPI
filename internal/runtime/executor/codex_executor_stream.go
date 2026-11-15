@@ -240,8 +240,6 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 	immediateTerminal := false
 	immediateIncomplete := false
 
-
-
 	var bootstrapTerminalErr error
 
 	closeBootstrapBody := func() {
@@ -287,9 +285,6 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 						timeoutReached := bootstrapTimeout > 0 && timeSinceStart >= bootstrapTimeout
 						if !timeoutReached {
 
-
-
-
 							helps.LogWithRequestID(ctx).Debugf("codex executor: bootstrap overload rejection after %d buffered lines, failing over", bufferedFrames)
 							return nil, newCodexBootstrapOverloadErr(terminalBody)
 						}
@@ -306,10 +301,6 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 					streamErr := newCodexEmptyIncompleteStreamError()
 					helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
 					reporter.PublishFailure(ctx, streamErr)
-
-
-
-
 
 					bootstrapTerminalErr = streamErr
 					break
@@ -339,9 +330,6 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 					translatedLine = append([]byte("data: "), data...)
 				}
 			} else {
-
-
-
 
 				translatedLine = bytes.Clone(line)
 				isHandshake = true
@@ -388,7 +376,6 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 			closeBootstrapBody()
 			if errScan := scanner.Err(); errScan != nil {
 
-
 				if ctx.Err() != nil {
 					return nil, ctx.Err()
 				}
@@ -429,7 +416,6 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 		out <- cliproxyexecutor.StreamChunk{Incomplete: true}
 	}
 	if bootstrapTerminalErr != nil {
-
 
 		out <- cliproxyexecutor.StreamChunk{Err: bootstrapTerminalErr}
 		close(out)

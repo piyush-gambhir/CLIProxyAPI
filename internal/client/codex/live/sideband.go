@@ -306,7 +306,6 @@ const (
 	sidebandRealtimeQuery
 )
 
-// HandleSideband relays live session sideband WebSocket frames bidirectionally.
 func (h *Handler) HandleSideband(c *gin.Context) {
 	if h == nil || h.authManager == nil || h.sessions == nil {
 		writeLiveError(c, http.StatusServiceUnavailable, "Codex live sideband unavailable")

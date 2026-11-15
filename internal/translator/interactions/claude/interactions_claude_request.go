@@ -14,14 +14,11 @@ func ConvertClaudeRequestToInteractions(modelName string, inputRawJSON []byte, s
 
 }
 
-
-
 func ConvertClaudeRequestToInteractionsWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertClaudeRequestToInteractions(modelName, inputRawJSON, stream, true)
 }
 
 func convertClaudeRequestToInteractions(modelName string, inputRawJSON []byte, stream, preserveEmptyThinkingBlocks bool) ([]byte, error) {
-
 
 	restoredRawJSON, _ := sigcompat.RestoreCodexCommentaryMarkers(inputRawJSON)
 	root := util.ParseGJSONBytesNoCopy(restoredRawJSON)
@@ -190,7 +187,6 @@ func appendClaudeMessageToInteractions(items *[][]byte, pendingToolUseIDs *[]str
 	if !content.IsArray() {
 		return 0
 	}
-
 
 	sendable := 0
 	stepContent := make([][]byte, 0, 4)

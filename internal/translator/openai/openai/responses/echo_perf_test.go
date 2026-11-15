@@ -52,9 +52,6 @@ func echoRequests() []struct {
 	}
 }
 
-
-
-
 var echoGoldenHashes = map[string][2]string{
 	"nil":             {"12e174a662e5387285c18447eacd8f21802f391689b43a855718bd3a7962a8d2", "1c76155d2c138f38f71aeb380c3bfc873486725a0a3da29d1484461831b729cc"},
 	"empty-object":    {"12e174a662e5387285c18447eacd8f21802f391689b43a855718bd3a7962a8d2", "1c76155d2c138f38f71aeb380c3bfc873486725a0a3da29d1484461831b729cc"},
@@ -98,8 +95,6 @@ func BenchmarkResponsesEchoShortStreams(b *testing.B) {
 		ConvertOpenAIChatCompletionsResponseToOpenAIResponses(context.Background(), "test", request, request, []byte("data: [DONE]"), &param)
 	}
 }
-
-
 
 func TestResponsesEchoGoldenEdgeCases(t *testing.T) {
 	for name, req := range map[string][]byte{

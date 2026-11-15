@@ -231,8 +231,6 @@ func TestResolveManagementBaseURL(t *testing.T) {
 
 const seededConfigTestSecret = "git-seed-plaintext-secret"
 
-
-
 func persistSeededConfigForTest(t *testing.T, configFilePath, content string) ([]string, error) {
 	t.Helper()
 	if errMkdir := os.MkdirAll(filepath.Dir(configFilePath), 0o700); errMkdir != nil {
@@ -277,8 +275,6 @@ func TestPersistSeededConfigHashesSecretBeforePersisting(t *testing.T) {
 		t.Fatalf("persisted secret %q is not the bcrypt hash of the plaintext secret", doc.RemoteManagement.SecretKey)
 	}
 }
-
-
 
 func TestPersistSeededConfigRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range map[string]string{

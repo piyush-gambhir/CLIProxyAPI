@@ -7,10 +7,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
 func TestClaudeOAuthToolAliasStoreIsSharedAcrossForAPIKeyCopies(t *testing.T) {
 	createBody := []byte(`{"thread":{"type":"create"}}`)
 	continuationBody := []byte(`{"thread":{"type":"continue","previous_message_id":"msg-shared"}}`)

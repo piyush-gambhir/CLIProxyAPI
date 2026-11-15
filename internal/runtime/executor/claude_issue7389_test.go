@@ -141,8 +141,6 @@ func TestClaudeIssue7389CountTokensDoesNotSendRejectedPropertyNames(t *testing.T
 	claudeIssue7389AssertUpstream(t, upstreamBody)
 }
 
-
-
 func TestClaudeIssue7389PayloadRulesRunAfterSchemaFallback(t *testing.T) {
 	for _, stream := range []bool{false, true} {
 		t.Run(fmt.Sprintf("stream=%t", stream), func(t *testing.T) {
@@ -185,8 +183,6 @@ func TestClaudeIssue7389PayloadRulesRunAfterSchemaFallback(t *testing.T) {
 	}
 }
 
-
-
 func claudeIssue7389Tool(body []byte, prefix string) ojson.Result {
 	var found ojson.Result
 	ojson.GetBytes(body, "tools").ForEach(func(_, tool ojson.Result) bool {
@@ -198,7 +194,6 @@ func claudeIssue7389Tool(body []byte, prefix string) ojson.Result {
 	})
 	return found
 }
-
 
 func claudeIssue7389AssertPropertyKeys(t *testing.T, node ojson.Result, propertyMap bool) {
 	t.Helper()
@@ -294,7 +289,6 @@ func claudeIssue7389SSEResponse(toolName string) string {
 	writeEvent("message_stop", `{"type":"message_stop"}`)
 	return b.String()
 }
-
 
 func claudeIssue7389ClientArguments(t *testing.T, format sdktranslator.Format, stream bool, output []byte) []byte {
 	t.Helper()

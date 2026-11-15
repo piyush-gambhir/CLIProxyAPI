@@ -11,9 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 func (m *Manager) lockAuthMutation(id string) func() {
 	release, _ := m.lockAuthMutationContext(context.Background(), id)
 	return release
@@ -155,7 +152,6 @@ func (m *Manager) beginForegroundStoreSave(ctx context.Context) (func(), error) 
 	return release, nil
 }
 
-
 func (m *Manager) lockAuthMutationContext(ctx context.Context, id string) (func(), error) {
 	return m.lockAuthMutationWithPersistCancel(ctx, id, nil)
 }
@@ -220,9 +216,6 @@ func (m *Manager) lockAuthMutationWithPersistCancel(ctx context.Context, id stri
 	}, nil
 }
 
-
-
-
 func (m *Manager) persistLocked(ctx context.Context, auth *Auth) error {
 	before := auth.Clone()
 	saved := auth.Clone()
@@ -232,10 +225,6 @@ func (m *Manager) persistLocked(ctx context.Context, auth *Auth) error {
 	mergeAuthSaveDelta(auth, before, saved, true)
 	return err
 }
-
-
-
-
 
 func mergeAuthSaveDelta(target, before, after *Auth, preserveConcurrent bool) {
 	dst := reflect.ValueOf(target).Elem()
@@ -333,11 +322,6 @@ func equalSaveValue(a, b reflect.Value) bool {
 	}
 	return reflect.DeepEqual(a.Interface(), b.Interface())
 }
-
-
-
-
-
 
 func (m *Manager) PersistMetadataEntry(ctx context.Context, id string, expectedEpoch uint64, key string, value any, validate func(existing *Auth) bool) (bool, bool) {
 	if m == nil || id == "" || key == "" {

@@ -30,13 +30,6 @@ const (
 	logCursorFingerprintMax = 4 * 1024
 )
 
-
-
-
-
-
-
-
 func (h *Handler) GetLogs(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})
@@ -131,7 +124,6 @@ func (h *Handler) GetLogs(c *gin.Context) {
 	writeLogsResponse(c, lines, total, latest, nextCursor, false)
 }
 
-
 func (h *Handler) DeleteLogs(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})
@@ -191,8 +183,6 @@ func (h *Handler) DeleteLogs(c *gin.Context) {
 		"removed": removed,
 	})
 }
-
-
 
 func (h *Handler) GetRequestErrorLogs(c *gin.Context) {
 	if h == nil {
@@ -255,8 +245,6 @@ func (h *Handler) GetRequestErrorLogs(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"files": files})
 }
-
-
 
 func (h *Handler) GetRequestLogByID(c *gin.Context) {
 	if h == nil {
@@ -402,9 +390,6 @@ func parseLogMetadata(filename string) logFileMeta {
 	}
 }
 
-
-
-
 func logFileIsNewer(candidateName string, candidateMod time.Time, currentName string, currentMod time.Time) bool {
 	if candidateMod.After(currentMod) {
 		return true
@@ -425,7 +410,6 @@ func logFileIsNewer(candidateName string, candidateMod time.Time, currentName st
 	}
 	return candidateName > currentName
 }
-
 
 func (h *Handler) DownloadRequestErrorLog(c *gin.Context) {
 	if h == nil {

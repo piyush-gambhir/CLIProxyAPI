@@ -13,8 +13,6 @@ const (
 	defaultMountPath = "/"
 )
 
-
-
 const (
 	txtKeyVersion   = "txtvers"
 	txtKeyPath      = "path"
@@ -27,8 +25,6 @@ const (
 	txtKeyRole      = "role"
 )
 
-
-
 const (
 	legacyKeyVersion     = "version"
 	legacyKeyAuth        = "auth_required"
@@ -39,7 +35,6 @@ const (
 	legacyKeyAnthropic   = "api_anthropic"
 	legacyKeyGemini      = "api_gemini"
 )
-
 
 type protocolRoute struct {
 	version     string
@@ -63,7 +58,6 @@ var protocolRoutes = map[string]protocolRoute{
 	"interactions":     {version: "/v1beta", suffix: "/interactions", legacyField: legacyKeyGemini},
 }
 
-
 func printableTXTASCII(value string) bool {
 	for i := 0; i < len(value); i++ {
 		if value[i] < 0x20 || value[i] > 0x7e {
@@ -72,7 +66,6 @@ func printableTXTASCII(value string) bool {
 	}
 	return true
 }
-
 
 type TXTOptions struct {
 	Path         string
@@ -85,7 +78,6 @@ type TXTOptions struct {
 	NodeRole     string
 }
 
-
 func DefaultTXTOptions() TXTOptions {
 	return TXTOptions{
 		Path:         defaultMountPath,
@@ -97,9 +89,6 @@ func DefaultTXTOptions() TXTOptions {
 		NodeRole:     "standalone",
 	}
 }
-
-
-
 
 func BuildTXTRecords(opts TXTOptions) ([]string, error) {
 	path := opts.Path
@@ -172,7 +161,6 @@ func txtFlag(enabled bool) string {
 	return "0"
 }
 
-
 func parseTXTFlag(value string) (bool, bool) {
 	switch value {
 	case "1":
@@ -214,8 +202,6 @@ func validTXTToken(token string) bool {
 	return true
 }
 
-
-
 func ParseTXTRecords(txt []string) map[string]string {
 	result := make(map[string]string, len(txt))
 	for _, entry := range txt {
@@ -231,8 +217,6 @@ func ParseTXTRecords(txt []string) map[string]string {
 	}
 	return result
 }
-
-
 
 func validateMountPath(p string) string {
 	if p == defaultMountPath {
@@ -256,16 +240,12 @@ func validateMountPath(p string) string {
 	return p
 }
 
-
 func joinURLPath(base, route string) string {
 	if base == defaultMountPath {
 		return route
 	}
 	return base + route
 }
-
-
-
 
 func applyTXTMetadata(svc *DiscoveredService, parsed map[string]string) bool {
 
@@ -328,7 +308,6 @@ func applyDraftTXTMetadata(svc *DiscoveredService, parsed map[string]string) boo
 	return true
 }
 
-
 func draftTXTList(value string) []string {
 	var result []string
 	seen := make(map[string]bool)
@@ -382,8 +361,6 @@ func applyLegacyTXTMetadata(svc *DiscoveredService, parsed map[string]string) bo
 	return len(svc.Endpoints) > 0
 }
 
-
-
 func validateDraftTXTRecords(records []string) bool {
 	total := 0
 	for _, record := range records {
@@ -397,7 +374,6 @@ func validateDraftTXTRecords(records []string) bool {
 	}
 	return true
 }
-
 
 func ProtocolFromSubtype(subtype string) string {
 	return strings.ToLower(strings.TrimPrefix(strings.TrimSpace(subtype), "_"))

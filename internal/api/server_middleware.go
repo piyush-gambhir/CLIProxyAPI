@@ -36,17 +36,12 @@ var corsExposedResponseHeaders = []string{
 	"Location",
 	"Retry-After",
 
-
 	"ETag",
 	"X-Request-Id",
 	"OpenAI-Request-Id",
 }
 
 var corsExposedResponseHeadersJoined = strings.Join(corsExposedResponseHeaders, ", ")
-
-
-
-
 
 var corsAllowedRequestHeaders = []string{
 	"Authorization",
@@ -423,11 +418,6 @@ func isExampleAPIKeySafeModeProxyPath(path string) bool {
 	}
 }
 
-
-
-
-
-
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
@@ -444,13 +434,6 @@ func corsMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-
-
-
-
-
-
 
 func corsAllowHeadersValue(req *http.Request) string {
 	allowed := make([]string, 0, len(corsAllowedRequestHeaders))
@@ -477,9 +460,6 @@ func corsAllowHeadersValue(req *http.Request) string {
 	}
 	return strings.Join(allowed, ", ")
 }
-
-
-
 
 func AuthMiddleware(manager *sdkaccess.Manager) gin.HandlerFunc {
 	return accessAuthMiddleware(manager, false)

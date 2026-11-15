@@ -7,15 +7,9 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
-
 func StripInvalidClaudeThinkingBlocks(payload []byte, opts ...ClaudeSignatureValidationOptions) []byte {
 	return stripInvalidClaudeThinkingBlocks(payload, false, opts...)
 }
-
-
 
 func StripInvalidClaudeThinkingBlocksAndEmptyMessages(payload []byte, opts ...ClaudeSignatureValidationOptions) []byte {
 	return stripInvalidClaudeThinkingBlocks(payload, true, opts...)

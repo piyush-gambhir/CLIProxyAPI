@@ -97,7 +97,6 @@ func TestResponsesSteeringLocalValidationRecovery(t *testing.T) {
 	create := fmt.Sprintf(`{"type":"response.create","model":%q,"input":[]}`, model)
 	send(create)
 
-
 	send("{")
 	errorsSeen, accepted, completed := 0, false, false
 	for !completed {

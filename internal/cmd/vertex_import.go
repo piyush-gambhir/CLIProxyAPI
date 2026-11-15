@@ -1,5 +1,3 @@
-
-
 package cmd
 
 import (
@@ -16,9 +14,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
 )
-
-
-
 
 func DoVertexImport(cfg *config.Config, keyPath string, prefix string) {
 	if cfg == nil {
@@ -62,15 +57,12 @@ func DoVertexImport(cfg *config.Config, keyPath string, prefix string) {
 
 	location := "global"
 
-
 	prefix = strings.TrimSpace(prefix)
 	prefix = strings.Trim(prefix, "/")
 	if prefix != "" && strings.Contains(prefix, "/") {
 		log.Errorf("vertex-import: prefix must be a single segment (no '/' allowed): %q", prefix)
 		return
 	}
-
-
 
 	baseName := sanitizeFilePart(projectID)
 	if prefix != "" {

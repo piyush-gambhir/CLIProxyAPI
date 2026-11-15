@@ -6,17 +6,7 @@ import (
 	"time"
 )
 
-
-
 const unixEpochFloor = 1_000_000_000
-
-
-
-
-
-
-
-
 
 func SignalWindows(provider string, signals map[string]string, observedAt time.Time) map[string]Window {
 	if len(signals) == 0 {
@@ -32,7 +22,6 @@ func SignalWindows(provider string, signals map[string]string, observedAt time.T
 	}
 }
 
-
 func SignalPlan(provider string, signals map[string]string) string {
 	if len(signals) == 0 {
 		return ""
@@ -46,12 +35,6 @@ func SignalPlan(provider string, signals map[string]string) string {
 	}
 	return ""
 }
-
-
-
-
-
-
 
 func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[string]Window {
 	const prefix = "anthropic-ratelimit-unified-"
@@ -129,7 +112,6 @@ func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[st
 			window.Known = true
 		case entry.limited:
 
-
 			window.UsedPercent, window.Known = 100, true
 		default:
 			continue
@@ -141,9 +123,6 @@ func claudeSignalWindows(signals map[string]string, observedAt time.Time) map[st
 	}
 	return out
 }
-
-
-
 
 func codexSignalWindows(signals map[string]string, observedAt time.Time) map[string]Window {
 	type accumulator struct {
@@ -226,8 +205,6 @@ func codexSignalWindows(signals map[string]string, observedAt time.Time) map[str
 	return out
 }
 
-
-
 func splitWindowField(rest string) (window, field string) {
 	rest = strings.Trim(rest, "-")
 	if rest == "" {
@@ -239,7 +216,6 @@ func splitWindowField(rest string) (window, field string) {
 	}
 	return rest[:index], rest[index+1:]
 }
-
 
 func canonicalClaudeWindow(window string) string {
 	switch strings.ToLower(strings.TrimSpace(window)) {
@@ -253,8 +229,6 @@ func canonicalClaudeWindow(window string) string {
 		return ""
 	}
 }
-
-
 
 func canonicalCodexWindow(slot string, minutes int) string {
 	if minutes > 0 {
@@ -284,9 +258,6 @@ func parseFloat(value string) (float64, bool) {
 	}
 	return parsed, true
 }
-
-
-
 
 func parseTimestamp(value string, observedAt time.Time) (time.Time, bool) {
 	value = strings.TrimSpace(value)

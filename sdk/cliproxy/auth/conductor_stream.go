@@ -102,7 +102,6 @@ func readStreamBootstrap(ctx context.Context, ch <-chan cliproxyexecutor.StreamC
 		)
 		if ctx != nil {
 
-
 			select {
 			case chunk, ok = <-ch:
 			default:
@@ -127,10 +126,6 @@ func readStreamBootstrap(ctx context.Context, ch <-chan cliproxyexecutor.StreamC
 		}
 	}
 }
-
-
-
-
 
 func (m *Manager) recordCanceledUpstreamCooldown(ctx context.Context, auth *Auth, provider, resultModel, routeModel string, opts cliproxyexecutor.Options, err error, ephemeral bool, executionSeq uint64) {
 	retryAfter := retryAfterFromError(err)

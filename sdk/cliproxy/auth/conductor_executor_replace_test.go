@@ -215,7 +215,6 @@ func TestManagerSchedulerFastPathKimiAI(t *testing.T) {
 		t.Fatal("expected HasProviderAuth(kimi) to be false when only kimi-ai is registered")
 	}
 
-
 	pickedAuth, exec, errPick := manager.pickNext(context.Background(), "kimi-ai", "", cliproxyexecutor.Options{}, nil)
 	if errPick != nil {
 		t.Fatalf("pickNext(kimi-ai) error = %v", errPick)
@@ -226,7 +225,6 @@ func TestManagerSchedulerFastPathKimiAI(t *testing.T) {
 	if exec != kimiExec {
 		t.Fatalf("pickNext(kimi-ai) exec = %v, want %v", exec, kimiExec)
 	}
-
 
 	pickedMixed, execMixed, providerKey, errMixed := manager.pickNextMixed(context.Background(), []string{"kimi-ai"}, "", cliproxyexecutor.Options{}, nil)
 	if errMixed != nil {
@@ -242,7 +240,6 @@ func TestManagerSchedulerFastPathKimiAI(t *testing.T) {
 		t.Fatalf("pickNextMixed([kimi-ai]) providerKey = %q, want kimi-ai", providerKey)
 	}
 
-
 	pinnedOpts := cliproxyexecutor.Options{
 		Metadata: map[string]any{
 			cliproxyexecutor.PinnedAuthMetadataKey: auth.ID,
@@ -256,13 +253,11 @@ func TestManagerSchedulerFastPathKimiAI(t *testing.T) {
 		t.Fatalf("pickNextMixed pinned auth = %v, want ID %s", pickedPinned, auth.ID)
 	}
 
-
 	resp, errExec := manager.Execute(context.Background(), []string{"kimi-ai"}, cliproxyexecutor.Request{Model: "kimi-k2"}, cliproxyexecutor.Options{})
 	if errExec != nil {
 		t.Fatalf("manager.Execute([kimi-ai]) error = %v", errExec)
 	}
 	_ = resp
-
 
 	streamRes, errStream := manager.ExecuteStream(context.Background(), []string{"kimi-ai"}, cliproxyexecutor.Request{Model: "kimi-k2"}, cliproxyexecutor.Options{})
 	if errStream != nil {
@@ -315,7 +310,6 @@ func TestManagerKimiDomainIsolation(t *testing.T) {
 		t.Fatal("expected HasProviderAuth(kimi.ai) alias to be true")
 	}
 
-
 	pickedCom, _, errCom := manager.pickNext(context.Background(), "kimi", "kimi-k2", cliproxyexecutor.Options{}, nil)
 	if errCom != nil {
 		t.Fatalf("pickNext(kimi) error = %v", errCom)
@@ -324,7 +318,6 @@ func TestManagerKimiDomainIsolation(t *testing.T) {
 		t.Fatalf("pickNext(kimi) picked %s, want %s", pickedCom.ID, authCom.ID)
 	}
 
-
 	pickedAI, _, errAI := manager.pickNext(context.Background(), "kimi-ai", "kimi-k2", cliproxyexecutor.Options{}, nil)
 	if errAI != nil {
 		t.Fatalf("pickNext(kimi-ai) error = %v", errAI)
@@ -332,7 +325,6 @@ func TestManagerKimiDomainIsolation(t *testing.T) {
 	if pickedAI.ID != authAI.ID {
 		t.Fatalf("pickNext(kimi-ai) picked %s, want %s", pickedAI.ID, authAI.ID)
 	}
-
 
 	mgrOnlyCom := NewManager(nil, nil, nil)
 	mgrOnlyCom.RegisterExecutor(kimiExec)

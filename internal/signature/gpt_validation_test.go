@@ -53,7 +53,6 @@ func TestInspectGPTReasoningSignature_RouterSuffixed(t *testing.T) {
 		t.Fatalf("CompatibleSignatureForProvider(GPT, routed) = (%q, %v), want verbatim routed value", got, ok)
 	}
 
-
 	for _, bad := range []string{native + ".", native + ".bad_char", native + ".a.b"} {
 		if _, err := InspectGPTReasoningSignature(bad); err == nil {
 			t.Fatalf("InspectGPTReasoningSignature(%q) unexpectedly succeeded", bad)

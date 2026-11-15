@@ -9,7 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-
 type logsTabModel struct {
 	client     *Client
 	hook       *LogHook

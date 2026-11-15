@@ -34,7 +34,6 @@ var (
 	errUnsupportedSessionType = errors.New("Realtime session type is not supported")
 )
 
-// ClientSecretAuthorization contains the local session configuration associated with an ephemeral key.
 type ClientSecretAuthorization struct {
 	Principal       string
 	IssuerPrincipal string
@@ -180,7 +179,6 @@ func randomRealtimeID(prefix string, size int) (string, error) {
 	return prefix + base64.RawURLEncoding.EncodeToString(payload), nil
 }
 
-// AuthenticateClientSecret validates a local ephemeral key when the request carries one.
 func (h *Handler) AuthenticateClientSecret(request *http.Request) (ClientSecretAuthorization, bool, error) {
 	token := bearerToken(request)
 	if !strings.HasPrefix(token, clientSecretPrefix) {
@@ -205,7 +203,6 @@ func bearerToken(request *http.Request) string {
 	return strings.TrimSpace(authorization[len(bearerPrefix):])
 }
 
-// CreateClientSecret creates a short-lived credential scoped to this proxy.
 func (h *Handler) CreateClientSecret(c *gin.Context) {
 	if h == nil || h.clientSecrets == nil {
 		writeRealtimeError(c, http.StatusServiceUnavailable, "Realtime client secret service unavailable", "server_error", "realtime_client_secret_unavailable")
@@ -230,7 +227,6 @@ func (h *Handler) CreateClientSecret(c *gin.Context) {
 	h.createClientSecret(c, request.Session, request.ExpiresAfter, false)
 }
 
-// CreateLegacySession implements the deprecated Realtime session credential endpoint.
 func (h *Handler) CreateLegacySession(c *gin.Context) {
 	if h == nil || h.clientSecrets == nil {
 		writeRealtimeError(c, http.StatusServiceUnavailable, "Realtime client secret service unavailable", "server_error", "realtime_client_secret_unavailable")

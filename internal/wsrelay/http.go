@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type HTTPRequest struct {
 	Method  string
 	URL     string
@@ -19,13 +18,11 @@ type HTTPRequest struct {
 	Body    []byte
 }
 
-
 type HTTPResponse struct {
 	Status  int
 	Headers http.Header
 	Body    []byte
 }
-
 
 type StreamEvent struct {
 	Type    string
@@ -34,7 +31,6 @@ type StreamEvent struct {
 	Headers http.Header
 	Err     error
 }
-
 
 func (m *Manager) NonStream(ctx context.Context, provider string, req *HTTPRequest) (*HTTPResponse, error) {
 	if req == nil {
@@ -110,7 +106,6 @@ func (m *Manager) NonStream(ctx context.Context, provider string, req *HTTPReque
 		}
 	}
 }
-
 
 func (m *Manager) Stream(ctx context.Context, provider string, req *HTTPRequest) (<-chan StreamEvent, error) {
 	if req == nil {

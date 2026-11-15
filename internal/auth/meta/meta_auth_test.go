@@ -206,7 +206,6 @@ func TestSaveTokenToFile_DoesNotRestoreClearedCredentialFields(t *testing.T) {
 	tempDir := t.TempDir()
 	authFilePath := filepath.Join(tempDir, "meta-test.json")
 
-	// Pre-populate an auth file that had expired DCA credentials and custom configuration
 	initial := map[string]any{
 		"type":            "meta",
 		"auth_kind":       "oauth",
@@ -227,14 +226,13 @@ func TestSaveTokenToFile_DoesNotRestoreClearedCredentialFields(t *testing.T) {
 		t.Fatalf("WriteFile error = %v", err)
 	}
 
-	// Token storage after minting an API key: Expired is explicitly empty, new APIKey set
 	storage := &MetaTokenStorage{
 		Type:        "meta",
 		AuthKind:    "oauth",
 		AccessToken: "new-minted-key",
 		APIKey:      "new-minted-key",
 		DCAToken:    "new-dca-token",
-		Expired:     "", // Deliberately cleared on refresh
+		Expired:     "",
 		Email:       "user@example.com",
 	}
 
@@ -252,7 +250,6 @@ func TestSaveTokenToFile_DoesNotRestoreClearedCredentialFields(t *testing.T) {
 		t.Fatalf("json.Unmarshal error = %v", errUnmarshal)
 	}
 
-	// Verify cleared credential fields were NOT restored from disk
 	if val, exists := saved["expired"]; exists && val != "" {
 		t.Errorf("SaveTokenToFile restored expired timestamp: %v", val)
 	}
@@ -263,7 +260,6 @@ func TestSaveTokenToFile_DoesNotRestoreClearedCredentialFields(t *testing.T) {
 		t.Errorf("SaveTokenToFile restored dca_expires_at timestamp")
 	}
 
-	// Verify new credentials were written
 	if saved["api_key"] != "new-minted-key" {
 		t.Errorf("api_key = %v, want new-minted-key", saved["api_key"])
 	}
@@ -271,7 +267,6 @@ func TestSaveTokenToFile_DoesNotRestoreClearedCredentialFields(t *testing.T) {
 		t.Errorf("access_token = %v, want new-minted-key", saved["access_token"])
 	}
 
-	// Verify non-credential configuration from disk was preserved
 	if saved["priority"] != float64(42) {
 		t.Errorf("priority = %v, want 42", saved["priority"])
 	}

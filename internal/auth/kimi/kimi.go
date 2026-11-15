@@ -1,5 +1,3 @@
-// Package kimi provides authentication and token management for Kimi (Moonshot AI) API.
-// It handles the RFC 8628 OAuth2 Device Authorization Grant flow for secure authentication.
 package kimi
 
 import (
@@ -24,48 +22,40 @@ import (
 )
 
 const (
-	// kimiClientID is Kimi Code's OAuth client ID.
 	kimiClientID = "17e5f671-d194-4dfb-9706-5516cb48c098"
 
-	// KimiDefaultDomain is the default domain for Kimi (.com).
 	KimiDefaultDomain = "kimi.com"
-	// KimiAIDomain is the domain for Kimi.ai.
+
 	KimiAIDomain = "kimi.ai"
 
-	// KimiOAuthHost is the OAuth server endpoint for Kimi (.com).
 	KimiOAuthHost = "https://auth.kimi.com"
-	// KimiAIOAuthHost is the OAuth server endpoint for Kimi.ai.
+
 	KimiAIOAuthHost = "https://auth.kimi.ai"
 
-	// kimiOAuthHost is kept for internal backward compatibility.
 	kimiOAuthHost = KimiOAuthHost
-	// kimiDeviceCodeURL is the endpoint for requesting device codes for Kimi (.com).
+
 	kimiDeviceCodeURL = kimiOAuthHost + "/api/oauth/device_authorization"
-	// kimiTokenURL is the endpoint for exchanging device codes for tokens for Kimi (.com).
+
 	kimiTokenURL = kimiOAuthHost + "/api/oauth/token"
 
-	// KimiAPIBaseURL is the base URL for Kimi (.com) API requests.
 	KimiAPIBaseURL = "https://api.kimi.com/coding"
-	// KimiAIAPIBaseURL is the base URL for Kimi.ai API requests.
+
 	KimiAIAPIBaseURL = "https://api.kimi.ai/coding"
 
-	// defaultPollInterval is the default interval for polling token endpoint.
 	defaultPollInterval = 5 * time.Second
-	// maxPollDuration is the maximum time to wait for user authorization.
+
 	maxPollDuration = 15 * time.Minute
-	// refreshThresholdSeconds is when to refresh token before expiry (5 minutes).
+
 	refreshThresholdSeconds = 300
 )
 
 var kimiRefreshGroup singleflight.Group
 
-// IsKimiAIDomain checks whether a domain or provider string represents kimi.ai.
 func IsKimiAIDomain(domain string) bool {
 	d := strings.ToLower(strings.TrimSpace(domain))
 	return d == "kimi.ai" || d == "ai" || d == "kimi-ai" || strings.HasSuffix(d, ".kimi.ai")
 }
 
-// IsKimiComDomain checks whether a domain or provider string represents kimi.com.
 func IsKimiComDomain(domain string) bool {
 	d := strings.ToLower(strings.TrimSpace(domain))
 	return d == "kimi.com" || d == "com" || d == "kimi" || strings.HasSuffix(d, ".kimi.com")
@@ -89,7 +79,6 @@ func isKimiComHost(rawURL string) bool {
 	return host == "kimi.com" || host == "api.kimi.com" || host == "auth.kimi.com" || strings.HasSuffix(host, ".kimi.com")
 }
 
-// NormalizeKimiDomain canonicalizes a domain string to "kimi.ai" or "kimi.com".
 func NormalizeKimiDomain(domain string) string {
 	if IsKimiAIDomain(domain) {
 		return KimiAIDomain
@@ -97,7 +86,6 @@ func NormalizeKimiDomain(domain string) string {
 	return KimiDefaultDomain
 }
 
-// ResolveKimiOAuthHost returns the OAuth host for the given domain.
 func ResolveKimiOAuthHost(domain string) string {
 	if IsKimiAIDomain(domain) {
 		return KimiAIOAuthHost
@@ -105,7 +93,6 @@ func ResolveKimiOAuthHost(domain string) string {
 	return KimiOAuthHost
 }
 
-// ResolveKimiAPIBaseURL returns the API base URL for the given domain.
 func ResolveKimiAPIBaseURL(domain string) string {
 	if IsKimiAIDomain(domain) {
 		return KimiAIAPIBaseURL
@@ -113,13 +100,11 @@ func ResolveKimiAPIBaseURL(domain string) string {
 	return KimiAPIBaseURL
 }
 
-// ResolveKimiDomainFromAuth detects whether an Auth represents kimi.ai or kimi.com.
-// Explicit configurations (domain, base_url, type) take precedence over file names.
 func ResolveKimiDomainFromAuth(auth *cliproxyauth.Auth) string {
 	if auth == nil {
 		return KimiDefaultDomain
 	}
-	// 1. Attributes
+
 	if auth.Attributes != nil {
 		if dom := auth.Attributes["domain"]; dom != "" {
 			if IsKimiAIDomain(dom) {
@@ -138,7 +123,7 @@ func ResolveKimiDomainFromAuth(auth *cliproxyauth.Auth) string {
 			}
 		}
 	}
-	// 2. Metadata
+
 	if auth.Metadata != nil {
 		if dom, ok := auth.Metadata["domain"].(string); ok && strings.TrimSpace(dom) != "" {
 			if IsKimiAIDomain(dom) {
@@ -165,7 +150,7 @@ func ResolveKimiDomainFromAuth(auth *cliproxyauth.Auth) string {
 			}
 		}
 	}
-	// 3. Storage
+
 	if storage, ok := auth.Storage.(*KimiTokenStorage); ok && storage != nil {
 		if storage.Domain != "" {
 			if IsKimiAIDomain(storage.Domain) {
@@ -192,7 +177,7 @@ func ResolveKimiDomainFromAuth(auth *cliproxyauth.Auth) string {
 			}
 		}
 	}
-	// 4. Provider
+
 	if auth.Provider != "" {
 		if IsKimiAIDomain(auth.Provider) {
 			return KimiAIDomain
@@ -201,7 +186,7 @@ func ResolveKimiDomainFromAuth(auth *cliproxyauth.Auth) string {
 			return KimiDefaultDomain
 		}
 	}
-	// 5. File name fallback when no explicit domain information is present
+
 	id := strings.ToLower(auth.ID)
 	fileName := strings.ToLower(auth.FileName)
 	if strings.Contains(id, "kimi-ai") || strings.Contains(id, "kimi.ai") ||
@@ -211,29 +196,24 @@ func ResolveKimiDomainFromAuth(auth *cliproxyauth.Auth) string {
 	return KimiDefaultDomain
 }
 
-// IsKimiAIAuth reports whether the provided auth targets kimi.ai.
 func IsKimiAIAuth(auth *cliproxyauth.Auth) bool {
 	return IsKimiAIDomain(ResolveKimiDomainFromAuth(auth))
 }
 
-// KimiAuth handles Kimi authentication flow.
 type KimiAuth struct {
 	deviceClient *DeviceFlowClient
 	cfg          *config.Config
 	domain       string
 }
 
-// NewKimiAuth creates a new KimiAuth service instance for kimi.com.
 func NewKimiAuth(cfg *config.Config) *KimiAuth {
 	return NewKimiAuthWithDomain(cfg, KimiDefaultDomain)
 }
 
-// NewKimiAIAuth creates a new KimiAuth service instance for kimi.ai.
 func NewKimiAIAuth(cfg *config.Config) *KimiAuth {
 	return NewKimiAuthWithDomain(cfg, KimiAIDomain)
 }
 
-// NewKimiAuthWithDomain creates a new KimiAuth service instance for the specified domain.
 func NewKimiAuthWithDomain(cfg *config.Config, domain string) *KimiAuth {
 	normDomain := NormalizeKimiDomain(domain)
 	return &KimiAuth{
@@ -243,12 +223,10 @@ func NewKimiAuthWithDomain(cfg *config.Config, domain string) *KimiAuth {
 	}
 }
 
-// StartDeviceFlow initiates the device flow authentication.
 func (k *KimiAuth) StartDeviceFlow(ctx context.Context) (*DeviceCodeResponse, error) {
 	return k.deviceClient.RequestDeviceCode(ctx)
 }
 
-// WaitForAuthorization polls for user authorization and returns the auth bundle.
 func (k *KimiAuth) WaitForAuthorization(ctx context.Context, deviceCode *DeviceCodeResponse) (*KimiAuthBundle, error) {
 	tokenData, err := k.deviceClient.PollForToken(ctx, deviceCode)
 	if err != nil {
@@ -261,7 +239,6 @@ func (k *KimiAuth) WaitForAuthorization(ctx context.Context, deviceCode *DeviceC
 	}, nil
 }
 
-// CreateTokenStorage creates a new KimiTokenStorage from auth bundle.
 func (k *KimiAuth) CreateTokenStorage(bundle *KimiAuthBundle) *KimiTokenStorage {
 	expired := ""
 	if bundle.TokenData.ExpiresAt > 0 {
@@ -286,7 +263,6 @@ func (k *KimiAuth) CreateTokenStorage(bundle *KimiAuthBundle) *KimiTokenStorage 
 	}
 }
 
-// DeviceFlowClient handles the OAuth2 device flow for Kimi.
 type DeviceFlowClient struct {
 	httpClient *http.Client
 	cfg        *config.Config
@@ -295,28 +271,22 @@ type DeviceFlowClient struct {
 	oauthHost  string
 }
 
-// NewDeviceFlowClient creates a new device flow client.
 func NewDeviceFlowClient(cfg *config.Config) *DeviceFlowClient {
 	return NewDeviceFlowClientWithDomain(cfg, KimiDefaultDomain)
 }
 
-// NewDeviceFlowClientWithDomain creates a new device flow client for the specified domain.
 func NewDeviceFlowClientWithDomain(cfg *config.Config, domain string) *DeviceFlowClient {
 	return NewDeviceFlowClientWithDomainDeviceIDAndProxyURL(cfg, domain, "", "")
 }
 
-// NewDeviceFlowClientWithDeviceID creates a new device flow client with the specified device ID.
 func NewDeviceFlowClientWithDeviceID(cfg *config.Config, deviceID string) *DeviceFlowClient {
 	return NewDeviceFlowClientWithDomainDeviceIDAndProxyURL(cfg, KimiDefaultDomain, deviceID, "")
 }
 
-// NewDeviceFlowClientWithDeviceIDAndProxyURL creates a new device flow client with a proxy override.
-// proxyURL takes precedence over cfg.ProxyURL when non-empty.
 func NewDeviceFlowClientWithDeviceIDAndProxyURL(cfg *config.Config, deviceID string, proxyURL string) *DeviceFlowClient {
 	return NewDeviceFlowClientWithDomainDeviceIDAndProxyURL(cfg, KimiDefaultDomain, deviceID, proxyURL)
 }
 
-// NewDeviceFlowClientWithDomainDeviceIDAndProxyURL creates a new device flow client with domain, device ID, and proxy override.
 func NewDeviceFlowClientWithDomainDeviceIDAndProxyURL(cfg *config.Config, domain string, deviceID string, proxyURL string) *DeviceFlowClient {
 	client := &http.Client{Timeout: 30 * time.Second}
 	effectiveProxyURL := strings.TrimSpace(proxyURL)
@@ -359,19 +329,16 @@ func (c *DeviceFlowClient) tokenURL() string {
 	return ResolveKimiOAuthHost(c.domain) + "/api/oauth/token"
 }
 
-// SetHTTPClient overrides the internal HTTP client.
 func (c *DeviceFlowClient) SetHTTPClient(client *http.Client) {
 	if client != nil {
 		c.httpClient = client
 	}
 }
 
-// getOrCreateDeviceID returns an in-memory device ID for the current authentication flow.
 func getOrCreateDeviceID() string {
 	return uuid.New().String()
 }
 
-// getDeviceModel returns a device model string.
 func getDeviceModel() string {
 	osName := runtime.GOOS
 	arch := runtime.GOARCH
@@ -388,7 +355,6 @@ func getDeviceModel() string {
 	}
 }
 
-// getHostname returns the machine hostname.
 func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -397,7 +363,6 @@ func getHostname() string {
 	return hostname
 }
 
-// commonHeaders returns headers required for Kimi API requests.
 func (c *DeviceFlowClient) commonHeaders() map[string]string {
 	return map[string]string{
 		"X-Msh-Platform":     "CLIProxyAPI",
@@ -408,7 +373,6 @@ func (c *DeviceFlowClient) commonHeaders() map[string]string {
 	}
 }
 
-// RequestDeviceCode initiates the device flow by requesting a device code from Kimi.
 func (c *DeviceFlowClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeResponse, error) {
 	data := url.Values{}
 	data.Set("client_id", kimiClientID)
@@ -450,7 +414,6 @@ func (c *DeviceFlowClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeRe
 	return &deviceCode, nil
 }
 
-// PollForToken polls the token endpoint until the user authorizes or the device code expires.
 func (c *DeviceFlowClient) PollForToken(ctx context.Context, deviceCode *DeviceCodeResponse) (*KimiTokenData, error) {
 	if deviceCode == nil {
 		return nil, fmt.Errorf("kimi: device code is nil")
@@ -488,13 +451,11 @@ func (c *DeviceFlowClient) PollForToken(ctx context.Context, deviceCode *DeviceC
 			if !shouldContinue {
 				return nil, pollErr
 			}
-			// Continue polling
+
 		}
 	}
 }
 
-// exchangeDeviceCode attempts to exchange the device code for an access token.
-// Returns (token, error, shouldContinue).
 func (c *DeviceFlowClient) exchangeDeviceCode(ctx context.Context, deviceCode string) (*KimiTokenData, error, bool) {
 	data := url.Values{}
 	data.Set("client_id", kimiClientID)
@@ -526,7 +487,6 @@ func (c *DeviceFlowClient) exchangeDeviceCode(ctx context.Context, deviceCode st
 		return nil, fmt.Errorf("kimi: failed to read token response: %w", err), false
 	}
 
-	// Parse response - Kimi returns 200 for both success and pending states
 	var oauthResp struct {
 		Error            string  `json:"error"`
 		ErrorDescription string  `json:"error_description"`
@@ -544,9 +504,9 @@ func (c *DeviceFlowClient) exchangeDeviceCode(ctx context.Context, deviceCode st
 	if oauthResp.Error != "" {
 		switch oauthResp.Error {
 		case "authorization_pending":
-			return nil, nil, true // Continue polling
+			return nil, nil, true
 		case "slow_down":
-			return nil, nil, true // Continue polling (with increased interval handled by caller)
+			return nil, nil, true
 		case "expired_token":
 			return nil, fmt.Errorf("kimi: device code expired"), false
 		case "access_denied":
@@ -574,7 +534,6 @@ func (c *DeviceFlowClient) exchangeDeviceCode(ctx context.Context, deviceCode st
 	}, nil, false
 }
 
-// RefreshToken exchanges a refresh token for a new access token.
 func (c *DeviceFlowClient) RefreshToken(ctx context.Context, refreshToken string) (*KimiTokenData, error) {
 	if strings.TrimSpace(refreshToken) == "" {
 		return nil, fmt.Errorf("kimi: refresh token is required")

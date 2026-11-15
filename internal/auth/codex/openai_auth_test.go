@@ -275,7 +275,6 @@ func TestRefreshTokens_ExtractsPlanTypeWhenPresent(t *testing.T) {
 func TestCreateAndUpdateTokenStorage_PlanType(t *testing.T) {
 	auth := NewCodexAuth(nil)
 
-	// Test CreateTokenStorage with missing plan type
 	bundleDefault := &CodexAuthBundle{
 		TokenData: CodexTokenData{
 			IDToken:     "id-tok",
@@ -287,7 +286,6 @@ func TestCreateAndUpdateTokenStorage_PlanType(t *testing.T) {
 		t.Fatalf("storage.PlanType = %q, want free", storage.PlanType)
 	}
 
-	// Test UpdateTokenStorage with plan type
 	auth.UpdateTokenStorage(storage, &CodexTokenData{
 		IDToken:     "id-tok-2",
 		AccessToken: "acc-tok-2",
@@ -297,7 +295,6 @@ func TestCreateAndUpdateTokenStorage_PlanType(t *testing.T) {
 		t.Fatalf("updated storage.PlanType = %q, want team", storage.PlanType)
 	}
 
-	// Test UpdateTokenStorage with empty plan type defaults to free
 	auth.UpdateTokenStorage(storage, &CodexTokenData{
 		IDToken:     "id-tok-3",
 		AccessToken: "acc-tok-3",

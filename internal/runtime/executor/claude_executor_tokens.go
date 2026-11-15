@@ -25,8 +25,6 @@ func (e *ClaudeExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Aut
 		baseURL = "https://api.anthropic.com"
 	}
 
-
-
 	if shouldUseClaudeUpstreamTokenCount(apiKey, baseURL) {
 		return e.countTokensUpstream(ctx, auth, req, opts)
 	}
@@ -38,7 +36,6 @@ func (e *ClaudeExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Aut
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	to := sdktranslator.FromString("claude")
 
-
 	if from == sdktranslator.FormatOpenAIResponse {
 		ctx = responsesclaude.WithTopLevelSystemItems(ctx, true)
 	}
@@ -49,7 +46,6 @@ func (e *ClaudeExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Aut
 	}
 	webSearchSessionKey, webSearchTTL, _ := e.claudeWebSearchResultCacheScope(ctx, auth, from, req, opts, originalPayload)
 	ctx = helps.WithClaudeWebSearchResultRestore(ctx, webSearchSessionKey, webSearchTTL)
-
 
 	stream := from != to
 	body, err := helps.TranslateRequestReturningError(ctx, opts.Headers, e.cfg, from, to, baseModel, req.Payload, stream, helps.APIKeyModelIsCompat(req))
@@ -81,8 +77,6 @@ func (e *ClaudeExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Aut
 	if errValidate := validateClaudeTokenCountRequest(body); errValidate != nil {
 		return cliproxyexecutor.Response{}, errValidate
 	}
-
-
 
 	count, err := helps.CountClaudeInputTokens(body)
 	if err != nil {
@@ -146,7 +140,6 @@ func shouldUseClaudeUpstreamTokenCount(apiKey, baseURL string) bool {
 	return strings.TrimSpace(apiKey) != "" && isAnthropicUpstreamBase(baseURL)
 }
 
-
 func (e *ClaudeExecutor) countTokensUpstream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	upstreamModel := e.upstreamModel(baseModel)
@@ -199,10 +192,6 @@ func (e *ClaudeExecutor) countTokensUpstream(ctx context.Context, auth *cliproxy
 
 	directAnthropic := isAnthropicUpstreamBase(baseURL)
 
-
-
-
-
 	policy, settings := resolveClaudeWirePolicy(e.cfg, auth, apiKey, confirmedClaudeCode)
 	cloaked := policy.Cloak
 	explicitCacheMode := isExplicitPromptCacheModeDoc(doc, originalPayload, req.Payload)
@@ -220,12 +209,10 @@ func (e *ClaudeExecutor) countTokensUpstream(ctx context.Context, auth *cliproxy
 		uncloakClaudeCodePayloadDoc(doc, confirmedClaudeCode)
 	}
 
-
 	enforceCacheControlLimitDoc(doc, 4)
 	if !explicitCacheMode {
 		normalizeCacheControlTTLDoc(doc)
 	}
-
 
 	extraBetas, _ := extractAndRemoveBetasDoc(doc)
 
@@ -239,19 +226,6 @@ func (e *ClaudeExecutor) countTokensUpstream(ctx context.Context, auth *cliproxy
 	applyClaudePreservedThinkingBindingDoc(doc)
 	stripPromptCacheOptionsDoc(doc)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 	alignCLICountTokensShape := fp.ProfileClaudeCodeCLI
 	if directAnthropic || alignCLICountTokensShape {
 		_ = doc.Delete("metadata")
@@ -261,8 +235,6 @@ func (e *ClaudeExecutor) countTokensUpstream(ctx context.Context, auth *cliproxy
 	if alignCLICountTokensShape {
 		stripClaudeCodeAttributionSystemDoc(doc)
 	}
-
-
 
 	finalize := helps.NewPayloadFinalizer(e.cfg, e.Identifier(), baseModel, to.String(), "", originalTranslatedForPayload, req, opts)
 	ctx = helps.WithPayloadFinalizer(ctx, finalize)
@@ -305,8 +277,6 @@ func (e *ClaudeExecutor) countTokensUpstream(ctx context.Context, auth *cliproxy
 	}
 	helps.RecordAPIResponseMetadata(ctx, e.cfg, resp.StatusCode, resp.Header.Clone())
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-
-
 
 		errBody, decErr := decodeResponseBody(resp.Body, claudeResponseContentEncoding(resp.Header))
 		if decErr != nil {

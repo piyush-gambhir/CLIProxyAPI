@@ -14,8 +14,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestExecutorsRefuseAFileOnlyTurnBeforeCallingUpstream(t *testing.T) {
 	var upstreamCalls int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

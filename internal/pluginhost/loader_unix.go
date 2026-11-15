@@ -185,11 +185,6 @@ func (dynamicLibraryLoader) Open(file pluginFile, host *Host) (pluginClient, err
 	if errOpen != nil {
 		return nil, errOpen
 	}
-	// From here on the image must never be unloaded: dlopen may already
-	// have started the plugin runtime, and a Go c-shared runtime cannot be
-	// removed from the host process safely. Failure paths below only detach
-	// the client logically and deliberately leak the mapped image together
-	// with any host callback state the runtime may reference.
 
 	cSymbol := C.CString("cliproxy_plugin_init")
 	initSymbol := C.cliproxy_dlsym(handle, cSymbol)
@@ -290,14 +285,6 @@ func (c *dynamicLibraryClient) closeAfterOpenFailure() {
 	c.close()
 }
 
-// close detaches the client logically without unloading the plugin image.
-// Go plugin libraries are not safe to hot-unload from the host process: the
-// plugin runtime, its threads and its signal handlers stay resident after
-// dlclose, so a later load in the same process forwards signals into
-// unmapped memory and spins. This also applies when initialization failed,
-// because dlopen may already have started the runtime. The plugin was
-// loaded from a shadow copy, so keeping the image mapped does not block
-// deleting or replacing the source artifact.
 func (c *dynamicLibraryClient) close() {
 	if c == nil {
 		return
@@ -313,11 +300,7 @@ func (c *dynamicLibraryClient) close() {
 	c.api.call = nil
 	c.api.free_buffer = nil
 	if c.hostCtx != nil {
-		// Drop the callback registration so repeated reloads do not pin the
-		// host forever. The C host context and host API block themselves are
-		// deliberately leaked: the resident plugin runtime may still pass
-		// the context back into cliproxyHostCall, which reads the callback
-		// id from it before failing the lookup.
+
 		id := uintptr(*(*C.uintptr_t)(c.hostCtx))
 		hostCallbackEntries.Delete(id)
 	}
@@ -483,10 +466,6 @@ func probePluginLibrary(sourcePath, loadPath string) error {
 		_ = devNull.Close()
 	}()
 
-	// Use an explicit os.Pipe (*os.File) for Stderr so os/exec does not spawn
-	// its own uncancelable pipe-drain goroutine. Closing stderrReader as soon
-	// as cmd.Wait() returns ensures a grandchild process that inherited Stderr
-	// neither blocks Wait() nor writes unbounded data to disk.
 	stderrReader, stderrWriter, errPipe := os.Pipe()
 	if errPipe != nil {
 		return fmt.Errorf("dlopen %s: create preflight probe pipe: %w", sourcePath, errPipe)

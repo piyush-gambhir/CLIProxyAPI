@@ -15,7 +15,6 @@ import (
 
 const codexResponsesLiteHeaderName = "X-OpenAI-Internal-Codex-Responses-Lite"
 
-
 func CodexModelUsesResponsesLite(model string) bool {
 	slug := strings.ToLower(strings.TrimSpace(thinking.ParseSuffix(model).ModelName))
 	if idx := strings.LastIndex(slug, "/"); idx >= 0 {
@@ -23,7 +22,6 @@ func CodexModelUsesResponsesLite(model string) bool {
 	}
 	return slug != "" && (strings.HasPrefix(slug, "gpt-6") || registry.CodexClientModelUsesResponsesLite(slug))
 }
-
 
 func CodexResponsesLiteRequestDoc(doc *ojson.Doc, headers http.Header) bool {
 	if strings.EqualFold(strings.TrimSpace(headers.Get(codexResponsesLiteHeaderName)), "true") {
@@ -35,9 +33,6 @@ func CodexResponsesLiteRequestDoc(doc *ojson.Doc, headers http.Header) bool {
 	value := doc.Get("client_metadata.ws_request_header_x_openai_internal_codex_responses_lite")
 	return value.Type == ojson.True || (value.Type == ojson.String && strings.EqualFold(strings.TrimSpace(value.String()), "true"))
 }
-
-
-
 
 func CodexResponsesLiteRequestForAuthDoc(doc *ojson.Doc, modelName string, auth *cliproxyauth.Auth, headers http.Header) bool {
 	if CodexResponsesLiteRequestDoc(doc, nil) {
@@ -63,12 +58,6 @@ func CodexResponsesLiteRequestForAuthDoc(doc *ojson.Doc, modelName string, auth 
 	}
 	return strings.EqualFold(effective, "true")
 }
-
-
-
-
-
-
 
 func CodexRequestHasReasoningForHostedImageDoc(doc *ojson.Doc, model string) bool {
 	if thinking.HasThinkingSuffix(model) {
@@ -101,10 +90,6 @@ func CodexRequestHasReasoningForHostedImageDoc(doc *ojson.Doc, model string) boo
 	}
 	return false
 }
-
-
-
-
 
 func ValidateCodexHostedImageGenerationDoc(doc *ojson.Doc, upstreamHeaders http.Header, cfg *config.Config, nativeCodex bool) error {
 	if !nativeCodex || doc == nil || (cfg != nil && cfg.DisableImageGeneration == config.DisableImageGenerationPassthrough) {

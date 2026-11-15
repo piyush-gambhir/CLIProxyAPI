@@ -1,5 +1,3 @@
-
-
 package registry
 
 import (
@@ -26,7 +24,6 @@ const (
 	xaiBuiltinSpeechVoiceModelID       = "grok-voice-tts-1.0"
 )
 
-
 type staticModelsJSON struct {
 	Claude      []*ModelInfo `json:"claude"`
 	Gemini      []*ModelInfo `json:"gemini"`
@@ -43,51 +40,41 @@ type staticModelsJSON struct {
 	Meta        []*ModelInfo `json:"meta"`
 }
 
-
 func GetClaudeModels() []*ModelInfo {
 	return cloneModelInfos(getModels().Claude)
 }
-
 
 func GetGeminiModels() []*ModelInfo {
 	return cloneModelInfos(getModels().Gemini)
 }
 
-
 func GetGeminiVertexModels() []*ModelInfo {
 	return cloneModelInfos(getModels().Vertex)
 }
-
 
 func GetAIStudioModels() []*ModelInfo {
 	return cloneModelInfos(getModels().AIStudio)
 }
 
-
 func GetCodexFreeModels() []*ModelInfo {
 	return WithCodexBuiltins(cloneModelInfos(getModels().CodexFree))
 }
-
 
 func GetCodexTeamModels() []*ModelInfo {
 	return WithCodexBuiltins(cloneModelInfos(getModels().CodexTeam))
 }
 
-
 func GetCodexPlusModels() []*ModelInfo {
 	return WithCodexBuiltins(cloneModelInfos(getModels().CodexPlus))
 }
-
 
 func GetCodexProModels() []*ModelInfo {
 	return WithCodexBuiltins(cloneModelInfos(getModels().CodexPro))
 }
 
-
 func GetKimiModels() []*ModelInfo {
 	return cloneModelInfos(getModels().Kimi)
 }
-
 
 func GetAntigravityModels() []*ModelInfo {
 	return cloneModelInfos(getModels().Antigravity)
@@ -218,8 +205,6 @@ var staticDevinModels = []*ModelInfo{
 	},
 }
 
-
-
 func AntigravityWebSearchModelFor(modelID string) string {
 	modelID = normalizeAntigravityCapabilityModelID(modelID)
 	if modelID == "" {
@@ -243,13 +228,9 @@ func AntigravityWebSearchModelFor(modelID string) string {
 	return ""
 }
 
-
 func GetXAIModels() []*ModelInfo {
 	return WithXAIBuiltins(cloneModelInfos(getModels().XAI))
 }
-
-
-
 
 func WithCodexBuiltins(models []*ModelInfo) []*ModelInfo {
 	return upsertModelInfos(models,
@@ -263,8 +244,6 @@ func WithCodexBuiltins(models []*ModelInfo) []*ModelInfo {
 		codexBuiltinImage26ModelInfo(),
 	)
 }
-
-
 
 func WithXAIBuiltins(models []*ModelInfo) []*ModelInfo {
 	return upsertModelInfos(models, xaiBuiltinImageModelInfo(), xaiBuiltinImageQualityModelInfo(), xaiBuiltinImage20ModelInfo(), xaiBuiltinVideoModelInfo(), xaiBuiltinVideo15ModelInfo(), xaiBuiltinVideo15PreviewModelInfo(), xaiBuiltinVideo15LiteModelInfo(), xaiBuiltinSpeechModelInfo(), xaiBuiltinSpeechVoiceModelInfo())
@@ -539,7 +518,6 @@ func upsertModelInfos(models []*ModelInfo, extras ...*ModelInfo) []*ModelInfo {
 	return filtered
 }
 
-
 func cloneModelInfos(models []*ModelInfo) []*ModelInfo {
 	if len(models) == 0 {
 		return nil
@@ -550,21 +528,6 @@ func cloneModelInfos(models []*ModelInfo) []*ModelInfo {
 	}
 	return out
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func GetStaticModelDefinitionsByChannel(channel string) []*ModelInfo {
 	key := strings.ToLower(strings.TrimSpace(channel))
@@ -596,8 +559,6 @@ func GetStaticModelDefinitionsByChannel(channel string) []*ModelInfo {
 	}
 }
 
-
-
 func LookupStaticModelInfoByChannel(modelID, channel string) *ModelInfo {
 	modelID = strings.TrimSpace(modelID)
 	if modelID == "" {
@@ -621,12 +582,9 @@ func LookupStaticModelInfoByChannel(modelID, channel string) *ModelInfo {
 	return nil
 }
 
-
 func GetMetaModels() []*ModelInfo {
 	return cloneModelInfos(getModels().Meta)
 }
-
-
 
 func LookupStaticModelInfo(modelID string) *ModelInfo {
 	if modelID == "" {
@@ -654,8 +612,6 @@ func LookupStaticModelInfo(modelID string) *ModelInfo {
 		}
 	}
 
-
-
 	for _, familyID := range claudeFamilyModelIDs(modelID) {
 		for _, m := range data.Claude {
 			if m != nil && m.ID == familyID {
@@ -666,8 +622,6 @@ func LookupStaticModelInfo(modelID string) *ModelInfo {
 
 	return nil
 }
-
-
 
 func claudeFamilyModelIDs(modelID string) []string {
 	if !strings.HasPrefix(modelID, "claude-") {

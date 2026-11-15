@@ -334,7 +334,6 @@ func TestManager_MarkResult_InFlightResultDoesNotReviveTerminalUnauthorizedAuth(
 	executor.refreshErr = errors.New(`token refresh failed with status 400: {"error": "invalid_grant", "error_description": "Refresh token not found or invalid"}`)
 	executor.mu.Unlock()
 
-
 	_, errExecute := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errExecute != nil {
 		t.Fatalf("Execute error = %v, want success via backup", errExecute)
@@ -347,7 +346,6 @@ func TestManager_MarkResult_InFlightResultDoesNotReviveTerminalUnauthorizedAuth(
 	if !hasUnauthorizedAuthFailure(authAfterRefresh) {
 		t.Fatalf("expected terminal unauthorized state initially")
 	}
-
 
 	m.MarkResult(context.Background(), Result{
 		AuthID:   primary.ID,
@@ -369,7 +367,6 @@ func TestManager_MarkResult_InFlightResultDoesNotReviveTerminalUnauthorizedAuth(
 		t.Fatalf("expected terminal unauthorized state preserved after in-flight 500, got status=%s unavailable=%v last_error=%+v", authAfter500.Status, authAfter500.Unavailable, authAfter500.LastError)
 	}
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID:   primary.ID,
 		Provider: "codex",
@@ -385,9 +382,7 @@ func TestManager_MarkResult_InFlightResultDoesNotReviveTerminalUnauthorizedAuth(
 		t.Fatalf("expected terminal unauthorized state preserved after in-flight success, got status=%s unavailable=%v last_error=%+v", authAfterSuccess.Status, authAfterSuccess.Unavailable, authAfterSuccess.LastError)
 	}
 
-
 	_, _, _ = m.ResetQuota(context.Background(), primary.ID)
-
 
 	callsBefore := len(executor.ExecuteCalls())
 	resp, errSecond := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
@@ -450,8 +445,6 @@ func TestManager_ConcurrentUnauthorized_BarrierExecutionPreservesTerminalState(t
 		t.Fatalf("register backup: %v", err)
 	}
 
-
-
 	primaryEntered := make(chan struct{}, 2)
 	releasePrimary := make(chan struct{})
 	executor.mu.Lock()
@@ -479,7 +472,6 @@ func TestManager_ConcurrentUnauthorized_BarrierExecutionPreservesTerminalState(t
 			}
 		}()
 	}
-
 
 	timeout := time.After(5 * time.Second)
 	for i := 0; i < 2; i++ {
@@ -512,7 +504,6 @@ func TestManager_ConcurrentUnauthorized_BarrierExecutionPreservesTerminalState(t
 		}
 	}
 
-
 	if got := executor.RefreshCalls(); got != 1 {
 		t.Fatalf("expected 1 refresh call during concurrent execution, got %d", got)
 	}
@@ -525,7 +516,6 @@ func TestManager_ConcurrentUnauthorized_BarrierExecutionPreservesTerminalState(t
 		t.Fatalf("expected terminal unauthorized state after concurrent execution, got unavailable=%v status=%s next_refresh=%v last_error=%+v",
 			final.Unavailable, final.Status, final.NextRefreshAfter, final.LastError)
 	}
-
 
 	callsBefore := executor.RefreshCalls()
 	m.refreshAuth(context.Background(), primary.ID)
@@ -541,12 +531,10 @@ func TestManager_ConcurrentUnauthorized_BarrierExecutionPreservesTerminalState(t
 		t.Fatalf("tryRefreshAfterUnauthorized called executor.Refresh on terminal unauthorized auth (%d -> %d)", callsBefore, got)
 	}
 
-
 	_, _ = m.ForceRefreshAuth(context.Background(), primary.ID)
 	if got := executor.RefreshCalls(); got != callsBefore+1 {
 		t.Fatalf("ForceRefreshAuth should call executor.Refresh, got %d calls, want %d", got, callsBefore+1)
 	}
-
 
 	execCallsBefore := len(executor.ExecuteCalls())
 	resp3, err3 := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
@@ -566,7 +554,6 @@ func TestManager_ConcurrentUnauthorized_BarrierExecutionPreservesTerminalState(t
 func TestManager_ForceRefreshAuth_FailurePreservesTerminalUnauthorizedState(t *testing.T) {
 	m, executor, primary, backup, model := newUnauthorizedRefreshFixture(t, false)
 
-
 	updated, ok := m.GetByID(primary.ID)
 	if !ok || updated == nil {
 		t.Fatal("primary auth missing")
@@ -580,7 +567,6 @@ func TestManager_ForceRefreshAuth_FailurePreservesTerminalUnauthorizedState(t *t
 	executor.refreshErr = errors.New(`token refresh failed with status 400: {"error": "invalid_grant", "error_description": "Refresh token not found or invalid"}`)
 	executor.mu.Unlock()
 
-
 	_, errExecute := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errExecute != nil {
 		t.Fatalf("Execute error: %v", errExecute)
@@ -590,7 +576,6 @@ func TestManager_ForceRefreshAuth_FailurePreservesTerminalUnauthorizedState(t *t
 	if !hasUnauthorizedAuthFailure(authAfterInit) {
 		t.Fatalf("expected terminal unauthorized state initially")
 	}
-
 
 	executor.mu.Lock()
 	executor.refreshErr = errors.New("upstream 503 service unavailable")
@@ -610,7 +595,6 @@ func TestManager_ForceRefreshAuth_FailurePreservesTerminalUnauthorizedState(t *t
 		t.Fatalf("expected NextRefreshAfter to remain zero after failed force refresh, got %v", authAfterFailedForce.NextRefreshAfter)
 	}
 
-
 	resp, errAfterFailedForce := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errAfterFailedForce != nil {
 		t.Fatalf("Execute error: %v", errAfterFailedForce)
@@ -618,7 +602,6 @@ func TestManager_ForceRefreshAuth_FailurePreservesTerminalUnauthorizedState(t *t
 	if string(resp.Payload) != backup.ID+":backup-access-token" {
 		t.Fatalf("expected backup selection, got %s", resp.Payload)
 	}
-
 
 	executor.mu.Lock()
 	executor.refreshErr = nil
@@ -807,7 +790,6 @@ func TestManagerReloginAfterRefreshFailureRestoresAccount(t *testing.T) {
 	}
 }
 
-
 func reloginSnapshot(t *testing.T, path, token string, expiry time.Time) *Auth {
 	t.Helper()
 	expired := expiry.Format(time.RFC3339)
@@ -885,7 +867,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatalf("register backup: %v", errReg)
 	}
 
-
 	m.refreshAuth(ctx, primary.ID)
 	if got := executor.RefreshCalls(); got != 1 {
 		t.Fatalf("RefreshCalls = %d, want 1", got)
@@ -909,12 +890,10 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatalf("NextRefreshAfter = %v, want deferred until access_token expiry %v", afterFirstFailure.NextRefreshAfter, futureExpiry)
 	}
 
-
 	m.refreshAuth(ctx, primary.ID)
 	if got := executor.RefreshCalls(); got != 1 {
 		t.Fatalf("repeated refreshAuth with unchanged rejected grant called Refresh %d times, want 1", got)
 	}
-
 
 	resp, errExec := m.Execute(ctx, []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errExec != nil {
@@ -928,7 +907,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatalf("successful inference cleared renewal failure state: RequiresSignIn=%v RefreshError=%+v", afterExec.RequiresSignIn, afterExec.RefreshError)
 	}
 
-
 	executor.mu.Lock()
 	executor.refreshErr = errors.New("token refresh failed with status 503: service unavailable")
 	executor.mu.Unlock()
@@ -941,7 +919,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatalf("transient NextRefreshAfter = %v, want ~5m backoff", afterTransient.NextRefreshAfter)
 	}
 
-
 	retryAfter := 30 * time.Minute
 	m.MarkResult(ctx, Result{
 		AuthID:          primary.ID,
@@ -951,7 +928,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		RetryAfter:      &retryAfter,
 		Error:           &Error{HTTPStatus: http.StatusTooManyRequests, Message: "quota exceeded"},
 	})
-
 
 	m.mu.Lock()
 	if cur := m.auths[primary.ID]; cur != nil {
@@ -977,7 +953,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatalf("Execute at primary expiry payload = %q, want backup", got)
 	}
 
-
 	relogged := afterExpiry.Clone()
 	relogged.Metadata["access_token"] = "relogged-access-token"
 	relogged.Metadata["refresh_token"] = "relogged-refresh-token"
@@ -996,20 +971,17 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatalf("expected active quota cooldown preserved after relogin, got unavailable=%v stage=%q", afterRelogin.Unavailable, afterRelogin.RecoveryStageAt(now))
 	}
 
-
 	_, _, _ = m.ResetQuota(ctx, primary.ID)
 	afterReset, _ := m.GetByID(primary.ID)
 	if afterReset.InferenceVerified || afterReset.RecoveryStageAt(now) != RecoveryStageLoaded {
 		t.Fatalf("expected stage loaded before inference verification, got Verified=%v stage=%q", afterReset.InferenceVerified, afterReset.RecoveryStageAt(now))
 	}
 
-
 	m.MarkResult(ctx, Result{AuthID: backup.ID, Provider: "codex", Model: model, Success: true, CompletedResponse: true})
 	afterOtherSuccess, _ := m.GetByID(primary.ID)
 	if afterOtherSuccess.InferenceVerified {
 		t.Fatal("another account's inference success must not verify primary")
 	}
-
 
 	if _, errCount := m.ExecuteCount(ctx, []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{}); errCount != nil {
 		t.Fatalf("ExecuteCount error: %v", errCount)
@@ -1018,7 +990,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 	if afterCountTokens.InferenceVerified {
 		t.Fatal("CountTokens success must not mark InferenceVerified=true")
 	}
-
 
 	executor.mu.Lock()
 	executor.streamChunkErr = &Error{HTTPStatus: http.StatusBadGateway, Message: "incomplete stream without response.completed", Retryable: true}
@@ -1035,7 +1006,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 	}
 	_, _, _ = m.ResetQuota(ctx, primary.ID)
 
-
 	executor.mu.Lock()
 	executor.streamChunkErr = nil
 	executor.streamPayloads = [][]byte{[]byte(`data: {"type":"response.created"}` + "\n\n")}
@@ -1051,7 +1021,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 		t.Fatal("clean EOF stream without terminal completion event must not mark InferenceVerified=true")
 	}
 
-
 	for _, falsePositiveChunk := range [][]byte{
 		[]byte(`data: {"choices":[{"delta":{"content":"hi"},"finish_reason":null}]}` + "\n\n"),
 		[]byte(`data: {"type":"response.output_text.delta","delta":"response.completed [DONE] message_stop"}` + "\n\n"),
@@ -1063,7 +1032,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 	if isCompletedExecutionPayload([]byte(`{"object":"list","data":[{"id":"gpt-5"}]}`)) {
 		t.Fatal("non-generation model list JSON must not be treated as a completed execution payload")
 	}
-
 
 	executor.mu.Lock()
 	executor.streamPayloads = [][]byte{[]byte(`data: {"type":"response.incomplete","response":{"status":"incomplete"}}` + "\n\n")}
@@ -1081,7 +1049,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 	if _, errVerifyIncomplete := m.VerifyInference(ctx, primary.ID, model); errVerifyIncomplete == nil {
 		t.Fatal("VerifyInference must fail when stream ends with response.incomplete")
 	}
-
 
 	executor.mu.Lock()
 	executor.streamPayloads = nil
@@ -1111,7 +1078,6 @@ func TestManager_CodexTerminalRenewalRecoveryLifecycle_Issue5783(t *testing.T) {
 	if afterVerify.RenewalVerified {
 		t.Fatal("RenewalVerified must remain false until first automatic refresh succeeds")
 	}
-
 
 	executor.mu.Lock()
 	executor.refreshErr = nil
@@ -1174,7 +1140,6 @@ func TestManager_StaleRefreshFailureDoesNotPoisonReloggedCredential_Issue5783(t 
 
 	<-refreshStarted
 
-
 	relogged := auth.Clone()
 	relogged.Metadata["access_token"] = "new-access-token"
 	relogged.Metadata["refresh_token"] = "new-refresh-token"
@@ -1182,7 +1147,6 @@ func TestManager_StaleRefreshFailureDoesNotPoisonReloggedCredential_Issue5783(t 
 	if _, errUpdate := m.Update(ctx, relogged); errUpdate != nil {
 		t.Fatalf("Update relogged auth: %v", errUpdate)
 	}
-
 
 	close(releaseRefresh)
 	<-refreshDone
@@ -1198,7 +1162,6 @@ func TestManager_StaleRefreshFailureDoesNotPoisonReloggedCredential_Issue5783(t 
 	if after.Unavailable || after.Status != StatusActive {
 		t.Fatalf("expected active credential after stale refresh discard, got status=%s unavailable=%v", after.Status, after.Unavailable)
 	}
-
 
 	verifyStarted := make(chan struct{})
 	releaseVerify := make(chan struct{})
@@ -1235,8 +1198,6 @@ func TestManager_StaleRefreshFailureDoesNotPoisonReloggedCredential_Issue5783(t 
 	if afterVerifyRace.InferenceVerified {
 		t.Fatal("new credential version must not inherit InferenceVerified from superseded in-flight VerifyInference")
 	}
-
-
 
 	saveStarted := make(chan struct{})
 	releaseSave := make(chan struct{})
@@ -1348,7 +1309,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 		t.Fatal("expected InferenceVerified=true on old access_token")
 	}
 
-
 	newExp := now.Add(36 * time.Hour).Truncate(time.Second)
 	accessOnly := verifiedOld.Clone()
 	accessOnly.Metadata["access_token"] = "at-2"
@@ -1368,7 +1328,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 	if afterAccessOnly.NextRefreshAfter.Before(newExp.Add(-time.Minute)) {
 		t.Fatalf("NextRefreshAfter = %v, want deferred to new access_token expiry %v", afterAccessOnly.NextRefreshAfter, newExp)
 	}
-
 
 	diskPatch := codex.NewCredentialRefreshPatch(
 		afterAccessOnly.Metadata,
@@ -1394,8 +1353,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 		t.Fatalf("disk-only adoption must NOT mark RenewalVerified=true, got verified=%v state=%q",
 			afterDiskAdopt.RenewalVerified, afterDiskAdopt.RenewalStateAt(now))
 	}
-
-
 
 	siwcAuth := &Auth{
 		ID:       "codex-siwc-outer.json",
@@ -1458,8 +1415,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 			afterOuterRelogin.RequiresSignIn, afterOuterRelogin.RefreshError)
 	}
 
-
-
 	executor.mu.Lock()
 	executor.refreshErr = codex.WrapSIWCRefreshError(errors.New(`OpenAI OAuth token request failed (401): {"error":{"code":"refresh_token_reused","message":"SIWC refresh token already used"}}`))
 	executor.mu.Unlock()
@@ -1484,8 +1439,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 		t.Fatalf("re-binding SIWC refresh_token while healthy outer token is unchanged must clear RequiresSignIn, got %v / %+v",
 			afterSIWCRebind.RequiresSignIn, afterSIWCRebind.RefreshError)
 	}
-
-
 
 	partialPatch := codex.NewCredentialRefreshPatch(
 		afterSIWCRebind.Metadata,
@@ -1517,7 +1470,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 	executor.mu.Lock()
 	executor.refreshPatch = nil
 
-
 	executor.refreshErr = errors.New(`OpenAI OAuth token request failed (503): service unavailable`)
 	executor.mu.Unlock()
 	m.refreshAuth(ctx, siwcAuth.ID)
@@ -1533,9 +1485,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 	executor.mu.Lock()
 	executor.refreshErr = nil
 	executor.mu.Unlock()
-
-
-
 
 	nowCheck := time.Now().UTC()
 	siwcDueClone := afterPartial.Clone()
@@ -1557,7 +1506,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 	if executor.RefreshCalls() != callsBeforeAutoSIWC+1 {
 		t.Fatalf("m.refreshAuth must invoke executor for healthy SIWC partition, calls=%d want %d", executor.RefreshCalls(), callsBeforeAutoSIWC+1)
 	}
-
 
 	outerHealthyClone := currentSIWCDue.Clone()
 	outerHealthyClone.Metadata["refresh_token"] = "brand-new-outer-rt"
@@ -1592,8 +1540,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 		t.Fatalf("m.refreshAuth must invoke executor for healthy outer partition, calls=%d want %d", executor.RefreshCalls(), callsBeforeAutoOuter+1)
 	}
 
-
-
 	disableAuth := &Auth{
 		ID:       "codex-disable-reload.json",
 		FileName: "codex-disable-reload.json",
@@ -1614,7 +1560,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 	executor.refreshErr = errors.New(`token refresh failed with status 401: {"error":{"code":"refresh_token_reused","message":"reused"}}`)
 	executor.mu.Unlock()
 	m.refreshAuth(ctx, disableAuth.ID)
-
 
 	disabledFromDisk := &Auth{
 		ID:       disableAuth.ID,
@@ -1663,8 +1608,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 			executor.RefreshCalls(), callsBeforeReenableRefresh)
 	}
 
-
-
 	dualFailAuth := &Auth{
 		ID:       "codex-dual-fail.json",
 		FileName: "codex-dual-fail.json",
@@ -1707,7 +1650,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 	executor.refreshErr = nil
 	executor.mu.Unlock()
 
-
 	m.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 		"codex": {{Name: "gpt-5.5", Alias: "codex-verified"}},
 	})
@@ -1745,9 +1687,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 		t.Fatalf("VerifyInference must resolve prefix+alias to upstream model gpt-5.5, got %q", gotModel)
 	}
 
-
-
-
 	raceBaseA, _ := m.GetByID(siwcAuth.ID)
 	reloggedOuterA := raceBaseA.Clone()
 	reloggedOuterA.Metadata["access_token"] = "relogged-outer-at-A"
@@ -1777,7 +1716,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 		t.Fatalf("stale outer failure in partial refresh must not poison relogged outer token: RequiresSignIn=%v RejectedOuter=%q RenewalVerified=%v",
 			mergedA.RequiresSignIn, mergedA.RejectedRefreshToken, mergedA.RenewalVerified)
 	}
-
 
 	raceBaseB, _ := m.GetByID(siwcAuth.ID)
 	reboundSIWCB := raceBaseB.Clone()
@@ -1809,7 +1747,6 @@ func TestManager_AccessTokenOnlyUpdateAndDiskAdoption_Issue5783(t *testing.T) {
 			mergedB.RequiresSignIn, mergedB.RejectedSIWCRefreshToken, mergedB.RenewalVerified)
 	}
 
-
 	padding := make([]byte, 285)
 	for i := range padding {
 		padding[i] = 'x'
@@ -1834,8 +1771,6 @@ func TestManager_ForceRefreshAuth_SignInRequiredDoesNotReadmitDeadCredential_Iss
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Second)
 	futureExp := now.Add(6 * time.Hour)
-
-
 
 	auth := &Auth{
 		ID:       "codex-single-7135.json",
@@ -1867,7 +1802,6 @@ func TestManager_ForceRefreshAuth_SignInRequiredDoesNotReadmitDeadCredential_Iss
 		t.Fatalf("register auth: %v", errReg)
 	}
 
-
 	_, errInit := m.Execute(ctx, []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errInit == nil {
 		t.Fatal("expected initial Execute to fail with 401")
@@ -1876,8 +1810,6 @@ func TestManager_ForceRefreshAuth_SignInRequiredDoesNotReadmitDeadCredential_Iss
 	if !beforeForce.Unavailable || beforeForce.Status != StatusError || !beforeForce.RequiresSignIn {
 		t.Fatalf("precondition failed: Unavailable=%v Status=%s RequiresSignIn=%v", beforeForce.Unavailable, beforeForce.Status, beforeForce.RequiresSignIn)
 	}
-
-
 
 	executor.mu.Lock()
 	executor.refreshErr = nil
@@ -1898,7 +1830,6 @@ func TestManager_ForceRefreshAuth_SignInRequiredDoesNotReadmitDeadCredential_Iss
 		t.Fatalf("RejectedAccessToken = %q, want %q preserved", afterForce.RejectedAccessToken, "revoked-access-token")
 	}
 
-
 	execCallsBefore := len(executor.ExecuteCalls())
 	_, errAfterForce := m.Execute(ctx, []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errAfterForce == nil {
@@ -1911,8 +1842,6 @@ func TestManager_ForceRefreshAuth_SignInRequiredDoesNotReadmitDeadCredential_Iss
 	if gotCalls := len(executor.ExecuteCalls()); gotCalls != execCallsBefore {
 		t.Fatalf("dead credential was selected for inference after ForceRefreshAuth (%d -> %d execute calls)", execCallsBefore, gotCalls)
 	}
-
-
 
 	withSIWC := afterForce.Clone()
 	withSIWC.Metadata["use_siwc"] = false

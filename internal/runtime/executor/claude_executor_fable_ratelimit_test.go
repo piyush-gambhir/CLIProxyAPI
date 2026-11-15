@@ -30,9 +30,7 @@ func TestClassifyClaudeUpstreamError_FableOnlyRejectionIsModelScoped(t *testing.
 		"Retry-After": []string{"120"},
 	}
 
-
 	err := classifyClaudeUpstreamError(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fable usage window rejected."}}`))
-
 
 	var scoped interface{ IsCredentialScoped() bool }
 	if !errors.As(err, &scoped) || scoped == nil {
@@ -53,9 +51,7 @@ func TestClassifyClaudeUpstreamError_FableOnlyAllowedWarningIsModelScoped(t *tes
 		"Retry-After": []string{"120"},
 	}
 
-
 	err := classifyClaudeUpstreamError(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fable usage window rejected."}}`))
-
 
 	var scoped interface{ IsCredentialScoped() bool }
 	if !errors.As(err, &scoped) || scoped == nil {
@@ -81,9 +77,7 @@ func TestClassifyClaudeUpstreamError_OverageRejectionIsModelScoped_Issue5915(t *
 		"Retry-After": []string{"121180"},
 	}
 
-
 	err := classifyClaudeUpstreamError(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fable usage window rejected."}}`))
-
 
 	var scoped interface{ IsCredentialScoped() bool }
 	if !errors.As(err, &scoped) || scoped == nil {
@@ -101,13 +95,11 @@ func TestClassifyClaudeUpstreamError_ModelLevelCoolingForcesModelScope(t *testin
 		"Retry-After":                           []string{"60"},
 	}
 
-
 	errDefault := classifyClaudeUpstreamErrorWithCooling(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error"}}`), false)
 	var scopedDefault interface{ IsCredentialScoped() bool }
 	if !errors.As(errDefault, &scopedDefault) || !scopedDefault.IsCredentialScoped() {
 		t.Fatal("expected default cooling to treat 5h rejection as credential-scoped")
 	}
-
 
 	errModelLevel := classifyClaudeUpstreamErrorWithCooling(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error"}}`), true)
 	var scopedModelLevel interface{ IsCredentialScoped() bool }
@@ -155,7 +147,6 @@ func TestClassifyClaudeUpstreamError_SharedOrAmbiguousRejectionRemainsCredential
 		t.Run(tt.name, func(t *testing.T) {
 
 			err := classifyClaudeUpstreamError(http.StatusTooManyRequests, tt.headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Shared usage window rejected."}}`))
-
 
 			var scoped interface{ IsCredentialScoped() bool }
 			if !errors.As(err, &scoped) || scoped == nil {
@@ -268,7 +259,6 @@ func TestClaudeExecutor_AuthManager_FableOnlyRejectionDoesNotBlockOpus(t *testin
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
 
-
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -348,7 +338,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("register auth: %v", err)
 	}
 
-
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpusFirst := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -357,7 +346,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 	if errOpusFirst != nil {
 		t.Fatalf("initial Opus request failed: %v", errOpusFirst)
 	}
-
 
 	payloadFable := []byte(`{"model":"claude-fable-5-1","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errFable := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
@@ -370,7 +358,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 	if got := fableAttempts.Load(); got != 1 {
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
-
 
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
@@ -386,7 +373,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("auth NextRetryAfter = %v; want zero time", updatedAuth.NextRetryAfter)
 	}
 
-
 	fableState := updatedAuth.ModelStates["claude-fable-5-1"]
 	if fableState == nil {
 		t.Fatal("fable model state not found")
@@ -398,7 +384,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatal("fable model state NextRetryAfter should be set")
 	}
 
-
 	opusState := updatedAuth.ModelStates["claude-opus-5"]
 	if opusState == nil {
 		t.Fatal("opus model state not found")
@@ -406,7 +391,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 	if opusState.Unavailable {
 		t.Fatalf("sibling opus model state was marked unavailable")
 	}
-
 
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -485,7 +469,6 @@ func TestClaudeExecutor_AuthManager_ModelLevelCoolingConfigScopesSharedRejection
 		t.Fatalf("Sonnet upstream attempts = %d, want 1", got)
 	}
 
-
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -493,7 +476,6 @@ func TestClaudeExecutor_AuthManager_ModelLevelCoolingConfigScopesSharedRejection
 	if updatedAuth.Quota.Reason == "credential_quota" {
 		t.Fatal("auth Quota.Reason = credential_quota; want non-credential_quota when ModelLevelCooling=true")
 	}
-
 
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
@@ -640,7 +622,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpusFirst := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -649,7 +630,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 	if errOpusFirst != nil {
 		t.Fatalf("initial Opus request failed: %v", errOpusFirst)
 	}
-
 
 	payloadFable := []byte(`{"model":"claude-fable-5-1","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errFable := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
@@ -663,7 +643,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
 
-
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -675,7 +654,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("auth NextRetryAfter = %v; want zero time", updatedAuth.NextRetryAfter)
 	}
 
-
 	fableState := updatedAuth.ModelStates["claude-fable-5-1"]
 	if fableState == nil {
 		t.Fatal("fable model state not found")
@@ -686,7 +664,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 	if fableState.Quota.NextRecoverAt.After(time.Now().Add(10 * time.Minute)) {
 		t.Fatalf("fable model cooldown was %v; want exponential backoff (<10m), not 27h spend cap", fableState.Quota.NextRecoverAt)
 	}
-
 
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -755,8 +732,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapFirstRequestAllowsOpus_Issue5
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
-
 	payloadFable := []byte(`{"model":"claude-fable-5-1","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errFable := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -768,7 +743,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapFirstRequestAllowsOpus_Issue5
 	if got := fableAttempts.Load(); got != 1 {
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
-
 
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
@@ -784,7 +758,6 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapFirstRequestAllowsOpus_Issue5
 	if fableState.Quota.NextRecoverAt.After(time.Now().Add(10 * time.Minute)) {
 		t.Fatalf("fable model cooldown was %v; want exponential backoff (<10m), not 27h spend cap", fableState.Quota.NextRecoverAt)
 	}
-
 
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{

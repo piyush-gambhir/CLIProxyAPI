@@ -21,8 +21,6 @@ func (issue6503QuotaError) StatusCode() int              { return http.StatusToo
 func (issue6503QuotaError) IsCredentialScoped() bool     { return true }
 func (e issue6503QuotaError) RetryAfter() *time.Duration { return &e.retryAfter }
 
-
-
 type issue6503StreamExecutor struct {
 	cancel context.CancelFunc
 	err    error
@@ -100,9 +98,6 @@ func TestManagerExecuteStreamPlainCancellationDoesNotCoolCredential(t *testing.T
 	}
 }
 
-
-
-
 type issue6503BootstrapExecutor struct {
 	issue6503StreamExecutor
 }
@@ -141,8 +136,6 @@ func TestManagerExecuteStreamRecordsQuotaCooldownFromCanceledBootstrapChunk(t *t
 		t.Fatalf("auth was not cooled: unavailable=%t next=%v", current.Unavailable, current.NextRetryAfter)
 	}
 }
-
-
 
 type issue6503RefreshExecutor struct {
 	issue6503StreamExecutor

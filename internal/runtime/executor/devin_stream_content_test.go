@@ -26,8 +26,6 @@ func TestDevinStreamEmitsContentBeforeThinkingCloses(t *testing.T) {
 	for _, format := range []sdktranslator.Format{sdktranslator.FormatOpenAI, sdktranslator.FormatOpenAIResponse} {
 		t.Run(string(format), func(t *testing.T) {
 
-
-
 			out := make(chan cliproxyexecutor.StreamChunk, 64)
 			var content []string
 			var thinking strings.Builder

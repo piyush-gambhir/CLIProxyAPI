@@ -443,7 +443,6 @@ func TestCodexExecutorDisambiguatesConfigIndex(t *testing.T) {
 	}
 	executor := NewCodexExecutor(cfg)
 
-
 	authCompat := &cliproxyauth.Auth{
 		Provider: "codex",
 		Attributes: map[string]string{

@@ -9,8 +9,6 @@ import (
 
 const defaultPluginsDir = "plugins"
 
-
-
 func ResolvePluginsDir(pluginsDir string) (string, error) {
 	pluginsDir = strings.TrimSpace(pluginsDir)
 	if pluginsDir == "" {
@@ -31,7 +29,6 @@ func ResolvePluginsDir(pluginsDir string) (string, error) {
 	}
 	return filepath.Clean(pluginsDir), nil
 }
-
 
 func (cfg *Config) ResolvePluginsDir() error {
 	if cfg == nil {

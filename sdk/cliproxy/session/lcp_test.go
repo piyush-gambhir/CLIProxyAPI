@@ -116,7 +116,6 @@ func TestExtractCanonicalTurnsBoundsPartsPerTurn(t *testing.T) {
 		t.Fatalf("truncation marker = %q, want <truncated:32 parts>", marker.Value)
 	}
 
-
 	againTurns := ExtractCanonicalTurns(sdktranslator.FormatOpenAI, []byte(payload.String()))
 	if len(againTurns) != 1 {
 		t.Fatalf("ExtractCanonicalTurns() returned %d turns, want 1", len(againTurns))
@@ -141,7 +140,6 @@ func TestExtractCanonicalTurnsBoundsPartsPerTurn(t *testing.T) {
 	if FastTurnFingerprint(smallTurns[0]) == FastTurnFingerprint(turns[0]) {
 		t.Fatal("truncation marker did not distinguish differently-sized part lists")
 	}
-
 
 	rawParts := make([]CanonicalPart, 0, maxCanonicalPartsPerTurn+50)
 	for index := 0; index < maxCanonicalPartsPerTurn+50; index++ {
@@ -275,8 +273,6 @@ func TestFastTurnFingerprintLargePartUsesBoundedSampling(t *testing.T) {
 func TestFastTurnFingerprintLargePartDigestDetectsUnsampledDifference(t *testing.T) {
 	t.Parallel()
 
-
-
 	base := strings.Repeat("a", 60*1024)
 	modified := base[:10*1024] + "z" + base[10*1024+1:]
 
@@ -386,7 +382,6 @@ func TestMerklePrefixMatcherTTLAndAuthInvalidation(t *testing.T) {
 		t.Fatalf("initial match = %#v, %v", match, ok)
 	}
 
-
 	current = current.Add(10 * time.Minute)
 	if _, ok := matcher.Match(namespace, turns); ok {
 		t.Fatal("expired matcher entry remained available")
@@ -431,7 +426,6 @@ func TestMerklePrefixMatcherRollingPrefixSessionIDDifferentSystemPrompts(t *test
 	defer matcher.Clear()
 	namespace := "lcp:v1:test:model:caller"
 
-
 	conv1 := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "system instruction AAA"}}},
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "common question"}}},
@@ -447,7 +441,6 @@ func TestMerklePrefixMatcherRollingPrefixSessionIDDifferentSystemPrompts(t *test
 	if sessionID1 == "" || sessionID2 == "" {
 		t.Fatalf("expected non-empty session IDs, got sessionID1=%q, sessionID2=%q", sessionID1, sessionID2)
 	}
-
 
 	if sessionID1 == sessionID2 {
 		t.Fatalf("expected distinct session IDs for conversations with different system prompts, got same: %q", sessionID1)
@@ -546,13 +539,11 @@ func TestMerklePrefixMatcherTouchFingerprintsDelayedSuccessProtection(t *testing
 	fingerprints := []string{"fp-1", "fp-2"}
 	minPrefixLength := 1
 
-
 	matcher.BindFingerprints(namespace, fingerprints, minPrefixLength, "auth-A")
 	match, ok := matcher.MatchFingerprints(namespace, fingerprints, minPrefixLength)
 	if !ok || match.AuthID != "auth-A" {
 		t.Fatalf("initial match = %v, want auth-A", match)
 	}
-
 
 	matcher.BindFingerprints(namespace, fingerprints, minPrefixLength, "auth-B")
 	match, ok = matcher.MatchFingerprints(namespace, fingerprints, minPrefixLength)
@@ -560,18 +551,15 @@ func TestMerklePrefixMatcherTouchFingerprintsDelayedSuccessProtection(t *testing
 		t.Fatalf("rebound match = %v, want auth-B", match)
 	}
 
-
 	refreshed := matcher.TouchFingerprints(namespace, fingerprints, minPrefixLength, "auth-A")
 	if refreshed {
 		t.Fatal("TouchFingerprints with outdated auth-A succeeded unexpectedly")
 	}
 
-
 	match, ok = matcher.MatchFingerprints(namespace, fingerprints, minPrefixLength)
 	if !ok || match.AuthID != "auth-B" {
 		t.Fatalf("match after delayed success = %v, want auth-B", match)
 	}
-
 
 	if !matcher.TouchFingerprints(namespace, fingerprints, minPrefixLength, "auth-B") {
 		t.Fatal("TouchFingerprints with current auth-B failed")
@@ -599,11 +587,9 @@ func TestMerklePrefixMatcherTouchExpiredEntry(t *testing.T) {
 
 	current = current.Add(25 * time.Minute)
 
-
 	if _, ok := matcher.MatchFingerprints(namespace, fingerprints, minPrefixLength); ok {
 		t.Fatal("expected match to fail after TTL expiry")
 	}
-
 
 	if !matcher.TouchFingerprints(namespace, fingerprints, minPrefixLength, "auth-A") {
 		t.Fatal("TouchFingerprints should succeed and re-bind")
@@ -649,18 +635,15 @@ func TestMerklePrefixMatcherFingerprintsBounding(t *testing.T) {
 		fps[i] = fmt.Sprintf("fp-%d", i)
 	}
 
-
 	sid := matcher.BindFingerprints("ns", fps, 2, "auth-1")
 	if sid == "" {
 		t.Fatal("BindFingerprints failed")
 	}
 
-
 	match, ok := matcher.MatchFingerprints("ns", fps, 2)
 	if !ok || match.PrefixLength != 10 {
 		t.Fatalf("expected 10 matched turns, got %d (ok=%v)", match.PrefixLength, ok)
 	}
-
 
 	if !matcher.TouchFingerprints("ns", fps, 2, "auth-1") {
 		t.Fatal("TouchFingerprints failed")
@@ -702,16 +685,10 @@ func TestMerklePrefixMatcherForkLineageTree(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-fork:model:caller"
 
-
-
-
-
-
 	seq1 := turnsFromTexts("1", "2", "3", "4", "5", "6", "7", "A")
 	seq2 := turnsFromTexts("1", "2", "3", "4", "5", "6", "7", "8")
 	seq3 := turnsFromTexts("1", "2", "3", "C", "12")
 	seq4 := turnsFromTexts("1", "2", "3", "C", "D")
-
 
 	res1 := matcher.BindWithResult(namespace, seq1, "auth-root")
 	if res1.SessionID == "" {
@@ -723,7 +700,6 @@ func TestMerklePrefixMatcherForkLineageTree(t *testing.T) {
 	if res1.ParentSessionID != "" {
 		t.Fatalf("seq1 parentSessionID = %q, want empty", res1.ParentSessionID)
 	}
-
 
 	match2, ok2 := matcher.Match(namespace, seq2)
 	if !ok2 {
@@ -749,7 +725,6 @@ func TestMerklePrefixMatcherForkLineageTree(t *testing.T) {
 		t.Fatalf("seq2 bind result mismatch: bind=%+v, match=%+v", res2, match2)
 	}
 
-
 	match3, ok3 := matcher.Match(namespace, seq3)
 	if !ok3 {
 		t.Fatal("seq3 match failed")
@@ -773,7 +748,6 @@ func TestMerklePrefixMatcherForkLineageTree(t *testing.T) {
 	if res3.SessionID != match3.SessionID || res3.ParentSessionID != match3.ParentSessionID {
 		t.Fatalf("seq3 bind result mismatch: bind=%+v, match=%+v", res3, match3)
 	}
-
 
 	match4, ok4 := matcher.Match(namespace, seq4)
 	if !ok4 {
@@ -799,7 +773,6 @@ func TestMerklePrefixMatcherForkLineageTree(t *testing.T) {
 	if res4.SessionID != match4.SessionID || res4.ParentSessionID != match4.ParentSessionID {
 		t.Fatalf("seq4 bind result mismatch: bind=%+v, match=%+v", res4, match4)
 	}
-
 
 	seq4Cont := turnsFromTexts("1", "2", "3", "C", "D", "E")
 	match4Cont, ok4Cont := matcher.Match(namespace, seq4Cont)
@@ -840,14 +813,11 @@ func TestMerklePrefixMatcherShorterGroupDoesNotMaskLongerTrajectory(t *testing.T
 	defer matcher.Clear()
 	namespace := "lcp:v1:mask-test:model:caller"
 
-
 	longTrunk := turnsFromTexts("1", "2", "3")
 	matcher.Bind(namespace, longTrunk, "auth-root")
 
-
 	shortPrefix := turnsFromTexts("1", "2")
 	matcher.Bind(namespace, shortPrefix, "auth-root")
-
 
 	fork := turnsFromTexts("1", "2", "4")
 	match, ok := matcher.Match(namespace, fork)
@@ -872,29 +842,24 @@ func TestMerklePrefixMatcherRemoveFingerprintsBeforeGenerationGuard(t *testing.T
 	turns := turnsFromTexts("1", "2")
 	fps, minPrefix := matcher.Prepare(turns)
 
-
 	res1 := matcher.BindFingerprintsWithResult(namespace, fps, minPrefix, "auth-1")
 	g1 := res1.AccessNumber
 	if g1 == 0 {
 		t.Fatal("expected non-zero access generation")
 	}
 
-
 	if !matcher.TouchFingerprints(namespace, fps, minPrefix, "auth-1") {
 		t.Fatal("TouchFingerprints failed")
 	}
-
 
 	removedStale := matcher.RemoveFingerprintsBefore(namespace, fps, "auth-1", g1)
 	if removedStale {
 		t.Fatal("stale RemoveFingerprintsBefore should not delete entry refreshed by newer touch")
 	}
 
-
 	if _, ok := matcher.MatchFingerprints(namespace, fps, minPrefix); !ok {
 		t.Fatal("entry should still be present after stale removal attempt")
 	}
-
 
 	removedCurrent := matcher.RemoveFingerprints(namespace, fps, "auth-1")
 	if !removedCurrent {
@@ -920,12 +885,10 @@ func TestMerklePrefixMatcherRemoveSessionBeforeGenerationGuard(t *testing.T) {
 		t.Fatalf("expected non-empty session and generation, got %+v", res1)
 	}
 
-
 	match, ok := matcher.MatchFingerprints(namespace, fps, minPrefix)
 	if !ok || match.AccessNumber <= res1.AccessNumber {
 		t.Fatalf("expected match generation > %d, got ok=%v match=%+v", res1.AccessNumber, ok, match)
 	}
-
 
 	if matcher.RemoveSessionBefore(namespace, res1.SessionID, "auth-1", res1.AccessNumber) {
 		t.Fatal("stale RemoveSessionBefore should not remove refreshed group")
@@ -933,7 +896,6 @@ func TestMerklePrefixMatcherRemoveSessionBeforeGenerationGuard(t *testing.T) {
 	if _, ok := matcher.MatchFingerprints(namespace, fps, minPrefix); !ok {
 		t.Fatal("group should still be present after stale RemoveSessionBefore")
 	}
-
 
 	latestMatch, ok := matcher.MatchFingerprints(namespace, fps, minPrefix)
 	if !ok {
@@ -954,26 +916,21 @@ func TestMerklePrefixMatcherClearPreservesMonotonicGeneration(t *testing.T) {
 	fps := []string{"fp-1", "fp-2"}
 	minPrefix := 1
 
-
 	res1 := matcher.BindFingerprintsWithResult(namespace, fps, minPrefix, "auth-old")
 	if res1.AccessNumber == 0 {
 		t.Fatal("expected non-zero generation for initial bind")
 	}
 
-
 	matcher.Clear()
-
 
 	res2 := matcher.BindFingerprintsWithResult(namespace, fps, minPrefix, "auth-new")
 	if res2.AccessNumber <= res1.AccessNumber {
 		t.Fatalf("expected generation to increase monotonically across Clear(), got %d <= %d", res2.AccessNumber, res1.AccessNumber)
 	}
 
-
 	if matcher.RemoveFingerprintsBefore(namespace, fps, "auth-new", res1.AccessNumber) {
 		t.Fatal("stale pre-clear generation should not evict post-clear binding")
 	}
-
 
 	match, ok := matcher.MatchFingerprints(namespace, fps, minPrefix)
 	if !ok || match.AuthID != "auth-new" {
@@ -988,13 +945,11 @@ func TestMerklePrefixMatcherCompactionSubsequenceContinuation(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-compaction:model:caller"
 
-
 	initial := turnsFromTexts("turn1", "turn2", "turn3", "turn4", "turn5")
 	initialRes := matcher.BindWithResult(namespace, initial, "auth-parent")
 	if initialRes.SessionID == "" {
 		t.Fatal("initial bind returned empty session ID")
 	}
-
 
 	compacted := turnsFromTexts("compacted-summary-of-1-to-3", "turn4", "turn5", "turn6")
 	match, ok := matcher.Match(namespace, compacted)
@@ -1017,7 +972,6 @@ func TestMerklePrefixMatcherCompactionSubsequenceContinuation(t *testing.T) {
 		t.Fatalf("nodeKind = %q, want compaction", match.NodeKind)
 	}
 
-
 	resCompacted := matcher.BindWithResult(namespace, compacted, "auth-parent")
 	if resCompacted.ParentSessionID != initialRes.SessionID {
 		t.Fatalf("bind parentSessionID = %q, want %q", resCompacted.ParentSessionID, initialRes.SessionID)
@@ -1031,7 +985,6 @@ func TestMerklePrefixMatcherCompactionSubsequenceContinuation(t *testing.T) {
 	if resCompacted.NodeKind != "compaction" {
 		t.Fatalf("bind nodeKind = %q, want compaction", resCompacted.NodeKind)
 	}
-
 
 	subsequent := turnsFromTexts("compacted-summary-of-1-to-3", "turn4", "turn5", "turn6", "turn7")
 	subMatch, okSub := matcher.Match(namespace, subsequent)
@@ -1048,7 +1001,6 @@ func TestMerklePrefixMatcherCompactionSubsequenceContinuation(t *testing.T) {
 		t.Fatal("subsequent turn should continue linearly on trunk, not fork")
 	}
 
-
 	otherNamespace := "lcp:v1:test-compaction:model:other-caller"
 	if _, okOther := matcher.Match(otherNamespace, compacted); okOther {
 		t.Fatal("compacted sequence unexpectedly matched across caller namespaces")
@@ -1062,10 +1014,8 @@ func TestMerklePrefixMatcherSlidingWindowTruncation(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-sliding-window:model:caller"
 
-
 	parent := turnsFromTexts("turnA", "turnB", "turnC", "turnD")
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-parent")
-
 
 	truncated := turnsFromTexts("turnC", "turnD", "turnE")
 	match, ok := matcher.Match(namespace, truncated)
@@ -1096,7 +1046,6 @@ func TestMerklePrefixMatcherCompactionSystemPromptIsolation(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-sys-isolation:model:caller"
 
-
 	sessA := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction A"}}},
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "turn1"}}},
@@ -1104,7 +1053,6 @@ func TestMerklePrefixMatcherCompactionSystemPromptIsolation(t *testing.T) {
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "turn3"}}},
 	}
 	matcher.BindWithResult(namespace, sessA, "auth-A")
-
 
 	candB := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction B"}}},
@@ -1124,12 +1072,10 @@ func TestMerklePrefixMatcherCompactionAmbiguityRejection(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-ambiguity:model:caller"
 
-
 	sess1 := turnsFromTexts("branch1", "turn2", "turn3", "sharedTailA", "sharedTailB")
 	sess2 := turnsFromTexts("branch2", "turnX", "turnY", "sharedTailA", "sharedTailB")
 	matcher.BindWithResult(namespace, sess1, "auth-1")
 	matcher.BindWithResult(namespace, sess2, "auth-2")
-
 
 	cand := turnsFromTexts("summary", "sharedTailA", "sharedTailB", "newTurn")
 	if _, ok := matcher.Match(namespace, cand); ok {
@@ -1144,7 +1090,6 @@ func TestMerklePrefixMatcherCompactionLongConversationActualTail(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-long-tail:model:caller"
 
-
 	totalTurns := 1200
 	texts := make([]string, totalTurns)
 	for i := 0; i < totalTurns; i++ {
@@ -1155,7 +1100,6 @@ func TestMerklePrefixMatcherCompactionLongConversationActualTail(t *testing.T) {
 	if parentRes.SessionID == "" {
 		t.Fatal("parent bind returned empty session ID")
 	}
-
 
 	candTexts := make([]string, 0, 15)
 	candTexts = append(candTexts, "summary of turns 0-1189")
@@ -1190,7 +1134,6 @@ func TestMerklePrefixMatcherCompactionMultiSystemTurnIsolation(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-multi-sys:model:caller"
 
-
 	parent := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction part 1"}}},
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "Developer instruction part 2"}}},
@@ -1199,7 +1142,6 @@ func TestMerklePrefixMatcherCompactionMultiSystemTurnIsolation(t *testing.T) {
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "turn2"}}},
 	}
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-multi-sys")
-
 
 	candDiffSecond := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction part 1"}}},
@@ -1212,7 +1154,6 @@ func TestMerklePrefixMatcherCompactionMultiSystemTurnIsolation(t *testing.T) {
 		t.Fatal("candidate with different second system turn must be rejected")
 	}
 
-
 	candNoSys := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "summary without sys"}}},
 		{Role: "assistant", Parts: []CanonicalPart{{Kind: "text", Value: "ack1"}}},
@@ -1221,7 +1162,6 @@ func TestMerklePrefixMatcherCompactionMultiSystemTurnIsolation(t *testing.T) {
 	if _, ok := matcher.Match(namespace, candNoSys); ok {
 		t.Fatal("candidate missing system turns must be rejected against parent with system turns")
 	}
-
 
 	candIdenticalSys := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction part 1"}}},
@@ -1247,12 +1187,10 @@ func TestMerklePrefixMatcherCompactionBucketBound(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-bucket-bound:model:caller"
 
-
 	for i := 0; i < 25; i++ {
 		sess := turnsFromTexts(fmt.Sprintf("unique-head-%d", i), "turnX", "sharedTailA", "sharedTailB")
 		matcher.BindWithResult(namespace, sess, fmt.Sprintf("auth-%d", i))
 	}
-
 
 	cand := turnsFromTexts("summary", "sharedTailA", "sharedTailB", "newTurn")
 	if _, ok := matcher.Match(namespace, cand); ok {
@@ -1267,7 +1205,6 @@ func TestMerklePrefixMatcherCompactionBucketBoundOverflowRemoval(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-overflow-rem:model:caller"
 
-
 	sessList := make([][]CanonicalTurn, 18)
 	for i := 0; i < 18; i++ {
 		sessList[i] = turnsFromTexts(fmt.Sprintf("unique-head-%d", i), "turnX", "sharedTailA", "sharedTailB")
@@ -1276,17 +1213,14 @@ func TestMerklePrefixMatcherCompactionBucketBoundOverflowRemoval(t *testing.T) {
 
 	cand := turnsFromTexts("summary", "sharedTailA", "sharedTailB", "newTurn")
 
-
 	if _, ok := matcher.Match(namespace, cand); ok {
 		t.Fatal("expected match to be rejected on overflowed bucket (18 items)")
 	}
-
 
 	matcher.Remove(namespace, sessList[17], "auth-17")
 	if _, ok := matcher.Match(namespace, cand); ok {
 		t.Fatal("expected match to still be rejected on overflowed bucket (17 items)")
 	}
-
 
 	matcher.BindWithResult(namespace, sessList[17], "auth-17")
 	for i := 1; i < 16; i++ {
@@ -1296,7 +1230,6 @@ func TestMerklePrefixMatcherCompactionBucketBoundOverflowRemoval(t *testing.T) {
 	if _, okAmbiguous := matcher.Match(namespace, cand); okAmbiguous {
 		t.Fatal("expected match to be rejected due to ambiguity between remaining sessions 0, 16, 17")
 	}
-
 
 	matcher.Remove(namespace, sessList[0], "auth-0")
 	matcher.Remove(namespace, sessList[16], "auth-16")
@@ -1325,7 +1258,6 @@ func TestMerklePrefixMatcherCompactionBucketOverflowExpirationRecovery(t *testin
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-overflow-exp:model:caller"
 
-
 	sessList := make([][]CanonicalTurn, 18)
 	for i := 0; i < 18; i++ {
 		sessList[i] = turnsFromTexts(fmt.Sprintf("unique-head-%d", i), "turnX", "sharedTailA", "sharedTailB")
@@ -1334,11 +1266,9 @@ func TestMerklePrefixMatcherCompactionBucketOverflowExpirationRecovery(t *testin
 
 	cand := turnsFromTexts("summary", "sharedTailA", "sharedTailB", "newTurn")
 
-
 	if _, ok := matcher.Match(namespace, cand); ok {
 		t.Fatal("expected match to be rejected on overflowed bucket (18 live items)")
 	}
-
 
 	nowMu.Lock()
 	currentTime = currentTime.Add(30 * time.Minute)
@@ -1347,11 +1277,9 @@ func TestMerklePrefixMatcherCompactionBucketOverflowExpirationRecovery(t *testin
 		t.Fatal("Touch failed on session 0")
 	}
 
-
 	nowMu.Lock()
 	currentTime = currentTime.Add(45 * time.Minute)
 	nowMu.Unlock()
-
 
 	matchUnique, okUnique := matcher.Match(namespace, cand)
 	if !okUnique {
@@ -1369,7 +1297,6 @@ func TestMerklePrefixMatcherCompactionCandidateOver1024Turns(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-long-candidate:model:caller"
 
-
 	totalParentTurns := 2000
 	parentTexts := make([]string, totalParentTurns)
 	for i := 0; i < totalParentTurns; i++ {
@@ -1377,7 +1304,6 @@ func TestMerklePrefixMatcherCompactionCandidateOver1024Turns(t *testing.T) {
 	}
 	parentTurns := turnsFromTexts(parentTexts...)
 	parentRes := matcher.BindWithResult(namespace, parentTurns, "auth-parent-2000")
-
 
 	candTexts := make([]string, 0, 1100)
 	candTexts = append(candTexts, "summary of earlier turns 0..900")
@@ -1409,7 +1335,6 @@ func TestMerklePrefixMatcherCompactionMiddleSystemTurnIsolation(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-middle-sys:model:caller"
 
-
 	parent := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "start user"}}},
 		{Role: "assistant", Parts: []CanonicalPart{{Kind: "text", Value: "start ack"}}},
@@ -1418,7 +1343,6 @@ func TestMerklePrefixMatcherCompactionMiddleSystemTurnIsolation(t *testing.T) {
 		{Role: "assistant", Parts: []CanonicalPart{{Kind: "text", Value: "step 3 ack"}}},
 	}
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-middle-sys")
-
 
 	candWithout := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "summary without middle sys"}}},
@@ -1429,7 +1353,6 @@ func TestMerklePrefixMatcherCompactionMiddleSystemTurnIsolation(t *testing.T) {
 	if _, ok := matcher.Match(namespace, candWithout); ok {
 		t.Fatal("candidate missing middle system directive must be rejected")
 	}
-
 
 	candWith := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "summary with middle sys"}}},
@@ -1454,7 +1377,6 @@ func TestMerklePrefixMatcherCompactionLongSessionTouchEnvironmentUpdate(t *testi
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-long-touch-env:model:caller"
 
-
 	totalTurns := 1100
 	initialTexts := make([]string, totalTurns)
 	for i := 0; i < totalTurns; i++ {
@@ -1462,7 +1384,6 @@ func TestMerklePrefixMatcherCompactionLongSessionTouchEnvironmentUpdate(t *testi
 	}
 	initialTurns := turnsFromTexts(initialTexts...)
 	parentRes := matcher.BindWithResult(namespace, initialTurns, "auth-long-env")
-
 
 	updatedTurns := make([]CanonicalTurn, 0, totalTurns+3)
 	updatedTurns = append(updatedTurns, initialTurns...)
@@ -1479,11 +1400,9 @@ func TestMerklePrefixMatcherCompactionLongSessionTouchEnvironmentUpdate(t *testi
 		Parts: []CanonicalPart{{Kind: "text", Value: "turn 1101 ack"}},
 	})
 
-
 	if !matcher.Touch(namespace, updatedTurns, "auth-long-env") {
 		t.Fatal("Touch failed on updated long conversation")
 	}
-
 
 	candMatching := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "summary of turns 0..1095"}}},
@@ -1499,7 +1418,6 @@ func TestMerklePrefixMatcherCompactionLongSessionTouchEnvironmentUpdate(t *testi
 	if match.ParentSessionID != parentRes.SessionID {
 		t.Fatalf("parentSessionID = %q, want %q", match.ParentSessionID, parentRes.SessionID)
 	}
-
 
 	candStale := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "summary of turns 0..1095"}}},
@@ -1519,14 +1437,12 @@ func TestMerklePrefixMatcherCompactionSystemPromptRemovalViaTouch(t *testing.T) 
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-sys-removal:model:caller"
 
-
 	totalTurns := 1100
 	initialTexts := make([]string, totalTurns)
 	for i := 0; i < totalTurns; i++ {
 		initialTexts[i] = fmt.Sprintf("sys-rem-turn-%d-text", i)
 	}
 	initialTurns := turnsFromTexts(initialTexts...)
-
 
 	withSysTurns := make([]CanonicalTurn, 0, totalTurns+1)
 	withSysTurns = append(withSysTurns, initialTurns...)
@@ -1535,7 +1451,6 @@ func TestMerklePrefixMatcherCompactionSystemPromptRemovalViaTouch(t *testing.T) 
 		Parts: []CanonicalPart{{Kind: "text", Value: "Temporary developer instruction"}},
 	})
 	parentRes := matcher.BindWithResult(namespace, withSysTurns, "auth-sys-rem")
-
 
 	withoutSysTurns := make([]CanonicalTurn, 0, totalTurns+2)
 	withoutSysTurns = append(withoutSysTurns, initialTurns...)
@@ -1552,7 +1467,6 @@ func TestMerklePrefixMatcherCompactionSystemPromptRemovalViaTouch(t *testing.T) 
 		t.Fatal("Touch failed on updated turns with system instruction removed")
 	}
 
-
 	candNoSys := []CanonicalTurn{
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "summary of turns 0..1095"}}},
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "turn 1101"}}},
@@ -1566,7 +1480,6 @@ func TestMerklePrefixMatcherCompactionSystemPromptRemovalViaTouch(t *testing.T) 
 	if match.ParentSessionID != parentRes.SessionID {
 		t.Fatalf("parentSessionID = %q, want %q", match.ParentSessionID, parentRes.SessionID)
 	}
-
 
 	candWithOldSys := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "Temporary developer instruction"}}},
@@ -1587,7 +1500,6 @@ func TestMerklePrefixMatcherCompactionPreservingInitialPrefix(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-prefix-compaction:model:caller"
 
-
 	parent := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction directive"}}},
 		{Role: "user", Parts: []CanonicalPart{{Kind: "text", Value: "turn A"}}},
@@ -1596,9 +1508,6 @@ func TestMerklePrefixMatcherCompactionPreservingInitialPrefix(t *testing.T) {
 		{Role: "assistant", Parts: []CanonicalPart{{Kind: "text", Value: "ack D"}}},
 	}
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-parent-prefix")
-
-
-
 
 	compacted := []CanonicalTurn{
 		{Role: "system", Parts: []CanonicalPart{{Kind: "text", Value: "System instruction directive"}}},
@@ -1639,10 +1548,8 @@ func TestMerklePrefixMatcherCompactionMultiToolBatchTrailingTurns(t *testing.T) 
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-multi-tool:model:caller"
 
-
 	parent := turnsFromTexts("msgA", "msgB", "msgC", "msgD")
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-multi-tool")
-
 
 	compacted := turnsFromTexts(
 		"compacted summary",
@@ -1676,10 +1583,8 @@ func TestMerklePrefixMatcherCompactionPreservingUserPrefix(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-user-prefix:model:caller"
 
-
 	parent := turnsFromTexts("userA", "userB", "userC", "userD")
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-user-prefix")
-
 
 	compacted := turnsFromTexts("userA", "summary of turn B", "userC", "userD", "userE")
 	match, ok := matcher.Match(namespace, compacted)
@@ -1704,10 +1609,8 @@ func TestMerklePrefixMatcherSingleTurnTruncation(t *testing.T) {
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-single-trunc:model:caller"
 
-
 	parent := turnsFromTexts("turnA", "turnB", "turnC")
 	parentRes := matcher.BindWithResult(namespace, parent, "auth-single-trunc")
-
 
 	truncated := turnsFromTexts("turnB", "turnC", "turnD")
 	match, ok := matcher.Match(namespace, truncated)
@@ -1732,20 +1635,14 @@ func TestMerklePrefixMatcherConsecutiveCompactionSharedTailLineageResolution(t *
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-consec-comp:model:caller"
 
-
 	sess1 := turnsFromTexts("turnA", "turnB", "turnC", "turnD")
 	res1 := matcher.BindWithResult(namespace, sess1, "auth-root")
-
 
 	sess2 := turnsFromTexts("summary-1", "turnC", "turnD")
 	res2 := matcher.BindWithResult(namespace, sess2, "auth-root")
 	if res2.ParentSessionID != res1.SessionID {
 		t.Fatalf("first compaction parent = %q, want %q", res2.ParentSessionID, res1.SessionID)
 	}
-
-
-
-
 
 	sess3 := turnsFromTexts("summary-2", "turnC", "turnD", "turnE")
 	match3, ok3 := matcher.Match(namespace, sess3)
@@ -1770,10 +1667,8 @@ func TestMerklePrefixMatcherCompactionAmbiguityWithAncestorAndUnrelatedCompetito
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-comp-ambig-unrel:model:caller"
 
-
 	sessA := turnsFromTexts("turnA", "turnB", "turnC", "turnD")
 	resA := matcher.BindWithResult(namespace, sessA, "auth-A")
-
 
 	sessAChild := turnsFromTexts("summary-A", "turnC", "turnD")
 	resAChild := matcher.BindWithResult(namespace, sessAChild, "auth-A")
@@ -1781,13 +1676,8 @@ func TestMerklePrefixMatcherCompactionAmbiguityWithAncestorAndUnrelatedCompetito
 		t.Fatalf("A_child parent = %q, want %q", resAChild.ParentSessionID, resA.SessionID)
 	}
 
-
 	sessR := turnsFromTexts("unrel1", "unrel2", "turnC", "turnD")
 	matcher.BindWithResult(namespace, sessR, "auth-R")
-
-
-
-
 
 	cand := turnsFromTexts("summary-new", "turnC", "turnD", "turnE")
 	if _, ok := matcher.Match(namespace, cand); ok {
@@ -1802,12 +1692,8 @@ func TestMerklePrefixMatcherLongCandidateWithDivergentHeadRejected(t *testing.T)
 	defer matcher.Clear()
 	namespace := "lcp:v1:test-long-unrelated:model:caller"
 
-
 	parent := turnsFromTexts("turnA", "turnB", "turnC", "turnD")
 	matcher.BindWithResult(namespace, parent, "auth-parent")
-
-
-
 
 	unrelTexts := make([]string, 0, 40)
 	for i := 0; i < 38; i++ {

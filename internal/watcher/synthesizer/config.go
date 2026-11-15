@@ -12,17 +12,11 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 type ConfigSynthesizer struct{}
-
 
 func NewConfigSynthesizer() *ConfigSynthesizer {
 	return &ConfigSynthesizer{}
 }
-
-
-
 
 func authProxyConnectionPool(pool *config.ProxyConnectionPoolConfig) *coreauth.ProxyConnectionPoolOverride {
 	if pool == nil {
@@ -38,14 +32,8 @@ func authProxyConnectionPool(pool *config.ProxyConnectionPoolConfig) *coreauth.P
 		out.MaxIdleConnsPerHost = &maxIdle
 	}
 
-
-
 	return out
 }
-
-
-
-
 
 func OpenAICompatConnectionPool(compat *config.OpenAICompatibility, entry *config.OpenAICompatibilityAPIKey) *config.ProxyConnectionPoolConfig {
 	return openAICompatConnectionPool(compat, entry)
@@ -85,7 +73,6 @@ func addWeightToAttrs(weight *int, attrs map[string]string) {
 	attrs[coreauth.AttributeWeight] = strconv.Itoa(normalized)
 }
 
-
 func (s *ConfigSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, error) {
 	out := make([]*coreauth.Auth, 0, 32)
 	if ctx == nil || ctx.Config == nil {
@@ -94,7 +81,6 @@ func (s *ConfigSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth,
 	if errValidate := ctx.Config.ValidateCredentialWeights(); errValidate != nil {
 		return nil, fmt.Errorf("synthesize config API key auths: %w", errValidate)
 	}
-
 
 	out = append(out, s.synthesizeGeminiKeys(ctx)...)
 
@@ -115,11 +101,9 @@ func (s *ConfigSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth,
 	return out, nil
 }
 
-
 func (s *ConfigSynthesizer) synthesizeGeminiKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeGeminiKeyEntries(ctx, ctx.Config.GeminiKey, "gemini:apikey", "gemini", "gemini-apikey", constant.Gemini)
 }
-
 
 func (s *ConfigSynthesizer) synthesizeInteractionsKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeGeminiKeyEntries(ctx, ctx.Config.InteractionsKey, "gemini-interactions:apikey", "interactions", "interactions-apikey", constant.GeminiInteractions)
@@ -190,7 +174,6 @@ func (s *ConfigSynthesizer) synthesizeGeminiKeyEntries(ctx *SynthesisContext, en
 	}
 	return out
 }
-
 
 func (s *ConfigSynthesizer) synthesizeClaudeKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	cfg := ctx.Config
@@ -268,16 +251,13 @@ func (s *ConfigSynthesizer) synthesizeClaudeKeys(ctx *SynthesisContext) []*corea
 	return out
 }
 
-
 func (s *ConfigSynthesizer) synthesizeCodexKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeCodexStyleKeys(ctx, ctx.Config.CodexKey, "codex")
 }
 
-
 func (s *ConfigSynthesizer) synthesizeXAIKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeCodexStyleKeys(ctx, ctx.Config.XAIKey, "xai")
 }
-
 
 func (s *ConfigSynthesizer) synthesizeMetaKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeCodexStyleKeys(ctx, ctx.Config.MetaKey, "meta")
@@ -357,7 +337,6 @@ func (s *ConfigSynthesizer) synthesizeCodexStyleKeys(ctx *SynthesisContext, entr
 	return out
 }
 
-
 func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*coreauth.Auth {
 	cfg := ctx.Config
 	now := ctx.Now
@@ -377,7 +356,6 @@ func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*cor
 		internalProviderKey := util.OpenAICompatibleProviderKey(providerName)
 		base := strings.TrimSpace(compat.BaseURL)
 		disableCooling := compat.DisableCooling
-
 
 		createdEntries := 0
 		for j := range compat.APIKeyEntries {
@@ -483,7 +461,6 @@ func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*cor
 	}
 	return out
 }
-
 
 func (s *ConfigSynthesizer) synthesizeVertexCompat(ctx *SynthesisContext) []*coreauth.Auth {
 	cfg := ctx.Config

@@ -1,4 +1,3 @@
-
 package clienterror
 
 import (
@@ -10,8 +9,6 @@ import (
 
 	"github.com/MoeForge/moego/ojson"
 )
-
-
 
 const StatusClientClosedRequest = 499
 
@@ -33,9 +30,6 @@ var requestFaultTypes = map[string]struct{}{
 	"bad_request_error":     {},
 	"invalid_prompt":        {},
 }
-
-
-
 
 func HTTPStatusFromError(err error) int {
 	if err == nil {
@@ -63,16 +57,12 @@ func HTTPStatusFromError(err error) int {
 	return 0
 }
 
-
-
 func HTTPStatusFromErrorOr(err error, fallback int) int {
 	if code := HTTPStatusFromError(err); code > 0 {
 		return code
 	}
 	return fallback
 }
-
-
 
 func IsRequestFault(status int, err error) bool {
 	if status <= 0 && err != nil {
@@ -85,34 +75,25 @@ func IsRequestFault(status int, err error) bool {
 		}
 	}
 
-
-
 	if status == http.StatusPaymentRequired || status == http.StatusTooManyRequests {
 		return false
 	}
-
-
 
 	if status == http.StatusUnauthorized && hasAuthenticationErrorBody(err) {
 		return false
 	}
 
-
 	if IsClaudeThreadNotFound(status, err) {
 		return true
 	}
-
 
 	if IsDevinRequestPermissionDenied(status, err) {
 		return true
 	}
 
-
-
 	if IsCreditBalanceTooLow(status, err) {
 		return false
 	}
-
 
 	if hasModelNotFoundErrorBody(err) {
 		return false
@@ -134,14 +115,6 @@ func IsRequestFault(status int, err error) bool {
 	}
 }
 
-
-
-
-
-
-
-
-
 func IsItemNotPersisted(message string) bool {
 	lower := strings.ToLower(message)
 	return strings.Contains(lower, "item with id") &&
@@ -149,16 +122,9 @@ func IsItemNotPersisted(message string) bool {
 		strings.Contains(lower, "items are not persisted when `store` is set to false")
 }
 
-
 const GeminiFilterBlockMessagePrefix = "This request was blocked by Gemini's filters."
 
-
 const GeminiFilterBlockPolicyURL = "https://policies.google.com/terms/generative-ai/use-policy"
-
-
-
-
-
 
 func GeminiFilterBlockMessage(payload []byte) (string, bool) {
 	if len(payload) == 0 || !bytes.Contains(payload, []byte(GeminiFilterBlockMessagePrefix)) || !ojson.ValidBytes(payload) {
@@ -203,7 +169,6 @@ func GeminiFilterBlockMessage(payload []byte) (string, bool) {
 	return "", false
 }
 
-
 func IsGeminiFilterBlockError(err error) bool {
 	if err == nil {
 		return false
@@ -231,9 +196,6 @@ func isGeminiFilterBlockText(text string) bool {
 	return strings.HasPrefix(trimmed, GeminiFilterBlockMessagePrefix) &&
 		strings.Contains(trimmed, GeminiFilterBlockPolicyURL)
 }
-
-
-
 
 func ClaudePolicyRefusalMessage(payload []byte) (string, bool) {
 	if len(payload) == 0 || !bytes.Contains(payload, []byte("stop_details")) || !ojson.ValidBytes(payload) {
@@ -273,7 +235,6 @@ func ClaudePolicyRefusalMessage(payload []byte) (string, bool) {
 	return "", false
 }
 
-
 func IsClaudePolicyRefusalError(err error) bool {
 	if err == nil {
 		return false
@@ -308,9 +269,6 @@ func isClaudePolicyRefusalText(text string) bool {
 			strings.Contains(lower, "anthropic's usage policy"))
 }
 
-
-
-
 func IsClaudeThreadNotFound(status int, err error) bool {
 	if status != http.StatusNotFound || err == nil {
 		return false
@@ -335,10 +293,6 @@ func IsClaudeThreadNotFound(status int, err error) bool {
 	lower := strings.ToLower(body)
 	return strings.Contains(lower, "thread state") && strings.Contains(lower, "previous_message_id")
 }
-
-
-
-
 
 func IsDevinRequestPermissionDenied(status int, err error) bool {
 	if status <= 0 && err != nil {
@@ -368,8 +322,6 @@ func isDevinRequestPermissionDeniedText(text string) bool {
 	return strings.Contains(lower, "unable to process request due to an mcp configuration issue") ||
 		strings.Contains(lower, "blocked by our content policy")
 }
-
-
 
 func IsCreditBalanceTooLow(status int, err error) bool {
 	if status <= 0 && err != nil {
@@ -460,8 +412,6 @@ func hasRequestFaultBody(err error) bool {
 	}
 	return false
 }
-
-
 
 func IsClientCancellation(status int, err error) bool {
 	if status == StatusClientClosedRequest {

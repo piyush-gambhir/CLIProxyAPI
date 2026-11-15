@@ -1,4 +1,3 @@
-
 package antigravity
 
 import (
@@ -17,7 +16,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -25,11 +23,9 @@ type TokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-
 type userInfo struct {
 	Email string `json:"email"`
 }
-
 
 type HTTPStatusError struct {
 	StatusCodeValue int
@@ -50,11 +46,9 @@ func (e *HTTPStatusError) StatusCode() int {
 	return e.StatusCodeValue
 }
 
-
 type AntigravityAuth struct {
 	httpClient *http.Client
 }
-
 
 func NewAntigravityAuth(cfg *config.Config, httpClient *http.Client) *AntigravityAuth {
 	if cfg == nil {
@@ -138,7 +132,6 @@ func defaultAntigravityTierID(loadResp map[string]any) string {
 	return "free-tier"
 }
 
-
 func (o *AntigravityAuth) BuildAuthURL(state, redirectURI string) string {
 	if strings.TrimSpace(redirectURI) == "" {
 		redirectURI = fmt.Sprintf("http://localhost:%d/oauth-callback", CallbackPort)
@@ -153,7 +146,6 @@ func (o *AntigravityAuth) BuildAuthURL(state, redirectURI string) string {
 	params.Set("state", state)
 	return AuthEndpoint + "?" + params.Encode()
 }
-
 
 func (o *AntigravityAuth) ExchangeCodeForTokens(ctx context.Context, code, redirectURI string) (*TokenResponse, error) {
 	data := url.Values{}
@@ -199,7 +191,6 @@ func (o *AntigravityAuth) ExchangeCodeForTokens(ctx context.Context, code, redir
 	return &token, nil
 }
 
-
 func (o *AntigravityAuth) FetchUserInfo(ctx context.Context, accessToken string) (string, error) {
 	accessToken = strings.TrimSpace(accessToken)
 	if accessToken == "" {
@@ -244,7 +235,6 @@ func (o *AntigravityAuth) FetchUserInfo(ctx context.Context, accessToken string)
 	}
 	return email, nil
 }
-
 
 func (o *AntigravityAuth) FetchProjectID(ctx context.Context, accessToken string) (string, error) {
 	userAgent := o.shortUserAgent()
@@ -308,7 +298,6 @@ func (o *AntigravityAuth) FetchProjectID(ctx context.Context, accessToken string
 
 	return projectID, nil
 }
-
 
 func (o *AntigravityAuth) OnboardUser(ctx context.Context, accessToken, tierID string) (string, error) {
 	log.Infof("Antigravity: onboarding user with tier: %s", tierID)

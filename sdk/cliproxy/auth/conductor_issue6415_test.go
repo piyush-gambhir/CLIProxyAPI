@@ -11,10 +11,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 func TestManager_Issue6415_RefreshPending_DoesNotSelectRejectedCredential(t *testing.T) {
 	m, executor, primary, backup, model := newUnauthorizedRefreshFixture(t, false)
 
@@ -40,9 +36,7 @@ func TestManager_Issue6415_RefreshPending_DoesNotSelectRejectedCredential(t *tes
 		resp1, err1 = m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	}()
 
-
 	<-refreshStarted
-
 
 	currentPrimary, ok := m.GetByID(primary.ID)
 	if !ok || currentPrimary == nil {
@@ -52,7 +46,6 @@ func TestManager_Issue6415_RefreshPending_DoesNotSelectRejectedCredential(t *tes
 	if !blocked {
 		t.Fatalf("primary must be blocked while refresh is pending for rejected token")
 	}
-
 
 	execCallsBefore := len(executor.ExecuteCalls())
 	resp2, err2 := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
@@ -68,7 +61,6 @@ func TestManager_Issue6415_RefreshPending_DoesNotSelectRejectedCredential(t *tes
 		}
 	}
 
-
 	close(releaseRefresh)
 	<-req1Done
 	if err1 != nil {
@@ -79,17 +71,12 @@ func TestManager_Issue6415_RefreshPending_DoesNotSelectRejectedCredential(t *tes
 	}
 }
 
-
-
-
-
 func TestManager_Issue6415_NonTerminalRefreshFailure_MarksCredentialUnavailable(t *testing.T) {
 	m, executor, primary, _, _ := newUnauthorizedRefreshFixture(t, false)
 
 	executor.mu.Lock()
 	executor.refreshErr = errors.New("upstream 503 Service Unavailable")
 	executor.mu.Unlock()
-
 
 	_, errRefresh := m.refreshAuthForRequest(context.Background(), primary.ID, authAccessToken(primary))
 	if errRefresh == nil {
@@ -108,12 +95,8 @@ func TestManager_Issue6415_NonTerminalRefreshFailure_MarksCredentialUnavailable(
 	}
 }
 
-
-
-
 func TestManager_Issue6415_RefreshSuccess_PreservesActiveQuotaCooldown(t *testing.T) {
 	m, _, primary, _, model := newUnauthorizedRefreshFixture(t, false)
-
 
 	now := time.Now()
 	quotaRecover := now.Add(30 * time.Minute)
@@ -139,7 +122,6 @@ func TestManager_Issue6415_RefreshSuccess_PreservesActiveQuotaCooldown(t *testin
 		t.Fatalf("update primary auth: %v", errUpdate)
 	}
 
-
 	_, errRefresh := m.ForceRefreshAuth(context.Background(), primary.ID)
 	if errRefresh != nil {
 		t.Fatalf("ForceRefreshAuth error = %v", errRefresh)
@@ -160,9 +142,6 @@ func TestManager_Issue6415_RefreshSuccess_PreservesActiveQuotaCooldown(t *testin
 		t.Fatalf("model state Quota.NextRecoverAt = %v, want %v", ms.Quota.NextRecoverAt, quotaRecover)
 	}
 }
-
-
-
 
 func TestManager_Issue6415_ExecuteRetrySuccess_PreservesActiveQuotaCooldown(t *testing.T) {
 	m, executor, primary, _, model := newUnauthorizedRefreshFixture(t, false)
@@ -198,7 +177,6 @@ func TestManager_Issue6415_ExecuteRetrySuccess_PreservesActiveQuotaCooldown(t *t
 		t.Fatalf("update primary auth: %v", errUpdate)
 	}
 
-
 	resp, errExec := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errExec != nil {
 		t.Fatalf("Execute error = %v, want success after refresh retry", errExec)
@@ -216,7 +194,6 @@ func TestManager_Issue6415_ExecuteRetrySuccess_PreservesActiveQuotaCooldown(t *t
 		t.Fatal("primary auth missing after execution")
 	}
 
-
 	siblingState := updatedPrimary.ModelStates[siblingModel]
 	if siblingState == nil {
 		t.Fatalf("sibling model state %q missing", siblingModel)
@@ -228,9 +205,6 @@ func TestManager_Issue6415_ExecuteRetrySuccess_PreservesActiveQuotaCooldown(t *t
 		t.Fatalf("sibling model Quota.NextRecoverAt = %v, want %v", siblingState.Quota.NextRecoverAt, quotaRecover)
 	}
 }
-
-
-
 
 func TestManager_Issue6415_MarkRejectedAccessToken_AdvancesGeneration(t *testing.T) {
 	m, _, primary, _, _ := newUnauthorizedRefreshFixture(t, false)
@@ -255,15 +229,11 @@ func TestManager_Issue6415_MarkRejectedAccessToken_AdvancesGeneration(t *testing
 	}
 }
 
-
-
-
 func TestManager_Issue6415_UpdateWithoutCredentialChange_PreservesRejectedAccessToken(t *testing.T) {
 	m, _, primary, _, _ := newUnauthorizedRefreshFixture(t, false)
 
 	token := authAccessToken(primary)
 	m.markRejectedAccessToken(primary.ID, token)
-
 
 	reloadAuth := primary.Clone()
 	reloadAuth.RejectedAccessToken = ""
@@ -286,15 +256,11 @@ func TestManager_Issue6415_UpdateWithoutCredentialChange_PreservesRejectedAccess
 	}
 }
 
-
-
-
 func TestManager_Issue6415_RefreshSuccessWithUnchangedToken_ClearsRejectedAccessToken(t *testing.T) {
 	m, executor, primary, _, model := newUnauthorizedRefreshFixture(t, false)
 
 	token := authAccessToken(primary)
 	m.markRejectedAccessToken(primary.ID, token)
-
 
 	executor.mu.Lock()
 	executor.refreshTokens[primary.ID] = token
@@ -321,9 +287,6 @@ func TestManager_Issue6415_RefreshSuccessWithUnchangedToken_ClearsRejectedAccess
 		t.Fatalf("primary is blocked after successful refresh with unchanged token")
 	}
 }
-
-
-
 
 func TestManager_Issue6415_RefreshCanceled_ReschedulesRefresh(t *testing.T) {
 	m, executor, primary, _, _ := newUnauthorizedRefreshFixture(t, false)

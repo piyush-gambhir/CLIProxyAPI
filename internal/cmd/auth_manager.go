@@ -4,12 +4,6 @@ import (
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v8/sdk/auth"
 )
 
-
-
-
-
-
-
 func newAuthManager() *sdkAuth.Manager {
 	store := sdkAuth.GetTokenStore()
 	manager := sdkAuth.NewManager(store,

@@ -33,8 +33,6 @@ func (r pluginStaticModelRegistrar) RegisterModels(context.Context, pluginapi.Mo
 	}, nil
 }
 
-
-
 func newPluginStaticModelHost(t *testing.T, provider string) *pluginhost.Host {
 	t.Helper()
 	host := pluginhost.New()
@@ -82,7 +80,6 @@ func TestRegisterModelsForAuth_PluginStaticModelsFollowExclusions(t *testing.T) 
 				t.Fatalf("plugin static models = (%t,%t), want (%t,%t); models = %v", present[pluginStaticGlobalModel], present[pluginStaticCredentialModel], tc.wantGlobal, tc.wantCredValue, present)
 			}
 
-
 			available := openAIModelIDSet(reg.GetAvailableModels("openai"))
 			_, hasGlobal := available[pluginStaticGlobalModel]
 			_, hasCredential := available[pluginStaticCredentialModel]
@@ -122,7 +119,6 @@ func TestPluginStaticModelAvailabilityFollowsCredentials(t *testing.T) {
 	service.registerModelsForAuth(t.Context(), inherited)
 	assertAvailable("global exclusions", false, true)
 
-
 	service.registerModelsForAuth(t.Context(), override)
 	assertAvailable("different credential exclusions", true, true)
 	override.Attributes["excluded_models"] = "plugin-static-*"
@@ -132,7 +128,6 @@ func TestPluginStaticModelAvailabilityFollowsCredentials(t *testing.T) {
 	cfg.OAuthExcludedModels[provider] = []string{"plugin-static-*"}
 	service.registerModelsForAuth(t.Context(), inherited)
 	assertAvailable("all credentials exclude both models", false, false)
-
 
 	host.RegisterModels(t.Context(), registry.GetGlobalRegistry())
 	host.RegisterExecutors(coreauth.NewManager(nil, nil, nil), registry.GetGlobalRegistry())
@@ -172,7 +167,6 @@ func TestRegisterModelsForAuth_PluginStaticExclusionsDoNotMatchNativeAliases(t *
 	t.Cleanup(func() { reg.UnregisterClient(auth.ID) })
 
 	service.registerModelsForAuth(t.Context(), auth)
-
 
 	if !reg.ClientSupportsModel(auth.ID, nativeAlias) || reg.ClientSupportsModel(auth.ID, pluginStaticGlobalModel) {
 		t.Fatalf("models = (%s:%t, %s:%t), want native alias kept and plugin model excluded", nativeAlias, reg.ClientSupportsModel(auth.ID, nativeAlias), pluginStaticGlobalModel, reg.ClientSupportsModel(auth.ID, pluginStaticGlobalModel))

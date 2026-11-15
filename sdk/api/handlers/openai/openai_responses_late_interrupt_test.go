@@ -20,8 +20,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	var connections atomic.Int32
@@ -63,7 +61,6 @@ func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 				return
 			}
 			if id == "r2" {
-
 
 				_, interrupt, errInterrupt := conn.ReadMessage()
 				if errInterrupt != nil {
@@ -154,7 +151,6 @@ func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 	send(`{"type":"response.interrupt","response_id":"r2","mode":"discard_partial_items"}`)
 	expect("response.completed", "r2")
 
-
 	auth, _ := manager.GetByID(authID)
 	auth.Attributes["websockets"] = "false"
 	if _, errUpdate := manager.Update(context.Background(), auth); errUpdate != nil {
@@ -188,8 +184,6 @@ func TestResponsesLateInterruptDoesNotPoisonNextCreate(t *testing.T) {
 		t.Fatal("interrupt timeline was not finalized")
 	}
 }
-
-
 
 func TestResponsesInterruptDiagnosticsAreSanitized(t *testing.T) {
 	gin.SetMode(gin.TestMode)

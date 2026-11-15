@@ -11,10 +11,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func (e *DevinExecutor) executeDevinResponsesCompaction(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	var resp cliproxyexecutor.Response
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
@@ -44,8 +40,6 @@ func (e *DevinExecutor) executeDevinResponsesCompaction(ctx context.Context, aut
 		Headers: summaryResp.Headers,
 	}, nil
 }
-
-
 
 func (e *DevinExecutor) executeDevinResponsesCompactionStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName

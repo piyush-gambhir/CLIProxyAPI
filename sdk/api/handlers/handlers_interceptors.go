@@ -17,7 +17,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-
 type PluginInterceptorHost interface {
 	InterceptRequestBeforeAuth(context.Context, pluginapi.RequestInterceptRequest) pluginapi.RequestInterceptResponse
 	InterceptRequestAfterAuth(context.Context, pluginapi.RequestInterceptRequest) pluginapi.RequestInterceptResponse
@@ -36,14 +35,9 @@ type streamInterceptorDetector interface {
 	HasStreamInterceptors() bool
 }
 
-
-
 type streamChunkRequestBodyPolicy interface {
 	StreamChunkPayloadIncludesRequestBody() bool
 }
-
-
-
 
 func streamChunkPayloadIncludesRequestBody(host PluginInterceptorHost) bool {
 	if host == nil {
@@ -55,14 +49,9 @@ func streamChunkPayloadIncludesRequestBody(host PluginInterceptorHost) bool {
 	return true
 }
 
-
-
 type streamChunkHistoryPolicy interface {
 	StreamChunkPayloadIncludesHistory() bool
 }
-
-
-
 
 func streamChunkPayloadIncludesHistory(host PluginInterceptorHost) bool {
 	if host == nil {
@@ -245,7 +234,6 @@ func nextStreamChunk(ctx context.Context, pending *[]coreexecutor.StreamChunk, c
 		case <-ctx.Done():
 			return coreexecutor.StreamChunk{}, false, true
 		case chunk, ok = <-chunks:
-
 
 			if !ok && ctx.Err() != nil {
 				return coreexecutor.StreamChunk{}, false, true
@@ -671,10 +659,7 @@ func (h *BaseAPIHandler) applyResponseInterceptors(ctx context.Context, requestI
 	return body, responseHeaders
 }
 
-
 const ModelDetailIDContextKey = "cliproxy.model_detail_id"
-
-
 
 func (h *BaseAPIHandler) WriteModelListResponse(c *gin.Context, sourceFormat string, payload any) {
 	if c == nil {

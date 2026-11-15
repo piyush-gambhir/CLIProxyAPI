@@ -345,7 +345,6 @@ func TestConvertGeminiResponses_SameNamedUserFunctionAndClientToolSearchCoexist(
 				t.Fatalf("expected a distinct Gemini name for the client tool_search shim: %s", geminiReqBytes)
 			}
 
-
 			contents := geminiReq.Get("contents").Array()
 			if len(contents) != 5 {
 				t.Fatalf("expected 5 contents, got %d: %s", len(contents), geminiReq.Get("contents").Raw)
@@ -362,7 +361,6 @@ func TestConvertGeminiResponses_SameNamedUserFunctionAndClientToolSearchCoexist(
 			if got := contents[4].Get("parts.0.functionResponse.name").String(); got != "tool_search" {
 				t.Fatalf("replayed user function_call_output name = %q, want tool_search", got)
 			}
-
 
 			streamChunk := []byte(`data: {"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"id":"c_shim","name":"` + shimGeminiName + `","args":{"query":"agents"}}},{"functionCall":{"id":"c_user","name":"tool_search","args":{"x":"abc"}}}]},"finishReason":"STOP"}],"responseId":"resp_coexist"}`)
 			var param any

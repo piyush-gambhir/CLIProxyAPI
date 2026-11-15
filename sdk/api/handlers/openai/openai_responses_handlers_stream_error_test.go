@@ -454,8 +454,6 @@ func TestResponsesHandlerDoesNotLoseErrorBeforeFirstPayload(t *testing.T) {
 	}
 }
 
-
-
 func TestForwardResponsesStreamExposesTerminalErrors(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -472,7 +470,6 @@ func TestForwardResponsesStreamExposesTerminalErrors(t *testing.T) {
 			wantExposed: true,
 		},
 		{
-
 
 			name:        "cyber policy behind bad gateway status",
 			status:      http.StatusBadGateway,

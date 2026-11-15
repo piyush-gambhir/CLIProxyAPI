@@ -20,7 +20,6 @@ func TestClaudeResponsesServerToolStopReason(t *testing.T) {
 		endTurn string
 	}{
 
-
 		{reason: "pause_turn", status: "completed", endTurn: "false"},
 		{reason: " PAUSE_TURN ", status: "completed", endTurn: "false"},
 		{reason: "max_tokens", status: "incomplete", detail: `{"reason":"max_output_tokens"}`},

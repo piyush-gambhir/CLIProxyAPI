@@ -1,8 +1,3 @@
-
-
-
-
-
 package chat_completions
 
 import (
@@ -34,10 +29,6 @@ type toolCallStreamState struct {
 	Done             bool
 }
 
-
-
-
-
 type codexChatToolMetadata struct {
 	resolved           bool
 	reverseToolNames   map[string]string
@@ -65,7 +56,6 @@ func (m *codexChatToolMetadata) resolve(original []byte) {
 	}
 }
 
-
 func collectChatToolWinners(original []byte) map[string]util.ResponsesToolDescriptor {
 	root := util.ParseGJSONBytesNoCopy(original)
 	var doc *ojson.Doc
@@ -90,8 +80,6 @@ func collectChatToolWinners(original []byte) map[string]util.ResponsesToolDescri
 	return util.CollectResponsesToolWinners(root)
 }
 
-
-
 func (m *codexChatToolMetadata) restoreToolName(original []byte, name string) string {
 	m.resolve(original)
 	if orig, ok := m.reverseToolNames[name]; ok {
@@ -99,7 +87,6 @@ func (m *codexChatToolMetadata) restoreToolName(original []byte, name string) st
 	}
 	return name
 }
-
 
 func (m *codexChatToolMetadata) isCustomPatch(original []byte, item ojson.Result) bool {
 	if item.Get("type").String() != "custom_tool_call" {
@@ -112,7 +99,6 @@ func (m *codexChatToolMetadata) isCustomPatch(original []byte, item ojson.Result
 	}
 	return m.customPatchWinners[name]
 }
-
 
 type ConvertCliToOpenAIParams struct {
 	ServiceTier           string
@@ -127,20 +113,6 @@ type ConvertCliToOpenAIParams struct {
 	emittedTextRunes      int64
 	LastImageHashByItemID map[string][32]byte
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -159,7 +131,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		return [][]byte{}
 	}
 	rawJSON = bytes.TrimSpace(rawJSON[5:])
-
 
 	templateDoc := ojson.NewDocString(`{"id":"","object":"chat.completion.chunk","created":12345,"model":"model","choices":[{"index":0,"delta":{},"finish_reason":null,"native_finish_reason":null}]}`)
 
@@ -187,7 +158,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		return [][]byte{}
 	}
 
-
 	cachedModel := (*param).(*ConvertCliToOpenAIParams).Model
 	if modelResult := rootResult.Get("model"); modelResult.Exists() {
 		_ = templateDoc.Set("model", modelResult.String())
@@ -199,9 +169,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 
 	_ = templateDoc.Set("created", (*param).(*ConvertCliToOpenAIParams).CreatedAt)
 
-
 	_ = templateDoc.Set("id", (*param).(*ConvertCliToOpenAIParams).ResponseID)
-
 
 	if usageResult := rootResult.Get("response.usage"); usageResult.Exists() {
 		if outputTokensResult := usageResult.Get("output_tokens"); outputTokensResult.Exists() {
@@ -295,7 +263,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 			return [][]byte{}
 		}
 
-
 		p := (*param).(*ConvertCliToOpenAIParams)
 		p.FunctionCallIndex++
 		state := &toolCallStreamState{Index: p.FunctionCallIndex, Patch: p.toolMetadata.isCustomPatch(originalRequestRawJSON, itemResult)}
@@ -304,7 +271,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		functionCallItemDoc := ojson.NewDocString(`{"index":0,"id":"","type":"function","function":{"name":"","arguments":""}}`)
 		_ = functionCallItemDoc.Set("index", state.Index)
 		_ = functionCallItemDoc.Set("id", itemResult.Get("call_id").String())
-
 
 		name := p.toolMetadata.restoreToolName(originalRequestRawJSON, itemResult.Get("name").String())
 		_ = functionCallItemDoc.Set("function.name", name)
@@ -341,7 +307,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		if state == nil || state.Done || state.InputClosed || (state.ArgumentsEmitted && !state.Patch) {
 			return [][]byte{}
 		}
-
 
 		fullArgsField := "arguments"
 		if dataType == "response.custom_tool_call_input.done" {
@@ -421,8 +386,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 				return [][]byte{}
 			}
 
-
-
 			state.ArgumentsEmitted = true
 			fullArgs := codexToolCallArguments(itemResult)
 			if state.Patch {
@@ -438,7 +401,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 			return [][]byte{templateDoc.Bytes()}
 		}
 
-
 		p.FunctionCallIndex++
 		state = &toolCallStreamState{Index: p.FunctionCallIndex, ArgumentsEmitted: true, Done: true, Patch: p.toolMetadata.isCustomPatch(originalRequestRawJSON, itemResult)}
 		registerToolCallState(p, rootResult, itemResult, state)
@@ -446,7 +408,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		functionCallItemDoc := ojson.NewDocString(`{"index":0,"id":"","type":"function","function":{"name":"","arguments":""}}`)
 		_ = functionCallItemDoc.Set("index", state.Index)
 		_ = functionCallItemDoc.Set("id", itemResult.Get("call_id").String())
-
 
 		name := p.toolMetadata.restoreToolName(originalRequestRawJSON, itemResult.Get("name").String())
 		_ = functionCallItemDoc.Set("function.name", name)
@@ -465,19 +426,6 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 
 	return [][]byte{templateDoc.Bytes()}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	rootResult := util.ParseGJSONBytesNoCopy(rawJSON)
@@ -499,11 +447,9 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 		_ = templateDoc.Set("service_tier", tier)
 	}
 
-
 	if modelResult := responseResult.Get("model"); modelResult.Exists() {
 		_ = templateDoc.Set("model", modelResult.String())
 	}
-
 
 	if createdAtResult := responseResult.Get("created_at"); createdAtResult.Exists() {
 		_ = templateDoc.Set("created", createdAtResult.Int())
@@ -511,11 +457,9 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 		_ = templateDoc.Set("created", unixTimestamp)
 	}
 
-
 	if idResult := responseResult.Get("id"); idResult.Exists() {
 		_ = templateDoc.Set("id", idResult.String())
 	}
-
 
 	if usageResult := responseResult.Get("usage"); usageResult.Exists() {
 		if outputTokensResult := usageResult.Get("output_tokens"); outputTokensResult.Exists() {
@@ -535,7 +479,6 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 			_ = templateDoc.Set("usage.completion_tokens_details.reasoning_tokens", reasoningTokensResult.Int())
 		}
 	}
-
 
 	var toolMetadata codexChatToolMetadata
 	var toolCalls [][]byte
@@ -630,7 +573,6 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 			}
 		}
 
-
 		if contentText != "" {
 			_ = templateDoc.Set("choices.0.message.content", contentText)
 		}
@@ -643,17 +585,14 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 			_ = templateDoc.SetRawBytes("choices.0.message.annotations", translatorcommon.JoinRawArray(messageAnnotations))
 		}
 
-
 		if len(toolCalls) > 0 {
 			_ = templateDoc.SetRawBytes("choices.0.message.tool_calls", translatorcommon.JoinRawArray(toolCalls))
 		}
-
 
 		if len(images) > 0 {
 			_ = templateDoc.SetRawBytes("choices.0.message.images", translatorcommon.JoinRawArray(images))
 		}
 	}
-
 
 	if statusResult := responseResult.Get("status"); statusResult.Exists() {
 		status := statusResult.String()
@@ -815,8 +754,6 @@ func codexToolCallArguments(itemResult ojson.Result) string {
 	return itemResult.Get("arguments").String()
 }
 
-
-
 func buildReverseMapFromOriginalOpenAI(original []byte) map[string]string {
 	rev := map[string]string{}
 	names := collectRequestToolNames(original)
@@ -850,7 +787,6 @@ func mimeTypeFromCodexOutputFormat(outputFormat string) string {
 	}
 }
 
-
 func codexResponseServiceTier(response ojson.Result) string {
 	tier := response.Get("service_tier")
 	if tier.Type != ojson.String || strings.TrimSpace(tier.Str) == "" {
@@ -858,7 +794,6 @@ func codexResponseServiceTier(response ojson.Result) string {
 	}
 	return strings.TrimSpace(tier.Str)
 }
-
 
 func setCodexCacheWriteTokensDoc(doc *ojson.Doc, usage ojson.Result) {
 	value := usage.Get("input_tokens_details.cache_write_tokens")
@@ -879,7 +814,6 @@ func setCodexCacheWriteTokensDoc(doc *ojson.Doc, usage ojson.Result) {
 	_ = doc.SetRawBytes("usage.prompt_tokens_details.cache_write_tokens", []byte(value.Raw))
 	_ = doc.SetRawBytes("usage.prompt_tokens_details.cached_creation_tokens", []byte(value.Raw))
 }
-
 
 func isOriginalCustomPatch(original []byte, item ojson.Result) bool {
 	if item.Get("type").String() != "custom_tool_call" {

@@ -11,7 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
 func DeleteJSONField(body []byte, key string) []byte {
 	if key == "" || len(body) == 0 {
 		return body
@@ -23,14 +22,12 @@ func DeleteJSONField(body []byte, key string) []byte {
 	return updated
 }
 
-
 func DeleteJSONFieldDoc(doc *ojson.Doc, key string) bool {
 	if key == "" || doc == nil || doc.Len() == 0 {
 		return false
 	}
 	return util.DeleteJSONDocIfExists(doc, key) == nil
 }
-
 
 func ParseRetryDelay(errorBody []byte) (*time.Duration, error) {
 	details := ojson.GetBytesNoCopy(errorBody, "error.details")

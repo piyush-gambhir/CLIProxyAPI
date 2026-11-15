@@ -25,8 +25,6 @@ func interactionsToClaudeEnvelope(input string) sdktranslator.RequestEnvelope {
 	})
 }
 
-
-
 func interactionsFinalTurnToClaude(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToClaudeEnvelope(`{"model":"m","input":[` + interactionsHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }

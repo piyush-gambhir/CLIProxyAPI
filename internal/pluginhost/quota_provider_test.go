@@ -320,7 +320,6 @@ func TestQuotaProvider_VersionReloadInvalidatesCache(t *testing.T) {
 		t.Fatal("expected host not to recognize provider-v2 before upgrade")
 	}
 
-
 	providerV2 := &testQuotaProvider{
 		identifier: "dynamic-quota",
 		describeFn: func(ctx context.Context, req pluginapi.QuotaDescribeRequest) (pluginapi.QuotaDescribeResponse, error) {
@@ -395,7 +394,6 @@ func TestQuotaProvider_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-
 	if host.HasQuotaProviderContext(ctx, "non-existent-provider") {
 		t.Fatal("expected false for canceled context search")
 	}
@@ -433,15 +431,12 @@ func TestQuotaProvider_InterleavedReloadDiscardStaleCache(t *testing.T) {
 		},
 	})
 
-
 	go func() {
 		defer close(goroutineDone)
 		_ = host.HasQuotaProvider("stale-provider")
 	}()
 
-
 	<-describeStarted
-
 
 	providerV2 := &testQuotaProvider{
 		identifier: "interleaved-provider",
@@ -462,11 +457,9 @@ func TestQuotaProvider_InterleavedReloadDiscardStaleCache(t *testing.T) {
 		},
 	})
 
-
 	close(allowDescribeFinish)
 
 	<-goroutineDone
-
 
 	if host.HasQuotaProvider("stale-provider") {
 		t.Fatal("stale-provider should not be cached after generation change")

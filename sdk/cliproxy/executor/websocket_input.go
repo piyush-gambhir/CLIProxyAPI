@@ -5,17 +5,9 @@ import (
 	"errors"
 )
 
-
 var ErrNoActiveUpstreamWebsocket = errors.New("no active upstream websocket for response.interrupt")
 
-
-
-
-
-
 var ErrUpstreamWebsocketInterruptRejected = errors.New("response.interrupt does not target the active upstream response")
-
-
 
 type WebsocketInput struct {
 	Payload []byte
@@ -36,8 +28,6 @@ func WebsocketInputFromContext(ctx context.Context) <-chan WebsocketInput {
 	return input
 }
 
-
-
 type websocketAuthCheckKey struct{}
 
 func WithWebsocketAuthCheck(ctx context.Context, check func(string) bool) context.Context {
@@ -52,9 +42,6 @@ func WebsocketAuthEnabled(ctx context.Context, authID string) bool {
 }
 
 type websocketTurnAuthorizerKey struct{}
-
-
-
 
 func WithWebsocketTurnAuthorizer(ctx context.Context, authorize func([]byte) ([]byte, error)) context.Context {
 	return context.WithValue(ctx, websocketTurnAuthorizerKey{}, authorize)

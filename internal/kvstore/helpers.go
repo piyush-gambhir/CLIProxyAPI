@@ -12,12 +12,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func HashKeyPart(value string) string {
 	sum := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(sum[:])
 }
-
 
 func KVGetJSONRequired(ctx context.Context, key string, out any) (bool, bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
@@ -34,7 +32,6 @@ func KVGetJSONRequired(ctx context.Context, key string, out any) (bool, bool, er
 	return true, true, nil
 }
 
-
 func KVSetJSONRequired(ctx context.Context, key string, value any, ttl time.Duration) (bool, error) {
 	raw, errMarshal := json.Marshal(value)
 	if errMarshal != nil {
@@ -42,7 +39,6 @@ func KVSetJSONRequired(ctx context.Context, key string, value any, ttl time.Dura
 	}
 	return KVSetBytesRequired(ctx, key, raw, ttl)
 }
-
 
 func KVSetBytesRequired(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
@@ -59,7 +55,6 @@ func KVSetBytesRequired(ctx context.Context, key string, value []byte, ttl time.
 	return true, nil
 }
 
-
 func KVSetNXRequired(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -68,7 +63,6 @@ func KVSetNXRequired(ctx context.Context, key string, value []byte, ttl time.Dur
 	written, errSet := client.KVSetNX(ctx, key, value, ttl)
 	return true, written, errSet
 }
-
 
 func KVDelRequired(ctx context.Context, keys ...string) (bool, int64, error) {
 	client, kvMode, errClient := CurrentKVClient()
@@ -79,7 +73,6 @@ func KVDelRequired(ctx context.Context, keys ...string) (bool, int64, error) {
 	return true, deleted, errDel
 }
 
-
 func KVExpireRequired(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -88,7 +81,6 @@ func KVExpireRequired(ctx context.Context, key string, ttl time.Duration) (bool,
 	_, errExpire := client.KVExpire(ctx, key, ttl)
 	return true, errExpire
 }
-
 
 func KVGetJSONBestEffort(ctx context.Context, key string, out any) (bool, bool) {
 	kvMode, found, errGet := KVGetJSONRequired(ctx, key, out)
@@ -99,7 +91,6 @@ func KVGetJSONBestEffort(ctx context.Context, key string, out any) (bool, bool) 
 	return kvMode, found
 }
 
-
 func KVSetJSONBestEffort(ctx context.Context, key string, value any, ttl time.Duration) bool {
 	raw, errMarshal := json.Marshal(value)
 	if errMarshal != nil {
@@ -108,7 +99,6 @@ func KVSetJSONBestEffort(ctx context.Context, key string, value any, ttl time.Du
 	}
 	return KVSetBytesBestEffort(ctx, key, raw, ttl)
 }
-
 
 func KVSetBytesBestEffort(ctx context.Context, key string, value []byte, ttl time.Duration) bool {
 	kvMode, errSet := KVSetBytesRequired(ctx, key, value, ttl)
@@ -122,7 +112,6 @@ func KVSetBytesBestEffort(ctx context.Context, key string, value []byte, ttl tim
 	return true
 }
 
-
 func KVSetNXBestEffort(ctx context.Context, key string, value []byte, ttl time.Duration) bool {
 	kvMode, written, errSet := KVSetNXRequired(ctx, key, value, ttl)
 	if !kvMode {
@@ -135,7 +124,6 @@ func KVSetNXBestEffort(ctx context.Context, key string, value []byte, ttl time.D
 	return written
 }
 
-
 func KVDelBestEffort(ctx context.Context, keys ...string) bool {
 	kvMode, _, errDel := KVDelRequired(ctx, keys...)
 	if !kvMode {
@@ -147,7 +135,6 @@ func KVDelBestEffort(ctx context.Context, keys ...string) bool {
 	}
 	return true
 }
-
 
 func KVExpireBestEffort(ctx context.Context, key string, ttl time.Duration) bool {
 	kvMode, errExpire := KVExpireRequired(ctx, key, ttl)

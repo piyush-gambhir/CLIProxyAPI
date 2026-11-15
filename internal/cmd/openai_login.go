@@ -12,28 +12,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 type LoginOptions struct {
-
 	NoBrowser bool
 
-
 	CallbackPort int
-
 
 	Prompt func(prompt string) (string, error)
 
 	ProxyURL string
 }
-
-
-
-
-
-
-
 
 func DoCodexLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {

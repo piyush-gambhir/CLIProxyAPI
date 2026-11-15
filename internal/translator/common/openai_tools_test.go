@@ -52,14 +52,6 @@ func TestAlignOpenAIToolCallMessages(t *testing.T) {
 			t.Fatalf("expected 7 messages, got %d", len(got))
 		}
 
-		// Expected order:
-		// 0: user "start"
-		// 1: assistant tool_calls
-		// 2: tool call_b
-		// 3: tool call_a
-		// 4: assistant "thinking part"
-		// 5: user "system reminder"
-		// 6: user "final prompt"
 		roles := make([]string, len(got))
 		for i, m := range got {
 			roles[i] = ojson.GetBytesNoCopy(m, "role").String()
@@ -84,7 +76,7 @@ func TestAlignOpenAIToolCallMessages(t *testing.T) {
 	})
 
 	t.Run("leaves incomplete tool calls untouched", func(t *testing.T) {
-		// Assistant calls call_1 and call_2, but only call_1 has a result
+
 		messages := [][]byte{
 			[]byte(`{"role":"assistant","tool_calls":[{"id":"call_1"},{"id":"call_2"}]}`),
 			[]byte(`{"role":"user","content":"middle"}`),
@@ -127,7 +119,7 @@ func TestAlignOpenAIToolCallMessages(t *testing.T) {
 	})
 
 	t.Run("leaves assistant with mixed empty ID untouched", func(t *testing.T) {
-		// Assistant calls one empty ID and one valid call_a
+
 		messages := [][]byte{
 			[]byte(`{"role":"assistant","tool_calls":[{"id":""},{"id":"call_a"}]}`),
 			[]byte(`{"role":"user","content":"reminder"}`),

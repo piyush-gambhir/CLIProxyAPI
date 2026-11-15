@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-
 type oauthProvider struct {
 	name       string
 	apiPath    string
@@ -29,7 +28,6 @@ var oauthProviders = []oauthProvider{
 	{"Meta", "meta-auth-url", "🔵", true},
 }
 
-
 type oauthTabModel struct {
 	client   *Client
 	viewport viewport.Model
@@ -41,7 +39,6 @@ type oauthTabModel struct {
 	height   int
 	ready    bool
 
-
 	authURL       string
 	authState     string
 	providerName  string
@@ -50,7 +47,6 @@ type oauthTabModel struct {
 	expiresIn     int
 	callbackInput textinput.Model
 	inputActive   bool
-
 
 	pollGeneration int
 }
@@ -71,7 +67,6 @@ const (
 	maxOAuthStatusPollErrors = 5
 	oauthStatusPollInterval  = 2 * time.Second
 )
-
 
 type oauthStartMsg struct {
 	url          string
@@ -206,7 +201,6 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 			}
 		}
 
-
 		if m.state == oauthRemote {
 			switch msg.String() {
 			case "c", "C":
@@ -226,7 +220,6 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 			return m, cmd
 		}
 
-
 		if m.state == oauthPending {
 			if msg.String() == "esc" {
 				m.pollGeneration++
@@ -236,7 +229,6 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 			}
 			return m, nil
 		}
-
 
 		switch msg.String() {
 		case "up", "k":
@@ -298,7 +290,6 @@ func (m oauthTabModel) startOAuth(provider oauthProvider, generation int) tea.Cm
 		expiresIn := int(getFloat(data, "expires_in"))
 		deviceFlow := provider.deviceFlow || flow == "device" || userCode != ""
 
-
 		_ = openBrowser(authURL)
 
 		return oauthStartMsg{
@@ -312,7 +303,6 @@ func (m oauthTabModel) startOAuth(provider oauthProvider, generation int) tea.Cm
 		}
 	}
 }
-
 
 func (m *oauthTabModel) cancelRemoteOAuth() tea.Cmd {
 	state := m.authState
@@ -448,11 +438,9 @@ func (m oauthTabModel) pollOAuthStatus(state string, expiresIn int, deviceFlow b
 	}
 }
 
-
 func shouldAcceptOAuthStart(msg oauthStartMsg, generation int) bool {
 	return msg.generation == generation
 }
-
 
 func shouldAcceptOAuthPoll(msg oauthPollMsg, authState string, generation int, state oauthState) bool {
 	if msg.generation != generation {
@@ -463,7 +451,6 @@ func shouldAcceptOAuthPoll(msg oauthPollMsg, authState string, generation int, s
 	}
 	return state == oauthRemote
 }
-
 
 func shouldFailOAuthStatusPoll(consecutiveErrors, maxErrors int) bool {
 	if maxErrors <= 0 {
@@ -503,7 +490,6 @@ func (m oauthTabModel) renderContent() string {
 		sb.WriteString("  " + m.message)
 		sb.WriteString("\n\n")
 	}
-
 
 	if m.state == oauthRemote {
 		if m.deviceFlow {
@@ -552,10 +538,8 @@ func (m oauthTabModel) renderRemoteMode() string {
 	sb.WriteString(providerStyle.Render(fmt.Sprintf("  ✦ %s OAuth", m.providerName)))
 	sb.WriteString("\n\n")
 
-
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Foreground(colorInfo).Render(T("oauth_auth_url")))
 	sb.WriteString("\n")
-
 
 	urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	maxURLWidth := m.width - 6
@@ -570,7 +554,6 @@ func (m oauthTabModel) renderRemoteMode() string {
 
 	sb.WriteString(helpStyle.Render(T("oauth_remote_hint")))
 	sb.WriteString("\n\n")
-
 
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Foreground(colorInfo).Render(T("oauth_callback_url")))
 	sb.WriteString("\n")
@@ -629,7 +612,6 @@ func (m oauthTabModel) renderDeviceMode() string {
 
 	return sb.String()
 }
-
 
 func wrapText(s string, maxWidth int) []string {
 	if maxWidth <= 0 {

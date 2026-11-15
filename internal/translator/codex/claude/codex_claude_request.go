@@ -1,8 +1,3 @@
-
-
-
-
-
 package claude
 
 import (
@@ -23,31 +18,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertClaudeRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return ConvertClaudeRequestToCodexContext(context.Background(), modelName, inputRawJSON, stream)
 
 }
-
-
 
 func ConvertClaudeRequestToCodexWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return ConvertClaudeRequestToCodexWithCompatContext(context.Background(), modelName, inputRawJSON, stream)
@@ -98,7 +72,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-
 	systemsResult := rootResult.Get("system")
 	if systemsResult.Exists() {
 		contentItems := make([][]byte, 0, 2)
@@ -131,7 +104,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 			inputItems = append(inputItems, message)
 		}
 	}
-
 
 	messagesResult := rootResult.Get("messages")
 	if messagesResult.IsArray() {
@@ -174,7 +146,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 			}
 			pendingToolUseIDs = nil
 			contentItems := make([][]byte, 0, 4)
-
 
 			turnSendable := 0
 			bufferedSendable := 0
@@ -271,9 +242,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 				if text == "" {
 					return
 				}
-
-
-
 
 				flushMessage()
 				content := []byte(`{"type":"output_text","text":""}`)
@@ -529,7 +497,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-
 	hasWebSearchTool := false
 	var toolItems [][]byte
 	if toolsResult.IsArray() || hasAdditionalTools {
@@ -561,15 +528,12 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		}
 	}
 
-
 	parallelToolCalls := true
 	if disableParallelToolUse := rootResult.Get("tool_choice.disable_parallel_tool_use"); disableParallelToolUse.Exists() {
 		parallelToolCalls = !disableParallelToolUse.Bool()
 	}
 
-
 	_ = templateDoc.Set("parallel_tool_calls", parallelToolCalls)
-
 
 	reasoningEffort := "medium"
 	effort := ""
@@ -587,7 +551,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 			}
 		case "adaptive", "auto":
 
-
 			if effort != "" {
 				reasoningEffort = effort
 			} else {
@@ -602,8 +565,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		reasoningEffort = effort
 	}
 	_ = templateDoc.Set("reasoning.effort", reasoningEffort)
-
-
 
 	serviceTier := normalizeCodexServiceTier(rootResult.Get("service_tier"))
 	if speed := rootResult.Get("speed"); speed.Type == ojson.String && speed.String() == "fast" {
@@ -620,7 +581,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 	}
 	_ = templateDoc.Set("include", includeFields)
 
-
 	if format := rootResult.Get("output_config.format"); format.IsObject() && format.Get("type").String() == "json_schema" && format.Get("schema").IsObject() {
 		name := "cli_proxy_structured_output"
 		if n := format.Get("name").String(); n != "" {
@@ -630,8 +590,6 @@ func convertClaudeRequestToCodex(modelName string, inputRawJSON []byte, _ bool, 
 		if s := format.Get("strict"); s.Exists() && s.Type == ojson.False {
 			strict = false
 		}
-
-
 
 		if strict && codexSchemaMissesRequired(format.Get("schema")) {
 			strict = false
@@ -663,8 +621,6 @@ func normalizeCodexServiceTier(result ojson.Result) string {
 		return ""
 	}
 }
-
-
 
 func shortenCodexCallIDIfNeeded(id string) string {
 	const limit = 64
@@ -756,11 +712,7 @@ func convertClaudeWebSearchToolToCodex(tool ojson.Result) []byte {
 	return outDoc.Bytes()
 }
 
-
-
-
 var gatewayToolNamePattern = regexp.MustCompile(`^(?:mcp_)?([a-z][a-z0-9-]*?)-[0-9a-f]{6,}(?:-[0-9a-f]+)*_(.+)$`)
-
 
 func shortenNameIfNeeded(name string) string {
 	const limit = 64
@@ -776,8 +728,6 @@ func shortenNameIfNeeded(name string) string {
 				return cand
 			}
 
-
-
 			if m := gatewayToolNamePattern.FindStringSubmatch(rest); m != nil {
 				if readable := "mcp__" + m[1] + "_" + m[2]; len(readable) <= limit {
 					return readable
@@ -788,7 +738,6 @@ func shortenNameIfNeeded(name string) string {
 	}
 	return name[:limit]
 }
-
 
 func buildShortNameMap(names []string) map[string]string {
 	const limit = 64
@@ -886,8 +835,6 @@ func ensureClaudeDeclaredToolsIndexed(toolsResult ojson.Result, declaredToolsByN
 		}
 	}
 }
-
-
 
 func convertClaudeSystemAdditionalTools(content, toolsResult ojson.Result, declaredToolsByName *map[string]ojson.Result, declaredToolsIndexed *bool, toolNameMap map[string]string, emittedToolNames map[string]struct{}) ([]byte, bool) {
 	if !content.IsArray() {
@@ -1107,7 +1054,6 @@ func claudePayloadMayContainToolAddition(rawJSON []byte) bool {
 		bytes.Contains(rawJSON, []byte(`\U`))
 }
 
-
 func buildReverseMapFromClaudeOriginalToShort(original []byte) map[string]string {
 	mayHaveToolAddition := claudePayloadMayContainToolAddition(original)
 	if !mayHaveToolAddition {
@@ -1131,9 +1077,6 @@ func buildReverseMapFromClaudeOriginalToShort(original []byte) map[string]string
 	}
 	return buildReverseMapFromClaudeOriginalToShortFromResult(util.ParseGJSONBytesNoCopy(original), true)
 }
-
-
-
 
 func normalizeToolParameters(raw string) string {
 	raw = strings.TrimSpace(raw)
@@ -1193,7 +1136,6 @@ func stripDialectKeywordsFromSchema(v any) {
 			delete(schema, "pattern")
 		}
 
-
 		if patternProps, ok := schema["patternProperties"].(map[string]any); ok {
 			for patternKey, subSchema := range patternProps {
 				if util.HasUnsupportedUnicodePropertyEscape(patternKey) {
@@ -1234,16 +1176,10 @@ func stripDialectKeywordsFromSchema(v any) {
 	}
 }
 
-
-
 var (
 	codexSchemaMapKeywords   = util.SchemaMapKeywords
 	codexSchemaValueKeywords = util.SchemaValueKeywords
 )
-
-
-
-
 
 func codexSchemaMissesRequired(schema ojson.Result) bool {
 	if !schema.IsObject() {
@@ -1301,11 +1237,6 @@ func codexSchemaMissesRequired(schema ojson.Result) bool {
 	}
 	return false
 }
-
-
-
-
-
 
 func claudeImageInputPart(source ojson.Result) ([]byte, bool) {
 	if !source.Exists() {

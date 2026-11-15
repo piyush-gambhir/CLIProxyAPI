@@ -14,13 +14,10 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-
 type ProviderExecutor interface {
-
 	Identifier() string
 
 	Execute(ctx context.Context, auth *Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error)
-
 
 	ExecuteStream(ctx context.Context, auth *Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error)
 
@@ -28,43 +25,31 @@ type ProviderExecutor interface {
 
 	CountTokens(ctx context.Context, auth *Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error)
 
-
 	HttpRequest(ctx context.Context, auth *Auth, req *http.Request) (*http.Response, error)
 }
-
-
 
 type APIKeyConfigExecutor interface {
 	ForAPIKey() ProviderExecutor
 }
-
-
 
 type RequestAuthPreparer interface {
 	ShouldPrepareRequestAuth(auth *Auth) bool
 	PrepareRequestAuth(ctx context.Context, auth *Auth) (*Auth, error)
 }
 
-
 type ExecutionSessionCloser interface {
 	CloseExecutionSession(sessionID string)
 }
-
-
 
 type ExecutionSessionSharer interface {
 	SharesExecutionSessionsWith(other ProviderExecutor) bool
 }
 
-
-
 type AuthExecutionSessionCloser interface {
 	CloseAuthExecutionSessions(authID string)
 }
 
-
 type Result struct {
-
 	AuthID string
 
 	Provider string
@@ -74,7 +59,6 @@ type Result struct {
 	RouteModel string
 
 	Success bool
-
 
 	CompletedResponse bool
 
@@ -86,8 +70,6 @@ type Result struct {
 
 	Options cliproxyexecutor.Options
 
-
-
 	SkipQuotaObservation bool
 
 	AccessToken string
@@ -96,13 +78,8 @@ type Result struct {
 
 	RegistrationEpoch uint64
 
-
-
-
-
 	ExecutionSeq uint64
 }
-
 
 type Selector interface {
 	Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error)
@@ -112,8 +89,6 @@ type PluginScheduler interface {
 	PickAuth(context.Context, pluginapi.SchedulerPickRequest) (pluginapi.SchedulerPickResponse, bool, error)
 }
 
-
-
 type PluginSchedulerAcrossPriorities interface {
 	SchedulerWantsAcrossPriorities() bool
 }
@@ -122,16 +97,12 @@ type pluginSchedulerState interface {
 	HasScheduler() bool
 }
 
-
-
 type StoppableSelector interface {
 	Selector
 	Stop()
 }
 
-
 type Hook interface {
-
 	OnAuthRegistered(ctx context.Context, auth *Auth)
 
 	OnAuthUpdated(ctx context.Context, auth *Auth)
@@ -139,28 +110,19 @@ type Hook interface {
 	OnResult(ctx context.Context, result Result)
 }
 
-
 type NoopHook struct{}
-
 
 func (NoopHook) OnAuthRegistered(context.Context, *Auth) {}
 
-
 func (NoopHook) OnAuthUpdated(context.Context, *Auth) {}
 
-
 func (NoopHook) OnResult(context.Context, Result) {}
-
-
-
 
 type ResultPolicy interface {
 	ApplyResultPolicy(ctx context.Context, result Result) Result
 }
 
-
 type ResultPolicyFunc func(ctx context.Context, result Result) Result
-
 
 func (f ResultPolicyFunc) ApplyResultPolicy(ctx context.Context, result Result) Result {
 	return f(ctx, result)
@@ -169,7 +131,6 @@ func (f ResultPolicyFunc) ApplyResultPolicy(ctx context.Context, result Result) 
 type resultPolicyHolder struct {
 	policy ResultPolicy
 }
-
 
 type Manager struct {
 	store                     Store
@@ -183,7 +144,6 @@ type Manager struct {
 	selectorMu                sync.Mutex
 	configCooldownMu          sync.Mutex
 	syncSchedulerMu           sync.Mutex
-
 
 	executionSeq       atomic.Uint64
 	structuralEpoch    atomic.Uint64
@@ -207,27 +167,19 @@ type Manager struct {
 	homeDispatchBundle          atomic.Pointer[HomeDispatchBundle]
 	homeInFlightPublisherConfig atomic.Pointer[HomeInFlightPublisherConfig]
 
-
 	requestRetry        atomic.Int32
 	maxRetryCredentials atomic.Int32
 	maxRetryInterval    atomic.Int64
 
-
 	oauthModelAlias atomic.Value
-
 
 	apiKeyModelRouting atomic.Value
 
-
 	modelPoolOffsets map[string]int
-
-
 
 	runtimeConfig atomic.Value
 
-
 	rtProvider RoundTripperProvider
-
 
 	refreshCancel context.CancelFunc
 	refreshLoop   *authAutoRefreshLoop
@@ -235,7 +187,6 @@ type Manager struct {
 	refreshJobs map[string]*authRefreshJob
 
 	requestPrepareLocks sync.Map
-
 
 	refreshLocks sync.Map
 
@@ -245,10 +196,8 @@ type Manager struct {
 	metadataPersistCancels sync.Map
 	metadataSaveGate       sync.Map
 
-
 	authLoadGate *semaphore.Weighted
 }
-
 
 func NewManager(store Store, selector Selector, hook Hook) *Manager {
 	if selector == nil {
@@ -282,7 +231,6 @@ func NewManager(store Store, selector Selector, hook Hook) *Manager {
 	return manager
 }
 
-
 func (m *Manager) SetResultPolicy(policy ResultPolicy) {
 	if m == nil {
 		return
@@ -293,7 +241,6 @@ func (m *Manager) SetResultPolicy(policy ResultPolicy) {
 	}
 	m.resultPolicy.Store(&resultPolicyHolder{policy: policy})
 }
-
 
 func (m *Manager) ResultPolicy() ResultPolicy {
 	if m == nil {

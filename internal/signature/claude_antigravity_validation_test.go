@@ -9,7 +9,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-
 func antigravityCAQSFixture(t *testing.T) string {
 	t.Helper()
 	return signaturetest.AntigravityCAQS()

@@ -13,8 +13,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-
-
 type Manager struct {
 	path      string
 	upgrader  websocket.Upgrader
@@ -30,7 +28,6 @@ type Manager struct {
 	logWarnf  func(string, ...any)
 }
 
-
 type Options struct {
 	Path            string
 	ProviderFactory func(*http.Request) (string, error)
@@ -40,7 +37,6 @@ type Options struct {
 	LogInfof        func(string, ...any)
 	LogWarnf        func(string, ...any)
 }
-
 
 func NewManager(opts Options) *Manager {
 	path := strings.TrimSpace(opts.Path)
@@ -79,7 +75,6 @@ func NewManager(opts Options) *Manager {
 	return mgr
 }
 
-
 func (m *Manager) Path() string {
 	if m == nil {
 		return "/v1/ws"
@@ -87,11 +82,9 @@ func (m *Manager) Path() string {
 	return m.path
 }
 
-
 func (m *Manager) Handler() http.Handler {
 	return http.HandlerFunc(m.handleWebsocket)
 }
-
 
 func (m *Manager) Stop(_ context.Context) error {
 	m.sessMutex.Lock()
@@ -109,7 +102,6 @@ func (m *Manager) Stop(_ context.Context) error {
 	}
 	return nil
 }
-
 
 func (m *Manager) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	expectedPath := m.Path()
@@ -158,8 +150,6 @@ func (m *Manager) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	go s.run(context.Background())
 }
-
-
 
 func (m *Manager) Send(ctx context.Context, provider string, msg Message) (<-chan Message, error) {
 	s := m.session(provider)

@@ -28,7 +28,6 @@ type homeAppLogPayload struct {
 	client    homeAppLogClient
 }
 
-
 type HomeAppLogForwarder struct {
 	formatter log.Formatter
 	queue     chan homeAppLogPayload
@@ -98,7 +97,6 @@ func registerHomeAppLogForwarder(forwarder *HomeAppLogForwarder) {
 	homeAppLogMuxHook.register(forwarder)
 }
 
-
 func StartHomeAppLogForwarder(queueSize int) *HomeAppLogForwarder {
 	if queueSize <= 0 {
 		queueSize = defaultHomeAppLogQueueSize
@@ -114,7 +112,6 @@ func StartHomeAppLogForwarder(queueSize int) *HomeAppLogForwarder {
 	registerHomeAppLogForwarder(forwarder)
 	return forwarder
 }
-
 
 func (f *HomeAppLogForwarder) Stop() {
 	if f == nil {
@@ -132,7 +129,6 @@ func (f *HomeAppLogForwarder) Stop() {
 	})
 }
 
-
 func (f *HomeAppLogForwarder) Bind(client *home.Client) {
 	f.bind(client)
 }
@@ -149,7 +145,6 @@ func (f *HomeAppLogForwarder) bind(client homeAppLogClient) {
 	f.owner = client
 	f.enabled.Store(true)
 }
-
 
 func (f *HomeAppLogForwarder) Deactivate(client *home.Client) {
 	f.deactivate(client)
@@ -172,11 +167,9 @@ func (f *HomeAppLogForwarder) client() homeAppLogClient {
 	return f.owner
 }
 
-
 func (f *HomeAppLogForwarder) Levels() []log.Level {
 	return log.AllLevels
 }
-
 
 func (f *HomeAppLogForwarder) Fire(entry *log.Entry) error {
 	if f == nil || entry == nil || !f.enabled.Load() {

@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-
-
 type CooldownView struct {
 	Scope            string    `json:"scope"`
 	ModelKey         string    `json:"model_key,omitempty"`
@@ -18,16 +16,11 @@ type CooldownView struct {
 	HTTPStatus       int       `json:"http_status,omitempty"`
 }
 
-
-
-
-
 func CooldownSnapshotForAuth(auth *Auth, now time.Time) []CooldownView {
 	views := make([]CooldownView, 0)
 	if auth == nil {
 		return views
 	}
-
 
 	if auth.Quota.Exceeded && auth.Quota.Reason == "credential_quota" && auth.Quota.NextRecoverAt.After(now) {
 		views = append(views, newCooldownView("credential", "", auth.Quota.NextRecoverAt, now, auth.Quota, auth.StatusMessage, auth.LastError))
@@ -36,7 +29,6 @@ func CooldownSnapshotForAuth(auth *Auth, now time.Time) []CooldownView {
 			views = append(views, newCooldownView("credential", "", next, now, auth.Quota, auth.StatusMessage, auth.LastError))
 		}
 	}
-
 
 	keys := make([]string, 0, len(auth.ModelStates))
 	for key := range auth.ModelStates {
@@ -98,7 +90,6 @@ func newCooldownView(scope, model string, next, now time.Time, quota QuotaState,
 		RetryAt: next.UTC(), RemainingSeconds: seconds,
 	}
 
-
 	if quota.Exceeded && (quota.NextRecoverAt.IsZero() || !quota.NextRecoverAt.Before(next)) {
 		switch quota.Reason {
 		case "credential_quota", "quota":
@@ -123,7 +114,6 @@ func newCooldownView(scope, model string, next, now time.Time, quota QuotaState,
 	if view.Reason == "unknown" {
 		view.Reason = cooldownStatusReason(statusMessage)
 	}
-
 
 	if !propagatedQuota && lastErr != nil && lastErr.HTTPStatus >= 400 && lastErr.HTTPStatus <= 599 && errorReason == view.Reason {
 		view.HTTPStatus = lastErr.HTTPStatus
@@ -163,7 +153,6 @@ func cooldownErrorReason(err *Error) string {
 }
 
 func cooldownStatusReason(message string) string {
-
 
 	switch strings.TrimSpace(message) {
 	case "quota", "quota exhausted":

@@ -1,6 +1,3 @@
-
-
-
 package cliproxy
 
 import (
@@ -13,93 +10,43 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
-
-
 type TokenClientProvider interface {
-
-
-
-
-
-
-
-
-
 	Load(ctx context.Context, cfg *config.Config) (*TokenClientResult, error)
 }
 
-
-
 type TokenClientResult struct {
-
 	SuccessfulAuthed int
 }
 
-
-
 type APIKeyClientProvider interface {
-
-
-
-
-
-
-
-
-
 	Load(ctx context.Context, cfg *config.Config) (*APIKeyClientResult, error)
 }
 
-
 type APIKeyClientResult struct {
-
-
 	GeminiKeyCount int
-
 
 	VertexCompatKeyCount int
 
-
 	ClaudeKeyCount int
-
 
 	CodexKeyCount int
 
-
 	XAIKeyCount int
 
-
 	MetaKeyCount int
-
 
 	OpenAICompatCount int
 }
 
-
-
-
-
-
-
-
-
-
-
-
 type WatcherFactory func(configPath, authDir string, reload func(*config.Config)) (*WatcherWrapper, error)
-
 
 type PluginAuthParser interface {
 	ParseAuth(context.Context, pluginapi.AuthParseRequest) (*coreauth.Auth, bool, error)
 }
 
-
-
 type PluginMultiAuthParser interface {
 	ParseAuths(context.Context, pluginapi.AuthParseRequest) ([]*coreauth.Auth, bool, error)
 }
-
 
 type WatcherWrapper struct {
 	start func(ctx context.Context) error
@@ -117,14 +64,12 @@ type WatcherWrapper struct {
 	reloadConfigIfChanged        func()
 }
 
-
 func (w *WatcherWrapper) Start(ctx context.Context) error {
 	if w == nil || w.start == nil {
 		return nil
 	}
 	return w.start(ctx)
 }
-
 
 func (w *WatcherWrapper) Stop() error {
 	if w == nil || w.stop == nil {
@@ -133,14 +78,12 @@ func (w *WatcherWrapper) Stop() error {
 	return w.stop()
 }
 
-
 func (w *WatcherWrapper) SetConfig(cfg *config.Config) {
 	if w == nil || w.setConfig == nil {
 		return
 	}
 	w.setConfig(cfg)
 }
-
 
 func (w *WatcherWrapper) ReloadConfigIfChanged() bool {
 	if w == nil || w.reloadConfigIfChanged == nil {
@@ -150,7 +93,6 @@ func (w *WatcherWrapper) ReloadConfigIfChanged() bool {
 	return true
 }
 
-
 func (w *WatcherWrapper) SetPluginAuthParser(parser PluginAuthParser) {
 	if w == nil || w.setPluginAuthParser == nil {
 		return
@@ -158,16 +100,12 @@ func (w *WatcherWrapper) SetPluginAuthParser(parser PluginAuthParser) {
 	w.setPluginAuthParser(parser)
 }
 
-
-
-
 func (w *WatcherWrapper) DispatchRuntimeAuthUpdate(update watcher.AuthUpdate) bool {
 	if w == nil || w.dispatchRuntimeUpdate == nil {
 		return false
 	}
 	return w.dispatchRuntimeUpdate(update)
 }
-
 
 func (w *WatcherWrapper) DispatchPersistedAuthUpdate(update watcher.AuthUpdate) bool {
 	if w == nil {
@@ -183,8 +121,6 @@ func (w *WatcherWrapper) DispatchPersistedAuthUpdate(update watcher.AuthUpdate) 
 	return false
 }
 
-
-
 func (w *WatcherWrapper) DispatchPersistedAuthUpdateWithRevision(update *watcher.AuthUpdate) (bool, uint64) {
 	if w == nil {
 		return false, 0
@@ -199,20 +135,12 @@ func (w *WatcherWrapper) DispatchPersistedAuthUpdateWithRevision(update *watcher
 	return false, 0
 }
 
-
-
-
-
-
-
-
 func (w *WatcherWrapper) SnapshotAuths() []*coreauth.Auth {
 	if w == nil || w.snapshotAuths == nil {
 		return nil
 	}
 	return w.snapshotAuths()
 }
-
 
 func (w *WatcherWrapper) SnapshotAuthFile(path string) ([]*coreauth.Auth, error) {
 	if w == nil || w.snapshotAuthFile == nil {
@@ -221,15 +149,12 @@ func (w *WatcherWrapper) SnapshotAuthFile(path string) ([]*coreauth.Auth, error)
 	return w.snapshotAuthFile(path)
 }
 
-
-
 func (w *WatcherWrapper) RereadDiscardedFileSnapshot(auth *coreauth.Auth) {
 	if w == nil || w.rereadDiscardedFileSnapshot == nil {
 		return
 	}
 	w.rereadDiscardedFileSnapshot(auth)
 }
-
 
 func (w *WatcherWrapper) SetAuthUpdateQueue(queue chan<- watcher.AuthUpdate) {
 	if w == nil || w.setUpdateQueue == nil {

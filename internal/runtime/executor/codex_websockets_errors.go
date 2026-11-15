@@ -56,7 +56,6 @@ func parseCodexWebsocketErrorWithCooling(payload []byte, modelLevelCooling bool)
 		transientRateLimit: transientCapacity && status == http.StatusTooManyRequests,
 	}
 
-
 	if retryAfter := parseCodexRetryAfter(status, out, time.Now()); retryAfter != nil {
 		statusError.retryAfter = retryAfter
 	} else if isCodexWebsocketConnectionLimitError(payload) {

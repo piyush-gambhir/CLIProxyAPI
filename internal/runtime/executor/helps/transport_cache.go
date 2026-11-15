@@ -10,20 +10,7 @@ import (
 	"sync/atomic"
 )
 
-
-
-
-
-
-
 const DefaultTransportCacheCapacity = 64
-
-
-
-
-
-
-
 
 type TransportCache[K comparable] struct {
 	mu       sync.Mutex
@@ -38,13 +25,6 @@ type transportCacheEntry[K comparable] struct {
 	transport *http.Transport
 	retired   atomic.Bool
 }
-
-
-
-
-
-
-
 
 func attachTransportRetirementGuard(transport *http.Transport, retired *atomic.Bool) {
 	if transport == nil || retired == nil {
@@ -81,8 +61,6 @@ func attachTransportRetirementGuard(transport *http.Transport, retired *atomic.B
 	}
 }
 
-
-
 func NewTransportCache[K comparable](capacity int) *TransportCache[K] {
 	if capacity <= 0 {
 		capacity = DefaultTransportCacheCapacity
@@ -93,12 +71,6 @@ func NewTransportCache[K comparable](capacity int) *TransportCache[K] {
 		items:    make(map[K]*list.Element, capacity),
 	}
 }
-
-
-
-
-
-
 
 func (c *TransportCache[K]) Get(key K, build func() (*http.Transport, error)) (*http.Transport, error) {
 	if c == nil {
@@ -129,7 +101,6 @@ func (c *TransportCache[K]) Get(key K, build func() (*http.Transport, error)) (*
 		return nil, errors.New("transport cache: build returned no transport")
 	}
 
-
 	if element, ok := c.items[key]; ok {
 		c.order.MoveToFront(element)
 		existing := element.Value.(*transportCacheEntry[K]).transport
@@ -152,11 +123,6 @@ func (c *TransportCache[K]) Get(key K, build func() (*http.Transport, error)) (*
 	return transport, nil
 }
 
-
-
-
-
-
 func (c *TransportCache[K]) evictLocked() []*http.Transport {
 	var evicted []*http.Transport
 	for c.order.Len() > c.capacity {
@@ -173,7 +139,6 @@ func (c *TransportCache[K]) evictLocked() []*http.Transport {
 	return evicted
 }
 
-
 func (c *TransportCache[K]) Len() int {
 	if c == nil {
 		return 0
@@ -182,7 +147,6 @@ func (c *TransportCache[K]) Len() int {
 	defer c.mu.Unlock()
 	return c.order.Len()
 }
-
 
 func (c *TransportCache[K]) Contains(key K) bool {
 	if c == nil {
@@ -193,8 +157,6 @@ func (c *TransportCache[K]) Contains(key K) bool {
 	_, ok := c.items[key]
 	return ok
 }
-
-
 
 func (c *TransportCache[K]) CloseKey(key K) bool {
 	if c == nil {
@@ -217,8 +179,6 @@ func (c *TransportCache[K]) CloseKey(key K) bool {
 	return true
 }
 
-
-
 func (c *TransportCache[K]) detachMatching(predicate func(key K) bool) []*http.Transport {
 	if c == nil || predicate == nil {
 		return nil
@@ -240,8 +200,6 @@ func (c *TransportCache[K]) detachMatching(predicate func(key K) bool) []*http.T
 	return toClose
 }
 
-
-
 func (c *TransportCache[K]) CloseMatching(predicate func(key K) bool) int {
 	toClose := c.detachMatching(predicate)
 	for _, t := range toClose {
@@ -249,7 +207,6 @@ func (c *TransportCache[K]) CloseMatching(predicate func(key K) bool) int {
 	}
 	return len(toClose)
 }
-
 
 func (c *TransportCache[K]) Purge() {
 	if c == nil {

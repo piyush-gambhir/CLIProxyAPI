@@ -712,11 +712,9 @@ func TestConvertOpenAIRequestToClaude_DeduplicatesToolResults(t *testing.T) {
 		t.Fatalf("expected at least 5 messages, got %d. Output: %s", len(messages), string(out))
 	}
 
-
 	if got := messages[1].Get("content.0.id").String(); got != "call_dup" {
 		t.Fatalf("messages[1].content.0.id = %q, want call_dup", got)
 	}
-
 
 	if got := messages[2].Get("content.0.type").String(); got != "tool_result" {
 		t.Fatalf("messages[2].content.0.type = %q, want tool_result", got)
@@ -728,14 +726,12 @@ func TestConvertOpenAIRequestToClaude_DeduplicatesToolResults(t *testing.T) {
 		t.Fatalf("messages[2].content.0.content = %q, want 'final output'", got)
 	}
 
-
 	if got := messages[3].Get("content.0.text").String(); got != "Next step" {
 		t.Fatalf("messages[3].content.0.text = %q, want 'Next step'", got)
 	}
 	if got := messages[3].Get("content.1.id").String(); got != "call_other" {
 		t.Fatalf("messages[3].content.1.id = %q, want call_other", got)
 	}
-
 
 	msg4Blocks := messages[4].Get("content").Array()
 	if len(msg4Blocks) != 2 {
@@ -1066,9 +1062,6 @@ func TestConvertOpenAIRequestToClaude_ResponseFormatAbsentOrTextNoOp(t *testing.
 	}
 }
 
-
-
-
 func TestConvertOpenAIRequestToClaude_ToolResultPartCacheControlHoisted(t *testing.T) {
 	inputJSON := []byte(`{
 		"messages":[
@@ -1085,12 +1078,10 @@ func TestConvertOpenAIRequestToClaude_ToolResultPartCacheControlHoisted(t *testi
 		t.Fatalf("message count = %d, want 3. Output: %s", len(messages), string(out))
 	}
 
-
 	firstText := messages[0].Get("content.0")
 	if got := firstText.Get("cache_control.type").String(); got != "ephemeral" {
 		t.Fatalf("user text part cache_control.type = %q, want ephemeral (must not be stripped). Output: %s", got, string(out))
 	}
-
 
 	toolResult := messages[2].Get("content.0")
 	if got := toolResult.Get("type").String(); got != "tool_result" {
@@ -1099,7 +1090,6 @@ func TestConvertOpenAIRequestToClaude_ToolResultPartCacheControlHoisted(t *testi
 	if got := toolResult.Get("cache_control.type").String(); got != "ephemeral" {
 		t.Fatalf("tool_result block cache_control.type = %q, want ephemeral (hoisted from the part). Output: %s", got, string(out))
 	}
-
 
 	innerParts := toolResult.Get("content").Array()
 	for i, part := range innerParts {
@@ -1475,12 +1465,10 @@ func TestConvertOpenAIRequestToClaude_SanitizesToolNamesAndProvidesFallbackSchem
 
 	result, _ := ConvertOpenAIRequestToClaude("claude-sonnet-4-6", []byte(inputJSON), false)
 
-
 	tool0Name := ojson.GetBytesNoCopy(result, "tools.0.name").String()
 	if tool0Name != "mcp_server_special_get_time" {
 		t.Fatalf("tools.0.name = %q, want mcp_server_special_get_time. Output: %s", tool0Name, result)
 	}
-
 
 	tool0Schema := ojson.GetBytesNoCopy(result, "tools.0.input_schema")
 	if !tool0Schema.Exists() || tool0Schema.Get("type").String() != "object" {
@@ -1491,12 +1479,10 @@ func TestConvertOpenAIRequestToClaude_SanitizesToolNamesAndProvidesFallbackSchem
 		t.Fatalf("tools.1.input_schema = %s, want object schema. Output: %s", tool1Schema, result)
 	}
 
-
 	toolUseName := ojson.GetBytesNoCopy(result, "messages.0.content.1.name").String()
 	if toolUseName != "mcp_server_special_get_time" {
 		t.Fatalf("messages.0.content.1.name = %q, want mcp_server_special_get_time. Output: %s", toolUseName, result)
 	}
-
 
 	toolChoiceName := ojson.GetBytesNoCopy(result, "tool_choice.name").String()
 	if toolChoiceName != "mcp_server_special_get_time" {

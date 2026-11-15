@@ -89,14 +89,11 @@ func TestClaudeOAuthTLSClientHelloSpecMatchesNative220Capture(t *testing.T) {
 func TestClaudeOAuthTLSResumptionIsWireSafe(t *testing.T) {
 	t.Parallel()
 
-
 	spec := claudeOAuthTLSClientHelloSpec()
 	last := spec.Extensions[len(spec.Extensions)-1]
 	if _, ok := last.(*tls.UtlsPreSharedKeyExtension); !ok {
 		t.Fatalf("last OAuth extension = %T, want *tls.UtlsPreSharedKeyExtension", last)
 	}
-
-
 
 	cfg := newClaudeOAuthTLSConfig("api.anthropic.com", tls.NewLRUClientSessionCache(claudeOAuthSessionCacheCapacity))
 	if cfg.ServerName != "api.anthropic.com" {
@@ -112,9 +109,6 @@ func TestClaudeOAuthTLSResumptionIsWireSafe(t *testing.T) {
 		t.Fatal("PreferSkipResumptionOnNilExtension = false, want true to avoid a HelloCustom resumption panic")
 	}
 
-
-
-
 	first := newUtlsRoundTripper(&sdkconfig.SDKConfig{ProxyURL: "http://127.0.0.1:9"})
 	second := newUtlsRoundTripper(&sdkconfig.SDKConfig{ProxyURL: "http://127.0.0.1:9"})
 	if first.sessionCache == nil || second.sessionCache == nil {
@@ -124,13 +118,10 @@ func TestClaudeOAuthTLSResumptionIsWireSafe(t *testing.T) {
 		t.Fatal("same-proxy transports have different session caches, so resumption can never hit")
 	}
 
-
 	other := newUtlsRoundTripper(&sdkconfig.SDKConfig{ProxyURL: "http://127.0.0.1:10"})
 	if first.sessionCache == other.sessionCache {
 		t.Fatal("different proxies share a session cache, want per-proxy isolation")
 	}
-
-
 
 	cacheOf := func(service *ClaudeAuth) tls.ClientSessionCache {
 		t.Helper()
@@ -206,9 +197,6 @@ func claudeOAuthExtensionTypes(t *testing.T, extensions []tls.TLSExtension) []ui
 		case *tls.SupportedVersionsExtension:
 			result = append(result, 43)
 		case *tls.UtlsPreSharedKeyExtension:
-
-
-
 
 			continue
 		default:

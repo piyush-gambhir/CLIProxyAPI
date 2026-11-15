@@ -6,17 +6,12 @@ type skipPersistContextKey struct{}
 type deferAPIKeyModelAliasRebuildContextKey struct{}
 type authCreationIntentContextKey struct{}
 
-
-
-
 func WithAuthCreationIntent(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, authCreationIntentContextKey{}, true)
 }
-
-
 
 func HasAuthCreationIntent(ctx context.Context) bool {
 	if ctx == nil {
@@ -27,17 +22,12 @@ func HasAuthCreationIntent(ctx context.Context) bool {
 	return ok && enabled
 }
 
-
-
-
 func WithSkipPersist(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, skipPersistContextKey{}, true)
 }
-
-
 
 func WithoutSkipPersist(ctx context.Context) context.Context {
 	if ctx == nil {
@@ -57,8 +47,6 @@ func shouldSkipPersist(ctx context.Context) bool {
 	enabled, ok := v.(bool)
 	return ok && enabled
 }
-
-
 
 func WithDeferredAPIKeyModelAliasRebuild(ctx context.Context) context.Context {
 	if ctx == nil {

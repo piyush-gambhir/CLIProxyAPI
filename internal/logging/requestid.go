@@ -9,19 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type requestIDKey struct{}
 
-
 const ginRequestIDKey = "__request_id__"
-
-
 
 func GenerateRequestID() (string, error) {
 	return GenerateRequestIDFromReader(nil)
 }
-
-
 
 func GenerateRequestIDFromReader(r io.Reader) (string, error) {
 	var id uuid.UUID
@@ -37,8 +31,6 @@ func GenerateRequestIDFromReader(r io.Reader) (string, error) {
 	return id.String(), nil
 }
 
-
-
 func ShortRequestID(requestID string) string {
 	requestID = strings.TrimSpace(requestID)
 	if len(requestID) > 8 {
@@ -47,12 +39,9 @@ func ShortRequestID(requestID string) string {
 	return requestID
 }
 
-
 func WithRequestID(ctx context.Context, requestID string) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, requestID)
 }
-
-
 
 func GetRequestID(ctx context.Context) string {
 	if ctx == nil {
@@ -64,13 +53,11 @@ func GetRequestID(ctx context.Context) string {
 	return ""
 }
 
-
 func SetGinRequestID(c *gin.Context, requestID string) {
 	if c != nil {
 		c.Set(ginRequestIDKey, requestID)
 	}
 }
-
 
 func GetGinRequestID(c *gin.Context) string {
 	if c == nil {

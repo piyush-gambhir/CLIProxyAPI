@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-
-
-
-
-
-
 func GenerateRandomState() (string, error) {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
@@ -22,7 +16,6 @@ func GenerateRandomState() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-
 type OAuthCallback struct {
 	Code             string
 	State            string
@@ -30,9 +23,6 @@ type OAuthCallback struct {
 	Error            string
 	ErrorDescription string
 }
-
-
-
 
 func AsyncPrompt(promptFn func(string) (string, error), message string) (<-chan string, <-chan error) {
 	inputCh := make(chan string, 1)
@@ -47,8 +37,6 @@ func AsyncPrompt(promptFn func(string) (string, error), message string) (<-chan 
 	}()
 	return inputCh, errCh
 }
-
-
 
 func ParseOAuthCallback(input string) (*OAuthCallback, error) {
 	trimmed := strings.TrimSpace(input)

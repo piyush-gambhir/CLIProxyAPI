@@ -300,7 +300,6 @@ func TestConvertGeminiRequestToOpenAI_SameNameCallsInSameMessageDistinct(t *test
 
 func TestConvertGeminiRequestToOpenAI_InterleavedPerNameFIFOMatching(t *testing.T) {
 
-
 	inputJSON := []byte(`{
 		"contents": [
 			{
@@ -329,11 +328,6 @@ func TestConvertGeminiRequestToOpenAI_InterleavedPerNameFIFOMatching(t *testing.
 	callB1 := ojson.GetBytesNoCopy(out, "messages.0.tool_calls.1.id").String()
 	callA2 := ojson.GetBytesNoCopy(out, "messages.0.tool_calls.2.id").String()
 	callB2 := ojson.GetBytesNoCopy(out, "messages.0.tool_calls.3.id").String()
-
-
-
-
-
 
 	if got := ojson.GetBytesNoCopy(out, "messages.1.tool_call_id").String(); got != callB1 {
 		t.Fatalf("first response (tool_b) = %q, want callB1 %q", got, callB1)
@@ -403,8 +397,6 @@ func TestConvertGeminiRequestToOpenAI_ExplicitCallInheritedByImplicitResponse(t 
 }
 
 func TestConvertGeminiRequestToOpenAI_OutOrderExplicitResponseDoesNotDuplicateID(t *testing.T) {
-
-
 
 	inputJSON := []byte(`{
 		"contents": [

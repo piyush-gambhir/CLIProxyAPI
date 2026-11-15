@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-
-
 type RateLimitError struct {
 	StatusCode int
 	RetryAt    time.Time
@@ -21,7 +19,6 @@ type RateLimitError struct {
 func (err *RateLimitError) Error() string {
 	return fmt.Sprintf("GitHub API rate limited; retry after %s", err.RetryAt.UTC().Format(time.RFC3339))
 }
-
 
 func (err *RateLimitError) RetryAfterSeconds(now time.Time) int64 {
 	delay := err.RetryAt.Sub(now)
@@ -40,9 +37,6 @@ type githubCooldown struct {
 	status   int
 	failures uint8
 }
-
-
-
 
 type GitHubRateLimiter struct {
 	mu          sync.Mutex
@@ -90,9 +84,6 @@ func (limiter *GitHubRateLimiter) check(key string) error {
 	return nil
 }
 
-
-
-
 func (limiter *GitHubRateLimiter) pruneLocked(now time.Time) {
 	if now.Before(limiter.nextPruneAt) {
 		return
@@ -104,8 +95,6 @@ func (limiter *GitHubRateLimiter) pruneLocked(now time.Time) {
 	}
 	limiter.nextPruneAt = now.Add(time.Hour)
 }
-
-
 
 func (limiter *GitHubRateLimiter) observe(key string, status int, headers http.Header, body []byte) error {
 	if key == "" {
@@ -137,7 +126,6 @@ func (limiter *GitHubRateLimiter) observe(key string, status int, headers http.H
 		if !rateLimited {
 			return nil
 		}
-
 
 		delay := time.Minute * time.Duration(1<<entry.failures)
 		if delay > time.Hour {

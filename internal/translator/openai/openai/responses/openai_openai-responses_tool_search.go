@@ -9,12 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
 const (
 	responsesToolSearchIDPrefix          = "tsc_"
 	responsesToolSearchDefaultParameters = `{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`
@@ -46,10 +40,6 @@ func (idx *responsesToolIndex) toolSearchName() string {
 	}
 	return ""
 }
-
-
-
-
 
 func (idx *responsesToolIndex) toolSearchHistory(items []ojson.Result) []ojson.Result {
 	var out []ojson.Result
@@ -154,8 +144,6 @@ func (idx *responsesToolIndex) toolSearchOutputAsFunctionCallOutput(item ojson.R
 	_ = translatorcommon.SetStringWithoutHTMLEscapeDoc(outputDoc, "output", summaryDoc.String())
 	return util.ParseGJSONBytesNoCopy(outputDoc.Bytes())
 }
-
-
 
 func toolSearchCallItem(callID, args, status string) []byte {
 	trimmed := strings.TrimSpace(args)

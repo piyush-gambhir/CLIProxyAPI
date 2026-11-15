@@ -147,7 +147,6 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("sessionID = %q, want canonical-override", meta1.SessionID)
 	}
 
-
 	res2 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.CanonicalSessionIDMetadataKey: "lcp:branch-123",
 		cliproxyexecutor.ParentSessionIDMetadataKey:    "lcp:trunk-000",
@@ -157,7 +156,6 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("synced session = (%q, %q), want (lcp:branch-123, lcp:trunk-000)", meta2.SessionID, meta2.ParentSessionID)
 	}
 
-
 	res3 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.CanonicalSessionIDMetadataKey: "same-loop",
 		cliproxyexecutor.ParentSessionIDMetadataKey:    "same-loop",
@@ -166,7 +164,6 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 	if meta3.SessionID != "same-loop" || meta3.ParentSessionID != "" {
 		t.Fatalf("self-loop session = (%q, %q), want (same-loop, empty)", meta3.SessionID, meta3.ParentSessionID)
 	}
-
 
 	ctxWithStaleParent := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID:       "old-child",
@@ -180,7 +177,6 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("stale parent not cleared: (%q, %q), want (new-root-session, empty)", meta4.SessionID, meta4.ParentSessionID)
 	}
 
-
 	res5 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.ExecutionSessionMetadataKey: "call-live-123",
 	})
@@ -189,7 +185,6 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("execution session = %q, want execution:call-live-123", meta5.SessionID)
 	}
 
-
 	res6 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.DerivedSessionIDMetadataKey: "ctx:v1:raw-hash",
 	})
@@ -197,7 +192,6 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 	if meta6.SessionID != "derived:ctx:v1:raw-hash" {
 		t.Fatalf("derived session = %q, want derived:ctx:v1:raw-hash", meta6.SessionID)
 	}
-
 
 	ctxWithExistingSession := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID:       "old-stale-session",
@@ -243,7 +237,6 @@ func TestApplyRequestAfterAuthInterceptorSessionClearing(t *testing.T) {
 	if _, ok := finalOpts.Metadata[cliproxyexecutor.ParentSessionIDMetadataKey]; ok {
 		t.Fatalf("parent session was not cleared from metadata after interceptor cleared headers")
 	}
-
 
 	ctxWithSession := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID:       "session:initial-session",

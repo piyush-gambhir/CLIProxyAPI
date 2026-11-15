@@ -42,38 +42,30 @@ const (
 type vertexASTNode struct {
 	kind vertexNodeKind
 
-	// Object state
 	keys       []string
 	children   map[string]*vertexASTNode
 	objNextIdx int
 
-	// Array state
 	elements   map[int]*vertexASTNode
 	maxIdx     int
 	arrNextIdx int
 
-	// String state
 	strBuf     strings.Builder
 	strEmitted int
 	strOpened  bool
 	strClosed  bool
 	stringOpen bool
 
-	// Scalar state
 	scalarRaw     string
 	scalarEmitted bool
 
 	holdUntilFinish bool
 
-	// Container emission state
 	containerOpened bool
 	containerClosed bool
 	commaEmitted    map[int]bool
 }
 
-// VertexPartialArgsAssembler incrementally reconstructs a JSON value from Vertex AI
-// streaming functionCall.partialArgs fragments and emits valid JSON deltas that can
-// be concatenated directly by downstream OpenAI and Claude clients.
 type VertexPartialArgsAssembler struct {
 	root             *vertexASTNode
 	lastStringNode   *vertexASTNode
@@ -84,14 +76,10 @@ type VertexPartialArgsAssembler struct {
 	err              error
 }
 
-// NewVertexPartialArgsAssembler creates a new assembler for a single streaming function call.
 func NewVertexPartialArgsAssembler() *VertexPartialArgsAssembler {
 	return &VertexPartialArgsAssembler{}
 }
 
-// SetArgumentCleaner configures an optional JSON argument cleaner (such as
-// Claude schema placeholder stripping) applied before potentially removable
-// placeholder fields ("reason", "_", or closed empty object fields) are emitted.
 func (a *VertexPartialArgsAssembler) SetArgumentCleaner(cleaner func(string) string) {
 	a.cleaner = cleaner
 	if cleaner != nil && a.closedEmptyCache == nil {
@@ -99,7 +87,6 @@ func (a *VertexPartialArgsAssembler) SetArgumentCleaner(cleaner func(string) str
 	}
 }
 
-// Err returns the first structural or limits error encountered while assembling partialArgs.
 func (a *VertexPartialArgsAssembler) Err() error {
 	return a.err
 }
@@ -110,8 +97,6 @@ func (a *VertexPartialArgsAssembler) setError(err error) {
 	}
 }
 
-// IsVertexStreamingFunctionCall reports whether a Gemini/Vertex functionCall object
-// uses streaming arguments (partialArgs or willContinue).
 func IsVertexStreamingFunctionCall(fc ojson.Result) bool {
 	if !fc.Exists() || !fc.IsObject() {
 		return false
@@ -135,14 +120,10 @@ func IsVertexStreamingFunctionCall(fc ojson.Result) bool {
 	return false
 }
 
-// VertexFunctionCallWillContinue reports whether a functionCall chunk indicates that
-// subsequent chunks will follow for the same function call.
 func VertexFunctionCallWillContinue(fc ojson.Result) bool {
 	return fc.Get("willContinue").Bool() || fc.Get("will_continue").Bool()
 }
 
-// PushFunctionCall processes one functionCall chunk and returns the newly emitted JSON
-// argument delta and whether the function call has completed cleanly.
 func (a *VertexPartialArgsAssembler) PushFunctionCall(fc ojson.Result) (string, bool) {
 	if a.err != nil {
 		return "", false
@@ -207,7 +188,6 @@ func (a *VertexPartialArgsAssembler) PushFunctionCall(fc ojson.Result) (string, 
 	return a.fullBuf.String()[startLen:], !outerWillContinue
 }
 
-// FullArguments returns the concatenated JSON arguments emitted so far.
 func (a *VertexPartialArgsAssembler) FullArguments() string {
 	if a.fullBuf.Len() == 0 {
 		return "{}"
@@ -330,7 +310,6 @@ func (a *VertexPartialArgsAssembler) pushPartialArg(item ojson.Result) {
 	hasNull := nullRes.Exists() && !hasString && !hasNumber && !hasBool
 	hasAnyValue := hasString || hasNumber || hasBool || hasNull
 
-	// Valueless end marker (e.g. {"jsonPath":"$.city"} or {"jsonPath":"$.city","willContinue":false}).
 	if !hasAnyValue && !innerWillContinue {
 		if len(segments) == 0 {
 			if a.lastStringNode != nil && a.lastStringNode.stringOpen {
@@ -1084,8 +1063,6 @@ func parseVertexJSONPath(rawPath string) ([]pathSegment, bool) {
 	return segments, true
 }
 
-// VertexStreamingToolCall tracks an in-progress Vertex streaming function call
-// across SSE chunks for a single candidate or stream.
 type VertexStreamingToolCall struct {
 	RawName    string
 	Name       string
@@ -1095,7 +1072,6 @@ type VertexStreamingToolCall struct {
 	Assembler  *VertexPartialArgsAssembler
 }
 
-// NewVertexStreamingToolCall creates a new active streaming tool call tracker.
 func NewVertexStreamingToolCall(rawName, name, upstreamID, id string, index int) *VertexStreamingToolCall {
 	return &VertexStreamingToolCall{
 		RawName:    rawName,
@@ -1107,7 +1083,6 @@ func NewVertexStreamingToolCall(rawName, name, upstreamID, id string, index int)
 	}
 }
 
-// CanContinueWith reports whether fc belongs to this in-progress streaming tool call.
 func (c *VertexStreamingToolCall) CanContinueWith(fc ojson.Result) bool {
 	if c == nil || c.Assembler == nil || !fc.Exists() || !fc.IsObject() {
 		return false
@@ -1132,8 +1107,6 @@ func (c *VertexStreamingToolCall) CanContinueWith(fc ojson.Result) bool {
 	return c.Assembler.CanAcceptContinuation(fc)
 }
 
-// CanAcceptContinuation reports whether fc's partialArgs can continue the current
-// in-progress argument tree without overwriting any already-completed leaf value.
 func (a *VertexPartialArgsAssembler) CanAcceptContinuation(fc ojson.Result) bool {
 	if a == nil || a.err != nil {
 		return false

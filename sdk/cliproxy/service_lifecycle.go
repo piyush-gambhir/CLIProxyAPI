@@ -22,15 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
-
-
-
 func (s *Service) Run(ctx context.Context) error {
 	if s == nil {
 		return fmt.Errorf("cliproxy: service is nil")
@@ -124,8 +115,6 @@ func (s *Service) Run(ctx context.Context) error {
 		}
 	}
 
-
-
 	s.ensureWebsocketGateway()
 	if homeEnabled {
 		s.registerAvailableExecutors(ctx, executorRegistrationOptions{
@@ -134,7 +123,6 @@ func (s *Service) Run(ctx context.Context) error {
 
 		redisqueue.SetEnabled(true)
 	}
-
 
 	s.server = api.NewServer(cfg, s.coreManager, s.accessManager, s.configPath, s.serverOptions...)
 	s.syncPluginRuntimeConfig(ctx)
@@ -248,15 +236,6 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 }
 
-
-
-
-
-
-
-
-
-
 func (s *Service) Shutdown(ctx context.Context) error {
 	if s == nil {
 		return nil
@@ -320,8 +299,6 @@ func (s *Service) Shutdown(ctx context.Context) error {
 		}
 		s.homeLifecycleMu.Unlock()
 
-
-
 		s.cfgMu.RLock()
 		watcherCancel := s.watcherCancel
 		s.cfgMu.RUnlock()
@@ -363,8 +340,6 @@ func (s *Service) Shutdown(ctx context.Context) error {
 				shutdownErr = errShutdownDiscovery
 			}
 		}
-
-
 
 		if s.server != nil {
 			if errStop := s.server.Stop(ctx); errStop != nil {
@@ -428,7 +403,6 @@ func (s *Service) ensureAuthDir() error {
 	}
 	return nil
 }
-
 
 func (s *Service) startModelCatalogUpdaters(ctx context.Context) {
 	s.cfgMu.RLock()

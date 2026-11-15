@@ -11,10 +11,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
 func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 	helps.ResetProxyTransports()
 	t.Cleanup(helps.ResetProxyTransports)
@@ -56,7 +52,6 @@ func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 		t.Fatal("first service did not reuse its pool")
 	}
 
-
 	second := build()
 	if second.proxyPoolPublisher == first.proxyPoolPublisher {
 		t.Fatal("services share one pool publisher")
@@ -65,15 +60,12 @@ func TestServiceProxyPoolFenceIsPerService(t *testing.T) {
 		t.Fatal("building another service retired the active service's pool")
 	}
 
-
 	if commit := second.commitConfigUpdate(&config.Config{AuthDir: second.currentConfig().AuthDir}); commit.cfg == nil {
 		t.Fatal("config update was rejected")
 	}
 	if got := transportFor(first); got != firstTransport {
 		t.Fatal("reloading another service retired the active service's pool")
 	}
-
-
 
 	secondTransport := transportFor(second)
 	secondCfgBeforeShutdown := second.currentConfig()
@@ -115,19 +107,15 @@ func TestOpenAICompatExecutorRebindsWhenConfigGenerationAdvances(t *testing.T) {
 		ProxyConnectionPool: &coreauth.ProxyConnectionPoolOverride{},
 	}
 
-
 	service.ensureExecutorsForAuthWithContext(context.Background(), compatAuth, false)
 	exec1, ok := service.coreManager.Executor("openai-compatible-ollama")
 	if !ok || exec1 == nil {
 		t.Fatal("expected initial openai-compatible-ollama executor")
 	}
 
-
 	if commit := service.commitConfigUpdate(&config.Config{AuthDir: dir}); commit.cfg == nil {
 		t.Fatal("config update rejected")
 	}
-
-
 
 	service.ensureExecutorsForAuthWithContext(context.Background(), compatAuth, false)
 	exec2, ok := service.coreManager.Executor("openai-compatible-ollama")

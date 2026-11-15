@@ -187,7 +187,6 @@ oauth:
 		t.Fatalf("unexpected loaded settings: %#v", cfg.OAuthSettings)
 	}
 
-
 	cfg.OAuthSettings["codex"][0].MaxContextLength = 1048576
 
 	if errSave := config.SaveConfigPreserveComments(configPath, cfg); errSave != nil {
@@ -214,18 +213,15 @@ func TestResolveOAuthModelSetting_Priority(t *testing.T) {
 		{Name: "upstream", Alias: "public", MaxContextLength: 1048576},
 	}
 
-
 	sUpstream := config.ResolveOAuthModelSetting(settings, "upstream", "upstream", "")
 	if sUpstream == nil || sUpstream.MaxContextLength != 524288 {
 		t.Fatalf("upstream model resolved to %+v, want 524288", sUpstream)
 	}
 
-
 	sPublic := config.ResolveOAuthModelSetting(settings, "public", "upstream", "")
 	if sPublic == nil || sPublic.MaxContextLength != 1048576 {
 		t.Fatalf("public model resolved to %+v, want 1048576", sPublic)
 	}
-
 
 	if got := config.ResolveOAuthModelSetting(settings, "unknown", "", ""); got != nil {
 		t.Fatalf("unknown model resolved to %+v, want nil", got)

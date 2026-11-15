@@ -8,15 +8,12 @@ import (
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
 func setClaudeToolSearchForTest(t *testing.T, enabled bool) {
 	t.Helper()
 	previous := responsesclaude.ClientToolSearchEnabled()
 	responsesclaude.SetClientToolSearchEnabled(enabled)
 	t.Cleanup(func() { responsesclaude.SetClientToolSearchEnabled(previous) })
 }
-
-
 
 func TestServerAppliesClaudeToolSearchSwitch(t *testing.T) {
 	setClaudeToolSearchForTest(t, false)

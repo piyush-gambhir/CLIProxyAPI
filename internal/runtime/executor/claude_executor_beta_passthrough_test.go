@@ -9,18 +9,12 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func fixtureAuth() *cliproxyauth.Auth {
 	attrs := map[string]string{}
 	attrs[cliproxyauth.AttributeAPIKey] = strings.Join([]string{"test", "fixture", "key"}, "-")
 	attrs["fingerprint_profile"] = "claude-code-cli"
 	return &cliproxyauth.Auth{Attributes: attrs}
 }
-
-
-
-
 
 func TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas(t *testing.T) {
 	t.Parallel()
@@ -43,9 +37,6 @@ func TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas(t *testing.T) {
 		t.Fatalf("Anthropic-Beta = %q, want fable-5-1 per-turn-control right after prompt-caching-scope", betas)
 	}
 }
-
-
-
 
 func TestApplyClaudeHeaders_StillGatesManagedCallerBetas(t *testing.T) {
 	t.Parallel()
@@ -104,9 +95,6 @@ func TestApplyClaudeHeaders_PreservesNativeGatewayHintsOnly(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas_OAuth(t *testing.T) {
 	t.Parallel()

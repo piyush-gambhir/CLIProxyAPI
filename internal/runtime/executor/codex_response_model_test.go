@@ -23,8 +23,6 @@ data: {"type":"response.completed","response":{"id":"resp_1","model":"gpt-5.6-lu
 
 data: [DONE]`
 
-
-
 func TestObserveCodexTokenEventRecordsResponseModel(t *testing.T) {
 	reporter := helps.NewExecutorUsageReporter(context.Background(), NewCodexExecutor(&config.Config{}), "gpt-6-astra", nil)
 
@@ -70,8 +68,6 @@ func (c *codexResponseModelUsageCapture) await(t *testing.T) coreusage.Record {
 		return coreusage.Record{}
 	}
 }
-
-
 
 func TestCodexUsageRecordsCarryResponseModelPerModel(t *testing.T) {
 	const alias = "codex-response-model-wiring-test"

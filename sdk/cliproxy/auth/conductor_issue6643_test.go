@@ -12,12 +12,9 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
 type issue6643Result struct {
 	err error
 }
-
-
 
 type issue6643Hook struct {
 	onResult func(context.Context, Result)
@@ -32,10 +29,6 @@ func (h *issue6643Hook) OnResult(ctx context.Context, result Result) {
 		h.onResult(ctx, result)
 	}
 }
-
-
-
-
 
 type issue6643ConcurrentExecutor struct {
 	exhausted            atomic.Bool
@@ -53,13 +46,11 @@ func (*issue6643ConcurrentExecutor) Identifier() string { return "antigravity" }
 func (e *issue6643ConcurrentExecutor) Execute(ctx context.Context, _ *Auth, req cliproxyexecutor.Request, _ cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	if e.exhausted.Load() {
 
-
 		e.callsAfterExhaustion.Add(1)
 		return cliproxyexecutor.Response{}, &Error{Code: "quota_exhausted", Message: "QUOTA_EXHAUSTED: Resets in 140h36m", Retryable: true, HTTPStatus: http.StatusTooManyRequests}
 	}
 	call := e.dispatched.Add(1)
 	if call < issue6643ConcurrentRequests {
-
 
 		select {
 		case <-e.quotaResultRecorded:
@@ -89,8 +80,6 @@ func (*issue6643ConcurrentExecutor) CountTokens(context.Context, *Auth, cliproxy
 func (*issue6643ConcurrentExecutor) HttpRequest(context.Context, *Auth, *http.Request) (*http.Response, error) {
 	return nil, &Error{HTTPStatus: http.StatusNotImplemented, Message: "not implemented"}
 }
-
-
 
 func issue6643SeqTestAuth(t *testing.T, authID string) *Manager {
 	t.Helper()
@@ -126,9 +115,6 @@ func issue6643ModelState(t *testing.T, manager *Manager, authID, model string) *
 	return updated.ModelStates[model]
 }
 
-
-
-
 func TestManager_Issue6643_SuccessDispatchedAfterCooldownClearsIt(t *testing.T) {
 	const (
 		authID = "issue6643-after-auth"
@@ -136,32 +122,22 @@ func TestManager_Issue6643_SuccessDispatchedAfterCooldownClearsIt(t *testing.T) 
 	)
 	manager := issue6643SeqTestAuth(t, authID)
 
-
-
 	staleSeq := manager.nextExecutionSeq()
 	manager.MarkResult(context.Background(), issue6643QuotaFailure(authID, model, manager.nextExecutionSeq()))
 	if state := issue6643ModelState(t, manager, authID, model); !state.Quota.Exceeded {
 		t.Fatalf("expected quota cooldown after failure, got %+v", state)
 	}
 
-
-
 	manager.MarkResult(context.Background(), Result{AuthID: authID, Provider: "antigravity", Model: model, Success: true, ExecutionSeq: staleSeq})
 	if state := issue6643ModelState(t, manager, authID, model); !state.Unavailable || !state.Quota.Exceeded || !state.NextRetryAfter.After(time.Now()) {
 		t.Fatalf("stale success cleared the quota cooldown: state = %+v", state)
 	}
-
-
 
 	manager.MarkResult(context.Background(), Result{AuthID: authID, Provider: "antigravity", Model: model, Success: true, ExecutionSeq: manager.nextExecutionSeq()})
 	if state := issue6643ModelState(t, manager, authID, model); state.Unavailable || state.Quota.Exceeded || !state.NextRetryAfter.IsZero() {
 		t.Fatalf("post-cooldown success did not clear the cooldown: state = %+v", state)
 	}
 }
-
-
-
-
 
 func TestManager_Issue6643_UnstampedSuccessKeepsLegacyClearBehavior(t *testing.T) {
 	const (
@@ -175,16 +151,11 @@ func TestManager_Issue6643_UnstampedSuccessKeepsLegacyClearBehavior(t *testing.T
 		t.Fatalf("expected quota cooldown after failure, got %+v", state)
 	}
 
-
-
 	manager.MarkResult(context.Background(), Result{AuthID: authID, Provider: "antigravity", Model: model, Success: true})
 	if state := issue6643ModelState(t, manager, authID, model); state.Unavailable || state.Quota.Exceeded {
 		t.Fatalf("unstamped success should clear the cooldown: state = %+v", state)
 	}
 }
-
-
-
 
 func TestManager_Issue6643_StaleAuthLevelSuccessKeepsCooldown(t *testing.T) {
 	const authID = "issue6643-auth-level-auth"
@@ -216,10 +187,6 @@ func TestManager_Issue6643_StaleAuthLevelSuccessKeepsCooldown(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestManager_Issue6643_RestoreKeepsCooldownWatermark(t *testing.T) {
 	const (
 		authID = "issue6643-restore-auth"
@@ -240,8 +207,6 @@ func TestManager_Issue6643_RestoreKeepsCooldownWatermark(t *testing.T) {
 		t.Fatal("expected the quota cooldown to be persisted for restore")
 	}
 
-
-
 	if errRestore := manager.RestoreCooldownStates(context.Background()); errRestore != nil {
 		t.Fatalf("RestoreCooldownStates returned error: %v", errRestore)
 	}
@@ -251,10 +216,6 @@ func TestManager_Issue6643_RestoreKeepsCooldownWatermark(t *testing.T) {
 		t.Fatalf("stale success cleared the cooldown after runtime restore: state = %+v", state)
 	}
 }
-
-
-
-
 
 func TestManager_Issue6643_InFlightSuccessesKeepFreshQuotaCooldown(t *testing.T) {
 	withQuotaCooldownEnabled(t)
@@ -273,8 +234,6 @@ func TestManager_Issue6643_InFlightSuccessesKeepFreshQuotaCooldown(t *testing.T)
 	var recordedOnce sync.Once
 	hook := &issue6643Hook{onResult: func(_ context.Context, result Result) {
 		if !result.Success && result.Error != nil && result.Error.HTTPStatus == http.StatusTooManyRequests {
-
-
 
 			recordedOnce.Do(func() { close(executor.quotaResultRecorded) })
 		}
@@ -299,8 +258,6 @@ func TestManager_Issue6643_InFlightSuccessesKeepFreshQuotaCooldown(t *testing.T)
 		}()
 	}
 
-
-
 	failures := 0
 	for i := 0; i < issue6643ConcurrentRequests; i++ {
 		select {
@@ -314,17 +271,12 @@ func TestManager_Issue6643_InFlightSuccessesKeepFreshQuotaCooldown(t *testing.T)
 		}
 	}
 
-
-
 	if failures != 1 {
 		t.Fatalf("concurrent failures = %d, want 1", failures)
 	}
 	if got := executor.callsAfterExhaustion.Load(); got != 0 {
 		t.Fatalf("upstream calls after quota exhaustion = %d, want 0", got)
 	}
-
-
-
 
 	updated, ok := manager.GetByID(authID)
 	if !ok || updated == nil {

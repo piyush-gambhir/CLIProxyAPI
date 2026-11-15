@@ -109,7 +109,6 @@ func TestRegisterExecutorsPreservesNativeCatalogPriority(t *testing.T) {
 				}
 			}
 
-
 			setHostSnapshotForTest(host, true, competitor)
 			host.RegisterModels(t.Context(), modelRegistry)
 			host.RegisterExecutors(manager, modelRegistry)

@@ -8,8 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
 const chatToolSearchTestRequest = `{
   "model": "chat-test",
   "stream": true,

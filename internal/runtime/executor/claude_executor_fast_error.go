@@ -13,10 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 type claudeFastRequestError struct {
 	cause      error
 	status     int
@@ -84,9 +80,6 @@ func (e *claudeFastRequestError) RetryAfter() *time.Duration {
 	return e.retryAfter
 }
 
-
-
-
 type claudeFastDirectResponseError struct {
 	response         *cliproxyexecutor.RequestTerminatedError
 	retryAfter       *time.Duration
@@ -147,7 +140,6 @@ func newClaudeFastDirectResponseError(resp *http.Response, body []byte) error {
 		return nil
 	}
 	headers := resp.Header.Clone()
-
 
 	headers.Del("Content-Encoding")
 	headers.Del("Content-Length")

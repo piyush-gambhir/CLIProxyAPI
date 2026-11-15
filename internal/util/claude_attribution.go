@@ -9,16 +9,10 @@ import (
 
 const claudeCodeAttributionSystemPrefix = "x-anthropic-billing-header:"
 
-
-
 func IsClaudeCodeAttributionSystemText(text string) bool {
 	text = strings.TrimLeftFunc(text, unicode.IsSpace)
 	return strings.HasPrefix(text, claudeCodeAttributionSystemPrefix)
 }
-
-
-
-
 
 func StripClaudeCodeAttributionSystem(payload []byte) []byte {
 	system := ojson.GetBytesNoCopy(payload, "system")

@@ -166,7 +166,6 @@ func TestEnsureTokenBreakdownDoesNotOverrideCanonicalZeroCacheRead(t *testing.T)
 
 func TestTokenBreakdown_Valid_RejectsArithmeticOverflow(t *testing.T) {
 
-
 	b := TokenBreakdown{
 		SchemaVersion: TokenAccountingSchemaVersion,
 		Quality:       TokenAccountingQualityComplete,
@@ -198,8 +197,6 @@ func TestTokenBreakdown_Valid_RejectsArithmeticOverflow(t *testing.T) {
 }
 
 func TestNewSubsetTokenBreakdown_RejectsArithmeticOverflow(t *testing.T) {
-
-
 
 	b := NewSubsetTokenBreakdown(math.MaxInt64, math.MaxInt64, math.MaxInt64, 0, 0, math.MaxInt64)
 	if b.Quality == TokenAccountingQualityComplete {

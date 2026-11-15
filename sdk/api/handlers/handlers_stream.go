@@ -16,14 +16,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-
-
-
 func (h *BaseAPIHandler) ExecuteStreamWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) (<-chan []byte, http.Header, <-chan *interfaces.ErrorMessage) {
 	return h.executeStreamWithAuthManager(ctx, handlerType, modelName, rawJSON, alt, false)
 }
-
-
 
 func (h *BaseAPIHandler) HasAlternativeExecutionTarget(ctx context.Context, handlerType, modelName string, rawJSON []byte, excludedAuthID string) bool {
 	if h == nil || h.AuthManager == nil {
@@ -72,7 +67,6 @@ func (h *BaseAPIHandler) HasAlternativeExecutionTarget(ctx context.Context, hand
 	ctx = enrichContextWithSessionHierarchy(ctx, opts.Headers, rawJSON, opts.Metadata)
 	return h.AuthManager.HasAlternativeTargetForModel(ctx, providers, normalizedModel, opts, excludedAuthID)
 }
-
 
 func (h *BaseAPIHandler) ExecuteImageStreamWithAuthManager(ctx context.Context, handlerType, modelName string, rawJSON []byte, alt string) (<-chan []byte, http.Header, <-chan *interfaces.ErrorMessage) {
 	return h.executeStreamWithAuthManager(ctx, handlerType, modelName, rawJSON, alt, true)
@@ -148,8 +142,6 @@ func (h *BaseAPIHandler) streamWithPluginExecutor(ctx context.Context, entryProt
 	streamInterceptorsActive := streamInterceptorsEnabled(interceptorHost)
 	rawStreamHeaders := cloneHeader(streamResult.Headers)
 	baseStreamHeaders := cloneHeader(streamResult.Headers)
-
-
 
 	var streamRequestHeaders http.Header
 	var streamOriginalRequest []byte
@@ -272,7 +264,6 @@ func (h *BaseAPIHandler) streamWithPluginExecutor(ctx context.Context, entryProt
 					ChunkIndex:      chunkIndex,
 					Metadata:        opts.Metadata,
 				}
-
 
 				if streamChunkPayloadIncludesHistory(interceptorHost) {
 					chunkReq.HistoryChunks = cloneByteSlices(historyChunks)
@@ -437,7 +428,6 @@ func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context
 	interceptorHost := h.interceptorHost()
 	streamInterceptorsActive := streamInterceptorsEnabled(interceptorHost)
 
-
 	rawStreamHeaders := cloneHeader(streamResult.Headers)
 	baseStreamHeaders := cloneHeader(streamResult.Headers)
 	chunks := streamResult.Chunks
@@ -449,8 +439,6 @@ func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context
 	streamClosedBeforeRead := false
 	streamCanceledBeforeRead := false
 	streamHeaderInitialized := false
-
-
 
 	var streamRequestHeaders http.Header
 	var streamOriginalRequest []byte
@@ -504,7 +492,6 @@ func (h *BaseAPIHandler) executeStreamWithAuthManagerFormats(ctx context.Context
 				ChunkIndex:      *chunkIndex,
 				Metadata:        opts.Metadata,
 			}
-
 
 			if streamChunkPayloadIncludesHistory(interceptorHost) {
 				chunkReq.HistoryChunks = cloneByteSlices(historyChunks)
@@ -900,8 +887,6 @@ func validateSSEDataJSON(chunk []byte) error {
 	}
 	return state.Finish()
 }
-
-
 
 func streamDeliveryCompletion(ctx context.Context, outcome pluginapi.RequestCompletionOutcome, status int, err error) (pluginapi.RequestCompletionOutcome, int, error) {
 	if ctx == nil {

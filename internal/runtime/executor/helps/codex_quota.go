@@ -14,18 +14,6 @@ const (
 	maxCodexAdditionalRateLimits  = 8
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
 func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 	if len(payload) == 0 {
 		return nil
@@ -45,7 +33,6 @@ func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 
 	baseRateLimits := firstCodexQuotaResult(root, "rate_limits", "rateLimit")
 	if addCodexQuotaRateLimitHeaders(headers, "X-Codex-", baseRateLimits) {
-
 
 		hasQuotaData = true
 	}
@@ -75,8 +62,6 @@ func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 			prefix := codexQuotaAdditionalHeaderKey + identifier + "-"
 			if addCodexQuotaRateLimitHeaders(headers, prefix, rateInfo) {
 
-
-
 				if validCodexQuotaEventText(limitName) {
 					headers.Set(prefix+"Limit-Name", strings.Clone(limitName))
 				}
@@ -103,7 +88,6 @@ func ParseCodexQuotaEventHeaders(payload []byte) http.Header {
 		return nil
 	}
 
-
 	activeLimit := firstCodexQuotaResultString(root, "metered_limit_name", "meteredLimitName", "limit_name", "limitName")
 	if validCodexQuotaEventIdentifier(activeLimit) {
 		headers.Set("X-Codex-Active-Limit", activeLimit)
@@ -119,11 +103,6 @@ const (
 	codexQuotaEventError
 	codexQuotaEventRateLimits
 )
-
-
-
-
-
 
 func codexQuotaEventKind(payload []byte) int {
 	const scanLimit = 256

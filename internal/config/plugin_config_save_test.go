@@ -60,8 +60,6 @@ empty_list: []
 	}
 	savedText := string(savedBytes)
 
-
-
 	for _, expected := range []string{
 		"enabled: false",
 		"timeout: 0",
@@ -131,7 +129,6 @@ nested:
 	}
 	savedText := string(savedBytes)
 
-
 	if strings.Contains(savedText, "stale_key") {
 		t.Errorf("saved config unexpectedly contains stale_key; got:\n%s", savedText)
 	}
@@ -160,7 +157,6 @@ func TestSaveConfigPreserveComments_PluginConfigPreservesSequenceReordering(t *t
 	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
-
 
 	cfg := &Config{
 		Plugins: PluginsConfig{
@@ -349,7 +345,6 @@ func TestSaveConfigPreserveComments_PluginConfigDeletesPluginAndClearsConfigs(t 
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
-
 	cfg := &Config{
 		Plugins: PluginsConfig{
 			Enabled: true,
@@ -374,7 +369,6 @@ func TestSaveConfigPreserveComments_PluginConfigDeletesPluginAndClearsConfigs(t 
 	if !strings.Contains(savedText, "plugin-b:") || !strings.Contains(savedText, "b-updated") {
 		t.Errorf("saved config step 1 missing plugin-b; got:\n%s", savedText)
 	}
-
 
 	cfg.Plugins.Configs = map[string]PluginInstanceConfig{}
 	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {

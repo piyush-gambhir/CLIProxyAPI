@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type Registry struct {
 	mu        sync.RWMutex
 	requests  map[Format]map[Format]RequestEnvelopeTransform
@@ -18,14 +17,12 @@ type Registry struct {
 	hooks     PluginHooks
 }
 
-
 func NewRegistry() *Registry {
 	return &Registry{
 		requests:  make(map[Format]map[Format]RequestEnvelopeTransform),
 		responses: make(map[Format]map[Format]ResponseTransform),
 	}
 }
-
 
 func (r *Registry) Register(from, to Format, request RequestTransform, response ResponseTransform) {
 	r.mu.Lock()
@@ -47,8 +44,6 @@ func (r *Registry) Register(from, to Format, request RequestTransform, response 
 	r.responses[from][to] = response
 }
 
-
-
 func (r *Registry) RegisterRequestEnvelope(from, to Format, request RequestEnvelopeTransform) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -59,8 +54,6 @@ func (r *Registry) RegisterRequestEnvelope(from, to Format, request RequestEnvel
 		r.requests[from][to] = request
 	}
 }
-
-
 
 func (r *Registry) Unregister(from, to Format) {
 	r.mu.Lock()
@@ -80,7 +73,6 @@ func (r *Registry) Unregister(from, to Format) {
 	}
 }
 
-
 func (r *Registry) SetPluginHooks(hooks PluginHooks) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -88,16 +80,11 @@ func (r *Registry) SetPluginHooks(hooks PluginHooks) {
 	r.hooks = hooks
 }
 
-
 func (r *Registry) HasPluginHooks() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.hooks != nil
 }
-
-
-
-
 
 func (r *Registry) TranslateRequest(from, to Format, model string, rawJSON []byte, stream bool) []byte {
 	req := r.TranslateRequestEnvelope(context.Background(), from, to, RequestEnvelope{
@@ -108,8 +95,6 @@ func (r *Registry) TranslateRequest(from, to Format, model string, rawJSON []byt
 	})
 	return req.Body
 }
-
-
 
 func (r *Registry) TranslateRequestEnvelope(ctx context.Context, from, to Format, req RequestEnvelope) RequestEnvelope {
 	if ctx == nil {
@@ -129,7 +114,6 @@ func (r *Registry) TranslateRequestEnvelope(ctx context.Context, from, to Format
 		req.Body = thinking.ApplySummaryConfigForModel(req.Body, to.String(), req.Model, summaryConfig)
 		if hooks != nil {
 
-
 			before := configurationUpdates(req.Body)
 			req.Body = hooks.NormalizeRequest(ctx, from, to, req.Model, req.Body, req.Stream)
 			req.ConfigurationUpdatesChanged = req.ConfigurationUpdatesChanged || updatesChanged(before, configurationUpdates(req.Body))
@@ -147,13 +131,9 @@ func (r *Registry) TranslateRequestEnvelope(ctx context.Context, from, to Format
 	}
 	if hooks == nil {
 
-
 		req.Format = to
 		return req
 	}
-
-
-
 
 	before := configurationUpdates(req.Body)
 	req.Body = hooks.NormalizeRequest(ctx, from, to, req.Model, req.Body, req.Stream)
@@ -165,8 +145,6 @@ func (r *Registry) TranslateRequestEnvelope(ctx context.Context, from, to Format
 	req.Format = to
 	return req
 }
-
-
 
 func configurationUpdates(body []byte) []string {
 	input := ojson.GetBytesNoCopy(body, "input")
@@ -195,7 +173,6 @@ func updatesChanged(before, after []string) bool {
 	return false
 }
 
-
 func (r *Registry) HasRequestTransformer(from, to Format) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -207,7 +184,6 @@ func (r *Registry) HasRequestTransformer(from, to Format) bool {
 	}
 	return false
 }
-
 
 func (r *Registry) HasResponseTransformer(from, to Format) bool {
 	r.mu.RLock()
@@ -221,7 +197,6 @@ func (r *Registry) HasResponseTransformer(from, to Format) bool {
 	return false
 }
 
-
 func (r *Registry) HasStreamResponseTransformer(from, to Format) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -233,7 +208,6 @@ func (r *Registry) HasStreamResponseTransformer(from, to Format) bool {
 	}
 	return false
 }
-
 
 func (r *Registry) HasNonStreamResponseTransformer(from, to Format) bool {
 	r.mu.RLock()
@@ -247,7 +221,6 @@ func (r *Registry) HasNonStreamResponseTransformer(from, to Format) bool {
 	return false
 }
 
-
 func (r *Registry) HasTokenCountTransformer(from, to Format) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -259,7 +232,6 @@ func (r *Registry) HasTokenCountTransformer(from, to Format) bool {
 	}
 	return false
 }
-
 
 func (r *Registry) TranslateStream(ctx context.Context, from, to Format, model string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	r.mu.RLock()
@@ -300,7 +272,6 @@ func (r *Registry) TranslateStream(ctx context.Context, from, to Format, model s
 	return outputs
 }
 
-
 func (r *Registry) TranslateNonStream(ctx context.Context, from, to Format, model string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	r.mu.RLock()
 	var fn ResponseTransform
@@ -330,7 +301,6 @@ func (r *Registry) TranslateNonStream(ctx context.Context, from, to Format, mode
 	return body
 }
 
-
 func translationToolInputFailed(param *any) bool {
 	if param == nil {
 		return false
@@ -338,7 +308,6 @@ func translationToolInputFailed(param *any) bool {
 	state, okState := (*param).(interface{ ToolInputError() error })
 	return okState && state.ToolInputError() != nil
 }
-
 
 func (r *Registry) TranslateTokenCount(ctx context.Context, from, to Format, count int64, rawJSON []byte) []byte {
 	r.mu.RLock()
@@ -351,8 +320,6 @@ func (r *Registry) TranslateTokenCount(ctx context.Context, from, to Format, cou
 	}
 	return rawJSON
 }
-
-
 
 func (r *Registry) NormalizeRequest(ctx context.Context, from, to Format, model string, body []byte, stream bool) []byte {
 	if ctx == nil {
@@ -370,86 +337,69 @@ func (r *Registry) NormalizeRequest(ctx context.Context, from, to Format, model 
 
 var defaultRegistry = NewRegistry()
 
-
 func Default() *Registry {
 	return defaultRegistry
 }
-
 
 func Register(from, to Format, request RequestTransform, response ResponseTransform) {
 	defaultRegistry.Register(from, to, request, response)
 }
 
-
 func Unregister(from, to Format) {
 	defaultRegistry.Unregister(from, to)
 }
-
 
 func RegisterRequestEnvelope(from, to Format, request RequestEnvelopeTransform) {
 	defaultRegistry.RegisterRequestEnvelope(from, to, request)
 }
 
-
 func SetPluginHooks(hooks PluginHooks) {
 	defaultRegistry.SetPluginHooks(hooks)
 }
-
 
 func HasPluginHooks() bool {
 	return defaultRegistry.HasPluginHooks()
 }
 
-
 func TranslateRequest(from, to Format, model string, rawJSON []byte, stream bool) []byte {
 	return defaultRegistry.TranslateRequest(from, to, model, rawJSON, stream)
 }
-
 
 func TranslateRequestEnvelope(ctx context.Context, from, to Format, req RequestEnvelope) RequestEnvelope {
 	return defaultRegistry.TranslateRequestEnvelope(ctx, from, to, req)
 }
 
-
 func NormalizeRequest(ctx context.Context, from, to Format, model string, body []byte, stream bool) []byte {
 	return defaultRegistry.NormalizeRequest(ctx, from, to, model, body, stream)
 }
-
 
 func HasRequestTransformer(from, to Format) bool {
 	return defaultRegistry.HasRequestTransformer(from, to)
 }
 
-
 func HasResponseTransformer(from, to Format) bool {
 	return defaultRegistry.HasResponseTransformer(from, to)
 }
-
 
 func HasStreamResponseTransformer(from, to Format) bool {
 	return defaultRegistry.HasStreamResponseTransformer(from, to)
 }
 
-
 func HasNonStreamResponseTransformer(from, to Format) bool {
 	return defaultRegistry.HasNonStreamResponseTransformer(from, to)
 }
-
 
 func HasTokenCountTransformer(from, to Format) bool {
 	return defaultRegistry.HasTokenCountTransformer(from, to)
 }
 
-
 func TranslateStream(ctx context.Context, from, to Format, model string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	return defaultRegistry.TranslateStream(ctx, from, to, model, originalRequestRawJSON, requestRawJSON, rawJSON, param)
 }
 
-
 func TranslateNonStream(ctx context.Context, from, to Format, model string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	return defaultRegistry.TranslateNonStream(ctx, from, to, model, originalRequestRawJSON, requestRawJSON, rawJSON, param)
 }
-
 
 func TranslateTokenCount(ctx context.Context, from, to Format, count int64, rawJSON []byte) []byte {
 	return defaultRegistry.TranslateTokenCount(ctx, from, to, count, rawJSON)

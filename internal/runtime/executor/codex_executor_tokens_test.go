@@ -67,7 +67,6 @@ func TestCodexExecutorCountTokensPreservesToolNumberSchemas(t *testing.T) {
 					t.Fatalf("CountTokens() error = %v", errCount)
 				}
 
-
 				if got := ojson.GetBytes(hooks.body, "tools.0.parameters.properties.yield_time_ms.type").String(); got != "number" {
 					t.Fatalf("yield_time_ms.type = %q, want number; body=%s", got, hooks.body)
 				}

@@ -20,7 +20,6 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
-
 	cfg := &Config{
 		ClaudeKey: []ClaudeKey{
 			{
@@ -44,8 +43,6 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 
-
-
 	if strings.Contains(savedText, "mode: always") {
 		t.Errorf("saved YAML still contains 'mode: always' after clearing mode; got:\n%s", savedText)
 	}
@@ -55,7 +52,6 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 	if strings.Contains(savedText, "cache-user-id: true") {
 		t.Errorf("saved YAML still contains 'cache-user-id: true' after disabling cache-user-id; got:\n%s", savedText)
 	}
-
 
 	loadedCfg, errLoad := LoadConfigOptional(configPath, false)
 	if errLoad != nil {
@@ -180,7 +176,6 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalseWhenFieldPreviouslyA
 	}
 	savedText := string(savedBytes)
 
-
 	if !strings.Contains(savedText, "cache-user-id: false") {
 		t.Errorf("saved YAML missing newly-added 'cache-user-id: false'; got:\n%s", savedText)
 	}
@@ -210,7 +205,6 @@ func TestSaveConfigPreserveComments_ClaudeCloakRemovedWhenNil(t *testing.T) {
 	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
-
 
 	cfg := &Config{
 		ClaudeKey: []ClaudeKey{
@@ -282,14 +276,12 @@ claude-api-key:
 	}
 	savedText := string(savedBytes)
 
-
 	if strings.Contains(savedText, "Custom-B") {
 		t.Errorf("saved YAML still contains deleted header 'Custom-B'; got:\n%s", savedText)
 	}
 	if !strings.Contains(savedText, "Custom-A: valA") {
 		t.Errorf("saved YAML missing retained header 'Custom-A: valA'; got:\n%s", savedText)
 	}
-
 
 	if !strings.Contains(savedText, "allow-remote: true") {
 		t.Errorf("saved YAML lost 'allow-remote: true'; got:\n%s", savedText)
@@ -313,7 +305,6 @@ func TestSaveConfigPreserveComments_SensitiveWordsReplaceEmptyValueAndPruning(t 
 			if errLoad != nil {
 				t.Fatalf("initial LoadConfigOptional() error = %v", errLoad)
 			}
-
 
 			cfg.Antigravity.SensitiveWordsReplace = map[string]string{
 				"You are Codex, an agent based on GPT-5.": "",
@@ -347,7 +338,6 @@ func TestSaveConfigPreserveComments_SensitiveWordsReplaceEmptyValueAndPruning(t 
 			if val, ok := reloaded.ClaudeKey[0].Cloak.SensitiveWordsReplace["DropClaudePhrase"]; !ok || val != "" {
 				t.Fatalf("Claude empty replacement lost: %#v", reloaded.ClaudeKey[0].Cloak.SensitiveWordsReplace)
 			}
-
 
 			delete(reloaded.Antigravity.SensitiveWordsReplace, "TempAntigrav")
 			reloaded.Devin.SensitiveWordsReplace = nil

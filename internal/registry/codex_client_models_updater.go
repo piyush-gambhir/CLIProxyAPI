@@ -13,9 +13,6 @@ var codexClientModelsURLs = []string{
 	"https://models.router-for.me/codex_client_models.json",
 }
 
-
-
-
 func StartCodexClientModelsUpdater(ctx context.Context) {
 	codexCatalogUpdater.configure(ctx, "")
 }

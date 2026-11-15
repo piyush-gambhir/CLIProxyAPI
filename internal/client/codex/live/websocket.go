@@ -20,7 +20,6 @@ import (
 
 const defaultStandardRealtimeModel = "gpt-realtime"
 
-// HandleRealtimeWebsocket dispatches a standard Realtime WebSocket or an existing call sideband.
 func (h *Handler) HandleRealtimeWebsocket(c *gin.Context) {
 	if strings.TrimSpace(c.Query("call_id")) != "" {
 		h.HandleSideband(c)
@@ -29,7 +28,6 @@ func (h *Handler) HandleRealtimeWebsocket(c *gin.Context) {
 	h.HandleDirectWebsocket(c)
 }
 
-// HandleDirectWebsocket relays a standard Realtime WebSocket through Codex OAuth.
 func (h *Handler) HandleDirectWebsocket(c *gin.Context) {
 	if h == nil || h.authManager == nil {
 		writeRealtimeError(c, http.StatusServiceUnavailable, "Codex auth manager unavailable", "server_error", "codex_auth_unavailable")

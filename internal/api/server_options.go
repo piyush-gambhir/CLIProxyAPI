@@ -29,7 +29,6 @@ type serverOptionConfig struct {
 	exampleAPIKeySafeMode bool
 }
 
-
 type ServerOption func(*serverOptionConfig)
 
 func defaultRequestLoggerFactory(cfg *config.Config, configPath string) logging.RequestLogger {
@@ -53,13 +52,11 @@ func effectiveSDKConfig(cfg *config.Config) *config.SDKConfig {
 	return &sdkCfg
 }
 
-
 func WithMiddleware(mw ...gin.HandlerFunc) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.extraMiddleware = append(cfg.extraMiddleware, mw...)
 	}
 }
-
 
 func WithEngineConfigurator(fn func(*gin.Engine)) ServerOption {
 	return func(cfg *serverOptionConfig) {
@@ -67,20 +64,17 @@ func WithEngineConfigurator(fn func(*gin.Engine)) ServerOption {
 	}
 }
 
-
 func WithRouterConfigurator(fn func(*gin.Engine, *handlers.BaseAPIHandler, *config.Config)) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.routerConfigurator = fn
 	}
 }
 
-
 func WithLocalManagementPassword(password string) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.localPassword = password
 	}
 }
-
 
 func WithKeepAliveEndpoint(timeout time.Duration, onTimeout func()) ServerOption {
 	return func(cfg *serverOptionConfig) {
@@ -93,13 +87,11 @@ func WithKeepAliveEndpoint(timeout time.Duration, onTimeout func()) ServerOption
 	}
 }
 
-
 func WithRequestLoggerFactory(factory func(*config.Config, string) logging.RequestLogger) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.requestLoggerFactory = factory
 	}
 }
-
 
 func WithPostAuthHook(hook auth.PostAuthHook) ServerOption {
 	return func(cfg *serverOptionConfig) {
@@ -107,13 +99,11 @@ func WithPostAuthHook(hook auth.PostAuthHook) ServerOption {
 	}
 }
 
-
 func WithPostAuthPersistHook(hook auth.PostAuthHook) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.postAuthPersistHook = hook
 	}
 }
-
 
 func WithPluginHost(host *pluginhost.Host) ServerOption {
 	return func(cfg *serverOptionConfig) {
@@ -121,13 +111,11 @@ func WithPluginHost(host *pluginhost.Host) ServerOption {
 	}
 }
 
-
 func WithConfigReloadHook(hook func(context.Context, *config.Config)) ServerOption {
 	return func(cfg *serverOptionConfig) {
 		cfg.configReloadHook = hook
 	}
 }
-
 
 func WithExampleAPIKeySafeMode() ServerOption {
 	return func(cfg *serverOptionConfig) {

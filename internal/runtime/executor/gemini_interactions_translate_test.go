@@ -66,9 +66,6 @@ func TestTranslateGeminiInteractionsRequestPairReusesSameSlice(t *testing.T) {
 	}
 }
 
-
-
-
 func TestTranslateGeminiInteractionsRequestPairTranslatesSameSliceOnce(t *testing.T) {
 	from := sdktranslator.Format("gemini-interactions-translate-count")
 	to := sdktranslator.FormatInteractions

@@ -6,9 +6,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 func SanitizeMetaWebSearchTools(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -19,8 +16,6 @@ func SanitizeMetaWebSearchTools(body []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func SanitizeMetaWebSearchToolsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {

@@ -46,11 +46,7 @@ func logV8MigrationWarning(section, msg string) {
 	}
 }
 
-
-
-
 type LogFormatter struct{}
-
 
 var logFieldOrder = []string{
 	"provider", "model",
@@ -106,7 +102,6 @@ func escapeLogControls(value string) string {
 	return out.String()
 }
 
-
 func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	var buffer *bytes.Buffer
 	if entry.Buffer != nil {
@@ -128,7 +123,6 @@ func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 		level = "warn"
 	}
 	levelStr := fmt.Sprintf("%-5s", level)
-
 
 	var fieldsStr string
 	if len(entry.Data) > 0 {
@@ -163,8 +157,6 @@ func (m *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-
-
 func SetupBaseLogger() {
 	setupOnce.Do(func() {
 		log.SetOutput(os.Stdout)
@@ -183,7 +175,6 @@ func SetupBaseLogger() {
 		log.RegisterExitHandler(closeLogOutputs)
 	})
 }
-
 
 func isDirWritable(dir string) bool {
 	info, err := os.Stat(dir)
@@ -204,7 +195,6 @@ func isDirWritable(dir string) bool {
 	return true
 }
 
-
 func ResolveLogDirectory(cfg *config.Config) string {
 	logDir := "logs"
 	if base := util.WritablePath(); base != "" {
@@ -224,9 +214,6 @@ func ResolveLogDirectory(cfg *config.Config) string {
 	}
 	return logDir
 }
-
-
-
 
 func ConfigureLogOutput(cfg *config.Config) error {
 	SetupBaseLogger()

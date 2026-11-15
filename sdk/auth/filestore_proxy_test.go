@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-
-
 func TestFileTokenStoreList_LoadsProxyURLAndPrefix(t *testing.T) {
 	dir := t.TempDir()
 	store := NewFileTokenStore()
@@ -45,13 +43,10 @@ func TestFileTokenStoreList_LoadsProxyURLAndPrefix(t *testing.T) {
 	}
 }
 
-
-
 func TestFileTokenStoreList_DoesNotBlockColdStartWithUnproxiedNetworkRequest(t *testing.T) {
 	var httpDefaultCalled atomic.Bool
 	origTransport := http.DefaultTransport
 	defer func() { http.DefaultTransport = origTransport }()
-
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		httpDefaultCalled.Store(true)
@@ -62,7 +57,6 @@ func TestFileTokenStoreList_DoesNotBlockColdStartWithUnproxiedNetworkRequest(t *
 	dir := t.TempDir()
 	store := NewFileTokenStore()
 	store.SetBaseDir(dir)
-
 
 	content := []byte(`{
 		"type": "antigravity",

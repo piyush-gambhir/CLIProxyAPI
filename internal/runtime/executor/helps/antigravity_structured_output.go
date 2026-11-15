@@ -12,10 +12,6 @@ import (
 
 var claude55Model = regexp.MustCompile(`^claude-(opus|sonnet)-5-5(?:-(high|reasoning))?(?:-[0-9]{8})?(?:\[[^\[\]]+\])?$`)
 
-
-
-
-
 func PrepareAntigravityClaudeStructuredOutput(model string, payload []byte) ([]byte, bool) {
 	if len(payload) == 0 {
 		return payload, false
@@ -26,8 +22,6 @@ func PrepareAntigravityClaudeStructuredOutput(model string, payload []byte) ([]b
 	}
 	return doc.Bytes(), true
 }
-
-
 
 func PrepareAntigravityClaudeStructuredOutputDoc(model string, doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -56,7 +50,6 @@ func PrepareAntigravityClaudeStructuredOutputDoc(model string, doc *ojson.Doc) b
 		return false
 	}
 
-
 	format := ojson.Parse(`{"type":"json_schema","schema":` + schema.Raw + `}`)
 	instruction := common.BuildClaudeStructuredOutputInstruction(format)
 	systemPath := "request.systemInstruction"
@@ -66,7 +59,6 @@ func PrepareAntigravityClaudeStructuredOutputDoc(model string, doc *ojson.Doc) b
 	if errSet := doc.Set(systemPath+".parts.-1.text", instruction); errSet != nil {
 		return false
 	}
-
 
 	for _, container := range containers {
 		for _, key := range append(schemaKeys, "responseMimeType", "response_mime_type") {

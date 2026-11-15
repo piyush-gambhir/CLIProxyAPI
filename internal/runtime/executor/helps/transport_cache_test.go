@@ -50,8 +50,6 @@ func TestTransportCacheReusesEntriesPerKey(t *testing.T) {
 	}
 }
 
-
-
 func TestTransportCacheBoundsEntries(t *testing.T) {
 	const capacity = 4
 	cache := NewTransportCache[cacheKey](capacity)
@@ -66,8 +64,6 @@ func TestTransportCacheBoundsEntries(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestTransportCacheEvictsLeastRecentlyUsed(t *testing.T) {
 	cache := NewTransportCache[cacheKey](2)
@@ -85,8 +81,6 @@ func TestTransportCacheEvictsLeastRecentlyUsed(t *testing.T) {
 		t.Fatal("the most recently used entry must survive eviction")
 	}
 }
-
-
 
 func TestTransportCacheDoesNotCacheBuildFailures(t *testing.T) {
 	cache := NewTransportCache[cacheKey](4)
@@ -183,11 +177,9 @@ func TestTransportCacheCloseKeyAndCloseMatching(t *testing.T) {
 		t.Fatalf("Len() = %d, want 3", got)
 	}
 
-
 	if closed := cache.CloseKey(cacheKey{"auth-nonexistent", ""}); closed {
 		t.Fatal("expected CloseKey on missing entry to return false")
 	}
-
 
 	if closed := cache.CloseKey(cacheKey{"auth-2", "p1"}); !closed {
 		t.Fatal("expected CloseKey on existing entry to return true")
@@ -195,7 +187,6 @@ func TestTransportCacheCloseKeyAndCloseMatching(t *testing.T) {
 	if got := cache.Len(); got != 2 {
 		t.Fatalf("Len() after CloseKey = %d, want 2", got)
 	}
-
 
 	closedCount := cache.CloseMatching(func(key cacheKey) bool {
 		return key.scope == "auth-1"
@@ -206,7 +197,6 @@ func TestTransportCacheCloseKeyAndCloseMatching(t *testing.T) {
 	if got := cache.Len(); got != 0 {
 		t.Fatalf("Len() after CloseMatching = %d, want 0", got)
 	}
-
 
 	var nilCache *TransportCache[cacheKey]
 	if nilCache.CloseKey(cacheKey{}) {
@@ -229,7 +219,6 @@ func TestTransportCacheEvictionClosesIdleConnections(t *testing.T) {
 		return &http.Transport{}, nil
 	}
 
-
 	t1, err1 := cache.Get(cacheKey{"auth-1", ""}, build)
 	if err1 != nil {
 		t.Fatal(err1)
@@ -239,14 +228,12 @@ func TestTransportCacheEvictionClosesIdleConnections(t *testing.T) {
 		t.Fatal(err2)
 	}
 
-
 	c1 := &http.Client{Transport: t1}
 	resp, errReq := c1.Get(srv.URL)
 	if errReq != nil {
 		t.Fatal(errReq)
 	}
 	_ = resp.Body.Close()
-
 
 	_, err3 := cache.Get(cacheKey{"auth-3", ""}, build)
 	if err3 != nil {

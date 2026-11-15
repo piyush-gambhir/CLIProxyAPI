@@ -210,7 +210,6 @@ func TestConvertOpenAIRequestToAntigravity_MidSessionDeveloperMessageDoesNotMuta
 	result, _ := ConvertOpenAIRequestToAntigravity("gemini-3-flash", []byte(inputJSON), false)
 	output := util.ParseGJSONBytesNoCopy(result)
 
-
 	sysParts := output.Get("request.systemInstruction.parts").Array()
 	if len(sysParts) != 1 {
 		t.Fatalf("request.systemInstruction parts = %d, want 1. Output: %s", len(sysParts), result)
@@ -218,7 +217,6 @@ func TestConvertOpenAIRequestToAntigravity_MidSessionDeveloperMessageDoesNotMuta
 	if got := sysParts[0].Get("text").String(); got != "You are a helpful assistant" {
 		t.Fatalf("systemInstruction text = %q, want %q", got, "You are a helpful assistant")
 	}
-
 
 	contents := output.Get("request.contents").Array()
 	if len(contents) != 4 {
@@ -293,7 +291,6 @@ func TestConvertOpenAIRequestToAntigravity_MidSessionTransientSystemInstructionP
 	contentsWith := ojson.GetBytesNoCopy(outWith, "request.contents").Array()
 	contentsWithout := ojson.GetBytesNoCopy(outWithout, "request.contents").Array()
 
-
 	if len(contentsWith) != 4 {
 		t.Fatalf("expected 4 standalone content items in request with transient instruction, got %d", len(contentsWith))
 	}
@@ -304,7 +301,6 @@ func TestConvertOpenAIRequestToAntigravity_MidSessionTransientSystemInstructionP
 	if contentsWith[3].Get("role").String() != "user" || contentsWith[3].Get("parts.0.text").String() != "Turn 2 user" {
 		t.Fatalf("turn 3 mismatch: %s", contentsWith[3].Raw)
 	}
-
 
 	if contentsWith[0].Raw != contentsWithout[0].Raw {
 		t.Fatalf("turn 0 diverged: %s vs %s", contentsWith[0].Raw, contentsWithout[0].Raw)
@@ -744,8 +740,6 @@ func TestConvertOpenAIRequestToAntigravity_MultiTurnRepeatedToolCallID_Issue5933
 
 	out, _ := ConvertOpenAIRequestToAntigravity("gemini-3-flash", []byte(inputJSON), false)
 
-
-
 	call1Name := ojson.GetBytesNoCopy(out, "request.contents.1.parts.0.functionCall.name").String()
 	resp1Name := ojson.GetBytesNoCopy(out, "request.contents.2.parts.0.functionResponse.name").String()
 	resp1Result := ojson.GetBytesNoCopy(out, "request.contents.2.parts.0.functionResponse.response.result").String()
@@ -760,8 +754,6 @@ func TestConvertOpenAIRequestToAntigravity_MultiTurnRepeatedToolCallID_Issue5933
 		t.Fatalf("turn 1 functionResponse result = %q, want [\"main.go\"]", resp1Result)
 	}
 
-
-
 	call2Name := ojson.GetBytesNoCopy(out, "request.contents.4.parts.0.functionCall.name").String()
 	resp2Name := ojson.GetBytesNoCopy(out, "request.contents.5.parts.0.functionResponse.name").String()
 	resp2Result := ojson.GetBytesNoCopy(out, "request.contents.5.parts.0.functionResponse.response.result").String()
@@ -775,7 +767,6 @@ func TestConvertOpenAIRequestToAntigravity_MultiTurnRepeatedToolCallID_Issue5933
 	if resp2Result != "package main" {
 		t.Fatalf("turn 2 functionResponse result = %q, want package main", resp2Result)
 	}
-
 
 	if errPairing := signature.ValidateGeminiFunctionCallPairing(out); errPairing != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on Antigravity output: %v; output=%s", errPairing, out)
@@ -934,7 +925,6 @@ func TestConvertOpenAIRequestToAntigravity_SanitizesClaudeToolIDs_DisambiguatesC
 		t.Fatalf("functionResponse 1 id = %q, want matching functionCall id %q", fr1ID, fc1ID)
 	}
 
-
 	fr0Result := ojson.GetBytesNoCopy(out, "request.contents.2.parts.0.functionResponse.response.result").String()
 	if want := "result_for_a_pipe_b"; fr0Result != want {
 		t.Fatalf("functionResponse 0 result = %q, want %q", fr0Result, want)
@@ -992,7 +982,6 @@ func TestConvertOpenAIRequestToAntigravity_SanitizesClaudeToolIDs_MissingRespons
 	if fr0ID != fc0ID || fr1ID != fc1ID {
 		t.Fatalf("functionResponse ids must match functionCall ids: fr0=%q, fc0=%q, fr1=%q, fc1=%q", fr0ID, fc0ID, fr1ID, fc1ID)
 	}
-
 
 	fr0Result := ojson.GetBytesNoCopy(out, "request.contents.2.parts.0.functionResponse.response.result").String()
 	if want := "{}"; fr0Result != want {

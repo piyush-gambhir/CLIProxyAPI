@@ -13,11 +13,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// RefreshJournal records consumption before sending a refresh grant. Claims never
-// expire: an absent response is not evidence that the provider did not rotate it.
-// Implementations must atomically create claims in the authoritative store, not
-// a disposable local mirror. Receipts contain credentials and require the same
-// protection as the credential store. Complete is called only by the claimant.
 const PendingRefreshReceipt = `{"stage":"pending"}`
 
 type RefreshJournal interface {
@@ -26,8 +21,6 @@ type RefreshJournal interface {
 	RefreshComplete(context.Context, string, []byte) error
 }
 
-// RefreshOutcomeUnknownError preserves the stage without exposing transport URLs,
-// response bodies, or credentials in diagnostic messages.
 type RefreshOutcomeUnknownError struct {
 	Stage string
 	Cause error
@@ -39,7 +32,6 @@ func (e *RefreshOutcomeUnknownError) Error() string {
 
 func (e *RefreshOutcomeUnknownError) Unwrap() error { return e.Cause }
 
-// IsRefreshOutcomeUnknown also recognizes wrapped partition errors.
 func IsRefreshOutcomeUnknown(err error) bool {
 	var outcome *RefreshOutcomeUnknownError
 	return errors.As(err, &outcome)
@@ -47,12 +39,10 @@ func IsRefreshOutcomeUnknown(err error) bool {
 
 type refreshJournalContextKey struct{}
 
-// WithRefreshJournal binds refresh attempts to their authoritative credential store.
 func WithRefreshJournal(ctx context.Context, journal RefreshJournal) context.Context {
 	return context.WithValue(ctx, refreshJournalContextKey{}, journal)
 }
 
-// SetRefreshJournal configures the journal for callers outside the auth manager.
 func (o *CodexAuth) SetRefreshJournal(journal RefreshJournal) { o.refreshJournal = journal }
 
 func refreshGrantKey(clientID, token string) string {
@@ -69,8 +59,6 @@ func (o *CodexAuth) journal(ctx context.Context) RefreshJournal {
 	return &processRefreshJournal
 }
 
-// journalRefresh returns a saved successful receipt to late callers. An incomplete
-// claim is deliberately not reclaimed, even after a crash or a storage timeout.
 func journalRefresh[T any](ctx context.Context, journal RefreshJournal, clientID, grant string, run func() (T, error), decode func(ojson.Result) (T, error)) (T, error) {
 	var zero T
 	key := refreshGrantKey(clientID, grant)
@@ -135,8 +123,7 @@ func journalRefresh[T any](ctx context.Context, journal RefreshJournal, clientID
 	if errSet != nil {
 		return zero, &RefreshOutcomeUnknownError{Stage: "receipt-encode", Cause: errSet}
 	}
-	// Use an independent acquisition context for the receipt, just as for the
-	// exchange itself. Caller cancellation must not discard a successful rotation.
+
 	if errComplete := journal.RefreshComplete(ctx, key, doc.Bytes()); errComplete != nil {
 		return zero, errors.Join(errRun, &RefreshOutcomeUnknownError{Stage: "receipt-write", Cause: errComplete})
 	}
@@ -197,8 +184,6 @@ func refreshRejectionCode(err error) string {
 	return "401 unauthorized"
 }
 
-// Direct SDK callers without a configured store still cannot replay an unresolved
-// grant in this process. Server and utility callers attach a durable journal.
 type memoryRefreshJournal struct {
 	mu       sync.Mutex
 	receipts map[string][]byte
@@ -236,7 +221,6 @@ func (j *memoryRefreshJournal) RefreshComplete(_ context.Context, key string, re
 	return nil
 }
 
-// doRefreshRequest forbids 307/308 redirects from silently replaying a POST body.
 func (o *CodexAuth) doRefreshRequest(req *http.Request) (*http.Response, error) {
 	client := *o.httpClient
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }

@@ -8,14 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type LogHook struct {
 	ch        chan string
 	formatter log.Formatter
 	mu        sync.Mutex
 	levels    []log.Level
 }
-
 
 func NewLogHook(bufSize int) *LogHook {
 	return &LogHook{
@@ -25,18 +23,15 @@ func NewLogHook(bufSize int) *LogHook {
 	}
 }
 
-
 func (h *LogHook) SetFormatter(f log.Formatter) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.formatter = f
 }
 
-
 func (h *LogHook) Levels() []log.Level {
 	return h.levels
 }
-
 
 func (h *LogHook) Fire(entry *log.Entry) error {
 	h.mu.Lock()
@@ -55,7 +50,6 @@ func (h *LogHook) Fire(entry *log.Entry) error {
 		line = fmt.Sprintf("[%s] %s", entry.Level, entry.Message)
 	}
 
-
 	select {
 	case h.ch <- line:
 	default:
@@ -71,7 +65,6 @@ func (h *LogHook) Fire(entry *log.Entry) error {
 	}
 	return nil
 }
-
 
 func (h *LogHook) Chan() <-chan string {
 	return h.ch

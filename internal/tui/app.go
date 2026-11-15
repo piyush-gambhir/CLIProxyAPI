@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-
 const (
 	tabDashboard = iota
 	tabConfig
@@ -20,7 +19,6 @@ const (
 	tabOAuth
 	tabLogs
 )
-
 
 type App struct {
 	activeTab int
@@ -47,7 +45,6 @@ type App struct {
 	height int
 	ready  bool
 
-
 	initialized [6]bool
 }
 
@@ -56,11 +53,9 @@ type authConnectMsg struct {
 	err error
 }
 
-
 func NewApp(port int, secretKey string, hook *LogHook) App {
 	return NewAppWithBaseURL(fmt.Sprintf("http://127.0.0.1:%d", port), secretKey, hook)
 }
-
 
 func NewAppWithBaseURL(baseURL string, secretKey string, hook *LogHook) App {
 	standalone := hook != nil
@@ -246,7 +241,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, cmd
 	}
 
-
 	var cmd tea.Cmd
 	switch a.activeTab {
 	case tabDashboard:
@@ -263,7 +257,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.logs, cmd = a.logs.Update(msg)
 	}
 
-
 	if a.logsEnabled && a.activeTab != tabLogs {
 		switch msg.(type) {
 		case logsPollMsg, logsTickMsg, logLineMsg:
@@ -277,7 +270,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return a, cmd
 }
-
 
 type localeChangedMsg struct{}
 
@@ -341,10 +333,8 @@ func (a App) View() string {
 
 	var sb strings.Builder
 
-
 	sb.WriteString(a.renderTabBar())
 	sb.WriteString("\n")
-
 
 	switch a.activeTab {
 	case tabDashboard:
@@ -362,7 +352,6 @@ func (a App) View() string {
 			sb.WriteString(a.logs.View())
 		}
 	}
-
 
 	sb.WriteString("\n")
 	sb.WriteString(a.renderStatusBar())
@@ -412,7 +401,6 @@ func (a App) renderStatusBar() string {
 	if width < 1 {
 		width = 1
 	}
-
 
 	contentWidth := width - 2
 	if contentWidth < 0 {
@@ -488,13 +476,9 @@ func (a App) connectWithPassword(password string) tea.Cmd {
 	}
 }
 
-
-
 func Run(port int, secretKey string, hook *LogHook, output io.Writer) error {
 	return RunWithBaseURL(fmt.Sprintf("http://127.0.0.1:%d", port), secretKey, hook, output)
 }
-
-
 
 func RunWithBaseURL(baseURL string, secretKey string, hook *LogHook, output io.Writer) error {
 	if output == nil {

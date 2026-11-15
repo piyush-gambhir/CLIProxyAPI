@@ -434,7 +434,6 @@ func TestMergeRefreshedAuth(t *testing.T) {
 
 func TestMergeExistingAuthMetadataMetaDoesNotRestoreOldKey(t *testing.T) {
 
-
 	auth := &Auth{Provider: "meta", Metadata: map[string]any{"access_token": "dca:new", "dca_token": "dca:new"}}
 	MergeExistingAuthMetadata(auth, map[string]any{"api_key": "LLM|old", "dca_expired": "old expiry", "dca_expires_at": 42, "priority": 3})
 	for _, key := range []string{"api_key", "dca_expired", "dca_expires_at"} {
@@ -479,7 +478,6 @@ func TestMergeRefreshedAndExistingAuthMetadataPreservesSIWC(t *testing.T) {
 	if !ok || siwcPreserved["access_token"] != "siwc-access-1" || siwcPreserved["device_id"] != "e61bbe28-07ef-466d-8e5d-a344f94ab305" {
 		t.Fatalf("siwc not preserved: %#v", target.Metadata["siwc"])
 	}
-
 
 	base := &Auth{
 		ID:       "codex-1",
@@ -526,7 +524,6 @@ func TestMergeRefreshedAndExistingAuthMetadataPreservesSIWC(t *testing.T) {
 
 func TestMergeExistingAuthMetadataPortalAttributionDeterministic(t *testing.T) {
 
-
 	for i := 0; i < 20; i++ {
 		target := &Auth{
 			Provider: "zcode",
@@ -540,7 +537,6 @@ func TestMergeExistingAuthMetadataPortalAttributionDeterministic(t *testing.T) {
 			t.Fatalf("iteration %d: expected both oauth_provider and portal preserved, got %#v", i, target.Metadata)
 		}
 	}
-
 
 	reloginTarget := &Auth{
 		Provider: "zcode",

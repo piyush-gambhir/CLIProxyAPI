@@ -365,7 +365,6 @@ func TestBuildErrorResponseBodyWithError_TerminalAuthEnforcesContractOnJSONInput
 		HTTPStatus: http.StatusServiceUnavailable,
 	}, errors.New("upstream failed"))
 
-
 	jsonErrText := `{"error":{"message":"token refresh failed: revoked","type":"server_error","code":"internal_server_error"}}`
 	body := BuildErrorResponseBodyWithError(http.StatusServiceUnavailable, jsonErrText, terminalErr)
 
@@ -392,7 +391,6 @@ func TestBuildErrorResponseBodyWithError_TerminalAuthEnforcesContractOnJSONInput
 	if !strings.Contains(payload.Error.Message, "token refresh failed: revoked") {
 		t.Fatalf("message = %q, want extracted upstream message", payload.Error.Message)
 	}
-
 
 	normalBody := BuildErrorResponseBodyWithError(http.StatusInternalServerError, jsonErrText, errors.New("normal error"))
 	if string(normalBody) != jsonErrText {

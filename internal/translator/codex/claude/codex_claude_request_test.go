@@ -200,14 +200,6 @@ func TestConvertClaudeRequestToCodex_PreservesToolAdjacencyWithInterveningSystem
 	result, _ := ConvertClaudeRequestToCodex("gpt-5.4", []byte(inputJSON), false)
 	inputs := ojson.GetBytesNoCopy(result, "input").Array()
 
-
-
-
-
-
-
-
-
 	types := make([]string, 0, len(inputs))
 	for _, item := range inputs {
 		types = append(types, item.Get("type").String())
@@ -791,8 +783,6 @@ func TestConvertClaudeRequestToCodex_IgnoresMetaSignatureForNonMetaTargets(t *te
 
 func TestConvertClaudeRequestToCodex_AssistantRoutedMetaSignatureToReasoningItem(t *testing.T) {
 
-
-
 	signature := testMetaClaudeSignature() + "." + strings.Repeat("Ab3", 23)[:67]
 	payload := []byte(`{"model":"meta/muse-wonder","messages":[{"role":"assistant","content":[{"type":"thinking","thinking":"summary","signature":""},{"type":"text","text":"answer"}]},{"role":"user","content":"next"}]}`)
 	payload, _ = ojson.SetBytes(payload, "messages.0.content.0.signature", signature)
@@ -811,15 +801,12 @@ func TestConvertClaudeRequestToCodex_AssistantRoutedMetaSignatureToReasoningItem
 		t.Fatalf("got %d reasoning items for non-Meta target, want 0; output=%s", got, out)
 	}
 
-
 	gptPayload := []byte(`{"model":"muse-spark-1.3","messages":[{"role":"assistant","content":[{"type":"thinking","thinking":"summary","signature":""},{"type":"text","text":"answer"}]},{"role":"user","content":"next"}]}`)
 	gptPayload, _ = ojson.SetBytes(gptPayload, "messages.0.content.0.signature", validCodexReasoningSignature())
 	out, _ = ConvertClaudeRequestToCodex("muse-spark-1.3", gptPayload, false)
 	if got := countRequestInputItemsByType(out, "reasoning"); got != 0 {
 		t.Fatalf("got %d reasoning items for GPT signature on Meta target, want 0; output=%s", got, out)
 	}
-
-
 
 	aliasOut, _ := ConvertClaudeRequestToCodex("deployment-123", payload, false)
 	if got := countRequestInputItemsByType(aliasOut, "reasoning"); got != 1 {
@@ -1223,14 +1210,12 @@ func TestNormalizeToolParameters_PreservesPropertyNamesAndLiteralData(t *testing
 		t.Errorf("expected literal default.$id to be preserved, got %q", gotDefaultID)
 	}
 
-
 	if emptyGot := normalizeToolParameters(""); emptyGot != `{"type":"object","properties":{}}` {
 		t.Errorf("expected empty string to normalize to empty object schema, got %s", emptyGot)
 	}
 	if nullGot := normalizeToolParameters("null"); nullGot != `{"type":"object","properties":{}}` {
 		t.Errorf("expected null to normalize to empty object schema, got %s", nullGot)
 	}
-
 
 	unionInput := `{"type": ["object", "null"]}`
 	unionGot := normalizeToolParameters(unionInput)
@@ -1365,7 +1350,6 @@ func TestConvertClaudeRequestToCodex_StripsUnsupportedUnicodePropertyEscapePatte
 	}
 	params := tools[0].Get("parameters")
 
-
 	if params.Get("properties.field.pattern").Exists() {
 		t.Errorf("expected properties.field.pattern to be removed, got %v", params.Get("properties.field.pattern").Raw)
 	}
@@ -1377,7 +1361,6 @@ func TestConvertClaudeRequestToCodex_StripsUnsupportedUnicodePropertyEscapePatte
 		t.Errorf("expected properties.field.description == 'field to replace', got %q", got)
 	}
 
-
 	if got := params.Get("properties.asset_id.pattern").String(); got != "^[0-9a-f]{32}$" {
 		t.Errorf("expected asset_id.pattern preserved, got %q", got)
 	}
@@ -1388,7 +1371,6 @@ func TestConvertClaudeRequestToCodex_StripsUnsupportedUnicodePropertyEscapePatte
 		t.Errorf("expected literal_p.pattern preserved, got %q", got)
 	}
 
-
 	if params.Get("properties.nested.properties.inner_field.pattern").Exists() {
 		t.Errorf("expected properties.nested.properties.inner_field.pattern to be removed, got %v", params.Get("properties.nested.properties.inner_field.pattern").Raw)
 	}
@@ -1396,11 +1378,9 @@ func TestConvertClaudeRequestToCodex_StripsUnsupportedUnicodePropertyEscapePatte
 		t.Errorf("expected nested inner_field.type preserved, got %q", got)
 	}
 
-
 	if params.Get("properties.union_field.anyOf.0.pattern").Exists() {
 		t.Errorf("expected union_field.anyOf.0.pattern to be removed, got %v", params.Get("properties.union_field.anyOf.0.pattern").Raw)
 	}
-
 
 	if got := params.Get("required.0").String(); got != "field" {
 		t.Errorf("expected required.0 == 'field', got %q", got)
@@ -1529,7 +1509,6 @@ func TestConvertClaudeRequestToCodex_MidConversationToolAdditions(t *testing.T) 
 		t.Fatalf("ConvertClaudeRequestToCodex returned error: %v", err)
 	}
 
-
 	topTools := ojson.GetBytesNoCopy(translated, "tools").Array()
 	if len(topTools) != 1 {
 		t.Fatalf("expected 1 top-level tool, got %d: %s", len(topTools), ojson.GetBytesNoCopy(translated, "tools").Raw)
@@ -1537,14 +1516,6 @@ func TestConvertClaudeRequestToCodex_MidConversationToolAdditions(t *testing.T) 
 	if topTools[0].Get("name").String() != "Read" {
 		t.Fatalf("unexpected top-level tool name: %q", topTools[0].Get("name").String())
 	}
-
-
-
-
-
-
-
-
 
 	inputs := ojson.GetBytesNoCopy(translated, "input").Array()
 	if len(inputs) != 7 {
@@ -1804,7 +1775,6 @@ func TestConvertClaudeRequestToCodex_ToolSearchDeferredLoadingPreservesPromptCac
 
 func TestConvertClaudeRequestToCodex_RepeatedToolSearchAndLongMCPToolMapping(t *testing.T) {
 
-
 	eagerLongTool := "mcp__shared-long-server-11111111-2222-3333-4444-555555555555_deliver_final_subagent_handback_report"
 	deferredLongTool := "mcp__shared-long-server-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_deliver_final_subagent_handback_report"
 
@@ -1882,13 +1852,11 @@ func TestConvertClaudeRequestToCodex_RepeatedToolSearchAndLongMCPToolMapping(t *
 		t.Fatalf("after ConvertClaudeRequestToCodex error: %v", err)
 	}
 
-
 	if gotBefore, gotAfter := ojson.GetBytesNoCopy(beforeOut, "tools").Raw, ojson.GetBytesNoCopy(afterOut, "tools").Raw; gotBefore != gotAfter {
 		t.Fatalf("top-level tools[] changed when colliding deferred tool was inserted:\nbefore: %s\nafter:  %s", gotBefore, gotAfter)
 	}
 
 	inputs := ojson.GetBytesNoCopy(afterOut, "input").Array()
-
 
 	var addToolsItems []ojson.Result
 	for _, item := range inputs {
@@ -1912,7 +1880,6 @@ func TestConvertClaudeRequestToCodex_RepeatedToolSearchAndLongMCPToolMapping(t *
 	if !strings.HasSuffix(deferredShortName, "_1") {
 		t.Fatalf("expected deferred colliding tool to receive _1 suffix so eager tool keeps base name, got eager=%q deferred=%q", eagerShortName, deferredShortName)
 	}
-
 
 	if gotCallName := ojson.GetBytesNoCopy(afterOut, `input.#(call_id=="call_mcp_1").name`).String(); gotCallName != deferredShortName {
 		t.Fatalf("function_call name = %q, want %q", gotCallName, deferredShortName)
@@ -2052,14 +2019,6 @@ func TestConvertClaudeRequestToCodex_StandaloneToolReferenceAndSearchResultOrder
 	}
 
 	inputs := ojson.GetBytesNoCopy(out, "input").Array()
-
-
-
-
-
-
-
-
 
 	if len(inputs) != 8 {
 		t.Fatalf("expected 8 input items, got %d: %s", len(inputs), ojson.GetBytesNoCopy(out, "input").Raw)

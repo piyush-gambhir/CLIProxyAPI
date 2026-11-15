@@ -29,10 +29,6 @@ func placementMessages(root ojson.Result) [][]byte {
 	return messages
 }
 
-
-
-
-
 func TestResponsesMidSessionSystemItemsKeepPromptPrefixBetweenTurns(t *testing.T) {
 	turnTwo := `[
 		{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": "base instructions"}]},
@@ -79,8 +75,6 @@ func TestResponsesMidSessionSystemItemsKeepPromptPrefixBetweenTurns(t *testing.T
 	}
 }
 
-
-
 func TestResponsesMidSessionSystemItemFollowsPendingUserMessage(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
 		"model": "claude-opus-5",
@@ -103,8 +97,6 @@ func TestResponsesMidSessionSystemItemFollowsPendingUserMessage(t *testing.T) {
 		t.Fatalf("in-place turn text = %q, want D1", got)
 	}
 }
-
-
 
 func TestResponsesMidSessionSystemItemWaitsForToolResult(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
@@ -131,9 +123,6 @@ func TestResponsesMidSessionSystemItemWaitsForToolResult(t *testing.T) {
 		t.Fatalf("invariant problems: %v", problems)
 	}
 }
-
-
-
 
 func TestResponsesMidSessionSystemItemTopLevelFallbacks(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
@@ -173,8 +162,6 @@ func TestResponsesMidSessionSystemItemTopLevelFallbacks(t *testing.T) {
 	}
 }
 
-
-
 func TestResponsesStructuredOutputOnlyKeepsFallbackUserMessage(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{"model":"claude-opus-5",`+placementFormatJSON+`}`)
 	if got := len(root.Get("system").Array()); got != 1 {
@@ -184,9 +171,6 @@ func TestResponsesStructuredOutputOnlyKeepsFallbackUserMessage(t *testing.T) {
 		t.Fatalf("roles = %s, want the fallback user message", got)
 	}
 }
-
-
-
 
 func TestResponsesMidSessionSystemItemKeepsCacheControl(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
@@ -221,8 +205,6 @@ func TestResponsesMidSessionSystemItemKeepsCacheControl(t *testing.T) {
 		t.Fatalf("item-level marker lost: %s", root.Get("messages.2").Raw)
 	}
 }
-
-
 
 func TestResponsesSystemItemPlacementFollowsPinnedDecision(t *testing.T) {
 	body := `{

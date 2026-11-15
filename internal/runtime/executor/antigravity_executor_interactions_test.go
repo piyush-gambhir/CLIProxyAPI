@@ -24,7 +24,6 @@ func TestAntigravityExecutorExecuteStreamInteractionsEmitsDoneAfterSplitTerminal
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 
-
 		_, _ = io.WriteString(w, "data: {\"response\":{\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"first\"}]},\"finishReason\":\"STOP\"}],\"modelVersion\":\"gemini-3.8-flash-high\",\"responseId\":\"resp-split\"}}\n\n")
 		if flusher != nil {
 			flusher.Flush()
@@ -34,13 +33,11 @@ func TestAntigravityExecutorExecuteStreamInteractionsEmitsDoneAfterSplitTerminal
 			flusher.Flush()
 		}
 
-
 		select {
 		case <-terminalReceived:
 		case <-r.Context().Done():
 		}
 	}))
-
 
 	t.Cleanup(func() {
 		cancel()
@@ -115,8 +112,6 @@ consume:
 
 func TestAntigravityExecutorExecuteStreamInteractionsCompletesToolCallWithoutFinishReason(t *testing.T) {
 
-
-
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		_, _ = io.WriteString(w, antigravityNoFinishReasonSSE)
@@ -144,7 +139,6 @@ func TestAntigravityExecutorExecuteStreamInteractionsCompletesToolCallWithoutFin
 }
 
 func TestAntigravityExecutorExecuteStreamInteractionsNoTerminalOnReadError(t *testing.T) {
-
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")

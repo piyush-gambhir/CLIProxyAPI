@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-
 type editableField struct {
 	label string
 	key   string
@@ -22,7 +21,6 @@ var authEditableFields = []editableField{
 	{label: "Proxy URL", key: "proxy_url"},
 	{label: "Priority", key: "priority"},
 }
-
 
 type authTabModel struct {
 	client   *Client
@@ -36,7 +34,6 @@ type authTabModel struct {
 	expanded int
 	confirm  int
 	status   string
-
 
 	editing      bool
 	editField    int
@@ -109,11 +106,9 @@ func (m authTabModel) Update(msg tea.Msg) (authTabModel, tea.Cmd) {
 			return m.handleEditInput(msg)
 		}
 
-
 		if m.confirm >= 0 {
 			return m.handleConfirmInput(msg)
 		}
-
 
 		return m.handleNormalInput(msg)
 	}
@@ -123,7 +118,6 @@ func (m authTabModel) Update(msg tea.Msg) (authTabModel, tea.Cmd) {
 	return m, cmd
 }
 
-
 func (m *authTabModel) startEdit(fieldIdx int) tea.Cmd {
 	if m.cursor >= len(m.files) {
 		return nil
@@ -132,7 +126,6 @@ func (m *authTabModel) startEdit(fieldIdx int) tea.Cmd {
 	m.editFileName = getString(f, "name")
 	m.editField = fieldIdx
 	m.editing = true
-
 
 	key := authEditableFields[fieldIdx].key
 	currentVal := getAnyString(f, key)
@@ -241,12 +234,10 @@ func (m authTabModel) renderContent() string {
 		sb.WriteString(rowStyle.Render(row))
 		sb.WriteString("\n")
 
-
 		if m.confirm == i {
 			sb.WriteString(warningStyle.Render(fmt.Sprintf("    "+T("confirm_delete"), name)))
 			sb.WriteString("\n")
 		}
-
 
 		if m.editing && i == m.cursor {
 			sb.WriteString(m.editInput.View())
@@ -254,7 +245,6 @@ func (m authTabModel) renderContent() string {
 			sb.WriteString(helpStyle.Render("    " + T("enter_save") + " • " + T("esc_cancel")))
 			sb.WriteString("\n")
 		}
-
 
 		if m.expanded == i {
 			sb.WriteString(m.renderDetail(f))
@@ -334,7 +324,6 @@ func (m authTabModel) renderDetail(f map[string]any) string {
 	sb.WriteString("    └─────────────────────────────────────────────\n")
 	return sb.String()
 }
-
 
 func getAnyString(m map[string]any, key string) string {
 	v, ok := m[key]

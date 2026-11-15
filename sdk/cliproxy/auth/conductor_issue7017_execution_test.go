@@ -11,11 +11,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
 type issue7017HintError struct {
 	msg   string
 	hint  *time.Duration
@@ -126,8 +121,6 @@ func TestIssue7017ExecuteSingleCredentialTerminalRetryAfter(t *testing.T) {
 	if state == nil || state.Quota.Exceeded || state.Quota.Reason == "quota" {
 		t.Fatalf("model state must cool without quota, got %+v", state)
 	}
-
-
 
 	_, errFollowUp := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6.1-sol"}, cliproxyexecutor.Options{})
 	if errFollowUp == nil {

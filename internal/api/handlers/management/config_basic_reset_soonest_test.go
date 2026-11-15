@@ -2,9 +2,6 @@ package management
 
 import "testing"
 
-
-
-
 func TestNormalizeRoutingStrategyAcceptsResetSoonestAndItsAlias(t *testing.T) {
 	t.Parallel()
 
@@ -18,8 +15,6 @@ func TestNormalizeRoutingStrategyAcceptsResetSoonestAndItsAlias(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestNormalizeRoutingStrategyKeepsTheExistingValues(t *testing.T) {
 	t.Parallel()

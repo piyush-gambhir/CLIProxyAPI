@@ -54,7 +54,6 @@ func TestRegisterExecutorForAuth_PluginAuthProviderWrapsOpenAICompatRefresh(t *t
 		t.Fatalf("inner executor type = %T, want *executor.OpenAICompatExecutor", inner)
 	}
 
-
 	service.coreManager.RegisterExecutor(runtimeexecutor.NewOpenAICompatExecutor("plugin-provider", service.cfg))
 	service.registerExecutorForAuth(auth, false)
 	resolved, ok = service.coreManager.Executor("plugin-provider")

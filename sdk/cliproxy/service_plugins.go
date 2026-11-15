@@ -49,20 +49,9 @@ var registerPluginExecutors = func(host *pluginhost.Host, manager *coreauth.Mana
 	host.RegisterExecutors(manager, registry.GetGlobalRegistry())
 }
 
-
-
-
 var modelRegistrationTaskHook func()
 
-
-
-
 var modelRegistrationTaskPostRunHook func(authID string)
-
-
-
-
-
 
 func (s *Service) RegisterUsagePlugin(plugin usage.Plugin) {
 	usage.RegisterPlugin(plugin)
@@ -168,7 +157,6 @@ func (s *Service) refreshPluginModelRegistrations(ctx context.Context) {
 	if s == nil || s.pluginHost == nil || s.coreManager == nil {
 		return
 	}
-
 
 	s.registerModelsForAuthBatch(ctx, s.coreManager.List())
 }
@@ -347,9 +335,6 @@ func modelRegistrationMaxWorkersForCategory(category string) int {
 }
 
 func (s *Service) registerModelRefreshCallback() {
-
-
-
 
 	registry.SetModelRefreshCallback(func(changedProviders []string) {
 		if s == nil || s.coreManager == nil || len(changedProviders) == 0 {

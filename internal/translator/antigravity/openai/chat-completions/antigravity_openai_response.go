@@ -1,8 +1,3 @@
-
-
-
-
-
 package chat_completions
 
 import (
@@ -20,7 +15,6 @@ import (
 	. "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/gemini/openai/chat-completions"
 )
 
-
 type convertCliResponseToOpenAIChatParams struct {
 	UnixTimestamp        int64
 	FunctionIndex        int
@@ -34,22 +28,7 @@ type convertCliResponseToOpenAIChatParams struct {
 	SanitizedNameMap     map[string]string
 }
 
-
 var functionCallIDCounter uint64
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	params, ok := (*param).(*convertCliResponseToOpenAIChatParams)
@@ -65,8 +44,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 	}
 
 	if bytes.Equal(rawJSON, []byte("[DONE]")) {
-
-
 
 		if params.SawResponse && !params.SawFinishReason {
 			params.SawFinishReason = true
@@ -93,15 +70,12 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		params.SawResponse = hasAntigravityResponsePayload(rawJSON)
 	}
 
-
 	templateDoc := ojson.NewDoc([]byte(`{"id":"","object":"chat.completion.chunk","created":12345,"model":"model","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":null},"finish_reason":null,"native_finish_reason":null}]}`))
-
 
 	if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "response.modelVersion"); modelVersionResult.Exists() {
 		params.ModelVersion = strings.Clone(modelVersionResult.String())
 		_ = templateDoc.Set("model", params.ModelVersion)
 	}
-
 
 	if createTimeResult := ojson.GetBytesNoCopy(rawJSON, "response.createTime"); createTimeResult.Exists() {
 		t, err := time.Parse(time.RFC3339Nano, createTimeResult.String())
@@ -113,19 +87,14 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		_ = templateDoc.Set("created", params.UnixTimestamp)
 	}
 
-
 	if responseIDResult := ojson.GetBytesNoCopy(rawJSON, "response.responseId"); responseIDResult.Exists() {
 		params.ResponseID = strings.Clone(responseIDResult.String())
 		_ = templateDoc.Set("id", params.ResponseID)
 	}
 
-
 	if finishReasonResult := ojson.GetBytesNoCopy(rawJSON, "response.candidates.0.finishReason"); finishReasonResult.Exists() {
 		params.UpstreamFinishReason = strings.Clone(strings.ToUpper(finishReasonResult.String()))
 	}
-
-
-
 
 	usageResult := ojson.GetBytesNoCopy(rawJSON, "response.usageMetadata")
 	if !usageResult.Exists() {
@@ -135,7 +104,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 	} else {
 		setOpenAIUsageMetadataDoc(templateDoc, usageResult)
 	}
-
 
 	partsResult := ojson.GetBytesNoCopy(rawJSON, "response.candidates.0.content.parts")
 	if partsResult.IsArray() {
@@ -163,14 +131,12 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 			hasTextPayload := partTextResult.Exists() && partTextResult.String() != ""
 			hasContentPayload := hasTextPayload || functionCallResult.Exists() || inlineDataResult.Exists()
 
-
 			if hasThoughtSignature && !hasContentPayload {
 				continue
 			}
 
 			if partTextResult.Exists() {
 				text := partTextResult.String()
-
 
 				if partResult.Get("thought").Bool() {
 					hasReasoningContent = true
@@ -237,12 +203,6 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 		}
 	}
 
-
-
-
-
-
-
 	isFinalChunk := params.UpstreamFinishReason != "" && usageResult.Exists()
 
 	if isFinalChunk {
@@ -255,18 +215,12 @@ func ConvertAntigravityResponseToOpenAI(_ context.Context, _ string, originalReq
 	return [][]byte{templateDoc.Bytes()}
 }
 
-
-
-
-
-
 func hasAntigravityResponsePayload(rawJSON []byte) bool {
 	for _, path := range []string{"response.candidates", "candidates"} {
 		if candidates := ojson.GetBytesNoCopy(rawJSON, path); candidates.IsArray() && len(candidates.Array()) > 0 {
 			return true
 		}
 	}
-
 
 	for _, path := range []string{
 		"response.usageMetadata", "response.cpaUsageMetadata",
@@ -278,9 +232,6 @@ func hasAntigravityResponsePayload(rawJSON []byte) bool {
 	}
 	return false
 }
-
-
-
 
 func resolveOpenAIFinishReason(params *convertCliResponseToOpenAIChatParams) (finishReason, nativeFinishReason string) {
 	switch {
@@ -327,19 +278,6 @@ func setOpenAIUsageMetadataDoc(templateDoc *ojson.Doc, usageResult ojson.Result)
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertAntigravityResponseToOpenAINonStream(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	responseResult := ojson.GetBytesNoCopy(rawJSON, "response")

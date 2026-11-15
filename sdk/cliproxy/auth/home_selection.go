@@ -147,7 +147,6 @@ func (r *executionResources) Close() error {
 	return result
 }
 
-
 type HomeDispatchSelection struct {
 	Auth                       *Auth
 	Executor                   ProviderExecutor
@@ -199,7 +198,6 @@ func newHomeDispatchSelection(auth *Auth, executor ProviderExecutor, provider st
 	return selection, nil
 }
 
-
 func (s *HomeDispatchSelection) Bind(closeFn func() error) error {
 	if s == nil || s.resources == nil {
 		if closeFn != nil {
@@ -209,7 +207,6 @@ func (s *HomeDispatchSelection) Bind(closeFn func() error) error {
 	}
 	return s.resources.Add(closeFn)
 }
-
 
 func (s *HomeDispatchSelection) AttemptContext(ctx context.Context) (context.Context, func(), error) {
 	if ctx == nil {
@@ -229,7 +226,6 @@ func (s *HomeDispatchSelection) AttemptContext(ctx context.Context) (context.Con
 	return context.WithValue(attemptCtx, homeAttemptContextKey{}, attempt), release, nil
 }
 
-
 func (s *HomeDispatchSelection) Retain() {
 	if s == nil || s.ended.Load() {
 		return
@@ -237,23 +233,17 @@ func (s *HomeDispatchSelection) Retain() {
 	s.retained.Store(true)
 }
 
-
 func (s *HomeDispatchSelection) Retained() bool {
 	return s != nil && s.retained.Load() && !s.ended.Load()
 }
-
 
 func (s *HomeDispatchSelection) Active() bool {
 	return s != nil && !s.ended.Load()
 }
 
-
 func (s *HomeDispatchSelection) End(reason string) {
 	_ = s.EndWithRelease(reason)
 }
-
-
-
 
 func (s *HomeDispatchSelection) EndWebsocketTurn(ctx context.Context, reason string) {
 	if s == nil {
@@ -266,7 +256,6 @@ func (s *HomeDispatchSelection) EndWebsocketTurn(ctx context.Context, reason str
 	}
 	s.End(reason)
 }
-
 
 func (s *HomeDispatchSelection) EndWithRelease(reason string) *executionregistry.ReleaseTicket {
 	if s == nil {
@@ -284,7 +273,6 @@ func (s *HomeDispatchSelection) EndWithRelease(reason string) *executionregistry
 	}
 	return s.scope.EndWithRelease("")
 }
-
 
 func (s *HomeDispatchSelection) ReplaceAuth(auth *Auth) {
 	if s == nil || auth == nil {
@@ -311,7 +299,6 @@ func preserveHomeRoutingAttributes(updated, previous *Auth) {
 	}
 }
 
-
 func (s *HomeDispatchSelection) CloneAuth() *Auth {
 	if s == nil {
 		return nil
@@ -323,7 +310,6 @@ func (s *HomeDispatchSelection) CloneAuth() *Auth {
 	}
 	return s.Auth.Clone()
 }
-
 
 func (s *HomeDispatchSelection) CloneAuthForRoute(routeModel string) *Auth {
 	auth := s.CloneAuth()

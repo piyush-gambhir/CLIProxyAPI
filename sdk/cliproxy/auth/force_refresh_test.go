@@ -32,7 +32,6 @@ func TestManager_ForceRefreshAuth_ClearsErrorAndRefreshes(t *testing.T) {
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
 	if !hasUnauthorizedAuthFailure(auth) {
 		t.Fatal("expected hasUnauthorizedAuthFailure to be true initially")
 	}
@@ -97,7 +96,6 @@ func TestManager_ForceRefreshAll(t *testing.T) {
 func TestManager_ForceRefreshAuth_PreservesErrorOnFailure(t *testing.T) {
 	ctx := context.Background()
 	manager := NewManager(nil, &RoundRobinSelector{}, nil)
-
 
 	auth := &Auth{
 		ID:          "ag-fail",
@@ -210,11 +208,8 @@ func TestManager_ForceRefreshAll_WorkersBounded(t *testing.T) {
 		close(done)
 	}()
 
-
 	<-executor.enteredCh
 	<-executor.enteredCh
-
-
 
 	close(executor.releaseCh)
 	<-done
@@ -270,7 +265,6 @@ func TestManager_ForceRefreshAll_CanceledContextSkipsExecutors(t *testing.T) {
 	}
 }
 
-
 type refreshCommitStore struct {
 	*memoryAuthTestStore
 	checkContext func(context.Context)
@@ -325,13 +319,10 @@ func TestManager_ForceRefreshAll_DynamicCancellationSkipsRemaining(t *testing.T)
 		close(done)
 	}()
 
-
 	<-executor.enteredCh
 	<-executor.enteredCh
-
 
 	cancel()
-
 
 	close(executor.releaseCh)
 	<-done
@@ -339,8 +330,6 @@ func TestManager_ForceRefreshAll_DynamicCancellationSkipsRemaining(t *testing.T)
 	if len(results) != 6 {
 		t.Fatalf("expected 6 results, got %d", len(results))
 	}
-
-
 
 	if entered := executor.totalEntered.Load(); entered != 2 {
 		t.Fatalf("expected exactly 2 entered calls, got %d", entered)
@@ -381,23 +370,19 @@ func TestManager_ForceRefreshAll_DynamicCancellationSkipsRemaining(t *testing.T)
 func TestManager_RefreshWorkersResolution(t *testing.T) {
 	manager := NewManager(nil, &RoundRobinSelector{}, nil)
 
-
 	if w := manager.refreshWorkers(); w != 16 {
 		t.Fatalf("expected default 16 workers, got %d", w)
 	}
-
 
 	manager.runtimeConfig.Store(&internalconfig.Config{AuthAutoRefreshWorkers: 0})
 	if w := manager.refreshWorkers(); w != 16 {
 		t.Fatalf("expected 16 workers for 0, got %d", w)
 	}
 
-
 	manager.runtimeConfig.Store(&internalconfig.Config{AuthAutoRefreshWorkers: -5})
 	if w := manager.refreshWorkers(); w != 16 {
 		t.Fatalf("expected 16 workers for -5, got %d", w)
 	}
-
 
 	manager.runtimeConfig.Store(&internalconfig.Config{AuthAutoRefreshWorkers: 4})
 	if w := manager.refreshWorkers(); w != 4 {

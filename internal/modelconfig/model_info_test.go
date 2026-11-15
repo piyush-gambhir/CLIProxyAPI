@@ -50,8 +50,6 @@ func TestNormalizeThinkingSupportDerivesSpecialLevelFlags(t *testing.T) {
 	}
 }
 
-
-
 func TestResolveModelInfoConfiguredThinkingKeepsCatalogDisableType(t *testing.T) {
 	configured := &registry.ThinkingSupport{Levels: []string{"low", "medium", "high", "none"}}
 	info := ResolveModelInfo("claude-sonnet-5-5", "claude", configured)

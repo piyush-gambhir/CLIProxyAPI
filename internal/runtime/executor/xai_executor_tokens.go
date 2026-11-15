@@ -14,7 +14,6 @@ import (
 	"github.com/tiktoken-go/tokenizer"
 )
 
-
 func (e *XAIExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	prepared, err := e.prepareResponsesRequestDoc(ctx, req, opts, false)
 	if err != nil {

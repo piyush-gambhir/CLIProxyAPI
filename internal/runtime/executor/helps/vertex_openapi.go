@@ -15,8 +15,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func IsVertexOpenAPIModel(model string) bool {
 	baseModel := strings.TrimSpace(thinking.ParseSuffix(model).ModelName)
 	if baseModel == "" {
@@ -36,9 +34,6 @@ func IsVertexOpenAPIModel(model string) bool {
 	}
 	return true
 }
-
-
-
 
 func NormalizeVertexOpenAPIModel(model string) string {
 	trimmed := strings.TrimSpace(model)
@@ -101,13 +96,9 @@ func cutVertexPublisherResource(baseModel string) (publisher, modelID string, ok
 	return pub, id, true
 }
 
-
-
 func ShouldExecuteVertexOpenAPI(auth *cliproxyauth.Auth, model string) bool {
 	return ShouldExecuteVertexOpenAPIForRequest(nil, auth, model, cliproxyexecutor.Options{})
 }
-
-
 
 func ShouldExecuteVertexOpenAPIForRequest(cfg *config.Config, auth *cliproxyauth.Auth, model string, opts cliproxyexecutor.Options) bool {
 	model = strings.TrimSpace(model)
@@ -303,7 +294,6 @@ func matchVertexModelOpenAPI(rules []config.OAuthModelAlias, model, requestedMod
 	return nil
 }
 
-
 func ResolveVertexCompatConfig(cfg *config.Config, auth *cliproxyauth.Auth) *config.VertexCompatKey {
 	if cfg == nil || auth == nil {
 		return nil
@@ -377,8 +367,6 @@ func parseVertexOpenAPIBool(raw any) (bool, bool) {
 	return false, false
 }
 
-
-
 func IsGoogleVertexHost(baseURL string) bool {
 	trimmed := strings.TrimSpace(baseURL)
 	if trimmed == "" {
@@ -404,8 +392,6 @@ func isGoogleVertexREPHost(host string) bool {
 	return loc != "" && !strings.Contains(loc, ".")
 }
 
-
-
 func VertexExplicitOpenAPILocation(cfg *config.Config, auth *cliproxyauth.Auth) string {
 	if auth != nil {
 		if auth.Attributes != nil {
@@ -429,8 +415,6 @@ func VertexExplicitOpenAPILocation(cfg *config.Config, auth *cliproxyauth.Auth) 
 	return ""
 }
 
-
-
 func VertexOpenAPILocation(auth *cliproxyauth.Auth, defaultLocation string) string {
 	if explicit := VertexExplicitOpenAPILocation(nil, auth); explicit != "" {
 		return explicit
@@ -453,7 +437,6 @@ func VertexOpenAPILocation(auth *cliproxyauth.Auth, defaultLocation string) stri
 	return "global"
 }
 
-
 func VertexAuthBaseURL(auth *cliproxyauth.Auth) string {
 	if auth == nil {
 		return ""
@@ -473,7 +456,6 @@ func VertexAuthBaseURL(auth *cliproxyauth.Auth) string {
 	return ""
 }
 
-
 func VertexAuthProjectID(auth *cliproxyauth.Auth) string {
 	if auth == nil || auth.Metadata == nil {
 		return ""
@@ -486,7 +468,6 @@ func VertexAuthProjectID(auth *cliproxyauth.Auth) string {
 	return ""
 }
 
-
 func VertexOpenAPIHostBaseURL(location string) string {
 	loc := strings.TrimSpace(location)
 	if loc == "" || strings.EqualFold(loc, "global") {
@@ -496,8 +477,6 @@ func VertexOpenAPIHostBaseURL(location string) string {
 	}
 	return fmt.Sprintf("https://%s-aiplatform.googleapis.com", loc)
 }
-
-
 
 func VertexServiceAccountOpenAPIBaseURL(baseURL, version, projectID, location string) string {
 	explicitLoc := strings.TrimSpace(location)
@@ -528,8 +507,6 @@ func VertexServiceAccountOpenAPIBaseURL(baseURL, version, projectID, location st
 	built := fmt.Sprintf("%s/projects/%s/locations/%s/endpoints/openapi", base, strings.TrimSpace(projectID), loc)
 	return rewriteVertexOpenAPILocation(built, explicitLoc)
 }
-
-
 
 func VertexAPIKeyOpenAPIBaseURL(baseURL, version, projectID, location string) string {
 	ver := strings.TrimSpace(version)

@@ -1,8 +1,3 @@
-
-
-
-
-
 package chat_completions
 
 import (
@@ -20,7 +15,6 @@ import (
 var (
 	dataTag = []byte("data:")
 )
-
 
 type ConvertAnthropicResponseToOpenAIParams struct {
 	CreatedAt         int64
@@ -44,7 +38,6 @@ type claudeUsageTokens struct {
 	HasThinkingTokens        bool
 	HasUsage                 bool
 }
-
 
 type ToolCallAccumulator struct {
 	ID        string
@@ -76,9 +69,6 @@ func (u *claudeUsageTokens) Merge(usage ojson.Result) {
 	}
 }
 
-
-
-
 func (u claudeUsageTokens) applyReasoningTokensDoc(outDoc *ojson.Doc) {
 	if !u.HasThinkingTokens {
 		return
@@ -102,19 +92,6 @@ func effectiveChatResponseModel(servedModel, requestedModel string) string {
 	return requestedModel
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &ConvertAnthropicResponseToOpenAIParams{
@@ -132,16 +109,13 @@ func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, original
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	eventType := root.Get("type").String()
 
-
 	templateDoc := ojson.NewDoc([]byte(`{"id":"","object":"chat.completion.chunk","created":0,"model":"","choices":[{"index":0,"delta":{},"finish_reason":null}]}`))
 
 	p := (*param).(*ConvertAnthropicResponseToOpenAIParams)
 
-
 	if chunkModel := effectiveChatResponseModel(p.Model, modelName); chunkModel != "" {
 		_ = templateDoc.Set("model", chunkModel)
 	}
-
 
 	if p.ResponseID != "" {
 		_ = templateDoc.Set("id", p.ResponseID)
@@ -168,14 +142,12 @@ func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, original
 			}
 			_ = templateDoc.Set("created", p.CreatedAt)
 
-
 			_ = templateDoc.Set("choices.0.delta.role", "assistant")
 			if fromModel, toModel, ok := translatorcommon.ClaudePreTokenFallbackModels(originalRequestRawJSON, requestRawJSON, modelName, upstreamModel); ok {
 				if fbBytes := p.Fallbacks.RecordPreToken(fromModel, toModel, "", nil); len(fbBytes) > 0 {
 					_ = templateDoc.SetRawBytes("choices.0.delta.fallback", fbBytes)
 				}
 			}
-
 
 			if p.ToolCallsAccumulator == nil {
 				p.ToolCallsAccumulator = make(map[int]*ToolCallAccumulator)
@@ -235,7 +207,6 @@ func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, original
 					Name:  toolName,
 					Index: toolCallIndex,
 				}
-
 
 				return [][]byte{}
 			}
@@ -297,7 +268,6 @@ func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, original
 				_ = templateDoc.Set("choices.0.delta.tool_calls.0.function.name", accumulator.Name)
 				_ = templateDoc.Set("choices.0.delta.tool_calls.0.function.arguments", arguments)
 
-
 				delete((*param).(*ConvertAnthropicResponseToOpenAIParams).ToolCallsAccumulator, index)
 
 				return [][]byte{templateDoc.Bytes()}
@@ -313,7 +283,6 @@ func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, original
 				_ = templateDoc.Set("choices.0.finish_reason", (*param).(*ConvertAnthropicResponseToOpenAIParams).FinishReason)
 			}
 		}
-
 
 		if usage := root.Get("usage"); usage.Exists() {
 			if iterModel, newHops := p.Fallbacks.RecordIterations(usage.Get("iterations"), modelName, "", nil); iterModel != "" {
@@ -384,7 +353,6 @@ func ConvertClaudeResponseToOpenAI(_ context.Context, modelName string, original
 	}
 }
 
-
 func mapAnthropicStopReasonToOpenAI(anthropicReason string) string {
 	switch anthropicReason {
 	case "end_turn":
@@ -402,19 +370,6 @@ func mapAnthropicStopReasonToOpenAI(anthropicReason string) string {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertClaudeResponseToOpenAINonStream(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	rawJSON, _ = translatorcommon.ClaudeMessagesJSONToSSE(rawJSON)
 	chunks := make([][]byte, 0)
@@ -426,7 +381,6 @@ func ConvertClaudeResponseToOpenAINonStream(_ context.Context, modelName string,
 		}
 		chunks = append(chunks, bytes.TrimSpace(line[5:]))
 	}
-
 
 	outDoc := ojson.NewDoc([]byte(`{"id":"","object":"chat.completion","created":0,"model":"","choices":[{"index":0,"message":{"role":"assistant","content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}`))
 
@@ -557,11 +511,9 @@ func ConvertClaudeResponseToOpenAINonStream(_ context.Context, modelName string,
 		usageTokens.applyReasoningTokensDoc(outDoc)
 	}
 
-
 	_ = outDoc.Set("id", messageID)
 	_ = outDoc.Set("created", createdAt)
 	_ = outDoc.Set("model", effectiveChatResponseModel(model, modelName))
-
 
 	messageContent := strings.Join(contentParts, "")
 	_ = outDoc.Set("choices.0.message.content", messageContent)
@@ -570,13 +522,11 @@ func ConvertClaudeResponseToOpenAINonStream(_ context.Context, modelName string,
 		_ = outDoc.SetRawBytes("choices.0.message.fallbacks", fallbacks.ArrayBytes())
 	}
 
-
 	if len(reasoningParts) > 0 {
 		reasoningContent := strings.Join(reasoningParts, "")
 
 		_ = outDoc.Set("choices.0.message.reasoning_content", reasoningContent)
 	}
-
 
 	if len(toolCallsAccumulator) > 0 {
 		toolCallsCount := 0

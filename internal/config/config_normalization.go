@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (cfg *Config) NormalizePluginsConfig() {
 	if cfg == nil {
 		return
@@ -35,7 +34,6 @@ func (cfg *Config) NormalizePluginsConfig() {
 	}
 }
 
-
 func (cfg *Config) NormalizeClaudeConfig() {
 	if cfg == nil {
 		return
@@ -46,8 +44,6 @@ func (cfg *Config) NormalizeClaudeConfig() {
 	}
 }
 
-
-
 func (cfg *Config) SanitizeCodexHeaderDefaults() {
 	if cfg == nil {
 		return
@@ -56,10 +52,6 @@ func (cfg *Config) SanitizeCodexHeaderDefaults() {
 	cfg.CodexHeaderDefaults.BetaFeatures = strings.TrimSpace(cfg.CodexHeaderDefaults.BetaFeatures)
 	cfg.Codex.SignInWithChatGPTIdentifier = strings.TrimSpace(cfg.Codex.SignInWithChatGPTIdentifier)
 }
-
-
-
-
 
 func (cfg *Config) SanitizeClaudeHeaderDefaults() {
 	if cfg == nil {
@@ -85,8 +77,6 @@ func (cfg *Config) SanitizeClaudeHeaderDefaults() {
 	cfg.ClaudeHeaderDefaults.Timezone = strings.TrimSpace(cfg.ClaudeHeaderDefaults.Timezone)
 }
 
-
-
 func normalizeClaudeEntrypointNames(names []string) []string {
 	if len(names) == 0 {
 		return nil
@@ -110,8 +100,6 @@ func normalizeClaudeEntrypointNames(names []string) []string {
 	return out
 }
 
-
-
 func normalizeClaudeBetaNames(names []string) []string {
 	if len(names) == 0 {
 		return nil
@@ -134,9 +122,6 @@ func normalizeClaudeBetaNames(names []string) []string {
 	}
 	return out
 }
-
-
-
 
 func (cfg *Config) SanitizeOAuthModelAlias() {
 	if cfg == nil || len(cfg.OAuthModelAlias) == 0 {
@@ -185,9 +170,6 @@ func (cfg *Config) SanitizeOAuthModelAlias() {
 	cfg.OAuthModelAlias = out
 }
 
-
-
-
 func (cfg *Config) SanitizeOAuthSettings() {
 	if cfg == nil || len(cfg.OAuthSettings) == 0 {
 		return
@@ -235,8 +217,6 @@ func (cfg *Config) SanitizeOAuthSettings() {
 	cfg.OAuthSettings = out
 }
 
-
-
 func (cfg *Config) SanitizeOAuthRequestScopedErrors() {
 	if cfg == nil || len(cfg.OAuthRequestScopedErrors) == 0 {
 		return
@@ -283,9 +263,6 @@ func (cfg *Config) SanitizeOAuthRequestScopedErrors() {
 	cfg.OAuthRequestScopedErrors = out
 }
 
-
-
-
 func (cfg *Config) SanitizeOpenAICompatibility() {
 	if cfg == nil || len(cfg.OpenAICompatibility) == 0 {
 		return
@@ -306,16 +283,12 @@ func (cfg *Config) SanitizeOpenAICompatibility() {
 	cfg.OpenAICompatibility = out
 }
 
-
-
 func (cfg *Config) SanitizeCodexKeys() {
 	if cfg == nil {
 		return
 	}
 	cfg.CodexKey = sanitizeCodexKeyEntries(cfg.CodexKey)
 }
-
-
 
 func (cfg *Config) SanitizeXAIKeys() {
 	if cfg == nil {
@@ -326,7 +299,6 @@ func (cfg *Config) SanitizeXAIKeys() {
 		cfg.XAIKey[i].AlphaSearch = false
 	}
 }
-
 
 func (cfg *Config) SanitizeMetaKeys() {
 	if cfg == nil {
@@ -379,8 +351,6 @@ func sanitizeCodexKeyEntries(entries []CodexKey) []CodexKey {
 	return out
 }
 
-
-
 func NormalizeSensitiveWordsReplace(in map[string]string) map[string]string {
 	if len(in) == 0 {
 		return nil
@@ -407,7 +377,6 @@ func NormalizeSensitiveWordsReplace(in map[string]string) map[string]string {
 	return out
 }
 
-
 func (cfg *Config) SanitizeAntigravity() {
 	if cfg == nil {
 		return
@@ -415,14 +384,12 @@ func (cfg *Config) SanitizeAntigravity() {
 	cfg.Antigravity.SensitiveWordsReplace = NormalizeSensitiveWordsReplace(cfg.Antigravity.SensitiveWordsReplace)
 }
 
-
 func (cfg *Config) SanitizeDevin() {
 	if cfg == nil {
 		return
 	}
 	cfg.Devin.SensitiveWordsReplace = NormalizeSensitiveWordsReplace(cfg.Devin.SensitiveWordsReplace)
 }
-
 
 func NormalizeCloakConfig(cloak *CloakConfig) *CloakConfig {
 	if cloak == nil {
@@ -448,7 +415,6 @@ func NormalizeCloakConfig(cloak *CloakConfig) *CloakConfig {
 	return cloak
 }
 
-
 func (cfg *Config) SanitizeClaudeKeys() {
 	if cfg == nil || len(cfg.ClaudeKey) == 0 {
 		return
@@ -459,8 +425,6 @@ func (cfg *Config) SanitizeClaudeKeys() {
 		entry.Headers = NormalizeHeaders(entry.Headers)
 		entry.ExcludedModels = NormalizeExcludedModels(entry.ExcludedModels)
 		entry.Cloak = NormalizeCloakConfig(entry.Cloak)
-
-
 
 		if normalized, ok := NormalizeClaudeFingerprintProfile(entry.FingerprintProfile); ok {
 			entry.FingerprintProfile = normalized
@@ -510,8 +474,6 @@ func formatGeminiKeyDedupID(entry GeminiKey) string {
 	return b.String()
 }
 
-
-
 func FormatConnectionPoolDedupID(pool *ProxyConnectionPoolConfig) string {
 	if pool == nil {
 		return ""
@@ -529,7 +491,6 @@ func FormatConnectionPoolDedupID(pool *ProxyConnectionPoolConfig) string {
 	}
 	return b.String()
 }
-
 
 func FormatSortedHeaders(headers map[string]string) string {
 	if len(headers) == 0 {
@@ -550,16 +511,12 @@ func FormatSortedHeaders(headers map[string]string) string {
 	return b.String()
 }
 
-
-
 func (cfg *Config) SanitizeGeminiKeys() {
 	if cfg == nil {
 		return
 	}
 	cfg.GeminiKey = sanitizeGeminiKeyEntries(cfg.GeminiKey)
 }
-
-
 
 func (cfg *Config) SanitizeInteractionsKeys() {
 	if cfg == nil {
@@ -580,7 +537,6 @@ func normalizeModelPrefix(prefix string) string {
 	return trimmed
 }
 
-
 func NormalizeHeaders(headers map[string]string) map[string]string {
 	if len(headers) == 0 {
 		return nil
@@ -599,8 +555,6 @@ func NormalizeHeaders(headers map[string]string) map[string]string {
 	}
 	return clean
 }
-
-
 
 func NormalizeExcludedModels(models []string) []string {
 	if len(models) == 0 {
@@ -624,8 +578,6 @@ func NormalizeExcludedModels(models []string) []string {
 	}
 	return out
 }
-
-
 
 func NormalizeOAuthExcludedModels(entries map[string][]string) map[string][]string {
 	if len(entries) == 0 {

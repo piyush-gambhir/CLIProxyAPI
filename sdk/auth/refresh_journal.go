@@ -10,8 +10,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func (s *FileTokenStore) RefreshJournalFor(auth *coreauth.Auth) (codex.RefreshJournal, error) {
 	if s == nil {
 		return nil, fmt.Errorf("auth filestore: nil refresh journal store")

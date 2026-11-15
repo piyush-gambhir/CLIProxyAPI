@@ -1,71 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package signature
 
 import (
@@ -85,22 +17,10 @@ const (
 	GeminiContextEngineeringBypass      = "context_engineering_is_the_way_to_go"
 )
 
-
-
-
-
 type GeminiThoughtSignatureValidationOptions struct {
-
-
 	AllowBypassSentinel bool
 
-
-
 	RequireKnownEnvelope bool
-
-
-
-
 
 	RequireObservedMarker bool
 }
@@ -110,23 +30,11 @@ type GeminiThoughtSignatureEnvelope string
 const (
 	GeminiThoughtSignatureEnvelopeUnknown GeminiThoughtSignatureEnvelope = "unknown"
 
-
-
-
 	GeminiThoughtSignatureEnvelopeProtobufField2 GeminiThoughtSignatureEnvelope = "protobuf_field_2"
-
-
-
-
-
-
-
 
 	GeminiThoughtSignatureEnvelopeBareTink  GeminiThoughtSignatureEnvelope = "bare_tink"
 	GeminiThoughtSignatureEnvelopeASCIIUUID GeminiThoughtSignatureEnvelope = "ascii_uuid"
 )
-
-
 
 type GeminiThoughtSignatureInfo struct {
 	IsBypassSentinel  bool
@@ -158,9 +66,6 @@ func geminiThoughtSignatureValidationOptions(opts []GeminiThoughtSignatureValida
 	return opts[0]
 }
 
-
-
-
 func IsGeminiThoughtSignatureBypass(rawSignature string) bool {
 	switch strings.TrimSpace(rawSignature) {
 	case GeminiSkipThoughtSignatureValidator, GeminiContextEngineeringBypass:
@@ -170,15 +75,10 @@ func IsGeminiThoughtSignatureBypass(rawSignature string) bool {
 	}
 }
 
-
-
 func IsValidGeminiThoughtSignature(rawSignature string, opts ...GeminiThoughtSignatureValidationOptions) bool {
 	_, err := InspectGeminiThoughtSignature(rawSignature, opts...)
 	return err == nil
 }
-
-
-
 
 func InspectGeminiThoughtSignature(rawSignature string, opts ...GeminiThoughtSignatureValidationOptions) (*GeminiThoughtSignatureInfo, error) {
 	opt := geminiThoughtSignatureValidationOptions(opts)
@@ -225,11 +125,6 @@ func InspectGeminiThoughtSignature(rawSignature string, opts ...GeminiThoughtSig
 
 	return info, nil
 }
-
-
-
-
-
 
 func ValidateGeminiThoughtSignatures(inputRawJSON []byte, opts ...GeminiThoughtSignatureValidationOptions) error {
 	contents, contentsPath := geminiContents(inputRawJSON)
@@ -288,11 +183,6 @@ func ValidateGeminiThoughtSignatures(inputRawJSON []byte, opts ...GeminiThoughtS
 
 	return nil
 }
-
-
-
-
-
 
 func ValidateGeminiFunctionCallPairing(inputRawJSON []byte) error {
 	contents, contentsPath := geminiContents(inputRawJSON)
@@ -363,8 +253,6 @@ func ValidateGeminiFunctionCallPairing(inputRawJSON []byte) error {
 			pending = calls
 			return true
 		case len(responses) == 0 && len(pending) > 0:
-
-
 
 			role := strings.ToLower(strings.TrimSpace(content.Get("role").String()))
 			if role == "model" {
@@ -478,7 +366,6 @@ func inspectGeminiEnvelope(decoded []byte, envelope GeminiThoughtSignatureEnvelo
 		}
 	case GeminiThoughtSignatureEnvelopeBareTink:
 
-
 		if isGeminiBareTinkEnvelope(decoded) {
 			return 1, len(decoded)
 		}
@@ -486,24 +373,11 @@ func inspectGeminiEnvelope(decoded []byte, envelope GeminiThoughtSignatureEnvelo
 	return 0, 0
 }
 
-
-
-
 const geminiBareTinkMinLen = 1 + 4 + 16
-
-
-
-
-
-
-
 
 var geminiVertexBareTinkKeyIDs = [][4]byte{
 	{0x8f, 0x3d, 0x6b, 0x5f},
 }
-
-
-
 
 func isGeminiBareTinkEnvelope(decoded []byte) bool {
 	if len(decoded) < geminiBareTinkMinLen || decoded[0] != 0x01 {
@@ -517,9 +391,6 @@ func isGeminiBareTinkEnvelope(decoded []byte) bool {
 	}
 	return false
 }
-
-
-
 
 func IsGeminiVertexBareTinkSignature(rawSignature string) bool {
 	info, err := InspectGeminiThoughtSignature(
@@ -578,27 +449,10 @@ func consumeGeminiField2Field1Value(decoded []byte) ([]byte, bool) {
 
 func isLikelyGeminiOpaquePayload(value []byte) bool {
 
-
-
-
-
-
-
-
-
-
-
-
-
 	return len(value) > 0 && value[0] == 0x01
 }
 
 func isLikelyGeminiToolInvocationPayload(value []byte) bool {
-
-
-
-
-
 
 	if len(value) == 0 {
 		return false

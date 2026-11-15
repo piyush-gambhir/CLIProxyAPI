@@ -461,7 +461,6 @@ func TestXAIExecutorExecuteFoldsNamespacesWhenToolsExceed200(t *testing.T) {
 		t.Fatalf("response output arguments = %q, want {\"q\":\"test\"}; payload=%s", got, resp.Payload)
 	}
 
-
 	turn2Payload := fmt.Sprintf(`{
 		"model":"grok-4.6",
 		"tools":[%s],
@@ -1011,7 +1010,6 @@ func TestXAIExecutorPrepareHonorsInjectXSearchConfig(t *testing.T) {
 func TestEnsureXAINativeXSearchTool(t *testing.T) {
 	t.Parallel()
 
-
 	out := ensureXAINativeXSearchTool([]byte(`{"model":"grok-4.5","input":"hi"}`))
 	tools := ojson.GetBytes(out, "tools").Array()
 	if len(tools) != 1 {
@@ -1021,7 +1019,6 @@ func TestEnsureXAINativeXSearchTool(t *testing.T) {
 		t.Fatalf("tools.0.type = %q, want x_search; body=%s", got, out)
 	}
 
-
 	out = ensureXAINativeXSearchTool([]byte(`{"tools":[{"type":"web_search"},{"type":"function","name":"lookup","parameters":{"type":"object"}}]}`))
 	tools = ojson.GetBytes(out, "tools").Array()
 	if len(tools) != 3 {
@@ -1030,7 +1027,6 @@ func TestEnsureXAINativeXSearchTool(t *testing.T) {
 	if got := tools[2].Get("type").String(); got != "x_search" {
 		t.Fatalf("tools.2.type = %q, want x_search; body=%s", got, out)
 	}
-
 
 	in := []byte(`{"tools":[{"type":"function","name":"lookup","parameters":{"type":"object"}},{"type":"x_search"}]}`)
 	out = ensureXAINativeXSearchTool(in)
@@ -1048,7 +1044,6 @@ func TestEnsureXAINativeXSearchTool(t *testing.T) {
 		t.Fatalf("x_search count = %d, want 1; body=%s", xSearchCount, out)
 	}
 
-
 	out = ensureXAINativeXSearchTool([]byte(`{
 		"tools":[{"type":"function","name":"lookup","parameters":{"type":"object"}}],
 		"tool_choice":{"type":"allowed_tools","tools":[{"type":"function","name":"lookup"}]}
@@ -1059,7 +1054,6 @@ func TestEnsureXAINativeXSearchTool(t *testing.T) {
 	if got := ojson.GetBytes(out, "tool_choice.tools.1.type").String(); got != "x_search" {
 		t.Fatalf("tool_choice.tools.1.type = %q, want x_search; body=%s", got, out)
 	}
-
 
 	out = ensureXAINativeXSearchTool([]byte(`{
 		"tools":[{"type":"web_search"},{"type":"x_search"}],
@@ -1214,7 +1208,6 @@ func TestXAIExecutorPrepareStripsUnsupportedWebSearchOptions(t *testing.T) {
 func TestPruneXAIOrphanedToolChoice(t *testing.T) {
 	t.Parallel()
 
-
 	out := pruneXAIOrphanedToolChoice([]byte(`{
 		"tools":[{"type":"function","name":"lookup","parameters":{"type":"object"}}],
 		"tool_choice":{"type":"image_generation"}
@@ -1222,7 +1215,6 @@ func TestPruneXAIOrphanedToolChoice(t *testing.T) {
 	if ojson.GetBytes(out, "tool_choice").Exists() {
 		t.Fatalf("orphaned forced tool_choice should be removed: %s", out)
 	}
-
 
 	out = pruneXAIOrphanedToolChoice([]byte(`{
 		"tools":[{"type":"function","name":"lookup","parameters":{"type":"object"}},{"type":"web_search"}],
@@ -1243,7 +1235,6 @@ func TestPruneXAIOrphanedToolChoice(t *testing.T) {
 		t.Fatalf("allowed_tools.1.type = %q, want web_search; body=%s", got, out)
 	}
 
-
 	out = pruneXAIOrphanedToolChoice([]byte(`{
 		"tools":[],
 		"tool_choice":{"type":"allowed_tools","tools":[{"type":"image_generation"}]}
@@ -1251,7 +1242,6 @@ func TestPruneXAIOrphanedToolChoice(t *testing.T) {
 	if ojson.GetBytes(out, "tool_choice").Exists() {
 		t.Fatalf("fully orphaned allowed_tools should be removed: %s", out)
 	}
-
 
 	in := []byte(`{"tools":[{"type":"web_search"}],"tool_choice":"auto"}`)
 	if got := pruneXAIOrphanedToolChoice(in); !bytes.Equal(got, in) {
@@ -1672,7 +1662,6 @@ func TestXAIExecutorPrepareDropsOrphanedToolChoiceBeforeXSearchInject(t *testing
 	prepared, err := exec.prepareResponsesRequest(context.Background(), cliproxyexecutor.Request{
 		Model: "grok-4.5",
 
-
 		Payload: []byte(`{
 			"model":"grok-4.5",
 			"input":"draw something",
@@ -1942,9 +1931,6 @@ func TestXAIExecutorPrepareAllowedToolsSyncsInjectedXSearch(t *testing.T) {
 	prepared, err := exec.prepareResponsesRequest(context.Background(), cliproxyexecutor.Request{
 		Model: "grok-4.5",
 
-
-
-
 		Payload: []byte(`{
 			"model":"grok-4.5",
 			"input":"search X",
@@ -2031,7 +2017,6 @@ func TestXAIIsInternalXSearchCallPreservesClientDeclaredTools(t *testing.T) {
 		]
 	}`))
 
-
 	if _, ok := clientTools[xaiClientToolKey{namespace: "", name: "x_keyword_search", toolType: xaiFunctionToolType}]; !ok {
 		t.Fatalf("plain client function/custom tool missing effective function key: %#v", clientTools)
 	}
@@ -2045,7 +2030,6 @@ func TestXAIIsInternalXSearchCallPreservesClientDeclaredTools(t *testing.T) {
 		t.Fatalf("namespaced client custom tool must not be keyed as custom after normalization: %#v", clientTools)
 	}
 
-
 	internalCustom := ojson.Parse(`{"type":"custom_tool_call","name":"x_user_search"}`)
 	if !xaiIsInternalXSearchCall(internalCustom, clientTools) {
 		t.Fatal("undeclared internal custom_tool_call should be filtered")
@@ -2055,13 +2039,10 @@ func TestXAIIsInternalXSearchCallPreservesClientDeclaredTools(t *testing.T) {
 		t.Fatal("undeclared internal function_call should be filtered")
 	}
 
-
-
 	plainClient := ojson.Parse(`{"type":"function_call","name":"x_keyword_search","call_id":"call_plain"}`)
 	if xaiIsInternalXSearchCall(plainClient, clientTools) {
 		t.Fatal("client-declared plain x_keyword_search function_call must be preserved")
 	}
-
 
 	internalSameName := ojson.Parse(`{"type":"custom_tool_call","call_id":"xs_call-1","name":"x_keyword_search"}`)
 	if !xaiIsInternalXSearchCall(internalSameName, clientTools) {
@@ -2075,7 +2056,6 @@ func TestXAIIsInternalXSearchCallPreservesClientDeclaredTools(t *testing.T) {
 	if !xaiIsInternalXSearchCall(plainInternalCustom, functionOnlyTools) {
 		t.Fatal("custom_tool_call must not be exempted by a function declaration of the same name")
 	}
-
 
 	customOnlyTools := collectXAIClientDeclaredToolKeys([]byte(`{
 		"tools":[{"type":"custom","name":"x_keyword_search"}]
@@ -2146,7 +2126,6 @@ func TestXAIInternalXSearchResponseFilterPreservesClientToolsInCompletedOutput(t
 func TestXAIExecutorExecutePreservesClientSameNameToolsWithXSearch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
-
 
 		_, _ = w.Write([]byte("data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"ctc_1\",\"type\":\"custom_tool_call\",\"call_id\":\"xs_call-1\",\"name\":\"x_keyword_search\",\"input\":\"{}\",\"status\":\"completed\"}}\n\n"))
 		_, _ = w.Write([]byte("data: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"id\":\"fc_ns\",\"type\":\"function_call\",\"call_id\":\"call_ns\",\"name\":\"acme__x_keyword_search\",\"arguments\":\"{}\",\"status\":\"completed\"}}\n\n"))
@@ -2328,10 +2307,6 @@ func TestXAIExecutorExecuteStreamPreservesClientSameNameToolsWithXSearch(t *test
 	}
 }
 
-
-
-
-
 func TestXAIExecutorExecutePreservesNormalizedCustomSameNameToolWithXSearch(t *testing.T) {
 	var gotBody []byte
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -2374,7 +2349,6 @@ func TestXAIExecutorExecutePreservesNormalizedCustomSameNameToolWithXSearch(t *t
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
-
 
 	var foundNormalizedFunction bool
 	var foundRawCustom bool
@@ -2817,7 +2791,6 @@ func TestXAIExecutorCompactOAuthUsesOfficialAPIHeadersNotCLIProxy(t *testing.T) 
 		Provider: "xai",
 		Attributes: map[string]string{
 			"auth_kind": "oauth",
-
 
 			"base_url": server.URL,
 			"api_key":  "oauth-token",
@@ -3749,7 +3722,6 @@ func assertXAIUsageRecordTTFT(t *testing.T, ttft time.Duration) {
 }
 
 func TestXAIUsageRecord_ZeroTTFTValidation(t *testing.T) {
-
 
 	record := usage.Record{
 		Model: "grok-imagine-image-quality",
@@ -4739,7 +4711,6 @@ func TestNormalizeXAITools_WhenFlattenedCountExceedsLimit_FoldsNamespaces(t *tes
 		t.Fatalf("dispatcher description missing child parameter schemas: %s", desc)
 	}
 
-
 	event := []byte(`{"type":"response.output_item.done","item":{"type":"function_call","name":"mcp__app_0","call_id":"call_1","arguments":"{\"name\":\"tool_3\",\"arguments\":{\"p\":\"val\"}}"}}`)
 	restored := restoreXAINamespaceToolCalls(event, refs)
 	if got := ojson.GetBytes(restored, "item.name").String(); got != "tool_3" {
@@ -4751,7 +4722,6 @@ func TestNormalizeXAITools_WhenFlattenedCountExceedsLimit_FoldsNamespaces(t *tes
 	if got := ojson.GetBytes(restored, "item.arguments").String(); got != `{"p":"val"}` {
 		t.Fatalf("restored item.arguments = %q, want {\"p\":\"val\"}; event=%s", got, string(restored))
 	}
-
 
 	turn2Body := []byte(fmt.Sprintf(`{"tools":[%s],"input":[{"type":"function_call","name":"tool_3","namespace":"mcp__app_0","call_id":"call_1","arguments":"{\"p\":\"val\"}"}]}`, strings.Join(nsList, ",")))
 	turn2Normalized := normalizeXAIInputNamespaceToolCalls(turn2Body)
@@ -4794,7 +4764,6 @@ func TestRestoreXAINamespaceToolCalls_DispatcherVariants(t *testing.T) {
 		"mcp__app_0": {namespace: "mcp__app_0", name: "", isDispatcher: true},
 	}
 
-
 	event1 := []byte(`{"type":"response.output_item.done","item":{"type":"function_call","name":"mcp__app_0","call_id":"c1","arguments":"{\"name\":\"tool_a\",\"arg1\":\"val1\"}"}}`)
 	restored1 := restoreXAINamespaceToolCalls(event1, refs)
 	if got := ojson.GetBytes(restored1, "item.name").String(); got != "tool_a" {
@@ -4807,7 +4776,6 @@ func TestRestoreXAINamespaceToolCalls_DispatcherVariants(t *testing.T) {
 		t.Fatalf("variant 1 arguments = %q, want {\"arg1\":\"val1\"}", got)
 	}
 
-
 	event2 := []byte(`{"type":"response.output_item.done","item":{"type":"function_call","name":"mcp__app_0","call_id":"c2","arguments":"{\"name\":\"tool_b\",\"arguments\":\"{\\\"k\\\":\\\"v\\\"}\"}"}}`)
 	restored2 := restoreXAINamespaceToolCalls(event2, refs)
 	if got := ojson.GetBytes(restored2, "item.name").String(); got != "tool_b" {
@@ -4816,7 +4784,6 @@ func TestRestoreXAINamespaceToolCalls_DispatcherVariants(t *testing.T) {
 	if got := ojson.GetBytes(restored2, "item.arguments").String(); got != `{"k":"v"}` {
 		t.Fatalf("variant 2 arguments = %q, want {\"k\":\"v\"}", got)
 	}
-
 
 	event3 := []byte(`{"type":"response.output_item.done","item":{"type":"function_call","name":"mcp__app_0","call_id":"c3","arguments":"{\"name\":\"tool_c\"}"}}`)
 	restored3 := restoreXAINamespaceToolCalls(event3, refs)
@@ -4880,13 +4847,11 @@ func TestRestoreXAINamespaceToolCalls_FoldModePreservesNonDispatcherArgumentsDon
 	}
 	restorer := newXAINamespaceRestorer(refs)
 
-
 	addedNonDisp := []byte(`{"type":"response.output_item.added","output_index":0,"item":{"id":"non_disp_1","type":"function_call","name":"web_search"}}`)
 	restoredAdded := restorer.restore(addedNonDisp)
 	if got := ojson.GetBytes(restoredAdded, "item.name").String(); got != "web_search" {
 		t.Fatalf("restored name = %q, want web_search", got)
 	}
-
 
 	doneNonDisp := []byte(`{"type":"response.function_call_arguments.done","item_id":"non_disp_1","output_index":0,"arguments":"{\"name\":\"golang\",\"query\":\"test\"}"}`)
 	restoredDone := restorer.restore(doneNonDisp)
@@ -4896,7 +4861,6 @@ func TestRestoreXAINamespaceToolCalls_FoldModePreservesNonDispatcherArgumentsDon
 }
 
 func TestPrepareResponsesRequest_CapsAt200WithInjectXSearch(t *testing.T) {
-
 
 	var nsList []string
 	for i := 0; i < 20; i++ {
@@ -4946,7 +4910,6 @@ func TestRestoreXAINamespaceToolCalls_FlattenModePreservesNameInArgumentsDone(t 
 		"mcp__github__create_repo": {namespace: "mcp__github", name: "create_repo", isDispatcher: false},
 	}
 
-
 	event := []byte(`{"type":"response.function_call_arguments.done","item_id":"item_1","output_index":0,"arguments":"{\"name\":\"my-awesome-repo\",\"private\":true}"}`)
 	restored := restoreXAINamespaceToolCalls(event, refs)
 
@@ -4959,7 +4922,6 @@ func TestRestoreXAINamespaceToolCalls_OutputItemAddedInDispatcherMode(t *testing
 	refs := map[string]xaiNamespaceToolRef{
 		"mcp__app_0": {namespace: "mcp__app_0", name: "", isDispatcher: true},
 	}
-
 
 	event := []byte(`{"type":"response.output_item.added","output_index":0,"item":{"id":"fc_1","type":"function_call","name":"mcp__app_0","status":"in_progress"}}`)
 	restored := restoreXAINamespaceToolCalls(event, refs)
@@ -4992,7 +4954,6 @@ func TestClampXAIToolsLimit_PreservesDispatchersOverRegularTools(t *testing.T) {
 	if len(tools) != 200 {
 		t.Fatalf("clamped tools count = %d, want 200", len(tools))
 	}
-
 
 	for i := 0; i < 47; i++ {
 		name := fmt.Sprintf("mcp__app_%d", i)
@@ -5179,9 +5140,6 @@ func TestXAIShouldFoldNamespaceTools_DeduplicatesAcrossAdditionalTools(t *testin
 		t.Fatalf("deduplicated tools length = %d, want 120", got)
 	}
 
-
-
-
 	var extraTools []string
 	for i := 120; i < 210; i++ {
 		extraTools = append(extraTools, fmt.Sprintf(`{"type":"function","name":"tool_%d","parameters":{"type":"object"}}`, i))
@@ -5205,8 +5163,6 @@ func TestXAIShouldFoldNamespaceTools_DeduplicatesAcrossAdditionalTools(t *testin
 	if !strings.Contains(clockDesc, "history alarm") {
 		t.Fatalf("clock dispatcher description should include unique child from additional_tools: %s", clockDesc)
 	}
-
-
 
 	collisionBody := []byte(fmt.Sprintf(`{
 		"tools":[
@@ -5249,9 +5205,6 @@ func TestXAIShouldFoldNamespaceTools_DeduplicatesAcrossAdditionalTools(t *testin
 		t.Fatalf("restored item.arguments = %q, want {\"ring\":true}; event=%s", got, restored)
 	}
 
-
-
-
 	flatVsFoldedBody := []byte(fmt.Sprintf(`{
 		"tools":[
 			{"type":"function","name":"clock__sleep","description":"flat top","parameters":{"type":"object"}},
@@ -5269,10 +5222,6 @@ func TestXAIShouldFoldNamespaceTools_DeduplicatesAcrossAdditionalTools(t *testin
 	if _, exists := flatVsFoldedRefs["clock__sleep"]; exists {
 		t.Fatalf("flat top-level function clock__sleep should not be registered in refs during fold mode: %+v", flatVsFoldedRefs["clock__sleep"])
 	}
-
-
-
-
 
 	foldedBeforeFlatBody := []byte(fmt.Sprintf(`{
 		"tools":[
@@ -5696,7 +5645,6 @@ func TestApplyXAIHeaders_EmptyAPIKey_OmitsAuthorization(t *testing.T) {
 		t.Fatalf("Custom-Token = %q, want xai-custom", got)
 	}
 
-
 	req2, _ := http.NewRequest(http.MethodPost, "https://example.com/v1/chat/completions", nil)
 	req2.Header.Set("Authorization", "Bearer preexisting-bearer")
 	exec := &XAIExecutor{}
@@ -6092,9 +6040,6 @@ func TestFilterXAIReasoningReplayItemsDoesNotMatchOlderAssistantMessage(t *testi
 	}
 }
 
-
-
-
 func TestFilterXAIReasoningReplayItemsSkipsAmbiguousTurnWhenLastAssistantTextDrifts(t *testing.T) {
 	encryptedContent := testValidGrokEncryptedContentForSeed(20)
 	body := []byte(`{"input":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"first answer."}]},{"type":"message","role":"user","content":[{"type":"input_text","text":"second"}]}]}`)
@@ -6109,9 +6054,6 @@ func TestFilterXAIReasoningReplayItemsSkipsAmbiguousTurnWhenLastAssistantTextDri
 		t.Fatalf("filtered = %q, want no replay for ambiguous drifted assistant", filtered)
 	}
 }
-
-
-
 
 func TestXAIExecutorClaudeInjectsLatestCachedReasoningWhenHistoryHasOnlyOlderSignature(t *testing.T) {
 	internalcache.ClearXAIReasoningReplayCache()
@@ -6147,7 +6089,6 @@ func TestXAIExecutorClaudeInjectsLatestCachedReasoningWhenHistoryHasOnlyOlderSig
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatClaude, Stream: false}
 	ctx := testContextWithAPIKey("claude-missing-sig-key")
 
-
 	_, err := executor.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model:   "grok-4.5",
 		Payload: []byte(`{"model":"grok-4.5","metadata":{"user_id":"{\"session_id\":\"claude-missing-latest\"}"},"messages":[{"role":"user","content":[{"type":"text","text":"hello"}]}]}`),
@@ -6155,8 +6096,6 @@ func TestXAIExecutorClaudeInjectsLatestCachedReasoningWhenHistoryHasOnlyOlderSig
 	if err != nil {
 		t.Fatalf("first Execute: %v", err)
 	}
-
-
 
 	secondPayload := []byte(`{
 		"model":"grok-4.5",
@@ -6182,8 +6121,6 @@ func TestXAIExecutorClaudeInjectsLatestCachedReasoningWhenHistoryHasOnlyOlderSig
 	if len(bodies) != 2 {
 		t.Fatalf("upstream requests = %d, want 2", len(bodies))
 	}
-
-
 
 	second := bodies[1]
 	foundLatest := false
@@ -7197,7 +7134,6 @@ func TestXAIExecutorAliasesClientWebSearchFunctionInRequest(t *testing.T) {
 		t.Fatalf("input.1.name = %q, want clientfn_web_search; body=%s", got, prepared.body)
 	}
 
-
 	preparedAllowed, errAllowed := exec.prepareResponsesRequest(context.Background(), cliproxyexecutor.Request{
 		Model: "grok-4.6",
 		Payload: []byte(`{
@@ -7266,7 +7202,6 @@ func TestXAIExecutorRestoresAliasedWebSearchInStreamAndExecute(t *testing.T) {
 		Metadata:   map[string]any{"access_token": "xai-token"},
 	}
 
-
 	streamRes, errStream := exec.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model: "grok-4.6",
 		Payload: []byte(`{
@@ -7297,7 +7232,6 @@ func TestXAIExecutorRestoresAliasedWebSearchInStreamAndExecute(t *testing.T) {
 	if !strings.Contains(streamText, `"name":"web_search"`) {
 		t.Fatalf("restored web_search missing from client stream: %s", streamText)
 	}
-
 
 	execRes, errExec := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model: "grok-4.6",
@@ -7366,7 +7300,6 @@ func TestXAIExecutorAliasesClientWebSearchWithExistingAliasCollision(t *testing.
 		t.Fatalf("input.1.name = %q, want clientfn_web_search_1; body=%s", got, prepared.body)
 	}
 
-
 	event := []byte(`{"type":"response.output_item.done","item":{"type":"function_call","name":"clientfn_web_search","call_id":"call_1"}}`)
 	restoredOriginal := restoreXAIClientWebSearchName(event, prepared.webSearchAlias)
 	if got := ojson.GetBytes(restoredOriginal, "item.name").String(); got != "clientfn_web_search" {
@@ -7421,7 +7354,6 @@ func TestXAIExecutorDoesNotAliasNamespacedWebSearchToolChoice(t *testing.T) {
 
 func TestXAIExecutorAliasesClientWebSearchBeyond100Collisions(t *testing.T) {
 	t.Parallel()
-
 
 	tools := []string{
 		`{"type":"function","name":"web_search","parameters":{"type":"object"}}`,
@@ -7495,7 +7427,6 @@ func TestXAIExecutorDoesNotRestoreNamespacedClientfnWebSearch(t *testing.T) {
 	}
 	streamText := streamOutput.String()
 
-
 	if !strings.Contains(streamText, `"name":"clientfn_web_search"`) {
 		t.Fatalf("namespaced clientfn_web_search should be preserved: %s", streamText)
 	}
@@ -7538,7 +7469,6 @@ func TestXAIExecutorAliasesReplayedReasoningCacheWebSearchCall(t *testing.T) {
 	if errPrepare != nil {
 		t.Fatalf("prepareResponsesRequest() error = %v", errPrepare)
 	}
-
 
 	input := ojson.GetBytes(prepared.body, "input").Array()
 	foundReplayedCall := false
@@ -7606,7 +7536,6 @@ func TestXAIExecutorFoldsNamespaceNamedWebSearchWithoutAliasing(t *testing.T) {
 		t.Fatalf("Execute() error = %v", err)
 	}
 
-
 	foundDispatcher := false
 	for _, tool := range ojson.GetBytes(gotBody, "tools").Array() {
 		if tool.Get("name").String() == "web_search" {
@@ -7620,7 +7549,6 @@ func TestXAIExecutorFoldsNamespaceNamedWebSearchWithoutAliasing(t *testing.T) {
 		t.Fatalf("dispatcher web_search tool missing from upstream tools; body=%s", gotBody)
 	}
 
-
 	output := ojson.GetBytes(resp.Payload, "output.0")
 	if got := output.Get("name").String(); got != "query_web" {
 		t.Fatalf("output.0.name = %q, want query_web; payload=%s", got, resp.Payload)
@@ -7629,7 +7557,6 @@ func TestXAIExecutorFoldsNamespaceNamedWebSearchWithoutAliasing(t *testing.T) {
 		t.Fatalf("output.0.namespace = %q, want web_search; payload=%s", got, resp.Payload)
 	}
 }
-
 
 func testApplyPatchResponsesExecutor(t *testing.T, provider string, exec interface {
 	Execute(context.Context, *cliproxyauth.Auth, cliproxyexecutor.Request, cliproxyexecutor.Options) (cliproxyexecutor.Response, error)
@@ -8407,7 +8334,6 @@ func TestXAIExecutorExecuteIncompleteStreamDoesNotCooldownCredential(t *testing.
 	if state := stored.ModelStates["grok-4.7"]; state != nil && (state.Unavailable || !state.NextRetryAfter.IsZero()) {
 		t.Fatalf("model state cooled down after incomplete stream: Unavailable=%v NextRetryAfter=%v", state.Unavailable, state.NextRetryAfter)
 	}
-
 
 	resp, errNext := manager.Execute(context.Background(), []string{"xai"}, cliproxyexecutor.Request{
 		Model:   "grok-4.7",

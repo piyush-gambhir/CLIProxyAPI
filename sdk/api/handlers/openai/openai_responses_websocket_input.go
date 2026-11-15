@@ -20,15 +20,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
-
-
-
-
 type responsesLocalInterrupt struct {
 	mu           sync.Mutex
 	active       bool
@@ -40,9 +31,6 @@ func newResponsesLocalInterrupt() *responsesLocalInterrupt {
 	return &responsesLocalInterrupt{frames: make(chan []byte, 1)}
 }
 
-
-
-
 func (s *responsesLocalInterrupt) begin(websocketOwned bool) {
 	if s == nil {
 		return
@@ -52,8 +40,6 @@ func (s *responsesLocalInterrupt) begin(websocketOwned bool) {
 	s.wsTurnActive = websocketOwned
 	s.mu.Unlock()
 }
-
-
 
 func (s *responsesLocalInterrupt) reactivate() {
 	if s == nil {
@@ -73,9 +59,6 @@ func (s *responsesLocalInterrupt) endWebsocketTurn() {
 	s.mu.Unlock()
 }
 
-
-
-
 func (s *responsesLocalInterrupt) stopClaims() {
 	if s == nil {
 		return
@@ -85,17 +68,13 @@ func (s *responsesLocalInterrupt) stopClaims() {
 	s.mu.Unlock()
 }
 
-
-
 func (s *responsesLocalInterrupt) end() {
 	s.stopClaims()
 }
 
-
 func (s *responsesLocalInterrupt) deactivate() {
 	s.stopClaims()
 }
-
 
 func (s *responsesLocalInterrupt) isActive() bool {
 	if s == nil {
@@ -105,9 +84,6 @@ func (s *responsesLocalInterrupt) isActive() bool {
 	defer s.mu.Unlock()
 	return s.active
 }
-
-
-
 
 func (s *responsesLocalInterrupt) deliver(payload []byte) bool {
 	if s == nil {
@@ -133,8 +109,6 @@ func (s *responsesLocalInterrupt) framesChan() <-chan []byte {
 	return s.frames
 }
 
-
-
 func (s *responsesLocalInterrupt) takeClaimed() []byte {
 	if s == nil {
 		return nil
@@ -146,9 +120,6 @@ func (s *responsesLocalInterrupt) takeClaimed() []byte {
 		return nil
 	}
 }
-
-
-
 
 func readResponsesWebsocketInput(ctx context.Context, cancel context.CancelCauseFunc, conn *websocket.Conn, interrupt func([]byte) error, local *responsesLocalInterrupt, writer *responsesWebsocketWriter, timeline websocketTimelineAppender, epoch *atomic.Uint64) (<-chan cliproxyexecutor.WebsocketInput, <-chan struct{}) {
 	input := make(chan cliproxyexecutor.WebsocketInput, 16)
@@ -167,7 +138,6 @@ func readResponsesWebsocketInput(ctx context.Context, cancel context.CancelCause
 				continue
 			}
 
-
 			if json.Valid(payload) && ojson.GetBytesNoCopy(payload, "type").String() == "response.interrupt" {
 				appendResponsesInterruptDiagnostic(timeline, payload, "")
 				errInterrupt := interrupt(payload)
@@ -180,7 +150,6 @@ func readResponsesWebsocketInput(ctx context.Context, cancel context.CancelCause
 					continue
 				default:
 					appendResponsesInterruptDiagnostic(timeline, payload, "rejected")
-
 
 					_, errWrite := writeResponsesWebsocketError(writer, nil, &interfaces.ErrorMessage{
 						StatusCode: http.StatusBadRequest,
@@ -208,7 +177,6 @@ func appendResponsesInterruptDiagnostic(timeline websocketTimelineAppender, payl
 	if timeline == nil {
 		return
 	}
-
 
 	idHash := sha256.Sum256([]byte(ojson.GetBytesNoCopy(payload, "response_id").String()))
 	diagnostic := struct {

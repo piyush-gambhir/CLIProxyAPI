@@ -1,6 +1,3 @@
-
-
-
 package util
 
 import (
@@ -10,9 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/proxyutil"
 	log "github.com/sirupsen/logrus"
 )
-
-
-
 
 func SetProxy(cfg *config.SDKConfig, httpClient *http.Client) *http.Client {
 	if cfg == nil || httpClient == nil {

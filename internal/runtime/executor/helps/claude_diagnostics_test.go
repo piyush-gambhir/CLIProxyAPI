@@ -113,13 +113,11 @@ func TestClaudeContinuityTracksRequestIDAndPromptID(t *testing.T) {
 	resetClaudeDiagnosticsForTest()
 	defer resetClaudeDiagnosticsForTest()
 
-
 	key, seq1, prevMsg, prevReq, prompt1 := BeginClaudeContinuity("cred-1", "sess-1", true, "")
 	if prevMsg != "" || prevReq != "" || prompt1 == "" {
 		t.Fatalf("turn 1 = prevMsg:%q prevReq:%q prompt:%q, want empty prevs and fresh prompt", prevMsg, prevReq, prompt1)
 	}
 	CommitClaudeContinuity(key, seq1, "msg_01aaa", "req_01bbb", prompt1)
-
 
 	_, seq2, prevMsg, prevReq, prompt2 := BeginClaudeContinuity("cred-1", "sess-1", false, "")
 	if prevMsg != "msg_01aaa" || prevReq != "req_01bbb" {
@@ -129,7 +127,6 @@ func TestClaudeContinuityTracksRequestIDAndPromptID(t *testing.T) {
 		t.Fatalf("turn 1.1 prompt = %q, want same prompt %q as turn 1", prompt2, prompt1)
 	}
 	CommitClaudeContinuity(key, seq2, "msg_01ccc", "req_01ddd", prompt2)
-
 
 	_, _, prevMsg, prevReq, prompt3 := BeginClaudeContinuity("cred-1", "sess-1", true, "")
 	if prevMsg != "msg_01ccc" || prevReq != "req_01ddd" {
@@ -214,24 +211,20 @@ func TestIsValidClaudePromptID(t *testing.T) {
 		t.Fatalf("IsValidClaudePromptID(%q) = false, want true", v4)
 	}
 
-
 	v1 := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	if IsValidClaudePromptID(v1) {
 		t.Fatalf("IsValidClaudePromptID(v1 %q) = true, want false", v1)
 	}
-
 
 	nonRFC4122 := "3c6489dc-badc-42b2-0d28-49f8ebabfedd"
 	if IsValidClaudePromptID(nonRFC4122) {
 		t.Fatalf("IsValidClaudePromptID(non-RFC4122 variant %q) = true, want false", nonRFC4122)
 	}
 
-
 	allZeros := "00000000-0000-0000-0000-000000000000"
 	if IsValidClaudePromptID(allZeros) {
 		t.Fatalf("IsValidClaudePromptID(all zeros %q) = true, want false", allZeros)
 	}
-
 
 	for _, invalid := range []string{"", "not-a-uuid", "12345", "3c6489dc-badc-42b2-bd28-49f8ebabfedd-extra"} {
 		if IsValidClaudePromptID(invalid) {
@@ -244,18 +237,14 @@ func TestClaudeContinuityConcurrentOverlappingPromptID(t *testing.T) {
 	resetClaudeDiagnosticsForTest()
 	defer resetClaudeDiagnosticsForTest()
 
-
 	key, seq1, _, _, prompt1 := BeginClaudeContinuity("cred-1", "sess-1", true, "")
-
 
 	_, seq2, _, _, prompt2 := BeginClaudeContinuity("cred-1", "sess-1", true, "")
 	if prompt1 == prompt2 {
 		t.Fatalf("turn 1 and turn 2 got same prompt %q, want distinct", prompt1)
 	}
 
-
 	CommitClaudeContinuity(key, seq1, "msg_01aaa", "req_01bbb", prompt1)
-
 
 	_, _, prevMsg, prevReq, prompt11 := BeginClaudeContinuity("cred-1", "sess-1", false, "")
 	if prevMsg != "msg_01aaa" || prevReq != "req_01bbb" {
@@ -265,9 +254,7 @@ func TestClaudeContinuityConcurrentOverlappingPromptID(t *testing.T) {
 		t.Fatalf("turn 1.1 prompt=%q, want committed turn 1 prompt %q, not overwritten by uncommitted turn 2 (%q)", prompt11, prompt1, prompt2)
 	}
 
-
 	CommitClaudeContinuity(key, seq2, "msg_01ccc", "req_01ddd", prompt2)
-
 
 	_, _, prevMsg2, prevReq2, prompt21 := BeginClaudeContinuity("cred-1", "sess-1", false, "")
 	if prevMsg2 != "msg_01ccc" || prevReq2 != "req_01ddd" {
@@ -282,19 +269,15 @@ func TestClaudeContinuityClearsStaleRequestID(t *testing.T) {
 	resetClaudeDiagnosticsForTest()
 	defer resetClaudeDiagnosticsForTest()
 
-
 	key, seq1, _, _, p1 := BeginClaudeContinuity("cred-1", "sess-1", true, "")
 	CommitClaudeContinuity(key, seq1, "msg_01aaa", "req_01bbb", p1)
-
 
 	_, seq2, _, prevReq1, p2 := BeginClaudeContinuity("cred-1", "sess-1", false, "")
 	if prevReq1 != "req_01bbb" {
 		t.Fatalf("turn 1.1 prevReq = %q, want req_01bbb", prevReq1)
 	}
 
-
 	CommitClaudeContinuity(key, seq2, "msg_01ccc", "", p2)
-
 
 	_, _, prevMsg, prevReq2, _ := BeginClaudeContinuity("cred-1", "sess-1", true, "")
 	if prevMsg != "msg_01ccc" {
@@ -314,13 +297,11 @@ func TestClaudeContinuity_ExpiredEntryDoesNotInheritPromptID(t *testing.T) {
 		t.Fatal("expected non-empty promptID")
 	}
 
-
 	claudeDiagnosticsState.Lock()
 	entry := claudeDiagnosticsState.entries[key]
 	entry.expiresAt = time.Now().Add(-time.Second)
 	claudeDiagnosticsState.entries[key] = entry
 	claudeDiagnosticsState.Unlock()
-
 
 	_, _, _, _, p2 := BeginClaudeContinuity("cred-expire", "sess-expire", false, "")
 	if p2 == "" {
@@ -332,7 +313,6 @@ func TestClaudeContinuity_ExpiredEntryDoesNotInheritPromptID(t *testing.T) {
 }
 
 func TestIsClaudeProbeRequest_MultiContentBlocksNotAProbe(t *testing.T) {
-
 
 	payload := []byte(`{
 		"model": "claude-sonnet-5",
@@ -433,12 +413,10 @@ func TestClaudeSubagentRequests1h(t *testing.T) {
 		t.Fatal("ClaudeSubagentRequests1h() = true, want false when no 1h requested")
 	}
 
-
 	payloadWith1h := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"task","cache_control":{"type":"ephemeral","ttl":"1h"}}]}]}`)
 	if !ClaudeSubagentRequests1h(headers, payloadWith1h) {
 		t.Fatal("ClaudeSubagentRequests1h() = false, want true when payload has 1h")
 	}
-
 
 	headersWithBeta := http.Header{}
 	headersWithBeta.Set("Anthropic-Beta", "claude-code-20250219,extended-cache-ttl-2025-04-11")
@@ -456,11 +434,9 @@ func TestPinClaudeSessionDateAnchorsFirstRequestAndReanchorsAfterTTL(t *testing.
 		t.Fatalf("first pin = %q, want 2026-08-01", got)
 	}
 
-
 	if got := PinClaudeSessionDate(key, "session", "2026-08-02", 0); got != "2026-08-01" {
 		t.Fatalf("second pin = %q, want anchored 2026-08-01", got)
 	}
-
 
 	claudeDiagnosticsState.Lock()
 	entry := claudeDiagnosticsState.entries[key]
@@ -471,8 +447,6 @@ func TestPinClaudeSessionDateAnchorsFirstRequestAndReanchorsAfterTTL(t *testing.
 	if got := PinClaudeSessionDate(key, "session", "2026-08-02", 0); got != "2026-08-02" {
 		t.Fatalf("post-TTL pin = %q, want re-anchored 2026-08-02", got)
 	}
-
-
 
 	if got := PinClaudeSessionDate("unknown-key", "", "2026-08-03", 0); got != "2026-08-03" {
 		t.Fatalf("unknown key pin = %q, want candidate 2026-08-03", got)
@@ -612,7 +586,6 @@ func TestPinClaudeSessionDateKVPersistsPermanentlyAndIgnoresRetention(t *testing
 		t.Fatal("IsClaudeSessionDatePinKVActive() = false, want true")
 	}
 
-
 	keyA, _, _ := BeginClaudeDiagnostics("credential-a", "session-kv")
 	if got := PinClaudeSessionDate(keyA, "session-kv", "2026-08-01", 0); got != "2026-08-01" {
 		t.Fatalf("first KV pin = %q, want 2026-08-01", got)
@@ -628,11 +601,9 @@ func TestPinClaudeSessionDateKVPersistsPermanentlyAndIgnoresRetention(t *testing
 		t.Fatalf("KV stored value at %q = %q, want 2026-08-01", wantKVKey, string(fakeKV.values[wantKVKey]))
 	}
 
-
 	if got := LookupClaudeSessionDatePin("session-kv", 0); got != "2026-08-01" {
 		t.Fatalf("LookupClaudeSessionDatePin(retention=0) = %q, want 2026-08-01", got)
 	}
-
 
 	resetClaudeDiagnosticsForTest()
 	keyB, _, _ := BeginClaudeDiagnostics("credential-b", "session-kv")
@@ -642,7 +613,6 @@ func TestPinClaudeSessionDateKVPersistsPermanentlyAndIgnoresRetention(t *testing
 	if fakeKV.setNXCalls != 1 || fakeKV.casCalls != 0 {
 		t.Fatalf("subsequent request must perform zero KV writes: setNX=%d cas=%d, want 1/0", fakeKV.setNXCalls, fakeKV.casCalls)
 	}
-
 
 	keyInvalid, _, _ := BeginClaudeDiagnostics("credential-a", "session-invalid-date")
 	if got := PinClaudeSessionDate(keyInvalid, "session-invalid-date", "not-a-valid-date", 0); got != "not-a-valid-date" {
@@ -671,8 +641,6 @@ func TestPinClaudeSessionDateKVConcurrentCorruptedRepairUsesCAS(t *testing.T) {
 
 	key1, _, _ := BeginClaudeDiagnostics("cred-1", "session-cas")
 	key2, _, _ := BeginClaudeDiagnostics("cred-2", "session-cas")
-
-
 
 	var getBarrier sync.WaitGroup
 	getBarrier.Add(2)
@@ -721,9 +689,6 @@ func TestPinClaudeSessionDateKVConcurrentCorruptedRepairUsesCAS(t *testing.T) {
 	if fakeKV.lastCASTTL != 0 {
 		t.Fatalf("KVCompareAndSwap TTL = %v, want 0 (permanent)", fakeKV.lastCASTTL)
 	}
-
-
-
 
 	resetClaudeDiagnosticsForTest()
 	fakeKV.values[wantKVKey] = []byte("corrupted-again")
@@ -790,7 +755,6 @@ func TestPinClaudeSessionDateKVTransientFailureAndRecovery(t *testing.T) {
 		currentClaudeSessionDatePinKVClient = prevClientFunc
 	}()
 
-
 	clientErr = errors.New("home kv transiently unavailable")
 	if !IsClaudeSessionDatePinKVActive() {
 		t.Fatal("IsClaudeSessionDatePinKVActive() during transient KV error = false, want true")
@@ -804,7 +768,6 @@ func TestPinClaudeSessionDateKVTransientFailureAndRecovery(t *testing.T) {
 		t.Fatalf("LookupClaudeSessionDatePin during KV outage (retention=0) = %q, want 2026-08-01", got)
 	}
 
-
 	clientErr = nil
 	fakeKV.err = errors.New("kv network timeout")
 	keyB, _, _ := BeginClaudeDiagnostics("cred-b", "session-transient-1")
@@ -815,7 +778,6 @@ func TestPinClaudeSessionDateKVTransientFailureAndRecovery(t *testing.T) {
 		t.Fatalf("PinClaudeSessionDate across midnight during KV timeout = %q, want 2026-08-01", got)
 	}
 
-
 	fakeKV.err = nil
 	if got := PinClaudeSessionDate(keyB, "session-transient-1", "2026-08-03", 0); got != "2026-08-01" {
 		t.Fatalf("PinClaudeSessionDate after KV recovery = %q, want original anchor 2026-08-01", got)
@@ -824,7 +786,6 @@ func TestPinClaudeSessionDateKVTransientFailureAndRecovery(t *testing.T) {
 	if string(fakeKV.values[wantKVKey1]) != "2026-08-01" {
 		t.Fatalf("KV backfilled date = %q, want 2026-08-01", string(fakeKV.values[wantKVKey1]))
 	}
-
 
 	keyC, _, _ := BeginClaudeDiagnostics("cred-c", "session-transient-2")
 	if got := PinClaudeSessionDate(keyC, "session-transient-2", "2026-08-10", 0); got != "2026-08-10" {

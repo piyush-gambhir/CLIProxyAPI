@@ -56,8 +56,6 @@ type configCommit struct {
 	sequence uint64
 }
 
-
-
 type routingRuntimeState struct {
 	strategy                 string
 	sessionAffinity          bool
@@ -98,7 +96,6 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 		state.fiveHourGuardPercent = *guard
 	}
 
-
 	state.quotaPollerEnabled = state.strategy == "reset-soonest"
 	if enabled := cfg.Routing.QuotaPoller.Enabled; enabled != nil {
 		state.quotaPollerEnabled = *enabled
@@ -128,8 +125,6 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 	}
 	return state
 }
-
-
 
 func positiveDurationOr(raw string, fallback time.Duration) time.Duration {
 	trimmed := strings.TrimSpace(raw)
@@ -182,9 +177,6 @@ func (s *Service) applyConfigUpdateWithAuthSynthesis(ctx context.Context, newCfg
 	}
 	return s.applyConfigRuntime(ctx, commit, synthesizeConfigAuths)
 }
-
-
-
 
 func (s *Service) commitConfigUpdate(newCfg *config.Config) configCommit {
 	if s == nil {

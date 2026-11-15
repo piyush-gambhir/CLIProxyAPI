@@ -9,11 +9,9 @@ import (
 	"strings"
 )
 
-
 func String(value string) string {
 	return html.EscapeString(value)
 }
-
 
 func Strings(values []string) []string {
 	out := make([]string, 0, len(values))
@@ -22,7 +20,6 @@ func Strings(values []string) []string {
 	}
 	return out
 }
-
 
 func JSONBody(body []byte) ([]byte, bool) {
 	trimmed := bytes.TrimSpace(body)
@@ -50,14 +47,12 @@ func JSONBody(body []byte) ([]byte, bool) {
 	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), true
 }
 
-
 func JSONBodyIfLikely(body []byte, contentType string) ([]byte, bool) {
 	if IsJSONContentType(contentType) || LooksLikeJSON(body) {
 		return JSONBody(body)
 	}
 	return body, false
 }
-
 
 func JSONValue(value any) any {
 	switch typed := value.(type) {
@@ -80,7 +75,6 @@ func JSONValue(value any) any {
 	}
 }
 
-
 func IsJSONContentType(contentType string) bool {
 	mediaType, _, errParse := mime.ParseMediaType(strings.TrimSpace(contentType))
 	if errParse != nil {
@@ -89,7 +83,6 @@ func IsJSONContentType(contentType string) bool {
 	mediaType = strings.ToLower(mediaType)
 	return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")
 }
-
 
 func LooksLikeJSON(body []byte) bool {
 	trimmed := bytes.TrimSpace(body)

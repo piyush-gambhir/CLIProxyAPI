@@ -604,7 +604,6 @@ func TestRewriteCodexMultiAgentV2Input_StripsAuthorAndRecipient_Issue6136(t *tes
 		cfg := &config.Config{SDKConfig: config.SDKConfig{Client: config.ClientConfig{Codex: config.CodexClientConfig{OptimizeMultiAgentV2: true}}}}
 		got := RewriteCodexMultiAgentV2Input(context.Background(), headers, payload, cfg, true)
 
-
 		if messageType := ojson.GetBytesNoCopy(got, "input.0.type").String(); messageType != "message" {
 			t.Fatalf("input.0.type = %q, want message", messageType)
 		}
@@ -621,7 +620,6 @@ func TestRewriteCodexMultiAgentV2Input_StripsAuthorAndRecipient_Issue6136(t *tes
 			t.Fatalf("input.0.internal_chat_message_metadata_passthrough was not stripped; got=%s", passthrough.String())
 		}
 
-
 		if messageType := ojson.GetBytesNoCopy(got, "input.1.type").String(); messageType != "message" {
 			t.Fatalf("input.1.type = %q, want message", messageType)
 		}
@@ -637,7 +635,6 @@ func TestRewriteCodexMultiAgentV2Input_StripsAuthorAndRecipient_Issue6136(t *tes
 		if passthrough := ojson.GetBytesNoCopy(got, "input.1.internal_chat_message_metadata_passthrough"); passthrough.Exists() {
 			t.Fatalf("input.1.internal_chat_message_metadata_passthrough was not stripped; got=%s", passthrough.String())
 		}
-
 
 		if content := ojson.GetBytesNoCopy(got, "input.2.content").String(); content != "clean assistant message" {
 			t.Fatalf("input.2.content = %q", content)
@@ -688,7 +685,6 @@ func TestRewriteCodexMultiAgentV2Input_CompatModeWithoutOptimize_Issue6233(t *te
 		cfg := &config.Config{SDKConfig: config.SDKConfig{Client: config.ClientConfig{Codex: config.CodexClientConfig{OptimizeMultiAgentV2: false}}}}
 		got := RewriteCodexMultiAgentV2Input(context.Background(), headers, payload, cfg, true)
 
-
 		messageType := ojson.GetBytesNoCopy(got, "input.0.type").String()
 		if messageType != "message" {
 			t.Fatalf("input.0.type = %q, want message (must not stay agent_message without author)", messageType)
@@ -698,7 +694,6 @@ func TestRewriteCodexMultiAgentV2Input_CompatModeWithoutOptimize_Issue6233(t *te
 			t.Fatalf("input.0.role = %q, want user", role)
 		}
 
-
 		contentType := ojson.GetBytesNoCopy(got, "input.0.content.1.type").String()
 		if contentType != "input_text" {
 			t.Fatalf("input.0.content.1.type = %q, want input_text", contentType)
@@ -707,7 +702,6 @@ func TestRewriteCodexMultiAgentV2Input_CompatModeWithoutOptimize_Issue6233(t *te
 		if contentText != "test task payload" {
 			t.Fatalf("input.0.content.1.text = %q, want test task payload", contentText)
 		}
-
 
 		if author := ojson.GetBytesNoCopy(got, "input.0.author"); author.Exists() {
 			t.Fatalf("input.0.author was not stripped; got=%s", author.String())
@@ -1069,7 +1063,6 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 	clientID1 := "cache-invalidation-client-1"
 	clientID2 := "cache-invalidation-client-2"
 
-
 	modelRegistry.RegisterClient(clientID1, "openai", []*registry.ModelInfo{
 		{
 			ID:          "test-spawn-model-alpha",
@@ -1093,12 +1086,10 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 		t.Fatalf("expected initial reasoning efforts low, medium, got: %s", formatted1)
 	}
 
-
 	formattedHit := formatCodexSpawnAgentModelsForRequest(context.Background(), nil, false)
 	if formattedHit != formatted1 {
 		t.Fatalf("cache hit expected identical output, got %s vs %s", formattedHit, formatted1)
 	}
-
 
 	modelRegistry.RegisterClient(clientID2, "openai", []*registry.ModelInfo{
 		{
@@ -1112,7 +1103,6 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 	if !strings.Contains(formatted2, "test-spawn-model-beta") {
 		t.Fatalf("expected cache invalidation to include test-spawn-model-beta, got: %s", formatted2)
 	}
-
 
 	modelRegistry.RegisterClient(clientID1, "openai", []*registry.ModelInfo{
 		{
@@ -1129,7 +1119,6 @@ func TestCodexSpawnAgentModelsCacheInvalidation(t *testing.T) {
 	if !strings.Contains(formatted3, "low, medium (default), high, max") {
 		t.Fatalf("expected updated thinking levels to reflect in markdown, got: %s", formatted3)
 	}
-
 
 	modelRegistry.UnregisterClient(clientID2)
 	formatted4 := formatCodexSpawnAgentModelsForRequest(context.Background(), nil, false)

@@ -29,8 +29,6 @@ type pluginReleaseLookup struct {
 	canceled bool
 }
 
-
-
 type pluginReleaseCache struct {
 	mu       sync.Mutex
 	entries  map[string]pluginReleaseCacheEntry
@@ -57,14 +55,12 @@ func pluginReleaseKey(client pluginstore.Client, plugin pluginstore.Plugin) stri
 	return key
 }
 
-
 func (cache *pluginReleaseCache) cached(client pluginstore.Client, plugin pluginstore.Plugin) string {
 	key := pluginReleaseKey(client, plugin)
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 	return cache.entries[key].version
 }
-
 
 func (h *Handler) latestPluginVersions(ctx context.Context, client pluginstore.Client, plugins []pluginstore.Plugin, force bool) []string {
 	versions := make([]string, len(plugins))
@@ -112,7 +108,6 @@ func (h *Handler) latestPluginVersion(ctx context.Context, client pluginstore.Cl
 			case <-pending.done:
 				if pending.canceled && ctx.Err() == nil {
 
-
 					continue
 				}
 				return pending.version
@@ -132,8 +127,6 @@ func (h *Handler) latestPluginVersion(ctx context.Context, client pluginstore.Cl
 		cache.mu.Unlock()
 		break
 	}
-
-
 
 	select {
 	case cache.slots <- struct{}{}:

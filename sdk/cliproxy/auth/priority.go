@@ -5,9 +5,7 @@ import (
 	"strings"
 )
 
-
 const AttributeFilePriority = "file_priority"
-
 
 func ApplyAuthPriorityMetadata(auth *Auth, metadata map[string]any) {
 	if auth == nil {

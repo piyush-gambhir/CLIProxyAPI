@@ -6,7 +6,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
 func defaultWebSearchFallbackChain() []routeBackend {
 	return []routeBackend{
 		backendAntigravityGoogle,
@@ -20,7 +19,6 @@ func isFallbackRoute(route string) bool {
 	r := strings.ToLower(strings.TrimSpace(route))
 	return r == "" || r == string(backendFallback)
 }
-
 
 func tryRouteBackend(backend routeBackend, cfg pluginConfig, req pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, bool) {
 	switch backend {

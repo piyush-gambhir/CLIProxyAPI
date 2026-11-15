@@ -45,27 +45,20 @@ func ensureOpenAICompatUserAgent(r *http.Request, clientHeaders ...http.Header) 
 	misc.EnsureHeader(r.Header, util.ResolveClientHeaders(r, clientHeaders...), "User-Agent", openAICompatDefaultUserAgent)
 }
 
-
-
-
 type OpenAICompatExecutor struct {
 	provider string
 	cfg      *config.Config
 }
 
-
 func NewOpenAICompatExecutor(provider string, cfg *config.Config) *OpenAICompatExecutor {
 	return &OpenAICompatExecutor{provider: provider, cfg: cfg}
 }
 
-
 func (e *OpenAICompatExecutor) Identifier() string { return e.provider }
-
 
 func (e *OpenAICompatExecutor) UsesConfig(cfg *config.Config) bool {
 	return e != nil && e.cfg == cfg
 }
-
 
 func (e *OpenAICompatExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -83,7 +76,6 @@ func (e *OpenAICompatExecutor) PrepareRequest(req *http.Request, auth *cliproxya
 	util.ApplyCustomHeadersFromAttrs(req, attrs)
 	return nil
 }
-
 
 func (e *OpenAICompatExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
@@ -246,7 +238,6 @@ func (e *OpenAICompatExecutor) executeWithCredentials(ctx context.Context, auth 
 		return resp, err
 	}
 	reporter.ObserveResponseModel(body)
-
 
 	var param any
 	out := sdktranslator.TranslateNonStream(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, body, &param)
@@ -421,8 +412,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 		}
 	}
 
-
-
 	helps.SetBoolIfDifferentDoc(doc, "stream_options.include_usage", true)
 
 	url := strings.TrimSuffix(baseURL, "/") + "/chat/completions"
@@ -564,7 +553,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 				}
 			}
 
-
 			if !isDone && len(dataLines) > 1 {
 				streamUsage.ObserveOpenAIStream(dataPayload)
 			}
@@ -656,7 +644,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 			}
 		} else if !seenDone {
 
-
 			if responseFormat == sdktranslator.FormatOpenAIResponse || (responseFormat == sdktranslator.FormatClaude && !sawFinishReason) {
 				streamErr := statusErr{code: http.StatusBadGateway, msg: "upstream stream closed before [DONE]", streamTruncated: true}
 				helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
@@ -671,7 +658,6 @@ func (e *OpenAICompatExecutor) executeStreamWithCredentials(ctx context.Context,
 				}
 				return
 			}
-
 
 			chunks := helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, []byte("data: [DONE]"), &param, claudeInputTokens)
 			helps.RecordApplyPatchStreamFailure(ctx, param, reporter, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage})
@@ -921,9 +907,6 @@ func (e *OpenAICompatExecutor) CountTokens(ctx context.Context, auth *cliproxyau
 	return cliproxyexecutor.Response{Payload: translatedUsage}, nil
 }
 
-
-
-
 func (e *OpenAICompatExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("openai compat executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
@@ -1157,7 +1140,6 @@ func (e *OpenAICompatExecutor) resolveCompatConfig(auth *cliproxyauth.Auth, req 
 	}
 	if e.cfg.Home.Enabled {
 
-
 		var options struct {
 			SupportPromptCacheKey bool                              `json:"support-prompt-cache-key"`
 			Models                []config.OpenAICompatibilityModel `json:"models"`
@@ -1296,14 +1278,9 @@ func (e statusErr) StatusCode() int            { return e.code }
 func (e statusErr) RetryAfter() *time.Duration { return e.retryAfter }
 func (e statusErr) IsCredentialScoped() bool   { return e.credentialScoped }
 
-
 func (e statusErr) LogDiagnostic() string { return e.diagnostic }
 
-
-
 func (e statusErr) IsStreamTruncated() bool { return e.streamTruncated }
-
-
 
 func (e statusErr) IsTransientRateLimit() bool { return e.transientRateLimit }
 
@@ -1317,15 +1294,6 @@ func newOpenAICompatStatusError(status int, headers http.Header, body []byte) st
 	}
 }
 
-
-
-
-
-
-
-
-
-
 func parseRetryAfterHeader(headers http.Header, now time.Time) *time.Duration {
 	if headers == nil {
 		return nil
@@ -1336,7 +1304,6 @@ func parseRetryAfterHeader(headers http.Header, now time.Time) *time.Duration {
 	}
 	if seconds, errParse := strconv.ParseInt(raw, 10, 64); errParse == nil && seconds >= 0 {
 		if seconds > int64(math.MaxInt64)/int64(time.Second) {
-
 
 			delay := time.Duration(math.MaxInt64)
 			return &delay
@@ -1371,6 +1338,5 @@ func openAICompatRetryAfter(status int, headers http.Header, body []byte, now ti
 	}
 	return nil
 }
-
 
 func (e *OpenAICompatExecutor) SupportsApplyPatch() bool { return e != nil }

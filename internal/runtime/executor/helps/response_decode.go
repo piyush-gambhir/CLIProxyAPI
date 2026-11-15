@@ -34,8 +34,6 @@ func (c *compositeReadCloser) Close() error {
 	return firstErr
 }
 
-
-
 type peekableBody struct {
 	*bufio.Reader
 	closer io.Closer
@@ -45,21 +43,12 @@ func (p *peekableBody) Close() error {
 	return p.closer.Close()
 }
 
-
-
 func DecodeResponseBody(body io.ReadCloser, header http.Header) (io.ReadCloser, error) {
 	contentEncoding := strings.Join(header.Values("Content-Encoding"), ",")
 	if body == nil {
 		return nil, fmt.Errorf("response body is nil")
 	}
 	if contentEncoding == "" {
-
-
-
-
-
-
-
 
 		return &sniffedResponseBody{body: &peekableBody{Reader: bufio.NewReader(body), closer: body}}, nil
 	}
@@ -147,15 +136,9 @@ func isZlibHeader(header []byte) bool {
 	return cmf&0x0f == 8 && cmf>>4 <= 7 && (uint16(cmf)<<8|uint16(flg))%31 == 0
 }
 
-
-
-
 func newResponseZstdReader(reader io.Reader) (*zstd.Decoder, error) {
 	return zstd.NewReader(reader, zstd.WithDecoderConcurrency(1))
 }
-
-
-
 
 type sniffedResponseBody struct {
 	body    *peekableBody

@@ -276,7 +276,6 @@ func TestConvertClaudeResponseToOpenAI_StreamAndNonStreamParity(t *testing.T) {
 		[]byte(`data: {"type":"message_stop"}`),
 	}
 
-
 	ctx := context.Background()
 	var param any
 	var streamReasoning string
@@ -297,7 +296,6 @@ func TestConvertClaudeResponseToOpenAI_StreamAndNonStreamParity(t *testing.T) {
 			}
 		}
 	}
-
 
 	var rawBuffer []byte
 	for _, ev := range events {
@@ -341,7 +339,6 @@ func TestConvertClaudeResponseToOpenAI_RedactedThinkingIgnored(t *testing.T) {
 		[]byte(`data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"input_tokens":10,"output_tokens":20}}`),
 	}
 
-
 	var rawJSON []byte
 	for _, ev := range events {
 		rawJSON = append(rawJSON, ev...)
@@ -358,7 +355,6 @@ func TestConvertClaudeResponseToOpenAI_RedactedThinkingIgnored(t *testing.T) {
 	if gotContent := ojson.GetBytesNoCopy(outNonStream, "choices.0.message.content").String(); gotContent != "Visible reply." {
 		t.Fatalf("content = %q, want %q", gotContent, "Visible reply.")
 	}
-
 
 	ctx := context.Background()
 	var param any
@@ -461,7 +457,6 @@ func TestConvertClaudeResponseToOpenAI_StreamEmitsTrailingUsageChunkWithCacheDet
 		chunks := ConvertClaudeResponseToOpenAI(ctx, "claude-opus-4-6", nil, nil, ev, &param)
 		allChunks = append(allChunks, chunks...)
 	}
-
 
 	var trailingUsageChunk []byte
 	var trailingUsageChunkIndex = -1
@@ -656,7 +651,6 @@ func TestConvertClaudeResponseToOpenAI_StreamPreservesUpstreamServingModel(t *te
 		t.Fatal("expected pre-token fallback stream to surface choices[0].delta.fallback")
 	}
 
-
 	var paramPreBlock any
 	preBlockEvents := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_fb_preblock","model":"claude-opus-4-8","usage":{"input_tokens":10,"output_tokens":0}}}`),
@@ -679,7 +673,6 @@ func TestConvertClaudeResponseToOpenAI_StreamPreservesUpstreamServingModel(t *te
 	if !sawTriggerChunk {
 		t.Fatal("expected fallback content_block to surface trigger in choices[0].delta.fallback even when message_start already reported target model")
 	}
-
 
 	preNonStreamRaw := []byte(`{"id":"msg_fb_1","type":"message","role":"assistant","model":"claude-opus-4-8","content":[{"type":"text","text":"fallback answer"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":4,"iterations":[{"type":"message","model":"claude-opus-5-5","output_tokens":0},{"type":"fallback_message","model":"claude-opus-4-8","output_tokens":4}]}}`)
 	preNonStreamOut := ConvertClaudeResponseToOpenAINonStream(ctx, "claude-opus-5-5", nil, nil, preNonStreamRaw, nil)
@@ -719,7 +712,6 @@ func TestConvertClaudeResponseToOpenAI_MidStreamFallbackUpdatesServingModelAndEm
 			}
 		}
 	}
-
 
 	wantModels := []string{
 		"claude-opus-5-5",
@@ -762,7 +754,6 @@ func TestConvertClaudeResponseToOpenAI_MidStreamFallbackUpdatesServingModelAndEm
 func TestConvertClaudeResponseToOpenAI_MultiHopFallbackAndStickyDefault(t *testing.T) {
 	ctx := context.Background()
 
-
 	rawJSON := []byte(`{"id":"msg_chat_chain","type":"message","role":"assistant","model":"claude-fable-5-1","content":[{"type":"text","text":"partA "},{"type":"fallback","from":{"model":"claude-fable-5-1"},"to":{"model":"claude-opus-5"},"trigger":{"type":"refusal","category":"reasoning_extraction"}},{"type":"text","text":"partB "},{"type":"fallback","from":{"model":"claude-opus-5"},"to":{"model":"claude-opus-4-8"},"trigger":{"type":"refusal","category":"cyber"}},{"type":"text","text":"partC"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":9}}`)
 	out := ConvertClaudeResponseToOpenAINonStream(ctx, "claude-fable-5-1", nil, nil, rawJSON, nil)
 	if got := ojson.GetBytesNoCopy(out, "model").String(); got != "claude-opus-4-8" {
@@ -778,7 +769,6 @@ func TestConvertClaudeResponseToOpenAI_MultiHopFallbackAndStickyDefault(t *testi
 	if hops[1].Get("from.model").String() != "claude-opus-5" || hops[1].Get("to.model").String() != "claude-opus-4-8" || hops[1].Get("content_offset").Int() != 12 {
 		t.Fatalf("Chat hop[1] = %s, want opus-5 -> opus-4-8 at content_offset=12", hops[1].Raw)
 	}
-
 
 	translatedDefaultReq := []byte(`{"model":"claude-opus-5-5","fallbacks":"default","messages":[{"role":"user","content":"turn 2"}]}`)
 	var stickyParam any

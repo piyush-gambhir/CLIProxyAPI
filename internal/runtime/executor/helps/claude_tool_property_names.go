@@ -8,26 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
 const (
 	claudePropertyKeyMaxLength      = 64
 	claudeToolSchemaMaxInspectDepth = 256
 	claudeToolSchemaFallbackPrefix  = "The input object must conform to the following JSON Schema. Use its property names exactly as written, including any characters such as brackets:\n"
 	claudeToolSchemaFallbackSchema  = `{"type":"object"}`
 )
-
-
 
 func claudePropertyKeyAccepted(name string) bool {
 	if len(name) == 0 || len(name) > claudePropertyKeyMaxLength {
@@ -42,14 +28,6 @@ func claudePropertyKeyAccepted(name string) bool {
 	}
 	return true
 }
-
-
-
-
-
-
-
-
 
 func claudeSchemaHasRejectedPropertyKey(schema ojson.Result, depth int) bool {
 	if !schema.IsObject() {
@@ -81,7 +59,6 @@ func claudeSchemaHasRejectedPropertyKey(schema ojson.Result, depth int) bool {
 			})
 		case "$defs", "definitions", "patternProperties", "dependentSchemas", "dependencies":
 
-
 			if value.IsObject() {
 				subschemas(value)
 			}
@@ -104,8 +81,6 @@ func claudeSchemaHasRejectedPropertyKey(schema ojson.Result, depth int) bool {
 	return found
 }
 
-
-
 func claudeToolNeedsSchemaFallback(tool ojson.Result) bool {
 	if IsClaudeServerToolType(tool.Get("type").String()) {
 		return false
@@ -113,10 +88,6 @@ func claudeToolNeedsSchemaFallback(tool ojson.Result) bool {
 	schema := tool.Get("input_schema")
 	return schema.IsObject() && claudeSchemaHasRejectedPropertyKey(schema, 0)
 }
-
-
-
-
 
 func NormalizeClaudeToolPropertyNamesDoc(doc *ojson.Doc) {
 	if doc == nil || doc.Len() == 0 {

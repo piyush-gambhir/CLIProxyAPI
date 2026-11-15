@@ -14,14 +14,7 @@ import (
 )
 
 const (
-
 	claudeAnthropicVersion = "2023-06-01"
-
-
-
-
-
-
 
 	claudeDefaultStainlessTimeout = "600"
 )
@@ -55,10 +48,6 @@ var claudeCodeSubclientByEntrypoint = map[string]string{
 	"claude-coworker":           "claude-coworker",
 	"claude-coworker-terminal":  "claude-coworker-terminal",
 }
-
-
-
-
 
 var nativeClaudeEntrypoints = map[string]bool{
 	"cli":           true,
@@ -108,12 +97,6 @@ const (
 	claudeCodeHelperModel = "claude-haiku-4-5-20251001"
 )
 
-
-
-
-
-
-
 var measuredClaudeCodeHelperBetaProfiles = map[string]claudeCodeHelperShape{
 	claudeCodeHelperBetaProfile(true):  claudeCodeHelperShapeMinimal,
 	claudeCodeHelperBetaProfile(false): claudeCodeHelperShapeMinimal,
@@ -140,9 +123,6 @@ var measuredClaudeCodeHelperBetaProfiles = map[string]claudeCodeHelperShape{
 	): claudeCodeHelperShapeTitle280,
 }
 
-
-
-
 type ClaudeCodeRequestDetection struct {
 	Confirmed       bool
 	ConfirmedShape  bool
@@ -157,13 +137,6 @@ type ClaudeCodeRequestDetection struct {
 	Subclient       string
 	AgentSDKVersion string
 }
-
-
-
-
-
-
-
 
 func DetectClaudeCodeRequest(headers http.Header, payload []byte, countTokens bool, configs ...*config.Config) ClaudeCodeRequestDetection {
 	var cfg *config.Config
@@ -394,10 +367,6 @@ func measuredClaudeCodeBillingAndIdentityMatch(payload []byte, entrypoint string
 		identity == "You are a Claude agent, built on Anthropic's Claude Agent SDK."
 }
 
-
-
-
-
 func normalizedClaudeBetaHeader(headers http.Header) string {
 	if headers == nil {
 		return ""
@@ -425,16 +394,6 @@ func normalizedClaudeBetaHeader(headers http.Header) string {
 	}
 	return strings.Join(betas, ",")
 }
-
-
-
-
-
-
-
-
-
-
 
 func measuredClaudeCodeHelperHeadersMatch(headers http.Header, cfg *config.Config, shape claudeCodeHelperShape) bool {
 	profile := defaultClaudeDeviceProfile(cfg)
@@ -477,11 +436,6 @@ func measuredClaudeCodeHelperHeadersMatch(headers http.Header, cfg *config.Confi
 		return false
 	}
 
-
-
-
-
-
 	if headerValue(headers, "X-Stainless-Async") != "" {
 		return false
 	}
@@ -505,10 +459,6 @@ func measuredClaudeCodeHelperSessionMatches(headers http.Header, payload []byte)
 	if userID.Type != ojson.String || !isValidUserID(userID.String()) {
 		return false
 	}
-
-
-
-
 
 	identityRaw := []byte(userID.String())
 	if !claudeJSONObjectHasKeys(identityRaw, []string{"device_id", "account_uuid", "session_id"}) &&
@@ -636,10 +586,6 @@ func measuredClaudeCodeHelperSystemMatches(system ojson.Result) bool {
 	return strings.HasPrefix(billing, "x-anthropic-billing-header:") && measuredClaudeBillingCCH(billing) && strings.HasPrefix(identity, "You are Claude Code")
 }
 
-
-
-
-
 func measuredClaudeBillingCCH(billing string) bool {
 	marker := strings.Index(billing, " cch=")
 	if marker < 0 {
@@ -688,7 +634,6 @@ func claudeJSONObjectHasKeys(raw []byte, want []string) bool {
 	closing, errClosing := decoder.Token()
 	return errClosing == nil && closing == json.Delim('}') && keyIndex == len(want)
 }
-
 
 func IsClaudeCodeUserAgent(userAgent string) bool {
 	return claudeCodeUserAgentPattern.MatchString(strings.TrimSpace(userAgent))

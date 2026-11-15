@@ -15,9 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 func (s *ObjectTokenStore) RefreshClaim(ctx context.Context, key string) (bool, error) {
 	if s == nil || s.client == nil {
 		return false, fmt.Errorf("object refresh journal is unavailable")
@@ -70,7 +67,6 @@ func (s *ObjectTokenStore) refreshObjectKey(key, kind string) string {
 func (s *ObjectTokenStore) createRefreshObject(ctx context.Context, key string, data []byte) (bool, error) {
 	headers := http.Header{"If-None-Match": []string{"*"}}
 
-
 	url, errPresign := s.client.PresignHeader(ctx, http.MethodPut, s.cfg.Bucket, key, time.Minute, nil, headers)
 	if errPresign != nil {
 		return false, fmt.Errorf("sign conditional refresh journal write: %w", errPresign)
@@ -105,7 +101,6 @@ func (s *ObjectTokenStore) ensureRefreshConditionalCreate(ctx context.Context) e
 	if s.refreshProbeReady {
 		return nil
 	}
-
 
 	if errProbe := s.probeRefreshConditionalCreate(ctx); errProbe != nil {
 		return errProbe

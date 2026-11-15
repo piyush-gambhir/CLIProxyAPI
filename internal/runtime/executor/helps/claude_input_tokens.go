@@ -22,7 +22,6 @@ var (
 	claudeInputTokenizerErr   error
 )
 
-
 type ClaudeInputTokenState struct {
 	upstreamFormat  sdktranslator.Format
 	responseFormat  sdktranslator.Format
@@ -30,7 +29,6 @@ type ClaudeInputTokenState struct {
 	codec           tokenizer.Codec
 	handled         bool
 }
-
 
 func NewClaudeInputTokenState(sourceFormat, upstreamFormat, responseFormat sdktranslator.Format, originalRequest []byte) *ClaudeInputTokenState {
 	enabled := sourceFormat == sdktranslator.FormatClaude &&
@@ -43,7 +41,6 @@ func NewClaudeInputTokenState(sourceFormat, upstreamFormat, responseFormat sdktr
 		handled:         !enabled,
 	}
 }
-
 
 func TranslateStreamWithClaudeInputTokens(
 	ctx context.Context,
@@ -83,7 +80,6 @@ func claudeInputTokenizer() (tokenizer.Codec, error) {
 	})
 	return claudeInputTokenizerCodec, claudeInputTokenizerErr
 }
-
 
 func CountClaudeInputTokens(payload []byte) (int64, error) {
 	enc, err := claudeInputTokenizer()

@@ -41,7 +41,6 @@ func TestAntigravityStaleAuthCannotRestoreExcludedModel(t *testing.T) {
 		t.Fatal("stale publisher reinstated excluded model")
 	}
 
-
 	currentEpoch := GlobalModelRegistry().ClientRegistrationEpoch(auth.ID)
 	svc.applyAntigravityModelHints(t.Context(), auth, "antigravity", hints, key, auth.RegistrationEpoch, currentEpoch)
 	if len(GlobalModelRegistry().GetModelsForClient(auth.ID)) != 0 {

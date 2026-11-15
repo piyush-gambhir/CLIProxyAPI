@@ -48,9 +48,6 @@ type antigravityCapabilityCacheEntry struct {
 	pending           bool
 }
 
-
-
-
 type antigravityFailureState struct {
 	failures    uint8
 	lastFailure time.Time
@@ -91,8 +88,6 @@ type antigravityModelCapabilityHints struct {
 func (h antigravityModelCapabilityHints) clone() antigravityModelCapabilityHints {
 	return antigravityModelCapabilityHints{WebSearchModelIDs: maps.Clone(h.WebSearchModelIDs), ModelIDs: maps.Clone(h.ModelIDs), revision: h.revision}
 }
-
-
 
 func (s *Service) antigravityCapabilityKey(auth *coreauth.Auth) string {
 	if auth == nil {
@@ -238,8 +233,6 @@ func (s *Service) fetchAntigravityModelCapabilityHintsForAuth(ctx context.Contex
 	return hints
 }
 
-
-
 func (s *Service) fetchAntigravityModelCapabilityHints(ctx context.Context, auth *coreauth.Auth) (string, antigravityModelCapabilityHints) {
 	if auth == nil || auth.Metadata == nil || s.antigravityHomeEnabled() {
 		return "", antigravityModelCapabilityHints{}
@@ -275,7 +268,6 @@ func (s *Service) fetchAntigravityModelCapabilityHints(ctx context.Context, auth
 	if hints, cached := lookup(); cached {
 		return cacheKey, hints
 	}
-
 
 	resultCh := antigravityCapabilityGroup.DoChan(failureKey, func() (any, error) {
 		if hints, cached := lookup(); cached {
@@ -333,7 +325,6 @@ func (s *Service) fetchAntigravityModelCapabilityHints(ctx context.Context, auth
 			delete(antigravityAuthFailureCache, failureKey)
 			return hints, nil
 		}
-
 
 		antigravityAuthFailureCache[failureKey] = nextAntigravityFailure(antigravityAuthFailureCache[failureKey], now, rand.Int64N)
 		retained := current.hints.clone()
@@ -462,15 +453,12 @@ func normalizeAntigravityFetchedModelID(modelID string) string {
 	return sdkauth.NormalizeAntigravityModelID(modelID)
 }
 
-
 func (s *Service) WaitAntigravityProbes() {
 	if s == nil {
 		return
 	}
 	s.antigravityProbeWg.Wait()
 }
-
-
 
 func (s *Service) reconcileRegisteredModelStates(ctx context.Context, auth *coreauth.Auth) {
 	if auth == nil || s.coreManager == nil {
@@ -537,8 +525,6 @@ func (s *Service) probeAndRegisterAntigravityModels(ctx context.Context, auth *c
 	return expectedKey, hints
 }
 
-
-
 func antigravityAuthModelSettingsEqual(a, b *coreauth.Auth) bool {
 	return a != nil && b != nil && a.Provider == b.Provider && a.Prefix == b.Prefix &&
 		a.RegistrationEpoch == b.RegistrationEpoch && a.Disabled == b.Disabled &&
@@ -562,10 +548,8 @@ func (s *Service) applyAntigravityModelHints(ctx context.Context, auth *coreauth
 	var updated bool
 	if hints.ModelIDs != nil {
 
-
 		s.cfgMu.RLock()
 		models := s.antigravityModelsForHintsWithConfig(auth, hints, s.cfg)
-
 
 		antigravityCapabilityMu.Lock()
 		entry := antigravityCapabilityCache[expectedKey]
@@ -599,9 +583,6 @@ func (s *Service) applyAntigravityModelHints(ctx context.Context, auth *coreauth
 	}
 }
 
-
-
-
 func (s *Service) refreshAntigravityModels(ctx context.Context) {
 	if s == nil || s.coreManager == nil || s.antigravityHomeEnabled() {
 		return
@@ -609,7 +590,6 @@ func (s *Service) refreshAntigravityModels(ctx context.Context) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
 
 	s.cancelStaleAntigravityProbes("")
 	for _, auth := range s.coreManager.List() {
@@ -640,9 +620,6 @@ func (s *Service) refreshAntigravityModels(ctx context.Context) {
 func (s *Service) scheduleAntigravityModelRefresh(ctx context.Context, auth *coreauth.Auth) {
 	s.queueAntigravityModelRefresh(ctx, auth, "antigravity")
 }
-
-
-
 
 func (s *Service) nextAntigravityModelRefreshDelay() time.Duration {
 	now := antigravityNowFunc()

@@ -4,22 +4,13 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 type ClaudeToolResultImage struct {
 	MimeType string
 	Data     string
 }
 
-
-
 type ClaudeToolResult struct {
-
 	Result string
-
-
-
 
 	ResultIsRaw bool
 
@@ -28,32 +19,11 @@ type ClaudeToolResult struct {
 	Images []ClaudeToolResultImage
 }
 
-
-
 func ConvertClaudeToolResult(block ojson.Result) ClaudeToolResult {
 	result := ConvertClaudeToolResultContent(block.Get("content"))
 	result.IsError = block.Get("is_error").Type == ojson.True
 	return result
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertClaudeToolResultContent(content ojson.Result) ClaudeToolResult {
 	switch {
@@ -99,12 +69,9 @@ func ConvertClaudeToolResultContent(content ojson.Result) ClaudeToolResult {
 	}
 }
 
-
 func isClaudeBase64Image(block ojson.Result) bool {
 	return block.Get("type").String() == "image" && block.Get("source.type").String() == "base64"
 }
-
-
 
 func claudeImageFromBlock(block ojson.Result) (ClaudeToolResultImage, bool) {
 	data := block.Get("source.data").String()

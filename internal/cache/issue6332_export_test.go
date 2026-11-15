@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// Issue6332BlockCommit pauses the first commit before it can update the ledger.
-// This hook exists only in the test binary.
 func Issue6332BlockCommit(t *testing.T) (<-chan struct{}, chan<- struct{}, func() int32) {
 	t.Helper()
 	original := currentAntigravityReasoningReplayKVClient

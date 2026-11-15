@@ -109,9 +109,6 @@ func TestConvertOpenAIRequestToInteractionsInfersToolNamesForOutOfOrderResults(t
 	}`)
 	out, _ := ConvertOpenAIRequestToInteractions("gemini-3.1-flash-lite", raw, false)
 
-
-
-
 	if got := ojson.GetBytesNoCopy(out, "input.2.call_id").String(); got != "call_2" {
 		t.Fatalf("input.2.call_id = %q, want call_2. Output: %s", got, string(out))
 	}

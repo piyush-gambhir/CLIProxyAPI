@@ -98,7 +98,6 @@ func TestOpenAICompatExecutor_ImageStreamChunkBoundaryObservability(t *testing.T
 				t.Fatalf("ExecuteStream error: %v", err)
 			}
 
-
 			var received bytes.Buffer
 			for chunk := range streamRes.Chunks {
 				if chunk.Err != nil {
@@ -111,7 +110,6 @@ func TestOpenAICompatExecutor_ImageStreamChunkBoundaryObservability(t *testing.T
 			if received.String() != expectedForwarded {
 				t.Fatalf("forwarded payload mismatch: got %q, want %q", received.String(), expectedForwarded)
 			}
-
 
 			record := capture.await(t)
 			if record.ResponseModel != tt.wantModel {
@@ -163,7 +161,6 @@ func TestOpenAICompatExecutor_ImageEndpointPath_HonorsOverriddenRequestPath_Issu
 	if requestedPath != "/images/edits" {
 		t.Fatalf("upstream path = %q, want /images/edits", requestedPath)
 	}
-
 
 	optsGenerations := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FromString("openai-image"),

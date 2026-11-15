@@ -32,10 +32,6 @@ func testGeminiSignaturePayload() string {
 	return base64.StdEncoding.EncodeToString(payload)
 }
 
-
-
-
-
 func testFakeClaudeSignature() string {
 	return base64.StdEncoding.EncodeToString([]byte{0x12, 0xFF, 0xFE, 0xFD})
 }
@@ -43,9 +39,6 @@ func testFakeClaudeSignature() string {
 func issue4959GeminiThoughtSignature() string {
 	return "EjQKMgEMOdbHO0Gd+c9Mxk4ELwPGbpCEcp2mFfYYLix2UVtBH3fL8GECc4+JITVnHF4qZDsA"
 }
-
-
-
 
 func issue4959ResponsesModelFirstPayload() []byte {
 	carrier := "cpa-gemini-responses-carrier-v1:next:function:" + base64.RawStdEncoding.EncodeToString([]byte(issue4959GeminiThoughtSignature()))

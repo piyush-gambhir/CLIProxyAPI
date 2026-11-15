@@ -9,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 func WithAntigravityHTTPClientTrace(client *http.Client, auth *cliproxyauth.Auth, operation string) *http.Client {
 	if client == nil {
 		return nil
@@ -40,14 +38,11 @@ func (t *antigravityConnectionTraceTransport) RoundTrip(req *http.Request) (*htt
 	return t.base.RoundTrip(WithAntigravityConnectionTrace(req, &t.auth, t.operation))
 }
 
-
 func (t *antigravityConnectionTraceTransport) CloseIdleConnections() {
 	if closer, ok := t.base.(interface{ CloseIdleConnections() }); ok {
 		closer.CloseIdleConnections()
 	}
 }
-
-
 
 func WithAntigravityConnectionTrace(req *http.Request, auth *cliproxyauth.Auth, operation string) *http.Request {
 	if req == nil || req.URL == nil || !log.IsLevelEnabled(log.DebugLevel) {

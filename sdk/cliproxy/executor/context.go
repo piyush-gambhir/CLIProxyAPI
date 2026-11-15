@@ -18,14 +18,12 @@ type localWebsocketTurnTracker struct {
 	executed atomic.Bool
 }
 
-
 func WithDownstreamWebsocket(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, downstreamWebsocketContextKey{}, true)
 }
-
 
 func DownstreamWebsocket(ctx context.Context) bool {
 	if ctx == nil {
@@ -36,14 +34,12 @@ func DownstreamWebsocket(ctx context.Context) bool {
 	return ok && enabled
 }
 
-
 func WithRequiredUpstreamWebsocket(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, requireUpstreamWebsocketContextKey{}, true)
 }
-
 
 func RequiredUpstreamWebsocket(ctx context.Context) bool {
 	if ctx == nil {
@@ -54,14 +50,12 @@ func RequiredUpstreamWebsocket(ctx context.Context) bool {
 	return ok && enabled
 }
 
-
 func WithUpstreamAttemptTracker(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, upstreamAttemptTrackerContextKey{}, &upstreamAttemptTracker{})
 }
-
 
 func MarkUpstreamAttempt(ctx context.Context) {
 	if ctx == nil {
@@ -74,7 +68,6 @@ func MarkUpstreamAttempt(ctx context.Context) {
 	tracker.attempted.Store(true)
 }
 
-
 func UpstreamAttempted(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -83,17 +76,12 @@ func UpstreamAttempted(ctx context.Context) bool {
 	return ok && tracker != nil && tracker.attempted.Load()
 }
 
-
-
-
 func WithLocalWebsocketTurnTracker(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, localWebsocketTurnTrackerContextKey{}, &localWebsocketTurnTracker{})
 }
-
-
 
 func MarkLocalWebsocketTurn(ctx context.Context) {
 	if ctx == nil {
@@ -106,7 +94,6 @@ func MarkLocalWebsocketTurn(ctx context.Context) {
 	tracker.executed.Store(true)
 }
 
-
 func ResetLocalWebsocketTurn(ctx context.Context) {
 	if ctx == nil {
 		return
@@ -117,8 +104,6 @@ func ResetLocalWebsocketTurn(ctx context.Context) {
 	}
 	tracker.executed.Store(false)
 }
-
-
 
 func LocalWebsocketTurnExecuted(ctx context.Context) bool {
 	if ctx == nil {

@@ -1,7 +1,3 @@
-
-
-
-
 package thinking
 
 import (
@@ -9,11 +5,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
 type ThinkingMode int
 
 const (
-
 	ModeBudget ThinkingMode = iota
 
 	ModeLevel
@@ -22,7 +16,6 @@ const (
 
 	ModeAuto
 )
-
 
 func (m ThinkingMode) String() string {
 	switch m {
@@ -39,11 +32,9 @@ func (m ThinkingMode) String() string {
 	}
 }
 
-
 type ThinkingLevel string
 
 const (
-
 	LevelNone ThinkingLevel = "none"
 
 	LevelAuto ThinkingLevel = "auto"
@@ -58,70 +49,28 @@ const (
 
 	LevelXHigh ThinkingLevel = "xhigh"
 
-
 	LevelMax ThinkingLevel = "max"
 )
 
-
-
-
-
-
-
-
-
 type ThinkingConfig struct {
-
 	Mode ThinkingMode
-
 
 	Budget int
 
 	Level ThinkingLevel
 }
 
-
-
-
-
 type SuffixResult struct {
-
-
 	ModelName string
 
-
 	HasSuffix bool
-
-
 
 	RawSuffix string
 }
 
-
-
-
-
-
-
-
-
-
-
 type ProviderApplier interface {
-
-
-
-
-
-
-
-
-
-
 	Apply(body []byte, config ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error)
 }
-
-
 
 type ProviderDocApplier interface {
 	ProviderApplier

@@ -161,9 +161,6 @@ func TestIssue6332LifecycleValidationFailureSurvivesDeliveryCancellation(t *test
 	}
 }
 
-
-
-
 func TestNextStreamChunkReportsCancellationWhenTheChannelClosesWithIt(t *testing.T) {
 	for range 200 {
 		ctx, cancel := context.WithCancel(context.Background())

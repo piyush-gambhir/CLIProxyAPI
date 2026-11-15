@@ -18,7 +18,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 type DiscoverOptions struct {
 	Timeout     time.Duration
 	JSONOutput  bool
@@ -37,7 +36,6 @@ func newLANBrowser(include, exclude []string) (discovery.Browser, error) {
 	}
 	return discovery.NewZeroconfBrowser(ifaces...), nil
 }
-
 
 func ParseInterfaceList(values ...string) []string {
 	var out []string
@@ -58,15 +56,12 @@ func ParseInterfaceList(values ...string) []string {
 	return out
 }
 
-
 func ResolveDiscoveryInterfaceFilters(cliInclude, cliExclude, cfgInclude, cfgExclude []string) (include, exclude []string) {
 	if len(cliInclude) > 0 || len(cliExclude) > 0 {
 		return append([]string(nil), cliInclude...), append([]string(nil), cliExclude...)
 	}
 	return append([]string(nil), cfgInclude...), append([]string(nil), cfgExclude...)
 }
-
-
 
 func defaultDiscoveryConfigPath() string {
 	wd, errGetwd := os.Getwd()
@@ -99,17 +94,13 @@ func LoadDiscoveryScanFilters(configPath string) (include, exclude []string) {
 	return ParseInterfaceList(payload.Discovery.Interfaces.Include...), ParseInterfaceList(payload.Discovery.Interfaces.Exclude...)
 }
 
-
-
 func DoDiscover(timeout time.Duration, jsonOutput bool) int {
 	return DoDiscoverWithOptions(DiscoverOptions{Timeout: timeout, JSONOutput: jsonOutput})
 }
 
-
 func DoDiscoverWithServiceType(timeout time.Duration, jsonOutput bool, serviceType string) int {
 	return DoDiscoverWithOptions(DiscoverOptions{Timeout: timeout, JSONOutput: jsonOutput, ServiceType: serviceType})
 }
-
 
 func DoDiscoverWithOptions(opts DiscoverOptions) int {
 	include, exclude := ResolveDiscoveryInterfaceFilters(opts.Include, opts.Exclude, nil, nil)
@@ -339,8 +330,6 @@ func sanitizeDisplayHost(host string) string {
 	}
 	return host
 }
-
-
 
 func sanitizeTerminal(s string) string {
 	var b strings.Builder

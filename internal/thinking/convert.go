@@ -6,8 +6,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
-
 var levelToBudgetMap = map[string]int{
 	"none":    0,
 	"auto":    -1,
@@ -17,37 +15,15 @@ var levelToBudgetMap = map[string]int{
 	"high":    24576,
 	"xhigh":   32768,
 
-
 	"max": 128000,
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertLevelToBudget(level string) (int, bool) {
 	budget, ok := levelToBudgetMap[strings.ToLower(level)]
 	return budget, ok
 }
 
-
-
 const (
-
 	ThresholdMinimal = 512
 
 	ThresholdLow = 1024
@@ -56,23 +32,6 @@ const (
 
 	ThresholdHigh = 24576
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertBudgetToLevel(budget int) (string, bool) {
 	switch {
@@ -96,8 +55,6 @@ func ConvertBudgetToLevel(budget int) (string, bool) {
 	}
 }
 
-
-
 func HasLevel(levels []string, target string) bool {
 	for _, level := range levels {
 		if strings.EqualFold(strings.TrimSpace(level), target) {
@@ -106,11 +63,6 @@ func HasLevel(levels []string, target string) bool {
 	}
 	return false
 }
-
-
-
-
-
 
 func MapToClaudeEffort(level string, supportsMax bool) (string, bool) {
 	level = strings.ToLower(strings.TrimSpace(level))
@@ -133,11 +85,9 @@ func MapToClaudeEffort(level string, supportsMax bool) (string, bool) {
 	}
 }
 
-
 type ModelCapability int
 
 const (
-
 	CapabilityUnknown ModelCapability = iota - 1
 
 	CapabilityNone
@@ -148,16 +98,6 @@ const (
 
 	CapabilityHybrid
 )
-
-
-
-
-
-
-
-
-
-
 
 func detectModelCapability(modelInfo *registry.ModelInfo) ModelCapability {
 	if modelInfo == nil {

@@ -26,16 +26,12 @@ func isPortableToolCallID(id string) bool {
 	return true
 }
 
-
-
 func EncodeDevinToolCallID(id string) string {
 	if id == "" || (isPortableToolCallID(id) && !strings.HasPrefix(id, devinToolIDPrefix)) {
 		return id
 	}
 	return devinToolIDPrefix + base64.RawURLEncoding.EncodeToString([]byte(id))
 }
-
-
 
 func DecodeDevinToolCallID(id string) string {
 	if !strings.HasPrefix(id, devinToolIDPrefix) {
@@ -52,8 +48,6 @@ func DecodeDevinToolCallID(id string) string {
 	return original
 }
 
-
-
 func RestoreDevinToolCallIDs(prompts []DevinPrompt) {
 	for i := range prompts {
 		for j := range prompts[i].ToolCalls {
@@ -63,9 +57,6 @@ func RestoreDevinToolCallIDs(prompts []DevinPrompt) {
 		prompts[i].OriginalToolCallID = DecodeDevinToolCallID(prompts[i].OriginalToolCallID)
 	}
 }
-
-
-
 
 func NormalizeClaudeToolCallIDs(body []byte) []byte {
 	type idField struct {
@@ -103,7 +94,6 @@ func NormalizeClaudeToolCallIDs(body []byte) []byte {
 	}
 	mapped := make(map[string]string)
 
-
 	out := make([]byte, 0, len(body))
 	offset := 0
 	for _, field := range fields {
@@ -122,7 +112,6 @@ func NormalizeClaudeToolCallIDs(body []byte) []byte {
 	}
 	return append(out, body[offset:]...)
 }
-
 
 func NormalizeClaudeToolCallIDsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {

@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-
-
 type fakeClock struct {
 	now time.Time
 }
@@ -44,7 +42,6 @@ func TestStoreNewestReadingPerWindowWins(t *testing.T) {
 		t.Fatalf("used percent = %.1f, want 35", window.UsedPercent)
 	}
 
-
 	store.Observe(identity, map[string]Window{
 		WindowSevenDay: {UsedPercent: 20, ResetAt: storeBase.Add(72 * time.Hour), Known: true, LearnedAt: storeBase},
 	}, storeBase)
@@ -63,7 +60,6 @@ func TestStorePassedResetMeansTheWindowIsFull(t *testing.T) {
 		WindowFiveHour: {UsedPercent: 100, HardLimited: true, ResetAt: storeBase.Add(time.Hour), Known: true},
 		WindowSevenDay: {UsedPercent: 90, ResetAt: storeBase.Add(48 * time.Hour), Known: true},
 	}, clock.Now())
-
 
 	reading, _ := store.Lookup("a")
 	if window, _ := reading.Window(WindowFiveHour); window.UsedPercent != 100 || !window.HardLimited {
@@ -109,7 +105,6 @@ func TestStoreMarkHardLimitedTargetsTheWindowNearestTheRecovery(t *testing.T) {
 	if long.HardLimited {
 		t.Fatal("the seven day window should be untouched")
 	}
-
 
 	store.MarkHardLimited(identity, false, time.Time{})
 	reading, _ = store.Lookup("a")
@@ -166,7 +161,6 @@ func TestStoreAReadingAfterTheResetClearsAHardLimit(t *testing.T) {
 	store.Observe(identity, map[string]Window{
 		WindowSevenDay: {UsedPercent: 100, HardLimited: true, ResetAt: storeBase.Add(time.Hour), Known: true},
 	}, clock.Now())
-
 
 	clock.Advance(2 * time.Hour)
 	store.Observe(identity, map[string]Window{

@@ -18,7 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type RefreshEvaluator interface {
 	ShouldRefresh(now time.Time, auth *Auth) bool
 }
@@ -31,18 +30,12 @@ const (
 	invalidGrantBackoffBase = time.Minute
 	invalidGrantBackoffMax  = 30 * time.Minute
 
-
-
-
 	refreshIneffectiveBackoff = 30 * time.Second
 	quotaBackoffBase          = time.Second
 	quotaBackoffMax           = 30 * time.Minute
 	minQuotaCooldownFloor     = 10 * time.Second
 	transientErrorCooldown    = time.Minute
 )
-
-
-
 
 func (m *Manager) StartAutoRefresh(parent context.Context, interval time.Duration) {
 	if interval <= 0 {
@@ -70,8 +63,6 @@ func (m *Manager) StartAutoRefresh(parent context.Context, interval time.Duratio
 	loop.rebuild(time.Now())
 	go loop.run(ctx)
 }
-
-
 
 func (m *Manager) StopAutoRefresh() {
 	m.mu.Lock()
@@ -114,8 +105,6 @@ func (m *Manager) queueRefreshUnschedule(authID string) {
 	}
 	loop.remove(authID)
 }
-
-
 
 func (m *Manager) codexAutoRefreshUnavailable(a *Auth, now time.Time) bool {
 	if a == nil || !strings.EqualFold(strings.TrimSpace(a.Provider), "codex") || m.HomeEnabled() {
@@ -472,8 +461,6 @@ func authHasRefreshCredential(auth *Auth) bool {
 	return auth != nil && strings.EqualFold(strings.TrimSpace(auth.Provider), "meta") &&
 		(authMetadataString(auth, "dca_token") != "" || strings.TrimSpace(auth.Attributes["dca_token"]) != "")
 }
-
-
 
 func CredentialsChanged(existing, incoming *Auth) bool {
 	if existing == nil || incoming == nil {
@@ -915,19 +902,11 @@ func shouldPreserveRejectedAccessToken(existing, updated *Auth, isRefresh bool) 
 	return false
 }
 
-
 func ClearUnauthorizedModelStates(auth *Auth, now time.Time) []string {
 	return clearUnauthorizedModelStates(auth, now)
 }
 
-
-
 const devinQuotaRevalidateInterval = time.Hour
-
-
-
-
-
 
 func devinQuotaRevalidateAt(a *Auth, now time.Time) (time.Time, bool) {
 	if a == nil || !strings.EqualFold(strings.TrimSpace(a.Provider), "devin") {
@@ -949,12 +928,6 @@ func devinQuotaRevalidateAt(a *Auth, now time.Time) (time.Time, bool) {
 	}
 	return next, true
 }
-
-
-
-
-
-
 
 func devinQuotaObservationRestored(auth, existing *Auth, now time.Time) bool {
 	if auth == nil || existing == nil {
@@ -978,12 +951,6 @@ func devinQuotaObservationRestored(auth, existing *Auth, now time.Time) bool {
 	return okDaily && okWeekly && daily > 0 && weekly > 0
 }
 
-
-
-
-
-
-
 func applyDevinQuotaRestoration(auth, existing *Auth, now time.Time) bool {
 	if !devinQuotaObservationRestored(auth, existing, now) {
 		return false
@@ -1002,10 +969,6 @@ func applyDevinQuotaRestoration(auth, existing *Auth, now time.Time) bool {
 		if !state.Quota.Exceeded || (reason != "quota" && !wrapped) {
 			continue
 		}
-
-
-
-
 
 		if shadow := state.credentialQuotaShadow; shadow != nil && isModelStateActiveCooldown(shadow, now) {
 			*state = *shadow.cloneShallow()
@@ -1046,10 +1009,6 @@ func applyDevinQuotaRestoration(auth, existing *Auth, now time.Time) bool {
 	return true
 }
 
-
-
-
-
 func isDevinQuotaExhaustionMessage(text string) bool {
 	lower := strings.ToLower(text)
 	if !strings.Contains(lower, "quota") || !strings.Contains(lower, "exhausted") {
@@ -1074,7 +1033,6 @@ func devinStateErrorText(state *ModelState) string {
 	}
 	return state.StatusMessage
 }
-
 
 func devinRemainingPercent(raw string) (int64, bool) {
 	value, errParse := strconv.ParseInt(strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(raw), "%")), 10, 64)
@@ -1124,8 +1082,6 @@ func clearUnauthorizedModelStates(auth *Auth, now time.Time) []string {
 	return resumed
 }
 
-
-
 func (m *Manager) RefreshHomeSelectionAfterUnauthorized(ctx context.Context, selection *HomeDispatchSelection, failedAuth *Auth) (*Auth, bool, error) {
 	if m == nil || selection == nil {
 		return nil, false, nil
@@ -1144,13 +1100,10 @@ func (m *Manager) RefreshHomeSelectionAfterUnauthorized(ctx context.Context, sel
 	return current, false, nil
 }
 
-
-
 func (m *Manager) tryRefreshAfterUnauthorized(ctx context.Context, auth *Auth, execErr error, alreadyTried bool, clientHeaders ...http.Header) (*Auth, bool) {
 	if m == nil || auth == nil || execErr == nil {
 		return auth, false
 	}
-
 
 	if isRequestScopedError(execErr) || !isUnauthorizedError(execErr) {
 		return auth, false
@@ -1197,15 +1150,11 @@ func (m *Manager) refreshAuth(ctx context.Context, id string) {
 	_, _ = m.refreshAuthForRequest(ctx, id, "")
 }
 
-
-
-
 func (m *Manager) refreshAuthForRequest(ctx context.Context, id, failedAccessToken string) (*Auth, error) {
 	return m.refreshAuthForRequestAtEpoch(ctx, id, failedAccessToken, 0)
 }
 
 type forceRefreshContextKey struct{}
-
 
 func WithForceRefresh(ctx context.Context) context.Context {
 	if ctx == nil {
@@ -1213,7 +1162,6 @@ func WithForceRefresh(ctx context.Context) context.Context {
 	}
 	return context.WithValue(ctx, forceRefreshContextKey{}, true)
 }
-
 
 func IsForceRefreshContext(ctx context.Context) bool {
 	if ctx == nil {
@@ -1284,7 +1232,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 	store := m.store
 	if auth != nil {
 
-
 		exec, _ = m.executorLocked(executorKeyFromAuth(auth))
 	}
 	m.mu.RUnlock()
@@ -1314,13 +1261,11 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 		return nil, errors.New("auth is unauthorized")
 	}
 
-
 	if failedAccessToken != "" {
 		if !authMatchesTokenPartition(auth, failedAccessToken) && (authAccessToken(auth) != "" || authOuterAccessToken(auth) != "") {
 			return auth.Clone(), nil
 		}
 	}
-
 
 	if !forceRefresh && authHasUnchangedRejectedRefreshToken(auth) {
 		checkNow := time.Now()
@@ -1516,7 +1461,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 				}
 			} else if authHasAnyRejectedRefreshPartition(current) {
 
-
 				current.RequiresSignIn = true
 				if current.RefreshError == nil || !isTerminalRefreshError(current, current.RefreshError) {
 					current.RefreshError = sanitizedRefreshErr
@@ -1528,7 +1472,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 
 			isDisabled = current.Disabled || current.Status == StatusDisabled
 			hasValidAccessToken := current.HasValidAccessToken(now)
-
 
 			accessTokenRejected := failedAccessToken != "" && authMatchesTokenPartition(current, failedAccessToken)
 			if isDisabled && invalidGrant {
@@ -1570,8 +1513,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 				shouldReschedule = true
 			} else if accessTokenRejected && (invalidGrant || terminalRefresh) {
 
-
-
 				current.Unavailable = true
 				current.Status = StatusError
 				current.NextRefreshAfter = time.Time{}
@@ -1612,8 +1553,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 					shouldReschedule = true
 				}
 			} else if terminalRefresh {
-
-
 
 				current.RefreshFailures = 0
 				if !authHasUnchangedRejectedRefreshToken(current) {
@@ -1670,7 +1609,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 		updated = base.Clone()
 	}
 
-
 	if updated.Runtime == nil {
 		updated.Runtime = auth.Runtime
 	}
@@ -1711,7 +1649,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 		updated.NextRefreshAfter = now.Add(refreshIneffectiveBackoff)
 	}
 
-
 	saved, errUpdate := m.UpdateRefreshedAuth(context.WithoutCancel(ctx), base, updated)
 	if errUpdate != nil {
 
@@ -1736,7 +1673,6 @@ func (m *Manager) refreshAuthForRequestAtEpoch(ctx context.Context, id, failedAc
 	return saved.Clone(), nil
 }
 
-
 func (m *Manager) ForceRefreshAuth(ctx context.Context, id string) (*Auth, error) {
 	if m == nil {
 		return nil, errors.New("auth manager is nil")
@@ -1758,13 +1694,11 @@ func (m *Manager) refreshWorkers() int {
 	return workers
 }
 
-
 type ForceRefreshResult struct {
 	ID      string `json:"id"`
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
 }
-
 
 func (m *Manager) ForceRefreshAll(ctx context.Context) []ForceRefreshResult {
 	if m == nil {

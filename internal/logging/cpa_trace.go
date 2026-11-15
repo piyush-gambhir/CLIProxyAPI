@@ -10,11 +10,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/httpwire"
 )
 
-
 const CPATraceIDHeader = "X-CPA-TRACE-ID"
 
 const ginCPATraceStateKey = "__cpa_trace_state__"
-
 
 func FormatCPATraceID(selectedAt time.Time, authIndex, requestID string) string {
 	authIndex = strings.TrimSpace(authIndex)
@@ -63,7 +61,6 @@ func ginCPATraceState(c *gin.Context) *cpaTraceState {
 	return state
 }
 
-
 func GinCPATraceIDCallback(c *gin.Context) func(string) {
 	state := ginCPATraceState(c)
 	if state == nil {
@@ -84,13 +81,11 @@ func GinCPATraceIDCallback(c *gin.Context) func(string) {
 	}
 }
 
-
 func SetGinCPATraceID(c *gin.Context, authIndex string) {
 	if callback := GinCPATraceIDCallback(c); callback != nil {
 		callback(authIndex)
 	}
 }
-
 
 func GetGinCPATraceID(c *gin.Context) string {
 	if c == nil {
@@ -103,7 +98,6 @@ func GetGinCPATraceID(c *gin.Context) string {
 	state, _ := value.(*cpaTraceState)
 	return state.get()
 }
-
 
 func CPATraceIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -148,7 +142,6 @@ func (w *cpaTraceResponseWriter) WriteString(data string) (int, error) {
 func (w *cpaTraceResponseWriter) Flush() {
 	_ = w.FlushError()
 }
-
 
 func (w *cpaTraceResponseWriter) FlushError() error {
 	w.applyTraceHeader()

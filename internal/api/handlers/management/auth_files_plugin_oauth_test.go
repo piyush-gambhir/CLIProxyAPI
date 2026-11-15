@@ -356,7 +356,6 @@ func TestServePluginAuthURLPassesQueryParamsAsMetadata(t *testing.T) {
 		t.Fatalf("capturedReq.Metadata[scopes] = %#v, want [read write]", capturedReq.Metadata["scopes"])
 	}
 
-
 	capturedReq = pluginapi.AuthLoginStartRequest{}
 	recNoQuery := httptest.NewRecorder()
 	ctxNoQuery, _ := gin.CreateTestContext(recNoQuery)
@@ -516,7 +515,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		t.Fatalf("expected plugin without AuthEntries to omit oauth_provider_entries, got body=%s", listRec.Body.String())
 	}
 
-
 	startRec := httptest.NewRecorder()
 	router.ServeHTTP(startRec, httptest.NewRequest(http.MethodGet, "/v8/management/oauth/auth-url?provider=zcode-bigmodel", nil))
 	if startRec.Code != http.StatusOK {
@@ -538,7 +536,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 	if pollRec.Code != http.StatusOK || !strings.Contains(pollRec.Body.String(), `"status":"ok"`) {
 		t.Fatalf("poll zcode-bigmodel status=%d body=%s", pollRec.Code, pollRec.Body.String())
 	}
-
 
 	pollEmail := "user@example.com"
 	coldHost := pluginhost.New()
@@ -624,7 +621,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 		t.Fatalf("replaced target file retained stale portal metadata: %s", string(rawSaved))
 	}
 
-
 	pollEmail = "wrong-user@example.com"
 	reloginNoProviderRec := httptest.NewRecorder()
 	router.ServeHTTP(reloginNoProviderRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"name":"zcode-account.json"}`)))
@@ -642,7 +638,6 @@ func TestV8PluginMultiPortalOAuthListLoginPollAndRelogin(t *testing.T) {
 	if mismatchPollRec.Code != http.StatusOK || !strings.Contains(mismatchPollRec.Body.String(), "Authenticated account does not match target credential") {
 		t.Fatalf("mismatch poll status=%d body=%s, want mismatch error", mismatchPollRec.Code, mismatchPollRec.Body.String())
 	}
-
 
 	_, _ = manager.Register(context.Background(), &coreauth.Auth{
 		ID:       "zcode-anonymous.json",
@@ -738,8 +733,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/v8/management/get-auth-status", h.GetAuthStatus)
 
-
-
 	var persistedIDs []string
 	h.postAuthPersistHook = func(_ context.Context, auth *coreauth.Auth) error {
 		if auth != nil {
@@ -775,7 +768,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("team/account.json content = %q (err=%v), want updated team-relogin-token", string(teamBytes), errReadTeam)
 	}
 
-
 	h.postAuthPersistHook = func(_ context.Context, _ *coreauth.Auth) error {
 		return fmt.Errorf("simulated post-persist failure")
 	}
@@ -806,7 +798,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 	if _, okAuth := manager.GetByID("team/account.json"); !okAuth {
 		t.Fatal("expected team/account.json to remain in runtime auth manager after failed overwrite")
 	}
-
 
 	concurrentWinnerJSON := `{"access_token":"concurrent-winner-token","disabled":false,"email":"user@example.com","oauth_provider":"zcode-zai","type":"zcode"}`
 	h.postAuthPersistHook = func(ctx context.Context, _ *coreauth.Auth) error {
@@ -847,8 +838,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("runtime auth after concurrent session = %#v, want access_token=concurrent-winner-token", currentAuth)
 	}
 
-
-
 	h.postAuthPersistHook = nil
 	batchRecords := []*coreauth.Auth{
 		host.AuthDataToCoreAuth(pluginapi.AuthData{
@@ -871,7 +860,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("runtime auth after StorageJSON-only batch rollback = %#v, want access_token=concurrent-winner-token", currentAuth)
 	}
 
-
 	records := []*coreauth.Auth{
 		host.AuthDataToCoreAuth(pluginapi.AuthData{
 			Provider:    "zcode",
@@ -890,8 +878,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 	}, "zcode-zai", records) {
 		t.Fatal("applyPluginOAuthRecoveryTarget rejected matching email stored only in StorageJSON")
 	}
-
-
 
 	storageOnlyTarget := host.AuthDataToCoreAuth(pluginapi.AuthData{
 		Provider:    "zcode",
@@ -919,8 +905,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 		t.Fatalf("storageTargetPollRec status=%d body=%s, want ok", storageTargetPollRec.Code, storageTargetPollRec.Body.String())
 	}
 
-
-
 	mismatchIDRecords := []*coreauth.Auth{
 		host.AuthDataToCoreAuth(pluginapi.AuthData{
 			Provider:    "zcode",
@@ -943,8 +927,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 	if _, ok := manager.GetByID("custom-logical-id"); ok {
 		t.Fatal("expected custom-logical-id to be absent from runtime manager after batch rollback")
 	}
-
-
 
 	logicalTargetFile := filepath.Join(authDir, "custom-target-file.json")
 	if errWrite := os.WriteFile(logicalTargetFile, []byte(`{"type":"zcode","email":"user@example.com","oauth_provider":"zcode-bigmodel","access_token":"old-logical-tok"}`), 0o600); errWrite != nil {
@@ -980,8 +962,6 @@ func TestV8PluginReloginPreservesSubdirTargetAndRollsBackOverwriteSafely(t *test
 	if _, okDup := manager.GetByID("custom-target-file.json"); okDup {
 		t.Fatal("expected no duplicate file-derived ID custom-target-file.json in manager")
 	}
-
-
 
 	if errWrite := os.WriteFile(teamFile, []byte(`{"type":"zcode","email":"user@example.com","access_token":"newer-disk-token","custom_disk_only":"keep"}`), 0o600); errWrite != nil {
 		t.Fatalf("write teamFile: %v", errWrite)

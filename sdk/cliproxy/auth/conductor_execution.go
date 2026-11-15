@@ -193,8 +193,6 @@ func (m *Manager) normalizeSessionAffinityNeverTerminalError(err error, provider
 	}
 }
 
-
-
 func isOpenAIImageExecutionOptions(opts cliproxyexecutor.Options) bool {
 	return strings.EqualFold(strings.TrimSpace(opts.SourceFormat.String()), "openai-image")
 }
@@ -270,7 +268,6 @@ func (m *Manager) Execute(ctx context.Context, providers []string, req cliproxye
 	return cliproxyexecutor.Response{}, &Error{Code: "auth_not_found", Message: "no auth available"}
 }
 
-
 func (m *Manager) ExecuteCount(ctx context.Context, providers []string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	ctx = cliproxyexecutor.WithRequestProxyURL(ctx, opts.ProxyURL)
 	req, opts = cliproxysession.Enrich(req, opts)
@@ -331,8 +328,6 @@ func (m *Manager) ExecuteCount(ctx context.Context, providers []string, req clip
 	}
 	return cliproxyexecutor.Response{}, &Error{Code: "auth_not_found", Message: "no auth available"}
 }
-
-
 
 func (m *Manager) ExecuteStream(ctx context.Context, providers []string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
 	ctx = cliproxyexecutor.WithRequestProxyURL(ctx, opts.ProxyURL)
@@ -594,18 +589,10 @@ func executorForAuth(executor ProviderExecutor, auth *Auth) ProviderExecutor {
 	return executor
 }
 
-
-
-
 func syncPreferredUpstreamError(upstreamErr *error, errExec error) {
 	if upstreamErr == nil || errExec == nil || !hasUpstreamExecutionAttempt(errExec) {
 		return
 	}
-
-
-
-
-
 
 	var bootstrap *streamBootstrapError
 	if errors.As(*upstreamErr, &bootstrap) && bootstrap != nil {
@@ -996,10 +983,6 @@ func (m *Manager) executeCountMixedOnce(ctx context.Context, providers []string,
 				action, okAction := matchRequestScopedErrorAction(auth, errExec, m.requestScopedErrorConfig(execCtx))
 				applyRequestScopedActionToResult(action, okAction, &result)
 
-
-
-
-
 				if isCountTokensEndpointNotFoundError(errExec, execReq.Model) && (result.Error == nil || result.Error.Code != ErrorCodeForceCooldown) {
 					m.recordAvailabilityNeutralResult(execCtx, result)
 				} else {
@@ -1155,9 +1138,6 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 		}
 		if selection != nil {
 
-
-
-
 			if _, alreadyTried := tried[auth.ID]; alreadyTried {
 				if _, excluded := homeExcludedAuthIDs[auth.ID]; excluded {
 					if errEnd := m.endHomeSelectionBeforeRedispatch(ctx, selection, "repeated_excluded_auth"); errEnd != nil {
@@ -1170,8 +1150,6 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 				} else {
 					homeSameAuthRetries[auth.ID]++
 					if homeSameAuthRetries[auth.ID] > 1 {
-
-
 
 						homeExcludedAuthIDs[auth.ID] = struct{}{}
 						if errEnd := m.endHomeSelectionBeforeRedispatch(ctx, selection, "repeated_same_auth"); errEnd != nil {
@@ -1345,7 +1323,6 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 			stoppedByRule := isRequestStopError(errStream) || isRequestScopedStop(action, okAction)
 			if stoppedByRule || (!okAction && (isRequestInvalidError(errStream) || cliproxyexecutor.IsUpstreamWebsocketTurnError(errStream))) {
 
-
 				if selection != nil {
 					releaseAttempt()
 					selection.End("request_stopped")
@@ -1408,7 +1385,6 @@ func shouldExcludeHomeAuthAfterStreamError(ctx context.Context, _ *Auth, err err
 	if err == nil || isConnectionLifecycleError(err) {
 		return false
 	}
-
 
 	if cliproxyexecutor.DownstreamWebsocket(ctx) && statusCodeFromError(err) == http.StatusUpgradeRequired {
 		return false
@@ -1640,7 +1616,6 @@ type requestAuthPrepareLock struct {
 	mu sync.Mutex
 }
 
-
 func (m *Manager) prepareHomeRequestAuth(ctx context.Context, executor ProviderExecutor, selection *HomeDispatchSelection) (*Auth, error) {
 	if selection == nil {
 		return nil, nil
@@ -1702,8 +1677,6 @@ func (m *Manager) prepareRequestAuth(ctx context.Context, executor ProviderExecu
 
 	return m.PrepareRequestAuth(ctx, preparer, auth)
 }
-
-
 
 func (m *Manager) PrepareRequestAuth(ctx context.Context, preparer RequestAuthPreparer, auth *Auth) (*Auth, error) {
 	if m == nil || preparer == nil || auth == nil || !preparer.ShouldPrepareRequestAuth(auth) {
@@ -1947,9 +1920,7 @@ func (m *Manager) executorFor(provider string) ProviderExecutor {
 	return exec
 }
 
-
 type roundTripperContextKey struct{}
-
 
 func (m *Manager) roundTripperFor(auth *Auth) http.RoundTripper {
 	m.mu.RLock()
@@ -1961,12 +1932,9 @@ func (m *Manager) roundTripperFor(auth *Auth) http.RoundTripper {
 	return p.RoundTripperFor(auth)
 }
 
-
 type RoundTripperProvider interface {
 	RoundTripperFor(auth *Auth) http.RoundTripper
 }
-
-
 
 type RequestPreparer interface {
 	PrepareRequest(req *http.Request, auth *Auth) error
@@ -2003,7 +1971,6 @@ func executorKeyFromAuth(auth *Auth) string {
 		return provider
 	}
 }
-
 
 func logEntryWithRequestID(ctx context.Context) *log.Entry {
 	if ctx == nil {
@@ -2046,7 +2013,6 @@ func formatOauthIdentity(auth *Auth, provider string, accountInfo string) string
 	if providerName == "" {
 		providerName = strings.TrimSpace(provider)
 	}
-
 
 	authFile := strings.TrimSpace(auth.FileName)
 	if authFile == "" {
@@ -2158,9 +2124,6 @@ func warnLogUpstreamFailure(ctx context.Context, entry *log.Entry, provider, mod
 	entry.Warnf("upstream execution failed: provider=%s model=%s auth=%s duration=%s err=%s", provider, model, authIdent, duration, errSummary)
 }
 
-
-
-
 func (m *Manager) InjectCredentials(req *http.Request, authID string) error {
 	if req == nil || authID == "" {
 		return nil
@@ -2180,7 +2143,6 @@ func (m *Manager) InjectCredentials(req *http.Request, authID string) error {
 	}
 	return nil
 }
-
 
 func (m *Manager) PrepareHttpRequest(ctx context.Context, auth *Auth, req *http.Request) error {
 	if m == nil {
@@ -2210,7 +2172,6 @@ func (m *Manager) PrepareHttpRequest(ctx context.Context, auth *Auth, req *http.
 	return preparer.PrepareRequest(req, auth)
 }
 
-
 func (m *Manager) NewHttpRequest(ctx context.Context, auth *Auth, method, targetURL string, body []byte, headers http.Header) (*http.Request, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -2235,7 +2196,6 @@ func (m *Manager) NewHttpRequest(ctx context.Context, auth *Auth, method, target
 	}
 	return httpReq, nil
 }
-
 
 func (m *Manager) HttpRequest(ctx context.Context, auth *Auth, req *http.Request) (*http.Response, error) {
 	if m == nil {
@@ -2349,9 +2309,6 @@ func syncMetadataSessionToContext(ctx context.Context, metadata map[string]any) 
 	return util.WithSessionID(ctx, clientMeta.SessionID)
 }
 
-
-
-
 func (m *Manager) VerifyInference(ctx context.Context, id, model string) (*Auth, error) {
 	if m == nil {
 		return nil, &Error{Code: "manager_unavailable", Message: "auth manager is not initialized", HTTPStatus: http.StatusServiceUnavailable}
@@ -2397,7 +2354,6 @@ func (m *Manager) VerifyInference(ctx context.Context, id, model string) (*Auth,
 	}
 
 	sessionID := fmt.Sprintf("verify-%s-%d", auth.ID, time.Now().UTC().UnixNano())
-
 
 	payload := []byte(fmt.Sprintf(`{"model":%q,"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"ping"}]}],"max_output_tokens":16,"store":false}`, verifyModel))
 	req := cliproxyexecutor.Request{

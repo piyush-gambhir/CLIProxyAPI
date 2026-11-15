@@ -11,13 +11,11 @@ var (
 	registeredStore coreauth.Store
 )
 
-
 func RegisterTokenStore(store coreauth.Store) {
 	storeMu.Lock()
 	registeredStore = store
 	storeMu.Unlock()
 }
-
 
 func GetTokenStore() coreauth.Store {
 	storeMu.RLock()

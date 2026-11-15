@@ -109,8 +109,6 @@ func TestConvertClaudeRequestToCodex_NonEmptyTextBesideAttachmentStillSucceeds(t
 	}
 }
 
-
-
 func claudeImageTurnToCodex(finalContent string) sdktranslator.RequestEnvelope {
 	input := `{"model":"m","messages":[{"role":"user","content":"a"},{"role":"assistant","content":"b"},{"role":"user","content":[` + finalContent + `]}]}`
 	return sdktranslator.TranslateRequestEnvelope(context.Background(), sdktranslator.FormatClaude, sdktranslator.FormatCodex, sdktranslator.RequestEnvelope{

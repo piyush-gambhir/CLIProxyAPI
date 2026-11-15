@@ -1,4 +1,3 @@
-
 package session
 
 import (
@@ -12,7 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
-
 
 type SessionInfo struct {
 	SessionID       string         `json:"session_id"`
@@ -30,10 +28,7 @@ type SessionInfo struct {
 	Metadata        map[string]any `json:"metadata,omitempty"`
 }
 
-
 type SessionTreeInfo = SessionInfo
-
-
 
 type sessionObject struct {
 	result     ojson.Result
@@ -78,20 +73,6 @@ func (object sessionObject) Get(path string) ojson.Result {
 	}
 	return value
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string]any) (SessionInfo, bool) {
 	var info SessionInfo
@@ -170,7 +151,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 	}
 
-
 	if sid := sessionHeaderValue(headers, "X-Claude-Code-Session-Id"); sid != "" {
 		info.ClientType = "claude"
 		agentID := sessionHeaderValue(headers, "X-Claude-Code-Agent-Id")
@@ -221,7 +201,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 		return finalizeSessionInfo(info)
 	}
-
 
 	if len(payload) > 0 {
 		if sid, parentSID, agentID := ClaudeMetadataIdentities(payload); sid != "" {
@@ -280,7 +259,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 	}
-
 
 	sid := sessionHeaderValue(headers, "Session-Id")
 	if sid == "" {
@@ -374,7 +352,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			subagentSignal = true
 		}
 
-
 		if forkedFrom != "" {
 			forkSessionID := tid
 			if forkSessionID == "" {
@@ -390,7 +367,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			info.IsSubagent = false
 			return finalizeSessionInfo(info)
 		}
-
 
 		if subagentSignal || (tid != "" && sid != "" && tid != sid) || (parentThread != "" && parentThread != tid && parentThread != sid) {
 			childSessionID := tid
@@ -426,7 +402,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 
-
 		sessionID := sid
 		if sessionID == "" {
 			sessionID = tid
@@ -445,7 +420,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 		return finalizeSessionInfo(info)
 	}
-
 
 	if sid := sessionHeaderValue(headers, "X-Http-Session-Id"); sid != "" {
 		info.ClientType = "agy"
@@ -471,7 +445,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 		return finalizeSessionInfo(info)
 	}
-
 
 	if sid := sessionHeaderValue(headers, "X-Session-ID"); sid != "" {
 		info.ClientType = "generic"
@@ -643,7 +616,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		return finalizeSessionInfo(info)
 	}
 
-
 	if len(payload) > 0 && root.Exists() {
 
 		for _, cachePath := range []string{"cachedContent", "cached_content"} {
@@ -663,7 +635,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 				return finalizeSessionInfo(info)
 			}
 		}
-
 
 		for _, threadPath := range []string{"thread_id", "threadId", "metadata.thread_id"} {
 			tid := normalizedSessionCandidate(root.Get(threadPath).String())
@@ -689,7 +660,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 				return finalizeSessionInfo(info)
 			}
 		}
-
 
 		agentID := normalizedSessionCandidate(root.Get("metadata.agent_id").String())
 		if agentID == "" {
@@ -748,7 +718,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			}
 		}
 
-
 		for _, path := range []string{
 			"task_id", "taskId", "taskID",
 			"action_id", "actionId", "actionID",
@@ -779,7 +748,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 				return finalizeSessionInfo(info)
 			}
 		}
-
 
 		var conversationID string
 		conversation := root.Get("conversation")
@@ -826,7 +794,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 
-
 		userID := normalizedSessionCandidate(root.Get("metadata.user_id").String())
 		if userID == "" && hasNestedReq {
 			userID = normalizedSessionCandidate(reqRoot.Get("metadata.user_id").String())
@@ -837,7 +804,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			info.AgentName = "main"
 			return finalizeSessionInfo(info)
 		}
-
 
 		for _, convPath := range []string{"conversation_id", "conversationId", "chat_id", "chatId", "metadata.conversation_id", "extra_body.conversation_id"} {
 			cid := normalizedSessionCandidate(root.Get(convPath).String())
@@ -858,7 +824,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 		}
 	}
 
-
 	if executionID, ok := metadata[cliproxyexecutor.ExecutionSessionMetadataKey].(string); ok {
 		if executionID = normalizedSessionCandidate(executionID); executionID != "" {
 			info.ClientType = "generic"
@@ -867,7 +832,6 @@ func ExtractSessionInfo(headers http.Header, payload []byte, metadata map[string
 			return finalizeSessionInfo(info)
 		}
 	}
-
 
 	if lcpID, ok := metadata[cliproxyexecutor.LCPAffinitySessionIDMetadataKey].(string); ok {
 		if lcpID = normalizedSessionCandidate(lcpID); lcpID != "" {
@@ -924,8 +888,6 @@ func isBodyForkCandidate(root, reqRoot sessionObject, hasNestedReq bool) bool {
 	return false
 }
 
-
-
 func BoundSessionIdentity(id string) string {
 	if len(id) <= 256 {
 		return id
@@ -968,7 +930,6 @@ func finalizeSessionInfo(info SessionInfo) (SessionInfo, bool) {
 	}
 	return info, true
 }
-
 
 func ExtractTreeInfo(headers http.Header, payload []byte, metadata map[string]any) (SessionInfo, bool) {
 	return ExtractSessionInfo(headers, payload, metadata)

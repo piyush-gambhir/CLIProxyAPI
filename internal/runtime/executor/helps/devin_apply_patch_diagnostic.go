@@ -16,9 +16,6 @@ const (
 	maxDevinDiagnosticToolCalls = 128
 )
 
-
-
-
 type DevinApplyPatchDiagnostics struct {
 	original []byte
 	calls    []*devinApplyPatchCallStats
@@ -36,8 +33,6 @@ type devinApplyPatchCallStats struct {
 	head           []byte
 }
 
-
-
 func NewDevinApplyPatchDiagnostics(original []byte) *DevinApplyPatchDiagnostics {
 	if !ApplyPatchRequested(original) {
 		return nil
@@ -49,7 +44,6 @@ func NewDevinApplyPatchDiagnostics(original []byte) *DevinApplyPatchDiagnostics 
 		lastKey:  -1,
 	}
 }
-
 
 func (d *DevinApplyPatchDiagnostics) ObserveDelta(tc DevinToolCallDelta) int {
 	if d == nil {
@@ -82,9 +76,6 @@ func (d *DevinApplyPatchDiagnostics) ObserveDelta(tc DevinToolCallDelta) int {
 	return key
 }
 
-
-
-
 func (d *DevinApplyPatchDiagnostics) MarkRecovered(key int) {
 	if d == nil {
 		return
@@ -93,7 +84,6 @@ func (d *DevinApplyPatchDiagnostics) MarkRecovered(key int) {
 		call.recovered = true
 	}
 }
-
 
 func (d *DevinApplyPatchDiagnostics) Observe(key int, tc DevinToolCallDelta) {
 	if d == nil || key < 0 {
@@ -131,7 +121,6 @@ func (d *DevinApplyPatchDiagnostics) Observe(key int, tc DevinToolCallDelta) {
 	call.bytes += len(tc.Arguments) + len(tc.InvalidJSONStr)
 }
 
-
 func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 	var b strings.Builder
 	b.WriteString(ApplyPatchUpstreamErrorMessage)
@@ -158,7 +147,6 @@ func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 		return logging.SafeDiagnosticForLog(b.String())
 	}
 
-
 	index := len(calls) - 1
 	for i, call := range calls {
 		if call.invalidJSON && !call.recovered {
@@ -174,7 +162,6 @@ func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 	b.WriteString("}")
 	return logging.SafeDiagnosticForLog(b.String())
 }
-
 
 func (c *devinApplyPatchCallStats) shape() string {
 	switch {
@@ -255,8 +242,6 @@ func devinParseErrorCode(message string) string {
 	}
 }
 
-
-
 func CanBeDevinBareApplyPatchPrefix(raw string) bool {
 	if !utf8.ValidString(raw) {
 		return false
@@ -277,8 +262,6 @@ func CanBeDevinBareApplyPatchPrefix(raw string) bool {
 	next := trimmed[len(devinPatchMarker)]
 	return next == '\n' || next == '\r'
 }
-
-
 
 func RecoverDevinBareApplyPatch(raw string) (string, bool) {
 	if !utf8.ValidString(raw) {

@@ -14,11 +14,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
-
 func TestDevinQuotaExhaustedError_StreamWeeklyIsCredentialScopedWithResetRetryAfter(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	auth := devinTestAuthWithQuotaResets(now.Add(24*time.Hour), now.Add(6*24*time.Hour))
@@ -102,7 +97,6 @@ func TestDevinQuotaExhaustedError_StreamPastResetYieldsNoRetryAfter(t *testing.T
 
 func TestDevinQuotaExhaustedError_StreamFarFutureResetIsRejected(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
-
 
 	auth := devinTestAuthWithQuotaResets(now.Add(90*24*time.Hour), now.Add(90*24*time.Hour))
 
@@ -198,12 +192,10 @@ func TestDevinStatusError_HTTP429WeeklyQuotaUsesResetWhenAuthKnown(t *testing.T)
 		t.Fatalf("RetryAfter = %v, want ~%v", got, want)
 	}
 
-
 	plain := newDevinStatusError(http.StatusTooManyRequests, http.Header{}, []byte("Your weekly usage quota has been exhausted."))
 	if !plain.IsCredentialScoped() || plain.RetryAfter() != nil {
 		t.Fatalf("auth-less HTTP 429 = %+v, want credential-scoped with nil RetryAfter", plain)
 	}
-
 
 	hdr := http.Header{}
 	hdr.Set("Retry-After", "30")

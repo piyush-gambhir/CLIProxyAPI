@@ -310,11 +310,6 @@ func TestGeminiVertexExecutorClaudeMalformedFunctionCallCancelAfterErrorRecordsF
 	}
 }
 
-
-
-
-
-
 func TestVertexAPIKeyModelsURL(t *testing.T) {
 	t.Parallel()
 

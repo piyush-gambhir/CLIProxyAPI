@@ -1,6 +1,3 @@
-
-
-
 package cliproxy
 
 import (
@@ -23,19 +20,12 @@ import (
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginstore"
 )
 
-
-
-
 type Service struct {
-
 	cfg *config.Config
-
 
 	cfgMu sync.RWMutex
 
-
 	configUpdateMu sync.Mutex
-
 
 	configRuntimeMu        sync.Mutex
 	executorRegistrationMu sync.Mutex
@@ -46,73 +36,49 @@ type Service struct {
 	configSequence         uint64
 	appliedRoutingState    *routingRuntimeState
 
-
-
 	proxyPoolPublisher uint64
-
 
 	configPath string
 
-
 	tokenProvider TokenClientProvider
-
 
 	apiKeyProvider APIKeyClientProvider
 
-
 	watcherFactory WatcherFactory
-
 
 	hooks Hooks
 
-
 	serverOptions []api.ServerOption
-
 
 	server *api.Server
 
-
 	pprofServer *pprofServer
-
 
 	discoveryManager *discoveryAdvertiserManager
 
-
 	kvStoreManaged atomic.Bool
-
 
 	serverErr chan error
 
-
 	watcher *WatcherWrapper
-
 
 	watcherCancel context.CancelFunc
 
-
 	authUpdates chan watcher.AuthUpdate
-
 
 	authQueueStop context.CancelFunc
 
-
 	authManager *sdkAuth.Manager
-
 
 	accessManager *sdkaccess.Manager
 
-
 	coreManager *coreauth.Manager
-
 
 	cooldownStateStore coreauth.CooldownStateStore
 
-
 	pluginHost *pluginhost.Host
 
-
 	shutdownOnce sync.Once
-
 
 	wsGateway *wsrelay.Manager
 
@@ -146,13 +112,10 @@ type Service struct {
 	antigravityAccountProbes map[string]map[*antigravityAccountProbe]struct{}
 	antigravityRefreshWake   chan struct{}
 
-
-
 	antigravityRefreshPending map[string]*antigravityModelRefreshRequest
 	antigravityPersistPending map[string]*antigravityHintPersistRequest
 	antigravityPersistActive  map[string]*antigravityHintPersistRequest
 }
-
 
 func (s *Service) SetResultPolicy(policy coreauth.ResultPolicy) {
 	if s == nil || s.coreManager == nil {
@@ -160,7 +123,6 @@ func (s *Service) SetResultPolicy(policy coreauth.ResultPolicy) {
 	}
 	s.coreManager.SetResultPolicy(policy)
 }
-
 
 func (s *Service) ResultPolicy() coreauth.ResultPolicy {
 	if s == nil || s.coreManager == nil {

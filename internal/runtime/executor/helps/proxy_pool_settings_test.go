@@ -7,7 +7,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
 func TestProxyPoolSettingsAndConcurrentBuild(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)

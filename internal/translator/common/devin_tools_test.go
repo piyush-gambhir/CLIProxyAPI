@@ -38,13 +38,11 @@ func TestObfuscateExecCommandDescription(t *testing.T) {
 		t.Fatalf("ObfuscateExecCommandDescription() = %q, want %q", got, want)
 	}
 
-	// Idempotency: second pass does not change output
 	gotAgain := ObfuscateExecCommandDescription(got)
 	if gotAgain != want {
 		t.Fatalf("ObfuscateExecCommandDescription() idempotent = %q, want %q", gotAgain, want)
 	}
 
-	// Unrelated description should be untouched
 	unrelated := "Runs an arbitrary script in a container"
 	if gotUnrelated := ObfuscateExecCommandDescription(unrelated); gotUnrelated != unrelated {
 		t.Fatalf("ObfuscateExecCommandDescription() unrelated = %q, want %q", gotUnrelated, unrelated)
@@ -60,13 +58,11 @@ func TestObfuscateWriteStdinDescription(t *testing.T) {
 		t.Fatalf("ObfuscateWriteStdinDescription() = %q, want %q", got, want)
 	}
 
-	// Idempotency: second pass does not change output
 	gotAgain := ObfuscateWriteStdinDescription(got)
 	if gotAgain != want {
 		t.Fatalf("ObfuscateWriteStdinDescription() idempotent = %q, want %q", gotAgain, want)
 	}
 
-	// Unrelated description should be untouched
 	unrelated := "Writes arbitrary input to a process"
 	if gotUnrelated := ObfuscateWriteStdinDescription(unrelated); gotUnrelated != unrelated {
 		t.Fatalf("ObfuscateWriteStdinDescription() unrelated = %q, want %q", gotUnrelated, unrelated)

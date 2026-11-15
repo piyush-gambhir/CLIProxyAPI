@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-
 func TestPublishedAuthSnapshotRace(t *testing.T) {
 	for _, operation := range []string{"Register", "Update", "UpdatePreparedAuth", "UpdateRefreshedAuth"} {
 		t.Run(operation, func(t *testing.T) {

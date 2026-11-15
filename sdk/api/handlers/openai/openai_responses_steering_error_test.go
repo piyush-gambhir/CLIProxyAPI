@@ -22,8 +22,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func TestResponsesSteeringErrorRecoveryIntegration(t *testing.T) {
 	for _, tc := range []struct {
 		name                            string

@@ -85,10 +85,6 @@ func TestManager_ShouldRetryAfterError_RetriesPreHTTPTransportFailure(t *testing
 	}
 }
 
-
-
-
-
 func TestConfiguredTLSHandshakeTimeoutIsRetryable(t *testing.T) {
 	configuredClaudeErr := &url.Error{
 		Op:  "Post",
@@ -381,8 +377,6 @@ func TestExecuteDoesNotPoisonCredentialOnPreHTTPTransportFailure(t *testing.T) {
 	}
 }
 
-
-
 type alwaysFailExecutor struct {
 	identifier string
 	fail       error
@@ -415,10 +409,6 @@ func (*alwaysFailExecutor) HttpRequest(context.Context, *Auth, *http.Request) (*
 }
 
 func (e *alwaysFailExecutor) callCount() int { return e.calls }
-
-
-
-
 
 func TestExecuteRetriesConfiguredClaudeHandshakeTimeoutToConfiguredRounds(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()

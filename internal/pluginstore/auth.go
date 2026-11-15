@@ -36,9 +36,7 @@ type AuthConfig struct {
 	AllowInsecure  bool     `yaml:"allow-insecure,omitempty" json:"allow_insecure,omitempty"`
 }
 
-
 type Secret []byte
-
 
 func (s *Secret) Clear() {
 	if s == nil {

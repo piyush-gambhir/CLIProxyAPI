@@ -13,10 +13,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
 func CredentialFileName(email, organizationUUID, accountUUID string) string {
 	email = strings.TrimSpace(email)
 	identity := strings.TrimSpace(organizationUUID)
@@ -31,10 +27,6 @@ func CredentialFileName(email, organizationUUID, accountUUID string) string {
 	identityHash := hex.EncodeToString(digest[:])[:8]
 	return fmt.Sprintf("claude-%s-%s.json", identityHash, email)
 }
-
-
-
-
 
 func FindMatchingLegacyCredential(ctx context.Context, store coreauth.Store, target *coreauth.Auth) (*coreauth.Auth, error) {
 	if store == nil || !isHashedCredentialTarget(target) {

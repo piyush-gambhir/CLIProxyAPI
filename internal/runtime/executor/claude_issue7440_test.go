@@ -207,7 +207,6 @@ func TestClaudeExecutor_ServerSideFallbackOptInAndPayloadFilter_Issue7440(t *tes
 		}
 	}
 
-
 	filteredCfg, errParseFilter := config.ParseConfigBytes([]byte("config-version: 8\nupstream:\n  claude:\n    server-side-fallback: true\nrequests:\n  payload:\n    filter:\n      - models:\n          - name: \"claude-opus-5-5\"\n            protocol: \"claude\"\n        params:\n          - \"fallbacks\"\n"))
 	if errParseFilter != nil {
 		t.Fatalf("ParseConfigBytes(filtered) error = %v", errParseFilter)
@@ -259,8 +258,6 @@ func TestClaudeExecutor_DefaultNoFallbackPreservesCallerFallbackAndRefusalTransp
 	if !strings.Contains(seenHeaders.Get("Anthropic-Beta"), claudeServerSideFallbackBeta) {
 		t.Fatalf("Anthropic-Beta = %q, want %s for explicit caller fallback", seenHeaders.Get("Anthropic-Beta"), claudeServerSideFallbackBeta)
 	}
-
-
 
 	refusalServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)

@@ -57,15 +57,6 @@ func finalizeAnthropicMessagesBodyCCH(body []byte, fallbackBilling string) ([]by
 	return signAnthropicMessagesBody(bodyWithPlaceholder)
 }
 
-
-
-
-
-
-
-
-
-
 func claudeBodyNeedsBillingFallback(body []byte) bool {
 	return ojson.GetBytesNoCopy(body, "system").Exists()
 }
@@ -214,11 +205,6 @@ func isKimiMessagesUpstream(auth *cliproxyauth.Auth, endpoint string) bool {
 	return isKimiAPIEndpoint(endpoint)
 }
 
-
-
-
-
-
 func stripDefaultKimiClaudeCodeAttribution(auth *cliproxyauth.Auth, endpoint string, cliFingerprint bool, body []byte) []byte {
 	if cliFingerprint || !isKimiMessagesUpstream(auth, endpoint) {
 		return body
@@ -271,31 +257,6 @@ func stripClaudeCodeAttributionSystemDoc(doc *ojson.Doc) bool {
 	return doc.SetRawBytes("system", []byte("["+strings.Join(kept, ",")+"]")) == nil
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func claudeCCHSigningEnabled(apiKey string, kind claudeCCHUpstreamKind, cliFingerprint bool, origin string) bool {
 	if isClaudeOAuthToken(apiKey) {
 		return true
@@ -308,8 +269,6 @@ func claudeCCHSigningEnabled(apiKey string, kind claudeCCHUpstreamKind, cliFinge
 	}
 	return kind == claudeCCHUpstreamAnthropic && isAnthropicUpstreamBase(origin)
 }
-
-
 
 func signAnthropicMessagesBody(body []byte) ([]byte, error) {
 	cchOffset, ok := claudeBillingCCHDigitsOffset(body)
@@ -385,8 +344,6 @@ func isLowerHex(value []byte) bool {
 	}
 	return true
 }
-
-
 
 func normalizeClaudeCCHInput(body []byte) ([]byte, error) {
 	if !json.Valid(body) {
@@ -577,7 +534,6 @@ func (scanner *claudeCCHJSONScanner) addExcludedMemberEdits(members []claudeCCHJ
 			scanner.addEdit(members[start].start, members[end].commaAfter+1)
 		case start > 0 && end > start:
 
-
 			scanner.addEdit(members[start].start, members[end].end)
 		case start > 0:
 			scanner.addEdit(members[start].commaBefore, members[end].end)
@@ -648,7 +604,6 @@ func resolveClaudeKeyConfig(cfg *config.Config, auth *cliproxyauth.Auth) *config
 
 	return nil
 }
-
 
 func resolveClaudeKeyCloakConfig(cfg *config.Config, auth *cliproxyauth.Auth) *config.CloakConfig {
 	if cfg != nil && cfg.Home.Enabled && auth != nil {

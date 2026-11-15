@@ -10,7 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 )
 
-
 func IsCodexAuthRecord(auth *Auth) bool {
 	if auth == nil {
 		return false
@@ -28,9 +27,6 @@ func IsCodexAuthRecord(auth *Auth) bool {
 	}
 	return false
 }
-
-
-
 
 func PersistCodexAuthFile(ctx context.Context, path string, auth *Auth) (bool, error) {
 	if !IsCodexAuthRecord(auth) {

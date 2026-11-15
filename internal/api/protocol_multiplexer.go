@@ -112,15 +112,9 @@ func (s *Server) acceptMuxConnections(listener net.Listener, httpListener *muxLi
 			return net.ErrClosed
 		}
 
-
-
-
-
-
 		go s.routeMuxConnection(conn, httpListener)
 	}
 }
-
 
 func (s *Server) routeMuxConnection(conn net.Conn, httpListener *muxListener) {
 	defer func() {
@@ -137,9 +131,6 @@ func (s *Server) routeMuxConnection(conn net.Conn, httpListener *muxListener) {
 			}
 		}
 	}()
-
-
-
 
 	_ = conn.SetReadDeadline(time.Now().Add(muxSniffDeadline))
 

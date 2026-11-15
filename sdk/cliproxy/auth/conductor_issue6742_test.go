@@ -44,8 +44,6 @@ func TestIssue6742_CodexProactiveRefreshBeforeSevenDayInvalidation(t *testing.T)
 
 	mgr := NewManager(nil, nil, nil)
 
-
-
 	checkAt := issuedAt.Add(6*24*time.Hour + time.Hour)
 	dueAt, hasOuter, needOuter := CodexOuterNeedsRefresh(auth, checkAt)
 	if !hasOuter {
@@ -69,7 +67,6 @@ func TestIssue6742_CodexProactiveRefreshBeforeSevenDayInvalidation(t *testing.T)
 
 func TestIssue6742_RejectedUnexpiredJWTRecoversViaBackgroundRefreshAfterTransientFailure(t *testing.T) {
 	now := time.Now()
-
 
 	staleJWTToken := makeIssue6742JWT(now.Add(8 * 24 * time.Hour))
 	freshJWTToken := makeIssue6742JWT(now.Add(10 * 24 * time.Hour))
@@ -114,7 +111,6 @@ func TestIssue6742_RejectedUnexpiredJWTRecoversViaBackgroundRefreshAfterTransien
 		t.Fatal("precondition failed: shouldRefresh = true before 401 with 8 days remaining, want false")
 	}
 
-
 	_, errExec := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errExec == nil {
 		t.Fatal("expected initial Execute to fail when on-demand refresh fails transiently")
@@ -134,13 +130,10 @@ func TestIssue6742_RejectedUnexpiredJWTRecoversViaBackgroundRefreshAfterTransien
 		t.Fatal("NextRefreshAfter is zero, want scheduled retry backoff")
 	}
 
-
-
 	retryTime := afterFail.NextRefreshAfter.Add(time.Second)
 	if !m.shouldRefresh(afterFail, retryTime) {
 		t.Fatal("shouldRefresh = false at retryTime, want true for rejected unexpired JWT")
 	}
-
 
 	executor.mu.Lock()
 	executor.refreshErr = nil
@@ -175,7 +168,6 @@ func TestIssue6742_RejectedUnexpiredJWTRecoversViaBackgroundRefreshAfterTransien
 		t.Fatalf("model state remained Unavailable after background refresh: %+v", state)
 	}
 
-
 	resp, errExec2 := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	if errExec2 != nil {
 		t.Fatalf("subsequent Execute error = %v, want success", errExec2)
@@ -198,7 +190,6 @@ func (e *inStreamUnauthorizedExecutor) ExecuteStream(_ context.Context, auth *Au
 
 	ch := make(chan cliproxyexecutor.StreamChunk, 2)
 
-
 	ch <- cliproxyexecutor.StreamChunk{Payload: []byte(`data: {"type":"response.created"}` + "\n\n")}
 	if invalid {
 		ch <- cliproxyexecutor.StreamChunk{Err: &Error{
@@ -215,7 +206,6 @@ func (e *inStreamUnauthorizedExecutor) ExecuteStream(_ context.Context, auth *Au
 
 func TestIssue6742_InStreamUnauthorizedMarksRejectedTokenAndSchedulesRefresh(t *testing.T) {
 	now := time.Now()
-
 
 	staleJWTToken := makeIssue6742JWT(now.Add(8 * 24 * time.Hour))
 	freshJWTToken := makeIssue6742JWT(now.Add(10 * 24 * time.Hour))
@@ -278,7 +268,6 @@ func TestIssue6742_InStreamUnauthorizedMarksRejectedTokenAndSchedulesRefresh(t *
 	if !m.shouldRefresh(afterStream, time.Now()) {
 		t.Fatal("shouldRefresh = false after in-stream 401, want true")
 	}
-
 
 	loop := newAuthAutoRefreshLoop(m, 5*time.Second, 1)
 	loop.handleDueAuth(context.Background(), time.Now(), primary.ID)
@@ -369,7 +358,6 @@ func TestIssue6742_InStreamUnauthorizedBlocksSiblingModelShardUntilRefreshed(t *
 		t.Fatalf("register backup: %v", errRegister)
 	}
 
-
 	respWarm, errWarm := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: modelB}, cliproxyexecutor.Options{})
 	if errWarm != nil {
 		t.Fatalf("warm-up Execute(modelB) error = %v", errWarm)
@@ -377,7 +365,6 @@ func TestIssue6742_InStreamUnauthorizedBlocksSiblingModelShardUntilRefreshed(t *
 	if got := string(respWarm.Payload); got != primary.ID+":"+staleJWTToken {
 		t.Fatalf("warm-up Execute(modelB) payload = %q, want primary", got)
 	}
-
 
 	executor.mu.Lock()
 	executor.tokenInvalid[staleJWTToken] = struct{}{}
@@ -389,8 +376,6 @@ func TestIssue6742_InStreamUnauthorizedBlocksSiblingModelShardUntilRefreshed(t *
 	}
 	for range stream.Chunks {
 	}
-
-
 
 	execCallsBefore := len(executor.ExecuteCalls())
 	respB, errB := m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: modelB}, cliproxyexecutor.Options{})

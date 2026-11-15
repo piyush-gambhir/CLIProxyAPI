@@ -40,12 +40,6 @@ func writeResponsesWebsocketSyntheticPrewarm(
 	for i := 0; i < len(payloads); i++ {
 		markAPIResponseTimestamp(c)
 
-
-
-
-
-
-
 		if errWrite := writeResponsesWebsocketPayload(writer, wsTimelineLog, payloads[i], time.Now()); errWrite != nil {
 			log.Warnf(
 				"responses websocket: downstream_out write failed id=%s event=%s error=%v",
@@ -58,9 +52,6 @@ func writeResponsesWebsocketSyntheticPrewarm(
 	}
 	return strings.Clone(ojson.GetBytesNoCopy(payloads[0], "response.id").String()), nil
 }
-
-
-
 
 func normalizeResponsesWebsocketPrewarmFollowup(rawJSON, warmupRequest []byte) ([]byte, []byte, *interfaces.ErrorMessage) {
 	var fieldsBuf [2]ojson.Result
@@ -119,14 +110,6 @@ func syntheticResponsesWebsocketPrewarmPayloads(requestJSON []byte) ([][]byte, e
 
 	return [][]byte{createdDoc.Bytes(), completedDoc.Bytes()}, nil
 }
-
-
-
-
-
-
-
-
 
 func inputContainsFullTranscript(input ojson.Result) bool {
 	if !input.IsArray() {

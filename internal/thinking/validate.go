@@ -1,4 +1,3 @@
-
 package thinking
 
 import (
@@ -8,32 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	log "github.com/sirupsen/logrus"
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFormat, toFormat string, fromSuffix bool) (*ThinkingConfig, error) {
 	fromFormat, toFormat = strings.ToLower(strings.TrimSpace(fromFormat)), strings.ToLower(strings.TrimSpace(toFormat))
@@ -53,15 +26,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 		return &config, nil
 	}
 
-
-
-
-
-
-
-
-
-
 	toCapability := detectModelCapability(modelInfo)
 	toHasLevelSupport := toCapability == CapabilityLevelOnly || toCapability == CapabilityHybrid
 	modelFamilyMismatch := false
@@ -75,10 +39,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 		}
 	}
 	allowClampUnsupported := toHasLevelSupport && (!isSameProviderFamily(fromFormat, toFormat) || modelFamilyMismatch)
-
-
-
-
 
 	strictBudget := !fromSuffix && fromFormat != "" && isSameProviderFamily(fromFormat, toFormat) && !modelFamilyMismatch
 	budgetDerivedFromLevel := false
@@ -105,7 +65,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 			if !ok {
 				return nil, NewThinkingError(ErrUnknownLevel, fmt.Sprintf("budget %d cannot be converted to a valid level", config.Budget))
 			}
-
 
 			config.Mode = ModeLevel
 			config.Level = clampLevel(ThinkingLevel(level), modelInfo, toFormat)
@@ -136,7 +95,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 			}
 			if !isLevelSupported(string(config.Level), support.Levels) {
 
-
 				validLevels := normalizeLevels(support.Levels)
 				message := fmt.Sprintf("level %q not supported, valid levels: %s", strings.ToLower(string(config.Level)), strings.Join(validLevels, ", "))
 				return nil, NewThinkingError(ErrLevelNotSupported, message)
@@ -154,12 +112,8 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 		}
 	}
 
-
 	if config.Mode == ModeAuto && !support.DynamicAllowed {
 		config = convertAutoToMidRange(config, support, toFormat, model)
-
-
-
 
 		if config.Mode == ModeLevel && len(support.Levels) > 0 && !isLevelSupported(string(config.Level), support.Levels) {
 			config.Level = clampLevel(config.Level, modelInfo, toFormat)
@@ -170,8 +124,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 		if !support.ZeroAllowed {
 			if lowest, ok := lowestSupportedLevel(support.Levels); ok {
 
-
-
 				config.Mode = ModeLevel
 				config.Budget = 0
 				config.Level = lowest
@@ -181,7 +133,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 			}
 		} else {
 
-
 			config.Budget = 0
 			config.Level = ""
 		}
@@ -190,10 +141,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 		case ModeBudget, ModeAuto, ModeNone:
 			config.Budget = clampBudget(config.Budget, modelInfo, toFormat)
 		}
-
-
-
-
 
 		cannotDisableLevelModel := !support.ZeroAllowed && !isLevelSupported(string(LevelNone), support.Levels)
 		if config.Mode == ModeNone && len(support.Levels) > 0 && (config.Budget > 0 || cannotDisableLevelModel) {
@@ -205,16 +152,6 @@ func ValidateConfig(config ThinkingConfig, modelInfo *registry.ModelInfo, fromFo
 
 	return &config, nil
 }
-
-
-
-
-
-
-
-
-
-
 
 func convertAutoToMidRange(config ThinkingConfig, support *registry.ThinkingSupport, provider, model string) ThinkingConfig {
 
@@ -230,7 +167,6 @@ func convertAutoToMidRange(config ThinkingConfig, support *registry.ThinkingSupp
 		}).Debug("thinking: mode converted, dynamic not allowed, using medium level |")
 		return config
 	}
-
 
 	mid := (support.Min + support.Max) / 2
 	if mid <= 0 && support.ZeroAllowed {
@@ -252,10 +188,7 @@ func convertAutoToMidRange(config ThinkingConfig, support *registry.ThinkingSupp
 	return config
 }
 
-
 var standardLevelOrder = []ThinkingLevel{LevelMinimal, LevelLow, LevelMedium, LevelHigh, LevelXHigh, LevelMax}
-
-
 
 func lowestSupportedLevel(supported []string) (ThinkingLevel, bool) {
 	bestIdx := -1
@@ -271,8 +204,6 @@ func lowestSupportedLevel(supported []string) (ThinkingLevel, bool) {
 	}
 	return "", false
 }
-
-
 
 func clampLevel(level ThinkingLevel, modelInfo *registry.ModelInfo, provider string) ThinkingLevel {
 	model := "unknown"
@@ -317,7 +248,6 @@ func clampLevel(level ThinkingLevel, modelInfo *registry.ModelInfo, provider str
 	return level
 }
 
-
 func clampBudget(value int, modelInfo *registry.ModelInfo, provider string) int {
 	model := "unknown"
 	support := (*registry.ThinkingSupport)(nil)
@@ -330,7 +260,6 @@ func clampBudget(value int, modelInfo *registry.ModelInfo, provider string) int 
 	if support == nil {
 		return value
 	}
-
 
 	if value == -1 {
 		return value
@@ -348,7 +277,6 @@ func clampBudget(value int, modelInfo *registry.ModelInfo, provider string) int 
 		}).Warn("thinking: budget zero not allowed |")
 		return min
 	}
-
 
 	if min == 0 && max == 0 {
 		return value
@@ -393,8 +321,6 @@ func normalizeLevels(levels []string) []string {
 	}
 	return out
 }
-
-
 
 func isBudgetCapableProvider(provider string) bool {
 	switch provider {

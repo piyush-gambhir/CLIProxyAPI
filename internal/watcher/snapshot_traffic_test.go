@@ -17,7 +17,6 @@ import (
 
 const trafficAuthFile = "claude.json"
 
-
 func takeQueuedAuthUpdate(w *Watcher, id string) (AuthUpdate, bool) {
 	w.dispatchMu.Lock()
 	defer w.dispatchMu.Unlock()
@@ -36,8 +35,6 @@ func setTrafficConfig(w *Watcher, cfg *config.Config) {
 	w.clientsMutex.Unlock()
 }
 
-
-
 func reloadExcludedModels(t *testing.T, w *Watcher, model string) AuthUpdate {
 	t.Helper()
 	setTrafficConfig(w, excludedModelsConfig(w.authDir, model))
@@ -48,9 +45,6 @@ func reloadExcludedModels(t *testing.T, w *Watcher, model string) AuthUpdate {
 	}
 	return update
 }
-
-
-
 
 func newTrafficWatcher(t *testing.T, persist bool) (*Watcher, *coreauth.Manager, string) {
 	t.Helper()
@@ -88,8 +82,6 @@ func trafficRequestResult(success bool) coreauth.Result {
 	return result
 }
 
-
-
 func applyQueuedSnapshot(t *testing.T, manager *coreauth.Manager, update AuthUpdate) bool {
 	t.Helper()
 	if (update.Action != AuthUpdateActionModify && update.Action != AuthUpdateActionAdd) || update.Auth == nil {
@@ -103,7 +95,6 @@ func applyQueuedSnapshot(t *testing.T, manager *coreauth.Manager, update AuthUpd
 	return after.Generation > before.Generation
 }
 
-
 func requireNextScanKeeps(t *testing.T, w *Watcher) {
 	t.Helper()
 	w.refreshAuthState(false)
@@ -111,9 +102,6 @@ func requireNextScanKeeps(t *testing.T, w *Watcher) {
 		t.Fatalf("next scan queued %v for the auth", update.Action)
 	}
 }
-
-
-
 
 func TestRefreshAuthStateExcludedModelsReloadSurvivesRequestResult(t *testing.T) {
 	w, manager, _ := newTrafficWatcher(t, true)
@@ -128,8 +116,6 @@ func TestRefreshAuthStateExcludedModelsReloadSurvivesRequestResult(t *testing.T)
 	}
 	requireNextScanKeeps(t, w)
 }
-
-
 
 func TestRefreshAuthStateSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	w, manager, _ := newTrafficWatcher(t, true)
@@ -164,8 +150,6 @@ func TestRefreshAuthStateSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	}
 }
 
-
-
 func TestRefreshAuthStateAppliesExternalEditAfterRequestResult(t *testing.T) {
 	w, manager, path := newTrafficWatcher(t, true)
 
@@ -199,8 +183,6 @@ func TestRefreshAuthStateAppliesExternalEditAfterRequestResult(t *testing.T) {
 	}
 }
 
-
-
 func TestAddOrUpdateClientConfigChangeSurvivesRequestResult(t *testing.T) {
 	w, manager, path := newTrafficWatcher(t, true)
 
@@ -223,10 +205,6 @@ func TestAddOrUpdateClientConfigChangeSurvivesRequestResult(t *testing.T) {
 	}
 	requireNextScanKeeps(t, w)
 }
-
-
-
-
 
 func TestRefreshAuthStateFirstResultSaveRecoveredByFileEvent(t *testing.T) {
 	w, manager, path := newTrafficWatcher(t, false)
@@ -264,8 +242,6 @@ func readJSONField(t *testing.T, path, key string) any {
 	return content[key]
 }
 
-
-
 type hostConfigParser struct{ host *string }
 
 func (p hostConfigParser) ParseAuth(_ context.Context, req pluginapi.AuthParseRequest) (*coreauth.Auth, bool, error) {
@@ -275,10 +251,6 @@ func (p hostConfigParser) ParseAuth(_ context.Context, req pluginapi.AuthParseRe
 	}
 	return &coreauth.Auth{ID: req.FileName, Provider: "claude", Metadata: metadata, Attributes: map[string]string{"host_config": *p.host}}, true, nil
 }
-
-
-
-
 
 func TestRefreshAuthStateRereadsAuthPersistedDuringScan(t *testing.T) {
 	for _, kind := range []string{"runtime_patch", "login_snapshot"} {

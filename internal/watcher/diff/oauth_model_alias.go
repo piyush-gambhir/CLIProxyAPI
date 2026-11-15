@@ -15,7 +15,6 @@ type OAuthModelAliasSummary struct {
 	count int
 }
 
-
 func SummarizeOAuthModelAlias(entries map[string][]config.OAuthModelAlias) map[string]OAuthModelAliasSummary {
 	if len(entries) == 0 {
 		return nil
@@ -33,7 +32,6 @@ func SummarizeOAuthModelAlias(entries map[string][]config.OAuthModelAlias) map[s
 	}
 	return out
 }
-
 
 func DiffOAuthModelAliasChanges(oldMap, newMap map[string][]config.OAuthModelAlias) ([]string, []string) {
 	oldSummary := SummarizeOAuthModelAlias(oldMap)

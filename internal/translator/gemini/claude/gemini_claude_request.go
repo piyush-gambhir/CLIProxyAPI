@@ -1,8 +1,3 @@
-// Package claude provides request translation functionality for Claude API.
-// It handles parsing and transforming Claude API requests into the internal client format,
-// extracting model information, system instructions, message contents, and tool declarations.
-// The package also performs JSON data cleaning and transformation to ensure compatibility
-// between Claude API format and the internal client's expected format.
 package claude
 
 import (
@@ -18,38 +13,23 @@ import (
 
 const geminiClaudeThoughtSignature = "skip_thought_signature_validator"
 
-// ConvertClaudeRequestToGemini parses a Claude API request and returns a complete
-// Gemini request body (as JSON bytes) ready to be sent via SendRawMessageStream.
-// All JSON transformations are performed using gjson/ojson.
-//
-// Parameters:
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON request from the Claude API.
-//   - stream: A boolean indicating if the request is for a streaming response.
-//
-// Returns:
-//   - []byte: The transformed request in Gemini format.
 func ConvertClaudeRequestToGemini(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertClaudeRequestToGemini(modelName, inputRawJSON, stream, false)
 
 }
 
-// ConvertClaudeRequestToGeminiWithCompat preserves assistant thinking blocks
-// with empty signatures for configured compatibility endpoints.
 func ConvertClaudeRequestToGeminiWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertClaudeRequestToGemini(modelName, inputRawJSON, stream, true)
 }
 
 func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool, preserveEmptyThinkingBlocks bool) ([]byte, error) {
-	// The internal commentary marker must be restored as assistant text before
-	// any thinking handling, so it is never dropped or mapped to thought.
+
 	rawJSON, _ := sigcompat.RestoreCodexCommentaryMarkers(inputRawJSON)
 	var drops translatorcommon.UserTurnDrops
-	// Build output Gemini request JSON
+
 	outDoc := ojson.NewDocString(`{"contents":[]}`)
 	_ = outDoc.Set("model", modelName)
 
-	// system instruction
 	if systemResult := ojson.GetBytesNoCopy(rawJSON, "system"); systemResult.IsArray() {
 		systemParts := make([][]byte, 0, 2)
 		systemResult.ForEach(func(_, systemPromptResult ojson.Result) bool {
@@ -79,7 +59,6 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 		_ = outDoc.SetRawBytes("systemInstruction", systemInstruction)
 	}
 
-	// contents
 	if messagesResult := ojson.GetBytesNoCopy(rawJSON, "messages"); messagesResult.IsArray() {
 		contentItems := translatorcommon.NewRawArrayItems(messagesResult.Get("#").Int())
 		toolNameByID := make(map[string]string)
@@ -199,7 +178,7 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 						if part := claudeBase64InlineData(contentResult.Get("source")); part != nil {
 							partItems = append(partItems, part)
 						} else if originalRole == "user" {
-							// A part that cannot be inlined (url or file source) is dropped; the turn is refused only if nothing else is left.
+
 							drops.Drop(contentResult.Get("type").String())
 						}
 					default:
@@ -211,7 +190,7 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 					partItems = translatorcommon.ReorderGeminiUserParts(partItems)
 				}
 				if originalRole == "user" {
-					// Whitespace-only text is forwarded but never keeps an emptied turn alive.
+
 					drops.EndTurn(translatorcommon.CountSendableGeminiParts(partItems))
 				}
 				if len(partItems) > 0 {
@@ -226,7 +205,6 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 			return true
 		})
 
-		// Strip a trailing model turn with unanswered function calls.
 		if len(contentItems) > 0 {
 			last := util.ParseGJSONBytesNoCopy(contentItems[len(contentItems)-1])
 			if last.Get("role").String() == "model" {
@@ -246,7 +224,6 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 		translatorcommon.SetRawArrayItemsDoc(outDoc, "contents", translatorcommon.MergeAdjacentGeminiContents(contentItems))
 	}
 
-	// tools
 	var toolItems [][]byte
 	hasStrictTool := false
 	if toolsResult := ojson.GetBytesNoCopy(rawJSON, "tools"); toolsResult.IsArray() {
@@ -289,7 +266,6 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 		}
 	}
 
-	// tool_choice
 	toolChoiceResult := ojson.GetBytesNoCopy(rawJSON, "tool_choice")
 	if toolChoiceResult.Exists() && toolChoiceResult.Type != ojson.Null {
 		toolChoiceType := ""
@@ -322,8 +298,6 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 		_ = outDoc.Set("toolConfig.functionCallingConfig.mode", "VALIDATED")
 	}
 
-	// Map Anthropic thinking -> Gemini thinking config when enabled
-	// Translator only does format conversion, ApplyThinking handles model capability validation.
 	if t := ojson.GetBytesNoCopy(rawJSON, "thinking"); t.Exists() && t.IsObject() {
 		switch t.Get("type").String() {
 		case "enabled":
@@ -332,10 +306,7 @@ func convertClaudeRequestToGemini(modelName string, inputRawJSON []byte, _ bool,
 				_ = outDoc.Set("generationConfig.thinkingConfig.thinkingBudget", budget)
 			}
 		case "adaptive", "auto":
-			// For adaptive thinking:
-			// - If output_config.effort is explicitly present, pass through as thinkingLevel.
-			// - Otherwise, treat it as "enabled with target-model maximum" and emit thinkingBudget=max.
-			// ApplyThinking handles clamping to target model's supported levels.
+
 			effort := ""
 			if v := ojson.GetBytesNoCopy(rawJSON, "output_config.effort"); v.Exists() && v.Type == ojson.String {
 				effort = strings.ToLower(strings.TrimSpace(v.String()))

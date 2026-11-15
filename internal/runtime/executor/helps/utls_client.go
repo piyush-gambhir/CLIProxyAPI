@@ -24,9 +24,6 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-
-
-
 type utlsRoundTripper struct {
 	dialer proxy.Dialer
 }
@@ -113,11 +110,8 @@ func (t *utlsRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return roundTripUtlsConnection(req, tlsConn)
 }
 
-
-
 func roundTripUtlsConnection(req *http.Request, tlsConn *tls.UConn) (*http.Response, error) {
 	closeConnection := func() error {
-
 
 		if errClose := tlsConn.Close(); errClose != nil && !errors.Is(errClose, net.ErrClosed) {
 			return errClose
@@ -136,8 +130,6 @@ func roundTripUtlsConnection(req *http.Request, tlsConn *tls.UConn) (*http.Respo
 		closeConnection = h2Conn.Close
 		resp, err = h2Conn.RoundTrip(req)
 	case "", "http/1.1":
-
-
 
 		transport := &http.Transport{
 			DisableKeepAlives: true,
@@ -172,15 +164,7 @@ func roundTripUtlsConnection(req *http.Request, tlsConn *tls.UConn) (*http.Respo
 	return resp, nil
 }
 
-
-
 const claudeCodeSessionCacheCapacity = 32
-
-
-
-
-
-
 
 func newClaudeCodeTLSConfig(host string, sessionCache tls.ClientSessionCache) *tls.Config {
 	return newClaudeCodeTLSConfigWithRoots(host, sessionCache, nil)
@@ -195,10 +179,6 @@ func newClaudeCodeTLSConfigWithRoots(host string, sessionCache tls.ClientSession
 		PreferSkipResumptionOnNilExtension: true,
 	}
 }
-
-
-
-
 
 func claudeCodeTLSClientHelloSpec() *tls.ClientHelloSpec {
 	return &tls.ClientHelloSpec{
@@ -247,7 +227,6 @@ func claudeCodeTLSClientHelloSpec() *tls.ClientHelloSpec {
 			&tls.PSKKeyExchangeModesExtension{Modes: []uint8{tls.PskModeDHE}},
 			&tls.SupportedVersionsExtension{Versions: []uint16{tls.VersionTLS13, tls.VersionTLS12}},
 			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
-
 
 			&tls.UtlsPreSharedKeyExtension{},
 		},
@@ -331,9 +310,6 @@ func newClaudeCodeRoundTripper(proxyURL string) http.RoundTripper {
 	return newClaudeCodeRoundTripperForDialer(claudeCodeDialer(proxyURL))
 }
 
-
-
-
 func claudeCodeDialer(proxyURL string) proxy.Dialer {
 	var dialer proxy.Dialer = proxy.Direct
 	if proxyURL != "" {
@@ -347,11 +323,6 @@ func claudeCodeDialer(proxyURL string) proxy.Dialer {
 	return dialer
 }
 
-
-
-
-
-
 func pooledClaudeCodeTransport(proxyURL string, cfg *config.Config, auth *cliproxyauth.Auth) *http.Transport {
 	tr, pooled := pooledTransport(proxyPoolKindClaudeCode, proxyURL, cfg, auth, func() (*http.Transport, error) {
 		return newClaudeCodeRoundTripperForDialer(claudeCodeDialer(proxyURL)), nil
@@ -362,23 +333,13 @@ func pooledClaudeCodeTransport(proxyURL string, cfg *config.Config, auth *clipro
 	return tr
 }
 
-
-
-
 func newClaudeCodeRoundTripperForDialer(dialer proxy.Dialer) *http.Transport {
 	return newClaudeCodeRoundTripperForDialerAndRoots(dialer, nil)
 }
 
 func newClaudeCodeRoundTripperForDialerAndRoots(dialer proxy.Dialer, roots *x509.CertPool) *http.Transport {
 
-
 	sessionCache := tls.NewLRUClientSessionCache(claudeCodeSessionCacheCapacity)
-
-
-
-
-
-
 
 	transport := &http.Transport{
 		ForceAttemptHTTP2:   false,
@@ -427,12 +388,6 @@ func newClaudeCodeRoundTripperForDialerAndRoots(dialer proxy.Dialer, roots *x509
 	return transport
 }
 
-
-
-
-
-
-
 type fallbackRoundTripper struct {
 	mu          sync.Mutex
 	anthropic   http.RoundTripper
@@ -476,17 +431,7 @@ func (f *fallbackRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return f.fallbackRoundTripper().RoundTrip(req)
 }
 
-
-
-
-
 func NewUtlsHTTPClient(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, timeout time.Duration) (clientOut *http.Client) {
-
-
-
-
-
-
 
 	var handshakeTimeout time.Duration
 	if cfg != nil {

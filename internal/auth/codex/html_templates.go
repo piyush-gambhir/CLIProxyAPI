@@ -1,8 +1,5 @@
 package codex
 
-// LoginSuccessHTML is the HTML template for the page shown after a successful
-// OAuth2 authentication with Codex. It informs the user that the authentication
-// was successful and provides a countdown timer to automatically close the window.
 const LoginSuccessHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -204,9 +201,6 @@ const LoginSuccessHtml = `<!DOCTYPE html>
 </body>
 </html>`
 
-// SetupNoticeHTML is the HTML template for the section that provides instructions
-// for additional setup. This is displayed on the success page when further actions
-// are required from the user.
 const SetupNoticeHtml = `
         <div class="setup-notice">
             <h3>Additional Setup Required</h3>

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 package claude
 
 import (
@@ -23,8 +17,6 @@ import (
 
 	"github.com/MoeForge/moego/ojson"
 )
-
-
 
 func decodeSignature(signature string) string {
 	if signature == "" {
@@ -50,15 +42,11 @@ func formatGeminiClaudeCarrierValue(modelName, signature, direction, targetKind 
 
 func formatClaudeSignatureValue(modelName, signature string) string {
 
-
 	if cache.GetModelGroup(modelName) == "claude" {
 		return decodeSignature(signature)
 	}
 	return signature
 }
-
-
-
 
 type Params struct {
 	ModelName               string
@@ -84,11 +72,8 @@ type Params struct {
 	WebSearchRequests       int64
 	WebSearchTextBuffer     strings.Builder
 
-
 	CurrentThinkingText   strings.Builder
 	CurrentThinkingSigned bool
-
-
 
 	ToolNameMap map[string]string
 
@@ -97,7 +82,6 @@ type Params struct {
 	CurrentToolInputEmitted    bool
 	CurrentToolPendingEmpty    bool
 }
-
 
 var toolUseIDCounter uint64
 
@@ -110,22 +94,6 @@ func antigravityClaudeToolUseID(modelName string, functionCall ojson.Result, fal
 	return util.SanitizeClaudeToolID(fallback)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &Params{
@@ -136,7 +104,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		}
 	}
 	params := (*param).(*Params)
-
 
 	if !params.RequestMetadataResolved {
 		params.ModelName = strings.Clone(ojson.GetBytesNoCopy(requestRawJSON, "model").String())
@@ -231,13 +198,9 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		return true
 	}
 
-
-
 	if !params.HasFirstResponse {
 
-
 		messageStartDoc := ojson.NewDoc([]byte(`{"type": "message_start", "message": {"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY", "type": "message", "role": "assistant", "content": [], "model": "claude-3-5-sonnet-20241022", "stop_reason": null, "stop_sequence": null, "usage": {"input_tokens": 0, "output_tokens": 0}}}`))
-
 
 		if promptTokenCount := ojson.GetBytesNoCopy(rawJSON, "response.cpaUsageMetadata.promptTokenCount"); promptTokenCount.Exists() {
 			_ = messageStartDoc.Set("message.usage.input_tokens", promptTokenCount.Int())
@@ -245,7 +208,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		if candidatesTokenCount := ojson.GetBytesNoCopy(rawJSON, "response.cpaUsageMetadata.candidatesTokenCount"); candidatesTokenCount.Exists() && !webSearchStreamMode {
 			_ = messageStartDoc.Set("message.usage.output_tokens", candidatesTokenCount.Int())
 		}
-
 
 		if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "response.modelVersion"); modelVersionResult.Exists() {
 			_ = messageStartDoc.Set("message.model", modelVersionResult.String())
@@ -274,8 +236,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		}
 	}
 
-
-
 	partsResult := ojson.GetBytesNoCopy(rawJSON, "response.candidates.0.content.parts")
 	if partsResult.IsArray() && webSearchStreamMode && !params.HasWebSearchTool && !handledWebSearchGrounding {
 		appendWebSearchBufferedText(partsResult, &params.WebSearchTextBuffer)
@@ -283,7 +243,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		partResults := partsResult.Array()
 		for i := 0; i < len(partResults); i++ {
 			partResult := partResults[i]
-
 
 			partTextResult := partResult.Get("text")
 			functionCallResult := partResult.Get("functionCall")
@@ -303,7 +262,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 				appendPartSignature(thoughtSignatureResult.String(), direction, targetKind)
 				continue
 			}
-
 
 			if partTextResult.Exists() {
 				partText := partTextResult.String()
@@ -373,7 +331,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 					appendPartSignature(toolSignature, geminiClaudeCarrierNext, geminiClaudeCarrierFunction)
 				}
 
-
 				params.HasToolUse = true
 				fcName := util.RestoreSanitizedToolName(params.ToolNameMap, functionCallResult.Get("name").String())
 
@@ -407,8 +364,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 					continue
 				}
 
-
-
 				if params.ResponseType == 3 {
 					flushPendingToolInput()
 					appendEvent("content_block_stop", fmt.Sprintf(`{"type":"content_block_stop","index":%d}`, params.ResponseIndex))
@@ -416,13 +371,9 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 					params.ResponseType = 0
 				}
 
-
 				if params.ResponseType == 2 {
 
-
-
 				}
-
 
 				if params.ResponseType != 0 {
 					flushPendingToolInput()
@@ -434,8 +385,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 				params.CurrentToolIsParameterless = util.ClaudeToolIsParameterless(fcName, originalRequestRawJSON)
 				params.CurrentToolInputEmitted = false
 				params.CurrentToolPendingEmpty = false
-
-
 
 				dataDoc := ojson.NewDocString(fmt.Sprintf(`{"type":"content_block_start","index":%d,"content_block":{"type":"tool_use","id":"","name":"","input":{}}}`, params.ResponseIndex))
 				fallbackID := fmt.Sprintf("%s-%d-%d", fcName, time.Now().UnixNano(), atomic.AddUint64(&toolUseIDCounter, 1))
@@ -494,7 +443,6 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		params.TotalTokenCount = usageResult.Get("totalTokenCount").Int()
 		if params.CandidatesTokenCount == 0 && params.TotalTokenCount > 0 {
 
-
 			params.CandidatesTokenCount = params.TotalTokenCount - rawPromptTokenCount - params.ThoughtsTokenCount
 			if params.CandidatesTokenCount < 0 {
 				params.CandidatesTokenCount = 0
@@ -546,7 +494,6 @@ func appendFinalEvents(params *Params, output *[]byte, force bool) {
 		return
 	}
 
-
 	if !params.HasContent {
 		return
 	}
@@ -565,7 +512,6 @@ func appendFinalEvents(params *Params, output *[]byte, force bool) {
 	stopReason := resolveStopReason(params)
 	usageOutputTokens := params.CandidatesTokenCount + params.ThoughtsTokenCount
 	if usageOutputTokens == 0 && params.TotalTokenCount > 0 {
-
 
 		usageOutputTokens = params.TotalTokenCount - (params.PromptTokenCount + params.CachedTokenCount)
 		if usageOutputTokens < 0 {
@@ -608,16 +554,6 @@ func resolveAntigravityClaudeStopReason(finishReason string, hasToolUse bool) st
 		return "end_turn"
 	}
 }
-
-
-
-
-
-
-
-
-
-
 
 func ConvertAntigravityResponseToClaudeNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	toolNameMap := util.DisambiguatedToolNameMap(originalRequestRawJSON)

@@ -24,9 +24,6 @@ var (
 	diagnosticStatusPattern       = regexp.MustCompile(`(?i)\bstatus(?:\s+code)?\s*[:=]?\s*([1-5][0-9]{2})\b`)
 )
 
-
-
-
 func SafeDiagnosticForLog(message string) string {
 	excerpt, sourceTruncated := diagnosticRunePrefix(message, diagnosticLogScanRuneLimit)
 	if sourceTruncated && !accessTokenExpiredLogPattern.MatchString(excerpt) {
@@ -45,8 +42,6 @@ func SafeDiagnosticForLog(message string) string {
 
 	return truncateDiagnosticLogExcerpt(excerpt, sourceTruncated)
 }
-
-
 
 func SafeErrorDiagnostic(err error) string {
 	if err == nil {

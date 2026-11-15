@@ -35,8 +35,6 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	url := fmt.Sprintf("%s/v1/messages?beta=true", baseURL)
 	fp := resolveClaudeFingerprintPolicy(e.cfg, auth, apiKey)
 
-
-
 	cchSigning := claudeCCHSigningEnabled(apiKey, claudeCCHUpstreamAnthropic, fp.ProfileClaudeCodeCLI, url)
 
 	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
@@ -57,7 +55,6 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 			clearClaudeThinkingReplayContent(ctx, replayScope)
 		}
 	}()
-
 
 	upstreamStream := responseFormat != to
 	originalPayloadSource := req.Payload
@@ -102,8 +99,6 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 		rebuildMidSystemMessagesToTopLevelDoc(doc)
 	}
 
-
-
 	isProbeOrHelper := isClaudeProbeOrHelperRequestDoc(doc)
 	explicitCacheMode := isExplicitPromptCacheModeDoc(doc, originalPayload, req.Payload)
 	if explicitCacheMode {
@@ -124,7 +119,6 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	if err != nil {
 		return resp, err
 	}
-
 
 	diagnosticsState := claudeDiagnosticsRequestState{}
 	if !isProbeOrHelper {
@@ -154,40 +148,17 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 
 	ensureModelMaxTokensDoc(doc, baseModel)
 
-
 	disableThinkingIfToolChoiceForcedDoc(doc)
 	reconcileClaudeCodeContextManagementDoc(doc, contextManagementState)
 	normalizeClaudeSamplingForUpstreamDoc(doc, confirmedClaudeCode)
-
-
-
-
-
-
 
 	cpaOwnsCacheControl := shouldEnsureCacheControlDoc(doc, cloaked, confirmedClaudeCode, originalPayload, req.Payload)
 	if cpaOwnsCacheControl {
 		ensureCacheControlDoc(doc)
 	}
 
-
-
-
 	enforceCacheControlLimitDoc(doc, 4)
 	stripPromptCacheOptionsDoc(doc)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	isSubagent := isClaudeSubagentRequestDoc(incomingHeaders, doc)
 	subagent1h := isSubagent && claudeSubagentRequests1hDoc(incomingHeaders, doc)
@@ -197,19 +168,14 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 		stripClaudeCacheControlTTLDoc(doc)
 	}
 
-
-
 	if !explicitCacheMode {
 		normalizeCacheControlTTLDoc(doc)
 	}
-
-
 
 	streamField := doc.Get("stream")
 	if !claudeCodeDetection.HelperProfile || streamField.Exists() || upstreamStream {
 		helps.SetBoolIfDifferentDoc(doc, "stream", upstreamStream)
 	}
-
 
 	var extraBetas []string
 	var oauthToolNamesReverseMap map[string]string
@@ -315,8 +281,6 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	}
 	helps.RecordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-
-
 
 		errBody, decErr := decodeResponseBody(httpResp.Body, claudeResponseContentEncoding(httpResp.Header))
 		if decErr != nil {

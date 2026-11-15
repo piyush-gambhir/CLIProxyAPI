@@ -5,22 +5,13 @@ import (
 	"strings"
 )
 
-
-
-
-
-
 const (
-
 	ClaudeFingerprintProfileDefault = ""
 
 	ClaudeFingerprintProfileClaudeCodeCLI = "claude-code-cli"
 
 	claudeFingerprintProfileOAuthCLIAlias = "oauth-cli"
 )
-
-
-
 
 func NormalizeClaudeFingerprintProfile(raw string) (string, bool) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -32,9 +23,6 @@ func NormalizeClaudeFingerprintProfile(raw string) (string, bool) {
 		return ClaudeFingerprintProfileDefault, false
 	}
 }
-
-
-
 
 func ValidateClaudeFingerprintProfile(raw string) error {
 	if _, ok := NormalizeClaudeFingerprintProfile(raw); !ok {

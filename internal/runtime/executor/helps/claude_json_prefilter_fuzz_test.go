@@ -7,8 +7,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
 func referenceIsClaudeTitleHelperRequest(body []byte) bool {
 	props := ojson.GetBytes(body, "output_config.format.schema.properties")
 	if props.Exists() {
@@ -52,8 +50,6 @@ func referenceIsClaudeTitleHelperRequest(body []byte) bool {
 	return false
 }
 
-
-
 func referenceClaudePayloadHas1hTTL(payload []byte) bool {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return false
@@ -93,7 +89,6 @@ func referenceClaudePayloadHas1hTTL(payload []byte) bool {
 	}
 	return has1h
 }
-
 
 const bs = `\`
 
@@ -137,8 +132,6 @@ func TestPrefilterMatchesReferenceOnSeeds(t *testing.T) {
 		checkPrefilterEquivalence(t, []byte(seed))
 	}
 }
-
-
 
 func FuzzPrefilterMatchesReference(f *testing.F) {
 	for _, seed := range prefilterSeeds {

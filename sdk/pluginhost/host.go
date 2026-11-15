@@ -11,19 +11,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 type ModelInfo = pluginapi.ModelInfo
 
-
 type ThinkingSupport = pluginapi.ThinkingSupport
-
 
 type OAuthModelAlias struct {
 	Name  string
 	Alias string
 	Fork  bool
 }
-
 
 type RuntimeConfig struct {
 	Enabled             bool
@@ -36,13 +32,11 @@ type RuntimeConfig struct {
 	Configs             map[string]PluginInstanceConfig
 }
 
-
 type PluginInstanceConfig struct {
 	Enabled  *bool
 	Priority int
 	Raw      yaml.Node
 }
-
 
 type AuthModelResult struct {
 	Provider string
@@ -52,25 +46,19 @@ type AuthModelResult struct {
 	Err      error
 }
 
-
 type RegisteredPluginInfo = internalpluginhost.RegisteredPluginInfo
-
 
 type RegisteredPluginMenu = internalpluginhost.RegisteredPluginMenu
 
-
 type AuthProviderEntry = pluginapi.AuthProviderEntry
-
 
 type Host struct {
 	inner *internalpluginhost.Host
 }
 
-
 func New() *Host {
 	return &Host{inner: internalpluginhost.New()}
 }
-
 
 func (h *Host) ApplyConfig(ctx context.Context, cfg RuntimeConfig) {
 	if h == nil || h.inner == nil {
@@ -80,11 +68,9 @@ func (h *Host) ApplyConfig(ctx context.Context, cfg RuntimeConfig) {
 	h.inner.ApplyConfig(ctx, internalCfg)
 }
 
-
 func (h *Host) ShutdownAll() {
 	h.ShutdownAllContext(context.Background())
 }
-
 
 func (h *Host) ShutdownAllContext(ctx context.Context) {
 	if h == nil || h.inner == nil {
@@ -93,17 +79,13 @@ func (h *Host) ShutdownAllContext(ctx context.Context) {
 	h.inner.ShutdownAllContext(ctx)
 }
 
-
 func (h *Host) PluginBusy(id string) bool {
 	return h != nil && h.inner != nil && h.inner.PluginBusy(id)
 }
 
-
-
 func (h *Host) UnloadPlugin(id string) bool {
 	return h.UnloadPluginContext(context.Background(), id)
 }
-
 
 func (h *Host) UnloadPluginContext(ctx context.Context, id string) bool {
 	if h == nil || h.inner == nil {
@@ -112,7 +94,6 @@ func (h *Host) UnloadPluginContext(ctx context.Context, id string) bool {
 	return h.inner.UnloadPluginContext(ctx, id)
 }
 
-
 func (h *Host) ParseAuth(ctx context.Context, req pluginapi.AuthParseRequest) (*coreauth.Auth, bool, error) {
 	if h == nil || h.inner == nil {
 		return nil, false, nil
@@ -120,14 +101,12 @@ func (h *Host) ParseAuth(ctx context.Context, req pluginapi.AuthParseRequest) (*
 	return h.inner.ParseAuth(ctx, req)
 }
 
-
 func (h *Host) ParseAuths(ctx context.Context, req pluginapi.AuthParseRequest) ([]*coreauth.Auth, bool, error) {
 	if h == nil || h.inner == nil {
 		return nil, false, nil
 	}
 	return h.inner.ParseAuths(ctx, req)
 }
-
 
 func (h *Host) ModelsForAuth(ctx context.Context, auth *coreauth.Auth) AuthModelResult {
 	if h == nil || h.inner == nil {
@@ -143,14 +122,12 @@ func (h *Host) ModelsForAuth(ctx context.Context, auth *coreauth.Auth) AuthModel
 	}
 }
 
-
 func (h *Host) ModelsForProvider(provider string) []ModelInfo {
 	if h == nil || h.inner == nil {
 		return nil
 	}
 	return registryModelsToPluginModels(h.inner.ModelsForProvider(provider))
 }
-
 
 func (h *Host) RefreshAuth(ctx context.Context, auth *coreauth.Auth) (*coreauth.Auth, bool, error) {
 	if h == nil || h.inner == nil {
@@ -159,7 +136,6 @@ func (h *Host) RefreshAuth(ctx context.Context, auth *coreauth.Auth) (*coreauth.
 	return h.inner.RefreshAuth(ctx, auth)
 }
 
-
 func (h *Host) AuthProviderIdentifiers() []string {
 	if h == nil || h.inner == nil {
 		return nil
@@ -167,16 +143,13 @@ func (h *Host) AuthProviderIdentifiers() []string {
 	return h.inner.AuthProviderIdentifiers()
 }
 
-
 func (h *Host) HasAuthProvider(provider string) bool {
 	return h != nil && h.inner != nil && h.inner.HasAuthProvider(provider)
 }
 
-
 func (h *Host) SameAuthProvider(providerA, providerB string) bool {
 	return h != nil && h.inner != nil && h.inner.SameAuthProvider(providerA, providerB)
 }
-
 
 func (h *Host) StartLogin(ctx context.Context, provider string, baseURL string, metadata ...map[string]any) (pluginapi.AuthLoginStartResponse, bool, error) {
 	if h == nil || h.inner == nil {
@@ -185,14 +158,12 @@ func (h *Host) StartLogin(ctx context.Context, provider string, baseURL string, 
 	return h.inner.StartLogin(ctx, provider, baseURL, metadata...)
 }
 
-
 func (h *Host) PollLogin(ctx context.Context, provider, state string, metadata ...map[string]any) (pluginapi.AuthLoginPollResponse, bool, error) {
 	if h == nil || h.inner == nil {
 		return pluginapi.AuthLoginPollResponse{}, false, nil
 	}
 	return h.inner.PollLogin(ctx, provider, state, metadata...)
 }
-
 
 func (h *Host) AuthDataToCoreAuth(data pluginapi.AuthData, path, fileName string) *coreauth.Auth {
 	if h == nil || h.inner == nil {
@@ -201,7 +172,6 @@ func (h *Host) AuthDataToCoreAuth(data pluginapi.AuthData, path, fileName string
 	return h.inner.AuthDataToCoreAuth(data, path, fileName)
 }
 
-
 func (h *Host) PickAuth(ctx context.Context, req pluginapi.SchedulerPickRequest) (pluginapi.SchedulerPickResponse, bool, error) {
 	if h == nil || h.inner == nil {
 		return pluginapi.SchedulerPickResponse{}, false, nil
@@ -209,17 +179,13 @@ func (h *Host) PickAuth(ctx context.Context, req pluginapi.SchedulerPickRequest)
 	return h.inner.PickAuth(ctx, req)
 }
 
-
 func (h *Host) HasScheduler() bool {
 	return h != nil && h.inner != nil && h.inner.HasScheduler()
 }
 
-
-
 func (h *Host) SchedulerWantsAcrossPriorities() bool {
 	return h != nil && h.inner != nil && h.inner.SchedulerWantsAcrossPriorities()
 }
-
 
 func (h *Host) RegisteredPlugins() []RegisteredPluginInfo {
 	if h == nil || h.inner == nil {

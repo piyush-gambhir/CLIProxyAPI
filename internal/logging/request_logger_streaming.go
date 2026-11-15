@@ -12,90 +12,59 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 type FileStreamingLogWriter struct {
-
 	logsDir string
-
 
 	logFilename string
 
-
 	url string
-
 
 	method string
 
-
 	timestamp time.Time
-
 
 	requestHeaders map[string][]string
 
-
 	requestBodyPath string
-
 
 	responseBodyPath string
 
-
 	responseBodyFile *os.File
-
 
 	chunkChan chan []byte
 
-
 	closeChan chan struct{}
-
 
 	errorChan chan error
 
-
 	responseStatus int
-
 
 	statusWritten bool
 
-
 	responseHeaders map[string][]string
-
 
 	apiRequest []byte
 
-
 	apiRequestSource *FileBodySource
-
 
 	apiResponse []byte
 
-
 	apiResponseSource *FileBodySource
-
 
 	apiWebsocketTimeline []byte
 
-
 	apiResponseErrors []*interfaces.ErrorMessage
-
 
 	apiResponseTimestamp time.Time
 }
-
-
-
-
 
 func (w *FileStreamingLogWriter) WriteChunkAsync(chunk []byte) {
 	if w.chunkChan == nil {
 		return
 	}
 
-
 	chunkCopy := make([]byte, len(chunk))
 	copy(chunkCopy, chunk)
-
 
 	select {
 	case w.chunkChan <- chunkCopy:
@@ -103,14 +72,6 @@ func (w *FileStreamingLogWriter) WriteChunkAsync(chunk []byte) {
 
 	}
 }
-
-
-
-
-
-
-
-
 
 func (w *FileStreamingLogWriter) WriteStatus(status int, headers map[string][]string) error {
 	if status == 0 {
@@ -130,13 +91,6 @@ func (w *FileStreamingLogWriter) WriteStatus(status int, headers map[string][]st
 	return nil
 }
 
-
-
-
-
-
-
-
 func (w *FileStreamingLogWriter) WriteAPIRequest(apiRequest []byte) error {
 	if len(apiRequest) == 0 {
 		return nil
@@ -144,7 +98,6 @@ func (w *FileStreamingLogWriter) WriteAPIRequest(apiRequest []byte) error {
 	w.apiRequest = bytes.Clone(apiRequest)
 	return nil
 }
-
 
 func (w *FileStreamingLogWriter) WriteAPIRequestSource(apiRequestSource *FileBodySource) error {
 	if apiRequestSource == nil || !apiRequestSource.HasPayload() {
@@ -154,13 +107,6 @@ func (w *FileStreamingLogWriter) WriteAPIRequestSource(apiRequestSource *FileBod
 	return nil
 }
 
-
-
-
-
-
-
-
 func (w *FileStreamingLogWriter) WriteAPIResponse(apiResponse []byte) error {
 	if len(apiResponse) == 0 {
 		return nil
@@ -168,7 +114,6 @@ func (w *FileStreamingLogWriter) WriteAPIResponse(apiResponse []byte) error {
 	w.apiResponse = bytes.Clone(apiResponse)
 	return nil
 }
-
 
 func (w *FileStreamingLogWriter) WriteAPIResponseSource(apiResponseSource *FileBodySource) error {
 	if apiResponseSource == nil || !apiResponseSource.HasPayload() {
@@ -178,13 +123,6 @@ func (w *FileStreamingLogWriter) WriteAPIResponseSource(apiResponseSource *FileB
 	return nil
 }
 
-
-
-
-
-
-
-
 func (w *FileStreamingLogWriter) WriteAPIWebsocketTimeline(apiWebsocketTimeline []byte) error {
 	if len(apiWebsocketTimeline) == 0 {
 		return nil
@@ -192,7 +130,6 @@ func (w *FileStreamingLogWriter) WriteAPIWebsocketTimeline(apiWebsocketTimeline 
 	w.apiWebsocketTimeline = bytes.Clone(apiWebsocketTimeline)
 	return nil
 }
-
 
 func (w *FileStreamingLogWriter) WriteAPIResponseErrors(errors []*interfaces.ErrorMessage) error {
 	if len(errors) == 0 {
@@ -208,17 +145,10 @@ func (w *FileStreamingLogWriter) SetFirstChunkTimestamp(timestamp time.Time) {
 	}
 }
 
-
-
-
-
-
-
 func (w *FileStreamingLogWriter) Close() error {
 	if w.chunkChan != nil {
 		close(w.chunkChan)
 	}
-
 
 	if w.closeChan != nil {
 		<-w.closeChan
@@ -258,7 +188,6 @@ func (w *FileStreamingLogWriter) Close() error {
 	return writeErr
 }
 
-
 func (w *FileStreamingLogWriter) Discard() error {
 	if w == nil {
 		return nil
@@ -266,8 +195,6 @@ func (w *FileStreamingLogWriter) Discard() error {
 	w.logFilename = ""
 	return w.Close()
 }
-
-
 
 func (w *FileStreamingLogWriter) asyncWriter() {
 	defer close(w.closeChan)
@@ -349,56 +276,21 @@ func (w *FileStreamingLogWriter) cleanupTempFiles() {
 	}
 }
 
-
-
 type NoOpStreamingLogWriter struct{}
 
-
-
-
-
 func (w *NoOpStreamingLogWriter) WriteChunkAsync(_ []byte) {}
-
-
-
-
-
-
-
-
 
 func (w *NoOpStreamingLogWriter) WriteStatus(_ int, _ map[string][]string) error {
 	return nil
 }
 
-
-
-
-
-
-
-
 func (w *NoOpStreamingLogWriter) WriteAPIRequest(_ []byte) error {
 	return nil
 }
 
-
-
-
-
-
-
-
 func (w *NoOpStreamingLogWriter) WriteAPIResponse(_ []byte) error {
 	return nil
 }
-
-
-
-
-
-
-
 
 func (w *NoOpStreamingLogWriter) WriteAPIWebsocketTimeline(_ []byte) error {
 	return nil
@@ -409,9 +301,5 @@ func (w *NoOpStreamingLogWriter) WriteAPIResponseErrors(_ []*interfaces.ErrorMes
 }
 
 func (w *NoOpStreamingLogWriter) SetFirstChunkTimestamp(_ time.Time) {}
-
-
-
-
 
 func (w *NoOpStreamingLogWriter) Close() error { return nil }

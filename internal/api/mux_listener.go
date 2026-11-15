@@ -114,9 +114,7 @@ func (l *muxListener) Close() error {
 		close(l.closeCh)
 		l.mu.Unlock()
 
-
 		l.inFlight.Wait()
-
 
 		for {
 			select {

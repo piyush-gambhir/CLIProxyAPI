@@ -14,7 +14,6 @@ const (
 	DefaultInFlightMaxStringBytes     = 256
 )
 
-
 type CredentialInFlightConfig struct {
 	SnapshotInterval   string `yaml:"snapshot-interval" json:"snapshot-interval"`
 	StaleAfter         string `yaml:"stale-after" json:"stale-after"`
@@ -26,7 +25,6 @@ type CredentialInFlightConfig struct {
 	MaxStringBytes     int    `yaml:"max-string-bytes" json:"max-string-bytes"`
 	StagingRetention   string `yaml:"staging-retention" json:"staging-retention"`
 }
-
 
 func DefaultCredentialInFlightConfig() CredentialInFlightConfig {
 	return CredentialInFlightConfig{
@@ -41,7 +39,6 @@ func DefaultCredentialInFlightConfig() CredentialInFlightConfig {
 		StagingRetention:   "1m",
 	}
 }
-
 
 func (c CredentialInFlightConfig) Durations() (time.Duration, time.Duration, time.Duration, error) {
 	snapshotInterval, errSnapshot := time.ParseDuration(c.SnapshotInterval)
@@ -58,7 +55,6 @@ func (c CredentialInFlightConfig) Durations() (time.Duration, time.Duration, tim
 	}
 	return snapshotInterval, staleAfter, stagingRetention, nil
 }
-
 
 func (c CredentialInFlightConfig) Validate() error {
 	if _, _, _, errDurations := c.Durations(); errDurations != nil {

@@ -239,7 +239,6 @@ func TestConvertGeminiRequestToAntigravity_AddSkipSentinelToFunctionCall(t *test
 	output, _ := ConvertGeminiRequestToAntigravity("gemini-3-pro-preview", inputJSON, false)
 	outputStr := string(output)
 
-
 	sig := ojson.Get(outputStr, "request.contents.0.parts.0.thoughtSignature").String()
 	expectedSig := "skip_thought_signature_validator"
 	if sig != expectedSig {
@@ -298,9 +297,6 @@ func TestConvertGeminiRequestToAntigravity_ParallelFunctionCallsOnlyFirstGetsSen
 
 func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 
-
-
-
 	input := `{
 		"model": "claude-opus-4-6-thinking",
 		"request": {
@@ -337,7 +333,6 @@ func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 		t.Fatalf("fixCLIToolResponse failed: %v", err)
 	}
 
-
 	contents := ojson.GetBytesNoCopy(result, "request.contents").Array()
 	var funcContent ojson.Result
 	for _, c := range contents {
@@ -350,12 +345,10 @@ func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 		t.Fatal("function role content should exist in output")
 	}
 
-
 	funcResp := funcContent.Get("parts.0.functionResponse")
 	if !funcResp.Exists() {
 		t.Fatal("functionResponse should exist in output")
 	}
-
 
 	inlineParts := funcResp.Get("parts").Array()
 	if len(inlineParts) != 1 {
@@ -367,7 +360,6 @@ func TestFixCLIToolResponse_PreservesFunctionResponseParts(t *testing.T) {
 	if inlineParts[0].Get("inlineData.data").String() != "iVBOR" {
 		t.Errorf("Expected data 'iVBOR', got '%s'", inlineParts[0].Get("inlineData.data").String())
 	}
-
 
 	if funcResp.Get("response.result").String() != "Screenshot taken" {
 		t.Errorf("Expected response.result 'Screenshot taken', got '%s'", funcResp.Get("response.result").String())
@@ -559,7 +551,6 @@ func TestFixCLIToolResponse_MoreResponsesThanCalls(t *testing.T) {
 	if !funcContent.Exists() {
 		t.Fatal("function role content should exist in output")
 	}
-
 
 	name0 := funcContent.Get("parts.0.functionResponse.name").String()
 	if name0 != "Bash" {

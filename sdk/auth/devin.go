@@ -17,12 +17,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type DevinAuthenticator struct {
 	CallbackPort int
 	AuthService  *devinauth.DevinAuthService
 }
-
 
 func NewDevinAuthenticator() *DevinAuthenticator {
 	return &DevinAuthenticator{
@@ -30,16 +28,13 @@ func NewDevinAuthenticator() *DevinAuthenticator {
 	}
 }
 
-
 func (a *DevinAuthenticator) Provider() string {
 	return "devin"
 }
 
-
 func (a *DevinAuthenticator) RefreshLead() *time.Duration {
 	return nil
 }
-
 
 func (a *DevinAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {
@@ -265,8 +260,6 @@ waitForResult:
 
 var errDevinUnrecognizedPaste = errors.New("unrecognized devin authorization code or token format")
 
-
-
 func parseDevinManualPaste(input, expectedState string) (authCode, rawToken string, err error) {
 	trimmed := strings.TrimSpace(input)
 	trimmed = strings.Trim(trimmed, "\"'")
@@ -274,7 +267,6 @@ func parseDevinManualPaste(input, expectedState string) (authCode, rawToken stri
 	if trimmed == "" {
 		return "", "", nil
 	}
-
 
 	if strings.HasPrefix(trimmed, "devin-session-token$") || strings.HasPrefix(trimmed, "eyJ") {
 		return "", trimmed, nil
@@ -288,7 +280,6 @@ func parseDevinManualPaste(input, expectedState string) (authCode, rawToken stri
 			return "", "", fmt.Errorf("devin oauth error: %s", errMsg)
 		}
 		if parsed.Code != "" {
-
 
 			if expectedState != "" && parsed.State != "" && parsed.State != expectedState {
 				return "", "", fmt.Errorf("devin oauth state mismatch (possible CSRF)")

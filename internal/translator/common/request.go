@@ -10,10 +10,8 @@ import (
 
 const tooluLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// GenerateClaudeToolCallID generates a random tool use ID prefixed with toolu_
-// using rejection sampling to guarantee a uniform distribution across the 62 alphanumeric characters.
 func GenerateClaudeToolCallID() string {
-	const maxValidByte = 256 - (256 % len(tooluLetters)) // 248: exact multiple of 62
+	const maxValidByte = 256 - (256 % len(tooluLetters))
 	var b strings.Builder
 	b.Grow(len("toolu_") + 24)
 	b.WriteString("toolu_")
@@ -35,8 +33,6 @@ func GenerateClaudeToolCallID() string {
 	return b.String()
 }
 
-// RequestModelName returns the model name from the original request, falling
-// back to the translated request when the original request is unavailable.
 func RequestModelName(originalRequestRawJSON, requestRawJSON []byte) string {
 	for _, rawJSON := range [][]byte{originalRequestRawJSON, requestRawJSON} {
 		if modelName := requestModelName(rawJSON); modelName != "" {

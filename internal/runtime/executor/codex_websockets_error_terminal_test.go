@@ -13,12 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
-
 func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 	received := make(chan string, 8)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +42,6 @@ func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 			return true
 		}
 
-
 		if !write(`{"type":"response.created","response":{"id":"r1"}}`) {
 			return
 		}
@@ -58,9 +51,6 @@ func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 		if !readFrame() {
 			return
 		}
-
-
-
 
 		if !write(`{"type":"error","response_id":"r1","error":{"message":"boom"}}`) {
 			return
@@ -140,9 +130,6 @@ func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 	}
 	read()
 	wantRejected(`{"type":"response.interrupt","response_id":"unknown-2"}`, "unknown interrupt after id-less failure")
-
-
-
 
 	if errInterrupt := interrupt(`{"type":"response.interrupt","response_id":"r2"}`); errInterrupt != nil {
 		t.Fatalf("interrupt r2 after id-less failure = %v, want nil (already terminal)", errInterrupt)

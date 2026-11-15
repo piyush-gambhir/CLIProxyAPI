@@ -69,11 +69,9 @@ type UsageReporter struct {
 
 	responseModel string
 
-
 	responseModelFinal atomic.Bool
 
 	upstreamModelMu sync.RWMutex
-
 
 	upstreamModel string
 }
@@ -161,15 +159,12 @@ func NewUsageReporter(ctx context.Context, provider, model string, auth *cliprox
 	return reporter
 }
 
-
 func (r *UsageReporter) SetStream(stream bool) {
 	if r == nil {
 		return
 	}
 	r.stream = stream
 }
-
-
 
 func (r *UsageReporter) SetSessionHierarchy(sessionID, parentSessionID string) {
 	if r == nil {
@@ -199,7 +194,6 @@ func isHierarchyParent(primary, parent string) bool {
 	}
 	return false
 }
-
 
 func (r *UsageReporter) UpdateAccessTokenFingerprint(auth *cliproxyauth.Auth) {
 	if r == nil {
@@ -235,8 +229,6 @@ func (r *UsageReporter) accessTokenFingerprint() string {
 	return r.accessTokenHash
 }
 
-
-
 func (r *UsageReporter) ObserveResponseModel(payload []byte) {
 	if r == nil || r.responseModelFinal.Load() {
 		return
@@ -260,7 +252,6 @@ func (r *UsageReporter) ObserveResponseModel(payload []byte) {
 	}
 }
 
-
 func (r *UsageReporter) SetResponseModel(model string) {
 	if r == nil || r.responseModelFinal.Load() {
 		return
@@ -274,10 +265,6 @@ func (r *UsageReporter) SetResponseModel(model string) {
 	r.responseModelMu.Unlock()
 }
 
-
-
-
-
 func (r *UsageReporter) SetUpstreamModel(model string) {
 	if r == nil {
 		return
@@ -286,7 +273,6 @@ func (r *UsageReporter) SetUpstreamModel(model string) {
 	r.upstreamModel = strings.TrimSpace(model)
 	r.upstreamModelMu.Unlock()
 }
-
 
 func (r *UsageReporter) UpstreamModel() string {
 	if r == nil {
@@ -297,12 +283,9 @@ func (r *UsageReporter) UpstreamModel() string {
 	return r.upstreamModel
 }
 
-
 func (r *UsageReporter) IsResponseModelFinal() bool {
 	return r != nil && r.responseModelFinal.Load()
 }
-
-
 
 func (r *UsageReporter) warnModelSubstitution(ctx context.Context) {
 	if r == nil {
@@ -326,7 +309,6 @@ func (r *UsageReporter) warnModelSubstitution(ctx context.Context) {
 	LogWithRequestID(ctx).Warnf("%s executor: upstream served model %q for requested model %q (auth_index=%s)", providerName, served, r.model, r.authIndexForLog())
 }
 
-
 func (r *UsageReporter) authIndexForLog() string {
 	if r == nil {
 		return "nil"
@@ -336,7 +318,6 @@ func (r *UsageReporter) authIndexForLog() string {
 	}
 	return "nil"
 }
-
 
 func (r *UsageReporter) ResponseModel() string {
 	if r == nil {
@@ -370,8 +351,6 @@ func (r *UsageReporter) PublishAdditionalModel(ctx context.Context, model string
 	r.publishRecord(ctx, record)
 }
 
-
-
 func (r *UsageReporter) SetTranslatedRequestMetadata(payload []byte, format string) {
 	if r == nil {
 		return
@@ -379,8 +358,6 @@ func (r *UsageReporter) SetTranslatedRequestMetadata(payload []byte, format stri
 	r.reasoning = thinking.ExtractTranslatedReasoningEffort(payload, format)
 	r.effectiveServiceTier = extractEffectiveServiceTier(payload)
 }
-
-
 
 func (r *UsageReporter) SetTranslatedReasoningEffort(payload []byte, format string) {
 	r.SetTranslatedRequestMetadata(payload, format)
@@ -403,11 +380,6 @@ func extractEffectiveServiceTier(payload []byte) string {
 func (r *UsageReporter) TrackHTTPClient(client *http.Client) *http.Client {
 	return r.trackHTTPClient(client, false)
 }
-
-
-
-
-
 
 func (r *UsageReporter) TrackHTTPClientRoundTripOnly(client *http.Client) *http.Client {
 	return r.trackHTTPClient(client, true)
@@ -485,14 +457,9 @@ func (r *UsageReporter) IsFirstPacketSet() bool {
 	return r.firstPacketSet
 }
 
-
 func (r *UsageReporter) RecordFirstPacket() {
 	r.ObserveTokenEvent(false)
 }
-
-
-
-
 
 func (r *UsageReporter) ObserveTokenEvent(isToken bool) {
 	if r == nil {
@@ -565,7 +532,6 @@ func (r *UsageReporter) buildAdditionalModelRecord(model string, detail usage.De
 	rec.RequestID = uuid.NewString()
 	if rec.HomeSelection != nil {
 
-
 		selection := *rec.HomeSelection
 		selection.Additional = true
 		rec.HomeSelection = &selection
@@ -615,10 +581,6 @@ func hasNonZeroTokenUsage(detail usage.Detail) bool {
 		detail.TokenBreakdown.TotalTokens != 0
 }
 
-
-
-
-
 func (r *UsageReporter) EnsurePublished(ctx context.Context) {
 	if r == nil {
 		return
@@ -627,8 +589,6 @@ func (r *UsageReporter) EnsurePublished(ctx context.Context) {
 		r.publishAttemptRecord(ctx, r.buildRecord(usage.Detail{}, false, usage.Failure{}))
 	})
 }
-
-
 
 func (r *UsageReporter) publishAttemptRecord(ctx context.Context, record usage.Record) {
 	r.publishRecord(ctx, record)
@@ -643,14 +603,12 @@ func (r *UsageReporter) publishRecord(ctx context.Context, record usage.Record) 
 	usage.PublishRecord(ctx, record)
 }
 
-
 func (r *UsageReporter) RequestID() string {
 	if r == nil {
 		return ""
 	}
 	return r.requestID
 }
-
 
 func (r *UsageReporter) TraceID() string {
 	if r == nil {
@@ -659,7 +617,6 @@ func (r *UsageReporter) TraceID() string {
 	return r.traceID
 }
 
-
 func (r *UsageReporter) SelectionID() string {
 	if r == nil {
 		return ""
@@ -667,14 +624,12 @@ func (r *UsageReporter) SelectionID() string {
 	return r.selectionID
 }
 
-
 func (r *UsageReporter) IsNativeKey() bool {
 	if r == nil {
 		return false
 	}
 	return r.isNativeKey
 }
-
 
 func (r *UsageReporter) AccessProvider() string {
 	if r == nil {
@@ -698,7 +653,6 @@ func (r *UsageReporter) buildRecordForModel(model string, detail usage.Detail, f
 	if r == nil {
 		return usage.Record{Model: model, Detail: detail, Failed: failed, Fail: fail, Generate: usage.GenerateFlag(true)}
 	}
-
 
 	responseModel := ""
 	if model == r.model {
@@ -889,7 +843,6 @@ func APIKeyFromContext(ctx context.Context) string {
 	return usage.APIKeyFromContext(ctx)
 }
 
-
 func AccessProviderFromContext(ctx context.Context) string {
 	if provider := usage.AccessProviderFromContext(ctx); provider != "" {
 		return provider
@@ -963,7 +916,6 @@ func resolveUsageAuthType(auth *cliproxyauth.Auth) string {
 	return auth.AuthKind()
 }
 
-
 type StreamUsageBuffer struct {
 	detail                       usage.Detail
 	ok                           bool
@@ -1035,7 +987,6 @@ func hasGeminiCandidateArtifactMarker(payload []byte) bool {
 		bytes.Contains(payload, geminiInlineDataSnakeMarker) ||
 		bytes.Contains(payload, geminiPredictionsMarker)
 }
-
 
 func (b *StreamUsageBuffer) Observe(detail usage.Detail, ok bool) {
 	if b == nil || !ok {
@@ -1120,8 +1071,6 @@ func (b *StreamUsageBuffer) applyGeminiStreamObservations() {
 	}
 }
 
-
-
 func (b *StreamUsageBuffer) SetRequestPayload(requestPayload []byte, contentType ...string) {
 	if b == nil || len(requestPayload) == 0 {
 		return
@@ -1129,11 +1078,9 @@ func (b *StreamUsageBuffer) SetRequestPayload(requestPayload []byte, contentType
 	b.requestedImageDetails = ParseRequestImageDetails(requestPayload, contentType...)
 }
 
-
 func (b *StreamUsageBuffer) ObserveGeminiStream(line []byte) {
 	b.observeGeminiFamilyStream(line, false)
 }
-
 
 func (b *StreamUsageBuffer) ObserveAntigravityStream(line []byte) {
 	b.observeGeminiFamilyStream(line, true)
@@ -1226,8 +1173,6 @@ func (b *StreamUsageBuffer) observeGeminiFamilyStream(line []byte, allowResponse
 	}
 	b.Observe(detail, true)
 }
-
-
 
 func (b *StreamUsageBuffer) ObserveOpenAIStream(line []byte) {
 	if b == nil {
@@ -1380,7 +1325,6 @@ func (b *StreamUsageBuffer) applyOpenAIStreamObservations() {
 	}
 }
 
-
 func (b *StreamUsageBuffer) ObserveClaudeStream(line []byte) {
 	if b == nil {
 		return
@@ -1402,8 +1346,6 @@ func (b *StreamUsageBuffer) ObserveClaudeStream(line []byte) {
 		b.applyClaudeStreamToolObservations()
 	}
 }
-
-
 
 func (b *StreamUsageBuffer) ObserveClaudeSSEEvent(rawEvent []byte) {
 	if b == nil || len(rawEvent) == 0 {
@@ -1510,7 +1452,6 @@ func (b *StreamUsageBuffer) applyClaudeStreamToolObservations() {
 	b.ok = true
 }
 
-
 func (b *StreamUsageBuffer) Publish(ctx context.Context, reporter *UsageReporter) bool {
 	if b == nil || !b.ok || reporter == nil {
 		return false
@@ -1521,7 +1462,6 @@ func (b *StreamUsageBuffer) Publish(ctx context.Context, reporter *UsageReporter
 	reporter.Publish(ctx, b.detail)
 	return true
 }
-
 
 func (b *StreamUsageBuffer) PublishFailure(ctx context.Context, reporter *UsageReporter, errs ...error) bool {
 	if b == nil || reporter == nil {
@@ -1534,7 +1474,6 @@ func (b *StreamUsageBuffer) PublishFailure(ctx context.Context, reporter *UsageR
 	return true
 }
 
-
 func (b *StreamUsageBuffer) Detail() (usage.Detail, bool) {
 	if b == nil || !b.ok {
 		return usage.Detail{}, false
@@ -1542,16 +1481,12 @@ func (b *StreamUsageBuffer) Detail() (usage.Detail, bool) {
 	return b.detail, true
 }
 
-
 func (b *StreamUsageBuffer) ResponseModel() string {
 	if b == nil {
 		return ""
 	}
 	return b.responseModel
 }
-
-
-
 
 func (b *StreamUsageBuffer) ObserveResponsesStream(line []byte) bool {
 	if b == nil {
@@ -1637,8 +1572,6 @@ func ParseCodexUsageWithOutputItems(data []byte, itemsByIndex map[int64][]byte, 
 	} else if len(itemsByIndex) > 0 || len(fallback) > 0 {
 		applyResponsesCollectedOutputItemsUsage(&detail, itemsByIndex, fallback)
 	}
-
-
 
 	if hasOpenAIStyleUsageTokenFields(root.Get("response.tool_usage.image_gen")) {
 		detail.ImageCount = nil
@@ -1792,8 +1725,6 @@ func applyOpenAIChatToolCallsUsage(detail *usage.Detail, root ojson.Result) {
 		}
 	}
 }
-
-
 
 func parseOpenAIStyleUsageWithCache(root, usageNode ojson.Result) (usage.Detail, bool) {
 	var detail usage.Detail
@@ -2295,7 +2226,6 @@ func applyResponsesOutputItemSliceUsage(detail *usage.Detail, items []ojson.Resu
 		}
 	} else if imageSearchCalls > 0 && detail.ToolUsageDetails.WebSearchCalls != nil && *detail.ToolUsageDetails.WebSearchCalls == 0 {
 
-
 		detail.ToolUsageDetails.WebSearchCalls = usage.Int64Ptr(imageSearchCalls)
 		detail.WebSearchRequests = usage.Int64Ptr(imageSearchCalls)
 	}
@@ -2348,8 +2278,6 @@ func isEmptyImageDetails(d *usage.ImageDetails) bool {
 	}
 	return d.Size == "" && d.Resolution == "" && d.ImageSize == "" && d.AspectRatio == "" && d.Quality == "" && d.Background == "" && d.OutputFormat == "" && d.ResponseFormat == "" && d.MimeType == "" && d.InputFidelity == ""
 }
-
-
 
 func ParseRequestImageDetails(requestPayload []byte, contentType ...string) *usage.ImageDetails {
 	if len(contentType) > 0 {
@@ -2409,8 +2337,6 @@ func ParseRequestImageDetails(requestPayload []byte, contentType ...string) *usa
 	return out
 }
 
-
-
 func parseMultipartImageDetails(payload []byte, boundary string) *usage.ImageDetails {
 	if boundary == "" {
 		return nil
@@ -2454,8 +2380,6 @@ func parseMultipartImageDetails(payload []byte, boundary string) *usage.ImageDet
 	}
 	return out
 }
-
-
 
 func ParseOpenAIImageUsage(requestPayload, responsePayload []byte, contentType ...string) usage.Detail {
 	var detail usage.Detail
@@ -2609,18 +2533,14 @@ func ParseOpenAIImageUsage(requestPayload, responsePayload []byte, contentType .
 	return detail
 }
 
-
-
 func ParseXAIImageUsage(requestPayload, responsePayload []byte) usage.Detail {
 	return ParseOpenAIImageUsage(requestPayload, responsePayload)
 }
-
 
 func ParseXAIVideoUsage(requestPayload, responsePayload []byte) usage.Detail {
 	detail := ParseOpenAIUsage(responsePayload)
 	root := util.ParseGJSONBytesNoCopy(responsePayload)
 	reqRoot := util.ParseGJSONBytesNoCopy(requestPayload)
-
 
 	hasCompletedVideo := root.Get("usage").Exists() || root.Get("video").Exists() || root.Get("data").Exists() || root.Get("url").Exists() || strings.EqualFold(strings.TrimSpace(root.Get("status").String()), "completed")
 	if !hasCompletedVideo {
@@ -2767,7 +2687,6 @@ func parseClaudeUsageNode(usageNode ojson.Result) usage.Detail {
 	cacheCreationTokens := usageNode.Get("cache_creation_input_tokens").Int()
 	rawOutputTokens := usageNode.Get("output_tokens").Int()
 
-
 	reasoningNode := firstExistingUsageNode(
 		usageNode,
 		"output_tokens_details.thinking_tokens",
@@ -2783,8 +2702,6 @@ func parseClaudeUsageNode(usageNode ojson.Result) usage.Detail {
 		nonReasoningOutput = rawOutputTokens - reasoningTokens
 	} else if reasoningTokens > rawOutputTokens {
 
-
-
 		nonReasoningOutput = 0
 	}
 	detail := usage.Detail{
@@ -2796,16 +2713,12 @@ func parseClaudeUsageNode(usageNode ojson.Result) usage.Detail {
 		CacheCreationTokens: cacheCreationTokens,
 	}
 
-
-
-
 	if speed := cloneTrimmedString(usageNode.Get("speed").String()); speed != "" {
 		detail.ResponseServiceTier = speed
 	}
 	if detail.CachedTokens == 0 {
 		detail.CachedTokens = detail.CacheCreationTokens
 	}
-
 
 	detail.TotalTokens = detail.InputTokens + rawOutputTokens + detail.CacheReadTokens + detail.CacheCreationTokens
 	detail.TokenBreakdown = usage.NewIndependentTokenBreakdown(
@@ -3657,8 +3570,6 @@ func applyGeminiNodesArtifactsWithCounter(detail *usage.Detail, candidates, pred
 	}
 }
 
-
-
 func ApplyGeminiRequestImageConfig(detail *usage.Detail, requestPayload []byte) {
 	if detail == nil || detail.ImageCount == nil || *detail.ImageCount <= 0 {
 		return
@@ -3991,9 +3902,6 @@ func rememberStopWithoutUsage(traceID string) {
 	time.AfterFunc(10*time.Minute, func() { stopChunkWithoutUsage.Delete(traceID) })
 }
 
-
-
-
 func FilterSSEUsageMetadata(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -4058,10 +3966,6 @@ func FilterSSEUsageMetadata(payload []byte) []byte {
 	return bytes.Join(lines, []byte("\n"))
 }
 
-
-
-
-
 func StripUsageMetadataFromJSON(rawJSON []byte) ([]byte, bool) {
 	jsonBytes := bytes.TrimSpace(rawJSON)
 	if len(jsonBytes) == 0 || !bytes.Contains(jsonBytes, geminiUsageMetaMarker) || !ojson.ValidBytes(jsonBytes) {
@@ -4107,8 +4011,6 @@ func StripUsageMetadataFromJSON(rawJSON []byte) ([]byte, bool) {
 	if finishReason != "" || (!topUsage.Exists() && !respUsage.Exists()) {
 		return rawJSON, false
 	}
-
-
 
 	if topUsage.Exists() != respUsage.Exists() {
 		key := topUsageKey

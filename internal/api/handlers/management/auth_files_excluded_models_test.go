@@ -142,7 +142,6 @@ func TestUploadAuthFileRejectsInvalidExcludedModels(t *testing.T) {
 				}
 				h.UploadAuthFile(c)
 
-
 				if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "excluded_models") || !strings.Contains(rec.Body.String(), "must be a string") {
 					t.Fatalf("status = %d body = %s, want 400 excluded_models validation error", rec.Code, rec.Body.String())
 				}
@@ -173,7 +172,6 @@ func TestPatchAuthFileFieldsRejectsConfigCredential(t *testing.T) {
 		t.Error("post-persist hook called for config credential")
 		return nil
 	}
-
 
 	rec := patchExcludedModelsFields(h, `"excluded_models":[]`)
 	if rec.Code != http.StatusNotFound {

@@ -32,41 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //	 properly licensed public code and works well on 70+ languages including Python, Go, JavaScript, React,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 type DevinExecutor struct {
 	cfg           *config.Config
@@ -75,23 +41,19 @@ type DevinExecutor struct {
 	cachedMatcher *helps.SensitiveWordMatcher
 }
 
-
 func NewDevinExecutor(cfg *config.Config) *DevinExecutor {
 	return &DevinExecutor{
 		cfg: cfg,
 	}
 }
 
-
 func (e *DevinExecutor) Identifier() string {
 	return "devin"
 }
 
-
 func (e *DevinExecutor) RequestToFormat(_ cliproxyexecutor.Request, _ cliproxyexecutor.Options) sdktranslator.Format {
 	return sdktranslator.FormatInteractions
 }
-
 
 func (e *DevinExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -111,7 +73,6 @@ func (e *DevinExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Aut
 		req.Header.Set("Sentry-Trace", helps.GenerateDevinSentryTrace())
 	}
 
-
 	req.Header["User-Agent"] = []string{""}
 
 	var attrs map[string]string
@@ -121,7 +82,6 @@ func (e *DevinExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Aut
 	util.ApplyCustomHeadersFromAttrs(req, attrs)
 	return nil
 }
-
 
 func (e *DevinExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
@@ -137,7 +97,6 @@ func (e *DevinExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth
 	httpClient := helps.NewDevinHTTPClient(ctx, e.cfg, auth, 0)
 	return httpClient.Do(httpReq)
 }
-
 
 func (e *DevinExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if auth == nil {
@@ -198,7 +157,6 @@ func (e *DevinExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*
 		updated.Attributes["org_name"] = status.OrgName
 	}
 
-
 	if updated.Quota.Signals == nil {
 		updated.Quota.Signals = make(map[string]string)
 	}
@@ -225,14 +183,12 @@ func (e *DevinExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*
 	return updated, nil
 }
 
-
 func (e *DevinExecutor) CountTokens(_ context.Context, _ *cliproxyauth.Auth, req cliproxyexecutor.Request, _ cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 
 	promptTokens := int64(len(req.Payload) / 4)
 	out := []byte(fmt.Sprintf(`{"total_tokens":%d,"input_tokens":%d}`, promptTokens, promptTokens))
 	return cliproxyexecutor.Response{Payload: out}, nil
 }
-
 
 func (e *DevinExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
@@ -331,7 +287,6 @@ func (e *DevinExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 	}
 	return cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}, nil
 }
-
 
 func (e *DevinExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
@@ -434,13 +389,11 @@ func (e *DevinExecutor) prepareDevinHTTPRequest(ctx context.Context, auth *clipr
 	}
 	systemPrompt, prompts, tools, temp, maxTokens, sessionID, cascadeID, thinkingLevel, budgetTokens := parseInteractionsPayload(payload, opts.OriginalRequest)
 
-
 	if opts.SourceFormat == sdktranslator.FormatClaude {
 		if directive := thinking.ClaudeEffortDirective(req.Payload); directive != "" {
 			thinkingLevel = directive
 		}
 	}
-
 
 	prompts, errTurns := helps.CheckDevinUserTurns(prompts)
 	if errTurns != nil {
@@ -531,8 +484,6 @@ func (e *DevinExecutor) streamDevinFrames(
 	e.streamDevinFramesForAuth(ctx, body, req, opts, chatModelUID, responseFormat, reporter, out, nil)
 }
 
-
-
 func (e *DevinExecutor) streamDevinFramesForAuth(
 	ctx context.Context,
 	body io.Reader,
@@ -575,8 +526,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 	var accumulatedSignature []byte
 	var signatureType string
 
-
-
 	originalReq := helps.ApplyPatchOriginalRequest(req, opts)
 	patchRequested := helps.ApplyPatchRequested(originalReq)
 	var translateParam any
@@ -602,8 +551,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 
 		eventType := ojson.GetBytesNoCopy(trimmed, "event_type").String()
 		isFailedEvent := eventType == "response.failed" || eventType == "interaction.failed"
-
-
 
 		if isFailedEvent && !createdSent {
 			return true
@@ -684,8 +631,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 	var lastStopReason uint64
 	sawEOS := false
 
-
-
 	streamContentEarly := responseFormat == sdktranslator.FormatOpenAI || responseFormat == sdktranslator.FormatOpenAIResponse
 	var pendingActions []func() bool
 	var deferredThoughtStops []int
@@ -709,11 +654,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 		return true
 	}
 
-
-
-
-
-
 	var postToolBufferedContent []string
 
 	emitContentChunk := func(chunk string) bool {
@@ -723,7 +663,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 				stopIdx = stepIndex
 			}
 			if responseFormat == sdktranslator.FormatOpenAIResponse {
-
 
 				deferredThoughtStops = append(deferredThoughtStops, stopIdx)
 			} else {
@@ -854,9 +793,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			slot.invalidJSON = true
 		}
 
-
-
-
 		if slot.invalidJSON && slot.invalidArgs.Len() > 0 && slot.name != "" {
 			if !patchRequested || !helps.IsApplyPatchUpstreamTool(originalReq, slot.name) {
 				buffered := slot.invalidArgs.String()
@@ -967,7 +903,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 		}
 	}
 
-
 	for {
 		flag, payload, errRead := helps.ReadConnectFrame(body)
 		if errRead != nil {
@@ -979,7 +914,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			break
 		}
 		streamFrameCount++
-
 
 		if flag&helps.ConnectFlagEndStream != 0 {
 			code, errTrailer := helps.ParseDevinTrailerError(payload)
@@ -1077,7 +1011,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			signatureType = frameRes.DeltaSignatureType
 		}
 
-
 		if frameRes.ThinkingText != "" {
 			if len(pendingActions) > 0 {
 				if !flushPendingActions() {
@@ -1113,7 +1046,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			}
 		}
 
-
 		if len(frameRes.DeltaSignature) > 0 {
 			if thoughtStepIndex == -1 && !contentStarted {
 				thoughtStepIndex = stepIndex
@@ -1144,7 +1076,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			}
 		}
 
-
 		for _, tc := range frameRes.ToolCallDeltas {
 			diagKey := patchDiagnostics.ObserveDelta(tc)
 			if thoughtStarted {
@@ -1159,7 +1090,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 				}
 			}
 		}
-
 
 		if frameRes.ContentText != "" {
 			accumulatedContent.WriteString(frameRes.ContentText)
@@ -1194,7 +1124,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 		return
 	}
 
-
 	if streamErr != nil && ctx.Err() == nil {
 		helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
 		failedEvent, _ := ojson.SetBytes([]byte(`{"event_type":"response.failed","error":{"message":"","code":"stream_read_error"}}`), "error.message", streamErr.Error())
@@ -1202,8 +1131,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 		emitStreamError(streamErr)
 		return
 	}
-
-
 
 	if !sawEOS && ctx.Err() == nil {
 		truncErr := fmt.Errorf("devin stream terminated prematurely before EOS trailer")
@@ -1213,7 +1140,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 		emitStreamError(truncErr)
 		return
 	}
-
 
 	completionStatus := "completed"
 	var completionFinishReason string
@@ -1274,7 +1200,6 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			helps.AppendAPIResponseChunk(ctx, e.cfg, []byte("\n=== DEVIN UPSTREAM RESPONSE SUMMARY ===\n"+string(summaryJSON)+"\n"))
 		}
 	}
-
 
 	if responseFormat == sdktranslator.FormatInteractions {
 		select {
@@ -1711,12 +1636,10 @@ func parseInteractionsPayload(payload, originalRequest []byte) (
 ) {
 	root := util.ParseGJSONBytesNoCopy(payload)
 
-
 	systemPrompt = strings.TrimSpace(root.Get("system_instruction").String())
 	if systemPrompt == "" {
 		systemPrompt = strings.TrimSpace(root.Get("systemInstruction").String())
 	}
-
 
 	genCfg := root.Get("generation_config")
 	if !genCfg.Exists() {
@@ -1744,10 +1667,6 @@ func parseInteractionsPayload(payload, originalRequest []byte) (
 		maxTokens = helps.DevinDefaultMaxTokens
 	}
 
-
-
-
-
 	sessionID = strings.TrimSpace(firstNonEmpty(
 		root.Get("session_id").String(),
 		root.Get("sessionId").String(),
@@ -1764,7 +1683,6 @@ func parseInteractionsPayload(payload, originalRequest []byte) (
 		))
 	}
 	cascadeID = sessionID
-
 
 	var pendingToolCalls []string
 	matchPendingToolCall := func(id string) (bool, string) {
@@ -1977,12 +1895,10 @@ func parseInteractionsPayload(payload, originalRequest []byte) (
 		}
 	}
 
-
 	if len(originalRequest) > 0 {
 		supplementSignaturesFromOriginal(originalRequest, prompts)
 		supplementImagesFromOriginal(originalRequest, prompts)
 	}
-
 
 	toolsRes := root.Get("tools")
 	if toolsRes.IsArray() {
@@ -2127,7 +2043,6 @@ func isProtocolWrapperObject(obj ojson.Result, wrapperKey string) bool {
 		return false
 	}
 
-
 	if strings.EqualFold(strings.TrimSpace(obj.Get("type").String()), "tool_result") {
 		allAllowed := true
 		obj.ForEach(func(k, _ ojson.Result) bool {
@@ -2140,7 +2055,6 @@ func isProtocolWrapperObject(obj ojson.Result, wrapperKey string) bool {
 		})
 		return allAllowed
 	}
-
 
 	allAllowed := true
 	hasWrapper := false
@@ -2317,9 +2231,6 @@ func extractFunctionResultContent(step ojson.Result) (string, []helps.DevinImage
 	return resText, images
 }
 
-
-
-
 func devinUnsendableMediaType(part ojson.Result) string {
 	if part.Get("text").String() != "" {
 		return ""
@@ -2330,8 +2241,6 @@ func devinUnsendableMediaType(part ojson.Result) string {
 	}
 	return ""
 }
-
-
 
 func extractInteractionsStepContent(step ojson.Result) (string, []helps.DevinImage, string) {
 	content := step.Get("content")
@@ -2549,7 +2458,6 @@ func parseSignatureBytes(sigStr string) ([]byte, string) {
 		return []byte(s), "gemini"
 	case internalsignature.SignatureProviderMeta:
 
-
 		return nil, ""
 	}
 	if strings.HasPrefix(s, "AY") {
@@ -2732,7 +2640,6 @@ func (e *DevinExecutor) getSensitiveWordMatcher() *helps.SensitiveWordMatcher {
 	return e.cachedMatcher
 }
 
-
 func devinApplyPatchConsumeReason(respLog *helps.DevinUpstreamResponseLog, _ error) string {
 	status := ""
 	if respLog != nil {
@@ -2750,24 +2657,13 @@ func devinApplyPatchConsumeReason(respLog *helps.DevinUpstreamResponseLog, _ err
 	}
 }
 
-
-
 func devinApplyPatchStatusError(diagnostic string) statusErr {
 	return statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage, diagnostic: diagnostic}
 }
 
-
-
-
-
-
 func devinTrailerStatusError(code int, msg string, auth *cliproxyauth.Auth) statusErr {
 	return devinQuotaScopedStatusError(statusErr{code: code, msg: msg}, auth, time.Now())
 }
-
-
-
-
 
 func devinQuotaScopedStatusError(err statusErr, auth *cliproxyauth.Auth, now time.Time) statusErr {
 	if err.code != http.StatusTooManyRequests {
@@ -2792,9 +2688,6 @@ func newDevinStatusError(code int, headers http.Header, body []byte) statusErr {
 	return newDevinStatusErrorForAuth(code, headers, body, nil)
 }
 
-
-
-
 func newDevinStatusErrorForAuth(code int, headers http.Header, body []byte, auth *cliproxyauth.Auth) statusErr {
 	err := statusErr{code: code, msg: string(body)}
 	if code == http.StatusTooManyRequests && headers != nil {
@@ -2810,7 +2703,6 @@ func newDevinStatusErrorForAuth(code int, headers http.Header, body []byte, auth
 			}
 		}
 	}
-
 
 	return devinQuotaScopedStatusError(err, auth, time.Now())
 }
@@ -2889,10 +2781,6 @@ func resolveDevinSessionAndCascadeIDs(ctx context.Context, sessionID, cascadeID 
 	return sessionID, cascadeID
 }
 
-
-
-
-
 func devinTotalInputTokens(u *helps.DevinUsage) int64 {
 	if u == nil {
 		return 0
@@ -2934,6 +2822,5 @@ func setDevinStringWithoutHTMLEscapeDoc(doc *ojson.Doc, path, value string) erro
 	raw := bytes.TrimRight(buf.Bytes(), "\n")
 	return doc.SetRawBytes(path, raw)
 }
-
 
 func (e *DevinExecutor) SupportsApplyPatch() bool { return e != nil }

@@ -11,8 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 func (h *Host) callHostRoutingResetCooldown(ctx context.Context, request []byte) ([]byte, error) {
 	var req pluginapi.HostRoutingResetCooldownRequest
 	if errUnmarshal := json.Unmarshal(request, &req); errUnmarshal != nil {

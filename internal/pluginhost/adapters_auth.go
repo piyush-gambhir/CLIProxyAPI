@@ -16,14 +16,11 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
-
 const (
 	maxAuthZstdWindowBytes  = 8 << 20
 	maxAuthDecodedBodyBytes = 64 << 20
 
 	maxAuthSpeechBodyBytes = 1 << 20
-
 
 	maxAuthContentCodings = 2
 )
@@ -32,9 +29,6 @@ var (
 	authDecodeSlots     = make(chan struct{}, 2)
 	errAuthBodyTooLarge = errors.New("request body too large")
 )
-
-
-
 
 func decodeAuthBody(body []byte, encoding string, limit int64) ([]byte, error) {
 	parts := strings.Split(encoding, ",")
@@ -61,11 +55,6 @@ func decodeAuthBody(body []byte, encoding string, limit int64) ([]byte, error) {
 	}
 	return body, nil
 }
-
-
-
-
-
 
 func handlerDecodesBody(r *http.Request) bool {
 	if r.Method != http.MethodPost {
@@ -251,7 +240,6 @@ func (a *accessAdapter) Authenticate(ctx context.Context, r *http.Request) (resu
 			case <-ctx.Done():
 				return nil, sdkaccess.NewInternalAuthError("plugin auth request canceled", ctx.Err())
 			}
-
 
 			limit := int64(maxAuthDecodedBodyBytes)
 			if cfg != nil && cfg.MaxRequestBodyBytes > 0 && cfg.MaxRequestBodyBytes < limit {

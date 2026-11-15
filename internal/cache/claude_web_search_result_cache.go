@@ -61,15 +61,10 @@ func claudeWebSearchResultKVKey(sessionKey, toolUseID string) string {
 	return "cpa:claude:web-search-result:" + key
 }
 
-// CacheClaudeWebSearchResult stores the raw content of one web_search_tool_result
-// block for a session. Memory is bounded by the maximum entry count (limit);
-// least recently used entries are evicted when the entry limit is exceeded.
 func CacheClaudeWebSearchResult(sessionKey, toolUseID string, content []byte, ttl time.Duration, limit int) {
 	CacheClaudeWebSearchResultBestEffort(context.Background(), sessionKey, toolUseID, content, ttl, limit)
 }
 
-// CacheClaudeWebSearchResultBestEffort stores the raw content of one
-// web_search_tool_result block for completed response paths.
 func CacheClaudeWebSearchResultBestEffort(ctx context.Context, sessionKey, toolUseID string, content []byte, ttl time.Duration, limit int) bool {
 	key, ok := claudeWebSearchResultKey(sessionKey, toolUseID)
 	if !ok || len(content) == 0 {
@@ -125,8 +120,6 @@ func CacheClaudeWebSearchResultBestEffort(ctx context.Context, sessionKey, toolU
 	return true
 }
 
-// GetClaudeWebSearchResult returns a copy of the stored content and extends its
-// lifetime. Expired entries are removed and reported as missing.
 func GetClaudeWebSearchResult(sessionKey, toolUseID string, ttl ...time.Duration) ([]byte, bool) {
 	content, ok, errGet := GetClaudeWebSearchResultRequired(context.Background(), sessionKey, toolUseID, ttl...)
 	if errGet != nil {
@@ -135,8 +128,6 @@ func GetClaudeWebSearchResult(sessionKey, toolUseID string, ttl ...time.Duration
 	return content, ok
 }
 
-// GetClaudeWebSearchResultRequired retrieves a copy of the stored content for
-// request-time paths and extends its lifetime.
 func GetClaudeWebSearchResultRequired(ctx context.Context, sessionKey, toolUseID string, ttl ...time.Duration) ([]byte, bool, error) {
 	key, ok := claudeWebSearchResultKey(sessionKey, toolUseID)
 	if !ok {
@@ -189,7 +180,6 @@ func GetClaudeWebSearchResultRequired(ctx context.Context, sessionKey, toolUseID
 	return bytes.Clone(entry.content), true, nil
 }
 
-// ClearClaudeWebSearchResultCache removes every stored entry.
 func ClearClaudeWebSearchResultCache() {
 	claudeWebSearchResultMu.Lock()
 	defer claudeWebSearchResultMu.Unlock()

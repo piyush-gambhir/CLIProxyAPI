@@ -914,7 +914,6 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, manager)
 
-
 	resp, errMsg := handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
 		ExitProtocol:   "openai",
@@ -933,7 +932,6 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 		t.Fatalf("default routing executed %q, want auth-high-priority", executedAuthID)
 	}
 	mu.Unlock()
-
 
 	resp, errMsg = handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
@@ -955,7 +953,6 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 	}
 	mu.Unlock()
 
-
 	_, errMsg = handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
 		ExitProtocol:   "openai",
@@ -967,7 +964,6 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 	if errMsg == nil {
 		t.Fatal("ExecuteModel() with non-existent AuthID error = nil, want auth_not_found")
 	}
-
 
 	_, errMsg = handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
@@ -1313,7 +1309,6 @@ func TestExecuteModelReplaysInterceptedCallerScopeWithoutGinContext(t *testing.T
 		t.Fatalf("intercept Metadata[caller_scope] = (%v, %v), want %q", beforeInterceptReq.Metadata[pluginapi.CallerScopeMetadataKey], afterInterceptReq.Metadata[pluginapi.CallerScopeMetadataKey], originalCallerScope)
 	}
 
-
 	replayStream, errReplayStream := handler.ExecuteModelStream(context.Background(), ModelExecutionRequest{
 		EntryProtocol:           "claude",
 		ExitProtocol:            "claude",
@@ -1335,7 +1330,6 @@ func TestExecuteModelReplaysInterceptedCallerScopeWithoutGinContext(t *testing.T
 	if got := replayStreamOpts.Metadata[coreexecutor.DerivedSessionIDMetadataKey]; got != originalDerivedSession {
 		t.Fatalf("replay stream DerivedSessionIDMetadataKey = %v, want %q", got, originalDerivedSession)
 	}
-
 
 	if _, errReplayExec := handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:           "claude",

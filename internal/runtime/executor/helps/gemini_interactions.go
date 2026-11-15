@@ -15,20 +15,10 @@ import (
 )
 
 const (
-
 	GeminiInteractionsAPIRevision = "2026-05-20"
 
 	StreamScannerBuffer = 52_428_800
 )
-
-
-
-
-
-
-
-
-
 
 func SanitizeGeminiInteractionsUnsupportedInputIDs(body []byte, allowVertexBareTink bool) []byte {
 	if len(body) == 0 {
@@ -40,8 +30,6 @@ func SanitizeGeminiInteractionsUnsupportedInputIDs(body []byte, allowVertexBareT
 	}
 	return doc.Bytes()
 }
-
-
 
 func SanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc, allowVertexBareTink bool) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -74,8 +62,6 @@ func SanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc, allowVerte
 				ok = false
 			}
 			if !ok || normalizedSig == "" || signature.IsGeminiThoughtSignatureBypass(signature.SignaturePayloadWithoutProviderPrefix(normalizedSig)) {
-
-
 
 				dropped[idx] = true
 				changed = true
@@ -138,17 +124,12 @@ func SanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc, allowVerte
 	return true
 }
 
-
 func TranslateGeminiInteractionsRequestBody(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) ([]byte, error) {
 	if opts.SourceFormat == "" || opts.SourceFormat == sdktranslator.FormatInteractions {
 		return bytes.Clone(payload), nil
 	}
 	return TranslateRequestReturningError(ctx, opts.Headers, cfg, opts.SourceFormat, sdktranslator.FormatInteractions, model, payload, stream, isCompat)
 }
-
-
-
-
 
 func TranslateGeminiInteractionsRequestPair(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) (original, working []byte, err error) {
 	source := geminiInteractionsPayloadConfigInput(opts, payload)
@@ -182,7 +163,6 @@ func geminiInteractionsSameByteSlice(a, b []byte) bool {
 	return &a[0] == &b[0]
 }
 
-
 func ApplyGeminiInteractionsThinking(body []byte, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) ([]byte, error) {
 	fromFormat := opts.SourceFormat.String()
 	if strings.TrimSpace(fromFormat) == "" {
@@ -191,7 +171,6 @@ func ApplyGeminiInteractionsThinking(body []byte, req cliproxyexecutor.Request, 
 	return ApplyRequestThinking(body, req, opts, fromFormat, sdktranslator.FormatInteractions.String(), "gemini")
 }
 
-
 func ApplyGeminiInteractionsThinkingDoc(doc *ojson.Doc, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) error {
 	fromFormat := opts.SourceFormat.String()
 	if strings.TrimSpace(fromFormat) == "" {
@@ -199,7 +178,6 @@ func ApplyGeminiInteractionsThinkingDoc(doc *ojson.Doc, req cliproxyexecutor.Req
 	}
 	return ApplyRequestThinkingDoc(doc, req, opts, fromFormat, sdktranslator.FormatInteractions.String(), "gemini")
 }
-
 
 func ApplyGeminiInteractionsRevisionHeader(req *http.Request) {
 	if req == nil {
@@ -210,7 +188,6 @@ func ApplyGeminiInteractionsRevisionHeader(req *http.Request) {
 	}
 }
 
-
 func ApplyGeminiInteractionsRequestHeaders(req *http.Request, headers http.Header) {
 	if req == nil || headers == nil || req.Header.Get("Api-Revision") != "" {
 		return
@@ -219,7 +196,6 @@ func ApplyGeminiInteractionsRequestHeaders(req *http.Request, headers http.Heade
 		req.Header.Set("Api-Revision", revision)
 	}
 }
-
 
 func GeminiInteractionsSSEPayload(frame []byte) []byte {
 	trimmed := bytes.TrimSpace(frame)
@@ -250,7 +226,6 @@ func GeminiInteractionsSSEPayload(frame []byte) []byte {
 	}
 	return payload
 }
-
 
 func GeminiInteractionsSSEDone(frame []byte) bool {
 	trimmed := bytes.TrimSpace(frame)

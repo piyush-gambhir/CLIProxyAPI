@@ -18,25 +18,18 @@ import (
 )
 
 const (
-	// ClaudeThinkingReplayCacheTTL limits how long signed assistant turns stay replayable.
 	ClaudeThinkingReplayCacheTTL = 1 * time.Hour
 
-	// ClaudeThinkingReplayCacheMaxEntries bounds process memory used by Claude replay continuity.
 	ClaudeThinkingReplayCacheMaxEntries = 10240
 
-	// ClaudeThinkingReplayCacheEvictBatchSize leaves headroom after reaching capacity.
 	ClaudeThinkingReplayCacheEvictBatchSize = 128
 
-	// ClaudeThinkingReplayCacheMaxBytesPerSession bounds all cached assistant turns for one session.
 	ClaudeThinkingReplayCacheMaxBytesPerSession = 8 << 20
 
-	// ClaudeThinkingReplayCacheMaxTurnsPerSession bounds the number of assistant turns per session.
 	ClaudeThinkingReplayCacheMaxTurnsPerSession = 64
 
-	// ClaudeThinkingReplayCacheMaxBlocksPerTurn prevents pathological content arrays.
 	ClaudeThinkingReplayCacheMaxBlocksPerTurn = 512
 
-	// ClaudeThinkingReplayCacheMaxTotalBytes bounds aggregate in-process Claude replay content.
 	ClaudeThinkingReplayCacheMaxTotalBytes = 256 << 20
 
 	claudeThinkingReplayCacheMaxSerializedBytes = ClaudeThinkingReplayCacheMaxBytesPerSession + 1024
@@ -49,7 +42,6 @@ type claudeThinkingReplayEntry struct {
 	Deleted    bool
 }
 
-// ClaudeThinkingReplaySnapshot identifies the exact replay generation read for one request.
 type ClaudeThinkingReplaySnapshot = KimiThinkingReplaySnapshot
 
 type claudeThinkingReplayHomeValue struct {
@@ -68,7 +60,6 @@ var currentClaudeThinkingReplayKVClient = func() (kimiThinkingReplayKVClient, bo
 	return homekv.CurrentKVClient()
 }
 
-// CacheClaudeThinkingReplayBestEffort stores one complete signed assistant content array.
 func CacheClaudeThinkingReplayBestEffort(ctx context.Context, modelFamily, sessionKey string, content []byte) bool {
 	key := claudeThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" || !validClaudeThinkingReplayContent(content) {
@@ -101,13 +92,11 @@ func CacheClaudeThinkingReplayBestEffort(ctx context.Context, modelFamily, sessi
 	return true
 }
 
-// GetClaudeThinkingReplayRequired retrieves all cached assistant turns for request-time replay.
 func GetClaudeThinkingReplayRequired(ctx context.Context, modelFamily, sessionKey string) ([][]byte, bool, error) {
 	contents, _, found, errGet := GetClaudeThinkingReplayWithSnapshotRequired(ctx, modelFamily, sessionKey)
 	return contents, found, errGet
 }
 
-// GetClaudeThinkingReplayWithSnapshotRequired retrieves replay content and the exact cache state read.
 func GetClaudeThinkingReplayWithSnapshotRequired(ctx context.Context, modelFamily, sessionKey string) ([][]byte, ClaudeThinkingReplaySnapshot, bool, error) {
 	key := claudeThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" {
@@ -162,7 +151,6 @@ func GetClaudeThinkingReplayWithSnapshotRequired(ctx context.Context, modelFamil
 	return cloneClaudeThinkingReplayContents(entry.Contents), snapshot, len(entry.Contents) > 0, nil
 }
 
-// ReplaceClaudeThinkingReplayIfUnchanged appends a completed assistant turn only if the request snapshot is current.
 func ReplaceClaudeThinkingReplayIfUnchanged(ctx context.Context, modelFamily, sessionKey string, snapshot ClaudeThinkingReplaySnapshot, content []byte) (bool, error) {
 	key := claudeThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" || !validClaudeThinkingReplayContent(content) {
@@ -213,7 +201,6 @@ func ReplaceClaudeThinkingReplayIfUnchanged(ctx context.Context, modelFamily, se
 	return true, nil
 }
 
-// DeleteClaudeThinkingReplayIfUnchanged clears replay state only if the request snapshot is current.
 func DeleteClaudeThinkingReplayIfUnchanged(ctx context.Context, modelFamily, sessionKey string, snapshot ClaudeThinkingReplaySnapshot) (bool, error) {
 	key := claudeThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" {
@@ -249,7 +236,6 @@ func DeleteClaudeThinkingReplayIfUnchanged(ctx context.Context, modelFamily, ses
 	return true, nil
 }
 
-// DeleteClaudeThinkingReplayRequired removes stale replay state unconditionally.
 func DeleteClaudeThinkingReplayRequired(ctx context.Context, modelFamily, sessionKey string) error {
 	key := claudeThinkingReplayCacheKey(modelFamily, sessionKey)
 	if key == "" {
@@ -275,7 +261,6 @@ func DeleteClaudeThinkingReplayRequired(ctx context.Context, modelFamily, sessio
 	return nil
 }
 
-// ClearClaudeThinkingReplayCache clears only Claude replay state.
 func ClearClaudeThinkingReplayCache() {
 	claudeThinkingReplayMu.Lock()
 	claudeThinkingReplayEntries = make(map[string]claudeThinkingReplayEntry)

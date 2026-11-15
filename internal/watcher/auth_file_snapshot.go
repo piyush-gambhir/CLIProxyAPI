@@ -10,8 +10,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func (w *Watcher) SnapshotAuthFile(path string) ([]*coreauth.Auth, error) {
 	if w == nil {
 		return nil, fmt.Errorf("file auth snapshot is unavailable")
@@ -24,7 +22,6 @@ func (w *Watcher) SnapshotAuthFile(path string) ([]*coreauth.Auth, error) {
 	if cfg == nil || authDir == "" {
 		return nil, fmt.Errorf("file auth snapshot is not configured")
 	}
-
 
 	absoluteAuthDir, errAbsAuthDir := filepath.Abs(authDir)
 	if errAbsAuthDir != nil {

@@ -65,7 +65,6 @@ func sessionIDCacheKey(apiKey string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-
 func CachedSessionID(apiKey string) string {
 	value, errValue := CachedSessionIDRequired(context.Background(), apiKey)
 	if errValue == nil && value != "" {
@@ -73,7 +72,6 @@ func CachedSessionID(apiKey string) string {
 	}
 	return uuid.New().String()
 }
-
 
 func CachedSessionIDRequired(ctx context.Context, apiKey string) (string, error) {
 	if apiKey == "" {

@@ -73,13 +73,11 @@ func TestClaudeExecutor_HonorsAnthropicRateLimitHeaders_Execute(t *testing.T) {
 		t.Fatalf("expected non-nil RetryAfter, got nil")
 	}
 
-
 	minExpected := 7*24*time.Hour - 5*time.Second
 	maxExpected := 7*24*time.Hour + 35*time.Second
 	if *retryAfter < minExpected || *retryAfter > maxExpected {
 		t.Fatalf("RetryAfter = %v, want between %v and %v", *retryAfter, minExpected, maxExpected)
 	}
-
 
 	if second := rap.RetryAfter(); second == nil || *second != *retryAfter {
 		t.Fatalf("RetryAfter changed across calls: %v vs %v", *second, *retryAfter)
@@ -360,7 +358,6 @@ func TestClaudeExecutor_RateLimit_FastModeAuthoritativeRejectionHeadersOverrideB
 		t.Fatalf("attempts on cred2 = %d, want 1", attemptsCred2.Load())
 	}
 
-
 	registeredAuth, ok := manager.GetByID(auth1.ID)
 	if !ok || registeredAuth == nil {
 		t.Fatal("auth1 not found")
@@ -467,7 +464,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("failed to register auth: %v", errRegister)
 	}
 
-
 	payload := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]}`)
 	_, err := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
@@ -481,7 +477,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("upstream attempts = %d, want 1", attempts)
 	}
 
-
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-opus-20240229",
 		Payload: payload,
@@ -493,7 +488,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 		t.Fatalf("upstream attempts after opus = %d, want 1 (must be blocked locally)", attempts)
 	}
 
-
 	_, errThinking := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-7-sonnet-20250219-thinking-16k",
 		Payload: payload,
@@ -504,7 +498,6 @@ func TestClaudeExecutor_AuthManager_CredentialScopeBlocksAllModelsAndAliases(t *
 	if attempts := upstreamAttempts.Load(); attempts != 1 {
 		t.Fatalf("upstream attempts after thinking suffix = %d, want 1 (must be blocked locally)", attempts)
 	}
-
 
 	_, errStream := manager.ExecuteStream(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-opus-20240229",
@@ -570,7 +563,6 @@ func TestClaudeExecutor_AuthManager_OrdinaryModel429DoesNotBlockSiblingModels(t 
 		t.Fatalf("register auth: %v", err)
 	}
 
-
 	payloadSonnet := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]}`)
 	_, errSonnet := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
@@ -582,7 +574,6 @@ func TestClaudeExecutor_AuthManager_OrdinaryModel429DoesNotBlockSiblingModels(t 
 	if attemptsSonnet.Load() != 1 {
 		t.Fatalf("sonnet attempts = %d, want 1", attemptsSonnet.Load())
 	}
-
 
 	payloadOpus := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"hi opus"}]}]}`)
 	respOpus, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
@@ -686,7 +677,6 @@ func TestClaudeExecutor_AuthManager_AlternativeCredentialCanBeSelected(t *testin
 		t.Fatal("expected non-empty response payload from cred2")
 	}
 
-
 	resp2, err2 := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
 		Payload: payload,
@@ -783,7 +773,6 @@ func TestClaudeExecutor_AuthManager_MultiModelPoolStreamStopsProbingOn429(t *tes
 			t.Fatalf("unexpected chunk error: %v", chunk.Err)
 		}
 	}
-
 
 	if got := attemptsCred1.Load(); got != 1 {
 		t.Fatalf("attempts on cred1 = %d, want 1 (must not probe other models on cooled cred)", got)

@@ -7,9 +7,6 @@ import (
 	"time"
 )
 
-
-
-
 func refreshAccessError(auth *Auth, message string, accessTokenRejected, wasTerminalUnauthorized bool) *Error {
 	if auth != nil && strings.EqualFold(strings.TrimSpace(auth.Provider), "codex") &&
 		!accessTokenRejected && !wasTerminalUnauthorized &&
@@ -25,8 +22,6 @@ func refreshAccessError(auth *Auth, message string, accessTokenRejected, wasTerm
 	return &Error{Code: "unauthorized", Message: message, HTTPStatus: http.StatusUnauthorized}
 }
 
-
-
 func codexRefreshMissingAccessForRequest(ctx context.Context, auth *Auth, headers ...http.Header) bool {
 	if !strings.EqualFold(strings.TrimSpace(auth.Provider), "codex") || !auth.RequiresSignIn ||
 		auth.RefreshError == nil || auth.RefreshError.Code != "refresh_outcome_unknown" {
@@ -34,8 +29,6 @@ func codexRefreshMissingAccessForRequest(ctx context.Context, auth *Auth, header
 	}
 	return authAccessTokenForRequest(ctx, auth, headers...) == ""
 }
-
-
 
 func codexRefreshUnavailableForRequest(ctx context.Context, auth *Auth, now time.Time, headers ...http.Header) bool {
 	if !auth.Unavailable || !strings.EqualFold(strings.TrimSpace(auth.Provider), "codex") ||

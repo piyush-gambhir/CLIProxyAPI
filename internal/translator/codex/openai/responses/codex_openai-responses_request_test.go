@@ -53,7 +53,6 @@ func TestConvertOpenAIResponsesRequestToCodexMaxOutputTokens(t *testing.T) {
 	}
 }
 
-// TestConvertSystemRoleToDeveloper_BasicConversion tests the basic system -> developer role conversion
 func TestConvertSystemRoleToDeveloper_BasicConversion(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
@@ -74,26 +73,22 @@ func TestConvertSystemRoleToDeveloper_BasicConversion(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check that system role was converted to developer
 	firstItemRole := ojson.Get(outputStr, "input.0.role")
 	if firstItemRole.String() != "developer" {
 		t.Errorf("Expected role 'developer', got '%s'", firstItemRole.String())
 	}
 
-	// Check that user role remains unchanged
 	secondItemRole := ojson.Get(outputStr, "input.1.role")
 	if secondItemRole.String() != "user" {
 		t.Errorf("Expected role 'user', got '%s'", secondItemRole.String())
 	}
 
-	// Check content is preserved
 	firstItemContent := ojson.Get(outputStr, "input.0.content.0.text")
 	if firstItemContent.String() != "You are a pirate." {
 		t.Errorf("Expected content 'You are a pirate.', got '%s'", firstItemContent.String())
 	}
 }
 
-// TestConvertSystemRoleToDeveloper_MultipleSystemMessages tests conversion with multiple system messages
 func TestConvertSystemRoleToDeveloper_MultipleSystemMessages(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
@@ -119,7 +114,6 @@ func TestConvertSystemRoleToDeveloper_MultipleSystemMessages(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check that both system roles were converted
 	firstRole := ojson.Get(outputStr, "input.0.role")
 	if firstRole.String() != "developer" {
 		t.Errorf("Expected first role 'developer', got '%s'", firstRole.String())
@@ -130,14 +124,12 @@ func TestConvertSystemRoleToDeveloper_MultipleSystemMessages(t *testing.T) {
 		t.Errorf("Expected second role 'developer', got '%s'", secondRole.String())
 	}
 
-	// Check that user role is unchanged
 	thirdRole := ojson.Get(outputStr, "input.2.role")
 	if thirdRole.String() != "user" {
 		t.Errorf("Expected third role 'user', got '%s'", thirdRole.String())
 	}
 }
 
-// TestConvertSystemRoleToDeveloper_NoSystemMessages tests that requests without system messages are unchanged
 func TestConvertSystemRoleToDeveloper_NoSystemMessages(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
@@ -158,7 +150,6 @@ func TestConvertSystemRoleToDeveloper_NoSystemMessages(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check that user and assistant roles are unchanged
 	firstRole := ojson.Get(outputStr, "input.0.role")
 	if firstRole.String() != "user" {
 		t.Errorf("Expected role 'user', got '%s'", firstRole.String())
@@ -170,7 +161,6 @@ func TestConvertSystemRoleToDeveloper_NoSystemMessages(t *testing.T) {
 	}
 }
 
-// TestConvertSystemRoleToDeveloper_EmptyInput tests that empty input arrays are handled correctly
 func TestConvertSystemRoleToDeveloper_EmptyInput(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
@@ -180,7 +170,6 @@ func TestConvertSystemRoleToDeveloper_EmptyInput(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check that input is still an empty array
 	inputArray := ojson.Get(outputStr, "input")
 	if !inputArray.IsArray() {
 		t.Error("Input should still be an array")
@@ -190,7 +179,6 @@ func TestConvertSystemRoleToDeveloper_EmptyInput(t *testing.T) {
 	}
 }
 
-// TestConvertSystemRoleToDeveloper_NoInputField tests that requests without input field are unchanged
 func TestConvertSystemRoleToDeveloper_NoInputField(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
@@ -200,7 +188,6 @@ func TestConvertSystemRoleToDeveloper_NoInputField(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check that other fields are still set correctly
 	stream := ojson.Get(outputStr, "stream")
 	if !stream.Bool() {
 		t.Error("Stream should be set to true by conversion")
@@ -212,9 +199,8 @@ func TestConvertSystemRoleToDeveloper_NoInputField(t *testing.T) {
 	}
 }
 
-// TestConvertOpenAIResponsesRequestToCodex_OriginalIssue tests the exact issue reported by the user
 func TestConvertOpenAIResponsesRequestToCodex_OriginalIssue(t *testing.T) {
-	// This is the exact input that was failing with "System messages are not allowed"
+
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
 		"input": [
@@ -235,19 +221,16 @@ func TestConvertOpenAIResponsesRequestToCodex_OriginalIssue(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Verify system role was converted to developer
 	firstRole := ojson.Get(outputStr, "input.0.role")
 	if firstRole.String() != "developer" {
 		t.Errorf("Expected role 'developer', got '%s'", firstRole.String())
 	}
 
-	// Verify stream was set to true (as required by Codex)
 	stream := ojson.Get(outputStr, "stream")
 	if !stream.Bool() {
 		t.Error("Stream should be set to true")
 	}
 
-	// Verify other required fields for Codex
 	store := ojson.Get(outputStr, "store")
 	if store.Bool() {
 		t.Error("Store should be false")
@@ -442,7 +425,6 @@ func TestConvertOpenAIResponsesRequestToCodex_FiltersPromptCacheRetention(t *tes
 	}
 }
 
-// TestConvertSystemRoleToDeveloper_AssistantRole tests that assistant role is preserved
 func TestConvertSystemRoleToDeveloper_AssistantRole(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "gpt-5.2",
@@ -468,19 +450,16 @@ func TestConvertSystemRoleToDeveloper_AssistantRole(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check system -> developer
 	firstRole := ojson.Get(outputStr, "input.0.role")
 	if firstRole.String() != "developer" {
 		t.Errorf("Expected first role 'developer', got '%s'", firstRole.String())
 	}
 
-	// Check user unchanged
 	secondRole := ojson.Get(outputStr, "input.1.role")
 	if secondRole.String() != "user" {
 		t.Errorf("Expected second role 'user', got '%s'", secondRole.String())
 	}
 
-	// Check assistant unchanged
 	thirdRole := ojson.Get(outputStr, "input.2.role")
 	if thirdRole.String() != "assistant" {
 		t.Errorf("Expected third role 'assistant', got '%s'", thirdRole.String())
@@ -543,7 +522,6 @@ func TestUserFieldDeletion(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Verify user field is deleted
 	userField := ojson.Get(outputStr, "user")
 	if userField.Exists() {
 		t.Errorf("user field should be deleted, but it was found with value: %s", userField.Raw)
@@ -767,11 +745,10 @@ func TestStripCodexResponsesCacheBreakpoints_WithSystemRole(t *testing.T) {
 	output, _ := ConvertOpenAIResponsesRequestToCodex("gpt-5.2", inputJSON, false)
 	outputStr := string(output)
 
-	// Check system role is converted to developer
 	if ojson.Get(outputStr, "input.0.role").String() != "developer" {
 		t.Fatalf("expected role 'developer', got %q", ojson.Get(outputStr, "input.0.role").String())
 	}
-	// Check prompt_cache_breakpoint is completely removed from payload
+
 	if strings.Contains(outputStr, "prompt_cache_breakpoint") {
 		t.Fatalf("prompt_cache_breakpoint should not exist in the output JSON")
 	}
@@ -1009,11 +986,6 @@ func TestConvertOpenAIResponsesRequestToCodex_ServiceTier(t *testing.T) {
 	}
 }
 
-// TestConvertOpenAIResponsesRequestToCodex_NormalizesEmptyFunctionCallArguments
-// covers the parameter-less tool call shape that strict Codex Responses
-// upstreams reject with "`arguments` must be valid JSON": only blank string
-// arguments on function_call history items become "{}", everything else is
-// preserved byte-for-byte in intent.
 func TestConvertOpenAIResponsesRequestToCodex_NormalizesEmptyFunctionCallArguments(t *testing.T) {
 	inputJSON := []byte(`{"model":"gpt-5.6","input":[
 		{"type":"function_call","id":"fc_empty","call_id":"call_empty","name":"create_worktree","arguments":""},

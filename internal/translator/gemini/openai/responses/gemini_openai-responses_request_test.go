@@ -1052,7 +1052,6 @@ func TestConvertOpenAIResponsesRequestToGemini_MidSessionDeveloperMessageDoesNot
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-
 	systemInstruction := result.Get("systemInstruction")
 	if !systemInstruction.Exists() {
 		t.Fatalf("systemInstruction missing; output=%s", output)
@@ -1064,7 +1063,6 @@ func TestConvertOpenAIResponsesRequestToGemini_MidSessionDeveloperMessageDoesNot
 	if got := parts[0].Get("text").String(); got != "Be a helpful assistant" {
 		t.Fatalf("systemInstruction part = %q, want %q; output=%s", got, "Be a helpful assistant", output)
 	}
-
 
 	contents := result.Get("contents").Array()
 	if len(contents) != 3 {
@@ -1217,12 +1215,10 @@ func TestConvertOpenAIResponsesRequestToGemini_MultipleMidSessionDeveloperMessag
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-
 	parts := result.Get("systemInstruction.parts").Array()
 	if len(parts) != 1 || parts[0].Get("text").String() != "Be a helpful assistant" {
 		t.Fatalf("systemInstruction corrupted: %s", output)
 	}
-
 
 	contents := result.Get("contents").Array()
 	if len(contents) != 3 {
@@ -1277,17 +1273,14 @@ func TestConvertOpenAIResponsesRequestToGemini_InterveningDeveloperMessagePreser
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-
 	if errPair := internalsignature.ValidateGeminiFunctionCallPairing(output); errPair != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed: %v; output=%s", errPair, output)
 	}
-
 
 	parts := result.Get("systemInstruction.parts").Array()
 	if len(parts) != 1 || parts[0].Get("text").String() != "Be a helpful assistant" {
 		t.Fatalf("systemInstruction corrupted: %s", output)
 	}
-
 
 	foundFR := false
 	for _, content := range result.Get("contents").Array() {
@@ -1335,7 +1328,6 @@ func TestConvertOpenAIResponsesRequestToGemini_InterveningDeveloperAndUserMessag
 
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
-
 
 	if errPair := internalsignature.ValidateGeminiFunctionCallPairing(output); errPair != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed: %v; output=%s", errPair, output)
@@ -2159,7 +2151,6 @@ func TestConvertOpenAIResponsesRequestToGemini_FunctionCallOutputAlternateIDsAnd
 
 func TestConvertOpenAIResponsesRequestToGemini_ParallelFunctionCallOutputsAlternateIDs(t *testing.T) {
 
-
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2186,7 +2177,6 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelFunctionCallOutputsAltern
 		t.Fatalf("expected 2 response parts, got %d; output=%s", len(responses), string(output))
 	}
 
-
 	if gotID := responses[0].Get("functionResponse.id").String(); gotID != "call-1" {
 		t.Fatalf("first response id = %q, want call-1", gotID)
 	}
@@ -2202,7 +2192,6 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelFunctionCallOutputsAltern
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOverItemID(t *testing.T) {
-
 
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
@@ -2230,14 +2219,12 @@ func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOve
 		t.Fatalf("expected 2 responses, got %d; output=%s", len(responses), string(output))
 	}
 
-
 	if gotID := responses[0].Get("functionResponse.id").String(); gotID != "call_a" {
 		t.Fatalf("first response id = %q, want call_a", gotID)
 	}
 	if gotResult := responses[0].Get("functionResponse.response.result").String(); gotResult != "content_a" {
 		t.Fatalf("first response result = %q, want content_a (tool_call_id precedence check failed)", gotResult)
 	}
-
 
 	if gotID := responses[1].Get("functionResponse.id").String(); gotID != "call_b" {
 		t.Fatalf("second response id = %q, want call_b", gotID)
@@ -2248,7 +2235,6 @@ func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOve
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_ExplicitUnmatchedCallIDNotRebound(t *testing.T) {
-
 
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
@@ -2283,10 +2269,6 @@ func TestConvertOpenAIResponsesRequestToGemini_ExplicitUnmatchedCallIDNotRebound
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_MixedMissingAndExplicitParallelOutputsAcrossUserMessage(t *testing.T) {
-
-
-
-
 
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
@@ -2324,10 +2306,6 @@ func TestConvertOpenAIResponsesRequestToGemini_MixedMissingAndExplicitParallelOu
 
 func TestConvertOpenAIResponsesRequestToGemini_AllPendingCallsReservedByFutureExplicitOutputsDoesNotDuplicate(t *testing.T) {
 
-
-
-
-
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2355,7 +2333,6 @@ func TestConvertOpenAIResponsesRequestToGemini_AllPendingCallsReservedByFutureEx
 		}
 	}
 
-
 	callACount := 0
 	for _, id := range responseIDs {
 		if id == "call_a" {
@@ -2365,7 +2342,6 @@ func TestConvertOpenAIResponsesRequestToGemini_AllPendingCallsReservedByFutureEx
 	if callACount != 1 {
 		t.Fatalf("call_a appeared %d times in responseIDs %v, want exactly 1", callACount, responseIDs)
 	}
-
 
 	for idx, id := range responseIDs {
 		if id == "call_a" && responseResults[idx] != "result_2" {
@@ -2390,7 +2366,6 @@ func TestConvertOpenAIResponsesRequestToGemini_InterruptedFunctionCallPreservesP
 	if err := internalsignature.ValidateGeminiFunctionCallPairing(result); err != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on Gemini request: %v; output=%s", err, result)
 	}
-
 
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.2.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
@@ -2422,7 +2397,6 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelInterruptedFunctionCallPr
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on parallel interrupted request: %v; output=%s", err, result)
 	}
 
-
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.2.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
 		t.Fatalf("unexpected response part 0 for c1: %s", c1Resp.Raw)
@@ -2448,7 +2422,6 @@ func TestConvertOpenAIResponsesRequestToGemini_TrailingPartialParallelCallsPrese
 	if err := internalsignature.ValidateGeminiFunctionCallPairing(result); err != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on trailing partial parallel request: %v; output=%s", err, result)
 	}
-
 
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.2.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
@@ -2476,7 +2449,6 @@ func TestConvertOpenAIResponsesRequestToGemini_InterruptedMessageBeforeRealOutpu
 	if err := internalsignature.ValidateGeminiFunctionCallPairing(result); err != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on interrupted message before real output request: %v; output=%s", err, result)
 	}
-
 
 	stopText := ojson.GetBytesNoCopy(result, "contents.2.parts.0.text").String()
 	if stopText != "Stop, do something else instead." {
@@ -2527,7 +2499,6 @@ func TestConvertOpenAIResponsesRequestToGemini_FunctionCallOutputWithFCOItemID(t
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_OrphanFunctionCallOutputBecomesUserText(t *testing.T) {
-
 
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
@@ -3531,7 +3502,6 @@ func TestConvertOpenAIResponsesRequestToGemini_FunctionResponseJSONRef(t *testin
 
 func TestConvertOpenAIResponsesRequestToGemini_UnsignedModelTextDoesNotSynthesizeBypassSignature(t *testing.T) {
 
-
 	inputJSON := `{
 		"input": [
 			{
@@ -3574,7 +3544,6 @@ func TestConvertOpenAIResponsesRequestToGemini_UnsignedModelTextDoesNotSynthesiz
 	if textPart.Get("thoughtSignature").Exists() {
 		t.Fatalf("visible text part should not have synthetic thoughtSignature, got: %s", textPart.Raw)
 	}
-
 
 	sanitized := internalsignature.SanitizeGeminiRequestThoughtSignatures(output, "contents")
 	sanitizedParts := ojson.GetBytesNoCopy(sanitized, "contents.0.parts").Array()

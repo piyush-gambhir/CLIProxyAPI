@@ -25,7 +25,6 @@ type Snapshot struct {
 	quotaSupportedProviders   map[string][]string
 }
 
-
 type RegisteredPluginInfo struct {
 	ID                   string
 	Priority             int
@@ -38,7 +37,6 @@ type RegisteredPluginInfo struct {
 	QuotaProvider        string
 	Menus                []RegisteredPluginMenu
 }
-
 
 type RegisteredPluginMenu struct {
 	Path        string
@@ -68,7 +66,6 @@ func (h *Host) activeRecordsFromSnapshot(snap *Snapshot) []capabilityRecord {
 	}
 	return out
 }
-
 
 func (h *Host) RegisteredPlugins() []RegisteredPluginInfo {
 	records := h.activeRecords()
@@ -111,7 +108,6 @@ func (h *Host) RegisteredPlugins() []RegisteredPluginInfo {
 	}
 	return out
 }
-
 
 func (h *Host) PluginRegistered(id string) bool {
 	if h == nil {

@@ -189,9 +189,6 @@ const observedFable51CAQSNarrationSample = "CAQS1wcKEQgRGAI4AUIJbmFycmF0aW9uEgx5
 
 const observedContextID = "d9743975-4bb0-4936-9e28-d5b0d21bdc48"
 
-
-
-
 type claudeCAISParts struct {
 	includeTopEnvelope   bool
 	topEnvelope          uint64
@@ -210,8 +207,6 @@ type claudeCAISParts struct {
 	blockKind            string
 	contextID            string
 }
-
-
 
 func defaultClaudeCAISParts(model string) claudeCAISParts {
 	return claudeCAISParts{
@@ -540,9 +535,6 @@ func TestSanitizeClaudeMessagesForClaudeUpstream_ClaudeCAIS(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeCAISSignature_ToleratesUpstreamFieldDrift(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -642,7 +634,6 @@ func TestClaudeCAISSignature_RejectsMalformedPayloads(t *testing.T) {
 
 		{"classic claude prefix", base64.StdEncoding.EncodeToString([]byte{0x12, 0x00})},
 
-
 		{"wrong marker byte", base64.StdEncoding.EncodeToString([]byte{0x0a, 0x00})},
 		{"no container", func() string {
 			p := defaultClaudeCAISParts("claude-opus-5")
@@ -704,9 +695,6 @@ func TestClaudeCAISSignature_RejectsMalformedPayloads(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeCAISSignature_DoesNotShadowClassicClaudeSignature(t *testing.T) {
 	classic := testClaudeThinkingSignature()
 	if IsValidClaudeCAISSignature(classic) {
@@ -725,10 +713,6 @@ func TestClaudeCAISSignature_DoesNotShadowClassicClaudeSignature(t *testing.T) {
 		t.Fatalf("signature = %q, want provider-native E-form %q", got, classic)
 	}
 }
-
-
-
-
 
 func TestClaudeCAISSignature_CachePrefixSurvivesClaudeUpstreamSanitize(t *testing.T) {
 	for _, prefix := range []string{"claude#", "anthropic#", "cais#", "ccmax#"} {

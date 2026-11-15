@@ -79,8 +79,6 @@ func TestConvertClaudeRequestToGemini_Base64DocumentAfterHistoryStaysInlineData(
 	}
 }
 
-// claudeImageTurnToGemini translates a conversation of two history turns followed by a final user
-// turn holding the given content parts.
 func claudeImageTurnToGemini(finalContent string) sdktranslator.RequestEnvelope {
 	input := `{"model":"m","messages":[{"role":"user","content":"a"},{"role":"assistant","content":"b"},{"role":"user","content":[` + finalContent + `]}]}`
 	return sdktranslator.TranslateRequestEnvelope(context.Background(), sdktranslator.FormatClaude, sdktranslator.FormatGemini, sdktranslator.RequestEnvelope{

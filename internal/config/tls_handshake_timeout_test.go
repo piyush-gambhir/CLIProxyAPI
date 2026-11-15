@@ -6,9 +6,6 @@ import (
 	"time"
 )
 
-
-
-
 func TestSDKConfigTLSHandshakeTimeout(t *testing.T) {
 	tests := []struct {
 		name string
@@ -30,8 +27,6 @@ func TestSDKConfigTLSHandshakeTimeout(t *testing.T) {
 	}
 }
 
-
-
 func TestParseConfigBytesRequestsTLSHandshakeTimeout(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
 requests:
@@ -48,8 +43,6 @@ requests:
 	}
 }
 
-
-
 func TestParseConfigBytesRequestsTLSHandshakeTimeoutLegacyLayout(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
 tls-handshake-timeout-seconds: 7
@@ -64,9 +57,6 @@ tls-handshake-timeout-seconds: 7
 		t.Fatalf("TLSHandshakeTimeout() = %v, want 7s", got)
 	}
 }
-
-
-
 
 func TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence(t *testing.T) {
 	tests := []struct {
@@ -97,9 +87,6 @@ func TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestParseConfigBytesUpstreamClaudeTLSHandshakeTimeoutIgnored(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`

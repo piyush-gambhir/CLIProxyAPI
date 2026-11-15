@@ -42,8 +42,6 @@ func runPerfCodexStream(request []byte, upstreamNames []string) []byte {
 	return out
 }
 
-
-
 func TestCodexClaudeToolNameCacheEquivalence(t *testing.T) {
 	longA := "mcp__very_long_server_name_for_testing__" + strings.Repeat("a", 40)
 	longB := "mcp__very_long_server_name_for_testing__" + strings.Repeat("a", 39) + "b"
@@ -63,7 +61,6 @@ func TestCodexClaudeToolNameCacheEquivalence(t *testing.T) {
 		{"web-search", perfCodexClaudeRequest([]string{"web_search"}), []string{"web_search"}},
 	}
 	for _, tc := range cases {
-
 
 		first := runPerfCodexStream(tc.request, tc.upstream)
 		second := runPerfCodexStream(tc.request, tc.upstream)

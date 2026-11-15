@@ -20,8 +20,6 @@ func interactionsToCodexEnvelope(input string) sdktranslator.RequestEnvelope {
 	})
 }
 
-
-
 func interactionsFinalTurnToCodex(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToCodexEnvelope(`{"model":"m","input":[` + interactionsCodexHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }
@@ -39,8 +37,6 @@ func requireInteractionsToCodexRefusal(t *testing.T, envelope sdktranslator.Requ
 		t.Fatalf("body is not JSON: %q", envelope.Body)
 	}
 }
-
-
 
 func TestInteractionsToCodexKeepsTheMediaGeminiToInteractionsWrites(t *testing.T) {
 	envelope := interactionsFinalTurnToCodex(`{"type":"image","uri":"gs://b/a.png","mime_type":"image/png"}`)
@@ -122,8 +118,6 @@ func TestInteractionsToCodexRefusesAnEmptiedTurnBeforeALaterTextTurn(t *testing.
 	requireInteractionsToCodexRefusal(t, envelope, "audio")
 }
 
-
-
 func TestInteractionsToCodexInstructionStepDoesNotHideAnEmptiedTurn(t *testing.T) {
 	const emptied = `{"type":"user_input","content":[{"type":"audio","mime_type":"audio/wav","uri":"gs://b/a.wav"}]}`
 	cases := map[string]string{
@@ -140,7 +134,6 @@ func TestInteractionsToCodexInstructionStepDoesNotHideAnEmptiedTurn(t *testing.T
 		})
 	}
 }
-
 
 func TestInteractionsToCodexTypeOnlyInstructionStepIsSentAsDeveloper(t *testing.T) {
 	for _, stepType := range []string{"system", "developer"} {

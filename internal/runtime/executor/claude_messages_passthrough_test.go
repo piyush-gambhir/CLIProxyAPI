@@ -212,7 +212,6 @@ func TestClaudeExecutor_PreserveCallerFingerprintAlignsSessionIDWithBody(t *test
 		t.Fatal("X-Claude-Code-Session-Id is empty, want authoritative session ID")
 	}
 
-
 	rawUserID := ojson.GetBytes(seenBody, "metadata.user_id").String()
 	bodySession := ojson.Get(rawUserID, "session_id").String()
 	if bodySession == "" {
@@ -221,7 +220,6 @@ func TestClaudeExecutor_PreserveCallerFingerprintAlignsSessionIDWithBody(t *test
 	if headerSession != bodySession {
 		t.Fatalf("header session %q != body session %q", headerSession, bodySession)
 	}
-
 
 	if got := seenHeaders.Get("X-Claude-Code-Request-Class"); got != "" {
 		t.Fatalf("X-Claude-Code-Request-Class = %q, want stripped for unconfirmed caller", got)

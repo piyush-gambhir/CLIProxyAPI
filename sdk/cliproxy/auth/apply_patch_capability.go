@@ -1,11 +1,8 @@
 package auth
 
-
-
 type ApplyPatchSupport interface {
 	SupportsApplyPatch() bool
 }
-
 
 func (m *Manager) SupportsApplyPatchForProviders(providers []string) bool {
 	if m == nil || len(providers) == 0 {

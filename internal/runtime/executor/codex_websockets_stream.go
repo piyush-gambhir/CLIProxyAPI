@@ -213,7 +213,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 			errSend = codexWebsocketTurnEventID(codexWebsocketTurnTransportError(errSend), originalPayload)
 			if cliproxyexecutor.IsUpstreamWebsocketTurnError(errSend) {
 
-
 				sess.markTerminalError(conn, errSend)
 				e.invalidateUpstreamConn(sess, conn, "send_error", errSend)
 				sess.clearActive(conn, readCh)
@@ -237,7 +236,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				sess.reqMu.Unlock()
 				return nil, errSend
 			}
-
 
 			connRetry, closerRetry, respHSRetry, errDialRetry := e.ensureUpstreamConnWithSIWC(ctx, auth, sess, authID, wsURL, wsHeaders, useSIWC)
 			if errDialRetry != nil || connRetry == nil {
@@ -322,14 +320,11 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 
 	var bufferedChunks [][]byte
 
-
 	bufferedFrames := 0
 	bufferedBytes := 0
 	var initialChunks [][]byte
 	immediateTerminal := false
 	immediateIncomplete := false
-
-
 
 	var bootstrapTerminalErr error
 	sawOutputDelta := false
@@ -367,12 +362,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				return nil, mappedErr
 			}
 
-
-
-
-
-
-
 			bufferedFrames++
 			timeSinceStart := nowCodexBootstrap().Sub(bootstrapStart)
 			timeoutReached := bootstrapTimeout > 0 && timeSinceStart >= bootstrapTimeout
@@ -403,8 +392,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 					reporter.PublishFailure(ctx, errBinary)
 					return nil, errBinary
 				}
-
-
 
 				continue
 			}
@@ -456,10 +443,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 			}
 			if streamErr, terminalBody, ok := codexTerminalFailureErrWithCooling(payload, e.modelLevelCooling()); ok {
 
-
-
-
-
 				overloadFailover := isCodexOverloadBootstrapFailure(terminalBody)
 				usageLimitFailover := isCodexUsageLimitError(terminalBody)
 				failoverPending := overloadFailover || usageLimitFailover
@@ -494,8 +477,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 					if isEphemeralSession {
 						closeCodexWebsocketSession(sess, "bootstrap_overload")
 					}
-
-
 
 					helps.LogWithRequestID(ctx).Debugf("codex websockets executor: bootstrap overload rejection after %d messages read, failing over", bufferedFrames)
 					if overloadFailover {
@@ -562,9 +543,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				currentChunks = helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, originalPayload, clientBody, line, &param, claudeInputTokens)
 			}
 
-
-
-
 			if windowOpen && isCodexBootstrapBufferableEvent(eventType, payload) && !isTerminalEvent {
 				frameBytes := len(payload)
 				for i := range currentChunks {
@@ -605,7 +583,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 		if isEphemeralSession {
 			closeCodexWebsocketSession(sess, "bootstrap_terminal_error")
 		}
-
 
 		out <- cliproxyexecutor.StreamChunk{Err: bootstrapTerminalErr}
 		close(out)
@@ -715,10 +692,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				terminateReason = "upstream_error"
 				terminateErr = wsErr
 
-
-
-
-
 				if sess != nil {
 					e.invalidateUpstreamConnWithoutDisconnectNotify(sess, conn, "upstream_error", wsErr)
 					sess.clearActive(conn, readCh)
@@ -745,7 +718,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 			if streamErr, terminalBody, ok := codexTerminalFailureErrWithCooling(payload, e.modelLevelCooling()); ok {
 				terminateReason = "upstream_error"
 				terminateErr = streamErr
-
 
 				if sess != nil {
 					e.invalidateUpstreamConnWithoutDisconnectNotify(sess, conn, "terminal_failure", streamErr)
@@ -857,8 +829,6 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 
 	return &cliproxyexecutor.StreamResult{Headers: upstreamHeaders, Chunks: out}, nil
 }
-
-
 
 type codexWebsocketPrepared struct {
 	from                 sdktranslator.Format

@@ -26,7 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (h *Handler) PatchAuthFileStatus(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
@@ -70,7 +69,6 @@ func (h *Handler) PatchAuthFileStatus(c *gin.Context) {
 		return
 	}
 	if coreauth.IsPluginVirtualAuth(targetAuth) {
-
 
 		if !isPluginVirtualSourceDelete(name, targetAuth) {
 			c.JSON(http.StatusConflict, gin.H{"error": errPluginVirtualAuth.Error()})
@@ -149,8 +147,6 @@ func (h *Handler) PatchAuthFileStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "disabled": *req.Disabled})
 }
-
-
 
 func (h *Handler) patchPluginVirtualSourceStatus(ctx context.Context, targetAuth *coreauth.Auth, disabled bool) ([]*coreauth.Auth, error) {
 	if h == nil || h.authManager == nil || targetAuth == nil {
@@ -259,7 +255,6 @@ func applyAuthDisabledState(auth *coreauth.Auth, disabled bool) {
 	auth.Metadata["disabled"] = disabled
 }
 
-
 func (h *Handler) PatchAuthFileFields(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
@@ -309,7 +304,6 @@ func (h *Handler) PatchAuthFileFields(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-
 	var targetAuth *coreauth.Auth
 	if auth, ok := h.authManager.GetByID(name); ok {
 		targetAuth = auth
@@ -322,7 +316,6 @@ func (h *Handler) PatchAuthFileFields(c *gin.Context) {
 			}
 		}
 	}
-
 
 	if targetAuth == nil || targetAuth.AuthSourceKind() == coreauth.AuthSourceConfig {
 		c.JSON(http.StatusNotFound, gin.H{"error": "auth file not found"})
@@ -449,7 +442,6 @@ func applyAuthFileFieldsPatch(targetAuth *coreauth.Auth, req map[string]json.Raw
 
 			delete(targetAuth.Attributes, "excluded_models")
 			delete(targetAuth.Attributes, "excluded_models_hash")
-
 
 			synthesizer.ApplyAuthExcludedModelsMeta(targetAuth, excluded, "")
 		}
@@ -1048,17 +1040,9 @@ func (h *Handler) saveTokenRecord(ctx context.Context, record *coreauth.Auth) (s
 		metadataStringValue(legacyXAICredential.Metadata, "email") != ""
 	if adoptXAICredential {
 
-
-
-
-
-
-
 		if _, isFileNameStore := store.(interface{ SetBaseDir(string) }); !isFileNameStore {
 			adoptXAICredential = false
 		} else if disabled, hasDisabled := record.Metadata["disabled"].(bool); hasDisabled && disabled {
-
-
 
 			adoptXAICredential = false
 		}
@@ -1145,12 +1129,6 @@ func metadataStringValue(metadata map[string]any, key string) string {
 	value, _ := metadata[key].(string)
 	return strings.TrimSpace(value)
 }
-
-
-
-
-
-
 
 func adoptLegacyXAIFileName(record, legacy *coreauth.Auth) {
 	legacyFileName := strings.TrimSpace(legacy.FileName)

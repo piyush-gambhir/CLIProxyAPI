@@ -325,7 +325,6 @@ func TestRequestCodexTokenLoginDoesNotRaceConfigV8Save(t *testing.T) {
 		CancelOAuthSession(payload.State)
 	}
 
-
 	state := requestCodexTokenState(t, router)
 	defer CompleteOAuthSession(state)
 	saveRetry(`0`)

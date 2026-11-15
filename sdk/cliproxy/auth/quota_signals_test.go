@@ -275,13 +275,10 @@ func TestMergeModelStateKeepsNewestObservationSnapshot(t *testing.T) {
 		t.Fatalf("newest snapshot was lost: %#v", target.Quota.Signals)
 	}
 
-
 	if _, ok := target.Quota.Signals["X-Codex-Plan-Type"]; ok {
 		t.Fatalf("stale snapshot key survived the merge: %#v", target.Quota.Signals)
 	}
 }
-
-
 
 func TestObserveResponseHeadersReplacesStaleWatermarks(t *testing.T) {
 	var quota QuotaState
@@ -311,8 +308,6 @@ func TestObserveResponseHeadersReplacesStaleWatermarks(t *testing.T) {
 	}
 }
 
-
-
 func TestObserveResponseHeadersKeepsSnapshotWhenResponseCarriesNoSignal(t *testing.T) {
 	quota := QuotaState{
 		ObservedAt: time.Unix(100, 0),
@@ -328,8 +323,6 @@ func TestObserveResponseHeadersKeepsSnapshotWhenResponseCarriesNoSignal(t *testi
 	}
 }
 
-
-
 func TestObserveResponseHeadersAdvancesObservedAtOnRepeatedValues(t *testing.T) {
 	var quota QuotaState
 	headers := http.Header{"X-Codex-Primary-Used-Percent": []string{"5"}}
@@ -339,8 +332,6 @@ func TestObserveResponseHeadersAdvancesObservedAtOnRepeatedValues(t *testing.T) 
 		t.Fatalf("ObservedAt = %v, want 200", quota.ObservedAt)
 	}
 }
-
-
 
 func TestObserveResponseHeadersRejectsControlCharacterValues(t *testing.T) {
 	var quota QuotaState
@@ -353,7 +344,6 @@ func TestObserveResponseHeadersRejectsControlCharacterValues(t *testing.T) {
 		t.Fatalf("control-character value was stored: %#v", quota.Signals)
 	}
 }
-
 
 func TestObserveResponseHeadersTruncatesDeterministically(t *testing.T) {
 	headers := make(http.Header, maxQuotaSignalHeaders*2)

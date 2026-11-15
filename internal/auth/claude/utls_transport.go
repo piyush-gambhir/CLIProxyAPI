@@ -29,9 +29,6 @@ var claudeOAuthRefreshHeaderOrder = []string{
 	"Connection",
 }
 
-
-
-
 var claudeOAuthInspectHeaderOrder = []string{
 	"Accept",
 	"Content-Type",
@@ -42,8 +39,6 @@ var claudeOAuthInspectHeaderOrder = []string{
 	"Host",
 	"Connection",
 }
-
-
 
 var claudeOAuthInspectTargets = []string{
 	"/api/oauth/profile",
@@ -61,23 +56,10 @@ func claudeOAuthRequestHeaderOrder(method, requestTarget string) []string {
 	return claudeOAuthRefreshHeaderOrder
 }
 
-
-
-
 const (
 	claudeOAuthSessionCacheCapacity      = 8
 	claudeOAuthProxySessionCacheCapacity = 64
 )
-
-
-
-
-
-
-
-
-
-
 
 var claudeOAuthSessionCaches = internalcache.NewBoundedLRU[string, tls.ClientSessionCache](
 	claudeOAuthProxySessionCacheCapacity,
@@ -90,13 +72,6 @@ func claudeOAuthSessionCache(proxyURL string) tls.ClientSessionCache {
 	})
 }
 
-
-
-
-
-
-
-
 func newClaudeOAuthTLSConfig(host string, sessionCache tls.ClientSessionCache) *tls.Config {
 	return &tls.Config{
 		ServerName:                         host,
@@ -105,10 +80,6 @@ func newClaudeOAuthTLSConfig(host string, sessionCache tls.ClientSessionCache) *
 		PreferSkipResumptionOnNilExtension: true,
 	}
 }
-
-
-
-
 
 func claudeOAuthTLSClientHelloSpec() *tls.ClientHelloSpec {
 	return &tls.ClientHelloSpec{
@@ -156,19 +127,13 @@ func claudeOAuthTLSClientHelloSpec() *tls.ClientHelloSpec {
 			&tls.PSKKeyExchangeModesExtension{Modes: []uint8{tls.PskModeDHE}},
 			&tls.SupportedVersionsExtension{Versions: []uint16{tls.VersionTLS13, tls.VersionTLS12}},
 
-
 			&tls.UtlsPreSharedKeyExtension{},
 		},
 	}
 }
 
-
-
-
 type utlsRoundTripper struct {
 	dialer proxy.Dialer
-
-
 
 	sessionCache tls.ClientSessionCache
 	transport    *http.Transport

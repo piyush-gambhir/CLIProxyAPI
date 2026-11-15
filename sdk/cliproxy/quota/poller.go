@@ -12,12 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 const (
-
 	DefaultClaudeInterval = 30 * time.Minute
-
-
 
 	DefaultClaudeMinGap = 10 * time.Minute
 
@@ -25,11 +21,9 @@ const (
 
 	DefaultClaudeBackoffMax = time.Hour
 
-
 	DefaultCodexInterval = 5 * time.Minute
 
 	DefaultTick = time.Minute
-
 
 	defaultRequestTimeout = 30 * time.Second
 )
@@ -38,14 +32,10 @@ const (
 	claudeUsageURL = "https://api.anthropic.com/api/oauth/usage"
 	codexUsageURL  = "https://chatgpt.com/backend-api/wham/usage"
 
-
 	codexUserAgent = "codex-tui/0.149.1"
 )
 
-
-
 type Target struct {
-
 	AuthID string
 
 	Provider string
@@ -63,24 +53,18 @@ type Target struct {
 	Disabled bool
 }
 
-
 type Doer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-
-
 type PollerConfig struct {
-
 	Store *Store
 
 	Now func() time.Time
 
 	Targets func() []Target
 
-
 	HTTPClientFor func(Target) Doer
-
 
 	ClaudeInterval     time.Duration
 	CodexInterval      time.Duration
@@ -91,13 +75,6 @@ type PollerConfig struct {
 	Tick time.Duration
 }
 
-
-
-
-
-
-
-
 type Poller struct {
 	cfg PollerConfig
 
@@ -107,8 +84,6 @@ type Poller struct {
 	claudeBackoff      time.Duration
 	started            bool
 }
-
-
 
 func NewPoller(cfg PollerConfig) *Poller {
 	if cfg.Store == nil || cfg.Targets == nil {
@@ -138,9 +113,6 @@ func NewPoller(cfg PollerConfig) *Poller {
 	return &Poller{cfg: cfg}
 }
 
-
-
-
 func (p *Poller) Start(ctx context.Context) {
 	if p == nil {
 		return
@@ -167,8 +139,6 @@ func (p *Poller) Start(ctx context.Context) {
 	}()
 }
 
-
-
 func (p *Poller) RunOnce(ctx context.Context) {
 	if p == nil || ctx == nil {
 		return
@@ -181,9 +151,6 @@ func (p *Poller) RunOnce(ctx context.Context) {
 		p.poll(ctx, target)
 	}
 }
-
-
-
 
 func (p *Poller) eligibleTargets() []Target {
 	raw := p.cfg.Targets()
@@ -201,7 +168,6 @@ func (p *Poller) eligibleTargets() []Target {
 			continue
 		}
 
-
 		if fetchedAt := p.cfg.Store.FetchedAt(target.AuthID); !fetchedAt.IsZero() && now.Sub(fetchedAt) < interval {
 			continue
 		}
@@ -216,9 +182,6 @@ func (p *Poller) eligibleTargets() []Target {
 	return out
 }
 
-
-
-
 func (p *Poller) providerInterval(provider string) (time.Duration, bool) {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "claude", "anthropic":
@@ -229,7 +192,6 @@ func (p *Poller) providerInterval(provider string) (time.Duration, bool) {
 		return 0, false
 	}
 }
-
 
 func (p *Poller) poll(ctx context.Context, target Target) {
 	isClaude := p.isClaude(target.Provider)
@@ -275,7 +237,6 @@ func (p *Poller) poll(ctx context.Context, target Target) {
 		Plan:     plan,
 	}, reading.Windows, now)
 }
-
 
 func (p *Poller) fetch(ctx context.Context, target Target) ([]byte, int, error) {
 	endpoint := claudeUsageURL
@@ -331,8 +292,6 @@ func (p *Poller) isClaude(provider string) bool {
 	}
 }
 
-
-
 func (p *Poller) claimClaudeSlot() bool {
 	now := p.cfg.Now()
 	p.mu.Lock()
@@ -346,7 +305,6 @@ func (p *Poller) claimClaudeSlot() bool {
 	p.lastClaudeCallAt = now
 	return true
 }
-
 
 func (p *Poller) noteClaude429() {
 	now := p.cfg.Now()
@@ -363,15 +321,12 @@ func (p *Poller) noteClaude429() {
 	p.claudeBackoffUntil = now.Add(p.claudeBackoff)
 }
 
-
 func (p *Poller) noteClaudeSuccess() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.claudeBackoff = 0
 	p.claudeBackoffUntil = time.Time{}
 }
-
-
 
 func (p *Poller) ClaudeBackoff() (time.Duration, time.Time) {
 	if p == nil {

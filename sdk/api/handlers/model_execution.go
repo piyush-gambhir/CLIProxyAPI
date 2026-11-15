@@ -31,7 +31,6 @@ type modelExecutionOptions struct {
 	AllowSpeechModel        bool
 }
 
-
 type ProtocolExecutionRequest struct {
 	EntryProtocol      string
 	ExitProtocol       string
@@ -45,7 +44,6 @@ type ProtocolExecutionRequest struct {
 	Alt                string
 	Path               string
 }
-
 
 type ModelExecutionRequest struct {
 	EntryProtocol           string
@@ -65,13 +63,11 @@ type ModelExecutionRequest struct {
 	CallerScope             string
 }
 
-
 type ModelExecutionResponse struct {
 	StatusCode int
 	Headers    http.Header
 	Body       []byte
 }
-
 
 type ModelExecutionStream struct {
 	StatusCode int
@@ -79,19 +75,16 @@ type ModelExecutionStream struct {
 	Chunks     <-chan ModelExecutionChunk
 }
 
-
 type ModelExecutionChunk struct {
 	Payload []byte
 	Err     *ModelExecutionStreamError
 }
-
 
 type ModelExecutionStreamError struct {
 	StatusCode int         `json:"status_code"`
 	Message    string      `json:"message"`
 	Headers    http.Header `json:"headers"`
 }
-
 
 func (e *ModelExecutionStreamError) Error() string {
 	if e == nil {
@@ -102,10 +95,6 @@ func (e *ModelExecutionStreamError) Error() string {
 	}
 	return http.StatusText(e.StatusCode)
 }
-
-
-
-
 
 func (h *BaseAPIHandler) ExecuteModel(ctx context.Context, req ModelExecutionRequest) (ModelExecutionResponse, *interfaces.ErrorMessage) {
 	markNestedExecution(ctx)
@@ -140,10 +129,6 @@ func (h *BaseAPIHandler) ExecuteModel(ctx context.Context, req ModelExecutionReq
 		Body:       cloneBytes(body),
 	}, nil
 }
-
-
-
-
 
 func (h *BaseAPIHandler) ExecuteModelStream(ctx context.Context, req ModelExecutionRequest) (ModelExecutionStream, *interfaces.ErrorMessage) {
 	markNestedExecution(ctx)
@@ -180,7 +165,6 @@ func (h *BaseAPIHandler) ExecuteModelStream(ctx context.Context, req ModelExecut
 	}, nil
 }
 
-
 func (h *BaseAPIHandler) ExecuteProtocolWithAuthManager(ctx context.Context, req ProtocolExecutionRequest) (ModelExecutionResponse, *interfaces.ErrorMessage) {
 	if req.Stream {
 		return ModelExecutionResponse{}, modelExecutionModeError("ExecuteProtocolWithAuthManager requires Stream=false")
@@ -202,7 +186,6 @@ func (h *BaseAPIHandler) ExecuteProtocolWithAuthManager(ctx context.Context, req
 		Body:       cloneBytes(body),
 	}, nil
 }
-
 
 func (h *BaseAPIHandler) ExecuteProtocolStreamWithAuthManager(ctx context.Context, req ProtocolExecutionRequest) (ModelExecutionStream, *interfaces.ErrorMessage) {
 	if !req.Stream {
@@ -263,10 +246,6 @@ func modelExecutionHeaders(ctx context.Context, headers http.Header) http.Header
 	}
 	return headersFromContext(ctx)
 }
-
-
-
-
 
 func modelExecutionQuery(ctx context.Context, query url.Values) url.Values {
 	if len(query) > 0 {

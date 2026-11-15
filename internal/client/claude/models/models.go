@@ -1,4 +1,3 @@
-// Package models builds model catalogs for Anthropic clients.
 package models
 
 import (
@@ -8,7 +7,6 @@ import (
 
 const claudeDDModelPrefix = "claude-fable-5-dd-"
 
-// BuildResponse builds an Anthropic model response from available models.
 func BuildResponse(availableModels []map[string]any, disableCloaking bool) map[string]any {
 	models := make([]map[string]any, len(availableModels))
 	for i, model := range availableModels {
@@ -44,9 +42,6 @@ func BuildResponse(availableModels []map[string]any, disableCloaking bool) map[s
 	}
 }
 
-// EnsureClaudeModelIDPrefix rewrites model IDs for Anthropic model listings.
-// IDs that already start with "claude-" are returned unchanged; all other IDs
-// become "claude-fable-5-dd-" plus the original ID with its characters reversed.
 func EnsureClaudeModelIDPrefix(id string) string {
 	if id == "" || strings.HasPrefix(id, "claude-") {
 		return id
@@ -54,8 +49,6 @@ func EnsureClaudeModelIDPrefix(id string) string {
 	return claudeDDModelPrefix + reverseModelID(id)
 }
 
-// ResolveClaudeModelIDPrefix reverses EnsureClaudeModelIDPrefix for request routing.
-// Optional thinking suffixes in model(value) form are preserved.
 func ResolveClaudeModelIDPrefix(id string) string {
 	if id == "" {
 		return id

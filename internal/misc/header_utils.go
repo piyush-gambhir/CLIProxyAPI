@@ -1,6 +1,3 @@
-
-
-
 package misc
 
 import (
@@ -8,16 +5,10 @@ import (
 	"strings"
 )
 
-
-
-
-
-
 func ScrubProxyAndFingerprintHeaders(req *http.Request) {
 	if req == nil {
 		return
 	}
-
 
 	req.Header.Del("X-Forwarded-For")
 	req.Header.Del("X-Forwarded-Host")
@@ -26,7 +17,6 @@ func ScrubProxyAndFingerprintHeaders(req *http.Request) {
 	req.Header.Del("X-Real-IP")
 	req.Header.Del("Forwarded")
 	req.Header.Del("Via")
-
 
 	req.Header.Del("X-Title")
 	req.Header.Del("X-Stainless-Lang")
@@ -38,9 +28,6 @@ func ScrubProxyAndFingerprintHeaders(req *http.Request) {
 	req.Header.Del("Http-Referer")
 	req.Header.Del("Referer")
 
-
-
-
 	req.Header.Del("Sec-Ch-Ua")
 	req.Header.Del("Sec-Ch-Ua-Mobile")
 	req.Header.Del("Sec-Ch-Ua-Platform")
@@ -49,21 +36,8 @@ func ScrubProxyAndFingerprintHeaders(req *http.Request) {
 	req.Header.Del("Sec-Fetch-Dest")
 	req.Header.Del("Priority")
 
-
-
-
 	req.Header.Del("Accept-Encoding")
 }
-
-
-
-
-
-
-
-
-
-
 
 func EnsureHeader(target http.Header, source http.Header, key, defaultValue string) {
 	if target == nil {

@@ -1,5 +1,3 @@
-
-
 package executor
 
 import (
@@ -25,7 +23,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 	log "github.com/sirupsen/logrus"
 )
-
 
 type XAIWebsocketsExecutor struct {
 	*XAIExecutor
@@ -482,9 +479,6 @@ func (e *XAIWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *cliprox
 		return e.executeCompactionTriggerFromWebsocketContext(ctx, auth, req, opts, idMapper)
 	}
 
-
-
-
 	token, baseURL := xaiCreds(auth)
 	if baseURL == "" {
 		baseURL = xaiauth.DefaultAPIBaseURL
@@ -729,7 +723,6 @@ func (e *XAIWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *cliprox
 
 		var streamUsage helps.StreamUsageBuffer
 		defer streamUsage.Publish(ctx, reporter)
-
 
 		invalidatePatchAttempt := func() {
 			terminateReason = "invalid_tool_arguments"
@@ -1109,7 +1102,6 @@ func parseXAIWebsocketError(payload []byte) (error, bool) {
 		if statusError, okStatus := wsErr.(statusErrWithHeaders); okStatus {
 			xaiError := xaiStatusErr(statusError.code, payload)
 
-
 			statusError.code = xaiError.code
 			if xaiError.retryAfter != nil {
 				statusError.retryAfter = xaiError.retryAfter
@@ -1319,7 +1311,6 @@ func configureXAIWebsocketConn(sess *codexWebsocketSession, conn *websocket.Conn
 		log.Debugf("xai websockets: upstream ping received session=%s session_object=%s ping_bytes=%d", sessionID, sessionKind, len(appData))
 		log.Debugf("xai websockets: upstream pong write started session=%s session_object=%s", sessionID, sessionKind)
 		start := time.Now()
-
 
 		errPong := conn.WriteControl(websocket.PongMessage, []byte(appData), time.Time{})
 		if errPong != nil {
@@ -1788,8 +1779,6 @@ func logXAIWebsocketDisconnectedWithLastEvent(sess *codexWebsocketSession, sessi
 	log.Infof("xai websockets: upstream disconnected session=%s auth=%s url=%s session_object=%s reason=%s is_terminal=false", sessionStr, strings.TrimSpace(authID), strings.TrimSpace(wsURL), sessionKind, strings.TrimSpace(reason))
 }
 
-
-
 func CloseXAIWebsocketSessionsForAuthID(authID string, reason string) {
 	closeXAIWebsocketSessionsInStoreForAuthID(globalXAIWebsocketSessionStore, globalXAIWebsocketIDStates, authID, reason)
 }
@@ -1851,9 +1840,6 @@ func closeXAIWebsocketSessionsInStoreForAuthID(store *codexWebsocketSessionStore
 	}
 }
 
-
-
-
 type XAIAutoExecutor struct {
 	httpExec *XAIExecutor
 	wsExec   *XAIWebsocketsExecutor
@@ -1867,7 +1853,6 @@ func NewXAIAutoExecutor(cfg *config.Config) *XAIAutoExecutor {
 }
 
 func (e *XAIAutoExecutor) Identifier() string { return "xai" }
-
 
 func (e *XAIAutoExecutor) UsesConfig(cfg *config.Config) bool {
 	return e != nil && e.httpExec != nil && e.httpExec.cfg == cfg
@@ -1980,7 +1965,6 @@ func xaiWebsocketsEnabled(auth *cliproxyauth.Auth) bool {
 	}
 	return false
 }
-
 
 func (e *XAIAutoExecutor) SupportsApplyPatch() bool {
 	return e != nil && e.httpExec != nil && e.wsExec != nil && e.httpExec.SupportsApplyPatch() && e.wsExec.SupportsApplyPatch()

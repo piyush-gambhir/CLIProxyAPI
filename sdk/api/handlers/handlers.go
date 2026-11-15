@@ -1,6 +1,3 @@
-
-
-
 package handlers
 
 import (
@@ -30,25 +27,16 @@ import (
 	"golang.org/x/net/context"
 )
 
-
-
 type ErrorResponse struct {
-
 	Error ErrorDetail `json:"error"`
 }
 
-
-
 type ErrorDetail struct {
-
 	Message string `json:"message"`
-
 
 	Type string `json:"type"`
 
-
 	Code string `json:"code,omitempty"`
-
 
 	Retryable *bool `json:"retryable,omitempty"`
 }
@@ -63,15 +51,9 @@ const (
 	maxStreamInterceptorHistoryBytes  = 1 << 20
 )
 
-
-
-
 func BuildErrorResponseBody(status int, errText string) []byte {
 	return BuildErrorResponseBodyWithError(status, errText, nil)
 }
-
-
-
 
 func BuildErrorResponseBodyWithError(status int, errText string, err error) []byte {
 	if status <= 0 {
@@ -173,8 +155,6 @@ func defaultStreamingKeepAliveTickerWithReset(interval time.Duration) (<-chan ti
 	return ticker.C, ticker.Stop, reset
 }
 
-
-
 func StreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	seconds := defaultStreamingKeepAliveSeconds
 	if cfg != nil {
@@ -186,13 +166,9 @@ func StreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-
-
 func StreamingSendKeepAliveBeforeFT(cfg *config.SDKConfig) bool {
 	return cfg != nil && cfg.Streaming.SendKeepAliveBeforeFT && StreamingKeepAliveInterval(cfg) > 0
 }
-
-
 
 func NewStreamingKeepAliveTickerWithReset(interval time.Duration) (<-chan time.Time, func(), func()) {
 	if interval <= 0 {
@@ -208,14 +184,10 @@ func NewStreamingKeepAliveTickerWithReset(interval time.Duration) (<-chan time.T
 	return defaultStreamingKeepAliveTickerWithReset(interval)
 }
 
-
-
 func NewStreamingKeepAliveTicker(interval time.Duration) (<-chan time.Time, func()) {
 	keepAliveC, stop, _ := NewStreamingKeepAliveTickerWithReset(interval)
 	return keepAliveC, stop
 }
-
-
 
 func NewPreFirstTokenKeepAliveTicker(cfg *config.SDKConfig) (<-chan time.Time, func()) {
 	if !StreamingSendKeepAliveBeforeFT(cfg) {
@@ -223,8 +195,6 @@ func NewPreFirstTokenKeepAliveTicker(cfg *config.SDKConfig) (<-chan time.Time, f
 	}
 	return NewStreamingKeepAliveTicker(StreamingKeepAliveInterval(cfg))
 }
-
-
 
 func SetStreamingKeepAliveTickerFactoryForTest(factory func(interval time.Duration) (<-chan time.Time, func())) func() {
 	prev := streamingKeepAliveTickerFactory
@@ -236,8 +206,6 @@ func SetStreamingKeepAliveTickerFactoryForTest(factory func(interval time.Durati
 	}
 }
 
-
-
 func SetStreamingKeepAliveTickerWithResetFactoryForTest(factory func(interval time.Duration) (<-chan time.Time, func(), func())) func() {
 	prev := streamingKeepAliveTickerWithResetFactory
 	if factory != nil {
@@ -247,8 +215,6 @@ func SetStreamingKeepAliveTickerWithResetFactoryForTest(factory func(interval ti
 		streamingKeepAliveTickerWithResetFactory = prev
 	}
 }
-
-
 
 func NonStreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	seconds := 0
@@ -261,7 +227,6 @@ func NonStreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-
 func StreamingBootstrapRetries(cfg *config.SDKConfig) int {
 	retries := defaultStreamingBootstrapRetries
 	if cfg != nil {
@@ -273,20 +238,15 @@ func StreamingBootstrapRetries(cfg *config.SDKConfig) int {
 	return retries
 }
 
-
-
 func PassthroughHeadersEnabled(cfg *config.SDKConfig) bool {
 	return cfg != nil && cfg.PassthroughHeaders
 }
-
-
 
 func executionPassthroughHeaders(cfg *config.SDKConfig, internal bool) bool {
 	return internal || PassthroughHeadersEnabled(cfg)
 }
 
 func requestExecutionMetadata(ctx context.Context) map[string]any {
-
 
 	key := ""
 	requestPath := ""
@@ -355,8 +315,6 @@ func extractSessionIDsFromRequest(request *http.Request) (string, string) {
 	}
 	return "", ""
 }
-
-
 
 func EnrichContextWithSessionHierarchy(ctx context.Context, headers http.Header, payload []byte, metadata map[string]any) context.Context {
 	meta := logging.GetClientRequestMetadata(ctx)
@@ -465,34 +423,17 @@ func setGenerateMetadata(meta map[string]any, rawJSON []byte) {
 	meta[coreexecutor.GenerateMetadataKey] = generate
 }
 
-
-
-
 type BaseAPIHandler struct {
 	runtimeMu sync.RWMutex
 
-
 	AuthManager *coreauth.Manager
-
 
 	Cfg *config.SDKConfig
 
-
 	PluginHost PluginInterceptorHost
-
-
 
 	ModelRouterHost PluginModelRouterHost
 }
-
-
-
-
-
-
-
-
-
 
 func NewBaseAPIHandlers(cfg *config.SDKConfig, authManager *coreauth.Manager) *BaseAPIHandler {
 	return &BaseAPIHandler{
@@ -500,12 +441,6 @@ func NewBaseAPIHandlers(cfg *config.SDKConfig, authManager *coreauth.Manager) *B
 		AuthManager: authManager,
 	}
 }
-
-
-
-
-
-
 
 func (h *BaseAPIHandler) UpdateClients(cfg *config.SDKConfig) {
 	if h == nil {
@@ -516,7 +451,6 @@ func (h *BaseAPIHandler) UpdateClients(cfg *config.SDKConfig) {
 	h.runtimeMu.Unlock()
 }
 
-
 func (h *BaseAPIHandler) CurrentConfig() *config.SDKConfig {
 	if h == nil {
 		return nil
@@ -526,7 +460,6 @@ func (h *BaseAPIHandler) CurrentConfig() *config.SDKConfig {
 	h.runtimeMu.RUnlock()
 	return cfg
 }
-
 
 func (h *BaseAPIHandler) SetPluginHost(host PluginInterceptorHost) {
 	if h == nil {
@@ -540,7 +473,6 @@ func (h *BaseAPIHandler) SetPluginHost(host PluginInterceptorHost) {
 	h.runtimeMu.Unlock()
 }
 
-
 func (h *BaseAPIHandler) SetModelRouterHost(host PluginModelRouterHost) {
 	if h == nil {
 		return
@@ -552,7 +484,6 @@ func (h *BaseAPIHandler) SetModelRouterHost(host PluginModelRouterHost) {
 	h.ModelRouterHost = host
 	h.runtimeMu.Unlock()
 }
-
 
 func (h *BaseAPIHandler) ModelRouterHostSnapshot() PluginModelRouterHost {
 	if h == nil {
@@ -589,14 +520,6 @@ func isNilInterface(value any) bool {
 	}
 }
 
-
-
-
-
-
-
-
-
 func (h *BaseAPIHandler) GetAlt(c *gin.Context) string {
 	var alt string
 	var hasAlt bool
@@ -609,18 +532,6 @@ func (h *BaseAPIHandler) GetAlt(c *gin.Context) string {
 	}
 	return alt
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 func (h *BaseAPIHandler) GetContextWithCancel(handler interfaces.APIHandler, c *gin.Context, ctx context.Context) (context.Context, APIHandlerCancelFunc) {
 	parentCtx := ctx
@@ -749,8 +660,6 @@ func (h *BaseAPIHandler) GetContextWithCancel(handler interfaces.APIHandler, c *
 	}
 }
 
-
-
 func (h *BaseAPIHandler) StartNonStreamingKeepAlive(c *gin.Context, ctx context.Context) func() {
 	if h == nil || c == nil {
 		return func() {}
@@ -796,12 +705,10 @@ func (h *BaseAPIHandler) StartNonStreamingKeepAlive(c *gin.Context, ctx context.
 	}
 }
 
-
 func appendAPIResponse(c *gin.Context, data []byte) {
 	if c == nil || len(data) == 0 {
 		return
 	}
-
 
 	if _, exists := c.Get("API_RESPONSE_TIMESTAMP"); !exists {
 		c.Set("API_RESPONSE_TIMESTAMP", time.Now())
@@ -822,7 +729,5 @@ func appendAPIResponse(c *gin.Context, data []byte) {
 
 	c.Set("API_RESPONSE", bytes.Clone(data))
 }
-
-
 
 type APIHandlerCancelFunc func(params ...interface{})

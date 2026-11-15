@@ -46,9 +46,6 @@ type issue6631Harness struct {
 	published      chan issue6631Values
 }
 
-
-
-
 func newIssue6631Harness(t *testing.T) *issue6631Harness {
 	t.Helper()
 	previousLevel := log.GetLevel()
@@ -146,7 +143,6 @@ func (h *issue6631Harness) put(path, value string) {
 	}
 }
 
-
 func (h *issue6631Harness) awaitFirstReload() issue6631Values {
 	h.t.Helper()
 	select {
@@ -157,7 +153,6 @@ func (h *issue6631Harness) awaitFirstReload() issue6631Values {
 	}
 	return issue6631Values{}
 }
-
 
 func (h *issue6631Harness) publishFirstReload() {
 	h.t.Helper()
@@ -181,8 +176,6 @@ func (h *issue6631Harness) disk() issue6631Values {
 	}
 	return issue6631ValuesOf(cfg)
 }
-
-
 
 func (h *issue6631Harness) waitForPublished(want issue6631Values) bool {
 	timeout := time.After(10 * time.Second)

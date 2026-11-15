@@ -1,8 +1,3 @@
-
-
-
-
-
 package chat_completions
 
 import (
@@ -20,7 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type convertGeminiResponseToOpenAIChatParams struct {
 	UnixTimestamp int64
 
@@ -37,22 +31,7 @@ type convertGeminiResponseToOpenAIChatParams struct {
 	HasIncompleteToolCall    map[int]bool
 }
 
-
 var functionCallIDCounter uint64
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 
@@ -67,7 +46,6 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 			SanitizedNameMapResolved: true,
 		}
 	}
-
 
 	p := (*param).(*convertGeminiResponseToOpenAIChatParams)
 	if p.FunctionIndex == nil {
@@ -133,10 +111,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		return doneChunks
 	}
 
-
-
 	baseDoc := ojson.NewDocString(`{"id":"","object":"chat.completion.chunk","created":12345,"model":"model","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":null,"tool_calls":null},"finish_reason":null,"native_finish_reason":null}]}`)
-
 
 	if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "modelVersion"); modelVersionResult.Exists() {
 		p.ModelVersion = strings.Clone(modelVersionResult.String())
@@ -144,7 +119,6 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 	} else if p.ModelVersion != "" {
 		_ = baseDoc.Set("model", p.ModelVersion)
 	}
-
 
 	if createTimeResult := ojson.GetBytesNoCopy(rawJSON, "createTime"); createTimeResult.Exists() {
 		t, err := time.Parse(time.RFC3339Nano, createTimeResult.String())
@@ -156,15 +130,12 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		_ = baseDoc.Set("created", p.UnixTimestamp)
 	}
 
-
 	if responseIDResult := ojson.GetBytesNoCopy(rawJSON, "responseId"); responseIDResult.Exists() {
 		p.ResponseID = strings.Clone(responseIDResult.String())
 		_ = baseDoc.Set("id", p.ResponseID)
 	} else if p.ResponseID != "" {
 		_ = baseDoc.Set("id", p.ResponseID)
 	}
-
-
 
 	usageResult := ojson.GetBytesNoCopy(rawJSON, "usageMetadata")
 	usageExists := usageResult.Exists()
@@ -180,12 +151,10 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 	var responseStrings [][]byte
 	candidates := ojson.GetBytesNoCopy(rawJSON, "candidates")
 
-
 	if candidates.IsArray() {
 		candidates.ForEach(func(_, candidate ojson.Result) bool {
 
 			templateDoc := ojson.NewDoc(baseTemplate)
-
 
 			candidateIndex := int(candidate.Get("index").Int())
 			_ = templateDoc.Set("choices.0.index", candidateIndex)
@@ -232,8 +201,6 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 						thoughtSignatureResult = partResult.Get("thought_signature")
 					}
 
-
-
 					audioTranscriptionResult := partResult.Get("audioTranscription")
 					if audioTranscriptionResult.Exists() && !partTextResult.Exists() {
 						partTextResult = audioTranscriptionResult.Get("text")
@@ -242,7 +209,6 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 					hasThoughtSignature := thoughtSignatureResult.Exists() && thoughtSignatureResult.String() != ""
 					hasTextPayload := partTextResult.Exists() && partTextResult.String() != ""
 					hasContentPayload := hasTextPayload || functionCallResult.Exists() || inlineDataResult.Exists()
-
 
 					if hasThoughtSignature && !hasContentPayload {
 						if p.ActiveToolCall[candidateIndex] != nil {
@@ -346,7 +312,6 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 							}
 							p.SawToolCall[candidateIndex] = true
 
-
 							functionCallIndex := p.FunctionIndex[candidateIndex]
 							p.FunctionIndex[candidateIndex]++
 
@@ -442,19 +407,6 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 	return responseStrings
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	sanitizedNameMap := util.SanitizedToolNameMap(originalRequestRawJSON)
 	var unixTimestamp int64
@@ -499,7 +451,6 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 		}
 	}
 
-
 	candidates := ojson.GetBytesNoCopy(rawJSON, "candidates")
 	if candidates.IsArray() {
 		var choicesList [][]byte
@@ -507,9 +458,7 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 
 			choiceDoc := ojson.NewDocString(`{"index":0,"message":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":null},"finish_reason":null,"native_finish_reason":null}`)
 
-
 			_ = choiceDoc.Set("index", candidate.Get("index").Int())
-
 
 			if finishReasonResult := candidate.Get("finishReason"); finishReasonResult.Exists() {
 				finishReason := strings.ToLower(finishReasonResult.String())
@@ -544,8 +493,6 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 						thoughtSignatureResult = partResult.Get("thought_signature")
 					}
 
-
-
 					audioTranscriptionResult := partResult.Get("audioTranscription")
 					if audioTranscriptionResult.Exists() && !partTextResult.Exists() {
 						partTextResult = audioTranscriptionResult.Get("text")
@@ -554,7 +501,6 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 					hasThoughtSignature := thoughtSignatureResult.Exists() && thoughtSignatureResult.String() != ""
 					hasTextPayload := partTextResult.Exists() && partTextResult.String() != ""
 					hasContentPayload := hasTextPayload || functionCallResult.Exists() || inlineDataResult.Exists()
-
 
 					if hasThoughtSignature && !hasContentPayload {
 						continue
@@ -621,7 +567,6 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 				_ = choiceDoc.Set("finish_reason", "tool_calls")
 				_ = choiceDoc.Set("native_finish_reason", "tool_calls")
 			}
-
 
 			choicesList = append(choicesList, choiceDoc.Bytes())
 			return true

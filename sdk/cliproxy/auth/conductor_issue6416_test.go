@@ -105,11 +105,6 @@ func (s *issue6416MockStore) List(context.Context) ([]*Auth, error) {
 	return items, nil
 }
 
-
-
-
-
-
 func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCredential(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -157,9 +152,7 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 		_, execErr = m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	}()
 
-
 	<-execStarted
-
 
 	currentAuth, ok := m.GetByID(authID)
 	if !ok || currentAuth == nil {
@@ -173,14 +166,12 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 		t.Fatalf("update auth: %v", errUpdate)
 	}
 
-
 	close(allowExecToFail)
 	<-reqDone
 
 	if execErr == nil {
 		t.Fatal("expected in-flight request to fail with 429")
 	}
-
 
 	freshAuth, ok := m.GetByID(authID)
 	if !ok || freshAuth == nil {
@@ -201,9 +192,6 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 		}
 	}
 }
-
-
-
 
 func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldownNewCredential(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -255,7 +243,6 @@ func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldow
 
 	<-streamStarted
 
-
 	currentAuth, ok := m.GetByID(authID)
 	if !ok || currentAuth == nil {
 		t.Fatal("auth not found")
@@ -280,7 +267,6 @@ func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldow
 		}
 	}
 
-
 	freshAuth, ok := m.GetByID(authID)
 	if !ok || freshAuth == nil {
 		t.Fatal("fresh auth not found")
@@ -297,9 +283,6 @@ func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldow
 		}
 	}
 }
-
-
-
 
 func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -364,7 +347,6 @@ func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 
 	<-execStarted
 
-
 	newAuth := loadedAuth.Clone()
 	newAuth.Metadata = map[string]any{"access_token": "new-access-token"}
 	updated, errUpdate := m.Update(context.Background(), newAuth)
@@ -386,9 +368,6 @@ func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 		t.Fatalf("fresh credential model must not be in cooldown after late 429 from old token")
 	}
 }
-
-
-
 
 func TestManager_Issue6416_Late401ResultBeforeCredentialUpdate_DoesNotInvalidateNewCredential(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -458,9 +437,6 @@ func TestManager_Issue6416_Late401ResultBeforeCredentialUpdate_DoesNotInvalidate
 		t.Fatalf("model state must not be unavailable after late 401 from old token")
 	}
 }
-
-
-
 
 func TestManager_Issue6416_APIKeyRotation_LateResultDoesNotCooldownNewAPIKey(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -539,9 +515,6 @@ func TestManager_Issue6416_APIKeyRotation_LateResultDoesNotCooldownNewAPIKey(t *
 	}
 }
 
-
-
-
 func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -568,7 +541,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("registered CredentialVersion = %d, want 1", registered.CredentialVersion)
 	}
 
-
 	updatedAuth := registered.Clone()
 	updatedAuth.Metadata = map[string]any{"access_token": "token-v2"}
 	updated, errUpdate := m.Update(context.Background(), updatedAuth)
@@ -578,7 +550,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 	if updated.CredentialVersion != 2 {
 		t.Fatalf("updated CredentialVersion = %d, want 2", updated.CredentialVersion)
 	}
-
 
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
@@ -597,7 +568,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("afterStale model state must not be in quota cooldown after stale MarkResult (v1)")
 	}
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -615,7 +585,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("afterStaleZero model state must not be in quota cooldown after stale MarkResult (v0)")
 	}
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -631,8 +600,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("afterCurrent model state must be in quota cooldown after current MarkResult, got %+v", ms)
 	}
 }
-
-
 
 func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -658,7 +625,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *tes
 	}
 	epoch1 := registered.RegistrationEpoch
 
-
 	m.Remove(context.Background(), authID)
 	reRegistered, errReReg := m.Register(context.Background(), initialAuth.Clone())
 	if errReReg != nil {
@@ -668,7 +634,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *tes
 	if epoch2 <= epoch1 {
 		t.Fatalf("expected epoch2 (%d) > epoch1 (%d)", epoch2, epoch1)
 	}
-
 
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
@@ -687,9 +652,6 @@ func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *tes
 		t.Fatalf("afterStale model state must not be in quota cooldown after stale epoch MarkResult")
 	}
 }
-
-
-
 
 func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffinity(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -724,7 +686,6 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		},
 	}
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -734,12 +695,10 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		Options:           opts,
 	})
 
-
 	picked, errPick := selector.Pick(context.Background(), "codex", model, opts, []*Auth{registered})
 	if errPick != nil || picked == nil || picked.ID != authID {
 		t.Fatalf("expected selector to pick %s via affinity, got %v (err=%v)", authID, picked, errPick)
 	}
-
 
 	updatedAuth := registered.Clone()
 	updatedAuth.Metadata = map[string]any{"access_token": "token-v2"}
@@ -747,7 +706,6 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 	if errUpdate != nil {
 		t.Fatalf("update: %v", errUpdate)
 	}
-
 
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
@@ -759,15 +717,11 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		Options:           opts,
 	})
 
-
 	pickedAfter, errPickAfter := selector.Pick(context.Background(), "codex", model, opts, []*Auth{updated})
 	if errPickAfter != nil || pickedAfter == nil || pickedAfter.ID != authID {
 		t.Fatalf("expected session affinity to remain preserved after stale MarkResult, got %v (err=%v)", pickedAfter, errPickAfter)
 	}
 }
-
-
-
 
 func TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -822,7 +776,6 @@ func TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown(t 
 
 	<-execStarted
 
-
 	currentAuth, _ := m.GetByID(authID)
 	nonSecretAuth := currentAuth.Clone()
 	nonSecretAuth.Label = "updated-label"
@@ -836,7 +789,6 @@ func TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown(t 
 
 	close(allowExecToFail)
 	<-reqDone
-
 
 	finalAuth, _ := m.GetByID(authID)
 	ms := finalAuth.ModelStates[model]

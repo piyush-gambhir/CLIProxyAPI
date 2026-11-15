@@ -1,8 +1,3 @@
-
-
-
-
-
 package gemini
 
 import (
@@ -17,23 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	rawJSON := inputRawJSON
 
@@ -41,7 +19,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	inputItems := translatorcommon.NewRawArrayItems(root.Get("contents.#").Int())
-
 
 	shortMap := map[string]string{}
 	if tools := root.Get("tools"); tools.IsArray() {
@@ -62,10 +39,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 			shortMap = buildShortNameMap(names)
 		}
 	}
-
-
-
-
 
 	var pendingCallIDs []string
 	callCounter := 0
@@ -91,12 +64,10 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		return ids
 	}
 
-
 	_ = outDoc.Set("model", modelName)
 	if serviceTier := normalizeGeminiCodexServiceTier(root.Get("service_tier")); serviceTier != "" {
 		_ = outDoc.Set("service_tier", serviceTier)
 	}
-
 
 	sysParts := root.Get("system_instruction.parts")
 	if !sysParts.Exists() {
@@ -124,7 +95,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		}
 	}
 
-
 	contents := root.Get("contents")
 	if contents.IsArray() {
 		items := contents.Array()
@@ -142,12 +112,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 			var pendingThoughtSummaryParts [][]byte
 			for j := 0; j < len(parr); j++ {
 				p := parr[j]
-
-
-
-
-
-
 
 				if role == "assistant" {
 					if rawSignature := geminiPartThoughtSignature(p); rawSignature != "" {
@@ -186,7 +150,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					continue
 				}
 
-
 				if t := p.Get("text"); t.Exists() {
 					partType := "input_text"
 					if role == "assistant" {
@@ -208,7 +171,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					inputItems = append(inputItems, codexMessageWithPart(role, contentPart))
 					continue
 				}
-
 
 				if fc := translatorcommon.GeminiPartFunctionCall(p); fc.Exists() {
 					fnDoc := ojson.NewDocString(`{"type":"function_call"}`)
@@ -236,7 +198,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					continue
 				}
 
-
 				if fr := translatorcommon.GeminiPartFunctionResponse(p); fr.Exists() {
 					fnoDoc := ojson.NewDocString(`{"type":"function_call_output"}`)
 
@@ -245,7 +206,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 					} else if resp := fr.Get("response"); resp.Exists() {
 						_ = fnoDoc.Set("output", resp.Raw)
 					}
-
 
 					var id string
 					if customID := getGeminiCallID(fr); customID != "" {
@@ -268,7 +228,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 	}
 
 	translatorcommon.SetRawArrayItemsDoc(outDoc, "input", inputItems)
-
 
 	tools := root.Get("tools")
 	hasTools := false
@@ -337,7 +296,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		_ = outDoc.SetRawBytes("tools", toolsRaw)
 	}
 
-
 	_ = outDoc.Set("parallel_tool_calls", true)
 	setCodexToolChoiceFromGeminiToolConfigDoc(outDoc, hasTools, root.Get("toolConfig.functionCallingConfig"))
 
@@ -357,8 +315,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 			break
 		}
 	}
-
-
 
 	effortSet := false
 	if genConfig.Exists() {
@@ -402,8 +358,6 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 		_ = outDoc.Set("reasoning.effort", "medium")
 	}
 
-
-
 	_ = outDoc.Set("stream", true)
 	_ = outDoc.Set("store", false)
 	_ = outDoc.Set("include", []string{"reasoning.encrypted_content"})
@@ -411,17 +365,12 @@ func ConvertGeminiRequestToCodex(modelName string, inputRawJSON []byte, _ bool) 
 	return outDoc.Bytes(), nil
 }
 
-
-
 func geminiPartThoughtSignature(part ojson.Result) string {
 	if signature := strings.TrimSpace(part.Get("thoughtSignature").String()); signature != "" {
 		return signature
 	}
 	return strings.TrimSpace(part.Get("thought_signature").String())
 }
-
-
-
 
 func decodeGeminiCodexThoughtSignature(value string) string {
 	value = strings.TrimSpace(value)
@@ -431,12 +380,6 @@ func decodeGeminiCodexThoughtSignature(value string) string {
 	}
 	return strings.TrimSpace(strings.TrimPrefix(string(decoded), geminiCodexThoughtSignatureCarrierMagic))
 }
-
-
-
-
-
-
 
 func normalizedGeminiThoughtSignatureForCodexTarget(modelName, rawSignature string) (string, bool) {
 	return translatorcommon.CodexReplaySignatureForTarget(modelName, decodeGeminiCodexThoughtSignature(rawSignature))
@@ -639,7 +582,6 @@ func codexFileNameFromMIME(mimeType string) string {
 	}
 }
 
-
 func shortenNameIfNeeded(name string) string {
 	const limit = 64
 	if len(name) <= limit {
@@ -657,7 +599,6 @@ func shortenNameIfNeeded(name string) string {
 	}
 	return name[:limit]
 }
-
 
 func buildShortNameMap(names []string) map[string]string {
 	const limit = 64

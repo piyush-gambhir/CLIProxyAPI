@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-
 var IgnoredInterfacePrefixes = []string{
 	"docker",
 	"veth",
@@ -24,9 +23,6 @@ var IgnoredInterfacePrefixes = []string{
 	"llw",
 }
 
-
-
-
 func FilterInterfaces(include, exclude []string) ([]net.Interface, error) {
 	all, err := net.Interfaces()
 	if err != nil {
@@ -42,19 +38,15 @@ func FilterInterfaces(include, exclude []string) ([]net.Interface, error) {
 			continue
 		}
 
-
 		if iface.Flags&net.FlagMulticast == 0 {
 			continue
 		}
 
 		name := strings.ToLower(iface.Name)
 
-
 		if len(exclude) > 0 && matchesAny(name, exclude) {
 			continue
 		}
-
-
 
 		if len(include) == 0 {
 			if isVirtualOrTunnel(name) || !isLikelyPhysicalLAN(name) {
@@ -62,11 +54,9 @@ func FilterInterfaces(include, exclude []string) ([]net.Interface, error) {
 			}
 		}
 
-
 		if len(include) > 0 && !matchesAny(name, include) {
 			continue
 		}
-
 
 		addrs, errAddrs := iface.Addrs()
 		if errAddrs != nil || len(addrs) == 0 {

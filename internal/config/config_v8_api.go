@@ -6,9 +6,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
-
 func ProjectV8ConfigAliases(root *yaml.Node, path string) {
 	if path == "" {
 		return
@@ -23,7 +20,6 @@ func ProjectV8ConfigAliases(root *yaml.Node, path string) {
 			continue
 		}
 
-
 		if value.Kind == yaml.MappingNode && len(value.Content) != 0 {
 			continue
 		}
@@ -33,17 +29,12 @@ func ProjectV8ConfigAliases(root *yaml.Node, path string) {
 	}
 }
 
-
-
-
-
 func NormalizeV8ConfigAliases(root *yaml.Node) error {
 	var shape any
 	if err := root.Decode(&shape); err != nil {
 		return err
 	}
 	*root = *expandConfigAliases(root)
-
 
 	for _, container := range v8SharedStructPaths {
 		value := yamlPath(root, container.old)

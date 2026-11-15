@@ -15,10 +15,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -70,7 +66,6 @@ func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested(
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	rawBody := string(seenBody)
 	has1h := strings.Contains(rawBody, `"ttl":"1h"`) || strings.Contains(rawBody, `"ttl": "1h"`)
 	if !has1h {
@@ -86,14 +81,11 @@ func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested(
 		}
 	}
 
-
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("subagent Anthropic-Beta must preserve extended-cache-ttl-2025-04-11 when requested, got: %s", betas)
 	}
 }
-
-
 
 func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested_Stream(t *testing.T) {
 	var seenHeaders http.Header
@@ -151,20 +143,16 @@ func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested_
 		}
 	}
 
-
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("subagent stream body must preserve ttl: 1h when requested by client, got: %s", rawBody)
 	}
-
 
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("subagent Anthropic-Beta must preserve extended-cache-ttl-2025-04-11 on stream when requested, got: %s", betas)
 	}
 }
-
-
 
 func TestClaudeExecutor_SubagentWithout1hKeepsDefault5m(t *testing.T) {
 	var seenHeaders http.Header
@@ -217,21 +205,16 @@ func TestClaudeExecutor_SubagentWithout1hKeepsDefault5m(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	rawBody := string(seenBody)
 	if strings.Contains(rawBody, `"ttl":"1h"`) || strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("subagent default body must not carry ttl: 1h, got: %s", rawBody)
 	}
-
 
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("subagent default Anthropic-Beta must not contain extended-cache-ttl, got: %s", betas)
 	}
 }
-
-
-
 
 func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta(t *testing.T) {
 	var seenHeaders http.Header
@@ -283,20 +266,16 @@ func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta(t *testing.T)
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("API key subagent body must preserve ttl: 1h, got: %s", rawBody)
 	}
-
 
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("API key subagent Anthropic-Beta must include extended-cache-ttl-2025-04-11 when 1h is in payload, got: %s", betas)
 	}
 }
-
-
 
 func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta_Stream(t *testing.T) {
 	var seenHeaders http.Header
@@ -353,12 +332,10 @@ func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta_Stream(t *tes
 		}
 	}
 
-
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("API key subagent stream body must preserve ttl: 1h, got: %s", rawBody)
 	}
-
 
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {

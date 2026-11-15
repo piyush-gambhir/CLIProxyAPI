@@ -7,7 +7,6 @@ import (
 
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/translator"
 
-
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/antigravity"
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/claude"
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/codex"
@@ -22,7 +21,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
-
 
 type thinkingTestCase struct {
 	name            string
@@ -41,9 +39,6 @@ type thinkingTestCase struct {
 	expectErr       bool
 }
 
-
-
-
 func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
 	uid := fmt.Sprintf("thinking-e2e-suffix-%d", time.Now().UnixNano())
@@ -52,8 +47,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 	defer reg.UnregisterClient(uid)
 
 	cases := []thinkingTestCase{
-
-
 
 		{
 			name:        "1",
@@ -218,9 +211,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectErr:   false,
 		},
 
-
-
-
 		{
 			name:        "16",
 			from:        "gemini",
@@ -254,9 +244,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectValue: "low",
 			expectErr:   false,
 		},
-
-
-
 
 		{
 			name:        "18",
@@ -374,9 +361,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectErr:       false,
 		},
 
-
-
-
 		{
 			name:        "28",
 			from:        "openai",
@@ -493,9 +477,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectErr:       false,
 		},
 
-
-
-
 		{
 			name:        "38",
 			from:        "openai",
@@ -603,9 +584,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectValue: "64512",
 			expectErr:   false,
 		},
-
-
-
 
 		{
 			name:        "48",
@@ -723,9 +701,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectErr:       false,
 		},
 
-
-
-
 		{
 			name:        "58",
 			from:        "gemini",
@@ -805,9 +780,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectField: "",
 			expectErr:   false,
 		},
-
-
-
 
 		{
 			name:        "66",
@@ -964,9 +936,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectErr:   false,
 		},
 
-
-
-
 		{
 			name:        "80",
 			from:        "openai",
@@ -1055,9 +1024,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 			expectErr:   false,
 		},
 
-
-
-
 		{
 			name:            "88",
 			from:            "gemini",
@@ -1086,8 +1052,6 @@ func TestThinkingE2EMatrix_Suffix(t *testing.T) {
 	runThinkingTests(t, cases)
 }
 
-
-
 func TestThinkingE2EMatrix_Body(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
 	uid := fmt.Sprintf("thinking-e2e-body-%d", time.Now().UnixNano())
@@ -1096,8 +1060,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 	defer reg.UnregisterClient(uid)
 
 	cases := []thinkingTestCase{
-
-
 
 		{
 			name:        "1",
@@ -1262,9 +1224,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectErr:   false,
 		},
 
-
-
-
 		{
 			name:        "16",
 			from:        "gemini",
@@ -1287,9 +1246,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			includeThoughts: "",
 			expectErr:       false,
 		},
-
-
-
 
 		{
 			name:        "18",
@@ -1407,9 +1363,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectErr:       false,
 		},
 
-
-
-
 		{
 			name:        "28",
 			from:        "openai",
@@ -1455,7 +1408,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			includeThoughts: "false",
 			expectErr:       false,
 		},
-
 
 		{
 			name:        "31A",
@@ -1567,9 +1519,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectErr:       false,
 		},
 
-
-
-
 		{
 			name:        "38",
 			from:        "openai",
@@ -1677,9 +1626,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectValue: "64512",
 			expectErr:   false,
 		},
-
-
-
 
 		{
 			name:        "48",
@@ -1797,9 +1743,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectErr:       false,
 		},
 
-
-
-
 		{
 			name:        "58",
 			from:        "gemini",
@@ -1879,9 +1822,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectField: "",
 			expectErr:   false,
 		},
-
-
-
 
 		{
 			name:        "66",
@@ -2038,9 +1978,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectErr:   false,
 		},
 
-
-
-
 		{
 			name:        "80",
 			from:        "openai",
@@ -2126,9 +2063,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 			expectErr:   true,
 		},
 
-
-
-
 		{
 			name:        "88",
 			from:        "gemini",
@@ -2154,7 +2088,6 @@ func TestThinkingE2EMatrix_Body(t *testing.T) {
 
 	runThinkingTests(t, cases)
 }
-
 
 func TestThinkingE2EProviderTargets(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
@@ -2356,7 +2289,6 @@ func TestThinkingE2EProviderTargets(t *testing.T) {
 			expectAbsent: []string{"reasoning_effort"},
 		},
 
-
 		{
 			name:        "X1",
 			from:        "openai",
@@ -2448,7 +2380,6 @@ func TestThinkingE2EProviderTargets(t *testing.T) {
 			expectValue: "high",
 		},
 
-
 		{
 			name:         "I1",
 			from:         "interactions",
@@ -2469,8 +2400,6 @@ func TestThinkingE2EProviderTargets(t *testing.T) {
 			expectField: "generation_config.thinking_level",
 			expectValue: "medium",
 		},
-
-
 
 		{
 			name:        "R1",
@@ -2516,16 +2445,6 @@ func TestThinkingE2EProviderTargets(t *testing.T) {
 
 	runThinkingTests(t, cases)
 }
-
-
-
-
-
-
-
-
-
-
 
 func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
@@ -2583,8 +2502,6 @@ func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 			expectValue: "high",
 		},
 
-
-
 		{
 			name:        "IN6",
 			from:        "claude",
@@ -2635,7 +2552,6 @@ func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 			expectValue: "minimal",
 		},
 
-
 		{
 			name:        "IN11",
 			from:        "interactions",
@@ -2645,7 +2561,6 @@ func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 			expectField: "generation_config.thinking_level",
 			expectValue: "medium",
 		},
-
 
 		{
 			name:        "OUT1",
@@ -2714,7 +2629,6 @@ func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 			expectValue: "high",
 		},
 
-
 		{
 			name:        "OUT8",
 			from:        "interactions",
@@ -2745,8 +2659,6 @@ func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 			expectAbsent: []string{"thinking.effort", "reasoning_effort"},
 		},
 
-
-
 		{
 			name:         "OUT11",
 			from:         "interactions",
@@ -2769,8 +2681,6 @@ func TestThinkingE2EInteractionsMatrix(t *testing.T) {
 
 	runThinkingTests(t, cases)
 }
-
-
 
 func TestThinkingE2EClaudeAdaptive_Body(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
@@ -2861,7 +2771,6 @@ func TestThinkingE2EClaudeAdaptive_Body(t *testing.T) {
 			expectValue: "high",
 			expectErr:   false,
 		},
-
 
 		{
 			name:        "B1",
@@ -3003,7 +2912,6 @@ func TestThinkingE2EClaudeAdaptive_Body(t *testing.T) {
 			expectValue: "high",
 			expectErr:   false,
 		},
-
 
 		{
 			name:        "C1",
@@ -3269,7 +3177,6 @@ func TestThinkingE2EClaudeAdaptive_Body(t *testing.T) {
 	runThinkingTests(t, cases)
 }
 
-
 func getTestModels() []*registry.ModelInfo {
 	return []*registry.ModelInfo{
 		{
@@ -3407,7 +3314,6 @@ func getTestModels() []*registry.ModelInfo {
 	}
 }
 
-
 func runThinkingTests(t *testing.T, cases []thinkingTestCase) {
 	for _, tc := range cases {
 		tc := tc
@@ -3495,10 +3401,6 @@ func runThinkingTests(t *testing.T, cases []thinkingTestCase) {
 				assertField(tc.expectField2, tc.expectValue2)
 			}
 
-
-
-
-
 			if tc.to == "claude" && ojson.GetBytesNoCopy(body, "output_config.effort").Exists() {
 				assertField("thinking.type", "adaptive")
 			}
@@ -3511,7 +3413,6 @@ func runThinkingTests(t *testing.T, cases []thinkingTestCase) {
 				if tc.to == "antigravity" {
 					path = "request.generationConfig.thinkingConfig.includeThoughts"
 				}
-
 
 				wantIncludeThoughts := tc.includeThoughts
 				itVal := ojson.GetBytesNoCopy(body, path)

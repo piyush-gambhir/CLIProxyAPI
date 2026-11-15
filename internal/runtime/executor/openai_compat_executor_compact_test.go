@@ -1286,9 +1286,6 @@ func TestOpenAICompatExecutorResponsesStreamHandlesAdditionalErrorShapes(t *test
 
 func TestOpenAICompatExecutorStreamDropsChunksAfterDone(t *testing.T) {
 
-
-
-
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)

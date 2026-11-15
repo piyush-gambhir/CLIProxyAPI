@@ -11,16 +11,12 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
 var claudeCLIIdentityNamespace = uuid.MustParse("6ba7b812-9dad-11d1-80b4-00c04fd430c8")
 
 func stableClaudeCLIDeviceID(seed string) string {
 	sum := sha256.Sum256([]byte("cpa-claude-code-cli-device|" + seed))
 	return hex.EncodeToString(sum[:])
 }
-
 
 func StableClaudeCLIDeviceID(seed string) string {
 	return stableClaudeCLIDeviceID(seed)
@@ -30,12 +26,9 @@ func stableClaudeCLIAccountUUID(seed string) string {
 	return uuid.NewSHA1(claudeCLIIdentityNamespace, []byte("cpa-claude-code-cli-account|"+seed)).String()
 }
 
-
 func StableClaudeCLIAccountUUID(seed string) string {
 	return stableClaudeCLIAccountUUID(seed)
 }
-
-
 
 func ClaudeCLIAuthIdentitySeed(auth *cliproxyauth.Auth) string {
 	if auth != nil {
@@ -52,10 +45,6 @@ func ClaudeCLIAuthIdentitySeed(auth *cliproxyauth.Auth) string {
 	return ""
 }
 
-
-
-
-
 func PrepareClaudeCLIFingerprintAuth(auth *cliproxyauth.Auth, seed string, synthesizeMissing bool) (*cliproxyauth.Auth, error) {
 	if auth == nil {
 		return nil, fmt.Errorf("auth is nil")
@@ -69,14 +58,6 @@ func PrepareClaudeCLIFingerprintAuth(auth *cliproxyauth.Auth, seed string, synth
 	}
 	return local, nil
 }
-
-
-
-
-
-
-
-
 
 func EnsureClaudeCLIFingerprintIdentity(auth *cliproxyauth.Auth, seed string, synthesizeMissing bool) error {
 	if auth == nil {

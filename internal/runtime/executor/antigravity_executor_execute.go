@@ -23,7 +23,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	if helps.HasResponsesCompactionItem(req.Payload) {
 		expanded, errExpand := helps.ExpandAntigravityCompactionCapsules(req.Payload)
@@ -108,7 +107,6 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	httpClient = reporter.TrackHTTPClient(httpClient)
 
-
 	if useCredits {
 		if injectEnabledCreditTypesDoc(doc) {
 			helps.MarkCreditsUsed(ctx)
@@ -190,7 +188,6 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 		return resp, err
 	}
 
-
 	if useCredits {
 		clearAntigravityCreditsFailureState(auth)
 	}
@@ -267,7 +264,6 @@ func (e *AntigravityExecutor) executeCompaction(ctx context.Context, auth *clipr
 	}, nil
 }
 
-
 func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	if !antigravityCoolingDisabled(auth, e.cfg) {
@@ -328,8 +324,6 @@ func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *
 	baseURL := resolveAntigravityRequestBaseURL(auth)
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	httpClient = reporter.TrackHTTPClient(httpClient)
-
-
 
 	if useCredits {
 		if injectEnabledCreditTypesDoc(doc) {
@@ -416,7 +410,6 @@ func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *
 		err = newAntigravityStatusErr(httpResp.StatusCode, bodyBytes)
 		return resp, err
 	}
-
 
 	if useCredits {
 		clearAntigravityCreditsFailureState(auth)

@@ -85,7 +85,6 @@ const (
 	pluginLoadStatusFailed       = "failed"
 )
 
-
 func CurrentPlatform() Platform {
 	return Platform{
 		GOOS:   runtime.GOOS,
@@ -729,7 +728,6 @@ func newSyncReport(platform Platform) SyncReport {
 		Plugins:       []PluginInstallStatus{},
 	}
 }
-
 
 func CompletedSyncReport(platform Platform, errSync error) SyncReport {
 	report := newSyncReport(platform)

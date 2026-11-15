@@ -26,17 +26,14 @@ Example input:
 +new
 *** End Patch`
 
-// IsCustomTool reports whether the declaration is the custom apply_patch tool.
 func IsCustomTool(tool ojson.Result) bool {
 	return tool.Get("type").String() == "custom" && strings.TrimSpace(tool.Get("name").String()) == "apply_patch"
 }
 
-// Parameters returns an independent copy of the patch input schema.
 func Parameters() []byte {
 	return []byte(parametersJSON)
 }
 
-// Description explains the JSON wrapper and preserves the original patch grammar.
 func Description(tool ojson.Result) string {
 	original := strings.ReplaceAll(tool.Get("description").String(), "This is a FREEFORM tool, so do not wrap the patch in JSON.", "")
 	var description strings.Builder
@@ -56,7 +53,6 @@ func Description(tool ojson.Result) string {
 	return description.String()
 }
 
-// WrapInput encodes the complete patch text as function arguments.
 func WrapInput(input string) string {
 	body, _ := json.Marshal(struct {
 		Input string `json:"input"`
@@ -64,7 +60,6 @@ func WrapInput(input string) string {
 	return string(body)
 }
 
-// UnwrapInput accepts only a JSON object containing one string field named input.
 func UnwrapInput(arguments string) (string, error) {
 	decoder := json.NewDecoder(strings.NewReader(arguments))
 	token, errToken := decoder.Token()
@@ -110,7 +105,6 @@ func UnwrapInput(arguments string) (string, error) {
 	return input, nil
 }
 
-// EscapeInputFragment encodes patch text for use inside a JSON string without quotes.
 func EscapeInputFragment(fragment string) string {
 	encoded, _ := json.Marshal(fragment)
 	return string(encoded[1 : len(encoded)-1])

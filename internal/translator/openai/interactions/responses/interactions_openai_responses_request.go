@@ -14,8 +14,6 @@ func ConvertOpenAIResponsesRequestToInteractions(modelName string, inputRawJSON 
 
 }
 
-
-
 func convertOpenAIResponsesRequestToInteractions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	var drops translatorcommon.UserTurnDrops
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
@@ -259,9 +257,6 @@ func setResponsesInputOnInteractionsDoc(outDoc *ojson.Doc, input ojson.Result, f
 	}
 }
 
-
-
-
 func responsesUserTurnDrops(role string, drops *translatorcommon.UserTurnDrops) *translatorcommon.UserTurnDrops {
 	if role == "" || role == "user" {
 		return drops
@@ -335,10 +330,6 @@ func responsesInputItemToInteractions(item ojson.Result, functionNamesByCallID m
 	return nil
 }
 
-
-
-
-
 func appendResponsesContentToInteractionsDoc(stepDoc *ojson.Doc, content ojson.Result, drops *translatorcommon.UserTurnDrops) {
 	var contentItems [][]byte
 	sendable := 0
@@ -378,9 +369,6 @@ func appendResponsesContentToInteractionsDoc(stepDoc *ojson.Doc, content ojson.R
 	}
 }
 
-
-
-
 func isResponsesUnsendableAttachmentType(partType string) bool {
 	switch partType {
 	case "input_file", "input_audio", "input_video":
@@ -410,9 +398,6 @@ func responsesContentPartToInteractions(part ojson.Result) ([]byte, bool) {
 	return nil, false
 }
 
-
-
-
 func responsesFilePartToInteractions(part ojson.Result) ([]byte, bool) {
 	filename := part.Get("filename").String()
 	fallbackMIMEType := firstNonEmpty(part.Get("mime_type").String(), part.Get("mimeType").String())
@@ -432,8 +417,6 @@ func responsesFilePartToInteractions(part ojson.Result) ([]byte, bool) {
 	}
 	return outDoc.Bytes(), hasContent
 }
-
-
 
 func responsesAudioPartToInteractions(part ojson.Result) ([]byte, bool) {
 	audio := part.Get("input_audio")
@@ -549,10 +532,6 @@ func responsesFunctionOutputToInteractions(item ojson.Result, functionNamesByCal
 	setJSONValueDoc(outDoc, "result", result, `{}`)
 	return outDoc.Bytes()
 }
-
-
-
-
 
 func responsesReasoningToInteractions(item ojson.Result) []byte {
 	sig := strings.TrimSpace(item.Get("encrypted_content").String())

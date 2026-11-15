@@ -76,8 +76,6 @@ func removeShadowPluginDir(dir string) {
 
 func shadowPluginProcessAlive(pid int) bool {
 
-
-
 	handle, errOpen := windows.OpenProcess(windows.SYNCHRONIZE, false, uint32(pid))
 	if errOpen != nil {
 		return !errors.Is(errOpen, windows.ERROR_INVALID_PARAMETER)

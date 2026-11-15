@@ -16,9 +16,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 func midSystemLegacyPayload(model string) []byte {
 	return []byte(`{"model":"` + model + `","max_tokens":32,` +
 		`"system":[{"type":"text","text":"Top rule"}],` +
@@ -26,10 +23,6 @@ func midSystemLegacyPayload(model string) []byte {
 		`{"role":"system","content":[{"type":"text","text":"Mid rule"}]}],` +
 		`"metadata":{"user_id":"{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"11111111-2222-4333-8444-555555555555\"}"}}`)
 }
-
-
-
-
 
 type midSystemUpstream struct {
 	body    []byte
@@ -60,7 +53,6 @@ func (u *midSystemUpstream) context(t *testing.T, headers http.Header) context.C
 			responseBody = `{"input_tokens":18}`
 		} else if ojson.GetBytes(payload, "stream").Bool() {
 			contentType = "text/event-stream"
-
 
 			responseBody = strings.Join([]string{
 				`event: message_start` + "\n" + `data: {"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","model":"m","content":[],"stop_reason":null,"usage":{"input_tokens":1,"output_tokens":0}}}`,
@@ -117,8 +109,6 @@ func assertMidSystemRejected(t *testing.T, err error, upstream *midSystemUpstrea
 	}
 }
 
-
-
 func TestClaudeExecutor_LegacyMidSystemMessageRejectedOnEveryUpstreamPath(t *testing.T) {
 	for _, test := range []struct {
 		name  string
@@ -171,7 +161,6 @@ func sendMidSystemCountTokens(t *testing.T, ex *ClaudeExecutor, ctx context.Cont
 	return err
 }
 
-
 func TestClaudeExecutor_PayloadOverrideCannotSmuggleLegacyMidSystemMessage(t *testing.T) {
 	upstream := &midSystemUpstream{}
 	cfg := midSystemConfig()
@@ -181,16 +170,11 @@ func TestClaudeExecutor_PayloadOverrideCannotSmuggleLegacyMidSystemMessage(t *te
 	}}
 	ex := NewClaudeExecutor(cfg)
 
-
-
 	_, err := ex.Execute(upstream.context(t, nil), midSystemAuth(), cliproxyexecutor.Request{
 		Model: "claude-sonnet-5", Payload: midSystemLegacyPayload("claude-sonnet-5"),
 	}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatClaude})
 	assertMidSystemRejected(t, err, upstream)
 }
-
-
-
 
 func TestClaudeExecutor_PayloadOverrideDoesNotClaimMatchingCallerTurn(t *testing.T) {
 	upstream := &midSystemUpstream{}
@@ -210,10 +194,6 @@ func TestClaudeExecutor_PayloadOverrideDoesNotClaimMatchingCallerTurn(t *testing
 	}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatClaude})
 	assertMidSystemRejected(t, err, upstream)
 }
-
-
-
-
 
 func TestClaudeExecutor_PayloadOverrideDoesNotRerunSystemPlacement(t *testing.T) {
 	for _, test := range []struct {
@@ -250,8 +230,6 @@ func TestClaudeExecutor_PayloadOverrideDoesNotRerunSystemPlacement(t *testing.T)
 			}}
 			ex := NewClaudeExecutor(cfg)
 
-
-
 			payload := []byte(`{"model":"claude-sonnet-5","max_tokens":32,` +
 				`"system":[{"type":"text","text":"Caller top"}],` +
 				`"messages":[{"role":"user","content":[{"type":"text","text":"hi"}]},` +
@@ -283,9 +261,6 @@ func TestClaudeExecutor_ConfirmedNativeLegacyMidSystemMessageForwarded(t *testin
 	}
 }
 
-
-
-
 func TestClaudeExecutor_LegacyMidSystemMessageForwardedToThirdPartyGateway(t *testing.T) {
 	upstream := &midSystemUpstream{}
 	ex := NewClaudeExecutor(&config.Config{ClaudeKey: []config.ClaudeKey{{
@@ -306,8 +281,6 @@ func TestClaudeExecutor_LegacyMidSystemMessageForwardedToThirdPartyGateway(t *te
 	}
 }
 
-
-
 func TestClaudeExecutor_SupportedModelMidSystemMessageForwarded(t *testing.T) {
 	for _, model := range []string{"claude-sonnet-5", "claude-sonnet-9"} {
 		t.Run(model, func(t *testing.T) {
@@ -324,8 +297,6 @@ func TestClaudeExecutor_SupportedModelMidSystemMessageForwarded(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestClaudeExecutor_LegacyMidSystemMessageOptInStillRebuilds(t *testing.T) {
 	upstream := &midSystemUpstream{}
@@ -346,11 +317,6 @@ func TestClaudeExecutor_LegacyMidSystemMessageOptInStillRebuilds(t *testing.T) {
 		t.Fatalf("opt-in rebuild left a role=system turn; body=%s", upstream.body)
 	}
 }
-
-
-
-
-
 
 func TestTranslatedRequestNeverPairsLegacyModelWithMidSystemMessage(t *testing.T) {
 	const legacyModel = "claude-haiku-4-5-20251001"
@@ -382,8 +348,6 @@ func TestTranslatedRequestNeverPairsLegacyModelWithMidSystemMessage(t *testing.T
 			if !upstream.called {
 				t.Fatal("expected the translated request to reach the upstream")
 			}
-
-
 
 			if got := ojson.GetBytes(upstream.body, "model").String(); got != legacyModel {
 				t.Fatalf("upstream model = %q, want the legacy model %q under test", got, legacyModel)
@@ -469,8 +433,6 @@ func TestValidateClaudeMidSystemMessageModel(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestClaudeExecutorPayloadRepairsLegacyMidSystemMessage(t *testing.T) {
 	const legacyModel = "claude-haiku-4-5-20251001"

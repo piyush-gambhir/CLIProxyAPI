@@ -148,11 +148,9 @@ func TestHostRoutingResetCooldownLeavesTokenFilesAlone(t *testing.T) {
 		t.Fatalf("auth_index = %q, want %q", resp.AuthIndex, auth.Index)
 	}
 
-
 	if store.saveCalls != 0 {
 		t.Fatalf("token store Save was called %d times during cooldown reset, want 0", store.saveCalls)
 	}
-
 
 	updated, ok := manager.GetByID(auth.ID)
 	if !ok || updated == nil {

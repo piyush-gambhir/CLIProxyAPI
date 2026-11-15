@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-
-
-
 type SessionTreeNode struct {
 	SessionID       string         `json:"session_id"`
 	ParentSessionID string         `json:"parent_session_id,omitempty"`
@@ -27,8 +24,6 @@ type SessionTreeNode struct {
 	Metadata        map[string]any `json:"metadata,omitempty"`
 }
 
-
-
 func (n *SessionTreeNode) Clone() *SessionTreeNode {
 	if n == nil {
 		return nil
@@ -43,8 +38,6 @@ func (n *SessionTreeNode) Clone() *SessionTreeNode {
 	return &res
 }
 
-
-
 type SessionTreeStore interface {
 	RecordNode(info SessionTreeInfo) *SessionTreeNode
 	GetNode(sessionID string) (*SessionTreeNode, bool)
@@ -56,23 +49,16 @@ type SessionTreeStore interface {
 	Clear()
 }
 
-
-
-
 type InMemorySessionTreeStore struct {
 	mu    sync.RWMutex
 	nodes map[string]*SessionTreeNode
 }
-
-
 
 func NewInMemorySessionTreeStore(maxNodes int, ttl time.Duration) *InMemorySessionTreeStore {
 	return &InMemorySessionTreeStore{
 		nodes: make(map[string]*SessionTreeNode),
 	}
 }
-
-
 
 func (s *InMemorySessionTreeStore) RecordNode(info SessionTreeInfo) *SessionTreeNode {
 	if s == nil || info.SessionID == "" {
@@ -108,8 +94,6 @@ func (s *InMemorySessionTreeStore) RecordNode(info SessionTreeInfo) *SessionTree
 	return node.Clone()
 }
 
-
-
 func (s *InMemorySessionTreeStore) GetNode(sessionID string) (*SessionTreeNode, bool) {
 	if s == nil {
 		return nil, false
@@ -122,8 +106,6 @@ func (s *InMemorySessionTreeStore) GetNode(sessionID string) (*SessionTreeNode, 
 	}
 	return node.Clone(), true
 }
-
-
 
 func (s *InMemorySessionTreeStore) GetTree(rootSessionID string) []*SessionTreeNode {
 	if s == nil {
@@ -140,13 +122,9 @@ func (s *InMemorySessionTreeStore) GetTree(rootSessionID string) []*SessionTreeN
 	return res
 }
 
-
-
 func (s *InMemorySessionTreeStore) GetSubtree(sessionID string) []*SessionTreeNode {
 	return s.GetTree(sessionID)
 }
-
-
 
 func (s *InMemorySessionTreeStore) Ancestors(sessionID string) []string {
 	if s == nil {
@@ -159,8 +137,6 @@ func (s *InMemorySessionTreeStore) Ancestors(sessionID string) []string {
 	}
 	return nil
 }
-
-
 
 func (s *InMemorySessionTreeStore) UpdateAffinity(sessionID, authID, provider, model string) bool {
 	if s == nil {
@@ -184,8 +160,6 @@ func (s *InMemorySessionTreeStore) UpdateAffinity(sessionID, authID, provider, m
 	return false
 }
 
-
-
 func (s *InMemorySessionTreeStore) Len() int {
 	if s == nil {
 		return 0
@@ -194,8 +168,6 @@ func (s *InMemorySessionTreeStore) Len() int {
 	defer s.mu.RUnlock()
 	return len(s.nodes)
 }
-
-
 
 func (s *InMemorySessionTreeStore) Clear() {
 	if s == nil {

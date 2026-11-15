@@ -55,9 +55,7 @@ func decodeEnvelope(raw []byte, nowUnixNano int64) (payload []byte, expiresAt in
 	return raw[envelopeHeaderSize:], exp, false, nil
 }
 
-
 type BoltStoreOption func(*BoltStore)
-
 
 func WithNowFunc(fn func() time.Time) BoltStoreOption {
 	return func(s *BoltStore) {
@@ -67,14 +65,11 @@ func WithNowFunc(fn func() time.Time) BoltStoreOption {
 	}
 }
 
-
-
 func WithSweepInterval(interval time.Duration) BoltStoreOption {
 	return func(s *BoltStore) {
 		s.sweepInterval = interval
 	}
 }
-
 
 func WithSweepBatchSize(batchSize int) BoltStoreOption {
 	return func(s *BoltStore) {
@@ -83,7 +78,6 @@ func WithSweepBatchSize(batchSize int) BoltStoreOption {
 		}
 	}
 }
-
 
 type BoltStore struct {
 	db                *bbolt.DB
@@ -98,8 +92,6 @@ type BoltStore struct {
 	runUpdate         func(func(*bbolt.Tx) error) error
 	beforeSweepDelete func(batch [][]byte)
 }
-
-
 
 func OpenBoltStore(path string, opts ...BoltStoreOption) (*BoltStore, error) {
 	resolvedPath, errResolve := ResolvePath(path)
@@ -153,15 +145,12 @@ func OpenBoltStore(path string, opts ...BoltStoreOption) (*BoltStore, error) {
 	return store, nil
 }
 
-
 func (s *BoltStore) Path() string {
 	if s == nil {
 		return ""
 	}
 	return s.path
 }
-
-
 
 func (s *BoltStore) Close() error {
 	if s == nil {
@@ -247,7 +236,6 @@ func computeExpiresAtUnixNano(now time.Time, ttl time.Duration) (int64, error) {
 	return expiresAt, nil
 }
 
-
 func (s *BoltStore) KVGet(ctx context.Context, key string) ([]byte, bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return nil, false, errCtx
@@ -290,7 +278,6 @@ func (s *BoltStore) KVGet(ctx context.Context, key string) ([]byte, bool, error)
 	}
 	return value, found, nil
 }
-
 
 func (s *BoltStore) KVSet(ctx context.Context, key string, value []byte, opts KVSetOptions) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
@@ -364,14 +351,12 @@ func (s *BoltStore) KVSet(ctx context.Context, key string, value []byte, opts KV
 	return written, nil
 }
 
-
 func (s *BoltStore) KVSetNX(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return false, errCtx
 	}
 	return s.KVSet(ctx, key, value, KVSetOptions{NX: true, EX: ttl})
 }
-
 
 func (s *BoltStore) KVCompareAndSwap(ctx context.Context, key string, expected []byte, expectedExists bool, value []byte, ttl time.Duration) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
@@ -440,7 +425,6 @@ func (s *BoltStore) KVCompareAndSwap(ctx context.Context, key string, expected [
 	return swapped, nil
 }
 
-
 func (s *BoltStore) KVDel(ctx context.Context, keys ...string) (int64, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return 0, errCtx
@@ -483,7 +467,6 @@ func (s *BoltStore) KVDel(ctx context.Context, keys ...string) (int64, error) {
 	}
 	return deleted, nil
 }
-
 
 func (s *BoltStore) KVExpire(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
@@ -538,9 +521,6 @@ func (s *BoltStore) KVExpire(ctx context.Context, key string, ttl time.Duration)
 	return updated, nil
 }
 
-
-
-
 func (s *BoltStore) KVTTL(ctx context.Context, key string) (time.Duration, bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return 0, false, errCtx
@@ -582,7 +562,6 @@ func (s *BoltStore) KVTTL(ctx context.Context, key string) (time.Duration, bool,
 	}
 	return remaining, found, nil
 }
-
 
 func (s *BoltStore) KVIncrBy(ctx context.Context, key string, delta int64) (int64, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
@@ -636,7 +615,6 @@ func (s *BoltStore) KVIncrBy(ctx context.Context, key string, delta int64) (int6
 	return next, nil
 }
 
-
 func (s *BoltStore) KVMGet(ctx context.Context, keys ...string) ([][]byte, []bool, error) {
 	if errCtx := checkContext(ctx); errCtx != nil {
 		return nil, nil, errCtx
@@ -685,7 +663,6 @@ func (s *BoltStore) KVMGet(ctx context.Context, keys ...string) ([][]byte, []boo
 	}
 	return values, found, nil
 }
-
 
 func (s *BoltStore) KVMSet(ctx context.Context, pairs map[string][]byte) error {
 	if errCtx := checkContext(ctx); errCtx != nil {

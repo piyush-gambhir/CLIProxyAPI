@@ -19,7 +19,6 @@ func setupTestLoggerHook(t *testing.T) *logtest.Hook {
 	oldLevel := log.GetLevel()
 	log.SetLevel(log.WarnLevel)
 
-
 	savedHooks := make(log.LevelHooks)
 	for lvl, hs := range log.StandardLogger().Hooks {
 		savedHooks[lvl] = append([]log.Hook(nil), hs...)
@@ -214,7 +213,6 @@ func TestWarnLogOnAuthUnavailable_SingleProvider(t *testing.T) {
 	if errExec == nil {
 		t.Fatal("expected error from Execute, got nil")
 	}
-
 
 	warnCount := 0
 	for _, entry := range hook.AllEntries() {
@@ -495,7 +493,6 @@ func TestWarnLogOnUpstreamFailure_401RefreshSuccess_DoesNotLogWarn(t *testing.T)
 	if string(resp.Payload) != `{"ok":true}` {
 		t.Fatalf("unexpected response payload: %s", string(resp.Payload))
 	}
-
 
 	for _, entry := range hook.AllEntries() {
 		if entry.Level == log.WarnLevel && strings.Contains(entry.Message, "upstream execution failed") {

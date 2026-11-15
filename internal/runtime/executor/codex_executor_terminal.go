@@ -46,9 +46,6 @@ func (codexEmptyIncompleteStreamError) IsRequestScoped() bool {
 	return true
 }
 
-
-
-
 func collectCodexOutputItemDone(eventData []byte, outputItemsByIndex map[int64][]byte, outputItemsFallback *[][]byte) {
 	itemResult := ojson.GetBytesNoCopy(eventData, "item")
 	if !itemResult.Exists() || itemResult.Type != ojson.JSON {
@@ -344,8 +341,6 @@ func newCodexStatusErrWithHeadersAndCooling(statusCode int, headers http.Header,
 	body = classifyCodexStatusError(errCode, body)
 	err := statusErr{code: errCode, msg: string(body), credentialScoped: credentialScoped, transientRateLimit: transientCapacity && errCode == http.StatusTooManyRequests}
 
-
-
 	if retryAfter := parseCodexRetryAfter(errCode, body, time.Now()); retryAfter != nil {
 		err.retryAfter = retryAfter
 	} else if errCode == http.StatusTooManyRequests {
@@ -402,13 +397,6 @@ func codexStatusErrorClassification(statusCode int, body []byte) (code string, e
 	}
 }
 
-
-
-
-
-
-
-
 func isCodexTurnRateLimitError(errorBody []byte) bool {
 	if len(errorBody) == 0 {
 		return false
@@ -429,7 +417,6 @@ func isCodexTurnRateLimitError(errorBody []byte) bool {
 		}
 		hasOtherCode = true
 	}
-
 
 	if hasOtherCode {
 		return false
@@ -462,8 +449,6 @@ func isCodexTurnRateLimitError(errorBody []byte) bool {
 	return false
 }
 
-
-
 func codexErrorCodeOf(errorBody []byte) string {
 	for _, path := range []string{"error.code", "code", "body.error.code"} {
 		if code := strings.TrimSpace(ojson.GetBytesNoCopy(errorBody, path).String()); code != "" {
@@ -472,11 +457,6 @@ func codexErrorCodeOf(errorBody []byte) string {
 	}
 	return ""
 }
-
-
-
-
-
 
 func isCodexTransientCapacityError(errorBody []byte) bool {
 	if code := codexErrorCodeOf(errorBody); code != "" &&
@@ -511,12 +491,6 @@ func isCodexModelCapacityError(errorBody []byte) bool {
 	}
 	return false
 }
-
-
-
-
-
-
 
 func isCodexUsageLimitError(errorBody []byte) bool {
 	if len(errorBody) == 0 {
@@ -558,7 +532,6 @@ func parseCodexRetryAfter(statusCode int, errorBody []byte, now time.Time) *time
 	return nil
 }
 
-
 var (
 	codexBootstrapNowMu sync.RWMutex
 	codexBootstrapNow   = time.Now
@@ -586,49 +559,16 @@ func setCodexBootstrapNowForTest(fn func() time.Time) func() {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 const codexBootstrapMaxBufferedFrames = 48
-
-
-
-
-
-
 
 const codexBootstrapMaxBufferedBytes = 1 << 20
 
-
-
-
-
-
-
-
-
-
-
-
 func isCodexBootstrapBufferableEvent(eventType string, payload []byte) bool {
-
-
 
 	if len(bytes.TrimSpace(payload)) == 0 {
 		return true
 	}
 	switch eventType {
-
-
 
 	case "response.created", "response.in_progress", "codex.rate_limits", "codex.response.metadata", "response.metadata", "keepalive":
 		return true
@@ -642,13 +582,6 @@ func isCodexBootstrapBufferableEvent(eventType string, payload []byte) bool {
 		return false
 	}
 }
-
-
-
-
-
-
-
 
 func isCodexBufferableOutputItem(payload []byte) bool {
 	item := ojson.GetBytesNoCopy(payload, "item")
@@ -669,10 +602,6 @@ func isCodexBufferableOutputItem(payload []byte) bool {
 	}
 }
 
-
-
-
-
 func isCodexEmptyContentList(list ojson.Result) bool {
 	for _, entry := range list.Array() {
 		switch entry.Get("type").String() {
@@ -691,10 +620,6 @@ func isCodexEmptyContentList(list ojson.Result) bool {
 	return true
 }
 
-
-
-
-
 func isCodexEmptyPart(payload []byte) bool {
 	part := ojson.GetBytesNoCopy(payload, "part")
 	switch part.Get("type").String() {
@@ -707,26 +632,14 @@ func isCodexEmptyPart(payload []byte) bool {
 	}
 }
 
-
-
 func observeCodexTokenEvent(reporter *helps.UsageReporter, payload []byte) {
 	helps.ObserveResponsesTokenEvent(reporter, payload)
 	reporter.ObserveResponseModel(payload)
 }
 
-
-
-
-
-
-
 func newCodexBootstrapOverloadErr(body []byte) statusErr {
 	return newCodexStatusErr(http.StatusServiceUnavailable, body)
 }
-
-
-
-
 
 func isCodexOverloadBootstrapFailure(body []byte) bool {
 	if isCodexTransientCapacityError(body) {

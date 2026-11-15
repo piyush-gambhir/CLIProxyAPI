@@ -13,13 +13,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
-
-
-
 var claudeCode2_1_220WireHeaderOrder = []string{
 	"Accept",
 	"Authorization",
@@ -50,13 +43,9 @@ func newClaudeWireProbeRequest(t *testing.T, rawURL string) *http.Request {
 		t.Fatalf("applyClaudeHeaders: %v", err)
 	}
 
-
 	applyClaudeWireHeaderCasing(req)
 	return req
 }
-
-
-
 
 func TestApplyClaudeHeaders_LeavesHeadersCanonicalForThePipeline(t *testing.T) {
 	auth := &cliproxyauth.Auth{ID: "wire", Metadata: map[string]any{"access_token": "sk-ant-oat01-wire"}}
@@ -72,8 +61,6 @@ func TestApplyClaudeHeaders_LeavesHeadersCanonicalForThePipeline(t *testing.T) {
 		}
 	}
 }
-
-
 
 func serializedHeaderNames(t *testing.T, req *http.Request) []string {
 	t.Helper()
@@ -98,15 +85,12 @@ func serializedHeaderNames(t *testing.T, req *http.Request) []string {
 	return names
 }
 
-
-
 func TestApplyClaudeHeaders_WireCasingMatchesRealClient(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.anthropic.com/v1/messages?beta=true")
 	got := serializedHeaderNames(t, req)
 
 	transportOwned := map[string]bool{
 		"Host": true, "Content-Length": true, "Connection": true, "Accept-Encoding": true,
-
 
 		"User-Agent": true,
 	}
@@ -127,9 +111,6 @@ func TestApplyClaudeHeaders_WireCasingMatchesRealClient(t *testing.T) {
 		}
 	}
 }
-
-
-
 
 func TestApplyClaudeHeaders_UserAgentStillHoistedByGo(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.anthropic.com/v1/messages?beta=true")
@@ -154,8 +135,6 @@ func TestApplyClaudeHeaders_UserAgentStillHoistedByGo(t *testing.T) {
 	}
 }
 
-
-
 func TestClaudeWireHeaderOrderIsBytewiseSorted(t *testing.T) {
 	sorted := append([]string(nil), claudeCode2_1_220WireHeaderOrder...)
 	sort.Strings(sorted)
@@ -165,7 +144,6 @@ func TestClaudeWireHeaderOrderIsBytewiseSorted(t *testing.T) {
 		}
 	}
 }
-
 
 func TestApplyClaudeHeaders_WireCasingIsAnthropicOnly(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.moonshot.cn/v1/messages")
@@ -179,8 +157,6 @@ func TestApplyClaudeHeaders_WireCasingIsAnthropicOnly(t *testing.T) {
 	}
 }
 
-
-
 func TestApplyClaudeHeaders_WireCasingPreservesValues(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.anthropic.com/v1/messages?beta=true")
 	for canonical, wire := range claudeWireHeaderCasing {
@@ -192,10 +168,6 @@ func TestApplyClaudeHeaders_WireCasingPreservesValues(t *testing.T) {
 		}
 	}
 }
-
-
-
-
 
 func TestClaudeExecutorHasSingleUpstreamSendBoundary(t *testing.T) {
 	paths := []string{

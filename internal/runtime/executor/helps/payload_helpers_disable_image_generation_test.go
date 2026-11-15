@@ -103,8 +103,6 @@ func TestApplyPayloadConfigWithRoot_DisableImageGenerationPassthrough_KeepsPaylo
 	}
 	payload := []byte(`{"tools":[{"type":"image_generation"},{"type":"function","name":"f1"}],"tool_choice":{"type":"image_generation"}}`)
 
-
-
 	for _, requestPath := range []string{"", "/v1/responses", "/v1/images/generations"} {
 		out := ApplyPayloadConfigWithRoot(cfg, "gpt-5.4", "openai-response", "", payload, nil, "", requestPath)
 

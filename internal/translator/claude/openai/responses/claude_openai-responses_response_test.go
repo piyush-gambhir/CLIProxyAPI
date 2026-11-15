@@ -1343,7 +1343,6 @@ func TestConvertClaudeResponseToOpenAIResponses_MaxTokensWithWebSearchEmitsIncom
 		t.Fatalf("response.output.0.status = %q, want incomplete", got)
 	}
 
-
 	raw := []byte(strings.Join([]string{
 		`data: {"type":"message_start","message":{"id":"msg_ws_incomplete","usage":{"input_tokens":10,"output_tokens":0}}}`,
 		`data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"srv_1","name":"web_search"}}`,
@@ -2427,10 +2426,6 @@ func TestApplyPatchClaudeSuccessfulTerminalSealsState(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestConvertClaudeResponseToOpenAIResponses_PinsRequestPerStream(t *testing.T) {
 	originalRequest := []byte(`{
 		"model":"gpt-test",
@@ -2450,8 +2445,6 @@ func TestConvertClaudeResponseToOpenAIResponses_PinsRequestPerStream(t *testing.
 	var param any
 	var added, completed ojson.Result
 	for i, chunk := range chunks {
-
-
 
 		var requestForChunk []byte
 		if i == 0 {
@@ -2505,7 +2498,6 @@ func BenchmarkConvertClaudeResponseToOpenAIResponses_TextDelta(b *testing.B) {
 func TestConvertClaudeResponseToOpenAIResponses_PreTokenAndMidStreamFallbackTransparency(t *testing.T) {
 	ctx := context.Background()
 
-
 	originalReq := []byte(`{"model":"claude-opus-5-5","input":[{"role":"user","content":"hi"}]}`)
 	translatedReq := []byte(`{"model":"claude-opus-5-5","fallbacks":[{"model":"claude-opus-4-8"}],"messages":[{"role":"user","content":"hi"}]}`)
 	preEvents := [][]byte{
@@ -2550,7 +2542,6 @@ func TestConvertClaudeResponseToOpenAIResponses_PreTokenAndMidStreamFallbackTran
 	if fb := ojson.GetBytesNoCopy(preNonStreamOut, "fallback"); !fb.Exists() || fb.Get("from.model").String() != "claude-opus-5-5" || fb.Get("to.model").String() != "claude-opus-4-8" {
 		t.Fatalf("pre-token non-stream Responses fallback = %s, want from=5-5 to=4-8", fb.Raw)
 	}
-
 
 	midEvents := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_resp_mid","model":"claude-opus-5-5","usage":{"input_tokens":8,"output_tokens":0}}}`),
@@ -2609,7 +2600,6 @@ func TestConvertClaudeResponseToOpenAIResponses_PreTokenAndMidStreamFallbackTran
 func TestConvertClaudeResponseToOpenAIResponses_DefaultStringFallbackAndStickyRouting(t *testing.T) {
 	ctx := context.Background()
 
-
 	origReq := []byte(`{"model":"claude-opus-5-5","input":[{"role":"user","content":"turn 2"}]}`)
 	translatedDefaultReq := []byte(`{"model":"claude-opus-5-5","fallbacks":"default","messages":[{"role":"user","content":"turn 2"}]}`)
 	stickyEvents := [][]byte{
@@ -2650,7 +2640,6 @@ func TestConvertClaudeResponseToOpenAIResponses_DefaultStringFallbackAndStickyRo
 	if got := ojson.GetBytesNoCopy(stickyNonStream, "model").String(); got != "claude-opus-4-8" {
 		t.Fatalf("sticky non-stream model = %q, want claude-opus-4-8", got)
 	}
-
 
 	var snapParam any
 	snapStart := []byte(`data: {"type":"message_start","message":{"id":"msg_snap","model":"claude-opus-5-5-20260501","usage":{"input_tokens":4,"output_tokens":0}}}`)

@@ -21,10 +21,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 type silentConnectProxy struct {
 	attempts atomic.Int32
 	closed   chan struct{}
@@ -53,9 +49,6 @@ func startSilentConnectProxy(t *testing.T) (*silentConnectProxy, string) {
 			t.Errorf("close silent CONNECT proxy listener: %v", errClose)
 		}
 		<-acceptDone
-
-
-
 
 		proxy.closeTrackedConnections(t)
 		handlers.Wait()
@@ -128,7 +121,6 @@ func (p *silentConnectProxy) closeTrackedConnections(t *testing.T) {
 
 func (p *silentConnectProxy) reportError(err error) {
 
-
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.stopped {
@@ -182,11 +174,6 @@ func (p *silentConnectProxy) handle(conn net.Conn) {
 	}
 	p.closed <- struct{}{}
 }
-
-
-
-
-
 
 func TestClaudeExecutorManagerRetriesSilentTLSHandshakeThroughConnectProxy(t *testing.T) {
 	proxy, proxyURL := startSilentConnectProxy(t)

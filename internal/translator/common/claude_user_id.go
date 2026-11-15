@@ -9,13 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// DeriveClaudeUserID returns a stable value for the Claude request field
-// metadata.user_id. It preserves any caller-supplied metadata.user_id or
-// OpenAI Chat Completions user field, then derives a deterministic value from
-// stable client signals (prompt_cache_key, session_id, conversation_id, first user
-// message content, and model/system instructions). The same conversation therefore gets
-// the same user_id on every worker and every turn, while different
-// conversations get different values.
 func DeriveClaudeUserID(rawJSON []byte) string {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
@@ -153,7 +146,7 @@ func firstStableRequestContent(root ojson.Result) string {
 		var content string
 		contents.ForEach(func(_, contentItem ojson.Result) bool {
 			role := strings.ToLower(strings.TrimSpace(contentItem.Get("role").String()))
-			// In Gemini API format, missing role defaults to "user"
+
 			if role == "" || role == "user" {
 				if parts := contentItem.Get("parts"); parts.IsArray() {
 					var texts []string
@@ -215,7 +208,7 @@ func isResponsesUserItem(item ojson.Result) bool {
 	}
 	typ := strings.ToLower(strings.TrimSpace(item.Get("type").String()))
 	if typ == "message" {
-		// Non-assistant / non-system message defaults to user
+
 		return true
 	}
 	return false

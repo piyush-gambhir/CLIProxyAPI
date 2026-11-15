@@ -11,14 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type FileBodySource struct {
 	mu      sync.Mutex
 	dir     string
 	paths   []string
 	cleaned bool
 }
-
 
 func NewFileBodySourceInDir(baseDir string, prefix string) (*FileBodySource, error) {
 	prefix = sanitizeTempPrefix(prefix)
@@ -63,7 +61,6 @@ func sanitizeTempPrefix(prefix string) string {
 	return out
 }
 
-
 func (s *FileBodySource) CreatePart(prefix string) (*os.File, error) {
 	if s == nil {
 		return nil, fmt.Errorf("file body source is nil")
@@ -85,7 +82,6 @@ func (s *FileBodySource) CreatePart(prefix string) (*os.File, error) {
 	return file, nil
 }
 
-
 func (s *FileBodySource) AppendPart(data []byte) error {
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 {
@@ -103,7 +99,6 @@ func (s *FileBodySource) AppendPart(data []byte) error {
 	}
 	return writeErr
 }
-
 
 func (s *FileBodySource) AppendBytes(data []byte) error {
 	if s == nil {
@@ -144,7 +139,6 @@ func (s *FileBodySource) AppendBytes(data []byte) error {
 	return writeErr
 }
 
-
 func (s *FileBodySource) HasPayload() bool {
 	if s == nil {
 		return false
@@ -153,7 +147,6 @@ func (s *FileBodySource) HasPayload() bool {
 	defer s.mu.Unlock()
 	return len(s.paths) > 0 && !s.cleaned
 }
-
 
 func (s *FileBodySource) Paths() []string {
 	if s == nil {
@@ -165,7 +158,6 @@ func (s *FileBodySource) Paths() []string {
 	copy(out, s.paths)
 	return out
 }
-
 
 func (s *FileBodySource) WriteTo(w io.Writer) (int64, error) {
 	if s == nil || w == nil {
@@ -208,7 +200,6 @@ func (s *FileBodySource) WriteTo(w io.Writer) (int64, error) {
 	return totalWritten, nil
 }
 
-
 func (s *FileBodySource) Bytes() ([]byte, error) {
 	var buf bytes.Buffer
 	if _, errWrite := s.WriteTo(&buf); errWrite != nil {
@@ -216,7 +207,6 @@ func (s *FileBodySource) Bytes() ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
-
 
 func (s *FileBodySource) Cleanup() error {
 	if s == nil {

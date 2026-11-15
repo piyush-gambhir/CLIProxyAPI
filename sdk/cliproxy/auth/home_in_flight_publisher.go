@@ -14,12 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type HomeInFlightTransport interface {
 	HeartbeatOK() bool
 	LPushInFlightSnapshot(context.Context, []byte) error
 }
-
 
 type HomeInFlightPublisherConfig struct {
 	SnapshotInterval   time.Duration
@@ -44,7 +42,6 @@ func homeInFlightStatus(accounted bool) home.InFlightAccountedStatus {
 	return home.InFlightUnaccounted
 }
 
-
 func HomeInFlightPublisherConfigFromConfig(cfg internalconfig.CredentialInFlightConfig) (HomeInFlightPublisherConfig, error) {
 	snapshotInterval, _, _, errDurations := cfg.Durations()
 	if errDurations != nil {
@@ -64,7 +61,6 @@ func HomeInFlightPublisherConfigFromConfig(cfg internalconfig.CredentialInFlight
 	}, nil
 }
 
-
 func (m *Manager) ApplyHomeInFlightPublisherConfig(cfg HomeInFlightPublisherConfig) {
 	if m == nil || !validHomeInFlightPublisherConfig(cfg) {
 		return
@@ -72,7 +68,6 @@ func (m *Manager) ApplyHomeInFlightPublisherConfig(cfg HomeInFlightPublisherConf
 	snapshot := cfg
 	m.homeInFlightPublisherConfig.Store(&snapshot)
 }
-
 
 func (m *Manager) HomeInFlightPublisherConfig() HomeInFlightPublisherConfig {
 	if m == nil {
@@ -100,7 +95,6 @@ func validHomeInFlightPublisherBounds(cfg HomeInFlightPublisherConfig) bool {
 	return cfg.MaxPartBytes > 0 && cfg.MaxPartCount > 0 && cfg.MaxRevisionBytes >= cfg.MaxPartBytes &&
 		cfg.MaxAggregateGroups > 0 && cfg.MaxDetails >= 0 && cfg.MaxStringBytes > 0
 }
-
 
 func (m *Manager) StartHomeInFlightPublisher(ctx context.Context, transport HomeInFlightTransport, registry *executionregistry.Registry) {
 	if m == nil || transport == nil || registry == nil {

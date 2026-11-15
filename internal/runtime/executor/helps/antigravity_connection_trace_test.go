@@ -114,7 +114,6 @@ func TestAntigravityConnectionTrace(t *testing.T) {
 		}
 	}
 
-
 	hook.Reset()
 	tracedClient := WithAntigravityHTTPClientTrace(client, auth, "project_discovery")
 	if client.Transport != transport || tracedClient == client {

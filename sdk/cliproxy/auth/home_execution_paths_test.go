@@ -1264,7 +1264,6 @@ func TestHomeStreamWithoutSourceEndsSelection(t *testing.T) {
 	}
 }
 
-
 type homeRequestMetadataSnapshot struct {
 	requestedModel  string
 	reasoningEffort string
@@ -1280,7 +1279,6 @@ func homeRequestMetadataFromContext(ctx context.Context) homeRequestMetadataSnap
 		generate:        coreusage.GenerateFromContext(ctx),
 	}
 }
-
 
 type homeRequestMetadataExecutor struct {
 	mu              sync.Mutex
@@ -1352,7 +1350,6 @@ func (*homeRequestMetadataExecutor) HttpRequest(context.Context, *Auth, *http.Re
 	return nil, nil
 }
 
-
 type homeRequestMetadataHook struct {
 	results chan homeRequestMetadataSnapshot
 }
@@ -1402,9 +1399,6 @@ func newHomeRequestMetadataManager(t *testing.T, executor *homeRequestMetadataEx
 	manager.RegisterExecutor(executor)
 	return manager
 }
-
-
-
 
 func homeRequestMetadataOptions(serviceTier string) cliproxyexecutor.Options {
 	return cliproxyexecutor.Options{Metadata: map[string]any{
@@ -1456,9 +1450,6 @@ func homeStreamMetadataPath() homeRequestMetadataPath {
 	}
 }
 
-
-
-
 func TestHomeExecutionPropagatesRequestMetadata(t *testing.T) {
 	paths := []homeRequestMetadataPath{homeExecuteMetadataPath(), homeCountMetadataPath(), homeStreamMetadataPath()}
 
@@ -1481,8 +1472,6 @@ func TestHomeExecutionPropagatesRequestMetadata(t *testing.T) {
 	}
 }
 
-
-
 func TestHomeExecutionFailureResultPreservesRequestMetadata(t *testing.T) {
 	paths := []homeRequestMetadataPath{homeExecuteMetadataPath(), homeCountMetadataPath()}
 
@@ -1501,8 +1490,6 @@ func TestHomeExecutionFailureResultPreservesRequestMetadata(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestHomePrepareFailureResultPreservesRequestMetadata(t *testing.T) {
 	paths := []homeRequestMetadataPath{homeExecuteMetadataPath(), homeCountMetadataPath(), homeStreamMetadataPath()}

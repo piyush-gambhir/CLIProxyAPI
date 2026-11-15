@@ -25,15 +25,12 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 	rawJSON := inputRawJSON
 	var drops translatorcommon.UserTurnDrops
 
-
 	useGeminiNativeReasoningLayout := sigcompat.SignatureProviderFromModelName(modelName) == sigcompat.SignatureProviderGemini
 	_ = stream
-
 
 	outDoc := ojson.NewDocString(`{"contents":[]}`)
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
-
 
 	functionDeclarations, forwardMap, _ := util.BuildGeminiFunctionDeclarations(root)
 	var toolBlocks [][]byte
@@ -57,7 +54,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		_ = outDoc.SetRawBytes("tools", translatorcommon.JoinRawArray(toolBlocks))
 	}
 
-
 	if len(functionDeclarations) > 0 {
 		if toolChoice := root.Get("tool_choice"); toolChoice.Exists() {
 			if toolConfig, ok := util.ConvertResponsesToolChoiceToGemini(toolChoice, forwardMap); ok {
@@ -66,11 +62,9 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		}
 	}
 
-
 	if hasGoogleSearch && len(functionDeclarations) > 0 {
 		_ = outDoc.Set("toolConfig.includeServerSideToolInvocations", true)
 	}
-
 
 	systemParts := make([][]byte, 0, 2)
 	if instructions := root.Get("instructions"); instructions.Exists() {
@@ -78,7 +72,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		part, _ = ojson.SetBytes(part, "text", instructions.String())
 		systemParts = append(systemParts, part)
 	}
-
 
 	if input := root.Get("input"); input.Exists() && input.IsArray() {
 		inputItems, hasGeminiCarrier := normalizeGeminiResponsesCarriers(restoreGeminiResponsesTextSignatures(modelName, normalizeOpenAIResponsesToolSearchItems(input.Array(), forwardMap)))
@@ -215,10 +208,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 					}
 				}
 
-
-
-
-
 				contentArray := item.Get("content")
 				var partsToProcess []ojson.Result
 				if contentArray.Exists() && contentArray.IsArray() {
@@ -297,7 +286,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 								partJSON = part
 								sendsContent = true
 							} else if effRole == "user" && isResponsesAttachmentPartType(contentType) {
-
 
 								drops.Drop(contentType)
 							}
@@ -393,8 +381,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 				var standaloneOutputContents [][]byte
 				appendStandaloneOutput := func(out ojson.Result) {
 
-
-
 					if parts := buildOpenAIResponsesStandaloneToolOutputTextParts(out); len(parts) > 0 {
 						standaloneOutputContents = append(standaloneOutputContents, geminiContent("user", parts))
 					}
@@ -482,23 +468,19 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 		_ = outDoc.SetRawBytes("systemInstruction", geminiSystemInstruction(systemParts))
 	}
 
-
 	if maxOutputTokens := root.Get("max_output_tokens"); maxOutputTokens.Exists() {
 		genConfig := []byte(`{"maxOutputTokens":0}`)
 		genConfig, _ = ojson.SetBytes(genConfig, "maxOutputTokens", maxOutputTokens.Int())
 		_ = outDoc.SetRawBytes("generationConfig", genConfig)
 	}
 
-
 	if temperature := root.Get("temperature"); temperature.Exists() {
 		_ = outDoc.Set("generationConfig.temperature", temperature.Float())
 	}
 
-
 	if topP := root.Get("top_p"); topP.Exists() {
 		_ = outDoc.Set("generationConfig.topP", topP.Float())
 	}
-
 
 	if stopSequences := root.Get("stop_sequences"); stopSequences.Exists() && stopSequences.IsArray() {
 		var sequences []string
@@ -510,8 +492,6 @@ func convertOpenAIResponsesRequestToGemini(modelName string, inputRawJSON []byte
 	}
 
 	applyOpenAIResponsesTextFormatToGeminiDoc(outDoc, root)
-
-
 
 	re := root.Get("reasoning.effort")
 	if re.Exists() {
@@ -729,8 +709,6 @@ func pairOpenAIResponsesReasoningWithFunctionCalls(items []ojson.Result) []ojson
 		for outputEnd < len(items) && isOpenAIResponsesToolOutput(items[outputEnd]) {
 			outputEnd++
 		}
-
-
 
 		if isOpenAIResponsesToolCall(items[groupStart]) {
 			for callIndex := groupStart; callIndex < groupEnd; callIndex++ {
@@ -986,8 +964,6 @@ func isResponsesContentPartType(itemType string) bool {
 	}
 }
 
-
-
 func isResponsesAttachmentPartType(itemType string) bool {
 	switch strings.ToLower(strings.TrimSpace(itemType)) {
 	case "input_image", "image_url", "image",
@@ -1094,14 +1070,11 @@ func openAIResponsesAudioFromBlock(block ojson.Result) (mimeType string, data st
 		block.Get("mime_type").String(),
 	)
 
-
 	audioData := audioObj.Get("data").String()
-
 
 	if audioData == "" {
 		audioData = block.Get("data").String()
 	}
-
 
 	if audioData == "" {
 		audioURL := firstNonEmpty(
@@ -1134,7 +1107,6 @@ func openAIResponsesAudioFromBlock(block ojson.Result) (mimeType string, data st
 			}
 		}
 	}
-
 
 	if audioData == "" && block.Get("source.type").String() == "base64" {
 		audioData = block.Get("source.data").String()
@@ -1189,7 +1161,6 @@ func openAIResponsesVideoFromBlock(block ojson.Result) (mimeType string, data st
 		block.Get("mime_type").String(),
 	)
 
-
 	videoURL := firstNonEmpty(
 		block.Get("video_url.url").String(),
 		block.Get("video_url").String(),
@@ -1220,14 +1191,11 @@ func openAIResponsesVideoFromBlock(block ojson.Result) (mimeType string, data st
 		}
 	}
 
-
 	videoData := videoObj.Get("data").String()
-
 
 	if videoData == "" {
 		videoData = block.Get("data").String()
 	}
-
 
 	if videoData == "" && block.Get("source.type").String() == "base64" {
 		videoData = block.Get("source.data").String()
@@ -1382,7 +1350,6 @@ func openAIResponsesMediaFromBlock(block ojson.Result) (mimeType string, data st
 func openAIResponsesPartFromBlock(block ojson.Result) ([]byte, bool) {
 	bType := strings.ToLower(strings.TrimSpace(block.Get("type").String()))
 
-
 	rawURL := firstNonEmpty(
 		block.Get("video_url.url").String(),
 		block.Get("video_url").String(),
@@ -1465,7 +1432,6 @@ func openAIResponsesPartFromBlock(block ojson.Result) ([]byte, bool) {
 		return geminiResponsesFileDataPart(mimeType, rawURL), true
 	}
 
-
 	if mimeType, data, ok := openAIResponsesMediaFromBlock(block); ok {
 		return geminiResponsesInlineDataPart(mimeType, data), true
 	}
@@ -1519,7 +1485,6 @@ func openAIResponsesImageFromBlock(block ojson.Result) (mimeType string, data st
 			block.Get("file.filename").String(),
 		)
 
-
 		imageURL := firstNonEmpty(
 			block.Get("image_url.url").String(),
 			block.Get("image_url").String(),
@@ -1540,7 +1505,6 @@ func openAIResponsesImageFromBlock(block ojson.Result) (mimeType string, data st
 			}
 		}
 
-
 		imageData := ""
 		if block.Get("source.type").String() == "base64" {
 			imageData = block.Get("source.data").String()
@@ -1548,7 +1512,6 @@ func openAIResponsesImageFromBlock(block ojson.Result) (mimeType string, data st
 				format = block.Get("source.media_type").String()
 			}
 		}
-
 
 		if imageData == "" && block.Get("data").Exists() {
 			imageData = block.Get("data").String()
@@ -1737,7 +1700,6 @@ func buildOpenAIResponsesFunctionResponseParts(item ojson.Result, functionNamesB
 		if str == "" || str == "null" {
 			return [][]byte{frDoc.Bytes()}
 		}
-
 
 		_ = frDoc.Set("functionResponse.response.result", str)
 		return [][]byte{frDoc.Bytes()}

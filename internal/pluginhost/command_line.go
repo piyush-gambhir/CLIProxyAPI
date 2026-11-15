@@ -22,7 +22,6 @@ type commandLineFlagRecord struct {
 	set      bool
 }
 
-
 func (h *Host) RegisterCommandLineFlags(ctx context.Context, flagSet *flag.FlagSet) {
 	if h == nil || flagSet == nil {
 		return
@@ -224,7 +223,6 @@ func (v *commandLineFlagValue) IsBoolFlag() bool {
 	return v != nil && v.kind == "bool"
 }
 
-
 func (h *Host) HasTriggeredCommandLineFlags() bool {
 	if h == nil {
 		return false
@@ -233,7 +231,6 @@ func (h *Host) HasTriggeredCommandLineFlags() bool {
 	defer h.mu.Unlock()
 	return len(h.commandLineHits) > 0
 }
-
 
 func (h *Host) ExecuteCommandLine(ctx context.Context, program string, args []string, configPath string, flagSet *flag.FlagSet) (int, bool) {
 	if h == nil {

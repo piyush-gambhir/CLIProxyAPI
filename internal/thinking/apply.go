@@ -1,4 +1,3 @@
-
 package thinking
 
 import (
@@ -19,7 +18,6 @@ type pluginProviderApplier struct {
 
 var providerAppliersMu sync.RWMutex
 
-
 var nativeProviderAppliers = map[string]ProviderApplier{
 	"gemini":      nil,
 	"claude":      nil,
@@ -33,10 +31,7 @@ var nativeProviderAppliers = map[string]ProviderApplier{
 	"xai":         nil,
 }
 
-
 var pluginProviderAppliers = map[string]pluginProviderApplier{}
-
-
 
 func GetProviderApplier(provider string) ProviderApplier {
 	provider = normalizedProviderName(provider)
@@ -71,7 +66,6 @@ func resolveProviderApplier(providerFormat, providerKey string) (ProviderApplier
 	return GetProviderApplier(providerFormat), false
 }
 
-
 func RegisterProvider(name string, applier ProviderApplier) {
 	name = normalizedProviderName(name)
 	if name == "" {
@@ -81,7 +75,6 @@ func RegisterProvider(name string, applier ProviderApplier) {
 	defer providerAppliersMu.Unlock()
 	nativeProviderAppliers[name] = applier
 }
-
 
 func RegisterPluginProvider(owner string, name string, priority int, applier ProviderApplier) bool {
 	owner = strings.TrimSpace(owner)
@@ -106,7 +99,6 @@ func RegisterPluginProvider(owner string, name string, priority int, applier Pro
 	return true
 }
 
-
 func UnregisterPluginProviders(owner string) {
 	owner = strings.TrimSpace(owner)
 	if owner == "" {
@@ -121,7 +113,6 @@ func UnregisterPluginProviders(owner string) {
 	}
 }
 
-
 func ClearPluginProviders() {
 	providerAppliersMu.Lock()
 	defer providerAppliersMu.Unlock()
@@ -132,8 +123,6 @@ func normalizedProviderName(provider string) string {
 	return strings.ToLower(strings.TrimSpace(provider))
 }
 
-
-
 func IsUserDefinedModel(modelInfo *registry.ModelInfo) bool {
 	if modelInfo == nil {
 		return true
@@ -141,12 +130,10 @@ func IsUserDefinedModel(modelInfo *registry.ModelInfo) bool {
 	return modelInfo.UserDefined
 }
 
-
 func ApplyThinking(body []byte, model string, fromFormat string, toFormat string, providerKey string) ([]byte, error) {
 	summaryConfig := ExtractSummaryConfig(body, toFormat)
 	return applyThinking(body, nil, model, fromFormat, toFormat, providerKey, nil, false, summaryConfig)
 }
-
 
 func ApplyThinkingDoc(doc *ojson.Doc, model, fromFormat, toFormat, providerKey string) error {
 	if doc == nil {
@@ -157,13 +144,9 @@ func ApplyThinkingDoc(doc *ojson.Doc, model, fromFormat, toFormat, providerKey s
 	return err
 }
 
-
-
 func ApplyThinkingWithSummary(body []byte, model string, fromFormat string, toFormat string, providerKey string, summaryConfig SummaryConfig) ([]byte, error) {
 	return applyThinking(body, nil, model, fromFormat, toFormat, providerKey, nil, false, summaryConfig)
 }
-
-
 
 func ApplyThinkingWithSummaryDoc(doc *ojson.Doc, model, fromFormat, toFormat, providerKey string, summaryConfig SummaryConfig) error {
 	if doc == nil {
@@ -173,13 +156,9 @@ func ApplyThinkingWithSummaryDoc(doc *ojson.Doc, model, fromFormat, toFormat, pr
 	return err
 }
 
-
-
 func ApplyThinkingWithSourceAndSummary(body, sourceBody []byte, model, fromFormat, toFormat, providerKey string, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return applyThinking(body, sourceBody, model, fromFormat, toFormat, providerKey, nil, false, summaryConfig, normalizedUpdatesChanged...)
 }
-
-
 
 func ApplyThinkingWithSourceAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, model, fromFormat, toFormat, providerKey string, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {
@@ -189,14 +168,9 @@ func ApplyThinkingWithSourceAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, mod
 	return err
 }
 
-
-
-
 func ApplyThinkingWithFallbackModelInfoAndSummary(body, sourceBody []byte, model, fromFormat, toFormat, providerKey string, fallbackModelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return applyThinking(body, sourceBody, model, fromFormat, toFormat, providerKey, fallbackModelInfo, false, summaryConfig, normalizedUpdatesChanged...)
 }
-
-
 
 func ApplyThinkingWithFallbackModelInfoAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, model, fromFormat, toFormat, providerKey string, fallbackModelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {
@@ -206,9 +180,6 @@ func ApplyThinkingWithFallbackModelInfoAndSummaryDoc(doc *ojson.Doc, sourceBody 
 	return err
 }
 
-
-
-
 func ApplyThinkingWithModelInfo(body, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo) ([]byte, error) {
 	summaryConfig := ExtractSummaryConfig(sourceBody, fromFormat)
 	if len(sourceBody) == 0 {
@@ -216,8 +187,6 @@ func ApplyThinkingWithModelInfo(body, sourceBody []byte, model string, fromForma
 	}
 	return ApplyThinkingWithModelInfoAndSummary(body, sourceBody, model, fromFormat, toFormat, providerKey, modelInfo, summaryConfig)
 }
-
-
 
 func ApplyThinkingWithModelInfoDoc(doc *ojson.Doc, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo) error {
 	if doc == nil {
@@ -230,14 +199,9 @@ func ApplyThinkingWithModelInfoDoc(doc *ojson.Doc, sourceBody []byte, model stri
 	return ApplyThinkingWithModelInfoAndSummaryDoc(doc, sourceBody, model, fromFormat, toFormat, providerKey, modelInfo, summaryConfig)
 }
 
-
-
-
 func ApplyThinkingWithModelInfoAndSummary(body, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return applyThinking(body, sourceBody, model, fromFormat, toFormat, providerKey, modelInfo, true, summaryConfig, normalizedUpdatesChanged...)
 }
-
-
 
 func ApplyThinkingWithModelInfoAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {
@@ -284,7 +248,6 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		}
 	}
 
-
 	updatesChanged := len(normalizedUpdatesChanged) > 0 && normalizedUpdatesChanged[0]
 	var sourceConfig ThinkingConfig
 	if isResponsesFormat(fromFormat) {
@@ -305,7 +268,6 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 	}
 	nativeResponses := responseTarget && isResponsesFormat(fromFormat) && supportsUpdates
 
-
 	applier, isPluginApplier := resolveProviderApplier(providerFormat, providerKey)
 	if applier == nil {
 		log.WithFields(log.Fields{
@@ -314,7 +276,6 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		}).Debug("thinking: unknown provider, passthrough |")
 		return modified, nil
 	}
-
 
 	if !suffixResult.HasSuffix && len(sourceBody) > 0 && isResponsesFormat(fromFormat) && !docValid && hasThinkingConfig(extractConfigurationUpdateConfig(sourceBody)) {
 
@@ -377,7 +338,6 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		return modified, nil
 	}
 
-
 	var config ThinkingConfig
 	if suffixResult.HasSuffix {
 		config = parseSuffixToConfig(suffixResult.RawSuffix, providerFormat, model)
@@ -435,7 +395,6 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		config.Level = mapConfiguredHighIntent(config.Level, modelInfo)
 	}
 
-
 	validated, err := ValidateConfig(config, modelInfo, fromFormat, providerFormat, suffixResult.HasSuffix)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -461,8 +420,6 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		"budget":   validated.Budget,
 		"level":    validated.Level,
 	}).Debug("thinking: processed config to apply |")
-
-
 
 	appliedMod, errApply := invokeProviderApplierOnDoc(applier, doc, &docValid, *validated, modelInfo)
 	if appliedMod {
@@ -569,11 +526,9 @@ func parseSuffixToConfig(rawSuffix, provider, model string) ThinkingConfig {
 		}
 	}
 
-
 	if level, ok := ParseLevelSuffix(rawSuffix); ok {
 		return ThinkingConfig{Mode: ModeLevel, Level: level}
 	}
-
 
 	if budget, ok := ParseNumericSuffix(rawSuffix); ok {
 		if budget == 0 {
@@ -687,7 +642,6 @@ func normalizeUserDefinedConfig(config ThinkingConfig, fromFormat, toFormat stri
 	return config
 }
 
-
 func extractThinkingConfig(body []byte, provider string) ThinkingConfig {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return ThinkingConfig{}
@@ -727,8 +681,6 @@ func hasThinkingConfig(config ThinkingConfig) bool {
 	return config.Mode != ModeBudget || config.Budget != 0 || config.Level != ""
 }
 
-
-
 func ExtractReasoningEffort(body []byte, provider, model string) string {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	if isResponsesFormat(provider) {
@@ -751,8 +703,6 @@ func ExtractReasoningEffort(body []byte, provider, model string) string {
 	}
 	return reasoningEffortFromConfig(config)
 }
-
-
 
 func ExtractTranslatedReasoningEffort(body []byte, provider string) string {
 	provider = strings.ToLower(strings.TrimSpace(provider))

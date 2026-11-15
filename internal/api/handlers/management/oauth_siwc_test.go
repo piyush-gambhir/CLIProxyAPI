@@ -43,7 +43,6 @@ func (s *testSIWCOAuth) ExchangeSIWCCodeForTokens(ctx context.Context, code, cli
 	s.inputs <- siwcExchangeInput{code, clientID, redirect, deviceID, pkce}
 	if s.release != nil {
 
-
 		<-s.release
 	}
 	if s.err != nil {

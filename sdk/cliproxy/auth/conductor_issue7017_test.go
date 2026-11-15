@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-
-
-
-
-
 type issue7017TransientError struct{ msg string }
 
 func (e issue7017TransientError) Error() string              { return e.msg }
@@ -100,7 +95,6 @@ func TestIssue7017MarkResultTurnRateLimitCoolsModelWithoutQuota(t *testing.T) {
 	if sibling != nil && (sibling.Unavailable || sibling.Quota.Exceeded) {
 		t.Fatalf("sibling model must stay available, got %+v", sibling)
 	}
-
 
 	views := CooldownSnapshotForAuth(got, time.Now())
 	if len(views) == 0 {

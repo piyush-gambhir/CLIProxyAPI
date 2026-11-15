@@ -59,8 +59,6 @@ func geminiToolHistoryPayload(turns int) []byte {
 		strings.Join(contents, ",")))
 }
 
-
-
 func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 	from := sdktranslator.FormatGemini
 	to := sdktranslator.FromString("antigravity")
@@ -94,7 +92,6 @@ func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 			t.Fatalf("turns=%d: working copy aliases the baseline; later in-place edits would corrupt it", turns)
 		}
 
-
 		baselineBefore := append([]byte(nil), reuseBase...)
 		reuseWork[0] = 'X'
 		if !bytes.Equal(baselineBefore, reuseBase) {
@@ -102,8 +99,6 @@ func TestTranslateRequestPairMatchesSeparateTranslations(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestTranslateRequestPairTranslatesDistinctPayloads(t *testing.T) {
 	from := sdktranslator.FormatGemini
@@ -275,7 +270,6 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 		t.Fatalf("expected thinking.display = summarized in body delivered to normalizer, got: %q", summaryDisplayInHook)
 	}
 
-
 	hooks.calls = 0
 	outNonCompat := TranslateRequestWithAPIKeyModelCompatibility(
 		context.Background(),
@@ -294,7 +288,6 @@ func TestTranslateRequestWithAPIKeyModelCompatibility_InvokesPluginNormalizers(t
 	if got := ojson.GetBytes(outNonCompat, "plugin_call").Int(); got != 1 {
 		t.Fatalf("non-compat plugin_call = %d, want 1; output was %s", got, outNonCompat)
 	}
-
 
 	hooks.calls = 0
 	outStream := TranslateRequestWithAPIKeyModelCompatibility(
@@ -416,7 +409,6 @@ func TestTranslateRequestWithCodexMultiAgentV2_NormalizesCodexToolTypes(t *testi
 		false,
 	)
 
-
 	if got := ojson.GetBytes(out, "tools.0.input_schema.properties.yield_time_ms.type").String(); got != "integer" {
 		t.Errorf("translated Claude tool yield_time_ms type = %q, want integer; out=%s", got, out)
 	}
@@ -434,7 +426,6 @@ func TestTranslateRequestWithCodexMultiAgentV2_NormalizesCodexToolTypes(t *testi
 		payload,
 		false,
 	)
-
 
 	geminiParam := ojson.GetBytes(outGemini, "tools.0.functionDeclarations.0.parametersJsonSchema.properties")
 	if !geminiParam.Exists() {

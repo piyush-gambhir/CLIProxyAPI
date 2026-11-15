@@ -1,9 +1,3 @@
-
-
-
-
-
-
 package main
 
 import (
@@ -22,7 +16,6 @@ import (
 )
 
 const providerKey = "echo"
-
 
 type EchoExecutor struct{}
 
@@ -87,7 +80,6 @@ func main() {
 		},
 	}
 
-
 	reqPrepared, errReqPrepared := core.NewHttpRequest(
 		ctx,
 		auth,
@@ -113,7 +105,6 @@ func main() {
 		panic(errReadPrepared)
 	}
 	fmt.Printf("Prepared request status: %d\n%s\n\n", respPrepared.StatusCode, bodyPrepared)
-
 
 	rawBody := []byte(`{"hello":"world"}`)
 	rawReq, errRawReq := http.NewRequestWithContext(ctx, http.MethodPost, "https://httpbin.org/anything", bytes.NewReader(rawBody))

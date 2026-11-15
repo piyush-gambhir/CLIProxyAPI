@@ -167,7 +167,6 @@ func TestRequestScopedErrors_ActionStop(t *testing.T) {
 		t.Fatalf("execCount = %d, want 1 (should stop immediately)", execCount)
 	}
 
-
 	a1, ok1 := m.GetByID("auth-claude-1")
 	if !ok1 || a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth1 not to be in cooldown, got unavailable=%v, nextRetry=%v", a1.Unavailable, a1.NextRetryAfter)
@@ -239,7 +238,6 @@ func TestRequestScopedErrors_ActionStopAndCooldown(t *testing.T) {
 	if execCount != 1 {
 		t.Fatalf("execCount = %d, want 1 (should stop immediately)", execCount)
 	}
-
 
 	a1, ok1 := m.GetByID("auth-claude-stop-cool")
 	if !ok1 || !a1.Unavailable || a1.NextRetryAfter.IsZero() {
@@ -319,7 +317,6 @@ func TestRequestScopedErrors_ActionContinue(t *testing.T) {
 		t.Fatalf("execCount = %d, want 2", execCount)
 	}
 
-
 	a1, ok1 := m.GetByID("auth-claude-continue-1")
 	if !ok1 || a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth1 not to be in cooldown, got unavailable=%v, nextRetry=%v", a1.Unavailable, a1.NextRetryAfter)
@@ -397,7 +394,6 @@ func TestRequestScopedErrors_ActionContinueAndCooldown(t *testing.T) {
 	if execCount != 2 {
 		t.Fatalf("execCount = %d, want 2", execCount)
 	}
-
 
 	a1, ok1 := m.GetByID("auth-claude-continue-cool-1")
 	if !ok1 || !a1.Unavailable || a1.NextRetryAfter.IsZero() {
@@ -958,7 +954,6 @@ func TestRequestScopedErrors_NonMatching_FallsBackToDefault(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-
 	a1, _ := m.GetByID("auth-nomatch-1")
 	if a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatal("expected auth1 not to be in cooldown under default fallback")
@@ -1023,7 +1018,6 @@ func TestRequestScopedErrors_StreamSubsequentChunkError(t *testing.T) {
 		}
 	}
 
-
 	a1, _ := m.GetByID("auth-stream-subsequent-1")
 	if !a1.Unavailable || a1.NextRetryAfter.IsZero() {
 		t.Fatal("expected auth1 to be in cooldown after mid-stream chunk error")
@@ -1080,7 +1074,6 @@ func TestRequestScopedErrors_UnmatchedBootstrapError_PreservesDefault(t *testing
 	if errStream == nil {
 		t.Fatal("expected error, got nil")
 	}
-
 
 	a1, _ := m.GetByID("auth-unmatched-boot-1")
 	if a1.Unavailable || !a1.NextRetryAfter.IsZero() {

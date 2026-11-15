@@ -29,12 +29,7 @@ const (
 	codexOptimizedCollaborationDotPrefix  = codexOptimizedCollaborationNamespace + "."
 )
 
-
-
 const CodexMultiAgentV2ToolsPreparedContextKey = "codex_multi_agent_v2_tools_prepared"
-
-
-
 
 var codexCollaborationMessageTools = map[string]struct{}{
 	"spawn_agent":   {},
@@ -56,17 +51,10 @@ type codexClientModelsCatalog struct {
 	Models []map[string]any `json:"models"`
 }
 
-
-
 func RewriteCodexSpawnAgentDescription(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config) []byte {
 	updated, _ := OptimizeCodexMultiAgentV2Request(ctx, headers, payload, cfg)
 	return updated
 }
-
-
-
-
-
 
 func RewriteCodexMultiAgentV2Input(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config, isCompat ...bool) []byte {
 	if len(payload) == 0 {
@@ -78,8 +66,6 @@ func RewriteCodexMultiAgentV2Input(ctx context.Context, headers http.Header, pay
 	}
 	return doc.Bytes()
 }
-
-
 
 func RewriteCodexMultiAgentV2InputDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, cfg *config.Config, isCompat ...bool) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -93,8 +79,6 @@ func RewriteCodexMultiAgentV2InputDoc(doc *ojson.Doc, ctx context.Context, heade
 	return rewriteCodexAgentMessageInputDoc(doc, optimizeEnabled, compatMode)
 }
 
-
-
 func RewriteCodexOrphanDelegationInputForConfig(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config) []byte {
 	if cfg == nil || !cfg.Codex.OrphanDelegationCompatibility {
 		return payload
@@ -102,16 +86,12 @@ func RewriteCodexOrphanDelegationInputForConfig(ctx context.Context, headers htt
 	return RewriteCodexOrphanDelegationInput(ctx, headers, payload, true)
 }
 
-
-
 func RewriteCodexOrphanDelegationInputForConfigDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, cfg *config.Config) bool {
 	if cfg == nil || !cfg.Codex.OrphanDelegationCompatibility {
 		return false
 	}
 	return RewriteCodexOrphanDelegationInputDoc(doc, ctx, headers, true)
 }
-
-
 
 func TranslateRequestWithCodexMultiAgentV2(ctx context.Context, headers http.Header, cfg *config.Config, from, to sdktranslator.Format, model string, payload []byte, stream bool) []byte {
 	return TranslateRequestEnvelopeWithCodexMultiAgentV2(ctx, headers, cfg, from, to, sdktranslator.RequestEnvelope{
@@ -121,8 +101,6 @@ func TranslateRequestWithCodexMultiAgentV2(ctx context.Context, headers http.Hea
 		Body:   payload,
 	}).Body
 }
-
-
 
 func TranslateRequestEnvelopeWithCodexMultiAgentV2(ctx context.Context, headers http.Header, cfg *config.Config, from, to sdktranslator.Format, req sdktranslator.RequestEnvelope) sdktranslator.RequestEnvelope {
 	if from == sdktranslator.FormatOpenAIResponse && len(req.Body) > 0 {
@@ -140,8 +118,6 @@ func TranslateRequestEnvelopeWithCodexMultiAgentV2(ctx context.Context, headers 
 	return sdktranslator.TranslateRequestEnvelope(ctx, from, to, req)
 }
 
-
-
 func PrepareCodexMultiAgentV2Tools(ctx context.Context, headers http.Header, payload []byte, enabled, homeEnabled bool) ([]byte, bool) {
 	if len(payload) == 0 {
 		return payload, codexMultiAgentV2ClientEnabled(ctx, headers, enabled)
@@ -153,8 +129,6 @@ func PrepareCodexMultiAgentV2Tools(ctx context.Context, headers http.Header, pay
 	}
 	return doc.Bytes(), prepared
 }
-
-
 
 func PrepareCodexMultiAgentV2ToolsDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, enabled, homeEnabled bool) (bool, bool) {
 	return prepareCodexMultiAgentV2ToolsDoc(doc, ctx, headers, enabled, homeEnabled)
@@ -186,8 +160,6 @@ func prepareCodexMultiAgentV2ToolsDoc(doc *ojson.Doc, ctx context.Context, heade
 	return rewriteCodexCollaborationToolsDoc(doc, messageToolPaths, toolPaths, models, formattedMarkdown), true
 }
 
-
-
 func OptimizeCodexMultiAgentV2Request(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config) ([]byte, bool) {
 	if len(payload) == 0 {
 		return payload, false
@@ -199,8 +171,6 @@ func OptimizeCodexMultiAgentV2Request(ctx context.Context, headers http.Header, 
 	}
 	return doc.Bytes(), optimized
 }
-
-
 
 func OptimizeCodexMultiAgentV2RequestDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, cfg *config.Config) bool {
 	_, optimized := optimizeCodexMultiAgentV2RequestDoc(doc, ctx, headers, cfg)
@@ -281,7 +251,6 @@ func headerValueCaseInsensitive(headers http.Header, name string) string {
 	}
 	return ""
 }
-
 
 func IsCodexClientUserAgent(userAgent string) bool {
 	userAgent = strings.TrimSpace(userAgent)
@@ -741,13 +710,9 @@ func rewriteCodexCollaborationToolsDoc(doc *ojson.Doc, messageToolPaths, spawnAg
 	return changed
 }
 
-
-
 func HasCodexMultiAgentV2NamespaceConflict(payload []byte) bool {
 	return hasCodexOptimizedCollaborationConflict(payload)
 }
-
-
 
 func HasCodexMultiAgentV2NamespaceConflictDoc(doc *ojson.Doc) bool {
 	return hasCodexOptimizedCollaborationConflictDoc(doc)
@@ -837,8 +802,6 @@ func optimizeCodexCollaborationNamespaceDoc(doc *ojson.Doc, toolPaths []string) 
 	}
 	return optimized
 }
-
-
 
 func RestoreCodexMultiAgentV2Response(payload []byte, optimized bool) []byte {
 	if !optimized || len(payload) == 0 || !ojson.ValidBytes(payload) {
@@ -1034,9 +997,6 @@ func codexSpawnAgentToolPathsDoc(doc *ojson.Doc) []string {
 	return codexToolPathsByNamesDoc(doc, map[string]struct{}{"spawn_agent": {}})
 }
 
-
-
-
 func codexCollaborationMessageToolPaths(payload []byte) []string {
 	return codexToolPathsByNames(payload, codexCollaborationMessageTools)
 }
@@ -1097,9 +1057,6 @@ func collectCodexToolPathsByNames(tools ojson.Result, path string, paths *[]stri
 		}
 	}
 }
-
-
-
 
 func removeCodexCollaborationMessageEncryption(payload []byte, toolPaths []string) []byte {
 	if len(payload) == 0 || len(toolPaths) == 0 {

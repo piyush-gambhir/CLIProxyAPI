@@ -19,7 +19,6 @@ import (
 
 const antigravityCredentialAcquisitionTimeout = 30 * time.Second
 
-
 func (e *AntigravityExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err

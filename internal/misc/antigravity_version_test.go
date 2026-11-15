@@ -48,8 +48,6 @@ func TestAntigravityLatestVersionUsesCurrentHubFallback(t *testing.T) {
 	}
 }
 
-
-
 func TestAntigravityFallbackVersionMeetsBackendFloor(t *testing.T) {
 	const floorMajor, floorMinor = 2, 23
 

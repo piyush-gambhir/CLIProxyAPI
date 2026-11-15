@@ -476,8 +476,6 @@ func TestReverseRemapOAuthToolNames_OverlappingSemanticSuffix(t *testing.T) {
 		t.Fatalf("parseClaudeMCPAlias(%q) failed", readFileAlias)
 	}
 
-
-
 	driftedReadFile := "mcp__" + readFileParts.server + "__" + readFileParts.toolID + "_" + readFileParts.toolID + "_read_file"
 	response := []byte(fmt.Sprintf(`{"content":[{"type":"tool_use","id":"toolu_1","name":%q,"input":{}}]}`, driftedReadFile))
 
@@ -488,7 +486,6 @@ func TestReverseRemapOAuthToolNames_OverlappingSemanticSuffix(t *testing.T) {
 	if got := ojson.GetBytes(restored, "content.0.name").String(); got != "read_file" {
 		t.Fatalf("restored tool name = %q, want read_file", got)
 	}
-
 
 	responseFile := []byte(fmt.Sprintf(`{"content":[{"type":"tool_use","id":"toolu_2","name":%q,"input":{}}]}`, fileAlias))
 	restoredFile, errFile := reverseRemapOAuthToolNames(responseFile, reverseMap)
@@ -562,12 +559,6 @@ func FuzzRemapOAuthToolNamesWithBatchedEditsMatchesLegacy(f *testing.F) {
 	})
 }
 
-
-
-
-
-
-
 func TestReverseRemapPassesThroughCallerMCPToolsOnVirtualServerCollision(t *testing.T) {
 	const secret = "virtual-server-collision"
 	server := strings.Split(helps.ClaudeMCPToolAlias(secret, "probe", 0), "__")[1]
@@ -575,7 +566,6 @@ func TestReverseRemapPassesThroughCallerMCPToolsOnVirtualServerCollision(t *test
 	native := []string{
 
 		"mcp__" + server + "__read_file",
-
 
 		"mcp__" + server + "__grep_read_file",
 
@@ -622,8 +612,6 @@ func TestReverseRemapPassesThroughCallerMCPToolsOnVirtualServerCollision(t *test
 		}
 	}
 
-
-
 	toolPart := strings.SplitN(alias, "__", 3)[2]
 	for _, drifted := range []string{alias, "mcp__" + server + "__" + server + "__" + toolPart, "mcp__" + server + "__abandon_read_file"} {
 		response := []byte(fmt.Sprintf(`{"content":[{"type":"tool_use","id":"toolu_1","name":%q,"input":{}}]}`, drifted))
@@ -637,9 +625,6 @@ func TestReverseRemapPassesThroughCallerMCPToolsOnVirtualServerCollision(t *test
 	}
 }
 
-
-
-
 func TestRemapKeepsReverseMapEmptyWhenOnlyCallerMCPToolsArePresent(t *testing.T) {
 	body := []byte(`{"tools":[{"name":"mcp__context7__query-docs"},{"type":"web_search_20250305","name":"web_search"}]}`)
 	out, reverseMap := remapOAuthToolNamesWithOptions(body, claudeMCPAliasOptions{secret: "no-proxied-tools"})
@@ -650,9 +635,6 @@ func TestRemapKeepsReverseMapEmptyWhenOnlyCallerMCPToolsArePresent(t *testing.T)
 		t.Fatalf("body = %s, want unchanged %s", out, body)
 	}
 }
-
-
-
 
 func TestReverseRemapOAuthToolNamesFailsOpenOnTrailingMarkup(t *testing.T) {
 	const alias = "mcp__hmzqrngkulqv__xuo7jlxlpzee_clear_thinking"
@@ -694,7 +676,6 @@ func TestReverseRemapOAuthToolNames_ToolSearchResult_NonStream(t *testing.T) {
 	if taskAlias == "task_list" || fetchAlias == "fetch_url" {
 		t.Fatalf("tools were not aliased: task=%q, fetch=%q", taskAlias, fetchAlias)
 	}
-
 
 	resp := []byte(fmt.Sprintf(`{
 		"id": "msg_01HczuyKgD1KCUuVzvZEH3WN",
@@ -739,7 +720,6 @@ func TestReverseRemapOAuthToolNames_ToolSearchResult_NonStream(t *testing.T) {
 	if toolUseName != "task_list" {
 		t.Errorf("toolUseName = %q, want task_list", toolUseName)
 	}
-
 
 	errorResp := []byte(`{
 		"id": "msg_02",
@@ -819,7 +799,6 @@ func TestRemapOAuthToolNames_ToolSearchResultInMessageHistory(t *testing.T) {
 		t.Fatal("task_list was not aliased")
 	}
 
-
 	tools := ojson.GetBytes(remapped, "tools")
 	if tools.Get("1.type").String() != "advisor_20260301" || tools.Get("1.name").String() != "advisor" {
 		t.Fatalf("advisor server tool was altered: %s", tools.Get("1").Raw)
@@ -828,17 +807,11 @@ func TestRemapOAuthToolNames_ToolSearchResultInMessageHistory(t *testing.T) {
 		t.Fatalf("agent_toolset was altered: %s", tools.Get("2").Raw)
 	}
 
-
 	gotHistoryToolName := ojson.GetBytes(remapped, "messages.0.content.0.content.tool_references.0.tool_name").String()
 	if gotHistoryToolName != taskAlias {
 		t.Fatalf("history tool_name = %q, want aliased %q", gotHistoryToolName, taskAlias)
 	}
 }
-
-
-
-
-
 
 func TestRemapOAuthToolNames_MidConversationToolChanges(t *testing.T) {
 	const tools = `[` +
@@ -1022,7 +995,6 @@ func TestReverseRemapOAuthToolNamesRestoresHybridPassthroughMCPTools(t *testing.
 				t.Fatalf("content.0.name = %q, want %q", got, tc.wantName)
 			}
 
-
 			line := []byte(fmt.Sprintf(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_1","name":%q,"input":{}}}`, tc.hybridName))
 			restoredLine, errStream := restoreClaudeOAuthToolNamesFromStreamLine(line, reverseMap)
 			if errStream != nil {
@@ -1071,9 +1043,6 @@ func TestReverseRemapOAuthToolNamesHybridPassthroughPrecedenceAndAmbiguity(t *te
 
 func TestReverseRemapOAuthToolNames_UndeclaredToolFailsOpen(t *testing.T) {
 
-
-
-
 	body := []byte(`{"tools":[{"name":"terminal","input_schema":{"type":"object"}}]}`)
 	remapped, reverseMap := remapOAuthToolNamesWithOptions(body, claudeMCPAliasOptions{secret: "undeclared-tool-caller"})
 	terminalAlias := ojson.GetBytes(remapped, "tools.0.name").String()
@@ -1082,9 +1051,7 @@ func TestReverseRemapOAuthToolNames_UndeclaredToolFailsOpen(t *testing.T) {
 		t.Fatalf("parseClaudeMCPAlias(%q) failed", terminalAlias)
 	}
 
-
 	undeclaredToolName := "mcp__" + parts.server + "__tiny_terminap"
-
 
 	resp := []byte(fmt.Sprintf(`{"content":[{"type":"tool_use","id":"toolu_1","name":%q,"input":{}}]}`, undeclaredToolName))
 	restored, err := restoreClaudeOAuthToolNamesFromResponse(resp, reverseMap)
@@ -1095,7 +1062,6 @@ func TestReverseRemapOAuthToolNames_UndeclaredToolFailsOpen(t *testing.T) {
 		t.Fatalf("restored tool name = %q, want %q forwarded unchanged", got, undeclaredToolName)
 	}
 
-
 	line := []byte(fmt.Sprintf(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_1","name":%q,"input":{}}}`, undeclaredToolName))
 	restoredLine, errStream := restoreClaudeOAuthToolNamesFromStreamLine(line, reverseMap)
 	if errStream != nil {
@@ -1105,9 +1071,6 @@ func TestReverseRemapOAuthToolNames_UndeclaredToolFailsOpen(t *testing.T) {
 		t.Fatalf("restoredLine = %s, want %s forwarded unchanged", string(restoredLine), string(line))
 	}
 }
-
-
-
 
 func TestReverseRemapRestoresCallerMCPToolWrappedInVirtualServer(t *testing.T) {
 	const recall = "mcp__docs-search__search-pages"

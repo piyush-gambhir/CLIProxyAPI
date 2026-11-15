@@ -464,7 +464,6 @@ func TestFileTokenStoreSaveReadModifyWritePreservesSIWC(t *testing.T) {
 	store := NewFileTokenStore()
 	store.SetBaseDir(baseDir)
 
-
 	authOuter := &cliproxyauth.Auth{
 		ID:       fileName,
 		FileName: fileName,
@@ -490,7 +489,6 @@ func TestFileTokenStoreSaveReadModifyWritePreservesSIWC(t *testing.T) {
 	if !ok || siwcMem["access_token"] != "siwc-disk" || siwcMem["client_id"] != "oaiapp_disk" {
 		t.Fatalf("in-memory Metadata should be synced with disk siwc, got %#v", authOuter.Metadata["siwc"])
 	}
-
 
 	authSIWC := &cliproxyauth.Auth{
 		ID:       fileName,
@@ -528,7 +526,6 @@ func TestFileTokenStoreSaveAllowsDeletingNonCredentialMetadata(t *testing.T) {
 
 	store := NewFileTokenStore()
 	store.SetBaseDir(baseDir)
-
 
 	auth := &cliproxyauth.Auth{
 		ID:       fileName,

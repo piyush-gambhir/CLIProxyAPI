@@ -6,13 +6,6 @@ import (
 	translatorcommon "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/common"
 )
 
-
-
-
-
-
-
-
 func CheckDevinUserTurns(prompts []DevinPrompt) ([]DevinPrompt, error) {
 	var run translatorcommon.UserRun
 	for _, prompt := range prompts {
@@ -48,7 +41,6 @@ func CheckDevinUserTurns(prompts []DevinPrompt) ([]DevinPrompt, error) {
 	}
 	return kept, nil
 }
-
 
 func devinPromptHasContent(prompt DevinPrompt) bool {
 	return strings.TrimSpace(prompt.Content) != "" || len(prompt.Images) > 0

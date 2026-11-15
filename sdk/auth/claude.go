@@ -17,11 +17,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type ClaudeAuthenticator struct {
 	CallbackPort int
 }
-
 
 func NewClaudeAuthenticator() *ClaudeAuthenticator {
 	return &ClaudeAuthenticator{CallbackPort: 54545}

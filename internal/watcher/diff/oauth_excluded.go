@@ -11,7 +11,6 @@ type ExcludedModelsSummary struct {
 	count int
 }
 
-
 func SummarizeExcludedModels(list []string) ExcludedModelsSummary {
 	if len(list) == 0 {
 		return ExcludedModelsSummary{}
@@ -34,7 +33,6 @@ func SummarizeExcludedModels(list []string) ExcludedModelsSummary {
 	}
 }
 
-
 func SummarizeOAuthExcludedModels(entries map[string][]string) map[string]ExcludedModelsSummary {
 	if len(entries) == 0 {
 		return nil
@@ -49,7 +47,6 @@ func SummarizeOAuthExcludedModels(entries map[string][]string) map[string]Exclud
 	}
 	return out
 }
-
 
 func DiffOAuthExcludedModelChanges(oldMap, newMap map[string][]string) ([]string, []string) {
 	oldSummary := SummarizeOAuthExcludedModels(oldMap)

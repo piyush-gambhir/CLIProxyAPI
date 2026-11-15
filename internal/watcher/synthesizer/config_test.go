@@ -921,7 +921,6 @@ func TestConfigSynthesizer_OpenAICompat_FallbackWithModels(t *testing.T) {
 						{Name: "model-x"},
 					},
 					Headers: map[string]string{"X-API": "header-value"},
-
 				},
 			},
 		},
@@ -981,7 +980,6 @@ func TestConfigSynthesizer_IDStability(t *testing.T) {
 			{APIKey: "stable-key", Prefix: "test"},
 		},
 	}
-
 
 	synth1 := NewConfigSynthesizer()
 	ctx1 := &SynthesisContext{
@@ -1341,9 +1339,6 @@ func TestConfigSynthesizer_RequestScopedErrors(t *testing.T) {
 	}
 }
 
-
-
-
 func TestConfigSynthesizer_ConnectionPoolOverride(t *testing.T) {
 	enabled := true
 	maxIdle := 4
@@ -1397,8 +1392,6 @@ func TestConfigSynthesizer_ConnectionPoolOverride(t *testing.T) {
 	}
 }
 
-
-
 func TestConfigSynthesizer_OpenAICompatConnectionPoolMerge(t *testing.T) {
 	groupEnabled := true
 	groupMax := 2
@@ -1448,9 +1441,6 @@ func TestConfigSynthesizer_OpenAICompatConnectionPoolMerge(t *testing.T) {
 	}
 }
 
-
-
-
 func TestConfigSynthesizer_EmptyConnectionPoolBlockOptsIn(t *testing.T) {
 	cfg := &config.Config{CodexKey: []config.CodexKey{{
 		APIKey:         "empty-block",
@@ -1475,8 +1465,6 @@ func TestConfigSynthesizer_EmptyConnectionPoolBlockOptsIn(t *testing.T) {
 	if enabled := auths[0].ProxyConnectionPool.Enabled; enabled != nil {
 		t.Fatalf("empty block must leave enabled unset (defaults to on), got %v", *enabled)
 	}
-
-
 
 	keyless := &config.Config{OpenAICompatibility: []config.OpenAICompatibility{{
 		Name:           "local-ollama",

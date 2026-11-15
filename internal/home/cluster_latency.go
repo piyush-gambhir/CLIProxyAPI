@@ -38,7 +38,6 @@ type clusterLatencyEntry struct {
 	probeBackoff   time.Duration
 }
 
-
 type clusterLatencyHistory struct {
 	mu            sync.Mutex
 	sequence      int64
@@ -159,7 +158,6 @@ func (s *clusterRTTSampler) expire(now time.Time, force bool) {
 	}
 }
 
-
 func (c *Client) runClusterLatency(ctx context.Context, pubsub *redis.PubSub, sampler *clusterRTTSampler) error {
 	sampleTimer := time.NewTimer(clusterLatencySampleDelay())
 	defer sampleTimer.Stop()
@@ -271,7 +269,6 @@ func (c *Client) reportClusterLatency(ctx context.Context, history *clusterLaten
 	}
 	return nil
 }
-
 
 func (c *Client) probeClusterLatency(ctx context.Context, address string) (time.Duration, error) {
 	c.mu.Lock()

@@ -15,7 +15,6 @@ import (
 	"time"
 )
 
-
 type CooldownStateRecord struct {
 	Provider       string     `json:"provider,omitempty"`
 	AuthID         string     `json:"auth_id"`
@@ -28,38 +27,27 @@ type CooldownStateRecord struct {
 	LastError      *Error     `json:"last_error,omitempty"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 
-
-
 	IndependentState *ModelState `json:"independent_state,omitempty"`
 
-
 	CredentialQuotaPropagated bool `json:"credential_quota_propagated,omitempty"`
-
 
 	CooldownSignals map[string]string `json:"cooldown_signals,omitempty"`
 
 	IndependentCooldownSignals map[string]string `json:"independent_cooldown_signals,omitempty"`
 
-
-
 	ForceCooldownUntil time.Time `json:"force_cooldown_until,omitempty"`
-
 
 	CredQuotaForceCooldownUntil time.Time `json:"cred_quota_force_cooldown_until,omitempty"`
 
-
 	IndependentForceCooldownUntil time.Time `json:"independent_force_cooldown_until,omitempty"`
-
 
 	ForceCooldownEvaluated bool `json:"force_cooldown_evaluated,omitempty"`
 }
-
 
 type CooldownStateStore interface {
 	Load(context.Context) ([]CooldownStateRecord, error)
 	Save(context.Context, []CooldownStateRecord) error
 }
-
 
 type CooldownStateStoreProvider interface {
 	CooldownStateStore() CooldownStateStore
@@ -73,19 +61,15 @@ type cooldownStateFile struct {
 	Records   []CooldownStateRecord `json:"records"`
 }
 
-
 type FileCooldownStateStore struct {
 	mu      sync.Mutex
 	dir     string
 	authDir string
 }
 
-
 func NewFileCooldownStateStore(dir string) *FileCooldownStateStore {
 	return NewFileCooldownStateStoreWithAuthDir(dir, "")
 }
-
-
 
 func NewFileCooldownStateStoreWithAuthDir(dir, authDir string) *FileCooldownStateStore {
 	return &FileCooldownStateStore{
@@ -93,7 +77,6 @@ func NewFileCooldownStateStoreWithAuthDir(dir, authDir string) *FileCooldownStat
 		authDir: strings.TrimSpace(authDir),
 	}
 }
-
 
 func (s *FileCooldownStateStore) Load(ctx context.Context) ([]CooldownStateRecord, error) {
 	if s == nil || s.dir == "" {
@@ -156,7 +139,6 @@ func readCooldownStateFile(ctx context.Context, path string) ([]CooldownStateRec
 	}
 	return envelope.Records, nil
 }
-
 
 func (s *FileCooldownStateStore) Save(ctx context.Context, records []CooldownStateRecord) error {
 	if s == nil || s.dir == "" {

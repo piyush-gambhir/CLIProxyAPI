@@ -275,7 +275,6 @@ func TestNormalizeKimiResponsesInput(t *testing.T) {
 			t.Fatalf("expected 9 items, got %d: %s", len(items), string(normalized))
 		}
 
-
 		if items[2].Get("call_id").String() != "b1_c1" || items[2].Get("type").String() != "function_call_output" {
 			t.Errorf("items[2] = %s, want b1_c1 output", items[2].Raw)
 		}

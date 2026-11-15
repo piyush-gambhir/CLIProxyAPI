@@ -11,9 +11,6 @@ import (
 
 const claudeOAuthToolAliasStateLimit = 1024
 
-
-
-
 var claudeOAuthToolAliasStoreInitMu sync.Mutex
 
 type claudeOAuthToolAliasStore struct {

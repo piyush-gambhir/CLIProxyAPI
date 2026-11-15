@@ -1,6 +1,3 @@
-
-
-
 package cliproxy
 
 import (
@@ -18,159 +15,105 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
-
-
 type Builder struct {
-
 	cfg *config.Config
-
 
 	configPath string
 
-
 	tokenProvider TokenClientProvider
-
 
 	apiKeyProvider APIKeyClientProvider
 
-
 	watcherFactory WatcherFactory
-
 
 	hooks Hooks
 
-
 	authManager *sdkAuth.Manager
-
 
 	accessManager *sdkaccess.Manager
 
-
 	coreManager *coreauth.Manager
-
 
 	cooldownStateStore coreauth.CooldownStateStore
 
-
 	pluginHost *pluginhost.Host
-
 
 	postAuthHook coreauth.PostAuthHook
 
-
 	resultPolicy coreauth.ResultPolicy
-
 
 	serverOptions []api.ServerOption
 }
 
-
-
-
 type Hooks struct {
-
-
 	OnBeforeStart func(*config.Config)
-
-
 
 	OnAfterStart func(*Service)
 }
 
-
-
-
-
-
 func NewBuilder() *Builder {
 	return &Builder{}
 }
-
-
-
-
-
-
-
 
 func (b *Builder) WithConfig(cfg *config.Config) *Builder {
 	b.cfg = cfg
 	return b
 }
 
-
-
-
-
-
-
-
 func (b *Builder) WithConfigPath(path string) *Builder {
 	b.configPath = path
 	return b
 }
-
 
 func (b *Builder) WithTokenClientProvider(provider TokenClientProvider) *Builder {
 	b.tokenProvider = provider
 	return b
 }
 
-
 func (b *Builder) WithAPIKeyClientProvider(provider APIKeyClientProvider) *Builder {
 	b.apiKeyProvider = provider
 	return b
 }
-
 
 func (b *Builder) WithWatcherFactory(factory WatcherFactory) *Builder {
 	b.watcherFactory = factory
 	return b
 }
 
-
 func (b *Builder) WithHooks(h Hooks) *Builder {
 	b.hooks = h
 	return b
 }
-
 
 func (b *Builder) WithAuthManager(mgr *sdkAuth.Manager) *Builder {
 	b.authManager = mgr
 	return b
 }
 
-
 func (b *Builder) WithRequestAccessManager(mgr *sdkaccess.Manager) *Builder {
 	b.accessManager = mgr
 	return b
 }
-
 
 func (b *Builder) WithCoreAuthManager(mgr *coreauth.Manager) *Builder {
 	b.coreManager = mgr
 	return b
 }
 
-
 func (b *Builder) WithCooldownStateStore(store coreauth.CooldownStateStore) *Builder {
 	b.cooldownStateStore = store
 	return b
 }
-
 
 func (b *Builder) WithPluginHost(host *pluginhost.Host) *Builder {
 	b.pluginHost = host
 	return b
 }
 
-
 func (b *Builder) WithServerOptions(opts ...api.ServerOption) *Builder {
 	b.serverOptions = append(b.serverOptions, opts...)
 	return b
 }
-
 
 func (b *Builder) WithLocalManagementPassword(password string) *Builder {
 	if password == "" {
@@ -180,8 +123,6 @@ func (b *Builder) WithLocalManagementPassword(password string) *Builder {
 	return b
 }
 
-
-
 func (b *Builder) WithPostAuthHook(hook coreauth.PostAuthHook) *Builder {
 	if hook == nil {
 		return b
@@ -190,12 +131,10 @@ func (b *Builder) WithPostAuthHook(hook coreauth.PostAuthHook) *Builder {
 	return b
 }
 
-
 func (b *Builder) WithResultPolicy(policy coreauth.ResultPolicy) *Builder {
 	b.resultPolicy = policy
 	return b
 }
-
 
 func (b *Builder) Build() (*Service, error) {
 	if b.cfg == nil {
@@ -330,8 +269,6 @@ func (s *Service) runtimeAuthSyncHook() coreauth.PostAuthHook {
 				update.SetRevision(rev)
 			}
 		}
-
-
 
 		syncCtx := coreauth.WithSkipPersist(context.Background())
 		s.handleAuthUpdate(syncCtx, update)

@@ -30,7 +30,6 @@ type VertexModelsSummary struct {
 	count int
 }
 
-
 func SummarizeGeminiModels(models []config.GeminiModel) GeminiModelsSummary {
 	if len(models) == 0 {
 		return GeminiModelsSummary{}
@@ -55,7 +54,6 @@ func SummarizeGeminiModels(models []config.GeminiModel) GeminiModelsSummary {
 	}
 }
 
-
 func SummarizeClaudeModels(models []config.ClaudeModel) ClaudeModelsSummary {
 	if len(models) == 0 {
 		return ClaudeModelsSummary{}
@@ -79,7 +77,6 @@ func SummarizeClaudeModels(models []config.ClaudeModel) ClaudeModelsSummary {
 		count: len(keys),
 	}
 }
-
 
 func SummarizeCodexModels(models []config.CodexModel) CodexModelsSummary {
 	if len(models) == 0 {
@@ -108,7 +105,6 @@ func SummarizeCodexModels(models []config.CodexModel) CodexModelsSummary {
 		count: len(keys),
 	}
 }
-
 
 func SummarizeVertexModels(models []config.VertexCompatModel) VertexModelsSummary {
 	if len(models) == 0 {

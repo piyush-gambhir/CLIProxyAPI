@@ -25,16 +25,6 @@ type openAIResponsesStreamFailedResponse struct {
 	Error  map[string]any `json:"error"`
 }
 
-
-
-
-
-
-
-
-
-
-
 type openAIResponsesStreamErrorClass struct {
 	code      string
 	errorType string
@@ -44,12 +34,6 @@ const (
 	openAIResponsesClientErrorType = "invalid_request_error"
 	openAIResponsesServerErrorType = "server_error"
 )
-
-
-
-
-
-
 
 var openAIResponsesStreamErrorClasses = map[int]openAIResponsesStreamErrorClass{
 	http.StatusUnauthorized:    {code: "invalid_api_key", errorType: openAIResponsesClientErrorType},
@@ -85,8 +69,6 @@ func unmarshalJSONWithNumber(data []byte, v any) error {
 	dec.UseNumber()
 	return dec.Decode(v)
 }
-
-
 
 func BuildOpenAIResponsesStreamErrorChunk(status int, errText string, sequenceNumber int) []byte {
 	if status <= 0 {
@@ -134,7 +116,6 @@ func BuildOpenAIResponsesStreamErrorChunk(status int, errText string, sequenceNu
 	if errMarshal == nil {
 		return data
 	}
-
 
 	fallbackDetail := map[string]any{
 		"type":    "server_error",
@@ -211,8 +192,6 @@ func openAIResponsesStreamErrorDetail(status int, errText, code, message string)
 func openAIResponsesStreamFailedErrorDetail(status int, errText, code, message string) map[string]any {
 	return openAIResponsesStreamErrorDetail(status, errText, code, message)
 }
-
-
 
 func BuildOpenAIResponsesStreamFailedChunk(status int, errText string, sequenceNumber int) []byte {
 	if status <= 0 {

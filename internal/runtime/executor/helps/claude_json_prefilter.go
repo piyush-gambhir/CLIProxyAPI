@@ -2,22 +2,6 @@ package helps
 
 import "bytes"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func jsonMayContainASCII(body []byte, needles ...string) bool {
 	if hasPrintableASCIIUnicodeEscape(body) {
 		return true
@@ -29,12 +13,6 @@ func jsonMayContainASCII(body []byte, needles ...string) bool {
 	}
 	return false
 }
-
-
-
-
-
-
 
 func hasPrintableASCIIUnicodeEscape(body []byte) bool {
 	for rest := body; ; {

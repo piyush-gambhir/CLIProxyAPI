@@ -12,9 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
-
 func TestConfigV8ETagIfMatch(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	path := filepath.Join(t.TempDir(), "config.yaml")
@@ -60,8 +57,6 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 	}
 	fileETag := func() string { return `"` + config.ComputeSourceHash(fileBytes()) + `"` }
 
-
-
 	recorder := do(http.MethodPatch, "/v8/management/config", `{"server":{"port":8319}}`, `"stale"`)
 	wantStatus(recorder, http.StatusPreconditionFailed)
 	if string(fileBytes()) != raw {
@@ -78,7 +73,6 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 		t.Fatalf("PATCH with matching If-Match not applied: port=%d err=%v", loaded.Port, err)
 	}
 
-
 	get := do(http.MethodGet, "/v8/management/config.yaml", "", "")
 	wantStatus(get, http.StatusOK)
 	etag := get.Header().Get("ETag")
@@ -91,13 +85,11 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 		t.Fatalf("GET sub-path ETag=%q want %q", got, etag)
 	}
 
-
 	revoked := do(http.MethodPut, "/v8/management/config/access/api-keys", `["other-key"]`, "")
 	wantStatus(revoked, http.StatusOK)
 	if got := revoked.Header().Get("ETag"); got != fileETag() {
 		t.Fatalf("PUT response ETag=%q want %q", got, fileETag())
 	}
-
 
 	before := string(fileBytes())
 	stale := do(http.MethodPut, "/v8/management/config.yaml", raw, etag)
@@ -116,22 +108,16 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 		t.Fatalf("stale PUT resurrected revoked key: %v", loaded.APIKeys)
 	}
 
-
 	staleDelete := do(http.MethodDelete, "/v8/management/config/access/api-keys", "", etag)
 	wantStatus(staleDelete, http.StatusPreconditionFailed)
 	if string(fileBytes()) != before {
 		t.Fatal("stale DELETE changed the file")
 	}
 
-
-
-
-
 	for _, ifMatch := range []string{"W/" + fileETag(), "not-an-etag", `"unterminated`, `"a"b"`, `"stale,*,tag"`, `W/"stale,*,tag"`, `"stale", *`} {
 		recorder = do(http.MethodPut, "/v8/management/config.yaml", before, ifMatch)
 		wantStatus(recorder, http.StatusPreconditionFailed)
 	}
-
 
 	recorder = httptest.NewRecorder()
 	splitReq := httptest.NewRequest(http.MethodPut, "/v8/management/config/server/port", strings.NewReader(`8318`))
@@ -140,14 +126,9 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 	router.ServeHTTP(recorder, splitReq)
 	wantStatus(recorder, http.StatusOK)
 
-
-
 	quotedComma := `"` + config.ComputeSourceHash(fileBytes()) + `,"`
 	recorder = do(http.MethodPut, "/v8/management/config/server/port", `8317`, quotedComma)
 	wantStatus(recorder, http.StatusPreconditionFailed)
-
-
-
 
 	for _, blank := range []string{"", "  \t  "} {
 		recorder = httptest.NewRecorder()
@@ -156,7 +137,6 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 		router.ServeHTTP(recorder, blankReq)
 		wantStatus(recorder, http.StatusPreconditionFailed)
 	}
-
 
 	current := fileETag()
 	listed := do(http.MethodDelete, "/v8/management/config/access/api-keys", "", `"stale", `+current+` , W/`+current)
@@ -169,10 +149,8 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 		t.Fatalf("DELETE with matching If-Match list not applied: %v", loaded.APIKeys)
 	}
 
-
 	star := do(http.MethodPut, "/v8/management/config/server/port", `8320`, "*")
 	wantStatus(star, http.StatusOK)
-
 
 	first := do(http.MethodPut, "/v8/management/config/server/port", `8321`, fileETag())
 	wantStatus(first, http.StatusOK)
@@ -183,10 +161,8 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 	second := do(http.MethodPut, "/v8/management/config/server/port", `8322`, nextETag)
 	wantStatus(second, http.StatusOK)
 
-
 	unconditional := do(http.MethodPut, "/v8/management/config/server/port", `8323`, "")
 	wantStatus(unconditional, http.StatusOK)
-
 
 	missing := do(http.MethodGet, "/v8/management/config/no-such-key", "", "")
 	wantStatus(missing, http.StatusNotFound)

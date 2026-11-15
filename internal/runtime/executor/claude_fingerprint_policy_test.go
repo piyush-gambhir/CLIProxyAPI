@@ -369,9 +369,6 @@ func TestClaudeExecutor_ClaudeCodeCLIFingerprintOnThirdPartyGateway(t *testing.T
 		t.Fatalf("system.0.text = %q, want billing header", billing)
 	}
 
-
-
-
 	if strings.Contains(billing, "cch=") {
 		t.Fatalf("billing = %q, want no cch on a third-party gateway", billing)
 	}
@@ -549,7 +546,6 @@ func TestClaudeExecutor_OfficialAPIKeyClaudeCodeCLIFingerprintIncludesDiagnostic
 		t.Fatalf("diagnostics = %s, want object after fingerprint-profile opt-in", diagnostics.Raw)
 	}
 
-
 	billing := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.HasPrefix(billing, "x-anthropic-billing-header:") || !strings.Contains(billing, "cch=") {
 		t.Fatalf("billing = %q, want signed cch on api.anthropic.com", billing)
@@ -704,7 +700,6 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 	executor := NewKimiExecutor(&config.Config{})
 	payload := []byte(`{"model":"kimi-k2.5(max)","max_tokens":32,"messages":[{"role":"user","content":"hello"}]}`)
 
-
 	defaultAuth := &cliproxyauth.Auth{
 		ID:         "kimi-auth-default",
 		Provider:   "kimi",
@@ -725,7 +720,6 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 	if errDefault != nil {
 		t.Fatalf("default Execute() error = %v", errDefault)
 	}
-
 
 	fpAuth := &cliproxyauth.Auth{
 		ID:         "kimi-auth-profile",
@@ -753,7 +747,6 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 		t.Fatalf("expected 2 captured requests, got %d", len(seenBodies))
 	}
 
-
 	if got := ojson.GetBytes(seenBodies[0], "metadata.user_id").String(); got != "" {
 		t.Fatalf("default Kimi request should not have metadata.user_id: %q", got)
 	}
@@ -766,9 +759,6 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 	if got := claudeFingerprintHeaderValue(seenHeaders[0], "User-Agent"); got != "kimi-caller/1.0" {
 		t.Fatalf("default Kimi User-Agent = %q, want caller value", got)
 	}
-
-
-
 
 	userID := ojson.GetBytes(seenBodies[1], "metadata.user_id").String()
 	if !helps.IsValidUserID(userID) {
@@ -866,9 +856,6 @@ func TestKimiExecutor_ClaudeCodeCLIProfileKeepsUnsignedBillingAndNativeCountToke
 	}
 }
 
-
-
-
 func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.T) {
 	newAuth := func() *cliproxyauth.Auth {
 		return &cliproxyauth.Auth{
@@ -884,9 +871,6 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 
 	incoming := http.Header{}
 
-
-
-
 	gatewayReq := httptest.NewRequest(http.MethodPost, "https://gateway.example/v1/messages", nil)
 	if err := applyClaudeHeaders(gatewayReq, newAuth(), "key-operator-headers", false, nil, body, nil, incoming, false); err != nil {
 		t.Fatalf("applyClaudeHeaders(gateway) error = %v", err)
@@ -898,8 +882,6 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 		t.Fatalf("gateway Accept-Encoding = %q, want the operator override preserved", got)
 	}
 
-
-
 	streamReq := httptest.NewRequest(http.MethodPost, "https://gateway.example/v1/messages", nil)
 	if err := applyClaudeHeaders(streamReq, newAuth(), "key-operator-headers", true, nil, body, nil, incoming, false); err != nil {
 		t.Fatalf("applyClaudeHeaders(stream) error = %v", err)
@@ -907,7 +889,6 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 	if got := streamReq.Header.Get("Accept"); got != "text/event-stream" {
 		t.Fatalf("stream Accept = %q, want event-stream negotiation restored", got)
 	}
-
 
 	directReq := newClaudeHeaderTestRequest(t, nil)
 	if err := applyClaudeHeaders(directReq, newAuth(), "key-operator-headers", false, nil, body, nil, incoming, false); err != nil {
@@ -917,8 +898,6 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 		t.Fatalf("direct Accept-Encoding = %q, want the operator override clawed back", got)
 	}
 }
-
-
 
 func TestApplyClaudeHeaders_CallerOwnedRestoreKeepsCallerAccept(t *testing.T) {
 	auth := &cliproxyauth.Auth{
@@ -938,9 +917,6 @@ func TestApplyClaudeHeaders_CallerOwnedRestoreKeepsCallerAccept(t *testing.T) {
 		t.Fatalf("Accept = %q, want the caller value restored rather than a CPA default", got)
 	}
 }
-
-
-
 
 func TestClaudeExecutor_CallerOwnedNeverSendsGoTransportUserAgent(t *testing.T) {
 	var seen http.Header
@@ -969,7 +945,6 @@ func TestClaudeExecutor_CallerOwnedNeverSendsGoTransportUserAgent(t *testing.T) 
 	}
 }
 
-
 func TestClaudeExecutor_CallerOwnedForwardsCallerUserAgent(t *testing.T) {
 	var seen http.Header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -995,9 +970,6 @@ func TestClaudeExecutor_CallerOwnedForwardsCallerUserAgent(t *testing.T) {
 		t.Fatalf("User-Agent = %q, want the caller value forwarded verbatim", got)
 	}
 }
-
-
-
 
 func TestKimiExecutor_DefaultCountTokensRespectsCallerBody(t *testing.T) {
 	var seenBody []byte
@@ -1025,7 +997,6 @@ func TestKimiExecutor_DefaultCountTokensRespectsCallerBody(t *testing.T) {
 		t.Fatal("expected an upstream count_tokens request")
 	}
 
-
 	if got := ojson.GetBytes(seenBody, "model").String(); got == "" {
 		t.Fatalf("upstream model is empty: %s", seenBody)
 	}
@@ -1045,9 +1016,6 @@ func TestKimiExecutor_DefaultCountTokensRespectsCallerBody(t *testing.T) {
 		t.Fatalf("default count_tokens must not inject billing/CCH: %s", seenBody)
 	}
 }
-
-
-
 
 func TestClaudeExecutor_DefaultCountTokensStillStripsAnthropicRejectedFields(t *testing.T) {
 	var seenBody []byte
@@ -1170,8 +1138,6 @@ func TestKimiExecutor_StripsCallerClaudeCodeCCH(t *testing.T) {
 	}
 }
 
-
-
 func TestNormalizeClaudeFingerprintProfileWarnsOncePerValue(t *testing.T) {
 	var buf bytes.Buffer
 	previous := log.StandardLogger().Out
@@ -1206,9 +1172,6 @@ func TestNormalizeClaudeFingerprintProfileWarnsOncePerValue(t *testing.T) {
 		t.Fatalf("total warnings = %d, want 2 (one per distinct value): %s", got, buf.String())
 	}
 }
-
-
-
 
 func TestResolveClaudeFingerprintPolicyIsOriginIndependent(t *testing.T) {
 	t.Parallel()

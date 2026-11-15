@@ -5,8 +5,6 @@ import (
 	"reflect"
 )
 
-
-
 func FlushResponse(w http.ResponseWriter) error {
 	for {
 		if flusher, ok := w.(interface{ FlushError() error }); ok {
@@ -29,8 +27,6 @@ func FlushResponse(w http.ResponseWriter) error {
 }
 
 func isGinResponseWriter(w http.ResponseWriter) bool {
-
-
 
 	t := reflect.TypeOf(w)
 	return t != nil && t.Kind() == reflect.Pointer &&

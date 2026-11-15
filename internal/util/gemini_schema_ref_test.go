@@ -358,7 +358,6 @@ func TestIssue6897_RefSiblingUnevaluatedScope(t *testing.T) {
 					node = ojson.ParseBytes(encoded)
 				}
 
-
 				compareJSON(t, tc.want, node.Raw)
 			})
 		}
@@ -369,7 +368,6 @@ func TestIssue6897_RefSiblingMinLength(t *testing.T) {
 	input := `{"$schema":"https://json-schema.org/draft/2020-12/schema","$defs":{"A":{"type":"string","minLength":5}},"type":"object","properties":{"x":{"$ref":"#/$defs/A","minLength":1}}}`
 	got := CleanJSONSchemaForGeminiJSONSchema(input)
 	t.Logf("cleaned=%s", got)
-
 
 	var minLength func(ojson.Result) int64
 	minLength = func(schema ojson.Result) int64 {

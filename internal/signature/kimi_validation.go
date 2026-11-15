@@ -6,62 +6,11 @@ import (
 	"strings"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const (
-
-
 	KimiThinkingSignatureNonStreamingLen = 12946
-
 
 	KimiThinkingSignatureStreamingLen = 4340
 )
-
-
 
 type KimiThinkingSignatureMode string
 
@@ -70,35 +19,18 @@ const (
 	KimiThinkingSignatureModeStreaming    KimiThinkingSignatureMode = "streaming"
 )
 
-
-
-
-
 var kimiThinkingSignatureLens = map[int]KimiThinkingSignatureMode{
 	KimiThinkingSignatureNonStreamingLen: KimiThinkingSignatureModeNonStreaming,
 	KimiThinkingSignatureStreamingLen:    KimiThinkingSignatureModeStreaming,
 }
 
-
-
-
-
 const MinKimiThinkingSignatureEntropyRatio = 0.85
-
 
 type KimiThinkingSignatureInfo struct {
 	RawLen     int
 	DecodedLen int
 	Mode       KimiThinkingSignatureMode
 }
-
-
-
-
-
-
-
-
 
 func InspectKimiThinkingSignature(raw string) (*KimiThinkingSignatureInfo, error) {
 	sig := strings.TrimSpace(raw)
@@ -121,9 +53,6 @@ func InspectKimiThinkingSignature(raw string) (*KimiThinkingSignatureInfo, error
 	if _, _, ok := SplitSignatureProviderPrefix(sig); ok {
 		return nil, fmt.Errorf("invalid Kimi thinking signature: carries another provider's cache prefix")
 	}
-
-
-
 
 	if maybeSelfDescribingSignatureEnvelope(sig) {
 		if strings.HasPrefix(sig, "gAAAA") {
@@ -152,8 +81,6 @@ func InspectKimiThinkingSignature(raw string) (*KimiThinkingSignatureInfo, error
 		Mode:       mode,
 	}, nil
 }
-
-
 
 func IsValidKimiThinkingSignature(raw string) bool {
 	_, err := InspectKimiThinkingSignature(raw)

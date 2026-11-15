@@ -17,8 +17,6 @@ import (
 
 type claudeCompactionSummaryContextKey struct{}
 
-
-
 func expandClaudeResponsesCompaction(req *cliproxyexecutor.Request, opts *cliproxyexecutor.Options) error {
 	return helps.ExpandResponsesCompactionCapsules(req, opts, "claude")
 }
@@ -122,8 +120,6 @@ func claudeCompactionSummaryFromContext(ctx context.Context) bool {
 	return ok && flag
 }
 
-
-
 func prepareClaudeCompactionSummaryPayload(payload []byte, modelName string) []byte {
 	tools := ojson.GetBytesNoCopy(payload, "tools")
 	additionalTools := ojson.GetBytesNoCopy(payload, "additional_tools")
@@ -137,10 +133,6 @@ func prepareClaudeCompactionSummaryPayload(payload []byte, modelName string) []b
 	}
 	return doc.Bytes()
 }
-
-
-
-
 
 func finalizeClaudeCompactionSummaryBody(body []byte) []byte {
 	doc := ojson.NewDoc(body)
@@ -233,8 +225,6 @@ func flattenClaudeToolBlocksForCompactionDoc(doc *ojson.Doc) bool {
 	}
 	return doc.SetRawBytes("messages", []byte("["+strings.Join(rewritten, ",")+"]")) == nil
 }
-
-
 
 func claudeCompactionResponsesUsage(payload []byte) (inputTokens, outputTokens, totalTokens, cachedTokens int) {
 	usage := ojson.GetBytesNoCopy(payload, "usage")

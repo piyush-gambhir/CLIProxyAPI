@@ -67,9 +67,7 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 	inputResult = stripCodexResponsesCacheBreakpointsDoc(rawJSON, inputResult, ensureDoc)
 	applyResponsesCompactionCompatibilityDoc(rawJSON, ensureDoc)
 
-
 	deleteCodexRequestFieldsDoc(rawJSON, ensureDoc, "user")
-
 
 	inputResult = convertSystemRoleToDeveloperDoc(inputResult, ensureDoc)
 	normalizeCodexBuiltinToolsDoc(rawJSON, ensureDoc)
@@ -81,13 +79,6 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 	}
 	return rawJSON, nil
 }
-
-
-
-
-
-
-
 
 func normalizeEmptyFunctionCallArgumentsDoc(inputResult ojson.Result, ensureDoc func() *ojson.Doc) {
 	if !inputResult.IsArray() {
@@ -162,13 +153,6 @@ func deleteCodexRequestFieldsDoc(rawJSON []byte, ensureDoc func() *ojson.Doc, pa
 	}
 }
 
-
-
-
-
-
-
-
 func stripCodexResponsesCacheBreakpointsDoc(rawJSON []byte, input ojson.Result, ensureDoc func() *ojson.Doc) ojson.Result {
 	if !bytes.Contains(rawJSON, []byte(`"prompt_cache_breakpoint"`)) {
 		return input
@@ -225,8 +209,6 @@ func stripCodexResponsesCacheBreakpointsDoc(rawJSON []byte, input ojson.Result, 
 	return util.ParseGJSONBytesNoCopy(joined)
 }
 
-
-
 func stripPromptCacheBreakpointFromContent(content ojson.Result) ([]byte, bool) {
 	parts := content.Array()
 	hasBreakpoint := false
@@ -258,23 +240,12 @@ func stripPromptCacheBreakpointFromContent(content ojson.Result) ([]byte, bool) 
 	return translatorcommon.JoinRawArray(rebuiltParts), true
 }
 
-
-
-
-
-
-
-
-
 func applyResponsesCompactionCompatibilityDoc(rawJSON []byte, ensureDoc func() *ojson.Doc) {
 	if !ojson.GetBytesNoCopy(rawJSON, "context_management").Exists() {
 		return
 	}
 	_ = ensureDoc().Delete("context_management")
 }
-
-
-
 
 func convertSystemRoleToDeveloper(rawJSON []byte) []byte {
 	return convertSystemRoleToDeveloperWithInput(rawJSON, util.GetGJSONBytesNoCopy(rawJSON, "input"))
@@ -377,8 +348,6 @@ func convertSystemRoleToDeveloperWithInput(rawJSON []byte, inputResult ojson.Res
 	return updated
 }
 
-
-
 func normalizeCodexBuiltinToolsDoc(rawJSON []byte, ensureDoc func() *ojson.Doc) {
 	normalizeCodexBuiltinToolArrayDoc(rawJSON, ensureDoc, "tools")
 	normalizeCodexBuiltinToolAtPathDoc(rawJSON, ensureDoc, "tool_choice.type")
@@ -428,9 +397,6 @@ func normalizeCodexBuiltinToolAtPathDoc(rawJSON []byte, ensureDoc func() *ojson.
 
 	log.Debugf("codex responses: normalized builtin tool type at %s from %q to %q", path, currentType, normalizedType)
 }
-
-
-
 
 func normalizeCodexBuiltinToolType(toolType string) string {
 	switch toolType {

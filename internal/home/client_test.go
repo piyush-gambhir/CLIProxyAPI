@@ -743,7 +743,6 @@ func TestKVCompareAndSwapOmitsPXWithoutTTL(t *testing.T) {
 		t.Fatalf("KVCompareAndSwap() error = %v", errCAS)
 	}
 
-
 	want := []string{"CAS", "key", "0", "", "new"}
 	if lastCommand := commands.Last(); !reflect.DeepEqual(lastCommand, want) {
 		t.Fatalf("last command = %#v, want %#v", lastCommand, want)

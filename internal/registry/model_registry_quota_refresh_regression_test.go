@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-
 func TestCredentialQuotaKeepsHealthyCatalogAcrossRefresh(t *testing.T) {
 	base := time.Date(2026, 9, 22, 8, 53, 19, 0, time.UTC)
 	registration := &ModelRegistration{
@@ -27,7 +26,6 @@ func TestCredentialQuotaKeepsHealthyCatalogAcrossRefresh(t *testing.T) {
 		}
 	}
 
-
 	r := newTestModelRegistry()
 	models := []*ModelInfo{{ID: "audit-luna", OwnedBy: "openai"}}
 	r.RegisterClient("healthy", "codex", models)
@@ -46,7 +44,6 @@ func TestCredentialQuotaKeepsHealthyCatalogAcrossRefresh(t *testing.T) {
 	}
 	old := time.Now().Add(-6 * time.Minute)
 	r.models["audit-luna"].QuotaExceededClients["oauth"] = &old
-
 
 	cached.expiresAt = time.Now().Add(-time.Second)
 	r.availableModelsCache["openai"] = cached

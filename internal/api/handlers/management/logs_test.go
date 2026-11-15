@@ -927,7 +927,6 @@ func TestGetRequestLogByID_MatchesFullUUIDAndShortID(t *testing.T) {
 		t.Fatalf("write log: %v", errWrite)
 	}
 
-
 	recShort := httptest.NewRecorder()
 	cShort, _ := gin.CreateTestContext(recShort)
 	cShort.Params = gin.Params{{Key: "id", Value: "1234abcd"}}
@@ -940,7 +939,6 @@ func TestGetRequestLogByID_MatchesFullUUIDAndShortID(t *testing.T) {
 	if body := recShort.Body.String(); body != "uuid v7 request log content" {
 		t.Fatalf("body = %q, want %q", body, "uuid v7 request log content")
 	}
-
 
 	recFull := httptest.NewRecorder()
 	cFull, _ := gin.CreateTestContext(recFull)

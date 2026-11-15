@@ -102,14 +102,12 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 
 	fmt.Println("Initializing Claude authentication...")
 
-
 	pkceCodes, err := claude.GeneratePKCECodes()
 	if err != nil {
 		log.Errorf("Failed to generate PKCE codes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate PKCE codes"})
 		return
 	}
-
 
 	state, err := claude.GenerateState()
 	if err != nil {
@@ -122,7 +120,6 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 	cfg := h.oauthConfigWithProxy(sessionProxyURL)
 
 	anthropicAuth := newClaudeOAuthService(cfg, sessionProxyURL)
-
 
 	authURL, state, err := anthropicAuth.GenerateAuthURL(state, pkceCodes)
 	if err != nil {
@@ -156,7 +153,6 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 		if isWebUI {
 			defer stopCallbackForwarderInstance(anthropicCallbackPort, forwarder)
 		}
-
 
 		waitFile := filepath.Join(cfg.AuthDir, fmt.Sprintf(".oauth-anthropic-%s.oauth", state))
 		waitForFile := func(path string, timeout time.Duration) (map[string]string, error) {
@@ -204,10 +200,8 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 			return
 		}
 
-
 		rawCode := resultMap["code"]
 		code := strings.Split(rawCode, "#")[0]
-
 
 		bundle, errExchange := anthropicAuth.ExchangeCodeForTokens(ctx, code, state, pkceCodes)
 		if errExchange != nil {
@@ -216,7 +210,6 @@ func (h *Handler) RequestAnthropicToken(c *gin.Context) {
 			SetOAuthSessionError(state, "Failed to exchange authorization code for tokens")
 			return
 		}
-
 
 		tokenStorage := anthropicAuth.CreateTokenStorage(bundle)
 		metadata := map[string]any{"email": tokenStorage.Email}
@@ -261,14 +254,12 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 
 	fmt.Println("Initializing Codex authentication...")
 
-
 	pkceCodes, err := codex.GeneratePKCECodes()
 	if err != nil {
 		log.Errorf("Failed to generate PKCE codes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate PKCE codes"})
 		return
 	}
-
 
 	state, err := misc.GenerateRandomState()
 	if err != nil {
@@ -281,7 +272,6 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 	cfg := h.oauthConfigWithProxy(sessionProxyURL)
 
 	openaiAuth := newCodexOAuthService(cfg)
-
 
 	authURL, err := openaiAuth.GenerateAuthURL(state, pkceCodes)
 	if err != nil {
@@ -317,7 +307,6 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 		if isWebUI {
 			defer stopCallbackForwarderInstance(codexCallbackPort, forwarder)
 		}
-
 
 		waitFile := filepath.Join(cfg.AuthDir, fmt.Sprintf(".oauth-codex-%s.oauth", state))
 		deadline := time.Now().Add(5 * time.Minute)
@@ -364,7 +353,6 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 			return
 		}
 
-
 		claims, _ := codex.ParseJWTToken(bundle.TokenData.IDToken)
 		planType := ""
 		if bundle != nil && strings.TrimSpace(bundle.TokenData.PlanType) != "" {
@@ -383,7 +371,6 @@ func (h *Handler) RequestCodexToken(c *gin.Context) {
 		if planType == "" {
 			planType = codex.DefaultPlanType
 		}
-
 
 		tokenStorage := openaiAuth.CreateTokenStorage(bundle)
 		tokenStorage.PlanType = planType
@@ -1189,7 +1176,6 @@ func (h *Handler) requestKimiTokenWithDomain(c *gin.Context, domain string) {
 
 	kimiAuth := newKimiOAuthService(cfg, domain)
 
-
 	deviceFlow, errStartDeviceFlow := kimiAuth.StartDeviceFlow(ctx)
 	if errStartDeviceFlow != nil {
 		log.Errorf("Failed to generate authorization URL: %s", redactSessionProxyInString(errStartDeviceFlow.Error(), sessionProxyURL))
@@ -1229,7 +1215,6 @@ func (h *Handler) requestKimiTokenWithDomain(c *gin.Context, domain string) {
 		if !IsOAuthSessionPending(state, providerName) {
 			return
 		}
-
 
 		tokenStorage := kimiAuth.CreateTokenStorage(authBundle)
 		if isAI {
@@ -1279,7 +1264,6 @@ func (h *Handler) requestKimiTokenWithDomain(c *gin.Context, domain string) {
 	c.JSON(200, response)
 }
 
-
 func watchOAuthSessionCancel(pollCtx context.Context, cancel context.CancelFunc, state, provider string) {
 	if cancel == nil {
 		return
@@ -1298,9 +1282,6 @@ func watchOAuthSessionCancel(pollCtx context.Context, cancel context.CancelFunc,
 		}
 	}
 }
-
-
-
 
 func (h *Handler) CancelAuthSession(c *gin.Context) {
 	state := strings.TrimSpace(c.Query("state"))
@@ -2096,7 +2077,6 @@ func (h *Handler) rollbackSavedPluginLoginRecords(ctx context.Context, rollbacks
 		}
 	}
 }
-
 
 func PopulateAuthContext(ctx context.Context, c *gin.Context) context.Context {
 	info := &coreauth.RequestInfo{

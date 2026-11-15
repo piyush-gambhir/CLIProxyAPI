@@ -6,16 +6,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
-
-
 type NativeToolSearchSupport interface {
 	SupportsNativeToolSearch(auth *Auth, upstreamModel string) bool
 }
-
-
-
-
 
 func (m *Manager) SupportsNativeToolSearchForModel(model string) bool {
 	model = strings.TrimSpace(model)

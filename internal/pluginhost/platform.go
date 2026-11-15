@@ -24,13 +24,11 @@ type pluginFile struct {
 	Version string
 }
 
-
 type PluginFileInfo struct {
 	ID      string
 	Path    string
 	Version string
 }
-
 
 func ValidatePluginID(id string) bool {
 	return validPluginID(id)
@@ -94,7 +92,6 @@ func pluginFileFromPath(filePath string, requiredExtension string) (pluginFile, 
 	}
 	return pluginFile{ID: id, Path: filePath, Version: version}, true
 }
-
 
 func PluginExtension(goos string) string {
 	return pluginExtension(goos)
@@ -292,7 +289,6 @@ func cleanupUnselectedPluginFiles(root string, loaded []pluginFile) error {
 	cleanupStaleShadowPlugins(root, append(keptCandidates, loaded...))
 	return errors.Join(errs...)
 }
-
 
 func DiscoverPluginFiles(root string, desiredVersions ...map[string]string) ([]PluginFileInfo, error) {
 	files, errSelect := selectPluginFiles(root, desiredVersions...)

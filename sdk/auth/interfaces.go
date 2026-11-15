@@ -11,8 +11,6 @@ import (
 
 var ErrRefreshNotSupported = errors.New("cliproxy auth: refresh not supported")
 
-
-
 type LoginOptions struct {
 	NoBrowser    bool
 	ProjectID    string
@@ -21,7 +19,6 @@ type LoginOptions struct {
 	Prompt       func(prompt string) (string, error)
 	ProxyURL     string
 }
-
 
 type Authenticator interface {
 	Provider() string

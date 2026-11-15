@@ -13,7 +13,6 @@ type GPTReasoningSignatureInfo struct {
 	DecodedLen    int
 	CiphertextLen int
 
-
 	RouterSuffix string
 }
 
@@ -21,9 +20,6 @@ func IsValidGPTReasoningSignature(rawSignature string) bool {
 	_, err := InspectGPTReasoningSignature(rawSignature)
 	return err == nil
 }
-
-
-
 
 func InspectGPTReasoningSignature(rawSignature string) (*GPTReasoningSignatureInfo, error) {
 	sig := strings.TrimSpace(rawSignature)
@@ -33,10 +29,6 @@ func InspectGPTReasoningSignature(rawSignature string) (*GPTReasoningSignatureIn
 	if len(sig) > MaxGPTReasoningSignatureLen {
 		return nil, fmt.Errorf("GPT reasoning signature exceeds maximum length (%d bytes)", MaxGPTReasoningSignatureLen)
 	}
-
-
-
-
 
 	if !strings.HasPrefix(sig, "gAAAA") {
 		return nil, fmt.Errorf("invalid GPT reasoning signature: expected gAAAA prefix")
@@ -87,12 +79,7 @@ func decodeGPTReasoningSignature(sig string) ([]byte, error) {
 	return nil, fmt.Errorf("invalid GPT reasoning signature: base64url decode failed")
 }
 
-
 var gptReasoningSignatureCharSet = base64AlphabetSet("-_=")
-
-
-
-
 
 func firstInvalidGPTReasoningSignatureChar(sig string) (int, rune, bool) {
 	for index := 0; index < len(sig); index++ {

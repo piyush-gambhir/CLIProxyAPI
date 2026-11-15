@@ -27,7 +27,6 @@ func TestLookupStaticModelInfoClaudeVariantsUseCatalogEntry(t *testing.T) {
 		}
 	}
 
-
 	if info := LookupStaticModelInfo("claude-haiku-4-5-20251001"); info == nil || info.ID != "claude-haiku-4-5-20251001" {
 		t.Errorf("exact dated ID resolved to %+v", info)
 	}

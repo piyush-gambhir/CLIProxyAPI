@@ -732,7 +732,6 @@ func TestCodexExecutorOptimizeMultiAgentV2RestoresDottedFlatToolName(t *testing.
 	req := cliproxyexecutor.Request{Model: "gpt-5.4", Payload: payload}
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FromString("openai-response"), Headers: headers}
 
-
 	result, errStream := executor.ExecuteStream(ctx, auth, req, opts)
 	if errStream != nil {
 		t.Fatalf("ExecuteStream() error = %v", errStream)
@@ -745,7 +744,6 @@ func TestCodexExecutorOptimizeMultiAgentV2RestoresDottedFlatToolName(t *testing.
 	if name := ojson.GetBytes(streamClientPayload, "response.output.0.name").String(); name != "spawn_agent" {
 		t.Fatalf("stream output name = %q, want spawn_agent", name)
 	}
-
 
 	response, errExecute := executor.Execute(ctx, auth, req, opts)
 	if errExecute != nil {

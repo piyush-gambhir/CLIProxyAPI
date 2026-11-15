@@ -26,18 +26,15 @@ import (
 )
 
 const (
-
 	ConnectFlagData byte = 0x00
 
 	ConnectFlagCompressed byte = 0x01
 
 	ConnectFlagEndStream byte = 0x02
 
-
 	DevinDefaultBaseURL = "https://server.codeium.com"
 
 	DevinChatPath = "/exa.api_server_pb.ApiServerService/GetChatMessage"
-
 
 	DevinDefaultClientName = "chisel"
 
@@ -45,13 +42,11 @@ const (
 
 	DevinFingerprintHexLen = 732
 
-
 	DevinDefaultMaxTokens = 128000
 
 	maxConnectFrameSize      = 16 * 1024 * 1024
 	maxDecompressedFrameSize = 64 * 1024 * 1024
 )
-
 
 type DevinTool struct {
 	Name        string
@@ -59,13 +54,11 @@ type DevinTool struct {
 	Parameters  []byte
 }
 
-
 type DevinToolCall struct {
 	ID        string
 	Name      string
 	Arguments string
 }
-
 
 type DevinToolCallDelta struct {
 	ID               string
@@ -76,12 +69,10 @@ type DevinToolCallDelta struct {
 	IsCustomToolCall bool
 }
 
-
 type DevinImage struct {
 	Base64Data string
 	MimeType   string
 }
-
 
 type DevinPrompt struct {
 	MessageID          string
@@ -98,7 +89,6 @@ type DevinPrompt struct {
 	SignatureType      string
 }
 
-
 type DevinUsage struct {
 	PromptTokens     int64             `json:"prompt_tokens"`
 	CompletionTokens int64             `json:"completion_tokens"`
@@ -109,7 +99,6 @@ type DevinUsage struct {
 	ModelName        string            `json:"model_name,omitempty"`
 	Headers          map[string]string `json:"headers,omitempty"`
 }
-
 
 type DevinFrameResult struct {
 	OutputID                string
@@ -127,9 +116,6 @@ type DevinFrameResult struct {
 	ResponseDimensionGroups [][]byte
 	UnknownFieldNumbers     []int
 }
-
-
-
 
 func GenerateDevinDeviceFingerprint(seed string) string {
 	if seed == "" {
@@ -150,8 +136,6 @@ func GenerateDevinDeviceFingerprint(seed string) string {
 	return sb.String()[:DevinFingerprintHexLen]
 }
 
-
-
 func GenerateDevinSentryTrace() string {
 	var b [24]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -168,10 +152,6 @@ const defaultMaxSessionTurnCounters = 5000
 
 var sessionTurnLRU = cache.NewBoundedLRU[string, *atomic.Uint64](defaultMaxSessionTurnCounters, nil)
 
-
-
-
-
 func NextDevinSessionTurnIndex(sessionID string) int {
 	cleanID := strings.TrimSpace(sessionID)
 	if cleanID == "" {
@@ -184,17 +164,13 @@ func NextDevinSessionTurnIndex(sessionID string) int {
 	return int(counter.Add(1) - 1)
 }
 
-
 func ResetDevinSessionTurnIndex(sessionID string) {
 	sessionTurnLRU.Delete(strings.TrimSpace(sessionID))
 }
 
-
-
 func WrapConnectEnvelope(protoBytes []byte) []byte {
 	return WrapConnectEnvelopeWithFlag(ConnectFlagData, protoBytes)
 }
-
 
 func WrapConnectEnvelopeWithFlag(flag byte, protoBytes []byte) []byte {
 	header := make([]byte, 5, 5+len(protoBytes))
@@ -202,7 +178,6 @@ func WrapConnectEnvelopeWithFlag(flag byte, protoBytes []byte) []byte {
 	binary.BigEndian.PutUint32(header[1:5], uint32(len(protoBytes)))
 	return append(header, protoBytes...)
 }
-
 
 func ReadConnectFrame(r io.Reader) (flag byte, payload []byte, err error) {
 	header := make([]byte, 5)
@@ -250,7 +225,6 @@ func ReadConnectFrame(r io.Reader) (flag byte, payload []byte, err error) {
 	return flag, payload, nil
 }
 
-
 func BuildDevinClientMetadataBytes(sessionToken, deviceSeed, osName string) []byte {
 	if osName == "" {
 		osName = runtime.GOOS
@@ -284,7 +258,6 @@ func BuildDevinClientMetadataBytes(sessionToken, deviceSeed, osName string) []by
 	return f1Bytes
 }
 
-
 func BuildDevinGetChatMessageRequest(
 	sessionToken string,
 	deviceSeed string,
@@ -315,11 +288,9 @@ func BuildDevinGetChatMessageRequest(
 	}
 	reqBytes := make([]byte, 0, estimatedSize)
 
-
 	f1Bytes := BuildDevinClientMetadataBytes(sessionToken, deviceSeed, osName)
 	reqBytes = protowire.AppendTag(reqBytes, 1, protowire.BytesType)
 	reqBytes = protowire.AppendBytes(reqBytes, f1Bytes)
-
 
 	if systemPrompt != "" {
 		sanitized := SanitizeDevinSystemPrompt(systemPrompt, matcher)
@@ -328,7 +299,6 @@ func BuildDevinGetChatMessageRequest(
 			reqBytes = protowire.AppendString(reqBytes, sanitized)
 		}
 	}
-
 
 	for _, p := range prompts {
 		var pBytes []byte
@@ -413,10 +383,8 @@ func BuildDevinGetChatMessageRequest(
 		reqBytes = protowire.AppendBytes(reqBytes, pBytes)
 	}
 
-
 	reqBytes = protowire.AppendTag(reqBytes, 7, protowire.VarintType)
 	reqBytes = protowire.AppendVarint(reqBytes, 5)
-
 
 	var f8Bytes []byte
 	f8Bytes = protowire.AppendTag(f8Bytes, 1, protowire.VarintType)
@@ -444,7 +412,6 @@ func BuildDevinGetChatMessageRequest(
 	reqBytes = protowire.AppendTag(reqBytes, 8, protowire.BytesType)
 	reqBytes = protowire.AppendBytes(reqBytes, f8Bytes)
 
-
 	for _, tool := range tools {
 		if tool.Name == "" || translatorcommon.IsDevinCodexAppAutomationUpdate("", tool.Name) {
 			continue
@@ -455,8 +422,6 @@ func BuildDevinGetChatMessageRequest(
 			tBytes = protowire.AppendString(tBytes, tool.Name)
 		}
 		desc := tool.Description
-
-
 
 		if strings.Contains(desc, "Takes a task_id parameter identifying the task") {
 			desc = strings.ReplaceAll(desc, "Takes a task_id parameter identifying the task", "Takes a taskId parameter identifying the task")
@@ -474,12 +439,6 @@ func BuildDevinGetChatMessageRequest(
 		reqBytes = protowire.AppendBytes(reqBytes, tBytes)
 	}
 
-
-
-
-
-
-
 	turnIndex := NextDevinSessionTurnIndex(sessionID)
 
 	var f15Bytes []byte
@@ -494,7 +453,6 @@ func BuildDevinGetChatMessageRequest(
 	f15Bytes = protowire.AppendTag(f15Bytes, 3, protowire.VarintType)
 	f15Bytes = protowire.AppendVarint(f15Bytes, 4)
 
-
 	if len(prompts) > 0 && prompts[len(prompts)-1].Source == 1 {
 		if turnIndex == 0 || len(prompts) < 2 || prompts[len(prompts)-2].Source != 1 {
 			f15Bytes = protowire.AppendTag(f15Bytes, 4, protowire.VarintType)
@@ -505,21 +463,17 @@ func BuildDevinGetChatMessageRequest(
 	reqBytes = protowire.AppendTag(reqBytes, 15, protowire.BytesType)
 	reqBytes = protowire.AppendBytes(reqBytes, f15Bytes)
 
-
 	reqBytes = protowire.AppendTag(reqBytes, 16, protowire.BytesType)
 	reqBytes = protowire.AppendString(reqBytes, cascadeID)
 
-
 	reqBytes = protowire.AppendTag(reqBytes, 20, protowire.VarintType)
 	reqBytes = protowire.AppendVarint(reqBytes, 1)
-
 
 	reqBytes = protowire.AppendTag(reqBytes, 21, protowire.BytesType)
 	reqBytes = protowire.AppendString(reqBytes, chatModelUID)
 
 	return reqBytes
 }
-
 
 func ParseDevinFrame(payload []byte) (DevinFrameResult, error) {
 	var res DevinFrameResult
@@ -615,8 +569,6 @@ func ParseDevinFrame(payload []byte) (DevinFrameResult, error) {
 
 	return res, nil
 }
-
-
 
 func SanitizeDevinSystemPrompt(prompt string, matcher *SensitiveWordMatcher) string {
 	if prompt == "" {
@@ -731,9 +683,6 @@ func parseDevinTimestamp(data []byte) uint64 {
 	return secs
 }
 
-
-
-
 func parseDevinHeaderField(data []byte) (string, string) {
 	var key, val string
 	pos := 0
@@ -841,9 +790,6 @@ func parseDevinUsageField(data []byte) *DevinUsage {
 	}
 	return u
 }
-
-
-
 
 func ParseDevinResponseDimensionGroups(groups ...[]byte) (promptTokens, completionTokens, cachedTokens int64, found bool) {
 	for _, gBytes := range groups {
@@ -965,7 +911,6 @@ func ParseDevinResponseDimensionGroups(groups ...[]byte) (promptTokens, completi
 	return promptTokens, completionTokens, cachedTokens, found
 }
 
-
 func ParseDevinTrailerError(payload []byte) (statusCode int, err error) {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("{}")) {
@@ -1025,11 +970,9 @@ func ParseDevinTrailerError(payload []byte) (statusCode int, err error) {
 	return httpCode, fmt.Errorf("devin upstream error (%s): %s", trailer.Error.Code, trailer.Error.Message)
 }
 
-
 type UTF8SplitBuffer struct {
 	remainder []byte
 }
-
 
 func (b *UTF8SplitBuffer) Feed(chunk []byte) string {
 	combined := append(b.remainder, chunk...)
@@ -1059,7 +1002,6 @@ func (b *UTF8SplitBuffer) Feed(chunk []byte) string {
 	return string(validBytes)
 }
 
-
 type DevinUpstreamRequestLog struct {
 	Model        string               `json:"model"`
 	SessionID    string               `json:"session_id,omitempty"`
@@ -1070,7 +1012,6 @@ type DevinUpstreamRequestLog struct {
 	Prompts      []DevinPromptLogItem `json:"prompts,omitempty"`
 	Tools        []DevinToolLogItem   `json:"tools,omitempty"`
 }
-
 
 type DevinPromptLogItem struct {
 	ID            string              `json:"id,omitempty"`
@@ -1085,12 +1026,10 @@ type DevinPromptLogItem struct {
 	Images        []DevinImageLogItem `json:"images,omitempty"`
 }
 
-
 type DevinImageLogItem struct {
 	MimeType string `json:"mime_type"`
 	DataLen  int    `json:"data_len"`
 }
-
 
 type DevinToolLogItem struct {
 	Name        string          `json:"name"`
@@ -1119,8 +1058,6 @@ func isPrintableASCII(b []byte) bool {
 	}
 	return true
 }
-
-
 
 func BuildDevinUpstreamLogBody(
 	interactionsPayload []byte,
@@ -1219,7 +1156,6 @@ func BuildDevinUpstreamLogBody(
 	return buf.Bytes()
 }
 
-
 type DevinUpstreamResponseLog struct {
 	Status                string                      `json:"status,omitempty"`
 	FramesCount           int                         `json:"frames_count"`
@@ -1232,8 +1168,6 @@ type DevinUpstreamResponseLog struct {
 	UnknownFields         []int                       `json:"unknown_fields,omitempty"`
 	ApplyPatchDiagnostics *DevinApplyPatchDiagnostics `json:"-"`
 }
-
-
 
 func BuildDevinUpstreamResponseLogBody(respLog *DevinUpstreamResponseLog, interactionsJSON []byte) []byte {
 	var buf bytes.Buffer

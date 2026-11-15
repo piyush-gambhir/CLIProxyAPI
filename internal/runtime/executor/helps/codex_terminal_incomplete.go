@@ -7,12 +7,8 @@ import (
 )
 
 const (
-
-
 	CodexEmptyIncompleteStreamMessage = "stream error: upstream terminated with incomplete empty response (0 tokens)"
 )
-
-
 
 func HasMeaningfulCodexOutputDelta(eventData []byte) bool {
 	eventType := ojson.GetBytesNoCopy(eventData, "type").String()
@@ -26,9 +22,6 @@ func HasMeaningfulCodexOutputDelta(eventData []byte) bool {
 	}
 	return false
 }
-
-
-
 
 func IsCodexTerminalEmptyIncomplete(eventData []byte, outputItemsCount int, sawOutputDelta bool) bool {
 	eventType := ojson.GetBytesNoCopy(eventData, "type").String()

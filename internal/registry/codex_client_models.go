@@ -35,12 +35,10 @@ func init() {
 	}
 }
 
-
 func GetCodexClientModelsJSON() []byte {
 	data, _ := GetCodexClientModelsSnapshot()
 	return data
 }
-
 
 func GetCodexClientModelsRevision() uint64 {
 	codexClientCatalogStore.mu.RLock()
@@ -48,15 +46,11 @@ func GetCodexClientModelsRevision() uint64 {
 	return codexClientCatalogStore.revision
 }
 
-
-
 func GetCodexClientModelsSnapshot() ([]byte, uint64) {
 	codexClientCatalogStore.mu.RLock()
 	defer codexClientCatalogStore.mu.RUnlock()
 	return append([]byte(nil), codexClientCatalogStore.data...), codexClientCatalogStore.revision
 }
-
-
 
 func CodexClientModelUsesResponsesLite(slug string) bool {
 	slug = strings.ToLower(strings.TrimSpace(slug))
@@ -67,8 +61,6 @@ func CodexClientModelUsesResponsesLite(slug string) bool {
 	defer codexClientCatalogStore.mu.RUnlock()
 	return codexClientCatalogStore.responsesLiteMap[slug]
 }
-
-
 
 func CodexClientModelThinkingLevels(slug string) []string {
 	slug = strings.ToLower(strings.TrimSpace(slug))
@@ -102,8 +94,6 @@ func loadCodexClientModelsFromBytes(data []byte, source string) (bool, error) {
 	codexClientCatalogStore.revision++
 	return true, nil
 }
-
-
 
 func ValidateCodexClientModelsJSON(data []byte) error {
 	_, _, err := parseAndValidateCodexClientModelsJSON(data)

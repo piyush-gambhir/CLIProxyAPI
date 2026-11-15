@@ -56,7 +56,6 @@ type codexWebsocketSession struct {
 
 	connMu sync.Mutex
 
-
 	recoverTransport          bool
 	turnContext               context.Context
 	conn                      *websocket.Conn
@@ -84,13 +83,6 @@ type codexWebsocketSession struct {
 
 	responseStateConn   *websocket.Conn
 	terminalResponseIDs map[string]struct{}
-
-
-
-
-
-
-
 
 	activeResponseID       string
 	activeResponseTerminal bool
@@ -296,7 +288,6 @@ func (s *codexWebsocketSession) isMultiAgentV2Optimized(conn *websocket.Conn) bo
 	return s.conn == conn && s.multiAgentV2OptimizedConn == conn
 }
 
-
 func sendTerminalWebsocketRead(ch chan<- codexWebsocketRead, done <-chan struct{}, event codexWebsocketRead, invalidate func()) bool {
 	select {
 	case ch <- event:
@@ -332,7 +323,6 @@ func (s *codexWebsocketSession) configureConn(conn *websocket.Conn) {
 		log.Debugf("codex websockets: upstream ping received session=%s session_object=%s ping_bytes=%d", sessionID, sessionKind, len(appData))
 		log.Debugf("codex websockets: upstream pong write started session=%s session_object=%s", sessionID, sessionKind)
 		start := time.Now()
-
 
 		errPong := conn.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(10*time.Second))
 		if errPong != nil {
@@ -807,7 +797,6 @@ func (e *CodexWebsocketsExecutor) readUpstreamLoop(sess *codexWebsocketSession, 
 			invalidated := false
 			if cliproxyexecutor.IsUpstreamWebsocketTurnError(errRead) {
 
-
 				invalidate()
 				invalidated = true
 			}
@@ -854,18 +843,6 @@ func (e *CodexWebsocketsExecutor) readUpstreamLoop(sess *codexWebsocketSession, 
 				sess.setLastEventType(conn, eventType)
 			}
 
-
-
-
-
-
-
-
-
-
-
-
-
 			responseID := strings.Clone(ojson.GetBytesNoCopy(payload, "response.id").String())
 			if eventType == "response.created" {
 				if responseID != "" {
@@ -890,7 +867,6 @@ func (e *CodexWebsocketsExecutor) readUpstreamLoop(sess *codexWebsocketSession, 
 							terminalID = sess.activeResponseID
 						}
 						if terminalID != "" && eventType != "error" {
-
 
 							sess.terminalResponseIDs[terminalID] = struct{}{}
 						}
@@ -1157,8 +1133,6 @@ func logCodexWebsocketDisconnectedWithLastEvent(sess *codexWebsocketSession, ses
 	}
 	log.Infof("codex websockets: upstream disconnected session=%s auth=%s url=%s session_object=%s reason=%s is_terminal=false", sessionStr, strings.TrimSpace(authID), strings.TrimSpace(wsURL), sessionKind, strings.TrimSpace(reason))
 }
-
-
 
 func CloseCodexWebsocketSessionsForAuthID(authID string, reason string) {
 	closeCodexWebsocketSessionsInStoreForAuthID(globalCodexWebsocketSessionStore, authID, reason)

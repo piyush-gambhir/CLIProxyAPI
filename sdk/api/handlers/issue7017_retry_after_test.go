@@ -15,8 +15,6 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func TestIssue7017TrustedRetryAfterWinsOverPassthroughAddon(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	next := time.Now().Add(256 * time.Second)
@@ -44,7 +42,6 @@ func TestIssue7017TrustedRetryAfterWinsOverPassthroughAddon(t *testing.T) {
 	if got := recorder.Header().Get("X-Request-Id"); got != "req-1" {
 		t.Fatalf("other passthrough headers must still apply, got %q", got)
 	}
-
 
 	recorderPlain := httptest.NewRecorder()
 	cPlain, _ := gin.CreateTestContext(recorderPlain)

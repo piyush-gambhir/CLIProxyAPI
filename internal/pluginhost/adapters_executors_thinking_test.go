@@ -184,7 +184,6 @@ func TestExecutorAdapterCallsPluginThinkingApplierWithoutModelThinkingMetadata(t
 		thinking.ClearPluginProviders()
 	})
 
-
 	host.modelRegistrations[record.id] = pluginModelRegistration{
 		pluginID:    record.id,
 		provider:    provider,
@@ -324,7 +323,6 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 	}, []sdktranslator.Format{sdktranslator.FormatClaude}, []sdktranslator.Format{sdktranslator.FormatClaude})
 	adapter.provider = provider
 
-
 	_, errBogus := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model(bogus)",
 		Format:  sdktranslator.FormatClaude,
@@ -340,7 +338,6 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 	if executeCalls != 0 {
 		t.Fatalf("plugin Execute was called %d times on bogus suffix", executeCalls)
 	}
-
 
 	_, errLevel := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model(xhigh)",
@@ -358,7 +355,6 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 		t.Fatalf("plugin Execute was called %d times on invalid level", executeCalls)
 	}
 
-
 	_, errBudget := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model",
 		Format:  sdktranslator.FormatClaude,
@@ -374,7 +370,6 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 	if executeCalls != 0 {
 		t.Fatalf("plugin Execute was called %d times on out-of-range body budget", executeCalls)
 	}
-
 
 	_, errSuffixClamp := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model(9000)",

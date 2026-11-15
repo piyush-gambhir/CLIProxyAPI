@@ -7,8 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
 func ShouldUseMaxCompletionTokensForModel(compat *config.OpenAICompatibility, upstreamModel, requestedModel string) bool {
 	if compat == nil {
 		return false
@@ -40,9 +38,6 @@ func openAICompatibilityModelUsesMaxCompletionTokens(models []config.OpenAICompa
 	return false, false
 }
 
-
-
-
 func NormalizeOpenAIMaxTokens(payload []byte, useMaxCompletionTokens bool) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -53,7 +48,6 @@ func NormalizeOpenAIMaxTokens(payload []byte, useMaxCompletionTokens bool) []byt
 	}
 	return doc.Bytes()
 }
-
 
 func NormalizeOpenAIMaxTokensDoc(doc *ojson.Doc, useMaxCompletionTokens bool) bool {
 	if doc == nil || doc.Len() == 0 {

@@ -271,7 +271,6 @@ func TestEnsureRepositoryResetsToRemoteDefaultWhenBranchUnset(t *testing.T) {
 	}
 	assertRepositoryBranchAndContents(t, filepath.Join(root, "workspace"), "develop", "remote develop branch\n")
 
-
 	storeDefault := NewGitTokenStore(remoteDir, "", "", "")
 	storeDefault.SetBaseDir(baseDir)
 	if err := storeDefault.EnsureRepository(); err != nil {
@@ -279,7 +278,6 @@ func TestEnsureRepositoryResetsToRemoteDefaultWhenBranchUnset(t *testing.T) {
 	}
 
 	assertRepositoryHeadBranch(t, filepath.Join(root, "workspace"), "master")
-
 
 	workspaceDir := filepath.Join(root, "workspace")
 	if err := os.WriteFile(filepath.Join(workspaceDir, "branch.txt"), []byte("local master update\n"), 0o600); err != nil {

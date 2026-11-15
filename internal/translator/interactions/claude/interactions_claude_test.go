@@ -86,10 +86,6 @@ func TestConvertClaudeRequestToInteractionsInfersToolNamesForOutOfOrderResults(t
 	}`)
 	out, _ := ConvertClaudeRequestToInteractions("gemini-3.1-flash-lite", raw, false)
 
-
-
-
-
 	if got := ojson.GetBytesNoCopy(out, "input.2.call_id").String(); got != "toolu_1" {
 		t.Fatalf("input.2.call_id = %q, want toolu_1. Output: %s", got, string(out))
 	}
@@ -143,14 +139,6 @@ func TestConvertClaudeRequestToInteractions_PreservesToolAdjacencyWithIntervenin
 	}`)
 	out, _ := ConvertClaudeRequestToInteractions("gemini-3.1-flash-lite", raw, false)
 	inputs := ojson.GetBytesNoCopy(out, "input").Array()
-
-
-
-
-
-
-
-
 
 	types := make([]string, 0, len(inputs))
 	for _, item := range inputs {
@@ -283,7 +271,6 @@ func TestConvertInteractionsResponseToClaude_IncompleteMaxTokens(t *testing.T) {
 	if got := ojson.GetBytesNoCopy(out, "stop_reason").String(); got != "max_tokens" {
 		t.Fatalf("stop_reason = %q, want max_tokens. Output: %s", got, string(out))
 	}
-
 
 	var param any
 	chunks := [][]byte{

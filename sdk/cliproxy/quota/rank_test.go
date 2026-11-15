@@ -7,7 +7,6 @@ import (
 
 var rankBase = time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 
-
 func readingOf(provider string, windows map[string]Window) Reading {
 	out := Reading{Provider: provider, Windows: make(map[string]Window, len(windows))}
 	for id, window := range windows {
@@ -22,7 +21,6 @@ func readingOf(provider string, windows map[string]Window) Reading {
 	}
 	return out
 }
-
 
 func longWindowOf(usedPercent float64, resetIn time.Duration) Reading {
 	return readingOf("claude", map[string]Window{
@@ -48,7 +46,6 @@ func TestRankUrgencyOrdering(t *testing.T) {
 	}{
 		{
 
-
 			name: "little left and resetting soon beats plenty left and far off",
 			candidates: []Candidate{
 				{AuthID: "a", Provider: "claude", Reading: longWindowOf(60, 3*time.Hour)},
@@ -57,7 +54,6 @@ func TestRankUrgencyOrdering(t *testing.T) {
 			want: []string{"a", "b"},
 		},
 		{
-
 
 			name: "urgency beats earliest reset",
 			candidates: []Candidate{
@@ -106,9 +102,6 @@ func TestRankUrgencyOrdering(t *testing.T) {
 func TestRankFableWindowUsesWhicheverHasLessLeft(t *testing.T) {
 	t.Parallel()
 
-
-
-
 	candidate := Candidate{AuthID: "a", Provider: "claude", Reading: readingOf("claude", map[string]Window{
 		WindowSevenDay: {UsedPercent: 10, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
 		WindowFable:    {UsedPercent: 95, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
@@ -128,8 +121,6 @@ func TestRankFableWindowUsesWhicheverHasLessLeft(t *testing.T) {
 			withFableModel[0].Urgency, withoutFableModel[0].Urgency)
 	}
 
-
-
 	mainTighter := Candidate{AuthID: "b", Provider: "claude", Reading: readingOf("claude", map[string]Window{
 		WindowSevenDay: {UsedPercent: 80, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
 		WindowFable:    {UsedPercent: 20, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
@@ -142,8 +133,6 @@ func TestRankFableWindowUsesWhicheverHasLessLeft(t *testing.T) {
 
 func TestRankFiveHourGuardDemotesWithoutBlocking(t *testing.T) {
 	t.Parallel()
-
-
 
 	guarded := Candidate{AuthID: "guarded", Provider: "claude", Reading: readingOf("claude", map[string]Window{
 		WindowFiveHour: {UsedPercent: 95, ResetAt: rankBase.Add(time.Hour)},
@@ -164,7 +153,6 @@ func TestRankFiveHourGuardDemotesWithoutBlocking(t *testing.T) {
 	if !ranked[1].Usable {
 		t.Fatal("the five-hour guard must demote, not block")
 	}
-
 
 	relaxed := Rank([]Candidate{guarded, calm}, RankOptions{Now: rankBase, FiveHourGuardPercent: 99})
 	if got := orderOf(relaxed); got[0] != "guarded" {
@@ -262,7 +250,6 @@ func TestRankUnknownsSortAfterKnownsInStableOrder(t *testing.T) {
 		}
 	}
 
-
 	if ranked[0].Reason != ReasonRanked {
 		t.Fatalf("known reason = %q, want %q", ranked[0].Reason, ReasonRanked)
 	}
@@ -279,8 +266,6 @@ func TestRankUnknownsSortAfterKnownsInStableOrder(t *testing.T) {
 func TestRankFallsBackToTheOnlyWindow(t *testing.T) {
 	t.Parallel()
 
-
-
 	candidate := Candidate{AuthID: "a", Provider: "codex", Reading: readingOf("codex", map[string]Window{
 		WindowFiveHour: {UsedPercent: 50, ResetAt: rankBase.Add(time.Hour)},
 	})}
@@ -295,7 +280,6 @@ func TestRankFallsBackToTheOnlyWindow(t *testing.T) {
 
 func TestUrgencyFloorsTheDenominator(t *testing.T) {
 	t.Parallel()
-
 
 	window := Window{UsedPercent: 0, ResetAt: rankBase.Add(time.Second), Known: true}
 	if got := Urgency(window, rankBase); got != 100/minHoursToReset {

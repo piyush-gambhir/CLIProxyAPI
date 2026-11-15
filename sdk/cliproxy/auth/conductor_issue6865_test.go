@@ -453,7 +453,6 @@ func TestIssue6865_RequestScoped401_ForceCooldown_CoolsWithoutRejectingOrRefresh
 			t.Fatalf("Register error = %v", errReg)
 		}
 
-
 		m.MarkResult(context.Background(), Result{
 			AuthID:            auth.ID,
 			Provider:          "codex",
@@ -466,7 +465,6 @@ func TestIssue6865_RequestScoped401_ForceCooldown_CoolsWithoutRejectingOrRefresh
 		if got.RejectedAccessToken != "" {
 			t.Fatalf("RejectedAccessToken after stale MarkResult = %q, want empty", got.RejectedAccessToken)
 		}
-
 
 		m.MarkResult(context.Background(), Result{
 			AuthID:            auth.ID,

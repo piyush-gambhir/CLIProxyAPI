@@ -214,12 +214,10 @@ func TestApplyClientModelCapabilities_UpdatesAllViews(t *testing.T) {
 		t.Fatal("expected capabilities to be applied")
 	}
 
-
 	clientModels := r.GetModelsForClient("ag-client-1")
 	if len(clientModels) != 1 || !clientModels[0].SupportsWebSearch {
 		t.Fatalf("GetModelsForClient: expected SupportsWebSearch=true, got %+v", clientModels)
 	}
-
 
 	infoByProv := r.GetModelInfo("gemini-3.1-flash-lite", "antigravity")
 	if infoByProv == nil || !infoByProv.SupportsWebSearch {
@@ -229,7 +227,6 @@ func TestApplyClientModelCapabilities_UpdatesAllViews(t *testing.T) {
 	if infoGlobal == nil || !infoGlobal.SupportsWebSearch {
 		t.Fatalf("GetModelInfo global: expected SupportsWebSearch=true, got %+v", infoGlobal)
 	}
-
 
 	availInfos := r.GetAvailableModelInfos()
 	foundAvail := false
@@ -247,12 +244,10 @@ func TestApplyClientModelCapabilities_UpdatesAllViews(t *testing.T) {
 func TestMultiClientRegistration_PreservesProbedCapabilities(t *testing.T) {
 	r := newTestModelRegistry()
 
-
 	r.RegisterClient("client-A", "antigravity", []*ModelInfo{{
 		ID:                "gemini-3.1-flash-lite",
 		SupportsWebSearch: false,
 	}})
-
 
 	epochA := r.ClientRegistrationEpoch("client-A")
 	r.ApplyClientModelCapabilities("client-A", epochA, func(modelID string, info *ModelInfo) {
@@ -261,12 +256,10 @@ func TestMultiClientRegistration_PreservesProbedCapabilities(t *testing.T) {
 		}
 	})
 
-
 	r.RegisterClient("client-B", "antigravity", []*ModelInfo{{
 		ID:                "gemini-3.1-flash-lite",
 		SupportsWebSearch: false,
 	}})
-
 
 	info := r.GetModelInfo("gemini-3.1-flash-lite", "antigravity")
 	if info == nil || !info.SupportsWebSearch {
@@ -285,7 +278,6 @@ func TestMultiClientRegistration_PreservesProbedCapabilities(t *testing.T) {
 		t.Fatal("GetAvailableModelInfos: expected SupportsWebSearch=true to be preserved after client B registered")
 	}
 
-
 	r.UnregisterClient("client-A")
 	infoAfterA := r.GetModelInfo("gemini-3.1-flash-lite", "antigravity")
 	if infoAfterA == nil || infoAfterA.SupportsWebSearch {
@@ -295,7 +287,6 @@ func TestMultiClientRegistration_PreservesProbedCapabilities(t *testing.T) {
 
 func TestReRegisterClient_ClearsStaleProbedCapabilitiesWhenNoOtherClientSupports(t *testing.T) {
 	r := newTestModelRegistry()
-
 
 	r.RegisterClient("client-A", "antigravity", []*ModelInfo{{
 		ID:                "gemini-3.1-flash-lite",
@@ -308,20 +299,15 @@ func TestReRegisterClient_ClearsStaleProbedCapabilitiesWhenNoOtherClientSupports
 		}
 	})
 
-
 	r.RegisterClient("client-B", "antigravity", []*ModelInfo{{
 		ID:                "gemini-3.1-flash-lite",
 		SupportsWebSearch: false,
 	}})
 
-
-
 	r.RegisterClient("client-A", "antigravity", []*ModelInfo{{
 		ID:                "gemini-3.1-flash-lite",
 		SupportsWebSearch: false,
 	}})
-
-
 
 	info := r.GetModelInfo("gemini-3.1-flash-lite", "antigravity")
 	if info == nil || info.SupportsWebSearch {

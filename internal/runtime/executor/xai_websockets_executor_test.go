@@ -675,7 +675,6 @@ func TestXAIWebsocketsExecuteStreamDoesNotRestoreNamespacedClientfnWebSearch(t *
 		t.Fatalf("unnamespaced item name = %q, want web_search", got)
 	}
 
-
 	if got := completed.Get("response.output.0.name").String(); got != "clientfn_web_search" {
 		t.Fatalf("completed 0 name = %q, want clientfn_web_search", got)
 	}
@@ -813,9 +812,6 @@ func TestXAIWebsocketsExecuteStreamPreservesClientSameNameToolsWithXSearch(t *te
 		t.Fatalf("completed output missing client tools plain=%v namespaced=%v; completed=%s", completedPlain, completedNamespaced, completed.Raw)
 	}
 }
-
-
-
 
 func TestXAIWebsocketsExecuteStreamPreservesNormalizedCustomSameNameToolWithXSearch(t *testing.T) {
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
@@ -2027,7 +2023,6 @@ func TestXAIWebsocketsCompactionTriggerFreshSessionFallback(t *testing.T) {
 		Metadata: map[string]any{"access_token": "xai-token"},
 	}
 
-
 	optsInput := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FormatOpenAIResponse,
 		ResponseFormat: sdktranslator.FormatOpenAIResponse,
@@ -2067,7 +2062,6 @@ func TestXAIWebsocketsCompactionTriggerFreshSessionFallback(t *testing.T) {
 		t.Fatal("timed out waiting for compact HTTP payload")
 	}
 
-
 	optsPrev := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FormatOpenAIResponse,
 		ResponseFormat: sdktranslator.FormatOpenAIResponse,
@@ -2099,7 +2093,6 @@ func TestXAIWebsocketsCompactionTriggerFreshSessionFallback(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for compact HTTP payload")
 	}
-
 
 	optsEmpty := cliproxyexecutor.Options{
 		SourceFormat:   sdktranslator.FormatOpenAIResponse,
@@ -2201,7 +2194,6 @@ func TestXAIWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 	sess := &codexWebsocketSession{sessionID: "test-xai-keepalive"}
 	configureXAIWebsocketConn(sess, clientConn)
 
-
 	go func() {
 		for {
 			if _, _, errRead := clientConn.ReadMessage(); errRead != nil {
@@ -2210,16 +2202,13 @@ func TestXAIWebsockets_PingHandlerDoesNotBlockOnWriteMu(t *testing.T) {
 		}
 	}()
 
-
 	sess.writeMu.Lock()
 	defer sess.writeMu.Unlock()
-
 
 	errPing := serverConn.WriteControl(websocket.PingMessage, []byte("xai-keepalive-ping"), time.Now().Add(time.Second))
 	if errPing != nil {
 		t.Fatalf("failed to send ping: %v", errPing)
 	}
-
 
 	select {
 	case got := <-pongReceived:
@@ -2240,7 +2229,6 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 	var pongDeliveredOnce sync.Once
 
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
-
 
 		inWriteHookOnce.Do(func() { close(inWriteHook) })
 		select {
@@ -2298,9 +2286,6 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_WithSession(t *testing.T) {
 			return
 		}
 
-
-
-
 		select {
 		case <-payloadReceived:
 		case <-time.After(2 * time.Second):
@@ -2355,7 +2340,6 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 	var pongDeliveredOnce sync.Once
 
 	testWebsocketWritePayloadHook = func(conn *websocket.Conn) {
-
 
 		inWriteHookOnce.Do(func() { close(inWriteHook) })
 		select {
@@ -2412,9 +2396,6 @@ func TestXAIWebsockets_KeepalivePingDuringUpload_Sessionless(t *testing.T) {
 			t.Errorf("pong was not received while payload write was in progress on sessionless connection")
 			return
 		}
-
-
-
 
 		select {
 		case <-payloadReceived:

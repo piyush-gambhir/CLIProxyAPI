@@ -1,23 +1,9 @@
-
-
 package chat_completions
 
 import (
 	"bytes"
 	"context"
 )
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertOpenAIResponseToOpenAI(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if param != nil {
@@ -37,16 +23,6 @@ func ConvertOpenAIResponseToOpenAI(_ context.Context, _ string, originalRequestR
 	}
 	return [][]byte{rawJSON}
 }
-
-
-
-
-
-
-
-
-
-
 
 func ConvertOpenAIResponseToOpenAINonStream(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	return rawJSON

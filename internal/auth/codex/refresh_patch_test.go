@@ -24,7 +24,7 @@ func TestCredentialRefreshPatchChecksPartitionsIndependently(t *testing.T) {
 				disk["siwc"].(map[string]any)["refresh_token"] = "siwc-ref-bound"
 				wantSIWC = "siwc-ref-bound"
 			}
-			// Changing source/result maps later must not mutate the immutable patch.
+
 			before["refresh_token"] = "mutated-before"
 			after["refresh_token"] = "mutated-after"
 			saved := patch.Apply(disk)

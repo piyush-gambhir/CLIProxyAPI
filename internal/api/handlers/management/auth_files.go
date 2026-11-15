@@ -332,14 +332,12 @@ func (h *Handler) lookupAuthFile(name string, authIndex string) (*coreauth.Auth,
 	return nil, false
 }
 
-
 func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	name := c.Query("name")
 	if name == "" {
 		c.JSON(400, gin.H{"error": "name is required"})
 		return
 	}
-
 
 	var authID string
 	if h.authManager != nil {
@@ -355,7 +353,6 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	if authID == "" {
 		authID = name
 	}
-
 
 	reg := registry.GetGlobalRegistry()
 	models := reg.GetModelsForClient(authID)
@@ -379,7 +376,6 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 
 	c.JSON(200, gin.H{"models": result})
 }
-
 
 func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagination) {
 	observedAt := time.Now().UTC()
@@ -419,7 +415,6 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagi
 	for _, candidate := range matching[start:end] {
 		name := candidate.entry.Name()
 		fileData := gin.H{"name": name, "size": candidate.info.Size(), "modtime": candidate.info.ModTime(), "cooldowns": nil}
-
 
 		full := filepath.Join(h.cfg.AuthDir, name)
 		if data, errRead := os.ReadFile(full); errRead == nil {
@@ -483,10 +478,7 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagi
 	c.JSON(200, authFilesListResponse(observedAt, files, pagination, total, end))
 }
 
-
 type authFileQuotaContext struct {
-
-
 	pluginIDs map[string]string
 
 	v8 bool
@@ -555,7 +547,6 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return unavailable, coreauth.StatusDisabled, statusMessage, nextRetry
 	}
 
-
 	if isPersistentAuthFailure(auth, now) {
 		if !nextRetry.IsZero() && !nextRetry.After(now) {
 			nextRetry = time.Time{}
@@ -565,9 +556,6 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		}
 		return true, coreauth.StatusError, statusMessage, nextRetry
 	}
-
-
-
 
 	hasActiveCredCooldown := false
 	if auth.Unavailable || auth.Quota.Exceeded {
@@ -581,7 +569,6 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 			}
 		}
 	}
-
 
 	hasSchedulableModels := false
 	allSchedulableBlocked := true
@@ -611,15 +598,12 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		(auth.Quota.Exceeded && !auth.Quota.NextRecoverAt.IsZero()) ||
 		hadAnyModelCooldown
 
-
-
 	if hasActiveCredCooldown || (hasSchedulableModels && allSchedulableBlocked && auth.Unavailable) {
 		if !nextRetry.IsZero() && !nextRetry.After(now) {
 			nextRetry = time.Time{}
 		}
 		return true, coreauth.StatusError, statusMessage, nextRetry
 	}
-
 
 	if !auth.Unavailable && !hasActiveCredCooldown {
 		if status == coreauth.StatusError && hasSchedulableModels && !allSchedulableBlocked {
@@ -629,11 +613,9 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return false, status, statusMessage, time.Time{}
 	}
 
-
 	if hadCooldown && !hasActiveCredCooldown && !hasActiveModelCooldown {
 		return false, coreauth.StatusActive, "", time.Time{}
 	}
-
 
 	if hadCooldown && hasSchedulableModels && !allSchedulableBlocked {
 		if status == coreauth.StatusError && !hasActiveCredCooldown {
@@ -642,7 +624,6 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		}
 		return false, status, statusMessage, time.Time{}
 	}
-
 
 	if !nextRetry.IsZero() && !nextRetry.After(now) {
 		nextRetry = time.Time{}
@@ -752,7 +733,6 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 		entry["id_token"] = claims
 	}
 
-
 	if p := strings.TrimSpace(authAttribute(auth, "priority")); p != "" {
 		if parsed, err := strconv.Atoi(p); err == nil {
 			entry["priority"] = parsed
@@ -771,7 +751,6 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 			}
 		}
 	}
-
 
 	if note := strings.TrimSpace(authAttribute(auth, "note")); note != "" {
 		entry["note"] = note
@@ -792,7 +771,6 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 		entry["request_retry"] = requestRetry
 	}
 	if quota.v8 {
-
 
 		if oauthProvider := authOAuthProvider(auth); oauthProvider != "" {
 			entry["oauth_provider"] = oauthProvider
@@ -875,9 +853,6 @@ func authFileRequestRetryFromJSON(data []byte) (int, bool) {
 	}
 	return (&coreauth.Auth{Metadata: metadata}).RequestRetryOverride()
 }
-
-
-
 
 func quotaObservationPayloadForProvider(provider string, quota coreauth.QuotaState) gin.H {
 	if !coreauth.ProviderSupportsQuotaObservation(provider) {

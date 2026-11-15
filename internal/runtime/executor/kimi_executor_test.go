@@ -1040,7 +1040,6 @@ func TestKimiExecutorNormalizesToolSchemasForMoonshot(t *testing.T) {
 		Metadata:   map[string]any{"access_token": "test-token"},
 	}
 
-
 	payload := []byte(`{
 		"model":"kimi-k3",
 		"messages":[{"role":"user","content":"hello"}],
@@ -1086,7 +1085,6 @@ func TestKimiExecutorNormalizesToolSchemasForMoonshot(t *testing.T) {
 		t.Fatalf("upstream tool function not found: %s", upstreamBody)
 	}
 
-
 	if ref := tool.Get("parameters.properties.value.$ref"); ref.Exists() {
 		t.Fatalf("upstream tool parameter still contains $ref: %s", tool.Get("parameters").Raw)
 	}
@@ -1128,7 +1126,6 @@ func TestKimiExecutorStreamNormalizesToolSchemasFromResponses(t *testing.T) {
 		Attributes: map[string]string{},
 		Metadata:   map[string]any{"access_token": "test-token"},
 	}
-
 
 	payload := []byte(`{
 		"model":"kimi-k3",
@@ -1652,7 +1649,6 @@ func TestKimiExecutor_KimiAI_TargetURL(t *testing.T) {
 	if requestedURL != "https://api.kimi.ai/coding/v1/chat/completions" {
 		t.Fatalf("requestedURL = %q, want https://api.kimi.ai/coding/v1/chat/completions", requestedURL)
 	}
-
 
 	requestedURL = ""
 	streamRes, errStream := executor.ExecuteStream(ctx, auth, cliproxyexecutor.Request{

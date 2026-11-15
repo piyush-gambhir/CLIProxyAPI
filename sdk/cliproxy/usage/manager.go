@@ -14,17 +14,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 const DefaultServiceTier = "default"
-
-
-
 
 const AutoServiceTier = "auto"
 
-
 type Record struct {
-
 	RequestID string
 
 	TraceID string
@@ -57,17 +51,13 @@ type Record struct {
 
 	ServiceTier string
 
-
 	EffectiveServiceTier string
-
 
 	RequestServiceTier string
 
 	ResponseServiceTier string
 
 	ResponseModel string
-
-
 
 	Generate *bool
 
@@ -82,28 +72,18 @@ type Record struct {
 	ResponseHeaders http.Header
 }
 
-
-
 const FailureStreamTruncatedCode = "stream_truncated"
-
-
 
 const FailureRequestScopedCode = "request_scoped"
 
-
-
 const FailureForceCooldownCode = "force_cooldown"
-
 
 type Failure struct {
 	StatusCode int
 	Body       string
 
-
-
 	Code string
 }
-
 
 type Detail struct {
 	InputTokens         int64
@@ -168,14 +148,12 @@ type capturedIdentityHolder struct {
 	hasNativeKey   bool
 }
 
-
 func WithExecutionRequestID(ctx context.Context, requestID string) context.Context {
 	if ctx == nil {
 		return context.Background()
 	}
 	return context.WithValue(ctx, executionRequestIDContextKey{}, strings.TrimSpace(requestID))
 }
-
 
 func ExecutionRequestIDFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -187,14 +165,12 @@ func ExecutionRequestIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-
 func WithTraceID(ctx context.Context, traceID string) context.Context {
 	if ctx == nil {
 		return context.Background()
 	}
 	return context.WithValue(ctx, executionTraceIDContextKey{}, strings.TrimSpace(traceID))
 }
-
 
 func TraceIDFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -206,14 +182,12 @@ func TraceIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-
 func WithSelectionID(ctx context.Context, selectionID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, selectionIDContextKey{}, strings.TrimSpace(selectionID))
 }
-
 
 func SelectionIDFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -230,7 +204,6 @@ func SelectionIDFromContext(ctx context.Context) string {
 	}
 }
 
-
 func WithRequestedModelAlias(ctx context.Context, alias string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -241,7 +214,6 @@ func WithRequestedModelAlias(ctx context.Context, alias string) context.Context 
 	}
 	return context.WithValue(ctx, requestedModelAliasContextKey{}, alias)
 }
-
 
 func RequestedModelAliasFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -258,7 +230,6 @@ func RequestedModelAliasFromContext(ctx context.Context) string {
 	}
 }
 
-
 func WithReasoningEffort(ctx context.Context, effort string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -269,7 +240,6 @@ func WithReasoningEffort(ctx context.Context, effort string) context.Context {
 	}
 	return context.WithValue(ctx, reasoningEffortContextKey{}, effort)
 }
-
 
 func ReasoningEffortFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -286,7 +256,6 @@ func ReasoningEffortFromContext(ctx context.Context) string {
 	}
 }
 
-
 func WithServiceTier(ctx context.Context, tier string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -297,7 +266,6 @@ func WithServiceTier(ctx context.Context, tier string) context.Context {
 	}
 	return context.WithValue(ctx, serviceTierContextKey{}, tier)
 }
-
 
 func ServiceTierFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -322,16 +290,12 @@ func ServiceTierFromContext(ctx context.Context) string {
 	}
 }
 
-
-
 func WithGenerate(ctx context.Context, generate bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, generateContextKey{}, generate)
 }
-
-
 
 func GenerateFromContext(ctx context.Context) bool {
 	if ctx == nil {
@@ -346,15 +310,12 @@ func GenerateFromContext(ctx context.Context) bool {
 	}
 }
 
-
 func WithStream(ctx context.Context, stream bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, streamContextKey{}, stream)
 }
-
-
 
 func StreamFromContext(ctx context.Context) bool {
 	if ctx == nil {
@@ -368,7 +329,6 @@ func StreamFromContext(ctx context.Context) bool {
 		return false
 	}
 }
-
 
 func WithAccessProvider(ctx context.Context, provider string) context.Context {
 	if ctx == nil {
@@ -393,7 +353,6 @@ func WithAccessProvider(ctx context.Context, provider string) context.Context {
 	return ctx
 }
 
-
 func WithAPIKey(ctx context.Context, apiKey string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -417,8 +376,6 @@ func WithAPIKey(ctx context.Context, apiKey string) context.Context {
 	return ctx
 }
 
-
-
 func WithCapturedIdentity(ctx context.Context, apiKey, accessProvider string, isNativeKey ...bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -433,8 +390,6 @@ func WithCapturedIdentity(ctx context.Context, apiKey, accessProvider string, is
 	}
 	return context.WithValue(ctx, capturedIdentityContextKey{}, holder)
 }
-
-
 
 func CaptureIdentity(ctx context.Context) context.Context {
 	if ctx == nil {
@@ -457,7 +412,6 @@ func CaptureIdentity(ctx context.Context) context.Context {
 	return WithCapturedIdentity(ctx, apiKey, accessProvider)
 }
 
-
 func HasCapturedIdentity(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -465,7 +419,6 @@ func HasCapturedIdentity(ctx context.Context) bool {
 	holder, ok := ctx.Value(capturedIdentityContextKey{}).(*capturedIdentityHolder)
 	return ok && holder != nil
 }
-
 
 func SetCapturedAPIKey(ctx context.Context, apiKey string) {
 	if ctx == nil {
@@ -513,7 +466,6 @@ func apiKeyFromGinContext(ctx context.Context) string {
 	return ""
 }
 
-
 func APIKeyFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -533,7 +485,6 @@ func APIKeyFromContext(ctx context.Context) string {
 	}
 	return apiKeyFromGinContext(ctx)
 }
-
 
 func AccessProviderFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -565,7 +516,6 @@ func AccessProviderFromContext(ctx context.Context) string {
 	return ""
 }
 
-
 func WithIsNativeKey(ctx context.Context, isNative bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -584,7 +534,6 @@ func WithIsNativeKey(ctx context.Context, isNative bool) context.Context {
 	}
 	return ctx
 }
-
 
 func IsNativeKeyFromContext(ctx context.Context) (bool, bool) {
 	if ctx == nil {
@@ -605,18 +554,14 @@ func IsNativeKeyFromContext(ctx context.Context) (bool, bool) {
 	return false, false
 }
 
-
 func IsNativeAccessProvider(provider string) bool {
 	p := strings.TrimSpace(provider)
 	return strings.EqualFold(p, "config-inline") || strings.EqualFold(p, "config-api-key")
 }
 
-
 func GenerateFlag(generate bool) *bool {
 	return &generate
 }
-
-
 
 func GenerateEnabled(generate *bool) bool {
 	if generate == nil {
@@ -624,7 +569,6 @@ func GenerateEnabled(generate *bool) bool {
 	}
 	return *generate
 }
-
 
 type Plugin interface {
 	HandleUsage(ctx context.Context, record Record)
@@ -634,7 +578,6 @@ type queueItem struct {
 	ctx    context.Context
 	record Record
 }
-
 
 type Manager struct {
 	once     sync.Once
@@ -651,13 +594,11 @@ type Manager struct {
 	named     map[string]int
 }
 
-
 func NewManager(buffer int) *Manager {
 	m := &Manager{}
 	m.cond = sync.NewCond(&m.mu)
 	return m
 }
-
 
 func (m *Manager) Start(ctx context.Context) {
 	if m == nil {
@@ -672,7 +613,6 @@ func (m *Manager) Start(ctx context.Context) {
 		go m.run(workerCtx)
 	})
 }
-
 
 func (m *Manager) Stop() {
 	if m == nil {
@@ -689,7 +629,6 @@ func (m *Manager) Stop() {
 	})
 }
 
-
 func (m *Manager) Register(plugin Plugin) {
 	if m == nil || plugin == nil {
 		return
@@ -698,7 +637,6 @@ func (m *Manager) Register(plugin Plugin) {
 	m.plugins = append(m.plugins, plugin)
 	m.pluginsMu.Unlock()
 }
-
 
 func (m *Manager) RegisterNamed(name string, plugin Plugin) {
 	if m == nil || plugin == nil {
@@ -722,8 +660,6 @@ func (m *Manager) RegisterNamed(name string, plugin Plugin) {
 	m.plugins = append(m.plugins, plugin)
 	m.pluginsMu.Unlock()
 }
-
-
 
 func (m *Manager) Publish(ctx context.Context, record Record) {
 	if m == nil {
@@ -826,20 +762,14 @@ func safeInvoke(plugin Plugin, ctx context.Context, record Record) {
 
 var defaultManager = NewManager(512)
 
-
 func DefaultManager() *Manager { return defaultManager }
-
 
 func RegisterPlugin(plugin Plugin) { DefaultManager().Register(plugin) }
 
-
 func RegisterNamedPlugin(name string, plugin Plugin) { DefaultManager().RegisterNamed(name, plugin) }
-
 
 func PublishRecord(ctx context.Context, record Record) { DefaultManager().Publish(ctx, record) }
 
-
 func StartDefault(ctx context.Context) { DefaultManager().Start(ctx) }
-
 
 func StopDefault() { DefaultManager().Stop() }

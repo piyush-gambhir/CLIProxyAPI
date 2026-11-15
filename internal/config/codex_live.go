@@ -11,10 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 const DefaultCodexLiveMediaMaxSessions = 32
-
-
 
 func (c *CodexLiveMediaRelayConfig) UnmarshalYAML(value *yaml.Node) error {
 	type plain CodexLiveMediaRelayConfig
@@ -54,14 +51,12 @@ func (c *CodexLiveMediaRelayConfig) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-
 func (c CodexLiveMediaRelayConfig) EffectiveMaxSessions() int {
 	if c.MaxSessions > 0 {
 		return c.MaxSessions
 	}
 	return DefaultCodexLiveMediaMaxSessions
 }
-
 
 func (c CodexLiveMediaRelayConfig) Validate() error {
 	if !c.Enabled {

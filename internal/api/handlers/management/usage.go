@@ -20,7 +20,6 @@ func (r usageQueueRecord) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(r))
 }
 
-
 func (h *Handler) GetUsageQueue(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})

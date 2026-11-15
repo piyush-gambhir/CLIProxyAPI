@@ -9,15 +9,7 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
 type tlsHandshakeTimeoutContextKey struct{}
-
-
-
 
 func withTLSHandshakeTimeout(ctx context.Context, timeout time.Duration) context.Context {
 	if ctx == nil || timeout <= 0 {
@@ -25,8 +17,6 @@ func withTLSHandshakeTimeout(ctx context.Context, timeout time.Duration) context
 	}
 	return context.WithValue(ctx, tlsHandshakeTimeoutContextKey{}, timeout)
 }
-
-
 
 func tlsHandshakeTimeoutFromContext(ctx context.Context) time.Duration {
 	if ctx == nil {
@@ -38,10 +28,6 @@ func tlsHandshakeTimeoutFromContext(ctx context.Context) time.Duration {
 	}
 	return timeout
 }
-
-
-
-
 
 type tlsHandshakeTimeoutRoundTripper struct {
 	base    http.RoundTripper
@@ -55,17 +41,6 @@ func (rt *tlsHandshakeTimeoutRoundTripper) RoundTrip(req *http.Request) (*http.R
 	return rt.base.RoundTrip(req)
 }
 
-
-
-
-
-
-
-
-
-
-
-
 func handshakeContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	timeout := tlsHandshakeTimeoutFromContext(ctx)
 	if timeout <= 0 {
@@ -73,10 +48,6 @@ func handshakeContext(ctx context.Context) (context.Context, context.CancelFunc)
 	}
 	return context.WithTimeout(ctx, timeout)
 }
-
-
-
-
 
 func classifyHandshakeError(parentCtx, handshakeCtx context.Context, err error) error {
 	if err == nil || tlsHandshakeTimeoutFromContext(parentCtx) <= 0 {

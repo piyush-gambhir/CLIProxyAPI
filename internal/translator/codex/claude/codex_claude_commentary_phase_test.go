@@ -8,12 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
-
-
-
 type codexClaudeBlocks struct {
 	text, thinking []string
 	signatures     []string
@@ -110,7 +104,6 @@ func TestConvertCodexResponseToClaude_StreamCommentaryDoneFallbackIsThinking(t *
 
 func TestConvertCodexResponseToClaude_StreamSecondMessageDoneFallbackAfterStreamedFirstMessage(t *testing.T) {
 
-
 	for _, includeSecondAdded := range []bool{true, false} {
 		chunks := [][]byte{
 			[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
@@ -136,8 +129,6 @@ func TestConvertCodexResponseToClaude_StreamSecondMessageDoneFallbackAfterStream
 }
 
 func TestConvertCodexResponseToClaude_StreamCommentaryDoesNotTakeReasoningSignature(t *testing.T) {
-
-
 
 	chunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
@@ -165,8 +156,6 @@ func TestConvertCodexResponseToClaude_StreamCommentaryDoesNotTakeReasoningSignat
 		t.Fatalf("final_answer should be the only text block, got %q", got.text)
 	}
 
-
-
 	parkedChunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),
 		[]byte(`data: {"type":"response.output_item.added","item":{"type":"reasoning","encrypted_content":"parked_sig"}}`),
@@ -186,8 +175,6 @@ func TestConvertCodexResponseToClaude_StreamCommentaryDoesNotTakeReasoningSignat
 }
 
 func TestConvertCodexResponseToClaude_StreamUnclosedReasoningClosesBeforeCommentaryStarts(t *testing.T) {
-
-
 
 	chunks := [][]byte{
 		[]byte(`data: {"type":"response.created","response":{"id":"resp_1","model":"gpt-5"}}`),

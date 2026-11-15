@@ -36,7 +36,6 @@ type resourceRouteRecord struct {
 	route    pluginapi.ResourceRoute
 }
 
-
 func (h *Host) RegisterManagementRoutes(ctx context.Context, reserved map[string]struct{}) {
 	if h == nil {
 		return
@@ -229,7 +228,6 @@ func managementRouteKey(method, path string) string {
 	return strings.ToUpper(strings.TrimSpace(method)) + " " + strings.TrimSpace(path)
 }
 
-
 func (h *Host) ServeManagementHTTP(w http.ResponseWriter, r *http.Request) bool {
 	if h == nil || w == nil || r == nil || r.URL == nil {
 		return false
@@ -292,7 +290,6 @@ func (h *Host) ServeManagementHTTP(w http.ResponseWriter, r *http.Request) bool 
 	}
 	return true
 }
-
 
 func (h *Host) ServeResourceHTTP(w http.ResponseWriter, r *http.Request) bool {
 	if h == nil || w == nil || r == nil || r.URL == nil {

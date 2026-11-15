@@ -10,11 +10,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
 func issue7017WaitSetup(t *testing.T, auth *Auth, model string) (*Manager, authSelectionEligibility) {
 	t.Helper()
 	withQuotaCooldownEnabled(t)

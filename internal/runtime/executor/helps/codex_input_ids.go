@@ -25,9 +25,6 @@ const (
 	codexInputItemIDDuplicate uint8 = 1 << 3
 )
 
-
-
-
 func SanitizeCodexInputItemIDs(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -38,9 +35,6 @@ func SanitizeCodexInputItemIDs(body []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
-
 
 func SanitizeCodexInputItemIDsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {

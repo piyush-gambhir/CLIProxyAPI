@@ -13,12 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
-
 func TestInterruptExecutionSessionUnknownAfterTerminalDelivery(t *testing.T) {
 	interruptCount := make(chan int, 1)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -86,14 +80,10 @@ func TestInterruptExecutionSessionUnknownAfterTerminalDelivery(t *testing.T) {
 	read()
 	read()
 
-
-
-
 	errInterrupt := exec.InterruptExecutionSession(context.Background(), sessionID, []byte(`{"type":"response.interrupt","response_id":"unknown"}`))
 	if !errors.Is(errInterrupt, cliproxyexecutor.ErrUpstreamWebsocketInterruptRejected) {
 		t.Fatalf("unknown interrupt after completion = %v, want ErrUpstreamWebsocketInterruptRejected", errInterrupt)
 	}
-
 
 	if errWrite := client.WriteMessage(websocket.TextMessage, []byte("barrier")); errWrite != nil {
 		t.Fatal(errWrite)

@@ -1,6 +1,3 @@
-
-
-
 package main
 
 import (
@@ -50,7 +47,6 @@ var (
 	DefaultConfigPath = ""
 )
 
-
 func init() {
 	logging.SetupBaseLogger()
 	buildinfo.Version = Version
@@ -67,9 +63,6 @@ func shouldEnableExampleAPIKeySafeMode(cfg *config.Config, commandMode, tuiMode,
 	}
 	return safemode.HasExampleAPIKeys(cfg.APIKeys)
 }
-
-
-
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "discover" {
@@ -97,13 +90,11 @@ func main() {
 		os.Exit(code)
 	}
 
-
 	isJSONDiscover := argvEnablesBoolFlag(os.Args[1:], "discover-json")
 	isDiscoverMode := isJSONDiscover || argvEnablesBoolFlag(os.Args[1:], "discover")
 	if !isJSONDiscover {
 		fmt.Printf("CLIProxyAPI Version: %s, Commit: %s, BuiltAt: %s\n", buildinfo.Version, buildinfo.Commit, buildinfo.BuildDate)
 	}
-
 
 	var codexLogin bool
 	var codexDeviceLogin bool
@@ -134,7 +125,6 @@ func main() {
 	var standalone bool
 	var managementBaseURL string
 	var localModel bool
-
 
 	flag.BoolVar(&codexLogin, "codex-login", false, "Login to Codex using OAuth")
 	flag.BoolVar(&codexDeviceLogin, "codex-device-login", false, "Login to Codex using device code flow")
@@ -201,7 +191,6 @@ func main() {
 		}
 	}
 
-
 	flag.Parse()
 
 	if discoverGateways || discoverJSON {
@@ -216,7 +205,6 @@ func main() {
 		})
 		os.Exit(code)
 	}
-
 
 	var err error
 	var cfg *config.Config
@@ -253,7 +241,6 @@ func main() {
 		log.Errorf("failed to get working directory: %v", err)
 		return
 	}
-
 
 	if errLoad := godotenv.Load(filepath.Join(wd, ".env")); errLoad != nil {
 		if !errors.Is(errLoad, os.ErrNotExist) {
@@ -332,14 +319,10 @@ func main() {
 		objectStoreLocalPath = value
 	}
 
-
-
 	deployEnv := os.Getenv("DEPLOY")
 	if deployEnv == "cloud" {
 		isCloudDeploy = true
 	}
-
-
 
 	var configFilePath string
 	if strings.TrimSpace(homeJWT) != "" {
@@ -433,14 +416,11 @@ func main() {
 		}
 		cfg = parsed
 
-
-
 		if strings.TrimSpace(configPath) != "" {
 			configFilePath = configPath
 		} else {
 			configFilePath = filepath.Join(wd, "config.yaml")
 		}
-
 
 		usePostgresStore = false
 		useObjectStore = false
@@ -606,7 +586,6 @@ func main() {
 		cfg = &config.Config{}
 	}
 
-
 	var configFileExists bool
 	if isCloudDeploy {
 		if configLoadedFromHome && cfg != nil {
@@ -620,7 +599,6 @@ func main() {
 				log.Info("Cloud deploy mode: Config path is a directory; standing by for configuration")
 				configFileExists = false
 			} else if cfg.Port == 0 {
-
 
 				log.Info("Cloud deploy mode: Configuration file is empty or invalid; standing by for valid configuration")
 				configFileExists = false
@@ -642,7 +620,6 @@ func main() {
 
 	log.Infof("CLIProxyAPI Version: %s, Commit: %s, BuiltAt: %s", buildinfo.Version, buildinfo.Commit, buildinfo.BuildDate)
 
-
 	util.SetLogLevel(cfg)
 
 	if resolvedAuthDir, errResolveAuthDir := util.ResolveAuthDir(cfg.AuthDir); errResolveAuthDir != nil {
@@ -653,7 +630,6 @@ func main() {
 	}
 	githubauth.SetToken(cfg.GitHubToken)
 	managementasset.SetCurrentConfig(cfg)
-
 
 	options := &cmd.LoginOptions{
 		NoBrowser:    noBrowser,
@@ -672,7 +648,6 @@ func main() {
 		serverOptions = append(serverOptions, api.WithExampleAPIKeySafeMode())
 	}
 
-
 	if usePostgresStore {
 		sdkAuth.RegisterTokenStore(pgStoreInst)
 	} else if useObjectStore {
@@ -682,7 +657,6 @@ func main() {
 	} else {
 		sdkAuth.RegisterTokenStore(sdkAuth.NewFileTokenStore())
 	}
-
 
 	configaccess.Register(&cfg.SDKConfig)
 	pluginHost.ApplyConfig(context.Background(), cfg)
@@ -701,7 +675,6 @@ func main() {
 	}
 	if homeClient != nil {
 
-
 		homeClient.Close()
 		homeClient = nil
 	}
@@ -713,8 +686,6 @@ func main() {
 			return
 		}
 	}
-
-
 
 	if vertexImport != "" {
 
@@ -824,7 +795,6 @@ func main() {
 				<-done
 			} else {
 
-
 				baseURL := resolveManagementBaseURL(managementBaseURL, cfg)
 				if errRun := tui.RunWithBaseURL(baseURL, password, nil, os.Stdout); errRun != nil {
 					fmt.Fprintf(os.Stderr, "TUI error: %v\n", errRun)
@@ -839,8 +809,6 @@ func main() {
 		}
 	}
 }
-
-
 
 func resolveManagementBaseURL(flagURL string, cfg *config.Config) string {
 	baseURL := strings.TrimSpace(flagURL)
@@ -859,10 +827,6 @@ func resolveManagementBaseURL(flagURL string, cfg *config.Config) string {
 	}
 	return fmt.Sprintf("http://127.0.0.1:%d", port)
 }
-
-
-
-
 
 func persistSeededConfig(ctx context.Context, configFilePath string, persist func(context.Context) error) error {
 	if errPrepare := config.PrepareConfigFileForUpload(configFilePath); errPrepare != nil {

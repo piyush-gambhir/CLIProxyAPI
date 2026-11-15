@@ -10,9 +10,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
 type issue7017MarkingExecutor struct {
 	inner error
 }
@@ -21,12 +18,9 @@ func (e *issue7017MarkingExecutor) Identifier() string { return "codex" }
 
 func (e *issue7017MarkingExecutor) Execute(ctx context.Context, _ *Auth, _ cliproxyexecutor.Request, _ cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 
-
 	cliproxyexecutor.MarkUpstreamAttempt(ctx)
 	return cliproxyexecutor.Response{}, e.inner
 }
-
-
 
 var issue7017StreamFirstChunk bool
 
@@ -205,7 +199,6 @@ func TestIssue7017TransientZeroHintKeepsQuotaDeadline(t *testing.T) {
 
 func TestTrustedRetryAfterIdentityHintMayDifferFromDeadline(t *testing.T) {
 
-
 	plain := errors.New("plain")
 	hint := time.Minute
 	err := withTrustedRetryAfter(plain, &hint)
@@ -223,7 +216,6 @@ func TestTrustedRetryAfterDeadlineDecays(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected trusted wrapper, got %T", err)
 	}
-
 
 	wrapped.deadline = time.Now().Add(-time.Second)
 	if got := SafeResponseHeaders(err).Get("Retry-After"); got != "" {

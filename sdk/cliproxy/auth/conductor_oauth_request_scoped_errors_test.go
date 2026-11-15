@@ -86,11 +86,9 @@ func TestOAuthRequestScopedErrors_AppliesToOAuthAuth(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-
 	if execCount != 1 {
 		t.Fatalf("expected execCount = 1 (stopped), got %d", execCount)
 	}
-
 
 	auth1State, ok := m.GetByID("auth-vertex-oauth")
 	if !ok || auth1State.Status != StatusActive || auth1State.Unavailable {
@@ -117,7 +115,6 @@ func TestOAuthRequestScopedErrors_DoesNotApplyToAPIKey(t *testing.T) {
 
 	m := NewManager(nil, nil, nil)
 	m.SetConfig(cfg)
-
 
 	auth1 := &Auth{
 		ID:         "auth-vertex-apikey",
@@ -173,7 +170,6 @@ func TestOAuthRequestScopedErrors_DoesNotApplyToAPIKey(t *testing.T) {
 	if string(resp.Payload) != `{"success": true}` {
 		t.Fatalf("unexpected payload: %s", string(resp.Payload))
 	}
-
 
 	if execCount != 2 {
 		t.Fatalf("expected execCount = 2 (rotated because OAuth rule skipped for API key), got %d", execCount)

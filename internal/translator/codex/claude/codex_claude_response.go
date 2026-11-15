@@ -1,9 +1,3 @@
-
-
-
-
-
-
 package claude
 
 import (
@@ -22,31 +16,17 @@ var (
 	dataTag = []byte("data:")
 )
 
-
-
 const codexThinkingSummaryPartSeparator = "\n\n"
-
-
-
-
-
 
 const codexCommentarySignatureMarker = sigcompat.CodexCommentarySignatureMarker
 
-
 type ConvertCodexResponseToClaudeParams struct {
-
-
-
 	ShortToOriginalToolNames map[string]string
 	ToolNamesResolved        bool
 	HasEmittedToolUse        bool
 	BlockIndex               int
 	HasTextDelta             bool
 	TextBlockOpen            bool
-
-
-
 
 	CommentaryMessageOpen   bool
 	PublicCommentaryText    strings.Builder
@@ -76,22 +56,6 @@ type codexFunctionCallStream struct {
 	Done                      bool
 	Closed                    bool
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequestRawJSON, _ []byte, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -134,9 +98,6 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		output = append(output, finalizeCodexCommentaryBlock(params)...)
 		params.CommentaryMessageOpen = false
 
-
-
-
 		if params.ThinkingBlockOpen {
 			output = append(output, appendCodexThinkingDelta(params, codexThinkingSummaryPartSeparator)...)
 		} else {
@@ -151,7 +112,6 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		output = append(output, appendCodexThinkingDelta(params, rootResult.Get("delta").String())...)
 		params.ThinkingSummarySeen = true
 	case "response.reasoning_summary_part.done":
-
 
 	case "response.content_part.added":
 		if rootResult.Get("part.type").String() == "output_text" {
@@ -220,7 +180,6 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		switch itemType {
 		case "message":
 
-
 			output = append(output, finalizeCodexThinkingBlock(params)...)
 			output = append(output, stopCodexTextBlock(params)...)
 			params.HasTextDelta = false
@@ -239,11 +198,9 @@ func ConvertCodexResponseToClaude(ctx context.Context, _ string, originalRequest
 		case "reasoning":
 			output = append(output, stopCodexTextBlock(params)...)
 
-
 			output = append(output, finalizeCodexThinkingBlock(params)...)
 			params.CommentaryMessageOpen = false
 			params.ThinkingSummarySeen = false
-
 
 			params.ThinkingSignature = strings.Clone(itemResult.Get("encrypted_content").String())
 		case "web_search_call":
@@ -424,10 +381,6 @@ func codexStreamErrorToClaudeError(rootResult ojson.Result) []byte {
 	return translatorcommon.AppendSSEEventBytes(nil, "error", outDoc.Bytes(), 2)
 }
 
-
-
-
-
 func ConvertCodexResponseToClaudeNonStream(ctx context.Context, _ string, originalRequestRawJSON, _ []byte, rawJSON []byte, _ *any) []byte {
 	revNames := buildReverseMapFromClaudeOriginalShortToOriginal(originalRequestRawJSON)
 
@@ -475,7 +428,6 @@ func ConvertCodexResponseToClaudeNonStream(ctx context.Context, _ string, origin
 					contentBlocks = append(contentBlocks, blockDoc.Bytes())
 				}
 			case "message":
-
 
 				blockType := "text"
 				if item.Get("phase").String() == "commentary" {
@@ -851,8 +803,6 @@ func clearCodexFunctionCalls(params *ConvertCodexResponseToClaudeParams) {
 	params.LastFunctionCall = nil
 }
 
-
-
 func (p *ConvertCodexResponseToClaudeParams) resolveToolUseName(originalRequestRawJSON []byte, name string) string {
 	if p == nil {
 		return resolveCodexClaudeToolUseName(originalRequestRawJSON, name)
@@ -932,7 +882,6 @@ func setClaudeReasoningUsageDoc(doc *ojson.Doc, usage ojson.Result) {
 	_ = doc.Set("usage.output_tokens_details.thinking_tokens", tokens)
 }
 
-
 func buildReverseMapFromClaudeOriginalShortToOriginal(original []byte) map[string]string {
 	rev := map[string]string{}
 	m := buildReverseMapFromClaudeOriginalToShort(original)
@@ -958,19 +907,12 @@ func startCodexTextBlock(params *ConvertCodexResponseToClaudeParams) []byte {
 	return translatorcommon.AppendSSEEventBytes(nil, "content_block_start", template, 2)
 }
 
-
-
-
-
 func finalizeCodexCommentaryBlock(params *ConvertCodexResponseToClaudeParams) []byte {
 	if !params.CommentaryMessageOpen || !params.ThinkingBlockOpen {
 		return nil
 	}
 	return finalizeCodexThinkingBlock(params)
 }
-
-
-
 
 func codexMessageTextBlock(blockType, text string) []byte {
 	if blockType == "thinking" {
@@ -1044,7 +986,6 @@ func startCodexThinkingBlock(params *ConvertCodexResponseToClaudeParams) []byte 
 	return translatorcommon.AppendSSEEventBytes(nil, "content_block_start", template, 2)
 }
 
-
 func appendCodexThinkingDelta(params *ConvertCodexResponseToClaudeParams, text string) []byte {
 	if text == "" {
 		return nil
@@ -1096,7 +1037,6 @@ func finalizeCodexThinkingBlock(params *ConvertCodexResponseToClaudeParams) []by
 
 	params.BlockIndex++
 	params.ThinkingBlockOpen = false
-
 
 	if signatureToEmit == codexCommentarySignatureMarker && params.PublicCommentaryText.Len() > 0 {
 		text := params.PublicCommentaryText.String()

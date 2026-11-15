@@ -1,8 +1,3 @@
-
-
-
-
-
 package gemini
 
 import (
@@ -23,8 +18,6 @@ type convertAntigravityGeminiParams struct {
 	ResponseID      string
 	UsageMetadata   []byte
 }
-
-
 
 func (p *convertAntigravityGeminiParams) observe(rawJSON []byte) {
 	if !p.SawResponse {
@@ -50,7 +43,6 @@ func (p *convertAntigravityGeminiParams) observe(rawJSON []byte) {
 		p.ResponseID = firstStringValue(rawJSON, "response.responseId", "responseId")
 	}
 
-
 	for _, path := range []string{"response.usageMetadata", "response.cpaUsageMetadata", "usageMetadata", "cpaUsageMetadata"} {
 		if usage := ojson.GetBytesNoCopy(rawJSON, path); usage.Exists() {
 			p.UsageMetadata = append(p.UsageMetadata[:0], usage.Raw...)
@@ -58,10 +50,6 @@ func (p *convertAntigravityGeminiParams) observe(rawJSON []byte) {
 		}
 	}
 }
-
-
-
-
 
 func (p *convertAntigravityGeminiParams) syntheticTerminalChunk() []byte {
 	chunkDoc := ojson.NewDoc([]byte(`{"candidates":[{"content":{"role":"model","parts":[{"text":""}]},"finishReason":"STOP"}]}`))
@@ -77,18 +65,12 @@ func (p *convertAntigravityGeminiParams) syntheticTerminalChunk() []byte {
 	return chunkDoc.Bytes()
 }
 
-
-
-
-
-
 func hasAntigravityResponsePayload(rawJSON []byte) bool {
 	for _, path := range []string{"response.candidates", "candidates"} {
 		if candidates := ojson.GetBytesNoCopy(rawJSON, path); candidates.IsArray() && len(candidates.Array()) > 0 {
 			return true
 		}
 	}
-
 
 	for _, path := range []string{
 		"response.usageMetadata", "response.cpaUsageMetadata",
@@ -110,23 +92,6 @@ func firstStringValue(rawJSON []byte, paths ...string) string {
 	return ""
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertAntigravityResponseToGemini(ctx context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if bytes.HasPrefix(rawJSON, []byte("data:")) {
 		rawJSON = bytes.TrimSpace(rawJSON[5:])
@@ -143,8 +108,6 @@ func ConvertAntigravityResponseToGemini(ctx context.Context, _ string, originalR
 	}
 
 	if bytes.Equal(rawJSON, []byte("[DONE]")) {
-
-
 
 		if state == nil || !state.SawResponse || state.SawFinishReason {
 			return [][]byte{}
@@ -193,18 +156,6 @@ func ConvertAntigravityResponseToGemini(ctx context.Context, _ string, originalR
 	return [][]byte{}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 var cpaUsageMetadataMarker = []byte(`"cpaUsageMetadata"`)
 
 func ConvertAntigravityResponseToGeminiNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
@@ -223,7 +174,6 @@ func ConvertAntigravityResponseToGeminiNonStream(_ context.Context, _ string, or
 	}
 	candidates := util.GetGJSONBytesNoCopy(chunk, "candidates")
 	if candidates.IsArray() {
-
 
 		var chunkDoc *ojson.Doc
 		idx := 0
@@ -280,10 +230,6 @@ func restoreGeminiFunctionNames(chunk, originalRequestRawJSON []byte) []byte {
 func GeminiTokenCount(ctx context.Context, count int64) []byte {
 	return translatorcommon.GeminiTokenCountJSON(count)
 }
-
-
-
-
 
 func restoreUsageMetadata(chunk []byte) []byte {
 	if !bytes.Contains(chunk, cpaUsageMetadataMarker) {

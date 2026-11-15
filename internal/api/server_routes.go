@@ -40,8 +40,6 @@ const oauthCallbackSuccessHTML = `<html><head><meta charset="utf-8"><title>Authe
 
 const codexAlphaSearchSourceFormat = "codex-alpha-search"
 
-
-
 func (s *Server) setupRoutes() {
 	healthzHandler := func(c *gin.Context) {
 		if c.Request.Method == http.MethodHead {
@@ -61,7 +59,6 @@ func (s *Server) setupRoutes() {
 	openaiResponsesHandlers := openai.NewOpenAIResponsesAPIHandler(s.handlers)
 	openaiResponsesHandlers.AccessManager = s.accessManager
 	s.codexLiveHandler = codexlive.NewHandler(s.handlers.AuthManager, s.cfg)
-
 
 	v1 := s.engine.Group("/v1")
 	v1.Use(AuthMiddleware(s.accessManager))
@@ -117,7 +114,6 @@ func (s *Server) setupRoutes() {
 		openaiV1.GET("/videos/:video_id", openaiHandlers.VideosRetrieve)
 	}
 
-
 	codexDirect := s.engine.Group("/backend-api/codex")
 	codexDirect.Use(AuthMiddleware(s.accessManager))
 	{
@@ -127,7 +123,6 @@ func (s *Server) setupRoutes() {
 		codexDirect.POST("/alpha/search", s.codexAlphaSearch)
 	}
 
-
 	v1beta := s.engine.Group("/v1beta")
 	v1beta.Use(AuthMiddleware(s.accessManager))
 	{
@@ -136,7 +131,6 @@ func (s *Server) setupRoutes() {
 		v1beta.POST("/models/*action", geminiHandlers.GeminiHandler)
 		v1beta.GET("/models/*action", s.geminiGetHandler(geminiHandlers))
 	}
-
 
 	s.engine.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -148,9 +142,6 @@ func (s *Server) setupRoutes() {
 			},
 		})
 	})
-
-
-
 
 	s.engine.GET("/anthropic/callback", func(c *gin.Context) {
 		code := c.Query("code")
@@ -230,7 +221,6 @@ func (s *Server) setupRoutes() {
 
 	s.engine.GET("/callback", devinCallbackHandler)
 	s.engine.GET("/devin/callback", devinCallbackHandler)
-
 
 }
 
@@ -315,8 +305,6 @@ func sanitizeCodexAlphaSearchBody(body []byte) []byte {
 	return sanitizedBody
 }
 
-
-
 func rewriteCodexAlphaSearchModel(body []byte, upstreamModel string) []byte {
 	upstreamModel = strings.TrimSpace(upstreamModel)
 	if upstreamModel == "" {
@@ -353,9 +341,6 @@ func homeSelectionAttemptContext(ctx context.Context, selection *auth.HomeDispat
 	}
 	return selection.AttemptContext(ctx)
 }
-
-
-
 
 func (s *Server) codexAlphaSearch(c *gin.Context) {
 	if s == nil || s.handlers == nil || s.handlers.AuthManager == nil {
@@ -464,7 +449,6 @@ func (s *Server) codexAlphaSearch(c *gin.Context) {
 		upstreamURL := "https://chatgpt.com/backend-api/codex/alpha/search"
 		requestBody := upstreamRequestBody
 
-
 		if current.AuthKind() == auth.AuthKindAPIKey {
 			baseURL := ""
 			if current.Attributes != nil {
@@ -564,8 +548,6 @@ func (s *Server) codexAlphaSearch(c *gin.Context) {
 	_, _ = c.Writer.Write(upstreamBody)
 }
 
-
-
 func (s *Server) AttachWebsocketRoute(path string, handler http.Handler) {
 	if s == nil || s.engine == nil || handler == nil {
 		return
@@ -608,19 +590,12 @@ func (s *Server) AttachWebsocketRoute(path string, handler http.Handler) {
 	s.engine.GET(trimmed, conditionalAuth, finalHandler)
 }
 
-
-
-
 func isAnthropicModelsRequest(c *gin.Context) bool {
 	if c.GetHeader("Anthropic-Version") != "" {
 		return true
 	}
 	return strings.HasPrefix(c.GetHeader("User-Agent"), "claude-cli")
 }
-
-
-
-
 
 func (s *Server) unifiedModelsHandler(openaiHandler *openai.OpenAIAPIHandler, claudeHandler *claude.ClaudeCodeAPIHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -644,7 +619,6 @@ func (s *Server) unifiedModelsHandler(openaiHandler *openai.OpenAIAPIHandler, cl
 			s.handleHomeModels(c)
 			return
 		}
-
 
 		if isAnthropicModelsRequest(c) {
 			claudeHandler.ClaudeModels(c)
@@ -707,8 +681,6 @@ func (s *Server) writeModelListResponse(c *gin.Context, sourceFormat string, pay
 	c.JSON(http.StatusOK, payload)
 }
 
-
-
 func (s *Server) handleHomeCodexClientModels(c *gin.Context, clientVersion string) {
 	entries, ok := s.loadHomeModelEntries(c)
 	if !ok {
@@ -739,7 +711,6 @@ func (s *Server) handleHomeCodexClientModels(c *gin.Context, clientVersion strin
 		payload = codexmodels.BuildResponseForClientWithSearchToolRoutes(models, nil, homeProvidersForModel(entries), webSearchCapabilityForModel, applyPatchCapabilityForModel, homeToolSearchCapabilityForModel(entries), optimizeMultiAgentV2, clientVersion)
 	} else {
 
-
 		payload = codexmodels.BuildResponseForClientWithToolCapabilities(models, nil, webSearchCapabilityForModel, applyPatchCapabilityForModel, nil, optimizeMultiAgentV2, clientVersion)
 	}
 	body, errMarshal := codexmodels.MarshalCompact(payload)
@@ -750,16 +721,12 @@ func (s *Server) handleHomeCodexClientModels(c *gin.Context, clientVersion strin
 	s.writeModelListResponse(c, "openai", body)
 }
 
-
-
 func homeApplyPatchCapabilityForModel(entries []homeModelEntry, manager *auth.Manager) codexmodels.ApplyPatchCapabilityForModelFunc {
 	providersForModel := homeProvidersForModel(entries)
 	return func(id string) bool {
 		return manager.SupportsApplyPatchForProviders(providersForModel(id))
 	}
 }
-
-
 
 func homeProvidersForModel(entries []homeModelEntry) codexmodels.ProvidersForModelFunc {
 	providersByID := make(map[string][]string, len(entries))
@@ -769,7 +736,6 @@ func homeProvidersForModel(entries []homeModelEntry) codexmodels.ProvidersForMod
 		if len(entry.providers) == 0 {
 			providersByID[id] = append(providersByID[id], "")
 		}
-
 
 		for _, route := range entry.nativeCapabilityRoutes {
 			if strings.TrimSpace(route.Provider) == "" {
@@ -781,9 +747,6 @@ func homeProvidersForModel(entries []homeModelEntry) codexmodels.ProvidersForMod
 		return providersByID[strings.TrimSpace(id)]
 	}
 }
-
-
-
 
 func homeToolSearchCapabilityForModel(entries []homeModelEntry) codexmodels.ToolSearchCapabilityForModelFunc {
 	routesByID := make(map[string][]registry.NativeCapabilityRoute, len(entries))
@@ -1110,9 +1073,6 @@ func homeGeminiModelMatches(entry homeModelEntry, action string) bool {
 	return action == id || action == "models/"+id || normalizedAction == normalizedID
 }
 
-
-
-
 func homeModelsAuthStatus(raw []byte) (int, bool) {
 	errType := homeModelsErrorType(raw)
 	if errType == "" {
@@ -1282,7 +1242,6 @@ func decodeHomeModels(raw []byte) ([]homeModelEntry, error) {
 
 	sort.Slice(out, func(i, j int) bool { return out[i].id < out[j].id })
 
-
 	if len(out) == 0 && hasModelRecords {
 		return nil, fmt.Errorf("home models payload contains no models")
 	}
@@ -1353,7 +1312,6 @@ func homeModelInt64Value(model map[string]any, keys ...string) int64 {
 	}
 	return 0
 }
-
 
 func homeModelTokenLimit(model map[string]any, keys ...string) int {
 	value := homeModelInt64Value(model, keys...)

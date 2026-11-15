@@ -28,12 +28,10 @@ import (
 
 const kimiReasoningUnavailable = "[reasoning unavailable]"
 
-
 type KimiExecutor struct {
 	ClaudeExecutor
 	cfg *config.Config
 }
-
 
 func NewKimiExecutor(cfg *config.Config) *KimiExecutor {
 	return &KimiExecutor{
@@ -47,14 +45,9 @@ func NewKimiExecutor(cfg *config.Config) *KimiExecutor {
 	}
 }
 
-
 func (e *KimiExecutor) Identifier() string { return "kimi" }
 
-
-
-
 func (e *KimiExecutor) SupportsNativeToolSearch(*cliproxyauth.Auth, string) bool { return false }
-
 
 func (e *KimiExecutor) RequestToFormat(_ cliproxyexecutor.Request, opts cliproxyexecutor.Options) sdktranslator.Format {
 	if opts.SourceFormat == sdktranslator.FormatClaude {
@@ -65,7 +58,6 @@ func (e *KimiExecutor) RequestToFormat(_ cliproxyexecutor.Request, opts cliproxy
 	}
 	return sdktranslator.FormatOpenAI
 }
-
 
 func (e *KimiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -83,7 +75,6 @@ func (e *KimiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth
 	return nil
 }
 
-
 func (e *KimiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("kimi executor: request is nil")
@@ -98,7 +89,6 @@ func (e *KimiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth,
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
 	return httpClient.Do(httpReq)
 }
-
 
 func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	from := opts.SourceFormat
@@ -143,7 +133,6 @@ func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req
 	if err != nil {
 		return resp, err
 	}
-
 
 	upstreamModel := normalizeKimiUpstreamModel(baseModel)
 	reporter.SetUpstreamModel(upstreamModel)
@@ -228,7 +217,6 @@ func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req
 	reporter.ObserveResponseModel(data)
 	var param any
 
-
 	out := sdktranslator.TranslateNonStream(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), body, data, &param)
 	if helps.ApplyPatchTranslationError(param) != nil || len(out) == 0 {
 		return cliproxyexecutor.Response{}, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
@@ -240,7 +228,6 @@ func (e *KimiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req
 	resp = cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}
 	return resp, nil
 }
-
 
 func (e *KimiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	from := opts.SourceFormat
@@ -283,7 +270,6 @@ func (e *KimiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Aut
 	if err != nil {
 		return nil, err
 	}
-
 
 	upstreamModel := normalizeKimiUpstreamModel(baseModel)
 	reporter.SetUpstreamModel(upstreamModel)
@@ -823,7 +809,6 @@ func (e *KimiExecutor) executeKimiResponsesCompactionStream(ctx context.Context,
 	return &cliproxyexecutor.StreamResult{Headers: headers, Chunks: out}, nil
 }
 
-
 func (e *KimiExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	if opts.SourceFormat == sdktranslator.FormatOpenAIResponse {
 		if errExpand := helps.ExpandResponsesCompactionCapsules(&req, &opts, "kimi"); errExpand != nil {
@@ -1128,7 +1113,6 @@ func fallbackAssistantReasoning(msg ojson.Result, hasLatest bool, latest string)
 	return kimiReasoningUnavailable
 }
 
-
 func (e *KimiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	log.Debugf("kimi executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
@@ -1204,8 +1188,6 @@ func (e *KimiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	return auth, nil
 }
 
-
-
 func applyKimiHeaders(r *http.Request, token string, stream bool) {
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Authorization", "Bearer "+token)
@@ -1270,7 +1252,6 @@ func applyKimiHeadersWithAuth(r *http.Request, token string, stream bool, auth *
 	}
 }
 
-
 func getKimiHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -1279,11 +1260,9 @@ func getKimiHostname() string {
 	return hostname
 }
 
-
 func getKimiDeviceModel() string {
 	return fmt.Sprintf("%s %s", runtime.GOOS, runtime.GOARCH)
 }
-
 
 func getKimiDeviceID() string {
 	homeDir, err := os.UserHomeDir()
@@ -1311,7 +1290,6 @@ func getKimiDeviceID() string {
 	return "cli-proxy-api-device"
 }
 
-
 func kimiCreds(a *cliproxyauth.Auth) (token string) {
 	if a == nil {
 		return ""
@@ -1334,7 +1312,6 @@ func kimiCreds(a *cliproxyauth.Auth) (token string) {
 	return ""
 }
 
-
 func stripKimiPrefix(model string) string {
 	model = strings.TrimSpace(model)
 	if strings.HasPrefix(strings.ToLower(model), "kimi-") {
@@ -1342,12 +1319,6 @@ func stripKimiPrefix(model string) string {
 	}
 	return model
 }
-
-
-
-
-
-
 
 func normalizeKimiUpstreamModel(model string) string {
 	model = strings.TrimSpace(model)
@@ -1370,9 +1341,6 @@ func normalizeKimiUpstreamModel(model string) string {
 	}
 	return normalized
 }
-
-
-
 
 func normalizeKimiTools(body []byte) []byte {
 	if len(body) == 0 {
@@ -1518,12 +1486,6 @@ func normalizeKimiParametersSchema(paramsRaw string) string {
 	return doc.String()
 }
 
-
-
-
-
-
-
 func normalizeKimiTemperature(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !normalizeKimiTemperatureDoc(doc) {
@@ -1554,9 +1516,7 @@ func normalizeKimiTemperatureDoc(doc *ojson.Doc) bool {
 	return false
 }
 
-
 func (e *KimiExecutor) SupportsApplyPatch() bool { return e != nil }
-
 
 func (e KimiExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	e.cfg = e.cfg.ForAPIKey()

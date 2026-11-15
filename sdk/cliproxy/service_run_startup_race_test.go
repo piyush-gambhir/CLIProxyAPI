@@ -133,7 +133,6 @@ func TestServiceRun_WatcherReloadConcurrentWithStartupModelRegistration_Issue658
 				}()
 			}
 
-
 			startupBatchEnteredOnce.Do(func() { close(startupBatchEntered) })
 		}
 	}
@@ -361,8 +360,6 @@ func TestRegisterModelsForAuthBatch_ConsistentConfigSnapshotAcrossConcurrentComm
 	}
 
 	service.registerModelsForAuthBatch(ctx, manager.List())
-
-
 
 	if reg.ClientSupportsModel(authID, "pfx/alias-v1") && !reg.ClientSupportsModel(authID, "alias-v1") {
 		t.Fatalf("detected torn config snapshot: registered initialCfg model alias-v1 with updatedCfg ForceModelPrefix=true (only pfx/alias-v1 present)")

@@ -147,8 +147,6 @@ func (h *Handler) ListPluginStore(c *gin.Context) {
 		pluginSourceCounts[item.plugin.ID]++
 	}
 
-
-
 	latestInput := make([]pluginstore.Plugin, len(plugins))
 	for index, item := range plugins {
 		status := statuses[item.plugin.ID]
@@ -497,8 +495,6 @@ func normalizePluginStoreRequestedVersion(version string) string {
 	}
 	return version
 }
-
-
 
 func (h *Handler) enablePluginConfigLocked(id string, storeManifest pluginstore.Manifest) error {
 	ensurePluginConfigMap(h.cfg)

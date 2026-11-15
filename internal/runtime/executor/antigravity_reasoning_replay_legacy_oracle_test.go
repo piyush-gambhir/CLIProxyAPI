@@ -1,15 +1,5 @@
 package executor
 
-
-
-
-
-
-
-
-
-
-
 import (
 	"crypto/sha256"
 	"encoding/json"
@@ -122,8 +112,6 @@ func legacyAntigravityFunctionCallPartLocationForReplayWithSchemas(payload []byt
 			return -1, -1, false
 		}
 
-
-
 		log.Debugf("antigravity replay: exact tool ID match for %q at contents[%d].parts[%d] rejected by context hash (opaque_id=%t)",
 			name, ci, pi, util.IsGeminiClaudeToolUseID(candidateID))
 		return -1, -1, false
@@ -222,11 +210,6 @@ func legacyAntigravityThoughtSignatureReplayPartPath(payload []byte, itemResult 
 	targetKind := strings.TrimSpace(itemResult.Get("targetKind").String())
 	targetHash := strings.TrimSpace(itemResult.Get("targetHash").String())
 
-
-
-
-
-
 	if targetHash != "" {
 		if targetOccurrence := itemResult.Get("targetOccurrence"); targetOccurrence.Exists() {
 			wanted := int(targetOccurrence.Int())
@@ -259,8 +242,6 @@ func legacyAntigravityThoughtSignatureReplayPartPath(payload []byte, itemResult 
 		return "", false
 	}
 
-
-
 	if !legacyAntigravityReplayItemContextMatches(payload, itemResult, ci) {
 		return "", false
 	}
@@ -270,8 +251,6 @@ func legacyAntigravityThoughtSignatureReplayPartPath(payload []byte, itemResult 
 			return fmt.Sprintf("request.contents.%d.parts.%d", ci, pi), true
 		}
 	}
-
-
 
 	for candidate := len(partArr) - 1; candidate >= 0; candidate-- {
 		if kind, _ := antigravityReplayPartFingerprint(partArr[candidate]); kind != "" {
@@ -387,18 +366,12 @@ func legacyMergeAntigravityFunctionCallPartReplayWithSchemas(payload []byte, ite
 		return restoreAntigravityNativeFunctionCallReplay(payload, ci, pi, itemResult, allowLegacyIDRestore, true)
 	}
 
-
-
-
 	if ci, pi, exists := legacyAntigravityFunctionCallProvenanceLocation(payload, itemResult, toolSchemas); exists {
 		return restoreAntigravityNativeFunctionCallReplay(payload, ci, pi, itemResult, false, true)
 	}
 	if callID != "" {
 		stableID := util.GeminiClaudeToolUseID(callID, name, args.Raw)
 		if legacyAntigravityPayloadHasFunctionCallID(payload, callID) || (stableID != "" && legacyAntigravityPayloadHasFunctionCallID(payload, stableID)) {
-
-
-
 
 			return payload, false
 		}
@@ -416,7 +389,6 @@ func legacyMergeAntigravityFunctionCallPartReplayWithSchemas(payload []byte, ite
 			}
 		}
 	} else {
-
 
 		return payload, false
 	}

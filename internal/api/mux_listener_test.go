@@ -35,14 +35,12 @@ func TestMuxListener_CloseDrainsAndClosesQueuedConnections(t *testing.T) {
 		t.Fatalf("Close failed: %v", err)
 	}
 
-
 	buf := make([]byte, 1)
 	_ = c2.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
 	_, errRead := c2.Read(buf)
 	if errRead == nil {
 		t.Fatalf("expected queued net.Pipe peer to observe connection close after listener Close")
 	}
-
 
 	_, errAccept := l.Accept()
 	if !errors.Is(errAccept, net.ErrClosed) {
@@ -54,7 +52,6 @@ func TestMuxListener_ConcurrentBlockedPutDuringClose(t *testing.T) {
 	const bufferSize = 2
 	const numGoroutines = 16
 	l := newMuxListener(&net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 8080}, bufferSize)
-
 
 	for i := 0; i < bufferSize; i++ {
 		c1, c2 := net.Pipe()
@@ -91,7 +88,6 @@ func TestMuxListener_ConcurrentBlockedPutDuringClose(t *testing.T) {
 	readyCount.Wait()
 	close(started)
 
-
 	if err := l.Close(); err != nil {
 		t.Fatalf("Close failed: %v", err)
 	}
@@ -103,7 +99,6 @@ func TestMuxListener_ConcurrentBlockedPutDuringClose(t *testing.T) {
 			t.Fatalf("goroutine %d Put error = %v, want %v", idx, err, net.ErrClosed)
 		}
 	}
-
 
 	if _, err := l.Accept(); !errors.Is(err, net.ErrClosed) {
 		t.Fatalf("Accept after Close returned %v, want %v", err, net.ErrClosed)

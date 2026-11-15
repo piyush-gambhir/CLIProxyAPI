@@ -9,10 +9,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 const issue7017TurnRateLimitBody = `{"error":{"type":"rate_limit_error","code":"turn_rate_limit_exceeded","message":"Codex is at capacity, please try again later"}}`
 
 func issue7017AssertTransient(t *testing.T, err error, wantHint *time.Duration) {

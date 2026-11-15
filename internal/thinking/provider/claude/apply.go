@@ -1,4 +1,3 @@
-
 package claude
 
 import (
@@ -8,11 +7,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
-
 
 func NewApplier() *Applier {
 	return &Applier{}
@@ -21,7 +18,6 @@ func NewApplier() *Applier {
 func init() {
 	thinking.RegisterProvider("claude", NewApplier())
 }
-
 
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	if !thinking.IsUserDefinedModel(modelInfo) && modelInfo.Thinking == nil {
@@ -51,7 +47,6 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	}
 	return doc.Bytes(), nil
 }
-
 
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {

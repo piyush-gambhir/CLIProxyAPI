@@ -645,7 +645,6 @@ func TestCaptureRequestInfo_HeadersDeepCopy(t *testing.T) {
 		t.Fatalf("captureRequestInfo failed: %v", err)
 	}
 
-
 	c.Request.Header["X-Audit"][0] = "mutated-value"
 
 	if got := info.Headers["X-Audit"][0]; got != "original-value" {
@@ -713,7 +712,6 @@ func TestRequestLoggingMiddleware_PreservesFullUUIDForLoggerAndTruncatesFilename
 		t.Fatalf("status = %d, want 200", resp.Code)
 	}
 
-
 	if spy.lastLogRequestID == "" {
 		t.Fatalf("expected non-empty request ID passed to logger")
 	}
@@ -724,7 +722,6 @@ func TestRequestLoggingMiddleware_PreservesFullUUIDForLoggerAndTruncatesFilename
 	if parsed.Version() != 7 {
 		t.Fatalf("request ID version = %d, want 7", parsed.Version())
 	}
-
 
 	entries, errRead := os.ReadDir(logsDir)
 	if errRead != nil {
@@ -808,8 +805,6 @@ func TestRequestLoggingMiddleware_FinalizesStreamingWriterOnHandlerPanic(t *test
 		t.Fatal("expected streaming log writer to be closed when handler panics")
 	}
 
-
-
 	logsDir := t.TempDir()
 	errorOnlyLogger := logging.NewFileRequestLogger(false, logsDir, "", 10)
 	errorRouter := gin.New()
@@ -834,7 +829,6 @@ func TestRequestLoggingMiddleware_FinalizesStreamingWriterOnHandlerPanic(t *test
 		t.Fatalf("expected 1 error log file on pre-status panic, got %+v", entries)
 	}
 
-
 	abortLogsDir := t.TempDir()
 	abortLogger := logging.NewFileRequestLogger(false, abortLogsDir, "", 10)
 	abortRouter := gin.New()
@@ -856,8 +850,6 @@ func TestRequestLoggingMiddleware_FinalizesStreamingWriterOnHandlerPanic(t *test
 		t.Fatalf("expected no error log for http.ErrAbortHandler, got %+v", abortEntries)
 	}
 }
-
-
 
 func streamingZstdBomb(t *testing.T, size int) []byte {
 	t.Helper()
@@ -897,9 +889,6 @@ func captureOf(t *testing.T, body []byte, limit int64) (captured, restored []byt
 	return info.Body, restored
 }
 
-
-
-
 func TestCaptureRequestInfoBoundsZstdExpansionWithoutAConfiguredLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	bomb := streamingZstdBomb(t, 40<<20)
@@ -920,8 +909,6 @@ func TestCaptureRequestInfoBoundsZstdExpansionWithoutAConfiguredLimit(t *testing
 		}
 	}
 }
-
-
 
 func TestCaptureRequestInfoDoesNotDecodeASingleSegmentBomb(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -954,7 +941,6 @@ func TestCaptureRequestInfoDoesNotDecodeASingleSegmentBomb(t *testing.T) {
 	}
 }
 
-
 func TestDecodeCapturedZstdRefusesAnOversizedWindow(t *testing.T) {
 
 	raw, errDecode := hex.DecodeString("28b52ffd0470b900007b226d6f64656c223a226770742d362e312d736f6c227d2a82afeb")
@@ -981,7 +967,6 @@ func TestResponseWriterLogOnErrorOnlyZeroBufferUntilActionableError(t *testing.T
 	wrapper.logOnErrorOnly = true
 	wrapper.ginContext = c
 
-
 	largePayload := bytes.Repeat([]byte("a"), 4<<20)
 	if _, err := wrapper.Write(largePayload); err != nil {
 		t.Fatalf("Write failed: %v", err)
@@ -989,7 +974,6 @@ func TestResponseWriterLogOnErrorOnlyZeroBufferUntilActionableError(t *testing.T
 	if wrapper.body.Len() != 0 {
 		t.Fatalf("wrapper.body.Len() for 200 OK = %d, want 0", wrapper.body.Len())
 	}
-
 
 	c.Set("API_RESPONSE_ERROR", []*interfaces.ErrorMessage{
 		{

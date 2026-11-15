@@ -16,7 +16,6 @@ import (
 )
 
 const (
-
 	AntigravityModelBaseURLDaily = "https://daily-cloudcode-pa.googleapis.com"
 
 	AntigravityModelsPath = "/v1internal:fetchAvailableModels"
@@ -27,7 +26,6 @@ const (
 	antigravityMaxModelIDBytes  = 256
 )
 
-
 type AntigravityProbeStatus int
 
 const (
@@ -36,13 +34,11 @@ const (
 	AntigravityProbeStatusTransientError
 )
 
-
 type AntigravityModelCapabilityHints struct {
 	WebSearchModelIDs map[string]struct{}
 
 	ModelIDs map[string]struct{}
 }
-
 
 func (h AntigravityModelCapabilityHints) Clone() AntigravityModelCapabilityHints {
 	return AntigravityModelCapabilityHints{
@@ -51,7 +47,6 @@ func (h AntigravityModelCapabilityHints) Clone() AntigravityModelCapabilityHints
 	}
 }
 
-
 type AntigravityModelProbeRequest struct {
 	BaseURLs    []string
 	ProxyURL    string
@@ -59,8 +54,6 @@ type AntigravityModelProbeRequest struct {
 	ProjectID   string
 	UserAgent   string
 }
-
-
 
 func FetchAntigravityAvailableModels(ctx context.Context, req AntigravityModelProbeRequest) (AntigravityModelCapabilityHints, AntigravityProbeStatus) {
 	baseURL := ""
@@ -136,7 +129,6 @@ func FetchAntigravityAvailableModels(ctx context.Context, req AntigravityModelPr
 	return hints, AntigravityProbeStatusSuccess
 }
 
-
 func NormalizeAntigravityModelID(modelID string) string {
 	trimmed := strings.ToLower(strings.TrimSpace(modelID))
 	if len(trimmed) > antigravityMaxModelIDBytes {
@@ -156,7 +148,6 @@ func sanitizeAntigravityPersistedEndpoint(endpoint string) string {
 	}
 	return trimmed
 }
-
 
 func ParseAntigravityModelCapabilityHints(body []byte) (AntigravityModelCapabilityHints, bool) {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
@@ -211,8 +202,6 @@ func ParseAntigravityModelCapabilityHints(body []byte) (AntigravityModelCapabili
 	}, true
 }
 
-
-
 func BuildPersistedAntigravityCapabilityHints(project, endpoint string, hints AntigravityModelCapabilityHints) map[string]any {
 	if hints.ModelIDs == nil {
 		return nil
@@ -255,7 +244,6 @@ func BuildPersistedAntigravityCapabilityHints(project, endpoint string, hints An
 	}
 	return value
 }
-
 
 func ParsePersistedAntigravityCapabilityHints(metadata map[string]any, expectedProject, expectedEndpoint string) (AntigravityModelCapabilityHints, bool) {
 	if metadata == nil {

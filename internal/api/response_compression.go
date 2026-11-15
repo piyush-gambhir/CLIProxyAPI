@@ -75,8 +75,6 @@ func responseCompressionMiddleware(cfg *config.Config) gin.HandlerFunc {
 	}
 }
 
-
-
 func negotiateResponseCompression(header string) (string, bool) {
 	qualities := make(map[string]float64)
 	for _, token := range strings.Split(header, ",") {
@@ -114,8 +112,6 @@ func negotiateResponseCompression(header string) (string, bool) {
 	}
 	return selected, identityAllowed
 }
-
-
 
 type responseCompressionCommitWriter struct {
 	gin.ResponseWriter
@@ -173,9 +169,6 @@ type responseCompressorPool interface {
 	Put(any)
 }
 
-
-
-
 var responseCompressorPools = map[string]responseCompressorPool{
 	"zstd": &sync.Pool{New: func() any {
 		encoder, errNewWriter := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1), zstd.WithWindowSize(1<<20), zstd.WithLowerEncoderMem(true))
@@ -187,7 +180,6 @@ var responseCompressorPools = map[string]responseCompressorPool{
 	}},
 	"gzip": &sync.Pool{New: func() any { return gzip.NewWriter(io.Discard) }},
 }
-
 
 func newResponseCompressor(encoding string, dst io.Writer) responseCompressor {
 	pool := responseCompressorPools[encoding]
@@ -201,8 +193,6 @@ func newResponseCompressor(encoding string, dst io.Writer) responseCompressor {
 	compressor.Reset(dst)
 	return compressor
 }
-
-
 
 type responseCompressionWriter struct {
 	gin.ResponseWriter
@@ -276,7 +266,6 @@ func (w *responseCompressionWriter) Write(data []byte) (n int, err error) {
 	return n, w.writeErr
 }
 
-
 func (w *responseCompressionWriter) WriteString(data string) (int, error) {
 	return w.Write([]byte(data))
 }
@@ -295,7 +284,6 @@ func (w *responseCompressionWriter) Flush() {
 		log.Debugf("response compression flush failed: %v", errFlush)
 	}
 }
-
 
 func (w *responseCompressionWriter) FlushError() error {
 	if w.writeErr != nil {
@@ -402,7 +390,6 @@ func (w *responseCompressionWriter) finish() {
 				log.Errorf("close response compression encoder: %v", errClose)
 			}
 		}
-
 
 		w.compressor.Reset(io.Discard)
 		responseCompressorPools[w.encoding].Put(w.compressor)

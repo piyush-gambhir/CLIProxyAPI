@@ -82,7 +82,6 @@ func (m *mockQuotaProvider) ResetQuota(ctx context.Context, req pluginapi.QuotaR
 func TestGetQuotaProviders_Endpoint(t *testing.T) {
 	h := NewHandlerWithoutConfigFilePath(&config.Config{AuthDir: t.TempDir()}, nil)
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/quota/providers", nil)
@@ -99,7 +98,6 @@ func TestGetQuotaProviders_Endpoint(t *testing.T) {
 	if !ok || len(providers) != 0 {
 		t.Fatalf("expected 0 providers, got %#v", emptyResp)
 	}
-
 
 	host := pluginhost.New()
 	host.RegisterPluginForTest("opencode-plugin", pluginapi.Plugin{
@@ -152,7 +150,6 @@ func TestFetchCredentialQuota_Endpoint(t *testing.T) {
 	h := NewHandlerWithoutConfigFilePath(&config.Config{AuthDir: t.TempDir()}, manager)
 	h.SetPluginHost(host)
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/v0/management/quota/fetch", strings.NewReader(`{}`))
@@ -162,7 +159,6 @@ func TestFetchCredentialQuota_Endpoint(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", rec.Code)
 	}
 
-
 	recNotFound := httptest.NewRecorder()
 	ctxNotFound, _ := gin.CreateTestContext(recNotFound)
 	ctxNotFound.Request = httptest.NewRequest(http.MethodPost, "/v0/management/quota/fetch", strings.NewReader(`{"auth_index":"non-existent"}`))
@@ -171,7 +167,6 @@ func TestFetchCredentialQuota_Endpoint(t *testing.T) {
 	if recNotFound.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", recNotFound.Code)
 	}
-
 
 	recSuccess := httptest.NewRecorder()
 	ctxSuccess, _ := gin.CreateTestContext(recSuccess)
@@ -246,7 +241,6 @@ func TestResetCredentialQuota_Endpoint(t *testing.T) {
 		t.Fatalf("unexpected reset payload: %+v", resetPayload)
 	}
 
-
 	updated, ok := manager.GetByID(auth.ID)
 	if !ok || updated.Unavailable || updated.Status == coreauth.StatusError {
 		t.Fatalf("expected core auth quota to be cleared, got %+v", updated)
@@ -276,7 +270,6 @@ func TestPluginSpecificQuotaEndpoints(t *testing.T) {
 	h := NewHandlerWithoutConfigFilePath(&config.Config{AuthDir: t.TempDir()}, manager)
 	h.SetPluginHost(host)
 
-
 	recGet := httptest.NewRecorder()
 	ctxGet, _ := gin.CreateTestContext(recGet)
 	ctxGet.Params = gin.Params{{Key: "id", Value: "workbuddy-plugin"}}
@@ -285,7 +278,6 @@ func TestPluginSpecificQuotaEndpoints(t *testing.T) {
 	if recGet.Code != http.StatusOK {
 		t.Fatalf("expected GET status 200, got %d: %s", recGet.Code, recGet.Body.String())
 	}
-
 
 	recPost := httptest.NewRecorder()
 	ctxPost, _ := gin.CreateTestContext(recPost)
@@ -296,7 +288,6 @@ func TestPluginSpecificQuotaEndpoints(t *testing.T) {
 	if recPost.Code != http.StatusOK {
 		t.Fatalf("expected POST status 200, got %d: %s", recPost.Code, recPost.Body.String())
 	}
-
 
 	recDel := httptest.NewRecorder()
 	ctxDel, _ := gin.CreateTestContext(recDel)
@@ -533,7 +524,6 @@ func TestResetCredentialQuota_FailureDoesNotClearCooldown(t *testing.T) {
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("expected status 502, got %d: %s", rec.Code, rec.Body.String())
 	}
-
 
 	record, ok := manager.GetByID(auth.ID)
 	if !ok || !record.Unavailable || record.Status != coreauth.StatusError {

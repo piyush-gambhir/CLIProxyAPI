@@ -53,7 +53,6 @@ func init() {
 	responsesWebsocketCompressionEnabled.Store(true)
 }
 
-
 func SetResponsesWebsocketCompressionEnabled(enabled bool) {
 	responsesWebsocketCompressionEnabled.Store(enabled)
 }
@@ -65,10 +64,6 @@ var responsesWebsocketUpgrader = websocket.Upgrader{
 		return true
 	},
 }
-
-
-
-
 
 func writeWebsocketCloseForUpstreamError(conn *websocket.Conn, err error) (bool, error) {
 	if conn == nil {
@@ -131,9 +126,6 @@ type responsesWebsocketWriter struct {
 func newResponsesWebsocketWriter(conn *websocket.Conn) *responsesWebsocketWriter {
 	return &responsesWebsocketWriter{conn: conn}
 }
-
-
-
 
 func (w *responsesWebsocketWriter) closeForUpstreamError(err error) (bool, error) {
 	if w == nil || w.conn == nil {
@@ -301,10 +293,6 @@ func (w *responsesWebsocketWriter) closeForUpstreamDisconnect(err error, wsTimel
 	return wrote
 }
 
-
-
-
-
 func isWebsocketConnectionClosedError(err error) bool {
 	if err == nil {
 		return false
@@ -322,7 +310,6 @@ func truncateWebsocketCloseReason(reason string, maxBytes int) string {
 	if len(reason) <= maxBytes && utf8.ValidString(reason) {
 		return reason
 	}
-
 
 	var truncated strings.Builder
 	truncated.Grow(min(len(reason), maxBytes))
@@ -413,10 +400,6 @@ func (h *OpenAIResponsesAPIHandler) authenticateResponsesWebsocketTurn(c *gin.Co
 	return result.Principal, nil
 }
 
-
-
-
-
 func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 	upgrader := responsesWebsocketUpgrader
 	upgrader.EnableCompression = responsesWebsocketCompressionEnabled.Load()
@@ -426,7 +409,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 	}
 	writer := newResponsesWebsocketWriter(conn)
 	passthroughSessionID := uuid.NewString()
-
 
 	socketCtx, cancelSocket := context.WithCancelCause(logging.WithDeferredAPIRequestCaptureDisabled(c.Request.Context()))
 	defer cancelSocket(nil)
@@ -451,7 +433,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		queueResponsesWebsocketKeepAliveInterval(keepAliveIntervals, interval)
 	}
 	updateKeepAlive()
-
 
 	requestLogEnabled := false
 	codexResponseSteering := false
@@ -502,8 +483,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 							return
 						case disconnectErr := <-disconnectCh:
 							if provider == "codex" && codexDuplexStream.Load() {
-
-
 
 								return
 							}
@@ -563,7 +542,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		if h == nil || h.AuthManager == nil {
 			return nil, false, false
 		}
-
 
 		if auth, ok := h.AuthManager.GetByID(authID); ok {
 			return auth, false, true
@@ -647,12 +625,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 			continue
 		}
 		updateKeepAlive()
-
-
-
-
-
-
 
 		wsTimelineLog.BeginRequest()
 		wsTimelineLog.Append("request", payload, time.Now())
@@ -755,14 +727,10 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 				return
 			}
 
-
 		}
 		if explicitRequestModelName != "" && !useUpstreamWebsocketPassthrough {
 			passthroughModelName = ""
 		}
-
-
-
 
 		observedCompactionReplayAuthID := ""
 		observedCompactionSupported := false
@@ -777,7 +745,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 				providerRouteMatches := (observedCompaction.provider == currentProvider && observedCompaction.targetModel == currentTargetModel)
 				if providerRouteMatches && observedCompaction.authID != "" {
 					if currentProvider != "" {
-
 
 						if compactionAuth, _, ok := sessionAuthByIDWithSource(observedCompaction.authID); ok && compactionAuth != nil {
 							if compactionAuth.Status == coreauth.StatusActive {
@@ -1001,17 +968,13 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		dataChan, _, errChan := h.ExecuteStreamWithAuthManager(cliCtx, h.HandlerType(), modelName, requestJSON, "")
 		if !selectedAuthObserved {
 
-
 			attemptedUpstreamMode = responsesWebsocketUpstreamModeHTTP
 		}
-
-
 
 		var lossWriteErr error
 		var replayedPinnedAuthFailure bool
 		replayPinnedAuthFailure := func(errMsg *interfaces.ErrorMessage) bool {
 			if cliproxyexecutor.IsUpstreamWebsocketTurnError(errMsg.Error) {
-
 
 				var turnErr *cliproxyexecutor.UpstreamWebsocketTurnError
 				if errors.As(errMsg.Error, &turnErr) {
@@ -1064,7 +1027,6 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 			switch {
 			case errors.Is(errForward, websocket.ErrCloseSent):
 			case isWebsocketConnectionClosedError(errForward):
-
 
 				log.Debugf("responses websocket: client closed during forward id=%s error=%v", passthroughSessionID, errForward)
 			default:
@@ -1228,7 +1190,6 @@ func websocketUpgradeHeaders(req *http.Request) http.Header {
 		return headers
 	}
 
-
 	turnState := strings.TrimSpace(req.Header.Get(wsTurnStateHeader))
 	if turnState != "" {
 		headers.Set(wsTurnStateHeader, turnState)
@@ -1244,8 +1205,6 @@ func responsesWebsocketPreviousResponseNotFoundError() *interfaces.ErrorMessage 
 		),
 	}
 }
-
-
 
 func writeResponsesWebsocketUpstreamLoss(writer *responsesWebsocketWriter, wsTimelineLog websocketTimelineAppender, errMsg *interfaces.ErrorMessage) error {
 	var turnErr *cliproxyexecutor.UpstreamWebsocketTurnError
@@ -1266,8 +1225,6 @@ func writeResponsesWebsocketUpstreamLoss(writer *responsesWebsocketWriter, wsTim
 	}
 	return nil
 }
-
-
 
 func writeResponsesWebsocketPreviousResponseNotFound(writer *responsesWebsocketWriter, wsTimelineLog websocketTimelineAppender, payload []byte) error {
 	errMsg := responsesWebsocketPreviousResponseNotFoundError()

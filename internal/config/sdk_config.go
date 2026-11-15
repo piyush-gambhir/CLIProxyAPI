@@ -1,7 +1,3 @@
-
-
-
-
 package config
 
 import (
@@ -16,103 +12,43 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 type SDKConfig struct {
-
-
 	MaxRequestBodyBytes int64 `yaml:"max-request-body-bytes" json:"max-request-body-bytes"`
-
-
-
-
 
 	ResponseCompression ResponseCompressionConfig `yaml:"response-compression" json:"-"`
 
-
 	Client ClientConfig `yaml:"client" json:"client"`
-
-
-
 
 	OAuthOnlyFields map[string]bool `yaml:"-" json:"-"`
 
-
 	CodexResponseSteering bool `yaml:"-" json:"-"`
-
 
 	ProxyURL string `yaml:"proxy-url" json:"proxy-url"`
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 	TLSHandshakeTimeoutSeconds int `yaml:"tls-handshake-timeout-seconds" json:"tls-handshake-timeout-seconds"`
-
-
-
-
-
-
-
-
-
-
 
 	DisableImageGeneration DisableImageGenerationMode `yaml:"disable-image-generation" json:"disable-image-generation"`
 
-
-
-
-
-
-
 	GPTImage2BaseModel string `yaml:"gpt-image-2-base-model,omitempty" json:"gpt-image-2-base-model,omitempty"`
-
-
-
 
 	VideoResultAuthCacheTTL string `yaml:"video-result-auth-cache-ttl,omitempty" json:"video-result-auth-cache-ttl,omitempty"`
 
-
-
-
 	ForceModelPrefix bool `yaml:"force-model-prefix" json:"force-model-prefix"`
-
 
 	RequestLog bool `yaml:"request-log" json:"request-log"`
 
-
 	CodexOrphanDelegationCompatibility bool `yaml:"-" json:"-"`
-
 
 	ClaudeCode ClaudeCodeConfig `yaml:"claude-code" json:"claude-code"`
 
-
 	APIKeys []string `yaml:"api-keys" json:"api-keys"`
-
-
 
 	PassthroughHeaders bool `yaml:"passthrough-headers" json:"passthrough-headers"`
 
-
 	Streaming StreamingConfig `yaml:"streaming" json:"streaming"`
-
-
 
 	NonStreamKeepAliveInterval int `yaml:"nonstream-keepalive-interval,omitempty" json:"nonstream-keepalive-interval,omitempty"`
 }
-
-
-
 
 func (c *SDKConfig) TLSHandshakeTimeout() time.Duration {
 	if c == nil || c.TLSHandshakeTimeoutSeconds <= 0 {
@@ -125,59 +61,38 @@ func (c *SDKConfig) TLSHandshakeTimeout() time.Duration {
 	return time.Duration(c.TLSHandshakeTimeoutSeconds) * time.Second
 }
 
-
 type ClientConfig struct {
 	Codex  CodexClientConfig  `yaml:"codex" json:"codex"`
 	Claude ClaudeClientConfig `yaml:"claude" json:"claude"`
 }
 
-
 type ClaudeClientConfig struct {
-
-
 	ShowCodexCommentary bool `yaml:"show-codex-commentary" json:"show-codex-commentary"`
 }
 
-
 type CodexClientConfig struct {
-
-
 	OptimizeMultiAgentV2 bool `yaml:"optimize-multi-agent-v2" json:"optimize-multi-agent-v2"`
 
-
-
 	EnableApplyPatch bool `yaml:"enable-apply-patch" json:"enable-apply-patch"`
-
-
 
 	WebSearchResultCache CodexWebSearchResultCacheConfig `yaml:"web-search-result-cache" json:"web-search-result-cache"`
 }
 
 const (
-
 	DefaultCodexWebSearchResultCacheTTL = 24 * time.Hour
-
 
 	DefaultCodexWebSearchResultCacheLimit = 1024
 
 	maxCodexWebSearchResultCacheTTLSeconds = int64(math.MaxInt64 / time.Second)
 )
 
-
 type CodexWebSearchResultCacheConfig struct {
-
-
 	Enabled bool `yaml:"enabled" json:"enabled"`
-
-
 
 	TTL string `yaml:"ttl" json:"ttl"`
 
-
-
 	Limit int `yaml:"limit" json:"limit"`
 }
-
 
 func (c CodexWebSearchResultCacheConfig) Validate() error {
 	if _, err := parseCodexWebSearchResultCacheTTL(c.TTL); err != nil {
@@ -189,7 +104,6 @@ func (c CodexWebSearchResultCacheConfig) Validate() error {
 	return nil
 }
 
-
 func (c CodexWebSearchResultCacheConfig) EffectiveTTL() time.Duration {
 	d, err := parseCodexWebSearchResultCacheTTL(c.TTL)
 	if err != nil || d <= 0 {
@@ -197,7 +111,6 @@ func (c CodexWebSearchResultCacheConfig) EffectiveTTL() time.Duration {
 	}
 	return d
 }
-
 
 func (c CodexWebSearchResultCacheConfig) EffectiveLimit() int {
 	if c.Limit > 0 {
@@ -357,25 +270,14 @@ func parseCodexWebSearchResultCacheTTL(raw string) (time.Duration, error) {
 	return d, nil
 }
 
-
 type ClaudeCodeConfig struct {
-
 	DisableCloakingModelList bool `yaml:"disable-cloaking-model-list" json:"disable-cloaking-model-list"`
 }
 
-
 type StreamingConfig struct {
-
-
-
 	KeepAliveSeconds int `yaml:"keepalive-seconds,omitempty" json:"keepalive-seconds,omitempty"`
 
-
-
-
 	BootstrapRetries int `yaml:"bootstrap-retries,omitempty" json:"bootstrap-retries,omitempty"`
-
-
 
 	SendKeepAliveBeforeFT bool `yaml:"send-keepalive-before-ft,omitempty" json:"send-keepalive-before-ft,omitempty"`
 }

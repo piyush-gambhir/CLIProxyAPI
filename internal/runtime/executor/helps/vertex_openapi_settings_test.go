@@ -155,7 +155,6 @@ func TestShouldExecuteVertexOpenAPIForRequest_RequestedModelAndAliasPriority(t *
 func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation(t *testing.T) {
 	enabled, disabled := true, false
 
-
 	prefixedAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Prefix:   "tenant",
@@ -172,7 +171,6 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 	if !ShouldExecuteVertexOpenAPIForRequest(nil, prefixedAuth, "gemini-2.5-pro", prefixedOpts) {
 		t.Fatal("expected prefixed request 'tenant/public-model' to match alias 'public-model' with openapi=true")
 	}
-
 
 	suffixAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
@@ -197,7 +195,6 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected 'public-model(low)' to fall back to base alias 'public-model' (openapi=false), not match 'public-model(high)'")
 	}
 
-
 	cfg := &config.Config{
 		OAuthModelAlias: map[string][]config.OAuthModelAlias{
 			"vertex": {{Name: "gemini-2.5-pro", Alias: "gemini-oauth-openapi", OpenAPI: &enabled}},
@@ -217,7 +214,6 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected global OAuth settings/aliases not to route API-key Vertex credential through OpenAPI")
 	}
 
-
 	publisherPrefixAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Prefix:   "deepseek-ai",
@@ -231,7 +227,6 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 	if !ShouldExecuteVertexOpenAPIForRequest(nil, publisherPrefixAuth, "deepseek-ai/deepseek-v4.1-flash-maas", publisherPrefixOpts) {
 		t.Fatal("expected resolved upstream model 'deepseek-ai/deepseek-v4.1-flash-maas' to keep publisher prefix even when auth.Prefix is 'deepseek-ai'")
 	}
-
 
 	precedenceAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
@@ -251,7 +246,6 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 	if !ShouldExecuteVertexOpenAPIForRequest(nil, precedenceAuth, "deepseek-ai/deepseek-v4.1-flash-maas", sharedAliasOpts) {
 		t.Fatal("expected model_aliases entry to take precedence over models entry for duplicate alias")
 	}
-
 
 	shadowAuth := &cliproxyauth.Auth{
 		Provider: "vertex",

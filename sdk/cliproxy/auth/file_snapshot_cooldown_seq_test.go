@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-
-
-
 func TestFileSnapshotKeepsCooldownWatermark(t *testing.T) {
 	const authID = "snapshot-watermark-auth"
 	manager := issue6643SeqTestAuth(t, authID)
@@ -53,8 +50,6 @@ func TestFileSnapshotKeepsCooldownWatermark(t *testing.T) {
 		t.Fatalf("a success dispatched after the cooldown did not clear it: %+v", final)
 	}
 }
-
-
 
 func TestManager_Issue6643_CredentialQuotaCarryKeepsCooldownWatermark(t *testing.T) {
 	const authID = "credential-quota-watermark-auth"

@@ -55,15 +55,9 @@ func devinBuiltinSWE16SlowModelInfo() *ModelInfo {
 	}
 }
 
-
-
-
 func WithDevinBuiltins(models []*ModelInfo) []*ModelInfo {
 	return upsertModelInfos(models, devinBuiltinSWE16SlowModelInfo())
 }
-
-
-
 
 func GetDevinModels() []*ModelInfo {
 	devinCatalogStore.mu.RLock()
@@ -80,8 +74,6 @@ func GetDevinModels() []*ModelInfo {
 
 	return WithDevinBuiltins(cloneModelInfos(staticDevinModels))
 }
-
-
 
 func LookupDevinModel(modelID string) *ModelInfo {
 	clean := strings.ToLower(strings.TrimSpace(modelID))
@@ -111,8 +103,6 @@ func LookupDevinModel(modelID string) *ModelInfo {
 		}
 	}
 
-
-
 	if base, _ := splitDevinModelID(clean); base != clean && base != "" {
 		for _, m := range models {
 			mClean := strings.ToLower(strings.TrimPrefix(m.ID, "devin/"))
@@ -124,19 +114,16 @@ func LookupDevinModel(modelID string) *ModelInfo {
 	return nil
 }
 
-
 func GetDevinModelsJSON() []byte {
 	data, _ := GetDevinModelsSnapshot()
 	return data
 }
-
 
 func GetDevinModelsRevision() uint64 {
 	devinCatalogStore.mu.RLock()
 	defer devinCatalogStore.mu.RUnlock()
 	return devinCatalogStore.revision
 }
-
 
 func GetDevinModelsSnapshot() ([]byte, uint64) {
 	devinCatalogStore.mu.RLock()
@@ -166,13 +153,10 @@ func loadDevinModelsFromBytes(data []byte, source string) (bool, error) {
 	return true, nil
 }
 
-
-
 func ValidateDevinModelsJSON(data []byte) ([]*ModelInfo, error) {
 	if len(bytes.TrimSpace(data)) == 0 {
 		return nil, fmt.Errorf("empty Devin models payload")
 	}
-
 
 	var payload devinModelsFilePayload
 	if err := json.Unmarshal(data, &payload); err == nil {
@@ -184,7 +168,6 @@ func ValidateDevinModelsJSON(data []byte) ([]*ModelInfo, error) {
 			return sanitizeAndValidateDevinModels(candidates)
 		}
 	}
-
 
 	var rawList []*ModelInfo
 	if err := json.Unmarshal(data, &rawList); err == nil && len(rawList) > 0 {
@@ -215,7 +198,6 @@ var devinCompoundSuffixes = []struct {
 	{suffix: "-thinking", effort: ""},
 	{suffix: "-max-1m", effort: "max", readd: "-1m"},
 	{suffix: "-none-1m", effort: "none", readd: "-1m"},
-
 
 	{suffix: "-minimal-lightning", effort: "minimal", readd: "-lightning"},
 	{suffix: "-low-lightning", effort: "low", readd: "-lightning"},
@@ -417,8 +399,6 @@ func aggregateDevinModels(models []*ModelInfo) []*ModelInfo {
 		entry := aggregated[id]
 		m := entry.model
 
-
-
 		if strings.HasSuffix(strings.ToLower(strings.TrimPrefix(id, "devin/")), "-lightning") &&
 			!strings.HasSuffix(strings.ToLower(m.DisplayName), "lightning") {
 			m.DisplayName = strings.TrimSpace(m.DisplayName + " Lightning")
@@ -447,7 +427,6 @@ func aggregateDevinModels(models []*ModelInfo) []*ModelInfo {
 				Levels: lvls,
 			}
 		}
-
 
 		if m.Type == "" {
 			m.Type = "devin"

@@ -79,9 +79,6 @@ func TestConvertGeminiResponseToOpenAINonStream_EmptyTextProducesEmptyString(t *
 	}
 }
 
-
-
-
 func TestConvertGeminiResponseToOpenAINonStream_AudioTranscriptionPartProducesContent(t *testing.T) {
 	response := []byte(`{"candidates":[{"content":{"parts":[{"text":""},{"audioTranscription":{"text":"Hello world"}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":185,"totalTokenCount":185}}`)
 	result := ConvertGeminiResponseToOpenAINonStream(context.Background(), "model", nil, nil, response, nil)
@@ -131,7 +128,6 @@ func TestConvertGeminiResponseToOpenAINonStream_TextPrecedenceOverAudioTranscrip
 func TestConvertGeminiResponseToOpenAI_PinsSanitizedNameMapPerStream(t *testing.T) {
 	ctx := context.Background()
 
-
 	var param any
 	reqWithTool := []byte(`{"model":"gemini-2.5-flash","tools":[{"name":"mcp/search"}]}`)
 	chunk1 := []byte(`{"candidates":[{"content":{"parts":[{"text":"thinking"}]}}]}`)
@@ -145,7 +141,6 @@ func TestConvertGeminiResponseToOpenAI_PinsSanitizedNameMapPerStream(t *testing.
 	if got := ojson.GetBytesNoCopy(out[0], "choices.0.delta.tool_calls.0.function.name").String(); got != "mcp/search" {
 		t.Fatalf("restored tool name = %q, want mcp/search", got)
 	}
-
 
 	var nilMapParam any
 	reqNoSanitize := []byte(`{"model":"gemini-2.5-flash","tools":[{"name":"plain_tool"}]}`)

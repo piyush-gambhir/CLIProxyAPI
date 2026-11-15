@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-
-
-
-
 func TestCredentialQuotaKeepsSoleCredentialModelsListed(t *testing.T) {
 	r := newTestModelRegistry()
 	models := []*ModelInfo{
@@ -36,7 +32,6 @@ func TestCredentialQuotaKeepsSoleCredentialModelsListed(t *testing.T) {
 		t.Errorf("metadata catalog lists %d models during a credential-wide quota, want %d", got, len(models))
 	}
 
-
 	registration := r.models["claude-opus-5-5"]
 	past := time.Now().Add(-2 * modelQuotaExceededWindow)
 	registration.QuotaExceededClients["claude-oauth"] = &past
@@ -46,7 +41,6 @@ func TestCredentialQuotaKeepsSoleCredentialModelsListed(t *testing.T) {
 	if got := len(r.GetAvailableModelsByProvider("claude")); got != len(models) {
 		t.Errorf("provider catalog lists %d models after the quota window, want %d", got, len(models))
 	}
-
 
 	_, epoch = r.GetModelsAndEpochForClient("claude-oauth")
 	if !r.ApplyClientModelProjections("claude-oauth", epoch, 2, []ClientModelProjection{
@@ -59,8 +53,6 @@ func TestCredentialQuotaKeepsSoleCredentialModelsListed(t *testing.T) {
 			t.Error("a model whose only credential is unauthorized is still listed")
 		}
 	}
-
-
 
 	r.RegisterClient("claude-api-backup", "claude", []*ModelInfo{
 		{ID: "claude-haiku-4-5", OwnedBy: "anthropic", Type: "claude"},

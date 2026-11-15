@@ -8,9 +8,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
 func TestExecuteStream_AllCredentialsOverloaded_ReturnsStatusError(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -23,7 +20,6 @@ func TestExecuteStream_AllCredentialsOverloaded_ReturnsStatusError(t *testing.T)
 	m.RegisterExecutor(&customStreamMockExecutor{
 		identifier: "codex",
 		streamFn: func(_ context.Context, _ *Auth, _ cliproxyexecutor.Request, _ cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
-
 
 			return nil, overloadStatusError()
 		},
@@ -43,8 +39,6 @@ func TestExecuteStream_AllCredentialsOverloaded_ReturnsStatusError(t *testing.T)
 		t.Fatalf("status code = %d, want %d", got, http.StatusServiceUnavailable)
 	}
 }
-
-
 
 func TestExecuteStream_UnbufferedOverload_StaysCommittedStream(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -87,10 +81,6 @@ func TestExecuteStream_UnbufferedOverload_StaysCommittedStream(t *testing.T) {
 		t.Fatal("expected the overload rejection to arrive in-stream")
 	}
 }
-
-
-
-
 
 func TestExecuteStream_ErrorAsFirstChunk_IsDowngradedToCommittedStream(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()

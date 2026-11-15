@@ -246,7 +246,6 @@ func TestGuardOAuthSessionPendingForSave(t *testing.T) {
 		}
 	}
 
-
 	store.Register("completed-save", "codex")
 	store.Complete("completed-save")
 	if errGuard := guardOAuthSessionPendingForSave("completed-save", "codex"); !errors.Is(errGuard, errOAuthSessionNotPending) {
@@ -291,7 +290,6 @@ func TestCancelAuthSessionHandler(t *testing.T) {
 	if repeat.status != http.StatusOK || repeat.cancelled {
 		t.Fatalf("repeat cancel response = %#v, want ok with cancelled=false", repeat)
 	}
-
 
 	statusRouter := gin.New()
 	statusRouter.GET("/status", handler.GetAuthStatus)

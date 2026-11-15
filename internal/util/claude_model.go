@@ -2,21 +2,14 @@ package util
 
 import "strings"
 
-
 func IsClaudeModel(model string) bool {
 	return strings.Contains(strings.ToLower(model), "claude")
 }
-
-
 
 func IsClaudeThinkingModel(model string) bool {
 	lower := strings.ToLower(model)
 	return strings.Contains(lower, "claude") && strings.Contains(lower, "thinking")
 }
-
-
-
-
 
 var claudeLegacySystemReminderModels = map[string]struct{}{
 	"claude-3-5-haiku-20241022":  {},
@@ -39,10 +32,6 @@ var claudeLegacySystemReminderModels = map[string]struct{}{
 	"claude-sonnet-4-5-20250929": {},
 	"claude-sonnet-4-6":          {},
 }
-
-
-
-
 
 func IsClaudeLegacySystemReminderModel(model string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(model))

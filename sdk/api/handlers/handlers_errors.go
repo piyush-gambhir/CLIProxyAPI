@@ -84,7 +84,6 @@ func enrichAuthSelectionError(err error, providers []string, model string) error
 		detail = fmt.Sprintf("%s (providers=%s, model=%s)", baseMessage, providerText, modelText)
 	}
 
-
 	if strings.Contains(","+providerText+",", ",claude,") {
 		detail += "; check Claude auth/key session and cooldown state via /v0/management/auth-files"
 	}
@@ -113,7 +112,6 @@ func enrichAuthSelectionError(err error, providers []string, model string) error
 	return enriched
 }
 
-
 func (h *BaseAPIHandler) WriteErrorResponse(c *gin.Context, msg *interfaces.ErrorMessage) {
 	status := http.StatusInternalServerError
 	if msg != nil && msg.StatusCode > 0 {
@@ -133,7 +131,6 @@ func (h *BaseAPIHandler) WriteErrorResponse(c *gin.Context, msg *interfaces.Erro
 			if len(values) == 0 || IsCPAReservedResponseHeader(key) {
 				continue
 			}
-
 
 			if coreauth.HasTrustedRetryDeadline(msg.Error) && http.CanonicalHeaderKey(key) == "Retry-After" {
 				continue

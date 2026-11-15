@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-
 type keysTabModel struct {
 	client       *Client
 	viewport     viewport.Model
@@ -30,7 +29,6 @@ type keysTabModel struct {
 	cursor       int
 	confirm      int
 	status       string
-
 
 	editing   bool
 	adding    bool
@@ -171,7 +169,6 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			}
 		}
 
-
 		if m.confirm >= 0 {
 			switch msg.String() {
 			case "y", "Y":
@@ -191,7 +188,6 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			}
 			return m, nil
 		}
-
 
 		switch msg.String() {
 		case "j", "down":
@@ -299,7 +295,6 @@ func (m keysTabModel) renderContent() string {
 		return sb.String()
 	}
 
-
 	sb.WriteString(tableHeaderStyle.Render(fmt.Sprintf("  %s (%d)", T("access_keys"), len(m.keys))))
 	sb.WriteString("\n")
 
@@ -320,12 +315,10 @@ func (m keysTabModel) renderContent() string {
 		sb.WriteString(rowStyle.Render(row))
 		sb.WriteString("\n")
 
-
 		if m.confirm == i {
 			sb.WriteString(warningStyle.Render(fmt.Sprintf("    "+T("confirm_delete_key"), maskKey(key))))
 			sb.WriteString("\n")
 		}
-
 
 		if m.editing && m.editIdx == i {
 			sb.WriteString(m.editInput.View())
@@ -334,7 +327,6 @@ func (m keysTabModel) renderContent() string {
 			sb.WriteString("\n")
 		}
 	}
-
 
 	if m.adding {
 		sb.WriteString("\n")
@@ -345,7 +337,6 @@ func (m keysTabModel) renderContent() string {
 	}
 
 	sb.WriteString("\n")
-
 
 	renderProviderKeys(&sb, "Gemini API Keys", m.gemini)
 	renderProviderKeys(&sb, "Interactions API Keys", m.interactions)

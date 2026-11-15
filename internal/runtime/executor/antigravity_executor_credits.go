@@ -169,7 +169,6 @@ func antigravityCreditsBalanceAvailable(authID string, bal antigravityCreditsBal
 	return available
 }
 
-
 func parseMetaFloat(metadata map[string]any, key string) (float64, bool) {
 	v, ok := metadata[key]
 	if !ok {

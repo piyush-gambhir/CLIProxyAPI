@@ -12,8 +12,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func registerOverloadAuths(t *testing.T, m *Manager, n int) []string {
 	t.Helper()
 	reg := registry.GetGlobalRegistry()
@@ -65,10 +63,6 @@ func successStreamResult() *cliproxyexecutor.StreamResult {
 		Chunks:  ch,
 	}
 }
-
-
-
-
 
 func TestExecuteStream_BootstrapOverload_SkipsConsecutiveOverloadedCredentials(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
@@ -180,8 +174,6 @@ func TestExecuteStream_BootstrapCapacity_SkipsConsecutiveOverloadedCredentials(t
 	}
 }
 
-
-
 func TestExecuteStream_BootstrapOverload_StopsAtCredentialBudget(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -221,7 +213,6 @@ func TestExecuteStream_BootstrapOverload_StopsAtCredentialBudget(t *testing.T) {
 	if attempts == 0 {
 		t.Fatal("expected at least one attempt")
 	}
-
 
 	if attempts < 4 || attempts > 6 {
 		t.Fatalf("attempts = %d, want between 4 and 6", attempts)

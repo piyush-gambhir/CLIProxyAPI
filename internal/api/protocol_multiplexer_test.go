@@ -337,7 +337,6 @@ func TestServerRejectsIncompleteUnauthenticatedRequestBodiesPromptly(t *testing.
 				})
 			}
 
-
 			httpClient := &http.Client{Timeout: 2 * time.Second}
 			healthResp, errHealth := httpClient.Get("http://" + addr + "/healthz")
 			if errHealth != nil {
@@ -421,18 +420,13 @@ func TestAcceptMuxNotBlockedByIdleConnection(t *testing.T) {
 	srv.Listener = muxLn
 	srv.Start()
 
-
 	idleConn, err := net.DialTimeout("tcp", listener.Addr().String(), 2*time.Second)
 	if err != nil {
 		t.Fatalf("failed to dial idle connection: %v", err)
 	}
 	defer idleConn.Close()
 
-
 	time.Sleep(50 * time.Millisecond)
-
-
-
 
 	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Get("http://" + listener.Addr().String() + "/")

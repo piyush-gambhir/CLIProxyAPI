@@ -1,5 +1,3 @@
-
-
 package executor
 
 import (
@@ -16,15 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
 type CodexWebsocketsExecutor struct {
 	*CodexExecutor
 
 	store *codexWebsocketSessionStore
-
 
 	duplexStateObserver func(event string, ready bool)
 }
@@ -35,11 +28,6 @@ func NewCodexWebsocketsExecutor(cfg *config.Config) *CodexWebsocketsExecutor {
 		store:         globalCodexWebsocketSessionStore,
 	}
 }
-
-
-
-
-
 
 type CodexAutoExecutor struct {
 	httpExec *CodexExecutor
@@ -54,7 +42,6 @@ func NewCodexAutoExecutor(cfg *config.Config) *CodexAutoExecutor {
 }
 
 func (e *CodexAutoExecutor) Identifier() string { return "codex" }
-
 
 func (e *CodexAutoExecutor) UsesConfig(cfg *config.Config) bool {
 	return e != nil && e.httpExec != nil && e.httpExec.cfg == cfg
@@ -174,12 +161,9 @@ func codexWebsocketsEnabled(auth *cliproxyauth.Auth) bool {
 	return false
 }
 
-
 func (e *CodexAutoExecutor) SupportsApplyPatch() bool {
 	return e != nil && e.httpExec != nil && e.wsExec != nil && e.httpExec.SupportsApplyPatch() && e.wsExec.SupportsApplyPatch()
 }
-
-
 
 func (e *CodexAutoExecutor) InterruptExecutionSession(ctx context.Context, sessionID string, payload []byte) error {
 	if e == nil || e.wsExec == nil {
@@ -187,9 +171,6 @@ func (e *CodexAutoExecutor) InterruptExecutionSession(ctx context.Context, sessi
 	}
 	return e.wsExec.InterruptExecutionSession(ctx, sessionID, payload)
 }
-
-
-
 
 func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context, sessionID string, payload []byte) error {
 	if e == nil {
@@ -222,7 +203,6 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 		return cliproxyexecutor.ErrNoActiveUpstreamWebsocket
 	}
 
-
 	authEnabled := cliproxyexecutor.WebsocketAuthEnabled(ctx, authID)
 	sess.connMu.Lock()
 	if sess.conn != conn {
@@ -234,10 +214,6 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 	_, alreadyTerminal := sess.terminalResponseIDs[targetID]
 	alreadyTerminal = alreadyTerminal && sess.responseStateConn == conn
 
-
-
-
-
 	liveChannel := sess.activeConn == conn && sess.activeCh != nil
 	active := liveChannel && !sess.activeResponseTerminal &&
 		(sess.activeResponseID == "" || sess.activeResponseID == targetID)
@@ -245,7 +221,6 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 	if sess.terminalConn == conn {
 		disconnectErr = sess.terminalErr
 	}
-
 
 	sess.activeMu.Unlock()
 	sess.connMu.Unlock()
@@ -257,12 +232,9 @@ func (e *CodexWebsocketsExecutor) InterruptExecutionSession(ctx context.Context,
 		return nil
 	}
 
-
 	if !liveChannel {
 		return cliproxyexecutor.ErrNoActiveUpstreamWebsocket
 	}
-
-
 
 	if !active {
 		return cliproxyexecutor.ErrUpstreamWebsocketInterruptRejected

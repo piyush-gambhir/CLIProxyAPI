@@ -15,8 +15,6 @@ type streamDelivery struct {
 	err       error
 }
 
-
-
 func WithStreamDelivery(ctx context.Context) (context.Context, func(error)) {
 	delivery := &streamDelivery{done: make(chan struct{})}
 	return context.WithValue(ctx, streamDeliveryKey{}, delivery), func(err error) {
@@ -27,9 +25,6 @@ func WithStreamDelivery(ctx context.Context) (context.Context, func(error)) {
 	}
 }
 
-
-
-
 func WithoutStreamDelivery(ctx context.Context) context.Context {
 	if ctx == nil {
 		return nil
@@ -37,13 +32,10 @@ func WithoutStreamDelivery(ctx context.Context) context.Context {
 	return context.WithValue(ctx, streamDeliveryKey{}, struct{}{})
 }
 
-
 func StreamDeliveryTracked(ctx context.Context) bool {
 	_, ok := ctx.Value(streamDeliveryKey{}).(*streamDelivery)
 	return ok
 }
-
-
 
 func WaitStreamDelivery(ctx context.Context) (error, bool) {
 	delivery, ok := ctx.Value(streamDeliveryKey{}).(*streamDelivery)
@@ -54,8 +46,6 @@ func WaitStreamDelivery(ctx context.Context) (error, bool) {
 	return delivery.err, true
 }
 
-
-
 func SupportStreamDelivery(ctx context.Context) func() {
 	delivery, ok := ctx.Value(streamDeliveryKey{}).(*streamDelivery)
 	if !ok {
@@ -65,7 +55,6 @@ func SupportStreamDelivery(ctx context.Context) func() {
 	var once sync.Once
 	return func() { once.Do(func() { delivery.supported.Add(-1) }) }
 }
-
 
 func StreamDeliverySupported(ctx context.Context) bool {
 	delivery, ok := ctx.Value(streamDeliveryKey{}).(*streamDelivery)

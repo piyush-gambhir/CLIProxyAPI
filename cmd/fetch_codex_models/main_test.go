@@ -26,7 +26,6 @@ func TestCountModels(t *testing.T) {
 		t.Fatalf("countModels(valid) = %d, want 2", count)
 	}
 
-
 	count, err = countModels([]byte(`{"models":[{"slug":"gpt-5.6-sol"}]}`))
 	if err != nil {
 		t.Fatalf("countModels(incomplete upstream model): %v", err)

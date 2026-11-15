@@ -33,7 +33,6 @@ type claudeIssue7000Executor interface {
 	CountTokens(context.Context, *cliproxyauth.Auth, cliproxyexecutor.Request, cliproxyexecutor.Options) (cliproxyexecutor.Response, error)
 }
 
-
 func captureClaudeIssue7000(t *testing.T, executor claudeIssue7000Executor, auth *cliproxyauth.Auth, request cliproxyexecutor.Request, options cliproxyexecutor.Options, method string) ([]byte, http.Header) {
 	t.Helper()
 	var captured []byte

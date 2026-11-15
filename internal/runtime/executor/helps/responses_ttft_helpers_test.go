@@ -251,11 +251,9 @@ func TestObserveResponsesTokenEvent_Behavior(t *testing.T) {
 	reporter.StartResponseTTFT()
 	time.Sleep(10 * time.Millisecond)
 
-
 	if reporter.IsTTFTSet() {
 		t.Fatalf("expected IsTTFTSet() to be false initially")
 	}
-
 
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"codex.rate_limits","rate_limits":{"plan_type":"pro"}}`))
 	if reporter.IsTTFTSet() {
@@ -265,12 +263,10 @@ func TestObserveResponsesTokenEvent_Behavior(t *testing.T) {
 		t.Fatalf("expected IsFirstPacketSet() == true")
 	}
 
-
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"response.created","response":{"id":"resp_1"}}`))
 	if reporter.IsTTFTSet() {
 		t.Fatalf("response.created must not trigger IsTTFTSet()")
 	}
-
 
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"response.output_text.delta","delta":"First word"}`))
 	if !reporter.IsTTFTSet() {
@@ -280,7 +276,6 @@ func TestObserveResponsesTokenEvent_Behavior(t *testing.T) {
 	if tokenTTFT <= 0 {
 		t.Fatalf("expected token TTFT > 0, got %v", tokenTTFT)
 	}
-
 
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"response.output_text.delta","delta":"Second word"}`))
 	if reporter.ttftDuration() != tokenTTFT {
@@ -293,14 +288,12 @@ func TestObserveResponsesTokenEvent_FirstPacketFallback(t *testing.T) {
 	reporter := NewUsageReporter(ctx, "codex", "gpt-5.6-luna", nil)
 	reporter.StartResponseTTFT()
 
-
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"codex.rate_limits","rate_limits":{"plan_type":"pro"}}`))
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"response.created","response":{"id":"resp_1"}}`))
 
 	if reporter.IsTTFTSet() {
 		t.Fatalf("expected IsTTFTSet() to be false when no tokens were received")
 	}
-
 
 	if !reporter.IsFirstPacketSet() {
 		t.Fatalf("expected IsFirstPacketSet() == true")

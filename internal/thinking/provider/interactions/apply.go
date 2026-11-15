@@ -1,4 +1,3 @@
-
 package interactions
 
 import (
@@ -10,11 +9,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
-
 
 func NewApplier() *Applier {
 	return &Applier{}
@@ -23,7 +20,6 @@ func NewApplier() *Applier {
 func init() {
 	thinking.RegisterProvider("interactions", NewApplier())
 }
-
 
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	if config.Mode != thinking.ModeBudget && config.Mode != thinking.ModeLevel && config.Mode != thinking.ModeNone && config.Mode != thinking.ModeAuto {
@@ -38,7 +34,6 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	}
 	return doc.Bytes(), nil
 }
-
 
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {

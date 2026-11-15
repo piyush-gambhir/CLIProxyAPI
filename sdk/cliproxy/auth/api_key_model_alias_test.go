@@ -37,18 +37,14 @@ func TestLookupAPIKeyUpstreamModel(t *testing.T) {
 		{"alias with suffix", "a1", "g25p(8192)", "gemini-2.5-pro-exp-03-25(8192)"},
 		{"alias without suffix", "a1", "g25p", "gemini-2.5-pro-exp-03-25"},
 
-
 		{"config suffix priority", "a1", "g25f(high)", "gemini-2.5-flash(low)"},
 		{"config suffix no user suffix", "a1", "g25f", "gemini-2.5-flash(low)"},
-
 
 		{"uppercase alias", "a1", "G25P", "gemini-2.5-pro-exp-03-25"},
 		{"mixed case with suffix", "a1", "G25p(4096)", "gemini-2.5-pro-exp-03-25(4096)"},
 
-
 		{"upstream name direct", "a1", "gemini-2.5-pro-exp-03-25", "gemini-2.5-pro-exp-03-25"},
 		{"upstream name with suffix", "a1", "gemini-2.5-pro-exp-03-25(8192)", "gemini-2.5-pro-exp-03-25(8192)"},
-
 
 		{"non-existent auth", "non-existent", "g25p", ""},
 		{"unknown alias", "a1", "unknown-alias", ""},
@@ -103,11 +99,9 @@ func TestAPIKeyModelAlias_ConfigHotReload(t *testing.T) {
 	ctx := context.Background()
 	_, _ = mgr.Register(ctx, &Auth{ID: "a1", Provider: "gemini", Attributes: map[string]string{"api_key": "k"}})
 
-
 	if resolved := mgr.lookupAPIKeyUpstreamModel("a1", "g25p"); resolved != "gemini-2.5-pro-exp-03-25" {
 		t.Fatalf("before reload: got %q, want %q", resolved, "gemini-2.5-pro-exp-03-25")
 	}
-
 
 	mgr.SetConfig(&internalconfig.Config{
 		GeminiKey: []internalconfig.GeminiKey{
@@ -117,7 +111,6 @@ func TestAPIKeyModelAlias_ConfigHotReload(t *testing.T) {
 			},
 		},
 	})
-
 
 	if resolved := mgr.lookupAPIKeyUpstreamModel("a1", "g25p"); resolved != "gemini-2.5-flash" {
 		t.Fatalf("after reload: got %q, want %q", resolved, "gemini-2.5-flash")
@@ -322,12 +315,10 @@ func TestLookupAPIKeyUpstreamModel_MetaKey(t *testing.T) {
 		t.Fatalf("register auth: %v", err)
 	}
 
-
 	resolved := mgr.lookupAPIKeyUpstreamModel("meta-auth-1", "muse-latest")
 	if resolved != "muse-spark-1.3" {
 		t.Fatalf("lookupAPIKeyUpstreamModel() = %q, want muse-spark-1.3", resolved)
 	}
-
 
 	slowRouting := &apiKeyModelRoutingSnapshot{
 		config:  cfg,
@@ -338,12 +329,10 @@ func TestLookupAPIKeyUpstreamModel_MetaKey(t *testing.T) {
 		t.Fatalf("applyAPIKeyModelAliasWithRouting(slow) = %q, want muse-spark-1.3", slowResolved)
 	}
 
-
 	aliasResult := mgr.resolveAPIKeyModelAliasWithResult(auth, "muse-latest")
 	if aliasResult.UpstreamModel != "muse-spark-1.3" {
 		t.Fatalf("resolveAPIKeyModelAliasWithResult() upstream = %q, want muse-spark-1.3", aliasResult.UpstreamModel)
 	}
-
 
 	entries := configuredModelAliasEntries(cfg, auth)
 	found := false

@@ -1,6 +1,3 @@
-
-
-
 package executor
 
 import (
@@ -25,29 +22,17 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 type AIStudioExecutor struct {
 	provider string
 	relay    *wsrelay.Manager
 	cfg      *config.Config
 }
 
-
-
-
-
-
-
-
-
-
 func NewAIStudioExecutor(cfg *config.Config, provider string, relay *wsrelay.Manager) *AIStudioExecutor {
 	return &AIStudioExecutor{provider: strings.ToLower(provider), relay: relay, cfg: cfg}
 }
 
-
 func (e *AIStudioExecutor) Identifier() string { return "aistudio" }
-
 
 func (e *AIStudioExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -60,7 +45,6 @@ func (e *AIStudioExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.
 	util.ApplyCustomHeadersFromAttrs(req, attrs)
 	return nil
 }
-
 
 func (e *AIStudioExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
@@ -121,7 +105,6 @@ func (e *AIStudioExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.A
 	}
 	return resp, nil
 }
-
 
 func (e *AIStudioExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	if opts.Alt == "responses/compact" {
@@ -215,7 +198,6 @@ func (e *AIStudioExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth,
 	resp = cliproxyexecutor.Response{Payload: ensureColonSpacedJSON(out), Headers: wsResp.Headers.Clone()}
 	return resp, nil
 }
-
 
 func (e *AIStudioExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	if opts.Alt == "responses/compact" {
@@ -528,7 +510,6 @@ func (e *AIStudioExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth
 	return &cliproxyexecutor.StreamResult{Headers: firstEvent.Headers.Clone(), Chunks: out}, nil
 }
 
-
 func (e *AIStudioExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	countReq := req
@@ -588,7 +569,6 @@ func (e *AIStudioExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.A
 	translated := sdktranslator.TranslateTokenCount(ctx, body.toFormat, responseFormat, totalTokens, resp.Body)
 	return cliproxyexecutor.Response{Payload: translated}, nil
 }
-
 
 func (e *AIStudioExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
@@ -676,9 +656,6 @@ func (e *AIStudioExecutor) translateRequest(ctx context.Context, req cliproxyexe
 	}, nil
 }
 
-
-
-
 func normalizeAIStudioThinkingLevel(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !normalizeAIStudioThinkingLevelDoc(doc) {
@@ -724,11 +701,6 @@ func (e *AIStudioExecutor) buildEndpoint(model, action, alt string) string {
 	return base
 }
 
-
-
-
-
-
 func splitRelayFrames(payload []byte) [][]byte {
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 	if !startsWithSSEField(trimmed) {
@@ -760,8 +732,6 @@ func startsWithSSEField(b []byte) bool {
 	return false
 }
 
-
-
 func ensureColonSpacedJSON(payload []byte) []byte {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) == 0 {
@@ -785,7 +755,6 @@ func ensureColonSpacedJSON(payload []byte) []byte {
 	for i := 0; i < len(indented); i++ {
 		ch := indented[i]
 		if ch == '"' {
-
 
 			backslashes := 0
 			for j := i - 1; j >= 0 && indented[j] == '\\'; j-- {
@@ -814,6 +783,5 @@ func ensureColonSpacedJSON(payload []byte) []byte {
 
 	return compacted
 }
-
 
 func (e *AIStudioExecutor) SupportsApplyPatch() bool { return e != nil }

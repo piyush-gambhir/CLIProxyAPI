@@ -5,8 +5,6 @@ import (
 	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
 func SetStringIfDifferent(payload []byte, path, value string) []byte {
 	current := ojson.GetBytesNoCopy(payload, path)
 	if current.Type == ojson.String && current.String() == value {
@@ -19,8 +17,6 @@ func SetStringIfDifferent(payload []byte, path, value string) []byte {
 	return updated
 }
 
-
-
 func SetStringIfDifferentDoc(doc *ojson.Doc, path, value string) bool {
 	if doc == nil {
 		return false
@@ -31,8 +27,6 @@ func SetStringIfDifferentDoc(doc *ojson.Doc, path, value string) bool {
 	}
 	return doc.Set(path, value) == nil
 }
-
-
 
 func SetBoolIfDifferent(payload []byte, path string, value bool) []byte {
 	current := ojson.GetBytesNoCopy(payload, path)
@@ -46,8 +40,6 @@ func SetBoolIfDifferent(payload []byte, path string, value bool) []byte {
 	return updated
 }
 
-
-
 func SetBoolIfDifferentDoc(doc *ojson.Doc, path string, value bool) bool {
 	if doc == nil {
 		return false
@@ -58,7 +50,6 @@ func SetBoolIfDifferentDoc(doc *ojson.Doc, path string, value bool) bool {
 	}
 	return doc.Set(path, value) == nil
 }
-
 
 func SetRawIfDifferent(payload []byte, path string, value []byte) []byte {
 	current := ojson.GetBytesNoCopy(payload, path)
@@ -72,7 +63,6 @@ func SetRawIfDifferent(payload []byte, path string, value []byte) []byte {
 	return updated
 }
 
-
 func SetRawIfDifferentDoc(doc *ojson.Doc, path string, value []byte) bool {
 	if doc == nil {
 		return false
@@ -83,7 +73,6 @@ func SetRawIfDifferentDoc(doc *ojson.Doc, path string, value []byte) bool {
 	}
 	return doc.SetRawBytes(path, value) == nil
 }
-
 
 func JoinRawJSONArray(items [][]byte) []byte {
 	size := securityutil.ByteCapacity(len(items), 1)
@@ -100,7 +89,6 @@ func JoinRawJSONArray(items [][]byte) []byte {
 	}
 	return append(out, ']')
 }
-
 
 func JoinRawJSONStrings(items []string) []byte {
 	size := securityutil.ByteCapacity(len(items), 1)

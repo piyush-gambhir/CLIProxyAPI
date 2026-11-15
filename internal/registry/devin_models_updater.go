@@ -13,9 +13,6 @@ var devinModelsURLs = []string{
 	"https://models.router-for.me/devin_models.json",
 }
 
-
-
-
 func StartDevinModelsUpdater(ctx context.Context) {
 	devinCatalogUpdater.configure(ctx, "")
 }

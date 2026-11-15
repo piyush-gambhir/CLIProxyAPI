@@ -1,4 +1,3 @@
-
 package signaturetest
 
 import (
@@ -7,13 +6,9 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-
-
 func AntigravityCAQS() string {
 	return AntigravityCAQSWithChannel(18)
 }
-
-
 
 func AntigravityCAQSWithChannel(channelID uint64) string {
 	appendVarint := func(dst []byte, field protowire.Number, value uint64) []byte {

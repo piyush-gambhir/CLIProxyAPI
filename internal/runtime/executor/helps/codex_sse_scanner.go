@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 const codexSSEDiagnosticLines = 8
 
 var codexSSEDataPrefix = []byte("data:")
@@ -24,42 +23,12 @@ type codexSSEQueuedItem struct {
 	rawBytes int
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 type CodexSSEScanner struct {
 	ctx      context.Context
 	lines    *bufio.Scanner
 	maxBytes int
 
 	stock bool
-
-
 
 	held    []byte
 	count   int
@@ -74,41 +43,29 @@ type CodexSSEScanner struct {
 	budgetCheck func(line []byte, heldLines int, heldBytes int) bool
 }
 
-
-
 func NewCodexSSEScanner(ctx context.Context, r io.Reader, maxBytes int) *CodexSSEScanner {
 	lines := bufio.NewScanner(r)
 	lines.Buffer(nil, maxBytes)
 	return &CodexSSEScanner{ctx: ctx, lines: lines, maxBytes: maxBytes}
 }
 
-
 func (s *CodexSSEScanner) SetOnLine(fn func(line []byte)) {
 	s.onLine = fn
 }
-
 
 func (s *CodexSSEScanner) HeldLines() int {
 	return s.count
 }
 
-
 func (s *CodexSSEScanner) HeldBytes() int {
 	return s.size
 }
-
-
-
 
 func (s *CodexSSEScanner) SetBudgetChecker(fn func(line []byte, heldLines int, heldBytes int) bool) {
 	s.budgetCheck = fn
 }
 
-
-
-
 func (s *CodexSSEScanner) SetAssembly(on bool) { s.stock = !on }
-
 
 func (s *CodexSSEScanner) Scan() bool {
 	if len(s.queue) > 0 {
@@ -157,7 +114,6 @@ func (s *CodexSSEScanner) Scan() bool {
 	return false
 }
 
-
 func (s *CodexSSEScanner) hold(line []byte) bool {
 	value := codexSSEValue(line)
 	if s.count > 0 {
@@ -171,8 +127,6 @@ func (s *CodexSSEScanner) hold(line []byte) bool {
 	s.size += len(line)
 	return s.nesting.feed(value)
 }
-
-
 
 func (s *CodexSSEScanner) release(end ...[]byte) {
 	assembled := s.assemble(s.held, s.count, s.joined)
@@ -191,12 +145,9 @@ func (s *CodexSSEScanner) release(end ...[]byte) {
 	s.held, s.count, s.size, s.joined, s.nesting = nil, 0, 0, nil, codexJSONNesting{}
 }
 
-
 func codexSSEValue(line []byte) []byte {
 	return bytes.TrimPrefix(line[len(codexSSEDataPrefix):], []byte(" "))
 }
-
-
 
 func codexSSEClosed(joined []byte) bool {
 	trimmed := bytes.TrimRight(joined, " \t\r\n")
@@ -206,8 +157,6 @@ func codexSSEClosed(joined []byte) bool {
 	return json.Valid(joined)
 }
 
-
-
 func codexSSEIncompleteJSON(value []byte) bool {
 	if len(value) == 0 || (value[0] != '{' && value[0] != '[') || bytes.Equal(value, []byte("[DONE]")) {
 		return false
@@ -215,14 +164,11 @@ func codexSSEIncompleteJSON(value []byte) bool {
 	return !codexSSEClosed(value)
 }
 
-
-
 type codexJSONNesting struct {
 	depth    int
 	inString bool
 	escaped  bool
 }
-
 
 func (n *codexJSONNesting) feed(p []byte) bool {
 	for _, c := range p {
@@ -250,9 +196,7 @@ func (n *codexJSONNesting) feed(p []byte) bool {
 	return false
 }
 
-
 func (s *CodexSSEScanner) Bytes() []byte { return s.current.payload }
-
 
 func (s *CodexSSEScanner) RawLines() int {
 	if s.current.rawLines == 0 {
@@ -261,7 +205,6 @@ func (s *CodexSSEScanner) RawLines() int {
 	return s.current.rawLines
 }
 
-
 func (s *CodexSSEScanner) RawBytes() int {
 	if s.current.rawBytes == 0 {
 		return len(s.current.payload)
@@ -269,10 +212,7 @@ func (s *CodexSSEScanner) RawBytes() int {
 	return s.current.rawBytes
 }
 
-
 func (s *CodexSSEScanner) Err() error { return s.lines.Err() }
-
-
 
 func (s *CodexSSEScanner) assemble(held []byte, lines int, joined []byte) []byte {
 	if lines == 1 {
@@ -291,10 +231,6 @@ func (s *CodexSSEScanner) assemble(held []byte, lines int, joined []byte) []byte
 	s.diagnose(held, lines, joined)
 	return held
 }
-
-
-
-
 
 func (s *CodexSSEScanner) diagnose(held []byte, lines int, data []byte) {
 	if s.warned || len(data) == 0 || bytes.Equal(data, []byte("[DONE]")) || json.Valid(data) {

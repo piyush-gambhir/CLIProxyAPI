@@ -24,20 +24,16 @@ const (
 	homeAuthCountMetadataKey  = "__cliproxy_home_auth_count"
 	homeRetryRoundMetadataKey = "request_retry_round"
 
-
 	ExcludedAuthIDsMetadataKey = "excluded_auth_ids"
-
 
 	CloseAllExecutionSessionsID = "__all_execution_sessions__"
 )
-
 
 type HomeDispatchBundle struct {
 	client     homeAuthDispatcher
 	registry   *executionregistry.Registry
 	generation uint64
 }
-
 
 func (m *Manager) PublishHomeDispatch(client homeAuthDispatcher, registry *executionregistry.Registry, generation uint64) *HomeDispatchBundle {
 	if m == nil || client == nil || registry == nil {
@@ -48,14 +44,12 @@ func (m *Manager) PublishHomeDispatch(client homeAuthDispatcher, registry *execu
 	return bundle
 }
 
-
 func (m *Manager) ClearHomeDispatchBundle(bundle *HomeDispatchBundle) bool {
 	if m == nil || bundle == nil {
 		return false
 	}
 	return m.homeDispatchBundle.CompareAndSwap(bundle, nil)
 }
-
 
 func (m *Manager) HomeDispatchBundle() *HomeDispatchBundle {
 	if m == nil {
@@ -64,14 +58,12 @@ func (m *Manager) HomeDispatchBundle() *HomeDispatchBundle {
 	return m.homeDispatchBundle.Load()
 }
 
-
 func (m *Manager) SetHomeExecutionRegistry(registry *executionregistry.Registry) {
 	if m == nil {
 		return
 	}
 	m.PublishHomeDispatch(currentHomeDispatcher(), registry, 0)
 }
-
 
 func (m *Manager) ClearHomeExecutionRegistry(registry *executionregistry.Registry) bool {
 	bundle := m.HomeDispatchBundle()
@@ -81,7 +73,6 @@ func (m *Manager) ClearHomeExecutionRegistry(registry *executionregistry.Registr
 	return m.ClearHomeDispatchBundle(bundle)
 }
 
-
 func (m *Manager) HomeExecutionRegistry() *executionregistry.Registry {
 	bundle := m.HomeDispatchBundle()
 	if bundle == nil {
@@ -89,7 +80,6 @@ func (m *Manager) HomeExecutionRegistry() *executionregistry.Registry {
 	}
 	return bundle.registry
 }
-
 
 func (m *Manager) HomeEnabled() bool {
 	if m == nil {
@@ -135,9 +125,6 @@ type homeDispatchRetryAfterError struct {
 	requestRetry    int
 	hasRequestRetry bool
 }
-
-
-
 
 type homeRetryRoundExhaustedError struct {
 	cause         error

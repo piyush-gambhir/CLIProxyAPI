@@ -1352,10 +1352,6 @@ func TestSplitResponsesQualifiedFunctionCallFromRequest_MatchesMergedToolIdentit
 
 func TestResponsesCustomToolNames_FollowsMergedDeclaration(t *testing.T) {
 
-
-
-
-
 	functionFirst := []byte(`{
 		"input": [
 			{"type":"additional_tools","tools":[{"type":"custom","name":"exec","description":"copy"}]}
@@ -1410,7 +1406,6 @@ func TestResponsesCustomToolNames_FollowsMergedDeclaration(t *testing.T) {
 }
 
 func TestResponsesCustomToolNames_OnlyReportsMergedTools(t *testing.T) {
-
 
 	raw := []byte(`{
 		"tools": [
@@ -1491,12 +1486,10 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_FunctionCallOutput
 				t.Fatalf("expected 2 messages (assistant, tool), got %d; output=%s", len(messages), string(out))
 			}
 
-
 			toolCallID := messages[0].Get("tool_calls.0.id").String()
 			if toolCallID != "call_123" {
 				t.Fatalf("tool_calls.0.id = %q, want call_123", toolCallID)
 			}
-
 
 			toolMessage := messages[1]
 			if toolMessage.Get("role").String() != "tool" {
@@ -1513,9 +1506,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_FunctionCallOutput
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedMissingAndExplicitParallelOutputs(t *testing.T) {
-
-
-
 
 	inputJSON := []byte(`{
 		"model": "deepseek-v4-flash",
@@ -1548,7 +1538,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedMissingAndExp
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DefersMessageUntilMissingIDToolOutput(t *testing.T) {
 
-
 	inputJSON := []byte(`{
 		"model": "deepseek-v4-flash",
 		"input": [
@@ -1563,7 +1552,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DefersMessageUntil
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages (assistant, tool, user), got %d; output=%s", len(messages), string(out))
 	}
-
 
 	if got := messages[0].Get("role").String(); got != "assistant" {
 		t.Fatalf("messages[0].role = %q, want assistant", got)
@@ -1585,10 +1573,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DefersMessageUntil
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedMissingAndExplicitParallelOutputsAcrossUserMessage(t *testing.T) {
-
-
-
-
 
 	inputJSON := []byte(`{
 		"model": "deepseek-v4-flash",
@@ -1739,8 +1723,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CapsLongNamespaceT
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DisambiguatesTruncationCollisions(t *testing.T) {
 
-
-
 	filler := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	raw := []byte(`{
 		"input": [
@@ -1776,8 +1758,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DisambiguatesTrunc
 		}
 	}
 
-
-
 	merged := []byte(`{
 		"input": [
 			{"type":"custom_tool_call","namespace":"mcp__server_two__` + filler + `","name":"_same_tail_tool_name","call_id":"call_1","input":"x"},
@@ -1809,9 +1789,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DisambiguatesTrunc
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoesNotDisplaceShortOriginal(t *testing.T) {
-
-
-
 
 	longNamespace := "mcp__a__" + strings.Repeat("b", 60)
 	longChild := "child_tool"
@@ -1851,9 +1828,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoe
 		}
 	}
 
-
-
-
 	replay := []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"` + flatName + `","arguments":"{}"},
@@ -1879,10 +1853,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoe
 		t.Fatalf("tool_choice for the flat tool resolved to %q, want %q; output=%s", got, flatName, forcedOut)
 	}
 
-
-
-
-
 	longReplay := []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_2","name":"` + qualified + `","arguments":"{}"},
@@ -1901,9 +1871,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongDeclarationDoe
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_AmbiguousLongLocalNameStaysUnresolved(t *testing.T) {
-
-
-
 
 	longLocal := "shared_" + strings.Repeat("x", 60)
 	toolsJSON := `[
@@ -1951,17 +1918,11 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_AmbiguousLongLocal
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDisplaceNamespacedLocalName(t *testing.T) {
 
-
-
-
-
 	localName := "l" + strings.Repeat("m", 63)
 	longFlatName := strings.Repeat("n", 11) + localName
 	if len(longFlatName) <= 64 || capResponsesChatToolName(longFlatName) != localName {
 		t.Fatalf("fixture drift: cap(%q) = %q, want %q", longFlatName, capResponsesChatToolName(longFlatName), localName)
 	}
-
-
 
 	toolsJSON := `[
 		{"type":"function","name":"` + longFlatName + `","parameters":{"type":"object"}},
@@ -1990,8 +1951,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDi
 		}
 	}
 
-
-
 	replay := []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"` + localName + `","arguments":"{}"},
@@ -2008,7 +1967,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDi
 		}
 	}
 
-
 	forcedOut, _ := ConvertOpenAIResponsesRequestToOpenAIChatCompletions("z-ai/glm-5.3-free", []byte(`{
 		"input": [{"role":"user","content":"hi"}],
 		"tools": `+toolsJSON+`,
@@ -2020,13 +1978,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_LongAliasDoesNotDi
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsNeverEmitted(t *testing.T) {
-
-
-
-
-
-
-
 
 	sharedLocal := "s" + strings.Repeat("t", 63)
 	for _, namespace := range []string{"mcp__alpha", "mcp__beta"} {
@@ -2072,7 +2023,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsN
 	alphaAlias := emitted[0].Get("function.name").String()
 	betaAlias := emitted[1].Get("function.name").String()
 
-
 	for _, tc := range []struct {
 		namespace string
 		want      string
@@ -2097,8 +2047,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsN
 			t.Fatalf("namespaced replay for %s resolved to %q, want %q; output=%s", tc.namespace, got, tc.want, namespacedOut)
 		}
 	}
-
-
 
 	bareOut, _ := ConvertOpenAIResponsesRequestToOpenAIChatCompletions("z-ai/glm-5.3-free", []byte(`{
 		"input": [
@@ -2138,11 +2086,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_SharedLocalNameIsN
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityOutranksForeignLocalName(t *testing.T) {
-
-
-
-
-
 
 	longChild := "read_" + strings.Repeat("f", 60)
 	qualified := rawResponsesNamespaceQualifiedName("alpha_ns", longChild)
@@ -2186,7 +2129,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityO
 		}
 	}
 
-
 	bareOut, _ := ConvertOpenAIResponsesRequestToOpenAIChatCompletions("z-ai/glm-5.3-free", []byte(`{
 		"input": [
 			{"type":"function_call","call_id":"call_1","name":"`+qualified+`","arguments":"{}"},
@@ -2210,7 +2152,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityO
 	if got := ojson.GetBytesNoCopy(bareForced, "tool_choice.function.name").String(); got != alphaAlias {
 		t.Fatalf("tool_choice bare qualified name resolved to %q, want %q; output=%s", got, alphaAlias, bareForced)
 	}
-
 
 	for _, tc := range []struct {
 		namespace string
@@ -2241,8 +2182,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_QualifiedIdentityO
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_IncompleteToolCallsDoNotDeferMessages(t *testing.T) {
 
-
-
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2261,10 +2200,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_IncompleteToolCall
 		roles = append(roles, m.Get("role").String())
 	}
 
-
-
-
-
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages, got %d: %s", len(messages), out)
 	}
@@ -2274,8 +2209,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_IncompleteToolCall
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CompleteToolCallsDoPairMessages(t *testing.T) {
-
-
 
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
@@ -2295,11 +2228,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_CompleteToolCallsD
 	for _, m := range messages {
 		roles = append(roles, m.Get("role").String())
 	}
-
-
-
-
-
 
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
@@ -2336,7 +2264,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MixedEmptyIDDoesNo
 		roles = append(roles, m.Get("role").String())
 	}
 
-
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages, got %d: %s", len(messages), out)
 	}
@@ -2365,7 +2292,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCallIDDoe
 		roles = append(roles, m.Get("role").String())
 	}
 
-
 	if len(messages) != 3 {
 		t.Fatalf("expected 3 messages, got %d: %s", len(messages), out)
 	}
@@ -2393,7 +2319,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateOutputCal
 	for _, m := range messages {
 		roles = append(roles, m.Get("role").String())
 	}
-
 
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
@@ -2426,7 +2351,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCustomOut
 		roles = append(roles, m.Get("role").String())
 	}
 
-
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
 	}
@@ -2439,7 +2363,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_DuplicateCustomOut
 }
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWithoutIDDoNotGuessOrReorder(t *testing.T) {
-
 
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
@@ -2459,8 +2382,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 	for _, m := range messages {
 		roles = append(roles, m.Get("role").String())
 	}
-
-
 
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), out)
@@ -2484,11 +2405,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 
 func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWithoutIDAndOrphanOutputDoNotGuessOrReorder(t *testing.T) {
 
-
-
-
-
-
 	inputJSON := []byte(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -2508,8 +2424,6 @@ func TestConvertOpenAIResponsesRequestToOpenAIChatCompletions_MultipleOutputsWit
 	for _, m := range messages {
 		roles = append(roles, m.Get("role").String())
 	}
-
-
 
 	if len(messages) != 5 {
 		t.Fatalf("expected 5 messages, got %d: %s", len(messages), out)

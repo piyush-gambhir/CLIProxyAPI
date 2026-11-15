@@ -5,9 +5,6 @@ import (
 	"strings"
 )
 
-
-
-
 var gatewayHeaderPrefixes = []string{
 	"x-litellm-",
 	"helicone-",
@@ -16,8 +13,6 @@ var gatewayHeaderPrefixes = []string{
 	"x-kong-",
 	"x-bt-",
 }
-
-
 
 var hopByHopHeaders = map[string]struct{}{
 
@@ -46,13 +41,10 @@ var cpaReservedResponseHeaders = map[string]struct{}{
 	"X-Cpa-Trace-Id":                   {},
 }
 
-
 func IsCPAReservedResponseHeader(name string) bool {
 	_, reserved := cpaReservedResponseHeaders[http.CanonicalHeaderKey(name)]
 	return reserved
 }
-
-
 
 func FilterUpstreamHeaders(src http.Header) http.Header {
 	if src == nil {
@@ -71,7 +63,6 @@ func FilterUpstreamHeaders(src http.Header) http.Header {
 		if _, scoped := connectionScoped[canonicalKey]; scoped {
 			continue
 		}
-
 
 		lowerKey := strings.ToLower(key)
 		gatewayMatch := false
@@ -105,8 +96,6 @@ func connectionScopedHeaders(src http.Header) map[string]struct{} {
 	}
 	return scoped
 }
-
-
 
 func WriteUpstreamHeaders(dst http.Header, src http.Header) {
 	if src == nil {

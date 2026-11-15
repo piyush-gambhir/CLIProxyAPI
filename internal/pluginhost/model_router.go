@@ -128,8 +128,6 @@ func cloneModelRouteRequest(req pluginapi.ModelRouteRequest) pluginapi.ModelRout
 	return req
 }
 
-
-
 func (h *Host) HasBuiltinProvider(provider string) bool {
 	if h == nil || h.authManager == nil {
 		return false
@@ -137,14 +135,12 @@ func (h *Host) HasBuiltinProvider(provider string) bool {
 	return h.authManager.HasProviderAuth(provider)
 }
 
-
 func (h *Host) BuiltinProviders() []string {
 	if h == nil || h.authManager == nil {
 		return nil
 	}
 	return h.authManager.AvailableProviders()
 }
-
 
 func (h *Host) availableProvidersSnapshot() []string {
 	providers := h.BuiltinProviders()

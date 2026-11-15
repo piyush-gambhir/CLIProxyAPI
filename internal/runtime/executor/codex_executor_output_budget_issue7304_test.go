@@ -21,11 +21,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
-
 func codexMinimumBudgetUpstream(t *testing.T) (*httptest.Server, <-chan []byte) {
 	t.Helper()
 	requests := make(chan []byte, 4)
@@ -81,8 +76,6 @@ func codexMinimumBudgetUpstream(t *testing.T) (*httptest.Server, <-chan []byte) 
 	return server, requests
 }
 
-
-
 func TestCodexVerifyInferenceMinimumOutputBudget_Issue7304(t *testing.T) {
 	server, requests := codexMinimumBudgetUpstream(t)
 
@@ -123,9 +116,6 @@ func TestCodexVerifyInferenceMinimumOutputBudget_Issue7304(t *testing.T) {
 		t.Fatalf("upstream max_output_tokens = %q, want 16; body=%s", got, body)
 	}
 }
-
-
-
 
 func TestCodexSmallOutputBudgetsAllSourceFormats_Issue7304(t *testing.T) {
 	modelRule := []config.PayloadModelRule{{Name: "gpt-5.6-sol", Protocol: "codex"}}
@@ -187,11 +177,6 @@ func TestCodexSmallOutputBudgetsAllSourceFormats_Issue7304(t *testing.T) {
 					opts := cliproxyexecutor.Options{SourceFormat: tc.from, Stream: stream}
 					auth := codexOAuthTestAuth(server.URL)
 					auth.ID = "codex-output-budget-7304-test"
-
-
-
-
-
 
 					wantAccept := true
 					if tc.want != "" {

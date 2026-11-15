@@ -19,7 +19,6 @@ func TestHasMeaningfulCodexOutputDelta(t *testing.T) {
 		t.Fatal("empty function_call_arguments.delta must return false")
 	}
 
-
 	if !HasMeaningfulCodexOutputDelta([]byte(`{"type":"response.output_text.delta","delta":"Hello"}`)) {
 		t.Fatal("non-empty output_text.delta must return true")
 	}
@@ -38,46 +37,38 @@ func TestIsCodexTerminalEmptyIncomplete(t *testing.T) {
 		t.Fatal("expected true for true empty incomplete with numeric 0 tokens")
 	}
 
-
 	if IsCodexTerminalEmptyIncomplete(trueEmpty, 0, true) {
 		t.Fatal("expected false when output deltas were observed")
 	}
 
-
 	if IsCodexTerminalEmptyIncomplete(trueEmpty, 1, false) {
 		t.Fatal("expected false when output items exist")
 	}
-
 
 	positiveTokens := []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[],"usage":{"output_tokens":5}}}`)
 	if IsCodexTerminalEmptyIncomplete(positiveTokens, 0, false) {
 		t.Fatal("expected false when output_tokens > 0")
 	}
 
-
 	floatTokens := []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[],"usage":{"output_tokens":0.5}}}`)
 	if IsCodexTerminalEmptyIncomplete(floatTokens, 0, false) {
 		t.Fatal("expected false when output_tokens is 0.5")
 	}
-
 
 	missingTokens := []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[],"usage":{}}}`)
 	if IsCodexTerminalEmptyIncomplete(missingTokens, 0, false) {
 		t.Fatal("expected false when output_tokens is missing")
 	}
 
-
 	nullTokens := []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[],"usage":{"output_tokens":null}}}`)
 	if IsCodexTerminalEmptyIncomplete(nullTokens, 0, false) {
 		t.Fatal("expected false when output_tokens is null")
 	}
 
-
 	nonEmptyOutput := []byte(`{"type":"response.incomplete","response":{"id":"r1","output":[{"type":"message"}],"usage":{"output_tokens":0}}}`)
 	if IsCodexTerminalEmptyIncomplete(nonEmptyOutput, 0, false) {
 		t.Fatal("expected false when response.output is non-empty")
 	}
-
 
 	completedEvent := []byte(`{"type":"response.completed","response":{"id":"r1","output":[],"usage":{"output_tokens":0}}}`)
 	if IsCodexTerminalEmptyIncomplete(completedEvent, 0, false) {

@@ -103,7 +103,6 @@ func TestBindCodexSIWCFailureDoesNotPublish(t *testing.T) {
 		t.Run(failure, func(t *testing.T) {
 			name := "auth.json"
 
-
 			if failure == "write" {
 				name = strings.Repeat("a", 244) + ".json"
 			}
@@ -185,7 +184,6 @@ func TestBindCodexSIWCFencesInflightRefreshAndWatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 
-
 	got, err := m.UpdateRefreshedAuth(context.Background(), base, refreshed)
 	if err != nil {
 		t.Fatal(err)
@@ -205,7 +203,6 @@ func TestBindCodexSIWCFencesInflightRefreshAndWatcher(t *testing.T) {
 		t.Fatal("stale watcher overwrote binding")
 	}
 }
-
 
 type bindingFileStore struct{ path string }
 
@@ -280,8 +277,6 @@ func TestBindCodexSIWCRejectsNonFileSources(t *testing.T) {
 func TestBindCodexSIWCTildeAndAttributeOverride(t *testing.T) {
 	m, base, path, _ := setupSIWCBinding(t, "auth.json")
 	homeDir := filepath.Dir(path)
-
-
 
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir)

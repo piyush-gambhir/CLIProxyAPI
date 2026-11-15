@@ -9,9 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
-
-
 func newCooldownMonotonicManager(t *testing.T, models ...string) (*Manager, *Auth) {
 	t.Helper()
 	m := NewManager(nil, nil, nil)
@@ -37,7 +34,6 @@ func TestManager_MarkResult_CredentialScopeKeepsLongerSiblingDeadline(t *testing
 
 	m, auth := newCooldownMonotonicManager(t, "model-a", "model-b")
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: auth.Provider, Model: "model-b",
 		Success: false, Error: &Error{HTTPStatus: http.StatusUnauthorized, Message: "long 401"},
@@ -48,7 +44,6 @@ func TestManager_MarkResult_CredentialScopeKeepsLongerSiblingDeadline(t *testing
 	if bState == nil || bState.NextRetryAfter.Before(before.Add(25*time.Minute)) {
 		t.Fatalf("precondition failed: model-b long deadline missing: %+v", bState)
 	}
-
 
 	short := 5 * time.Minute
 	m.MarkResult(context.Background(), Result{
@@ -66,7 +61,6 @@ func TestManager_MarkResult_CredentialScopeKeepsLongerSiblingDeadline(t *testing
 		t.Fatalf("credential-scoped failure shortened model-b deadline to %v", bStateAfter.NextRetryAfter.Sub(before))
 	}
 
-
 	blockedA, _, _ := isAuthBlockedForModel(updated, "model-a", before.Add(6*time.Minute))
 	if blockedA {
 		t.Fatalf("model-a should have unblocked after its 5m credential quota, but is still blocked")
@@ -77,9 +71,6 @@ func TestManager_MarkResult_CredentialScopeKeepsLongerSiblingDeadline(t *testing
 	}
 }
 
-
-
-
 func TestManager_MarkResult_CredentialScope_DoesNotPromoteSiblingDeadlineToQuota(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -87,13 +78,11 @@ func TestManager_MarkResult_CredentialScope_DoesNotPromoteSiblingDeadlineToQuota
 
 	m, auth := newCooldownMonotonicManager(t, "model-a", "model-b")
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: auth.Provider, Model: "model-b",
 		Success: false, Error: &Error{HTTPStatus: http.StatusNotFound, Message: "model not found"},
 	})
 	before := time.Now()
-
 
 	short := 5 * time.Minute
 	m.MarkResult(context.Background(), Result{
@@ -116,7 +105,6 @@ func TestManager_MarkResult_CredentialScope_DoesNotPromoteSiblingDeadlineToQuota
 		t.Fatalf("model-b Quota.NextRecoverAt was incorrectly elevated to %v", bState1.Quota.NextRecoverAt.Sub(before))
 	}
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: auth.Provider, Model: "model-b",
 		Success: false, RetryAfter: &short, CredentialScope: true,
@@ -135,7 +123,6 @@ func TestManager_MarkResult_CredentialScope_DoesNotPromoteSiblingDeadlineToQuota
 	if snap2.Quota.NextRecoverAt.After(before.Add(10 * time.Minute)) {
 		t.Fatalf("auth.Quota.NextRecoverAt was incorrectly elevated to 12h: %v", snap2.Quota.NextRecoverAt.Sub(before))
 	}
-
 
 	blockedA, _, _ := isAuthBlockedForModel(snap2, "model-a", before.Add(6*time.Minute))
 	if blockedA {
@@ -206,9 +193,6 @@ func TestManager_MarkResult_LaterShorterFailureKeepsLongerModelDeadline(t *testi
 	}
 }
 
-
-
-
 func TestManager_ClientModelProjection_ReflectsAuthLevelCooldown(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -269,7 +253,6 @@ func TestManager_ApplyAuthFailureState_PreservesLongerCredentialDeadline(t *test
 			if !snap.Unavailable || snap.NextRetryAfter.Before(before.Add(11*time.Hour)) {
 				t.Fatalf("precondition failed: expected ~12h deadline, got: %v", snap.NextRetryAfter.Sub(before))
 			}
-
 
 			m.MarkResult(context.Background(), Result{
 				AuthID: auth.ID, Provider: auth.Provider, Model: "",

@@ -13,17 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 const quotaPollerRequestTimeout = 30 * time.Second
 
 var quotaPollerStart sync.Once
-
-
-
-
-
-
 
 func (s *Service) startQuotaPoller(ctx context.Context) {
 	if s == nil || s.coreManager == nil {
@@ -71,7 +63,6 @@ func (s *Service) quotaPollerEnabled() bool {
 	return s.routingStateSnapshot().quotaPollerEnabled
 }
 
-
 func (s *Service) routingStateSnapshot() routingRuntimeState {
 	if s == nil {
 		return normalizedRoutingRuntimeState(nil)
@@ -81,8 +72,6 @@ func (s *Service) routingStateSnapshot() routingRuntimeState {
 	s.cfgMu.RUnlock()
 	return normalizedRoutingRuntimeState(cfg)
 }
-
-
 
 func (s *Service) quotaPollTargets() []quota.Target {
 	if s == nil || s.coreManager == nil {
@@ -115,9 +104,6 @@ func (s *Service) quotaPollTargets() []quota.Target {
 	return targets
 }
 
-
-
-
 func (s *Service) quotaPollClient(target quota.Target) quota.Doer {
 	client := &http.Client{Timeout: quotaPollerRequestTimeout}
 	proxyURL := strings.TrimSpace(target.ProxyURL)
@@ -146,8 +132,6 @@ func quotaPollAccessToken(auth *coreauth.Auth) string {
 	}
 	return metadataString(auth.Metadata, "accessToken")
 }
-
-
 
 func quotaPollAccountID(auth *coreauth.Auth) string {
 	if id := metadataString(auth.Metadata, "account_id"); id != "" {

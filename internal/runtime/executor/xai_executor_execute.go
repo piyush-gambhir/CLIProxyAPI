@@ -145,7 +145,6 @@ func (e *XAIExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req 
 				completedData = xaiNormalizeReasoningSummaryData(completedData)
 				if eventType == "response.completed" {
 
-
 					cacheXAIReasoningReplayFromCompleted(ctx, prepared.replayScope, completedData)
 				}
 				var param any
@@ -282,7 +281,6 @@ func (e *XAIExecutor) executeCompact(ctx context.Context, auth *cliproxyauth.Aut
 func (e *XAIExecutor) executeCompactRequest(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*xaiPreparedRequest, []byte, http.Header, *helps.UsageReporter, error) {
 	token, _ := xaiCreds(auth)
 
-
 	baseURL := xaiCompactBaseURL(auth)
 	logXAIResolvedBaseURL(ctx, baseURL)
 
@@ -293,8 +291,6 @@ func (e *XAIExecutor) executeCompactRequest(ctx context.Context, auth *cliproxya
 	doc := prepared.ensureDoc()
 	_ = doc.Delete("stream")
 	_ = doc.Delete("tools")
-
-
 
 	normalizeXAIToolChoiceForToolsDoc(doc)
 	for _, field := range []string{"max_output_tokens", "temperature", "top_p", "top_k", "stop"} {
@@ -317,7 +313,6 @@ func (e *XAIExecutor) executeCompactRequest(ctx context.Context, auth *cliproxya
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-
 
 	applyXAIHeaders(httpReq, auth, token, false, prepared.sessionID, opts.Headers)
 	e.recordXAIRequest(ctx, auth, requestURL, httpReq.Header.Clone(), prepared.body)

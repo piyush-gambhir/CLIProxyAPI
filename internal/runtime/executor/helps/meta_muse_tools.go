@@ -4,14 +4,7 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 const metaMuseNamespace = `{"type":"namespace","name":"muse","description":"Muse Code tool set.","tools":[{"type":"function","name":"submit_reminder_decision","description":"Submit this reminder child's explicit decision.","parameters":{"additionalProperties":false,"properties":{"advisory_text":{"description":"Short text to deliver to the main agent when reminding.","type":["null","string"]},"confidence":{"description":"Confidence in the decision.","enum":["low","medium","high"],"type":["null","string"]},"decision":{"enum":["remind","none"],"type":"string"},"priority":{"description":"Requested reminder priority.","enum":["low","normal","high"],"type":["null","string"]},"reason":{"description":"Brief reason for reminding or staying silent.","type":"string"},"skill_id":{"description":"The listed skill id to remind when needs_reminder is true.","type":["null","string"]},"visible_for_steps":{"description":"Requested ephemeral visibility length in main model steps.","maximum":8,"minimum":1,"type":["null","integer"]}},"required":["advisory_text","confidence","decision","priority","reason","skill_id","visible_for_steps"],"type":"object"},"strict":true}]}`
-
-
-
-
 
 func EnsureMetaMuseToolNamespace(body []byte) []byte {
 	if len(body) == 0 {
@@ -23,8 +16,6 @@ func EnsureMetaMuseToolNamespace(body []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func EnsureMetaMuseToolNamespaceDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {

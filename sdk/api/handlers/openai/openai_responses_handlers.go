@@ -1,9 +1,3 @@
-
-
-
-
-
-
 package openai
 
 import (
@@ -56,7 +50,6 @@ func writeResponsesSSEChunk(w io.Writer, chunk []byte) error {
 	}
 	return nil
 }
-
 
 func flushResponsesSSE(w http.ResponseWriter) error {
 	return httpwire.FlushResponse(w)
@@ -259,11 +252,9 @@ func (f *responsesSSEFramer) shouldFilterPrivateEvent(streamEvent, payloadType s
 			return false
 		}
 
-
 		if strings.HasPrefix(name, "responsesapi.") || name == "response.subscription_usage" {
 			return true
 		}
-
 
 		if f != nil && f.isCodexClient {
 			if name == "codex.rate_limits" {
@@ -271,9 +262,6 @@ func (f *responsesSSEFramer) shouldFilterPrivateEvent(streamEvent, payloadType s
 			}
 			return false
 		}
-
-
-
 
 		if strings.HasPrefix(name, "codex.") || name == "response.metadata" {
 			return true
@@ -512,7 +500,6 @@ func responsesSSERecoverJSONFrame(frame []byte, syntheticBreaks []int) []byte {
 	if found && json.Valid(payload) {
 		return frame
 	}
-
 
 	positions := make([]int, 0, len(syntheticBreaks))
 	for _, pos := range syntheticBreaks {
@@ -814,20 +801,10 @@ func responsesSSEDataEndsInsideJSONString(chunk []byte) bool {
 	return inString
 }
 
-
-
 type OpenAIResponsesAPIHandler struct {
 	*handlers.BaseAPIHandler
 	AccessManager *sdkaccess.Manager
 }
-
-
-
-
-
-
-
-
 
 func NewOpenAIResponsesAPIHandler(apiHandlers *handlers.BaseAPIHandler) *OpenAIResponsesAPIHandler {
 	return &OpenAIResponsesAPIHandler{
@@ -835,20 +812,15 @@ func NewOpenAIResponsesAPIHandler(apiHandlers *handlers.BaseAPIHandler) *OpenAIR
 	}
 }
 
-
 func (h *OpenAIResponsesAPIHandler) HandlerType() string {
 	return OpenaiResponse
 }
-
 
 func (h *OpenAIResponsesAPIHandler) Models() []map[string]any {
 
 	modelRegistry := registry.GetGlobalRegistry()
 	return modelRegistry.GetAvailableModels("openai")
 }
-
-
-
 
 func (h *OpenAIResponsesAPIHandler) OpenAIResponsesModels(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -943,12 +915,6 @@ func (h *OpenAIResponsesAPIHandler) prepareCodexRequestPayload(c *gin.Context, p
 	return doc.Bytes()
 }
 
-
-
-
-
-
-
 func (h *OpenAIResponsesAPIHandler) Responses(c *gin.Context) {
 	rawJSON, err := handlers.ReadRequestBody(c)
 
@@ -963,7 +929,6 @@ func (h *OpenAIResponsesAPIHandler) Responses(c *gin.Context) {
 	}
 
 	rawJSON = h.prepareCodexRequestPayload(c, rawJSON)
-
 
 	streamResult := ojson.GetBytesNoCopy(rawJSON, "stream")
 	if streamResult.Type == ojson.True {
@@ -1025,13 +990,6 @@ func (h *OpenAIResponsesAPIHandler) Compact(c *gin.Context) {
 	cliCancel()
 }
 
-
-
-
-
-
-
-
 func (h *OpenAIResponsesAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
 
@@ -1051,13 +1009,6 @@ func (h *OpenAIResponsesAPIHandler) handleNonStreamingResponse(c *gin.Context, r
 	cliCancel()
 }
 
-
-
-
-
-
-
-
 func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byte) {
 
 	flusher, ok := c.Writer.(http.Flusher)
@@ -1070,7 +1021,6 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 		})
 		return
 	}
-
 
 	modelName := strings.Clone(ojson.GetBytesNoCopy(rawJSON, "model").String())
 	deliveryCtx, finishDelivery := usage.WithStreamDelivery(context.Background())
@@ -1126,7 +1076,6 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 	}
 	framer := &responsesSSEFramer{failureEvent: failureEvent, isCodexClient: isCodexClient, canComplete: func() bool { return usage.StreamDeliverySupported(cliCtx) }}
 	var initialOutput bytes.Buffer
-
 
 	for {
 		select {
@@ -1260,7 +1209,6 @@ func (h *OpenAIResponsesAPIHandler) handleStreamingResponse(c *gin.Context, rawJ
 		}
 	}
 }
-
 
 func isCodexResponsesClientRequest(c *gin.Context) bool {
 	if c == nil || c.Request == nil {

@@ -203,7 +203,6 @@ func TestListAuthFiles_ExpiredCooldownReconciledToActive(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "codex-expired",
 		Index:          "idx-codex-expired",
@@ -221,7 +220,6 @@ func TestListAuthFiles_ExpiredCooldownReconciledToActive(t *testing.T) {
 		},
 		Attributes: map[string]string{"runtime_only": "true"},
 	})
-
 
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "model-expired",
@@ -278,7 +276,6 @@ func TestListAuthFiles_ExpiredCooldownWithSubsequentTokenFailure(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "codex-token-expired",
 		Index:          "idx-codex-token-expired",
@@ -326,7 +323,6 @@ func TestListAuthFiles_PartialModelCooldownWithAuthFailure(t *testing.T) {
 	manager := coreauth.NewManager(nil, nil, nil)
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
-
 
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:            "auth-unauthorized-partial-model",
@@ -379,8 +375,6 @@ func TestListAuthFiles_UnexpiredTokenWithRefresh401_NoCooldown(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-
-
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:               "auth-valid-token-refresh-401",
 		Index:            "idx-valid-token",
@@ -424,8 +418,6 @@ func TestListAuthFiles_UnexpiredTokenWithRefresh401_ExpiredCooldown(t *testing.T
 	manager := coreauth.NewManager(nil, nil, nil)
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
-
-
 
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:               "auth-valid-token-expired-cooldown",
@@ -482,8 +474,6 @@ func TestListAuthFiles_ModelLevel403CooldownExpired(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-
-
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "auth-model-403-expired",
 		Index:          "idx-model-403-exp",
@@ -537,7 +527,6 @@ func TestListAuthFiles_SingleModel403Cooling_OtherModelActive(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:            "auth-single-403-other-active",
 		Index:         "idx-single-403",
@@ -587,9 +576,6 @@ func TestListAuthFiles_ExpiredCooldown_ExpiredToken_InFlightRefresh(t *testing.T
 	manager := coreauth.NewManager(nil, nil, nil)
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
-
-
-
 
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:               "auth-expired-cooldown-expired-token",
@@ -642,9 +628,6 @@ func TestListAuthFiles_ActiveAuth_InactiveFutureTimestamp(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-
-
-
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "auth-active-inactive-future-timestamp",
 		Index:          "idx-active-inactive-future",
@@ -680,9 +663,6 @@ func TestListAuthFiles_ModelCooling_OtherModelPermanentBlocked(t *testing.T) {
 	manager := coreauth.NewManager(nil, nil, nil)
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
-
-
-
 
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:            "auth-all-blocked-cooling-and-perm",
@@ -730,9 +710,6 @@ func TestListAuthFiles_SparseModelState_BlockedModelDoesNotMakeAuthUnavailable(t
 	manager := coreauth.NewManager(nil, nil, nil)
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
-
-
-
 
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:          "auth-sparse-models",
@@ -807,9 +784,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		Attributes: map[string]string{"path": credPath, "source": credPath},
 	})
 
-
 	_, _ = manager.ForceRefreshAuth(context.Background(), "codex-a.json")
-
 
 	manager.MarkResult(context.Background(), coreauth.Result{
 		AuthID:            "codex-a.json",
@@ -864,7 +839,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		}
 	}
 
-
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
 		c.Set(ConfigV8ContextKey, true)
@@ -899,7 +873,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	}
 	state, _ := startResp["state"].(string)
 
-
 	wCancel := httptest.NewRecorder()
 	router.ServeHTTP(wCancel, httptest.NewRequest(http.MethodDelete, "/v8/management/oauth/session?state="+state, nil))
 	if wCancel.Code != http.StatusOK {
@@ -909,7 +882,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if !stillBroken.RequiresSignIn {
 		t.Fatal("cancelling OAuth session must not clear RequiresSignIn")
 	}
-
 
 	mockSvc := &targetedRecoveryTestCodexOAuthService{
 		authDir:   authDir,
@@ -941,7 +913,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if !afterMismatch.RequiresSignIn {
 		t.Fatal("authenticating a different account must not mark target credential repaired")
 	}
-
 
 	for _, missingCase := range []struct {
 		name      string
@@ -975,7 +946,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 			t.Fatalf("%s: missing identity field must not mark target credential repaired", missingCase.name)
 		}
 	}
-
 
 	mockSvc.email = "a@example.com"
 	mockSvc.accountID = "acc-a"
@@ -1011,7 +981,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("unrelated credential update must not mark OAuth session adopted, got %#v", unrelatedStatus)
 	}
 
-
 	if errDelayedReg := h.registerAuthFromFile(context.Background(), credPath, nil); errDelayedReg != nil {
 		t.Fatalf("delayed registerAuthFromFile error: %v", errDelayedReg)
 	}
@@ -1026,7 +995,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected delayed adoption + rotation to transition GetAuthStatus to adopted=true renewal_verified=true recovery_stage=renewal_verified, got %#v", delayedStatus)
 	}
 	h.SetPostAuthPersistHook(nil)
-
 
 	wMatchStart := httptest.NewRecorder()
 	reqMatchStart := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"codex","name":"codex-a.json"}`))
@@ -1053,8 +1021,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected codex-a.json repaired in manager, got RequiresSignIn=%v RefreshError=%+v", repaired.RequiresSignIn, repaired.RefreshError)
 	}
 
-
-
 	exec.streamPayloads = [][]byte{[]byte(`data: {"type":"response.incomplete","response":{"status":"incomplete"}}` + "\n\n")}
 	wVerifyIncomp := httptest.NewRecorder()
 	reqVerifyIncomp := httptest.NewRequest(http.MethodPost, "/v8/management/credentials/verify", strings.NewReader(`{"name":"codex-a.json","model":"gpt-5.5"}`))
@@ -1063,7 +1029,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if wVerifyIncomp.Code != http.StatusBadGateway {
 		t.Fatalf("VerifyAuthFileV8 (incomplete) status = %d, want 502: %s", wVerifyIncomp.Code, wVerifyIncomp.Body.String())
 	}
-
 
 	exec.streamPayloads = nil
 	exec.streamErr = &coreauth.Error{Code: "service_unavailable", Message: "upstream 503", HTTPStatus: http.StatusServiceUnavailable, Retryable: true}
@@ -1082,7 +1047,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("503 transient failure must not be classified as quota_blocked, got %#v", verify503Resp)
 	}
 	_, _, _ = manager.ResetQuota(context.Background(), "codex-a.json")
-
 
 	exec.streamPayloads = nil
 	exec.streamErr = &coreauth.Error{
@@ -1111,7 +1075,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	}
 	_, _, _ = manager.ResetQuota(context.Background(), "codex-a.json")
 
-
 	exec.streamErr = nil
 	exec.streamPayloads = [][]byte{[]byte(`data: {"type":"response.completed"}` + "\n\n")}
 	wVerifyOK := httptest.NewRecorder()
@@ -1129,8 +1092,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected verified=true inference_verified=true recovery_stage=inference_verified, got %#v", okVerifyResp)
 	}
 
-
-
 	exec.err = nil
 	exec.rotateTokens = true
 	if _, errForceRefresh := manager.ForceRefreshAuth(coreauth.WithSkipPersist(context.Background()), "codex-a.json"); errForceRefresh != nil {
@@ -1140,8 +1101,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if rotatedStatus["adopted"] != true || rotatedStatus["renewal_verified"] != true || rotatedStatus["recovery_stage"] != coreauth.RecoveryStageRenewalVerified {
 		t.Fatalf("expected adopted=true renewal_verified=true recovery_stage=renewal_verified after token rotation, got %#v", rotatedStatus)
 	}
-
-
 
 	currentAdopted, _ := manager.GetByID("codex-a.json")
 	postRotationUnrelated := currentAdopted.Clone()
@@ -1157,7 +1116,6 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if replacedAfterRotationStatus["adopted"] != false || strings.TrimSpace(fmt.Sprint(replacedAfterRotationStatus["adoption_error"])) == "" {
 		t.Fatalf("expected adopted=false and adoption_error after unrelated credential replacement + refresh, got %#v", replacedAfterRotationStatus)
 	}
-
 
 	exec.streamPayloads = nil
 	exec.streamErr = &coreauth.Error{
@@ -1345,7 +1303,6 @@ func TestRefreshAuthFilesV8_SignInRequiredAndRedaction_Issue7135(t *testing.T) {
 		Attributes: map[string]string{"path": credPath, "source": credPath},
 	})
 
-
 	exec.err = nil
 	exec.rotateTokens = false
 
@@ -1357,7 +1314,6 @@ func TestRefreshAuthFilesV8_SignInRequiredAndRedaction_Issue7135(t *testing.T) {
 	})
 	router.POST("/v8/management/credentials/refresh", h.RefreshAuthFiles)
 	router.GET("/v8/management/credentials", h.ListAuthFiles)
-
 
 	wRefreshDead := httptest.NewRecorder()
 	reqRefreshDead := httptest.NewRequest(http.MethodPost, "/v8/management/credentials/refresh", strings.NewReader(`{"name":"codex-dead.json"}`))
@@ -1382,7 +1338,6 @@ func TestRefreshAuthFilesV8_SignInRequiredAndRedaction_Issue7135(t *testing.T) {
 	if deadEntry["status"] != string(coreauth.StatusError) || deadEntry["unavailable"] != true || deadEntry["requires_sign_in"] != true || deadEntry["recovery_stage"] != coreauth.RecoveryStageSignInRequired {
 		t.Fatalf("expected status=error unavailable=true requires_sign_in=true recovery_stage=sign_in_required, got %#v", deadEntry)
 	}
-
 
 	exec.rotateTokens = true
 	wRefreshOK := httptest.NewRecorder()

@@ -9,9 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 var credentialSeparator = strings.Repeat("-", 67)
-
 
 func LogSavingCredentials(path string) {
 	if path == "" {
@@ -21,15 +19,12 @@ func LogSavingCredentials(path string) {
 	fmt.Printf("Saving credentials to %q\n", filepath.Clean(path))
 }
 
-
 func LogCredentialSeparator() {
 	log.Debug(credentialSeparator)
 }
 
-
 func MergeMetadata(source any, metadata map[string]any) (map[string]any, error) {
 	var data map[string]any
-
 
 	if srcMap, ok := source.(map[string]any); ok {
 		data = make(map[string]any, len(srcMap)+len(metadata))
@@ -46,7 +41,6 @@ func MergeMetadata(source any, metadata map[string]any) (map[string]any, error) 
 			return nil, fmt.Errorf("failed to unmarshal to map: %w", errUnmarshal)
 		}
 	}
-
 
 	if metadata != nil {
 		if data == nil {

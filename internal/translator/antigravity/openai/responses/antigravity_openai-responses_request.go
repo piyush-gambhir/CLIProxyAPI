@@ -124,8 +124,6 @@ func ensureAntigravityResponsesWebSearchSystemInstructionDoc(doc *ojson.Doc, pay
 	_ = doc.SetRawBytes("request.systemInstruction.parts", translatorcommon.JoinRawArray(parts))
 }
 
-
-
 func ConvertOpenAIResponsesRequestToAntigravity(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	req := ConvertOpenAIResponsesRequestEnvelopeToAntigravity(context.Background(), sdktranslator.RequestEnvelope{
 		Model:  modelName,
@@ -134,8 +132,6 @@ func ConvertOpenAIResponsesRequestToAntigravity(modelName string, inputRawJSON [
 	})
 	return req.Body, nil
 }
-
-
 
 func ConvertOpenAIResponsesRequestEnvelopeToAntigravity(_ context.Context, req sdktranslator.RequestEnvelope) sdktranslator.RequestEnvelope {
 	if shouldBuildAntigravityResponsesWebSearchRequest(req.Model, req.Body, req.ModelInfo) {
@@ -151,10 +147,6 @@ func ConvertOpenAIResponsesRequestEnvelopeToAntigravity(_ context.Context, req s
 	req.Body = enableAntigravityResponsesThinkingSummary(inputRawJSON, req.Body)
 	return req
 }
-
-
-
-
 
 func stripAntigravityResponsesGoogleSearch(payload []byte) []byte {
 	var doc *ojson.Doc
@@ -189,9 +181,6 @@ func stripAntigravityResponsesGoogleSearch(payload []byte) []byte {
 	return stripAntigravityServerSideToolInvocations(payload)
 }
 
-
-
-
 func stripAntigravityServerSideToolInvocations(payload []byte) []byte {
 	var doc *ojson.Doc
 	for _, toolConfigPath := range []string{"toolConfig", "request.toolConfig"} {
@@ -213,9 +202,6 @@ func stripAntigravityServerSideToolInvocations(payload []byte) []byte {
 	return payload
 }
 
-
-
-
 func enableAntigravityResponsesThinkingSummary(inputRawJSON, translated []byte) []byte {
 	effort := ojson.GetBytesNoCopy(inputRawJSON, "reasoning.effort")
 	if effort.Type != ojson.String {
@@ -227,7 +213,6 @@ func enableAntigravityResponsesThinkingSummary(inputRawJSON, translated []byte) 
 	}
 	summaryConfig := thinking.ExtractSummaryConfig(inputRawJSON, "openai-response")
 	if summaryConfig.Mode == thinking.SummaryUnspecified {
-
 
 		summaryConfig = thinking.SummaryConfig{
 			Mode:   thinking.SummaryEnabled,

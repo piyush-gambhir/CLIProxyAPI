@@ -32,7 +32,6 @@ func TestKVStoreBBoltPersistenceAndRouting(t *testing.T) {
 		t.Fatalf("kvstore.ConfigureLocal(true, %q) error = %v", dbPath, errCfg)
 	}
 
-	// 1. Signature cache persists to bbolt when in-memory cache is cleared.
 	sigText := "thinking text persisted in bbolt"
 	sigVal := "bboltValidSignature1234567890123456789012345678901234567890"
 	CacheSignature(testModelName, sigText, sigVal)
@@ -41,7 +40,6 @@ func TestKVStoreBBoltPersistenceAndRouting(t *testing.T) {
 		t.Fatalf("GetCachedSignature() after ClearSignatureCache = %q, want %q", gotSig, sigVal)
 	}
 
-	// 2. Codex reasoning replay items persist to bbolt (including CAS append) when in-memory map is cleared.
 	turn1 := [][]byte{
 		[]byte(`{"type":"` + CodexReasoningReplayTurnType + `","id":"turn-1","assistant_fingerprint":"answer-1"}`),
 		validCodexReasoningReplayItemForTest(21),
@@ -68,7 +66,6 @@ func TestKVStoreBBoltPersistenceAndRouting(t *testing.T) {
 		t.Fatalf("replayItems[2] id = %q, want turn-2", gotID2)
 	}
 
-	// 3. Claude web search result cache persists to bbolt when in-memory cache is cleared.
 	webContent := []byte(`[{"type":"web_search_result","url":"https://example.com/bbolt"}]`)
 	CacheClaudeWebSearchResult("session-bbolt", "srvtoolu_bbolt", webContent, 30*time.Minute, 16)
 	ClearClaudeWebSearchResultCache()
@@ -77,7 +74,6 @@ func TestKVStoreBBoltPersistenceAndRouting(t *testing.T) {
 		t.Fatalf("GetClaudeWebSearchResult() after ClearClaudeWebSearchResultCache = (%q, %v), want (%q, true)", gotWeb, foundWeb, webContent)
 	}
 
-	// 4. When Home mode is active (home.SetCurrent), Home KV takes priority over local bbolt.
 	homeClient := homekv.New(config.HomeConfig{Enabled: true, Host: "127.0.0.1", Port: 1})
 	homekv.SetCurrent(homeClient)
 	if gotHomeSig := GetCachedSignature(testModelName, sigText); gotHomeSig != "" {
@@ -90,7 +86,6 @@ func TestKVStoreBBoltPersistenceAndRouting(t *testing.T) {
 	CacheSignature(testModelName, homeOnlyText, sigVal)
 	homekv.ClearCurrent()
 
-	// After clearing Home client, bbolt is active again: original key is still readable, Home-only write did not touch bbolt.
 	if gotAfterHome := GetCachedSignature(testModelName, sigText); gotAfterHome != sigVal {
 		t.Fatalf("GetCachedSignature() after ClearCurrent = %q, want %q", gotAfterHome, sigVal)
 	}
@@ -98,7 +93,6 @@ func TestKVStoreBBoltPersistenceAndRouting(t *testing.T) {
 		t.Fatalf("GetCachedSignature(homeOnlyText) = %q, want empty", gotHomeOnly)
 	}
 
-	// 5. Disabling local bbolt KV restores standard in-memory cache behavior.
 	if errDisable := kvstore.ConfigureLocal(false, ""); errDisable != nil {
 		t.Fatalf("kvstore.ConfigureLocal(false, \"\") error = %v", errDisable)
 	}

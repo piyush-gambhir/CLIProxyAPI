@@ -23,8 +23,6 @@ type oaiToResponsesState struct {
 	translatorcommon.ApplyPatchErrorState
 	ApplyPatchCalls map[string]*translatorcommon.ApplyPatchCallState
 
-
-
 	RequestEcho        responsesRequestEcho
 	ToolIndex          *responsesToolIndex
 	RequestInitialized bool
@@ -36,7 +34,6 @@ type oaiToResponsesState struct {
 	CompletionPending  bool
 	ReasoningID        string
 	ReasoningIndex     int
-
 
 	MsgTextBuf            map[int]*strings.Builder
 	ReasoningBuf          strings.Builder
@@ -59,7 +56,6 @@ type oaiToResponsesState struct {
 	FuncArgsDone   map[string]bool
 	FuncItemDone   map[string]bool
 
-
 	CustomToolNames map[string]struct{}
 	FinishReason    string
 
@@ -70,7 +66,6 @@ type oaiToResponsesState struct {
 	ReasoningTokens  int64
 	UsageSeen        bool
 }
-
 
 var responseIDCounter uint64
 
@@ -88,11 +83,6 @@ func incompleteByFinishReason(reason string) ([]byte, bool) {
 		return nil, false
 	}
 }
-
-
-
-
-
 
 type responsesRequestEcho struct {
 	instructions          string
@@ -421,8 +411,6 @@ func buildResponsesCompletedEvent(st *oaiToResponsesState, nextSeq func() int) [
 	}
 	return emitRespEvent(eventType, completedDoc.Bytes())
 }
-
-
 
 func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -784,9 +772,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 			_, isIncomplete := incompleteByFinishReason(st.FinishReason)
 			isExplicitToolFinish := st.FinishReason == "tool_calls" || st.FinishReason == "stop"
 
-
-
-
 			name := st.ToolIndex.canonicalName(st.FuncNames[key])
 			if name == "" {
 				name, _ = st.ToolIndex.singleCustomName()
@@ -925,7 +910,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 		return out
 	}
 
-
 	if choices := root.Get("choices"); choices.Exists() && choices.IsArray() {
 		choices.ForEach(func(_, choice ojson.Result) bool {
 			idx := int(choice.Get("index").Int())
@@ -1004,13 +988,11 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 					st.MsgTextBuf[idx].WriteString(c.String())
 				}
 
-
 				if tcs := delta.Get("tool_calls"); tcs.Exists() && tcs.IsArray() && len(tcs.Array()) > 0 {
 					if st.ReasoningID != "" {
 						stopReasoning(st.ReasoningBuf.String())
 						st.ReasoningBuf.Reset()
 					}
-
 
 					emitMessageItemDone(idx)
 
@@ -1055,9 +1037,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 				return false
 			}
 
-
-
-
 			if fr := choice.Get("finish_reason"); fr.Exists() && fr.String() != "" {
 				st.FinishReason = strings.Clone(fr.String())
 				finalizeOpenItems()
@@ -1070,8 +1049,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 
 	return out
 }
-
-
 
 func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
@@ -1090,13 +1067,11 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		respStatus = "incomplete"
 	}
 
-
 	respDoc := ojson.NewDocString(`{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null,"incomplete_details":null}`)
 	_ = respDoc.Set("status", respStatus)
 	if isIncomplete {
 		_ = respDoc.SetRawBytes("incomplete_details", incompleteDetails)
 	}
-
 
 	id := root.Get("id").String()
 	if id == "" {
@@ -1104,13 +1079,11 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 	}
 	_ = respDoc.Set("id", id)
 
-
 	created := root.Get("created").Int()
 	if created == 0 {
 		created = time.Now().Unix()
 	}
 	_ = respDoc.Set("created_at", created)
-
 
 	echo := responsesRequestEcho{}
 	if len(requestRawJSON) > 0 {
@@ -1127,7 +1100,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		}
 	}
 	echo.applyDoc(respDoc, "")
-
 
 	var outputItems [][]byte
 
@@ -1172,13 +1144,11 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 					outputItems = append(outputItems, itemDoc.Bytes())
 				}
 
-
 				if tcs := msg.Get("tool_calls"); tcs.Exists() && tcs.IsArray() {
 					customToolNames := toolIndex.custom
 					tcs.ForEach(func(tcIndex, tc ojson.Result) bool {
 						callID := tc.Get("id").String()
 						if callID == "" {
-
 
 							callID = fmt.Sprintf("call_%s_%d_%d", id, choice.Get("index").Int(), tcIndex.Int())
 						}
@@ -1244,7 +1214,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		_ = respDoc.SetRawBytes("output", translatorcommon.JoinRawArray(outputItems))
 	}
 
-
 	if usage := root.Get("usage"); usage.Exists() {
 
 		if usage.Get("prompt_tokens").Exists() || usage.Get("completion_tokens").Exists() || usage.Get("total_tokens").Exists() {
@@ -1253,7 +1222,6 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 				_ = respDoc.Set("usage.input_tokens_details.cached_tokens", d.Int())
 			}
 			_ = respDoc.Set("usage.output_tokens", usage.Get("completion_tokens").Int())
-
 
 			if d := usage.Get("output_tokens_details.reasoning_tokens"); d.Exists() {
 				_ = respDoc.Set("usage.output_tokens_details.reasoning_tokens", d.Int())
@@ -1287,11 +1255,9 @@ func (st *oaiToResponsesState) canFinalizeResponse() bool {
 	return st.ReasoningID == ""
 }
 
-
 func (st *oaiToResponsesState) CanFinalizeResponseStream() bool {
 	return st.ToolInputError() == nil && !st.CompletedEmitted && st.CompletionPending
 }
-
 
 func (st *oaiToResponsesState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.CompletedEmitted {

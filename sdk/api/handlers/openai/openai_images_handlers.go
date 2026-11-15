@@ -2051,7 +2051,6 @@ func (h *OpenAIAPIHandler) streamImagesFromResponses(c *gin.Context, responsesRe
 		flusher.Flush()
 	}
 
-
 	for {
 		select {
 		case <-c.Request.Context().Done():

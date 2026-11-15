@@ -2,10 +2,6 @@ package usage
 
 import "context"
 
-
-
-
-
 type HomeSelection struct {
 	Reused           bool   `json:"reused"`
 	Additional       bool   `json:"additional,omitempty"`
@@ -15,15 +11,12 @@ type HomeSelection struct {
 
 type homeSelectionContextKey struct{}
 
-
 func WithHomeSelection(ctx context.Context, selection HomeSelection) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, homeSelectionContextKey{}, selection)
 }
-
-
 
 func HomeSelectionFromContext(ctx context.Context) *HomeSelection {
 	if ctx == nil {

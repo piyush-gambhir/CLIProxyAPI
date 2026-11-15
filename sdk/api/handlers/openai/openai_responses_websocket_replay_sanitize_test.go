@@ -8,10 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
-
 func TestMergeResponsesWebsocketInputDropsReplayedContentTokenCount(t *testing.T) {
 	lastRequest := []byte(`{"model":"test-model","stream":true,"input":[{"type":"message","id":"msg-1"}]}`)
 	lastResponseOutput := []byte(`[
@@ -120,9 +116,6 @@ func TestMergeResponsesWebsocketInputDropsReplayedContentTokenCount(t *testing.T
 	}
 }
 
-
-
-
 func TestResponsesWebsocketToolCacheSanitizesTransactionalLifecycle(t *testing.T) {
 	sessionKey := "session-7146-transaction"
 	defer defaultWebsocketToolOutputCache.deleteSession(sessionKey)
@@ -147,10 +140,6 @@ func TestResponsesWebsocketToolCacheSanitizesTransactionalLifecycle(t *testing.T
 	}
 }
 
-
-
-
-
 func TestResponsesWebsocketToolCachePreservesClientItems(t *testing.T) {
 	outputCache := newWebsocketToolOutputCache(time.Minute, 10)
 	callCache := newWebsocketToolOutputCache(time.Minute, 10)
@@ -172,9 +161,6 @@ func TestResponsesWebsocketToolCachePreservesClientItems(t *testing.T) {
 	}
 }
 
-
-
-
 func TestResponsesWebsocketToolCachePreservesTransactionalClientItems(t *testing.T) {
 	const sessionKey = "session-7146-transaction-client"
 	defer defaultWebsocketToolOutputCache.deleteSession(sessionKey)
@@ -189,8 +175,6 @@ func TestResponsesWebsocketToolCachePreservesTransactionalClientItems(t *testing
 		t.Fatalf("transactional client output must not be sanitized: %s", repaired)
 	}
 }
-
-
 
 func TestResponsesWebsocketReplaySanitizedItemLeavesInvalidJSONUnchanged(t *testing.T) {
 	invalidInputs := []string{
@@ -209,9 +193,6 @@ func TestResponsesWebsocketReplaySanitizedItemLeavesInvalidJSONUnchanged(t *test
 		}
 	}
 }
-
-
-
 
 func TestResponsesWebsocketToolCacheStripsContentTokenCount(t *testing.T) {
 	outputCache := newWebsocketToolOutputCache(time.Minute, 10)

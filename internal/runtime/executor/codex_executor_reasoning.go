@@ -561,10 +561,6 @@ func codexReplayInputPrefixFingerprint(inputItems []ojson.Result, end int) strin
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-
-
-
-
 type codexReplayPrefixFingerprints struct {
 	items  []ojson.Result
 	hasher hash.Hash
@@ -585,7 +581,6 @@ func (f *codexReplayPrefixFingerprints) at(end int) string {
 	if end < 0 || end > len(f.items) {
 		return ""
 	}
-
 
 	for len(f.sums) <= end {
 		next := len(f.sums) - 1

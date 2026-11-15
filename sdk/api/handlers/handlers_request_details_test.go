@@ -31,7 +31,6 @@ func TestGetRequestDetails_PreservesSuffix(t *testing.T) {
 		{ID: "claude-sonnet-4-5", Created: now + 5},
 	})
 
-
 	clientIDs := []string{
 		"test-request-details-gemini",
 		"test-request-details-openai",
@@ -122,10 +121,6 @@ func TestGetRequestDetails_PreservesSuffix(t *testing.T) {
 		})
 	}
 }
-
-
-
-
 
 func TestGetRequestDetails_UnknownModelErrorResistsJSONInjection(t *testing.T) {
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, coreauth.NewManager(nil, nil, nil))

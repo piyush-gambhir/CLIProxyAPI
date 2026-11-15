@@ -9,8 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
 func ResolvePath(raw string) (string, error) {
 	resolved := strings.TrimSpace(raw)
 	if resolved == "" {
@@ -40,8 +38,6 @@ func ResolvePath(raw string) (string, error) {
 	}
 	return resolved, nil
 }
-
-
 
 func ResolvePathWithAuthDir(rawPath, authDir string) (string, error) {
 	return ResolvePath((config.KVStoreConfig{Path: rawPath}).EffectivePathForAuthDir(authDir))

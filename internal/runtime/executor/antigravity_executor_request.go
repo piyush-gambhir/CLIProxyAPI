@@ -67,7 +67,6 @@ func (e *AntigravityExecutor) buildRequestDoc(ctx context.Context, auth *cliprox
 	geminiToAntigravityDoc(doc, modelName, projectID, derivedSessionIDs...)
 	promptStructuredOutput := helps.PrepareAntigravityClaudeStructuredOutputDoc(modelName, doc)
 
-
 	if maxOut := doc.Get("request.generationConfig.maxOutputTokens"); maxOut.Exists() && maxOut.Type == ojson.Number {
 		if modelInfo := registry.LookupModelInfo(modelName, "antigravity"); modelInfo != nil && modelInfo.MaxCompletionTokens > 0 {
 			if int(maxOut.Int()) > modelInfo.MaxCompletionTokens {
@@ -105,9 +104,6 @@ func (e *AntigravityExecutor) buildRequestDoc(ctx context.Context, auth *cliprox
 		return nil, nil, errReq
 	}
 
-
-
-
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+token)
 	httpReq.Header.Set("User-Agent", resolveUserAgent(auth))
@@ -141,23 +137,9 @@ func (e *AntigravityExecutor) buildRequestDoc(ctx context.Context, auth *cliprox
 	return httpReq, finalPayload, nil
 }
 
-
-
-
-
-
-
-
-
-
-
-
 func sanitizeAntigravityRequestSchemas(payloadStr string, useAntigravitySchema bool) string {
 	return sanitizeAntigravityRequestSchemasForModel(payloadStr, useAntigravitySchema, false)
 }
-
-
-
 
 func sanitizeAntigravityRequestSchemasForModel(payloadStr string, useAntigravitySchema, isClaudeModel bool) string {
 	payloadStr = sanitizeAntigravityToolSchemasForModel(payloadStr, useAntigravitySchema, isClaudeModel)
@@ -174,10 +156,6 @@ func sanitizeAntigravityRequestSchemasForModelDoc(doc *ojson.Doc, useAntigravity
 	}
 	return changed
 }
-
-
-
-
 
 func sanitizeAntigravityToolSchemas(payloadStr string, useAntigravitySchema bool) string {
 	return sanitizeAntigravityToolSchemasForModel(payloadStr, useAntigravitySchema, false)
@@ -229,23 +207,10 @@ func sanitizeAntigravityToolSchemaDocument(payloadStr string, useAntigravitySche
 	return sanitizeAntigravityToolSchemaDocumentForModel(payloadStr, useAntigravitySchema, false)
 }
 
-
-
 var antigravityDeclarationContainers = []string{"functionDeclarations", "function_declarations"}
-
-
-
-
-
-
-
-
-
 
 func sanitizeAntigravityToolSchemaDocumentForModel(payloadStr string, useAntigravitySchema, isClaudeModel bool) string {
 	toolSchemaCleaner := func(schema string, isParameterSchema bool) string {
-
-
 
 		if isClaudeModel && isParameterSchema {
 			return util.CleanJSONSchemaForAntigravityClaudeTool(schema, useAntigravitySchema)
@@ -308,20 +273,11 @@ func sanitizeAntigravityToolSchemaDocumentForModel(payloadStr string, useAntigra
 	return string(updated)
 }
 
-
-
 type antigravityElementEdit struct {
 	offset      int
 	raw         string
 	replacement string
 }
-
-
-
-
-
-
-
 
 func applyAntigravityElementEdits(arrayRaw string, arrayIndex int, elements []ojson.Result, edits []antigravityElementEdit) string {
 	var rebuilt strings.Builder
@@ -338,9 +294,6 @@ func applyAntigravityElementEdits(arrayRaw string, arrayIndex int, elements []oj
 	rebuilt.WriteString(arrayRaw[cursor:])
 	return rebuilt.String()
 }
-
-
-
 
 func joinAntigravityElements(arrayIndex int, elements []ojson.Result, edits []antigravityElementEdit) string {
 	replacements := make(map[int]string, len(edits))
@@ -363,10 +316,6 @@ func joinAntigravityElements(arrayIndex int, elements []ojson.Result, edits []an
 	return rebuilt.String()
 }
 
-
-
-
-
 func sanitizeAntigravityDeclarations(decls ojson.Result, clean func(schemaRaw string, isParameterSchema bool) string) (string, bool) {
 	elements := make([]ojson.Result, 0)
 	edits := make([]antigravityElementEdit, 0)
@@ -386,10 +335,6 @@ func sanitizeAntigravityDeclarations(decls ojson.Result, clean func(schemaRaw st
 	}
 	return applyAntigravityElementEdits(decls.Raw, decls.Index, elements, edits), true
 }
-
-
-
-
 
 func sanitizeAntigravityDeclaration(decl ojson.Result, clean func(schemaRaw string, isParameterSchema bool) string) string {
 	declRaw := decl.Raw
@@ -427,8 +372,6 @@ func sanitizeAntigravityDeclaration(decl ojson.Result, clean func(schemaRaw stri
 	}
 	return declRaw
 }
-
-
 
 func sanitizeAntigravityGenerationSchemas(payloadStr string) string {
 	doc := ojson.NewDoc([]byte(payloadStr))
@@ -484,8 +427,6 @@ func sanitizeAntigravityGenerationSchemasDoc(doc *ojson.Doc) bool {
 	return changed
 }
 
-
-
 func isParameterSchemaPath(schemaPath string) bool {
 	key := schemaPath
 	if idx := strings.LastIndex(schemaPath, "."); idx >= 0 {
@@ -521,14 +462,7 @@ func cleanAntigravitySchemasAtPaths(payloadStr string, schemaPaths []string, cle
 	return string(doc.Bytes())
 }
 
-
 const antigravitySchemaWrapperKey = "schema"
-
-
-
-
-
-
 
 func cleanNestedSchema(clean func(string) string, schemaRaw string) string {
 	wrapped, errWrap := ojson.SetRaw("{}", antigravitySchemaWrapperKey, schemaRaw)
@@ -540,9 +474,6 @@ func cleanNestedSchema(clean func(string) string, schemaRaw string) string {
 	}
 	return clean(schemaRaw)
 }
-
-
-
 
 func antigravityFunctionDeclarationPaths(payloadStr string) []string {
 	tools := ojson.Get(payloadStr, "request.tools")
@@ -563,9 +494,6 @@ func antigravityFunctionDeclarationPaths(payloadStr string) []string {
 	}
 	return paths
 }
-
-
-
 
 func antigravitySchemaPaths(payloadStr string) []string {
 	paths := antigravityDeclarationSchemaPaths(payloadStr)
@@ -596,11 +524,6 @@ func antigravityGenerationSchemaPaths(payloadStr string) []string {
 	}
 	return paths
 }
-
-
-
-
-
 
 var (
 	antigravityDeclarationSchemaKeys = []string{
@@ -645,8 +568,6 @@ func antigravityRequestNeedsSchemaSanitizationDoc(doc *ojson.Doc) bool {
 	}
 	return false
 }
-
-
 
 func resolveAntigravityRequestBaseURL(auth *cliproxyauth.Auth) string {
 	if base := resolveCustomAntigravityBaseURL(auth); base != "" {

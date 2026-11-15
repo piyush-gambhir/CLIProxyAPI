@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 )
 
-
-
 type UpstreamWebsocketReplayRequiredError struct{}
 
 func (*UpstreamWebsocketReplayRequiredError) Error() string {
@@ -19,23 +17,17 @@ func (*UpstreamWebsocketReplayRequiredError) StatusCode() int { return http.Stat
 
 func (*UpstreamWebsocketReplayRequiredError) IsRequestScoped() bool { return true }
 
-
 func NewUpstreamWebsocketReplayRequiredError() error {
 	return &UpstreamWebsocketReplayRequiredError{}
 }
-
 
 func IsUpstreamWebsocketReplayRequired(err error) bool {
 	var replayErr *UpstreamWebsocketReplayRequiredError
 	return errors.As(err, &replayErr)
 }
 
-
-
-
 type UpstreamWebsocketTurnError struct {
 	Cause error
-
 
 	FullContextRequired bool
 
@@ -66,7 +58,6 @@ func (e *UpstreamWebsocketTurnError) StatusCode() int {
 }
 func (*UpstreamWebsocketTurnError) IsRequestScoped() bool { return true }
 
-
 func IsUpstreamWebsocketTurnError(err error) bool {
 	var turnErr *UpstreamWebsocketTurnError
 	return errors.As(err, &turnErr)
@@ -79,9 +70,6 @@ type websocketInputLossState struct {
 
 type websocketInputLossContextKey struct{}
 
-
-
-
 func WithWebsocketInputEpoch(ctx context.Context, epoch *atomic.Uint64, messageEpoch uint64) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -92,7 +80,6 @@ func WithWebsocketInputEpoch(ctx context.Context, epoch *atomic.Uint64, messageE
 	})
 }
 
-
 func NotifyWebsocketInputLoss(ctx context.Context) {
 	if ctx == nil {
 		return
@@ -102,8 +89,6 @@ func NotifyWebsocketInputLoss(ctx context.Context) {
 	}
 }
 
-
-
 func WebsocketInputPredatesLoss(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -111,8 +96,6 @@ func WebsocketInputPredatesLoss(ctx context.Context) bool {
 	state, ok := ctx.Value(websocketInputLossContextKey{}).(websocketInputLossState)
 	return ok && state.epoch != nil && state.messageEpoch < state.epoch.Load()
 }
-
-
 
 func WebsocketInputLossError(ctx context.Context) error {
 	if !WebsocketInputPredatesLoss(ctx) {

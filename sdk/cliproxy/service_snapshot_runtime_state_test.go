@@ -16,8 +16,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
-
 func TestHandleAuthUpdatesFileSnapshotKeepsCooldown(t *testing.T) {
 	for _, model := range []string{"claude-sonnet-4-6", ""} {
 		name := model
@@ -119,7 +117,6 @@ func TestHandleAuthUpdatesDiscardedSnapshotTriggersWatcherReread(t *testing.T) {
 	ctx := coreauth.WithSkipPersist(context.Background())
 	service.handleAuthUpdates(ctx, []watcher.AuthUpdate{{Action: watcher.AuthUpdateActionAdd, ID: id, Auth: synthesize(initial)}})
 	snapshot := synthesize(edit)
-
 
 	file, errOpen := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0o600)
 	if errOpen != nil {

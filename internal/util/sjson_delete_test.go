@@ -72,8 +72,6 @@ func TestDeleteJSONBytesIfExistsPresentLargeValueAllocation(t *testing.T) {
 		}
 	}).AllocedBytesPerOp()
 
-
-
 	if helperAllocs > sjsonAllocs+1024 {
 		t.Fatalf("present large value: helper allocated %d B/op, sjson allocated %d B/op; want difference <= 1024", helperAllocs, sjsonAllocs)
 	}

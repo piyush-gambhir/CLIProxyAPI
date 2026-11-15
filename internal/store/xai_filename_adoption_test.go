@@ -11,10 +11,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
 func TestFileNameStoresExposeBaseDirCapability(t *testing.T) {
 	stores := map[string]cliproxyauth.Store{
 		"git":      &GitTokenStore{},
@@ -27,10 +23,6 @@ func TestFileNameStoresExposeBaseDirCapability(t *testing.T) {
 		}
 	}
 }
-
-
-
-
 
 func TestGitTokenStoreSaveResolvesFromRecordFileName(t *testing.T) {
 	root := t.TempDir()
@@ -76,10 +68,6 @@ func TestGitTokenStoreSaveResolvesFromRecordFileName(t *testing.T) {
 		t.Fatalf("superseded subject file should not exist: %v", errStat)
 	}
 }
-
-
-
-
 
 func TestRemoteStoresSaveResolvesFromRecordFileName(t *testing.T) {
 	const emailFileName = "xai-user@example.com-0123456789abcdef.json"

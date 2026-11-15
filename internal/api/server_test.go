@@ -1984,7 +1984,6 @@ func TestModelsDispatchByAnthropicVersionHeader(t *testing.T) {
 
 	server := newTestServer(t)
 
-
 	t.Run("anthropic version header routes to claude format", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 		req.Header.Set("Authorization", "Bearer test-key")
@@ -2037,7 +2036,6 @@ func TestModelsDispatchByAnthropicVersionHeader(t *testing.T) {
 			}
 		}
 	})
-
 
 	t.Run("plain request stays on openai format", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
@@ -2442,7 +2440,6 @@ func TestCodexClientModelsEndpoint_FiltersMaxAndUltraForOlderClientVersion(t *te
 
 	server := newTestServer(t)
 
-
 	reqOld := httptest.NewRequest(http.MethodGet, "/v1/models?client_version=0.137.0", nil)
 	reqOld.Header.Set("Authorization", "Bearer test-key")
 	rrOld := httptest.NewRecorder()
@@ -2480,7 +2477,6 @@ func TestCodexClientModelsEndpoint_FiltersMaxAndUltraForOlderClientVersion(t *te
 		t.Fatal("expected gpt-5.6-sol in codex catalog")
 	}
 
-
 	reqNew := httptest.NewRequest(http.MethodGet, "/v1/models?client_version=0.149.1", nil)
 	reqNew.Header.Set("Authorization", "Bearer test-key")
 	rrNew := httptest.NewRecorder()
@@ -2515,7 +2511,6 @@ func TestCodexClientModelsEndpoint_FiltersMaxAndUltraForOlderClientVersion(t *te
 	if !foundNewUltra {
 		t.Fatal("expected ultra reasoning effort for newer client 0.149.1")
 	}
-
 
 	for _, unparsedVersion := range []string{"", "pi", "latest"} {
 		path := "/v1/models?client_version=" + unparsedVersion
@@ -2631,7 +2626,6 @@ func TestDefaultRequestLoggerFactory_UsesResolvedLogDirectory(t *testing.T) {
 			t.Fatalf("failed to restore working directory: %v", errChdirBack)
 		}
 	}()
-
 
 	if errWriteFile := os.WriteFile(filepath.Join(tmpDir, "logs"), []byte("not-a-directory"), 0o644); errWriteFile != nil {
 		t.Fatalf("failed to create blocking logs file: %v", errWriteFile)
@@ -2944,7 +2938,6 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 		},
 	}
 
-
 	codexEntry := homeModelEntry{
 		id:        "shared-model",
 		providers: []string{"codex"},
@@ -2953,7 +2946,6 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 	if got := mCodex["max_context_length"]; got != 524288 {
 		t.Errorf("mCodex max_context_length = %v, want 524288", got)
 	}
-
 
 	claudeEntry := homeModelEntry{
 		id:        "shared-model",
@@ -2964,7 +2956,6 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 		t.Errorf("mClaude max_context_length = %v, want 200000", got)
 	}
 
-
 	otherEntry := homeModelEntry{
 		id:        "shared-model",
 		providers: []string{"vertex"},
@@ -2973,7 +2964,6 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 	if got := mOther["max_context_length"]; got != nil {
 		t.Errorf("mOther max_context_length = %v, want nil", got)
 	}
-
 
 	multiEntry := homeModelEntry{
 		id:        "shared-model",
@@ -3042,7 +3032,6 @@ func TestUpdateClientsContext_AntigravityConnectionPoolPurgesTransports(t *testi
 	cfg1.Antigravity.ConnectionPool.Enabled = &enabled
 	cfg1.Antigravity.ConnectionPool.IdleConnTimeout = "30s"
 	server.oldConfigYaml, _ = yaml.Marshal(&cfg1)
-
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -3467,7 +3456,6 @@ func assertSerializedCPAWebSearch(t *testing.T, model map[string]any, want bool)
 	}
 }
 
-
 type modelCatalogUnknownExecutor struct{ auth.ProviderExecutor }
 
 type modelCatalogUnsupportedExecutor struct{ auth.ProviderExecutor }
@@ -3520,7 +3508,6 @@ func TestHomeApplyPatchCapabilityForModel(t *testing.T) {
 		t.Fatal("unknown or absent route was advertised")
 	}
 }
-
 
 func newHomeCatalogClient(t *testing.T, payload string) *home.Client {
 	t.Helper()
@@ -3706,8 +3693,6 @@ func TestModelsWithClientVersionHomeSearchToolRouting(t *testing.T) {
 	}{
 		{
 
-
-
 			name:       "tool search on",
 			toolSearch: true,
 			want: map[string]bool{
@@ -3720,8 +3705,6 @@ func TestModelsWithClientVersionHomeSearchToolRouting(t *testing.T) {
 			},
 		},
 		{
-
-
 
 			name: "tool search off",
 			want: map[string]bool{
@@ -3952,7 +3935,6 @@ func TestServerResponsesWebsocketReauthorizesEachTurn(t *testing.T) {
 
 	provider.revoked.Store(true)
 
-
 	freshConn, resp, errFreshDial := websocket.DefaultDialer.Dial(wsURL, headers)
 	if errFreshDial == nil {
 		_ = freshConn.Close()
@@ -3968,7 +3950,6 @@ func TestServerResponsesWebsocketReauthorizesEachTurn(t *testing.T) {
 	if resp.Body != nil {
 		_ = resp.Body.Close()
 	}
-
 
 	turn2 := []byte(`{"type":"response.create","model":"ws-reauth-model","input":[{"type":"message","role":"user","content":"turn 2"}]}`)
 	if errWrite := conn.WriteMessage(websocket.TextMessage, turn2); errWrite != nil {

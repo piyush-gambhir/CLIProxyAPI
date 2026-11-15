@@ -45,7 +45,6 @@ type geminiFunctionCallEvidence struct {
 	PatchCall    *translatorcommon.ApplyPatchCallState
 }
 
-
 type geminiResponsesUsage struct {
 	Present    bool
 	Prompt     int64
@@ -112,13 +111,11 @@ type geminiToResponsesState struct {
 	FinishReason string
 	Usage        geminiResponsesUsage
 
-
 	MsgOpened    bool
 	MsgClosed    bool
 	MsgIndex     int
 	CurrentMsgID string
 	ItemTextBuf  strings.Builder
-
 
 	ReasoningOpened           bool
 	ReasoningIndex            int
@@ -136,7 +133,6 @@ type geminiToResponsesState struct {
 	SeenReasoningSignatures   map[string]bool
 	LastSemanticKind          string
 	HiddenTextSignatures      map[string][]string
-
 
 	NextIndex              int
 	FuncArgsBuf            map[int]*strings.Builder
@@ -156,7 +152,6 @@ type geminiToResponsesState struct {
 	ActiveStreamingFunc    *translatorcommon.VertexStreamingToolCall
 	ActiveStreamingPatch   *translatorcommon.ApplyPatchCallState
 	HasFailedStreamingFunc bool
-
 
 	WebSearchStreamMode          bool
 	WebSearchOpened              bool
@@ -187,9 +182,7 @@ type geminiStreamBufferedPart struct {
 	Text      string
 }
 
-
 var responseIDCounter uint64
-
 
 var funcCallIDCounter uint64
 
@@ -348,7 +341,6 @@ func determineWebSearchStreamMode(modelName, requestModelName string, originalRe
 	}
 	return false
 }
-
 
 func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -523,9 +515,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		st.ReasoningPendingDeltas = nil
 	}
 
-
-
-
 	finalizeReasoning := func() {
 		openReasoning()
 		if !st.ReasoningOpened || st.ReasoningClosed {
@@ -679,10 +668,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		}
 	}
 
-
-
-
-
 	finalizeMessage := func() {
 		finalizeWebSearch()
 		if len(st.WebSearchBufferedDeltas) > 0 {
@@ -814,7 +799,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			finalizeReasoning()
 			finalizeMessage()
 
-
 			if !st.MsgOpened || (st.ReasoningOpened && st.ReasoningIndex > st.MsgIndex) {
 				emitDetachedReasoning(signature, geminiResponsesCarrierPrevious, geminiResponsesCarrierText)
 				return
@@ -823,7 +807,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				st.HiddenTextSignatures = make(map[string][]string)
 			}
 			signatures := append(st.HiddenTextSignatures[st.CurrentMsgID], signature)
-
 
 			st.HiddenTextSignatures[st.CurrentMsgID] = signatures
 			if cacheGeminiResponsesTextSignatures(modelName, st.CurrentMsgID, st.ItemTextBuf.String(), signatures) {
@@ -838,7 +821,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			emitDetachedReasoning(signature, geminiResponsesCarrierStandalone, geminiResponsesCarrierAny)
 		}
 	}
-
 
 	if !st.Started {
 		st.ResponseID = strings.Clone(root.Get("responseId").String())
@@ -887,7 +869,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		st.WebSearchStreamMode = determineWebSearchStreamMode(modelName, requestModelName, originalRequestRawJSON, requestRawJSON, reqJSON)
 	}
 
-
 	if gm := ExtractGroundingMetadata(root); gm.Exists() {
 		if st.RawGroundingMetadata.Exists() {
 			st.RawGroundingMetadata = MergeGroundingMetadata(st.RawGroundingMetadata, gm)
@@ -906,8 +887,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			st.WebSearchSources = sources
 		}
 
-
-
 		if st.WebSearchDone {
 			st.WebSearchDoneItem = BuildResponsesWebSearchCallItem(st.WebSearchItemID, st.WebSearchQuery, st.WebSearchQueries, st.WebSearchSources)
 		}
@@ -918,7 +897,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 
 		emitLateCitations()
 	}
-
 
 	if parts := root.Get("candidates.0.content.parts"); parts.Exists() && parts.IsArray() {
 		parts.ForEach(func(partIdxInChunk, part ojson.Result) bool {
@@ -1063,7 +1041,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				}
 			}
 
-
 			if isThought {
 				if len(st.WebSearchBufferedDeltas) > 0 {
 					finalizeMessage()
@@ -1121,14 +1098,11 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				return true
 			}
 
-
 			if t := part.Get("text"); t.Exists() && t.String() != "" {
 				if signature == "" && st.PendingReasoningSignature != "" && ((st.MsgOpened && !st.MsgClosed) || len(st.WebSearchBufferedDeltas) > 0) {
 					emitTrailingDetachedReasoning(st.PendingReasoningSignature)
 					st.PendingReasoningSignature = ""
 				}
-
-
 
 				finalizeReasoning()
 
@@ -1138,9 +1112,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					st.ItemTextBuf.Reset()
 					st.CurrentMsgRuneOffset = 0
 				}
-
-
-
 
 				if st.WebSearchStreamMode && !st.WebSearchDone {
 					textStr := strings.Clone(t.String())
@@ -1201,9 +1172,7 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				return true
 			}
 
-
 			if fc := part.Get("functionCall"); fc.Exists() {
-
 
 				finalizeReasoning()
 				finalizeWebSearch()
@@ -1510,7 +1479,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					}
 					st.FuncInputBuf[idx] = strings.Clone(inputStr)
 
-
 					itemDoc := ojson.NewDocString(`{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"","type":"custom_tool_call","status":"in_progress","input":"","call_id":"","name":""}}`)
 					_ = itemDoc.Set("sequence_number", nextSeq())
 					_ = itemDoc.Set("output_index", idx)
@@ -1518,7 +1486,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					_ = itemDoc.Set("item.call_id", st.FuncCallIDs[idx])
 					translatorcommon.SetResponsesToolCallIdentityDoc(itemDoc, name, namespace, "item")
 					out = append(out, emitEvent("response.output_item.added", itemDoc.Bytes()))
-
 
 					if patchCall != nil && inputStr != "" {
 						out = append(out, emitEvent("response.custom_tool_call_input.delta", translatorcommon.ApplyPatchInputDelta(patchCall, inputStr, nextSeq())))
@@ -1559,8 +1526,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 					translatorcommon.SetResponsesToolCallIdentityDoc(itemDoc, name, namespace, "item")
 					out = append(out, emitEvent("response.output_item.added", itemDoc.Bytes()))
 
-
-
 					if argsJSON != "" {
 						adDoc := ojson.NewDocString(`{"type":"response.function_call_arguments.delta","sequence_number":0,"item_id":"","output_index":0,"delta":""}`)
 						_ = adDoc.Set("sequence_number", nextSeq())
@@ -1569,7 +1534,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 						_ = translatorcommon.SetStringWithoutHTMLEscapeDoc(adDoc, "delta", argsJSON)
 						out = append(out, emitEvent("response.function_call_arguments.delta", adDoc.Bytes()))
 					}
-
 
 					if !st.FuncDone[idx] {
 						fcDoneDoc := ojson.NewDocString(`{"type":"response.function_call_arguments.done","sequence_number":0,"item_id":"","output_index":0,"arguments":""}`)
@@ -1603,7 +1567,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		return out
 	}
 
-
 	if fr := root.Get("candidates.0.finishReason").String(); fr != "" && st.FinishReason == "" {
 		st.FinishReason = strings.Clone(fr)
 	}
@@ -1623,11 +1586,9 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 			st.PendingReasoningSignature = ""
 		}
 
-
 		finalizeWebSearch()
 		finalizeReasoning()
 		finalizeMessage()
-
 
 		if len(st.FuncArgsBuf) > 0 {
 
@@ -1697,9 +1658,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 				st.FuncDone[idx] = true
 			}
 		}
-
-
-
 
 		completedDoc := ojson.NewDocString(`{"type":"response.completed","sequence_number":0,"response":{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null}}`)
 		_ = completedDoc.Set("type", eventType)
@@ -1776,7 +1734,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 		}
 
 		emitLateCitations()
-
 
 		outputs := make([][]byte, 0, st.NextIndex)
 		for idx := 0; idx < st.NextIndex; idx++ {
@@ -1858,7 +1815,6 @@ func ConvertGeminiResponseToOpenAIResponses(_ context.Context, modelName string,
 	return out
 }
 
-
 func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	root = unwrapGeminiResponseRoot(root)
@@ -1866,14 +1822,12 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	sanitizedNameMap := util.SanitizedToolNameMap(originalRequestRawJSON)
 	toolIdentityMap := util.ResponsesToolReverseIdentityMap(reqJSON)
 
-
 	respDoc := ojson.NewDocString(`{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null,"incomplete_details":null}`)
 	_, status, incompleteDetails := geminiResponsesTerminalState(root.Get("candidates.0.finishReason").String())
 	_ = respDoc.Set("status", status)
 	if incompleteDetails != nil {
 		_ = respDoc.SetRawBytes("incomplete_details", incompleteDetails)
 	}
-
 
 	id := root.Get("responseId").String()
 	if id == "" {
@@ -1885,7 +1839,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	}
 	_ = respDoc.Set("id", id)
 
-
 	createdAt := time.Now().Unix()
 	if v := root.Get("createTime"); v.Exists() {
 		if t, errParseCreateTime := time.Parse(time.RFC3339Nano, v.String()); errParseCreateTime == nil {
@@ -1893,7 +1846,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 		}
 	}
 	_ = respDoc.Set("created_at", createdAt)
-
 
 	if len(reqJSON) > 0 {
 		req := unwrapRequestRoot(util.ParseGJSONBytesNoCopy(reqJSON))
@@ -1962,7 +1914,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	} else if v := root.Get("modelVersion"); v.Exists() {
 		_ = respDoc.Set("model", v.String())
 	}
-
 
 	var reasoningText strings.Builder
 	var reasoningEncrypted string
@@ -2257,7 +2208,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	flushReasoningOutput()
 	flushMessageOutput()
 
-
 	groundingMetadata := ExtractGroundingMetadata(root)
 	hasGrounding := HasValidWebGrounding(groundingMetadata)
 	var wsItem []byte
@@ -2371,8 +2321,6 @@ func ConvertGeminiResponseToOpenAIResponsesNonStream(_ context.Context, _ string
 	return respDoc.Bytes()
 }
 
-
-
 func geminiRecordFunctionEvidence(st *geminiToResponsesState, fc ojson.Result, partIndex int, validJSON bool) *geminiFunctionCallEvidence {
 	if st.FunctionEvidence == nil {
 		st.FunctionEvidence = make(map[string]*geminiFunctionCallEvidence)
@@ -2484,7 +2432,6 @@ func geminiPendingIdentityError(st *geminiToResponsesState) error {
 	}
 	return nil
 }
-
 
 func (st *geminiToResponsesState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.Completed {

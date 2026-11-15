@@ -14,10 +14,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-
 const MaxRequestBodyBytesContextKey = "maxRequestBodyBytes"
-
-
 
 func ReadRequestBody(c *gin.Context) ([]byte, error) {
 	maxBytes := int64(0)

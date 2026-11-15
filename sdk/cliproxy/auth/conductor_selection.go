@@ -64,8 +64,6 @@ func (m *Manager) snapshotPluginScheduler() (PluginScheduler, bool) {
 	return scheduler, pluginSchedulerWantsAcrossPriorities(scheduler)
 }
 
-
-
 func (m *Manager) PluginSchedulerWantsAcrossPriorities() bool {
 	_, wants := m.snapshotPluginScheduler()
 	return wants
@@ -162,11 +160,6 @@ func (m *Manager) snapshotAuths() []*Auth {
 	return out
 }
 
-
-
-
-
-
 func (m *Manager) RefreshSchedulerEntry(authID string) {
 	if m == nil || m.scheduler == nil || authID == "" {
 		return
@@ -183,7 +176,6 @@ func (m *Manager) RefreshSchedulerEntry(authID string) {
 	m.scheduler.upsertAuth(snapshot)
 }
 
-
 func (m *Manager) RefreshSchedulerAll() {
 	if m == nil {
 		return
@@ -198,14 +190,6 @@ func (m *Manager) RefreshSchedulerAll() {
 		m.RefreshSchedulerEntry(id)
 	}
 }
-
-
-
-
-
-
-
-
 
 func (m *Manager) ReconcileRegistryModelStates(ctx context.Context, authID string) {
 	if m == nil || authID == "" {
@@ -273,7 +257,6 @@ func (m *Manager) ReconcileRegistryModelStates(ctx context.Context, authID strin
 					lookupKey = strings.ToLower(strings.TrimSpace(modelKey))
 				}
 				if _, isSupported := supported[lookupKey]; !isSupported {
-
 
 					delete(candidateAuth.ModelStates, modelKey)
 					candidateChanged = true
@@ -754,7 +737,6 @@ func (m *Manager) SetSelector(selector Selector) {
 	}
 }
 
-
 func (m *Manager) Selector() Selector {
 	if m == nil {
 		return nil
@@ -763,8 +745,6 @@ func (m *Manager) Selector() Selector {
 	defer m.mu.RUnlock()
 	return m.selector
 }
-
-
 
 func (m *Manager) LookupSessionAffinity(provider, model, sessionID string) (*Auth, string) {
 	if m == nil {
@@ -829,13 +809,11 @@ func (m *Manager) LookupSessionAffinity(provider, model, sessionID string) (*Aut
 	return snapshot, "bound"
 }
 
-
 func (m *Manager) SetStore(store Store) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.store = store
 }
-
 
 func (m *Manager) SetCooldownStateStore(store CooldownStateStore) {
 	if m == nil {
@@ -847,7 +825,6 @@ func (m *Manager) SetCooldownStateStore(store CooldownStateStore) {
 	defer m.mu.Unlock()
 	m.cooldownStore = store
 }
-
 
 func (m *Manager) SetRoundTripperProvider(p RoundTripperProvider) {
 	m.mu.Lock()
@@ -932,14 +909,9 @@ func (m *Manager) availableAuthsForRouteModelForRequest(ctx context.Context, aut
 	return availableAuthsFromPriorityBuckets(availableByPriority, allPriorities), nil
 }
 
-
-
-
-
 func (m *Manager) availableAuthsForSelector(ctx context.Context, selector Selector, auths []*Auth, provider, routeModel string, now time.Time, schedulerAcross bool, clientHeaders ...http.Header) (priorityAuths, selectorAuths []*Auth, err error) {
 	_, sessionAffinity := selector.(*SessionAffinitySelector)
 	if _, weighted := selector.(*WeightedRoundRobinSelector); weighted {
-
 
 		auths = positiveWeightAuths(auths)
 	}
@@ -952,8 +924,6 @@ func (m *Manager) availableAuthsForSelector(ctx context.Context, selector Select
 		priorityAuths = cloneAuthSlice(priorityAuths)
 		return priorityAuths, priorityAuths, nil
 	}
-
-
 
 	allAuths, errAcross := m.availableAuthsForRouteModelForRequest(ctx, auths, provider, routeModel, now, true, clientHeaders...)
 	if errAcross != nil {
@@ -1400,12 +1370,6 @@ func (m *Manager) normalizeProviders(providers []string) []string {
 	return result
 }
 
-
-
-
-
-
-
 func (m *Manager) AvailableProviders() []string {
 	if m == nil {
 		return nil
@@ -1430,9 +1394,6 @@ func (m *Manager) AvailableProviders() []string {
 	sort.Strings(out)
 	return out
 }
-
-
-
 
 func (m *Manager) HasProviderAuth(provider string) bool {
 	if m == nil {
@@ -1538,11 +1499,6 @@ func retryRoundAvailabilityForAuthForRequest(ctx context.Context, auth *Auth, mo
 	return true, next
 }
 
-
-
-
-
-
 func hasLiveQuotaCooldown(auth *Auth, model string, now time.Time) bool {
 	if auth == nil {
 		return false
@@ -1567,9 +1523,6 @@ func hasLiveQuotaCooldown(auth *Auth, model string, now time.Time) bool {
 	}
 	return false
 }
-
-
-
 
 func hasTransientZeroWaitEligibility(auth *Auth, model string) bool {
 	if auth == nil {
@@ -1655,10 +1608,6 @@ func (m *Manager) closestCooldownWaitWithAttemptedForRequest(ctx context.Context
 		}
 		coolingDisabled := m.cooldownDisabledForAuth(auth)
 
-
-
-
-
 		transientZeroWait := !hasLiveQuotaCooldown(auth, checkModel, now) && hasTransientZeroWaitEligibility(auth, checkModel)
 		if !wasAttempted || coolingDisabled || status != http.StatusTooManyRequests || transientZeroWait {
 			if next.IsZero() {
@@ -1674,8 +1623,6 @@ func (m *Manager) closestCooldownWaitWithAttemptedForRequest(ctx context.Context
 			}
 			continue
 		}
-
-
 
 		var wait time.Duration
 		if next.IsZero() {
@@ -1758,11 +1705,6 @@ func (m *Manager) shouldRetryAfterError(err error, attempt int, providers []stri
 	return m.shouldRetryAfterErrorWithHomeRetryLimit(context.Background(), cliproxyexecutor.Options{}, err, attempt, providers, model, maxWait, -1, defaultRequestRetry)
 }
 
-
-
-
-
-
 func (m *Manager) shouldRetryAfterErrorWithHomeRetryLimit(ctx context.Context, opts cliproxyexecutor.Options, err error, attempt int, providers []string, model string, maxWait time.Duration, homeRetryLimit int, defaultRequestRetry int) (time.Duration, bool) {
 	return m.shouldRetryAfterErrorWithAttempted(ctx, opts, err, attempt, providers, model, maxWait, homeRetryLimit, defaultRequestRetry, nil)
 }
@@ -1802,7 +1744,6 @@ func (m *Manager) shouldRetryAfterErrorWithAttempted(ctx context.Context, opts c
 			}
 			return *retryAfter, true
 		}
-
 
 		return 0, true
 	}
@@ -1919,14 +1860,7 @@ func isRequestRetryRoundError(err error) bool {
 	return isCredentialRetryRoundStatus(statusCodeFromError(err)) || isTransientTransportError(err)
 }
 
-
-
 const cooldownWaitJitterCap = 2 * time.Second
-
-
-
-
-
 
 func jitteredCooldownWait(wait, maxWait time.Duration) time.Duration {
 	if wait <= 0 {
@@ -1959,7 +1893,6 @@ func waitForCooldown(ctx context.Context, wait, maxWait time.Duration) error {
 	}
 }
 
-
 func (m *Manager) List() []*Auth {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -1969,7 +1902,6 @@ func (m *Manager) List() []*Auth {
 	}
 	return list
 }
-
 
 func (m *Manager) GetByID(id string) (*Auth, bool) {
 	if id == "" {
@@ -1983,11 +1915,6 @@ func (m *Manager) GetByID(id string) (*Auth, bool) {
 	}
 	return auth.Clone(), true
 }
-
-
-
-
-
 
 func (m *Manager) PublishIfRegistrationCurrent(id string, registrationEpoch uint64, prefix, provider string, disabled bool, authKind string, attributes map[string]string, publish func() bool) bool {
 	if m == nil || id == "" || publish == nil {
@@ -2004,11 +1931,6 @@ func (m *Manager) PublishIfRegistrationCurrent(id string, registrationEpoch uint
 	}
 	return publish()
 }
-
-
-
-
-
 
 func (m *Manager) UpdateIfRegistrationCurrent(ctx context.Context, base *Auth, updated *Auth) (*Auth, bool, error) {
 	if m == nil || base == nil || updated == nil || base.ID == "" || updated.ID != base.ID {
@@ -2046,7 +1968,6 @@ func modelRegistrationInputsMatch(current *Auth, registrationEpoch uint64, prefi
 		current.AuthKind() == authKind &&
 		maps.Equal(current.Attributes, attributes)
 }
-
 
 func (m *Manager) GetExecutionSessionAuthByID(sessionID string, authID string) (*Auth, bool) {
 	sessionID = strings.TrimSpace(sessionID)
@@ -2101,7 +2022,6 @@ func (m *Manager) executorLocked(provider string) (ProviderExecutor, bool) {
 	return executor, true
 }
 
-
 func (m *Manager) Executor(provider string) (ProviderExecutor, bool) {
 	if m == nil {
 		return nil, false
@@ -2110,7 +2030,6 @@ func (m *Manager) Executor(provider string) (ProviderExecutor, bool) {
 	defer m.mu.RUnlock()
 	return m.executorLocked(provider)
 }
-
 
 func (m *Manager) CloseExecutionSession(sessionID string) {
 	sessionID = strings.TrimSpace(sessionID)
@@ -2384,8 +2303,6 @@ func (m *Manager) pickNextLegacy(ctx context.Context, provider, model string, op
 	return authCopy, executor, nil
 }
 
-
-
 func (m *Manager) SelectAuth(ctx context.Context, provider, model string, opts cliproxyexecutor.Options) (*Auth, error) {
 	if m != nil && m.HomeEnabled() {
 		return nil, &Error{Code: "home_unavailable", Message: "legacy auth selection is unavailable while Home is enabled", HTTPStatus: http.StatusServiceUnavailable}
@@ -2399,8 +2316,6 @@ func (m *Manager) SelectAuth(ctx context.Context, provider, model string, opts c
 	}
 	return selected, nil
 }
-
-
 
 func (m *Manager) SelectAuthByKind(ctx context.Context, provider, model, requiredKind string, opts cliproxyexecutor.Options) (*Auth, error) {
 	if m != nil && m.HomeEnabled() {
@@ -2424,7 +2339,6 @@ func (m *Manager) SelectAuthByKind(ctx context.Context, provider, model, require
 	}
 	return selected, nil
 }
-
 
 func (m *Manager) SelectAuthWithCredentialPolicy(ctx context.Context, provider, model, policy string, opts cliproxyexecutor.Options) (*Auth, error) {
 	if m != nil && m.HomeEnabled() {
@@ -2450,7 +2364,6 @@ func (m *Manager) SelectAuthWithCredentialPolicy(ctx context.Context, provider, 
 	}
 	return selected, nil
 }
-
 
 func (m *Manager) SelectHomeAuthWithCredentialPolicy(ctx context.Context, provider, model, policy string, opts cliproxyexecutor.Options) (*HomeDispatchSelection, error) {
 	policy = normalizeCredentialPolicy(policy)
@@ -2500,7 +2413,6 @@ func (m *Manager) SelectHomeAuthWithCredentialPolicy(ctx context.Context, provid
 		homeAuthCount++
 	}
 }
-
 
 func (m *Manager) SelectHomeAuthByKind(ctx context.Context, provider string, model string, requiredKind string, opts cliproxyexecutor.Options) (*HomeDispatchSelection, error) {
 	requiredKind = normalizeAuthKind(requiredKind)
@@ -2610,8 +2522,6 @@ func (m *Manager) pickNext(ctx context.Context, provider, model string, opts cli
 	}
 	return authCopy, executor, nil
 }
-
-
 
 func (m *Manager) HasAlternativeTargetForModel(ctx context.Context, providers []string, model string, opts cliproxyexecutor.Options, excludedAuthID string) bool {
 	if m == nil {
@@ -2809,7 +2719,6 @@ func (m *Manager) pickNextMixedLegacy(ctx context.Context, providers []string, m
 			selectorCtx = context.WithValue(selectorCtx, weightedAccountingPoolKey{}, accountingAuths)
 		}
 		if _, bareWeighted := selector.(*WeightedRoundRobinSelector); bareWeighted {
-
 
 			singleProvider := ""
 			for providerKey := range providerSet {

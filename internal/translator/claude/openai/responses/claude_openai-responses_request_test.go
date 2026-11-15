@@ -642,9 +642,6 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputPreservesInputI
 
 func TestConvertOpenAIResponsesRequestToClaude_StandaloneToolOutputBecomesUserText(t *testing.T) {
 
-
-
-
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -685,8 +682,6 @@ func TestConvertOpenAIResponsesRequestToClaude_StandaloneToolOutputBecomesUserTe
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForDanglingToolUse(t *testing.T) {
-
-
 
 	raw := []byte(`{
 		"model":"claude-test",
@@ -748,7 +743,6 @@ func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForTrailingToolU
 
 func TestConvertOpenAIResponsesRequestToClaude_MovesToolResultsAheadOfInjectedText(t *testing.T) {
 
-
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -786,8 +780,6 @@ func TestConvertOpenAIResponsesRequestToClaude_MovesToolResultsAheadOfInjectedTe
 
 func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForTrailingToolUseOnPrefillRejectingModel(t *testing.T) {
 
-
-
 	raw := []byte(`{
 		"model":"claude-fable-5-1",
 		"input":[
@@ -818,9 +810,6 @@ func TestConvertOpenAIResponsesRequestToClaude_SynthesizesResultForTrailingToolU
 
 func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t *testing.T) {
 
-
-
-
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -835,11 +824,9 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t
 	out, _ := ConvertOpenAIResponsesRequestToClaude("claude-test", raw, false)
 	root := util.ParseGJSONBytesNoCopy(out)
 
-
 	if got := root.Get("messages.#").Int(); got != 5 {
 		t.Fatalf("message count = %d, want 5. Output: %s", got, string(out))
 	}
-
 
 	if got := root.Get("messages.2.content.0.type").String(); got != "tool_result" {
 		t.Fatalf("messages.2.content.0.type = %q, want tool_result. Output: %s", got, string(out))
@@ -850,7 +837,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t
 	if !root.Get("messages.2.content.0.is_error").Bool() {
 		t.Fatalf("synthesized tool_result should be is_error. Output: %s", string(out))
 	}
-
 
 	last := root.Get("messages.4")
 	if got := last.Get("role").String(); got != "user" {
@@ -868,9 +854,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultFoldsToText(t
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_EmptyStandaloneToolOutputKeepsMarker(t *testing.T) {
-
-
-
 
 	for _, output := range []string{`""`, `[{"type":"input_text","text":""}]`} {
 		raw := []byte(`{
@@ -907,8 +890,6 @@ func TestConvertOpenAIResponsesRequestToClaude_EmptyStandaloneToolOutputKeepsMar
 
 func TestConvertOpenAIResponsesRequestToClaude_SanitizedIDCollisionKeepsOrphanAsText(t *testing.T) {
 
-
-
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -941,8 +922,6 @@ func TestConvertOpenAIResponsesRequestToClaude_SanitizedIDCollisionKeepsOrphanAs
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_EmptyLateOrphanToolResultKeepsNonEmptyUserMessage(t *testing.T) {
-
-
 
 	raw := []byte(`{
 		"model":"claude-fable-5-1",
@@ -982,7 +961,6 @@ func TestConvertOpenAIResponsesRequestToClaude_EmptyLateOrphanToolResultKeepsNon
 
 func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultArrayOfEmptyTextKeepsMarker(t *testing.T) {
 
-
 	raw := []byte(`{
 		"model":"claude-fable-5-1",
 		"input":[
@@ -1016,7 +994,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LateOrphanToolResultArrayOfEmptyT
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_StandaloneToolOutputDropsEmptyTextInMixedArray(t *testing.T) {
-
 
 	raw := []byte(`{
 		"model":"claude-test",
@@ -1750,8 +1727,6 @@ func TestConvertOpenAIResponsesRequestToClaude_SystemItemCacheControlAppliesToLa
 
 func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testing.T) {
 
-
-
 	raw := []byte(`{
 		"model":"claude-test",
 		"input":[
@@ -1818,11 +1793,9 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 		t.Fatalf("expected at least 5 messages, got %d. Output: %s", len(messages), string(out))
 	}
 
-
 	if got := messages[0].Get("role").String(); got != "user" {
 		t.Fatalf("messages[0].role = %q, want user", got)
 	}
-
 
 	if got := messages[1].Get("content.0.type").String(); got != "tool_use" {
 		t.Fatalf("messages[1].content.0.type = %q, want tool_use", got)
@@ -1830,7 +1803,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 	if got := messages[1].Get("content.0.id").String(); got != "toolu_dup" {
 		t.Fatalf("messages[1].content.0.id = %q, want toolu_dup", got)
 	}
-
 
 	if got := messages[2].Get("role").String(); got != "user" {
 		t.Fatalf("messages[2].role = %q, want user", got)
@@ -1845,7 +1817,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 		t.Fatalf("messages[2].content.0.content = %q, want 'final result'", got)
 	}
 
-
 	if got := messages[3].Get("role").String(); got != "assistant" {
 		t.Fatalf("messages[3].role = %q, want assistant", got)
 	}
@@ -1855,10 +1826,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeduplicatesToolOutputs(t *testin
 	if got := messages[3].Get("content.1.id").String(); got != "toolu_parallel" {
 		t.Fatalf("messages[3].content.1.id = %q, want toolu_parallel", got)
 	}
-
-
-
-
 
 	msg4Blocks := messages[4].Get("content").Array()
 	if len(msg4Blocks) != 3 {
@@ -2555,7 +2522,6 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputAlternateIDsAnd
 				t.Fatalf("expected 3 messages (user, assistant, user), got %d; output=%s", len(messages), string(out))
 			}
 
-
 			toolUse := messages[1].Get("content.0")
 			if toolUse.Get("type").String() != "tool_use" {
 				t.Fatalf("expected tool_use, got %s", toolUse.Raw)
@@ -2563,7 +2529,6 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputAlternateIDsAnd
 			if gotID := toolUse.Get("id").String(); gotID != "call_123" {
 				t.Fatalf("tool_use.id = %q, want call_123", gotID)
 			}
-
 
 			toolResult := messages[2].Get("content.0")
 			if toolResult.Get("type").String() != "tool_result" {
@@ -2580,9 +2545,6 @@ func TestConvertOpenAIResponsesRequestToClaude_FunctionCallOutputAlternateIDsAnd
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_MixedMissingAndExplicitParallelOutputs(t *testing.T) {
-
-
-
 
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-6",
@@ -2620,10 +2582,6 @@ func TestConvertOpenAIResponsesRequestToClaude_MixedMissingAndExplicitParallelOu
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_MixedMissingAndExplicitParallelOutputsAcrossUserMessage(t *testing.T) {
-
-
-
-
 
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-6",
@@ -2695,7 +2653,6 @@ func TestConvertOpenAIResponsesRequestToClaude_StringInput(t *testing.T) {
 		t.Fatalf("expected user message content %q, got %q", "hi", text)
 	}
 
-
 	withInstructions := []byte(`{
 		"model": "claude-sonnet-4-6",
 		"instructions": "Be concise.",
@@ -2715,7 +2672,6 @@ func TestConvertOpenAIResponsesRequestToClaude_StringInput(t *testing.T) {
 	if messagesWithInstr[0].Get("role").String() != "user" || messagesWithInstr[0].Get("content").String() != "hello world" {
 		t.Fatalf("unexpected user message in output: %s", string(outWithInstr))
 	}
-
 
 	complexInput := []byte(`{
 		"model": "claude-sonnet-4-6",
@@ -2776,7 +2732,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LongToolNamesUniqueAndReversible(
 			name1, child1, ns1, "acme_inventory_service_get_item_metrics", "mcp__example_apps__acme_inventory_service")
 	}
 
-
 	claudeResp := []byte(strings.Join([]string{
 		`data: {"type":"message_start","message":{"id":"msg_test_123","usage":{"input_tokens":10,"output_tokens":5}}}`,
 		fmt.Sprintf(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call_test_0","name":%q,"input":{}}}`, name0),
@@ -2795,7 +2750,6 @@ func TestConvertOpenAIResponsesRequestToClaude_LongToolNamesUniqueAndReversible(
 	if outputItem.Get("namespace").String() != "mcp__example_apps__acme_inventory_service" {
 		t.Fatalf("output.0.namespace = %q, want mcp__example_apps__acme_inventory_service", outputItem.Get("namespace").String())
 	}
-
 
 	streamChunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_stream_123","usage":{"input_tokens":10,"output_tokens":5}}}`),
@@ -2901,15 +2855,12 @@ func TestConvertOpenAIResponsesRequestToClaude_LongToolChoiceAndHistory(t *testi
 
 	out, _ := ConvertOpenAIResponsesRequestToClaude("claude-sonnet-5-5", reqJSON, false)
 
-
 	declaredPricesName := ojson.GetBytesNoCopy(out, "tools.0.name").String()
-
 
 	toolChoiceName := ojson.GetBytesNoCopy(out, "tool_choice.name").String()
 	if toolChoiceName != declaredPricesName {
 		t.Fatalf("tool_choice.name = %q, want %q", toolChoiceName, declaredPricesName)
 	}
-
 
 	messages := ojson.GetBytesNoCopy(out, "messages").Array()
 	var foundHistoryToolUseName string

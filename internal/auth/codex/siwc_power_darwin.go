@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// ReadSIWCSystemState reads the macOS power capabilities used by SIWC renewal.
 var ReadSIWCSystemState = func(ctx context.Context) ([]byte, error) {
 	return exec.CommandContext(ctx, "/usr/bin/pmset", "-g", "systemstate").Output()
 }
@@ -17,7 +16,7 @@ var ReadSIWCSystemState = func(ctx context.Context) ([]byte, error) {
 func siwcRefreshReadiness(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	// shortcut: checks entry state; use native sleep coordination if in-flight sleep still breaks renewal.
+
 	state, errState := ReadSIWCSystemState(ctx)
 	if errState != nil {
 		return fmt.Errorf("SIWC renewal deferred: macOS power state unavailable: %w", errState)

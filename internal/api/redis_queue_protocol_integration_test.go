@@ -742,7 +742,6 @@ func TestRedisProtocol_MalformedAndOverflowFramesDoNotCrashServer(t *testing.T) 
 		})
 	}
 
-
 	conn, errDial := net.DialTimeout("tcp", addr, time.Second)
 	if errDial != nil {
 		t.Fatalf("failed to dial redis listener after malformed frames: %v", errDial)

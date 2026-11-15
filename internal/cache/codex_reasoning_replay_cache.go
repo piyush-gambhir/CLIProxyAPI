@@ -15,25 +15,16 @@ import (
 )
 
 const (
-	// CodexReasoningReplayTurnType identifies an internal turn-boundary marker.
 	CodexReasoningReplayTurnType = "cpa_codex_replay_turn"
 
-	// CodexReasoningReplayCacheTTL limits how long encrypted reasoning replay
-	// items stay in process memory.
 	CodexReasoningReplayCacheTTL = 1 * time.Hour
 
-	// CodexReasoningReplayCacheMaxEntries bounds process memory for replay
-	// continuity. Oldest entries are evicted first.
 	CodexReasoningReplayCacheMaxEntries = 10240
 
-	// CodexReasoningReplayCacheMaxTurnsPerEntry bounds cumulative state for one agent.
 	CodexReasoningReplayCacheMaxTurnsPerEntry = 256
 
-	// CodexReasoningReplayCacheMaxBytesPerEntry bounds cumulative serialized items for one agent.
 	CodexReasoningReplayCacheMaxBytesPerEntry = 16 << 20
 
-	// CodexReasoningReplayCacheEvictBatchSize leaves headroom after the cache
-	// reaches capacity so high write volume does not rescan the map every turn.
 	CodexReasoningReplayCacheEvictBatchSize = 128
 )
 
@@ -59,20 +50,14 @@ var currentCodexReasoningReplayKVClient = func() (codexReasoningReplayKVClient, 
 	return homekv.CurrentKVClient()
 }
 
-// CacheCodexReasoningReplayItem stores a final GPT/Codex reasoning item for
-// stateless replay. The stored item is normalized to the minimal shape accepted
-// by Responses input replay.
 func CacheCodexReasoningReplayItem(modelName, sessionKey string, item []byte) bool {
 	return CacheCodexReasoningReplayItems(modelName, sessionKey, [][]byte{item})
 }
 
-// CacheCodexReasoningReplayItems stores the final GPT/Codex assistant output
-// items needed to replay a stateless next turn.
 func CacheCodexReasoningReplayItems(modelName, sessionKey string, items [][]byte) bool {
 	return CacheCodexReasoningReplayItemsBestEffort(context.Background(), modelName, sessionKey, items)
 }
 
-// CacheCodexReasoningReplayItemsBestEffort stores replay items for completed response paths.
 func CacheCodexReasoningReplayItemsBestEffort(ctx context.Context, modelName, sessionKey string, items [][]byte) bool {
 	key := codexReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -114,7 +99,6 @@ func CacheCodexReasoningReplayItemsBestEffort(ctx context.Context, modelName, se
 	return true
 }
 
-// AppendCodexReasoningReplayItemsBestEffort appends one completed turn to existing replay state.
 func AppendCodexReasoningReplayItemsBestEffort(ctx context.Context, modelName, sessionKey string, items [][]byte) bool {
 	if ctx == nil {
 		ctx = context.Background()
@@ -230,7 +214,6 @@ func trimCodexReasoningReplayItems(items [][]byte) [][]byte {
 	}
 }
 
-// GetCodexReasoningReplayItem retrieves the first normalized upstream replay item.
 func GetCodexReasoningReplayItem(modelName, sessionKey string) ([]byte, bool) {
 	items, ok := GetCodexReasoningReplayItems(modelName, sessionKey)
 	if !ok {
@@ -244,7 +227,6 @@ func GetCodexReasoningReplayItem(modelName, sessionKey string) ([]byte, bool) {
 	return nil, false
 }
 
-// GetCodexReasoningReplayItems retrieves normalized assistant output items.
 func GetCodexReasoningReplayItems(modelName, sessionKey string) ([][]byte, bool) {
 	items, ok, err := GetCodexReasoningReplayItemsRequired(context.Background(), modelName, sessionKey)
 	if err == nil {
@@ -253,7 +235,6 @@ func GetCodexReasoningReplayItems(modelName, sessionKey string) ([][]byte, bool)
 	return nil, false
 }
 
-// GetCodexReasoningReplayItemsRequired retrieves replay items for request-time paths.
 func GetCodexReasoningReplayItemsRequired(ctx context.Context, modelName, sessionKey string) ([][]byte, bool, error) {
 	key := codexReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -296,15 +277,12 @@ func GetCodexReasoningReplayItemsRequired(ctx context.Context, modelName, sessio
 	return cloneCodexReasoningReplayItems(entry.Items), true, nil
 }
 
-// DeleteCodexReasoningReplayItem removes one replay item after upstream rejects
-// it or the caller otherwise knows it is stale.
 func DeleteCodexReasoningReplayItem(modelName, sessionKey string) {
 	if errDelete := DeleteCodexReasoningReplayItemRequired(context.Background(), modelName, sessionKey); errDelete != nil {
 		return
 	}
 }
 
-// DeleteCodexReasoningReplayItemRequired removes one replay item for request-time paths.
 func DeleteCodexReasoningReplayItemRequired(ctx context.Context, modelName, sessionKey string) error {
 	key := codexReasoningReplayCacheKey(modelName, sessionKey)
 	if key == "" {
@@ -324,7 +302,6 @@ func DeleteCodexReasoningReplayItemRequired(ctx context.Context, modelName, sess
 	return nil
 }
 
-// ClearCodexReasoningReplayCache clears all Codex reasoning replay state.
 func ClearCodexReasoningReplayCache() {
 	codexReasoningReplayMu.Lock()
 	codexReasoningReplayEntries = make(map[string]codexReasoningReplayEntry)
@@ -337,8 +314,7 @@ func codexReasoningReplayCacheKey(modelName, sessionKey string) string {
 	if modelName == "" || sessionKey == "" {
 		return ""
 	}
-	// The session key is the continuity boundary. Keep this independent from
-	// the selected upstream Codex credential so auth failover can preserve replay.
+
 	return strings.Join([]string{"codex-reasoning-replay", modelName, sessionKey}, "\x00")
 }
 

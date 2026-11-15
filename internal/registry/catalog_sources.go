@@ -17,9 +17,6 @@ import (
 
 const embeddedCatalogSource = "embed"
 
-
-
-
 type catalogUpdater struct {
 	mu              sync.Mutex
 	source          string
@@ -80,7 +77,6 @@ func (u *catalogUpdater) configure(ctx context.Context, source string) {
 	}()
 }
 
-
 type CatalogSourceStatus struct {
 	Source           string   `json:"source"`
 	Refreshed        bool     `json:"refreshed"`
@@ -88,7 +84,6 @@ type CatalogSourceStatus struct {
 	ChangedProviders []string `json:"changed_providers,omitempty"`
 	Error            string   `json:"error,omitempty"`
 }
-
 
 type CatalogRefreshResult struct {
 	Catalog          string                         `json:"catalog"`
@@ -379,14 +374,11 @@ var catalogRuntime struct {
 	home    bool
 }
 
-
-
 func SetLocalModelCatalogs(local bool) {
 	catalogRuntime.Lock()
 	defer catalogRuntime.Unlock()
 	catalogRuntime.local = local
 }
-
 
 func StartModelCatalogUpdaters(ctx context.Context, sources CatalogSources, home bool) {
 	catalogRuntime.Lock()
@@ -396,8 +388,6 @@ func StartModelCatalogUpdaters(ctx context.Context, sources CatalogSources, home
 	catalogRuntime.home = home
 	configureCatalogs(ctx, sources, catalogRuntime.local, home)
 }
-
-
 
 func UpdateModelCatalogSources(sources CatalogSources, home bool) {
 	catalogRuntime.Lock()
@@ -409,7 +399,6 @@ func UpdateModelCatalogSources(sources CatalogSources, home bool) {
 	}
 }
 
-
 func RefreshModelCatalogs(ctx context.Context) (CatalogRefreshResult, error) {
 	catalogRuntime.Lock()
 	sources := catalogRuntime.sources
@@ -417,8 +406,6 @@ func RefreshModelCatalogs(ctx context.Context) (CatalogRefreshResult, error) {
 	catalogRuntime.Unlock()
 	return RefreshModelCatalogsWithPolicy(ctx, sources, home)
 }
-
-
 
 func RefreshModelCatalogsWithPolicy(ctx context.Context, fallbackSources CatalogSources, fallbackHome bool) (CatalogRefreshResult, error) {
 	if errValidate := fallbackSources.Validate(); errValidate != nil {

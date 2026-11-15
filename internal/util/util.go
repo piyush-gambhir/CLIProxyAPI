@@ -1,6 +1,3 @@
-
-
-
 package util
 
 import (
@@ -17,26 +14,16 @@ import (
 
 var functionNameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9_.:-]`)
 
-
-
-
-
 func SanitizeFunctionName(name string) string {
 	if name == "" {
 		return ""
 	}
 
-
 	sanitized := functionNameSanitizer.ReplaceAllString(name, "_")
-
-
 
 	if len(sanitized) > 0 {
 		first := sanitized[0]
 		if !((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z') || first == '_') {
-
-
-
 
 			if len(sanitized) >= 64 {
 				sanitized = sanitized[:63]
@@ -47,14 +34,11 @@ func SanitizeFunctionName(name string) string {
 		sanitized = "_"
 	}
 
-
 	if len(sanitized) > 64 {
 		sanitized = sanitized[:64]
 	}
 	return sanitized
 }
-
-
 
 func SetLogLevel(cfg *config.Config) {
 	currentLevel := log.GetLevel()
@@ -70,9 +54,6 @@ func SetLogLevel(cfg *config.Config) {
 		log.Infof("log level changed from %s to %s (debug=%t)", currentLevel, newLevel, cfg.Debug)
 	}
 }
-
-
-
 
 func ResolveAuthDir(authDir string) (string, error) {
 	if authDir == "" {
@@ -94,8 +75,6 @@ func ResolveAuthDir(authDir string) (string, error) {
 	return filepath.Clean(authDir), nil
 }
 
-
-
 func CountAuthFiles[T any](ctx context.Context, store interface {
 	List(context.Context) ([]T, error)
 }) int {
@@ -112,8 +91,6 @@ func CountAuthFiles[T any](ctx context.Context, store interface {
 	}
 	return len(entries)
 }
-
-
 
 func WritablePath() string {
 	for _, key := range []string{"WRITABLE_PATH", "writable_path"} {

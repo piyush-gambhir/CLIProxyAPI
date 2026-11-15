@@ -8,8 +8,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 )
 
-
-
 func IsAuthTokenPayloadKey(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
 	case "access_token", "refresh_token", "id_token", "session_id",
@@ -20,8 +18,6 @@ func IsAuthTokenPayloadKey(key string) bool {
 		return false
 	}
 }
-
-
 
 func MergeExistingAuthMetadata(target *Auth, existingMap map[string]any) {
 	if target == nil || len(existingMap) == 0 {
@@ -62,14 +58,9 @@ func MergeExistingAuthMetadata(target *Auth, existingMap map[string]any) {
 	}
 }
 
-
-
 func MergePreparedAuth(base, current, updated *Auth) *Auth {
 	return mergeAuthContent(base, current, updated)
 }
-
-
-
 
 func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 	merged := mergeAuthContent(base, current, updated)
@@ -82,7 +73,6 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 
 	merged.CodexRefreshPatch = updated.CodexRefreshPatch
 
-
 	applyPreservedRejectedTokens(current, merged, true)
 	if !updated.LastRefreshedAt.IsZero() {
 		merged.LastRefreshedAt = updated.LastRefreshedAt
@@ -90,7 +80,6 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 	if !updated.NextRefreshAfter.IsZero() || (base != nil && !base.NextRefreshAfter.IsZero()) {
 		merged.NextRefreshAfter = updated.NextRefreshAfter
 	}
-
 
 	baseErrMsg := ""
 	if base != nil && base.LastError != nil {
@@ -101,7 +90,6 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 		currentErrMsg = current.LastError.Message
 	}
 	hasNewConcurrentError := currentErrMsg != "" && currentErrMsg != baseErrMsg
-
 
 	baseDisabled := base != nil && (base.Disabled || base.Status == StatusDisabled)
 	currentDisabled := current.Disabled || current.Status == StatusDisabled
@@ -151,16 +139,7 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 		}
 	}
 
-
-
-
-
-
-
 	merged.Quota = mergeQuotaObservation(merged.Quota, updated.Quota)
-
-
-
 
 	for model, mergedState := range merged.ModelStates {
 		if mergedState == nil {
@@ -236,7 +215,6 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		baseMeta = base.Metadata
 	}
 
-
 	if updated.Metadata != nil {
 		for k, v := range updated.Metadata {
 			if strings.EqualFold(strings.TrimSpace(k), "proxy_url") {
@@ -305,14 +283,12 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		merged.Metadata = updated.CodexRefreshPatch.Apply(merged.Metadata)
 	}
 
-
 	if updated.Storage != nil {
 		merged.Storage = updated.Storage
 	}
 	if updated.Runtime != nil {
 		merged.Runtime = updated.Runtime
 	}
-
 
 	baseStruct := ""
 	if base != nil {
@@ -382,7 +358,6 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		delete(merged.Metadata, "proxy_url")
 	}
 
-
 	basePrefix := ""
 	if base != nil {
 		basePrefix = strings.TrimSpace(base.Prefix)
@@ -395,7 +370,6 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 	} else {
 		merged.Prefix = currentPrefix
 	}
-
 
 	if updated.Attributes != nil {
 		if merged.Attributes == nil {

@@ -14,7 +14,6 @@ func TestSessionCache_CapacityEvictionOrder(t *testing.T) {
 	cache := NewSessionCacheWithCapacity(time.Hour, maxEntries)
 	defer cache.Stop()
 
-
 	for i := 1; i <= 5; i++ {
 		cache.Set(fmt.Sprintf("sess-%d", i), fmt.Sprintf("auth-%d", i))
 	}
@@ -22,7 +21,6 @@ func TestSessionCache_CapacityEvictionOrder(t *testing.T) {
 	if cache.Len() != 5 {
 		t.Fatalf("cache.Len() = %d, want 5", cache.Len())
 	}
-
 
 	cache.Set("sess-6", "auth-6")
 
@@ -48,7 +46,6 @@ func TestSessionCache_MultiAliasGroupEviction(t *testing.T) {
 	cache := NewSessionCacheWithCapacity(time.Hour, maxEntries)
 	defer cache.Stop()
 
-
 	cache.SetAliases("auth-1", "s1-a", "s1-b")
 
 	cache.SetAliases("auth-2", "s2-a", "s2-b")
@@ -56,8 +53,6 @@ func TestSessionCache_MultiAliasGroupEviction(t *testing.T) {
 	if cache.Len() != 4 {
 		t.Fatalf("cache.Len() = %d, want 4", cache.Len())
 	}
-
-
 
 	cache.Set("s3", "auth-3")
 
@@ -87,7 +82,6 @@ func TestSessionCache_HighThroughputCapacitySaturated(t *testing.T) {
 	cache := NewSessionCacheWithCapacity(time.Hour, maxEntries)
 	defer cache.Stop()
 
-
 	for i := 0; i < 10000; i++ {
 		cache.Set(fmt.Sprintf("sess-%d", i), fmt.Sprintf("auth-%d", i%10))
 	}
@@ -95,7 +89,6 @@ func TestSessionCache_HighThroughputCapacitySaturated(t *testing.T) {
 	if cache.Len() > maxEntries {
 		t.Fatalf("cache.Len() = %d, want <= %d", cache.Len(), maxEntries)
 	}
-
 
 	for i := 9900; i < 10000; i++ {
 		if got, ok := cache.Get(fmt.Sprintf("sess-%d", i)); !ok || got != fmt.Sprintf("auth-%d", i%10) {

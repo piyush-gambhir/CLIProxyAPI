@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
 func NewFileTokenClientProvider() TokenClientProvider {
 	return &fileTokenClientProvider{}
 }
@@ -20,7 +19,6 @@ func (p *fileTokenClientProvider) Load(ctx context.Context, cfg *config.Config) 
 	_ = cfg
 	return &TokenClientResult{SuccessfulAuthed: 0}, nil
 }
-
 
 func NewAPIKeyClientProvider() APIKeyClientProvider {
 	return &apiKeyClientProvider{}

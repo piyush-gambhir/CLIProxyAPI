@@ -8,7 +8,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 func IsNativeCodexRequest(body []byte, opts cliproxyexecutor.Options) bool {
 	for _, format := range []sdktranslator.Format{opts.SourceFormat, cliproxyexecutor.ResponseFormatOrSource(opts)} {
 		name := strings.TrimSpace(format.String())

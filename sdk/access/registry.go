@@ -7,12 +7,10 @@ import (
 	"sync"
 )
 
-
 type Provider interface {
 	Identifier() string
 	Authenticate(ctx context.Context, r *http.Request) (*Result, *AuthError)
 }
-
 
 type Result struct {
 	Provider  string
@@ -27,7 +25,6 @@ var (
 	exclusiveProvider string
 )
 
-
 func RegisterProvider(typ string, provider Provider) {
 	normalizedType := strings.TrimSpace(typ)
 	if normalizedType == "" || provider == nil {
@@ -41,7 +38,6 @@ func RegisterProvider(typ string, provider Provider) {
 	registry[normalizedType] = provider
 	registryMu.Unlock()
 }
-
 
 func UnregisterProvider(typ string) {
 	normalizedType := strings.TrimSpace(typ)
@@ -64,7 +60,6 @@ func UnregisterProvider(typ string) {
 	registryMu.Unlock()
 }
 
-
 func SetExclusiveProvider(typ string) {
 	normalizedType := strings.TrimSpace(typ)
 	registryMu.Lock()
@@ -72,13 +67,11 @@ func SetExclusiveProvider(typ string) {
 	registryMu.Unlock()
 }
 
-
 func ClearExclusiveProvider() {
 	registryMu.Lock()
 	exclusiveProvider = ""
 	registryMu.Unlock()
 }
-
 
 func RegisteredProviders() []Provider {
 	registryMu.RLock()

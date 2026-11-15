@@ -35,19 +35,11 @@ type antigravityUsageNoop struct{}
 
 func (antigravityUsageNoop) HandleUsage(context.Context, usage.Record) {}
 
-
-
-
-
-
 const antigravitySplitTerminalSSE = `data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"first"}]},"finishReason":"STOP"}],"modelVersion":"gemini-3.7-flash","responseId":"resp-split"},"traceId":"trace-split"}
 
 data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":""}]}}],"usageMetadata":{"promptTokenCount":11,"candidatesTokenCount":22,"totalTokenCount":33},"modelVersion":"gemini-3.7-flash","responseId":"resp-split"},"traceId":"trace-split"}
 
 `
-
-
-
 
 func TestAntigravityStreamFinalizesSplitTerminalUsageOnce(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -116,8 +108,6 @@ func TestAntigravityStreamFinalizesSplitTerminalUsageOnce(t *testing.T) {
 		t.Fatalf("terminal prompt_tokens = %d, want 11", got)
 	}
 }
-
-
 
 func TestAntigravityStreamReportsSplitTerminalUsage(t *testing.T) {
 	const authID = "antigravity-split-usage"

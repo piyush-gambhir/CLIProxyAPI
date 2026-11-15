@@ -959,7 +959,6 @@ func TestConvertInteractionsResponseToOpenAIResponsesPreservesNonCollidingAndNon
 		t.Fatalf("output.0.name = %q, want external_lookup (preserved). Output: %s", got, string(outNonColliding))
 	}
 
-
 	rawNonAnti := []byte(`{
 		"id":"interaction_2",
 		"model":"gemini-3.1-flash-lite",
@@ -976,7 +975,6 @@ func TestConvertInteractionsResponseToOpenAIResponsesPreservesNonCollidingAndNon
 func TestConvertInteractionsResponseToOpenAIResponses_PreservesHTMLCharactersInToolCallArguments(t *testing.T) {
 	command := `gh issue view 5802 --json number,title,body,url,state,labels,assignees 2>&1 | head -100`
 
-
 	rawNonStream := []byte(fmt.Sprintf(`{
 		"id":"interaction_test",
 		"model":"devin/swe-2",
@@ -992,7 +990,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_PreservesHTMLCharactersInT
 	if !strings.Contains(outNonStreamStr, "2>&1") {
 		t.Fatalf("non-stream output should contain '2>&1': %s", outNonStreamStr)
 	}
-
 
 	var param any
 	var outStream [][]byte
@@ -1025,9 +1022,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_PreservesHTMLCharactersInT
 }
 
 func TestConvertInteractionsResponseToOpenAIResponses_LogReplayTwoToolCalls(t *testing.T) {
-
-
-
 
 	command := `gh issue view 5802 --json number,title,body,url,state,labels,assignees 2>&1 | head -100`
 
@@ -1129,7 +1123,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_FunctionCallHasStatus(t *t
 		t.Fatalf("completed response.output.0.status = %q, want completed. Payload: %s", got, string(completedPayload))
 	}
 
-
 	rawNonStream := []byte(`{
 		"id":"i1",
 		"model":"devin/swe-2",
@@ -1141,7 +1134,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_FunctionCallHasStatus(t *t
 	if got := ojson.GetBytesNoCopy(outNonStream, "output.0.status").String(); got != "completed" {
 		t.Fatalf("non-stream output.0.status = %q, want completed. Output: %s", got, string(outNonStream))
 	}
-
 
 	var paramTrunc any
 	rawTruncEvents := [][]byte{
@@ -1192,7 +1184,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_ContentFilterIncomplete(t 
 		t.Fatalf("incomplete_details.reason = %q, want content_filter. Payload: %s", got, string(incompletePayload))
 	}
 
-
 	rawNonStream := []byte(`{
 		"id":"i_cf",
 		"model":"devin/swe-2",
@@ -1241,7 +1232,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_MissingUsageDefaultsToZero
 		t.Fatalf("expected usage.total_tokens to exist")
 	}
 
-
 	rawNonStream := []byte(`{
 		"id":"i_nousage",
 		"model":"devin/swe-2",
@@ -1281,7 +1271,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		]
 	}`)
 
-
 	rawNonStream := []byte(`{
 		"id": "resp_1",
 		"steps": [
@@ -1302,7 +1291,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 
 	outNonStream := ConvertInteractionsResponseToOpenAIResponsesNonStream(context.Background(), "devin/gemini-3-7-flash", origRequest, nil, rawNonStream, nil)
 
-
 	if got := ojson.GetBytesNoCopy(outNonStream, "output.0.name").String(); got != "close_agent" {
 		t.Errorf("output.0.name = %q, want close_agent", got)
 	}
@@ -1312,7 +1300,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 	if got := ojson.GetBytesNoCopy(outNonStream, "output.0.type").String(); got != "function_call" {
 		t.Errorf("output.0.type = %q, want function_call", got)
 	}
-
 
 	if got := ojson.GetBytesNoCopy(outNonStream, "output.1.name").String(); got != "exec" {
 		t.Errorf("output.1.name = %q, want exec", got)
@@ -1329,7 +1316,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 	if ojson.GetBytesNoCopy(outNonStream, "output.1.arguments").Exists() {
 		t.Errorf("output.1.arguments should not exist for custom_tool_call")
 	}
-
 
 	var param any
 	streamChunk := []byte(`{"event_type":"step.start","index":0,"step":{"type":"function_call","call_id":"call_1","name":"multi_agent_v1__close_agent","arguments":"{\"target\":\"agent_1\"}"}}`)
@@ -1355,7 +1341,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 		t.Fatalf("expected response.output_item.added event in stream")
 	}
 
-
 	doneChunk := []byte(`{"event_type":"step.stop","index":0}`)
 	eventsDone := ConvertInteractionsResponseToOpenAIResponses(context.Background(), "devin/gemini-3-7-flash", origRequest, nil, doneChunk, &param)
 	foundDone := false
@@ -1375,7 +1360,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_RestoresNamespaceAndCustom
 	if !foundDone {
 		t.Fatalf("expected response.output_item.done event in stream")
 	}
-
 
 	var paramCustom any
 	streamCustomStart := []byte(`{"event_type":"step.start","index":0,"step":{"type":"function_call","call_id":"call_2","name":"functions__exec"}}`)
@@ -1476,7 +1460,6 @@ func TestConvertInteractionsResponseToOpenAIResponses_AntigravityCustomToolResto
 	if ojson.GetBytesNoCopy(outNonStream, "output.0.arguments").Exists() {
 		t.Fatalf("output.0.arguments unexpectedly exists for custom_tool_call")
 	}
-
 
 	var param any
 	streamChunk := []byte(`{"event_type":"step.start","index":0,"step":{"type":"function_call","call_id":"call_1","name":"external_read_file"}}`)

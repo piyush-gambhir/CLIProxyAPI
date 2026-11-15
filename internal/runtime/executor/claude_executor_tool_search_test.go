@@ -15,8 +15,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 const nativeToolSearchResponsesPayload = `{"model":"claude-sonnet-4-5","input":[` +
 	`{"type":"message","role":"user","content":[{"type":"input_text","text":"create a calendar event"}]},` +
 	`{"type":"tool_search_call","call_id":"call_search_1","status":"completed","execution":"client","arguments":{"query":"calendar"}},` +
@@ -29,7 +27,6 @@ const nativeToolSearchResponsesPayload = `{"model":"claude-sonnet-4-5","input":[
 const nativeToolSearchCalendar = "mcp__codex_apps__calendar_create_event"
 
 const nativeToolSearchGateway = "https://gateway.example.com"
-
 
 func enableClaudeToolSearchForTest(t *testing.T, enabled bool) {
 	t.Helper()
@@ -76,7 +73,6 @@ func sendNativeToolSearchCountTokens(t *testing.T, ex *ClaudeExecutor, ctx conte
 		cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: original})
 	return err
 }
-
 
 func captureNativeToolSearchBody(t *testing.T, cfg *config.Config, send nativeToolSearchSend, auth *cliproxyauth.Auth, model string, payload, original []byte) []byte {
 	t.Helper()
@@ -277,8 +273,6 @@ func TestClaudeExecutor_NativeToolSearchOAuthAliasesReferences(t *testing.T) {
 		t.Fatalf("no tool_reference in OAuth body: %s", ojson.GetBytes(body, "messages").Raw)
 	}
 }
-
-
 
 func TestClaudeExecutor_NativeToolSearchOAuthAliasesRenamedReferences(t *testing.T) {
 	enableClaudeToolSearchForTest(t, true)

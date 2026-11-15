@@ -48,7 +48,6 @@ func TestModelRegistry_TransientSuspendDeadline_AutoExpiresCacheAndAllViews(t *t
 		t.Fatal("expected initial projection to apply")
 	}
 
-
 	duringOpenAI := listedIDs(r.GetAvailableModels("openai"))
 	if duringOpenAI["grok-4.7"] || duringOpenAI["grok-4.7-cp"] || !duringOpenAI["grok-4.6"] {
 		t.Fatalf("unexpected /v1/models set during transient cooldown: %v", duringOpenAI)
@@ -69,13 +68,11 @@ func TestModelRegistry_TransientSuspendDeadline_AutoExpiresCacheAndAllViews(t *t
 		t.Fatal("expected IsModelSuspendedForClient to report true during active transient cooldown")
 	}
 
-
 	mockNow = deadline.Add(-time.Nanosecond)
 	stillCooling := listedIDs(r.GetAvailableModels("openai"))
 	if stillCooling["grok-4.7"] || stillCooling["grok-4.7-cp"] {
 		t.Fatalf("models listed before deadline elapsed: %v", stillCooling)
 	}
-
 
 	mockNow = deadline
 	afterOpenAI := listedIDs(r.GetAvailableModels("openai"))
@@ -118,13 +115,11 @@ func TestModelRegistry_OpenEndedSuspensionAndManualOverridePersist(t *testing.T)
 	epoch := r.ClientRegistrationEpoch("xai-auth")
 	deadline := baseNow.Add(time.Minute)
 
-
 	if !r.ApplyClientModelProjections("xai-auth", epoch, 1, []ClientModelProjection{
 		{ModelID: "grok-4.7", Suspended: true, SuspendReason: "transient 408", SuspendUntil: deadline},
 	}) {
 		t.Fatal("initial transient projection rejected")
 	}
-
 
 	r.SuspendClientModel("xai-auth", "grok-4.7", "manual")
 
@@ -135,7 +130,6 @@ func TestModelRegistry_OpenEndedSuspensionAndManualOverridePersist(t *testing.T)
 	if !r.IsModelSuspendedForClient("xai-auth", "grok-4.7") {
 		t.Fatal("expected manual open-ended suspension to stay active")
 	}
-
 
 	r.ResumeClientModel("xai-auth", "grok-4.7")
 	if !listedIDs(r.GetAvailableModels("openai"))["grok-4.7"] {
@@ -182,7 +176,6 @@ func TestModelRegistry_ShortQuotaDeadlineRecoversWithDisabledBackup(t *testing.T
 	if listedIDs(r.GetAvailableModels("openai"))["grok-4.7"] {
 		t.Fatal("expected model hidden while c1 is in 1m quota cooldown and c2 is disabled")
 	}
-
 
 	mockNow = shortQuotaDeadline.Add(time.Second)
 	if !listedIDs(r.GetAvailableModels("openai"))["grok-4.7"] {

@@ -1,7 +1,3 @@
-
-
-
-
 package gemini
 
 import (
@@ -21,43 +17,22 @@ var (
 	dataTag = []byte("data:")
 )
 
-
 type ConvertCodexResponseToGeminiParams struct {
 	Model      string
 	CreatedAt  int64
 	ResponseID string
 
-
-
 	StorageOutputs     [][]byte
 	HasOutputTextDelta bool
 	LastImageHashByID  map[string][32]byte
 
-
-
 	PendingThoughtSignature string
 
-
 	SeenReasoningSignatures map[[32]byte]bool
-
-
 
 	HasReasoningDelta      bool
 	StreamedReasoningItems map[string]bool
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -81,8 +56,6 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 
 	params := (*param).(*ConvertCodexResponseToGeminiParams)
 
-
-
 	flushStorageOutputs := func(extra ...[]byte) [][]byte {
 		outputs := make([][]byte, 0, len(params.StorageOutputs)+len(extra))
 		for _, stored := range params.StorageOutputs {
@@ -98,7 +71,6 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 		setGeminiThoughtSignatureDoc(doc, params.PendingThoughtSignature)
 		params.PendingThoughtSignature = ""
 	}
-
 
 	templateDoc := ojson.NewDocString(`{"candidates":[{"content":{"role":"model","parts":[]}}],"usageMetadata":{"trafficType":"PROVISIONED_THROUGHPUT"},"modelVersion":"gemini-2.5-pro","createTime":"2025-08-15T02:52:03.884209Z","responseId":"06CeaPH7NaCU48APvNXDyA4"}`)
 	{
@@ -139,7 +111,6 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 		return flushStorageOutputs(templateDoc.Bytes())
 	}
 
-
 	if typeStr == "response.output_item.done" {
 		itemResult := rootResult.Get("item")
 		itemType := itemResult.Get("type").String()
@@ -170,7 +141,6 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 			}
 			var emittedParts [][]byte
 			if params.PendingThoughtSignature != "" && signature != "" {
-
 
 				part := setGeminiThoughtSignature([]byte(`{"thought":true,"text":""}`), params.PendingThoughtSignature)
 				params.PendingThoughtSignature = ""
@@ -230,7 +200,6 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 				_ = functionCallDoc.Set("functionCall.name", n)
 			}
 
-
 			argsStr := itemResult.Get("arguments").String()
 			if argsStr != "" {
 				argsResult := ojson.Parse(argsStr)
@@ -246,13 +215,11 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 
 			params.StorageOutputs = append(params.StorageOutputs, append([]byte(nil), templateDoc.Bytes()...))
 
-
 			return [][]byte{}
 		}
 	}
 
 	if typeStr == "response.created" {
-
 
 		params.StorageOutputs = nil
 		params.PendingThoughtSignature = ""
@@ -295,7 +262,6 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 		partDoc := ojson.NewDocString(`{"text":""}`)
 		_ = partDoc.Set("text", rootResult.Get("delta").String())
 		if rootResult.Get("delta").String() != "" {
-
 
 			attachPendingThoughtSignatureDoc(partDoc)
 		}
@@ -352,34 +318,17 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 	return flushStorageOutputs(templateDoc.Bytes())
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	rootResult := util.ParseGJSONBytesNoCopy(rawJSON)
-
 
 	responseType := rootResult.Get("type").String()
 	if responseType != "response.completed" && responseType != "response.incomplete" {
 		return []byte{}
 	}
 
-
 	templateDoc := ojson.NewDocString(`{"candidates":[{"content":{"role":"model","parts":[]},"finishReason":"STOP"}],"usageMetadata":{"trafficType":"PROVISIONED_THROUGHPUT"},"modelVersion":"","createTime":"","responseId":""}`)
 
-
 	_ = templateDoc.Set("modelVersion", modelName)
-
 
 	responseData := rootResult.Get("response")
 	if responseData.Exists() {
@@ -391,11 +340,9 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 			_ = templateDoc.Set("responseId", responseId.String())
 		}
 
-
 		if createdAt := responseData.Get("created_at"); createdAt.Exists() {
 			_ = templateDoc.Set("createTime", time.Unix(createdAt.Int(), 0).Format(time.RFC3339Nano))
 		}
-
 
 		if usage := responseData.Get("usage"); usage.Exists() {
 			inputTokens := usage.Get("input_tokens").Int()
@@ -407,7 +354,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 			_ = templateDoc.Set("usageMetadata.totalTokenCount", totalTokens)
 		}
 
-
 		var parts [][]byte
 		var pendingFunctionCalls [][]byte
 
@@ -415,7 +361,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 			if len(pendingFunctionCalls) == 0 {
 				return
 			}
-
 
 			parts = append(parts, pendingFunctionCalls...)
 			pendingFunctionCalls = nil
@@ -429,11 +374,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 				case "reasoning":
 
 					flushPendingFunctionCalls()
-
-
-
-
-
 
 					signature := strings.TrimSpace(value.Get("encrypted_content").String())
 					thoughtTexts := extractCodexGeminiReasoningTexts(value)
@@ -453,7 +393,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 				case "message":
 
 					flushPendingFunctionCalls()
-
 
 					if content := value.Get("content"); content.Exists() && content.IsArray() {
 						content.ForEach(func(_, contentItem ojson.Result) bool {
@@ -494,7 +433,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 						_ = functionCallDoc.Set("functionCall.name", n)
 					}
 
-
 					if argsStr := value.Get("arguments").String(); argsStr != "" {
 						argsResult := ojson.Parse(argsStr)
 						if argsResult.IsObject() {
@@ -508,7 +446,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 				return true
 			})
 
-
 			flushPendingFunctionCalls()
 
 			if len(parts) > 0 {
@@ -518,7 +455,6 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 	}
 	return templateDoc.Bytes()
 }
-
 
 func buildReverseMapFromGeminiOriginal(original []byte) map[string]string {
 	tools := ojson.GetBytesNoCopy(original, "tools")
@@ -547,13 +483,6 @@ func buildReverseMapFromGeminiOriginal(original []byte) map[string]string {
 	}
 	return rev
 }
-
-
-
-
-
-
-
 
 func extractCodexGeminiReasoningTexts(value ojson.Result) []string {
 	var thoughtTexts []string

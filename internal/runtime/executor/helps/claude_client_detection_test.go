@@ -270,7 +270,6 @@ func TestDetectClaudeCodeRequestRejectsCrossMismatchedHaikuHelperBetaAndBody(t *
 	)
 	legacyStructuredBeta := claudeCodeHelperBetaProfile(true, "structured-outputs-2025-12-15")
 
-
 	det1 := DetectClaudeCodeRequest(
 		measuredClaudeCodeHelperHeaders(title280Beta),
 		measuredClaudeCodeStructuredHelperPayload(),
@@ -279,7 +278,6 @@ func TestDetectClaudeCodeRequestRejectsCrossMismatchedHaikuHelperBetaAndBody(t *
 	if det1.Confirmed || det1.HelperProfile {
 		t.Fatalf("det1 = %#v, want 2.1.280 beta with legacy structured payload rejected", det1)
 	}
-
 
 	det2 := DetectClaudeCodeRequest(
 		measuredClaudeCodeHelperHeaders(legacyStructuredBeta),
@@ -423,12 +421,6 @@ func TestDetectClaudeCodeRequestRejectsMalformedNativeSignals(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
 func TestDetectClaudeCodeRequestAcceptsHelperSubagentParentSessionID(t *testing.T) {
 	identity := `{"device_id":"0000000000000000000000000000000000000000000000000000000000000000","account_uuid":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","session_id":"11111111-2222-4333-8444-555555555555","parent_session_id":"99999999-8888-4777-8666-555555555555"}`
 	encoded, _ := json.Marshal(identity)
@@ -458,9 +450,6 @@ func TestDetectClaudeCodeRequestRejectsHelperIdentityWithUnknownKeys(t *testing.
 		t.Fatalf("detection = %#v, want an unknown identity key to disqualify the helper profile", detection)
 	}
 }
-
-
-
 
 func TestDetectClaudeCodeRequestAcceptsHelperFromNonBaselinePlatform(t *testing.T) {
 	for _, platform := range []struct{ os, arch string }{
@@ -525,7 +514,6 @@ func TestNormalizedClaudeBetaHeaderIsDeterministic(t *testing.T) {
 		t.Fatalf("canonical join = %q, want %q", got, want)
 	}
 
-
 	nonCanonical := http.Header{
 		"anthropic-beta": {"oauth-2025-04-20"},
 		"ANTHROPIC-BETA": {"interleaved-thinking-2025-05-14"},
@@ -544,10 +532,6 @@ func TestNormalizedClaudeBetaHeaderIsDeterministic(t *testing.T) {
 		t.Fatalf("nil header join = %q, want empty", got)
 	}
 }
-
-
-
-
 
 func TestMeasuredHelperProfileIgnoresConfiguredStainlessTimeout(t *testing.T) {
 	headers := measuredClaudeCodeHelperHeaders(claudeCodeHelperBetaProfile(true))
@@ -578,8 +562,6 @@ func TestMeasuredHelperProfileIgnoresConfiguredStainlessTimeout(t *testing.T) {
 			}
 		})
 	}
-
-
 
 	t.Run("foreign timeout stays rejected", func(t *testing.T) {
 		foreign := measuredClaudeCodeHelperHeaders(claudeCodeHelperBetaProfile(true))

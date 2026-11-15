@@ -9,7 +9,6 @@ import (
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
 func Register(cfg *sdkconfig.SDKConfig) {
 	if cfg == nil {
 		sdkaccess.UnregisterProvider(sdkaccess.AccessProviderTypeConfigAPIKey)

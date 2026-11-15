@@ -16,14 +16,11 @@ var (
 	localErr     error
 )
 
-
-
 func RegisterHomeProvider(fn func() (KVClient, bool, error)) {
 	controllerMu.Lock()
 	homeProvider = fn
 	controllerMu.Unlock()
 }
-
 
 func ConfigureLocal(enabled bool, rawPath string) error {
 	controllerMu.Lock()
@@ -76,7 +73,6 @@ func ConfigureLocal(enabled bool, rawPath string) error {
 	return nil
 }
 
-
 func ShutdownLocal() error {
 	controllerMu.Lock()
 	defer controllerMu.Unlock()
@@ -94,10 +90,6 @@ func shutdownLocalLocked() error {
 	localErr = nil
 	return errClose
 }
-
-
-
-
 
 func CurrentKVClient() (KVClient, bool, error) {
 	controllerMu.RLock()

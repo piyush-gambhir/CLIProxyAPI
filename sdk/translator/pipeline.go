@@ -6,7 +6,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
 type RequestEnvelope struct {
 	Format    Format
 	Model     string
@@ -19,7 +18,6 @@ type RequestEnvelope struct {
 	Err error
 }
 
-
 type ResponseEnvelope struct {
 	Format Format
 	Model  string
@@ -28,25 +26,19 @@ type ResponseEnvelope struct {
 	Chunks [][]byte
 }
 
-
 type RequestMiddleware func(ctx context.Context, req RequestEnvelope, next RequestHandler) (RequestEnvelope, error)
-
 
 type ResponseMiddleware func(ctx context.Context, resp ResponseEnvelope, next ResponseHandler) (ResponseEnvelope, error)
 
-
 type RequestHandler func(ctx context.Context, req RequestEnvelope) (RequestEnvelope, error)
 
-
 type ResponseHandler func(ctx context.Context, resp ResponseEnvelope) (ResponseEnvelope, error)
-
 
 type Pipeline struct {
 	registry           *Registry
 	requestMiddleware  []RequestMiddleware
 	responseMiddleware []ResponseMiddleware
 }
-
 
 func NewPipeline(registry *Registry) *Pipeline {
 	if registry == nil {
@@ -55,20 +47,17 @@ func NewPipeline(registry *Registry) *Pipeline {
 	return &Pipeline{registry: registry}
 }
 
-
 func (p *Pipeline) UseRequest(mw RequestMiddleware) {
 	if mw != nil {
 		p.requestMiddleware = append(p.requestMiddleware, mw)
 	}
 }
 
-
 func (p *Pipeline) UseResponse(mw ResponseMiddleware) {
 	if mw != nil {
 		p.responseMiddleware = append(p.responseMiddleware, mw)
 	}
 }
-
 
 func (p *Pipeline) TranslateRequest(ctx context.Context, from, to Format, req RequestEnvelope) (RequestEnvelope, error) {
 	terminal := func(ctx context.Context, input RequestEnvelope) (RequestEnvelope, error) {
@@ -86,7 +75,6 @@ func (p *Pipeline) TranslateRequest(ctx context.Context, from, to Format, req Re
 
 	return handler(ctx, req)
 }
-
 
 func (p *Pipeline) TranslateResponse(ctx context.Context, from, to Format, resp ResponseEnvelope, originalReq, translatedReq []byte, param *any) (ResponseEnvelope, error) {
 	terminal := func(ctx context.Context, input ResponseEnvelope) (ResponseEnvelope, error) {

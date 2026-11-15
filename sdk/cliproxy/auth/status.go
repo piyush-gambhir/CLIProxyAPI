@@ -1,10 +1,8 @@
 package auth
 
-
 type Status string
 
 const (
-
 	StatusUnknown Status = "unknown"
 
 	StatusActive Status = "active"

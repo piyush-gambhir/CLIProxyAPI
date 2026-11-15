@@ -50,8 +50,6 @@ func TestIssue6825StreamToolIndicesAcrossChunks(t *testing.T) {
 	}
 }
 
-
-
 type issue6825Conversation struct {
 	t        *testing.T
 	executor *AntigravityExecutor

@@ -12,8 +12,6 @@ import (
 
 var resetSoonestBase = time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 
-
-
 func newResetSoonestFixture(guard float64) (*ResetSoonestSelector, *quota.Store) {
 	store := quota.NewStore(func() time.Time { return resetSoonestBase })
 	selector := &ResetSoonestSelector{
@@ -23,7 +21,6 @@ func newResetSoonestFixture(guard float64) (*ResetSoonestSelector, *quota.Store)
 	}
 	return selector, store
 }
-
 
 func seedLongWindow(store *quota.Store, authID, provider, windowID string, usedPercent float64, resetIn time.Duration) {
 	store.Observe(quota.Identity{AuthID: authID, Provider: provider, FileName: authID + ".json"},
@@ -61,7 +58,6 @@ func TestResetSoonestSelectorRespectsThePriorityTier(t *testing.T) {
 
 	selector, store := newResetSoonestFixture(0)
 
-
 	auths := []*Auth{
 		{ID: "high-tier", Provider: "claude", FileName: "high-tier.json", Attributes: map[string]string{"priority": "10"}},
 		{ID: "low-tier-urgent", Provider: "claude", FileName: "low-tier-urgent.json", Attributes: map[string]string{"priority": "1"}},
@@ -76,7 +72,6 @@ func TestResetSoonestSelectorRespectsThePriorityTier(t *testing.T) {
 	if auth.ID != "high-tier" {
 		t.Fatalf("picked %q, want high-tier: priority must outrank urgency", auth.ID)
 	}
-
 
 	auths[0].Disabled = true
 	auth, err = selector.Pick(context.Background(), "claude", "claude-opus-5", cliproxyexecutor.Options{}, auths)
@@ -196,8 +191,6 @@ func TestResetSoonestSelectorFallsBackWhenEveryReadingLooksUnusable(t *testing.T
 		}, resetSoonestBase)
 	}
 
-
-
 	auth, err := selector.Pick(context.Background(), "claude", "claude-opus-5", cliproxyexecutor.Options{}, auths)
 	if err != nil {
 		t.Fatalf("Pick() error = %v", err)
@@ -225,8 +218,6 @@ func TestResetSoonestSelectorUsesTheFableWindowForFableRequests(t *testing.T) {
 		quota.WindowFable:    {UsedPercent: 10, ResetAt: resetSoonestBase.Add(48 * time.Hour), Known: true},
 	}, resetSoonestBase)
 
-
-
 	fableAuth, err := selector.Pick(context.Background(), "claude", "claude-fable-5-1", cliproxyexecutor.Options{}, auths)
 	if err != nil {
 		t.Fatalf("Pick() error = %v", err)
@@ -247,7 +238,6 @@ func TestResetSoonestSelectorIngestsHeaderSignals(t *testing.T) {
 	t.Parallel()
 
 	selector, store := newResetSoonestFixture(0)
-
 
 	auths := []*Auth{
 		{ID: "calm", Provider: "claude", FileName: "calm.json", Quota: QuotaState{
@@ -303,7 +293,6 @@ func TestIngestAuthQuotaRecordsAndClearsAHardLimit(t *testing.T) {
 	if !window.HardLimited {
 		t.Fatalf("five hour = %+v, want hard limited", window)
 	}
-
 
 	auth.Quota.Exceeded = false
 	IngestAuthQuota(store, []*Auth{auth}, resetSoonestBase)
@@ -364,8 +353,6 @@ func TestSessionAffinityKeepsABoundSessionOnItsCredential(t *testing.T) {
 		t.Fatalf("first pick = %q, want first-choice", bound.ID)
 	}
 
-
-
 	seedLongWindowAt(store, "second-choice", quota.WindowSevenDay, 60, 30*time.Minute)
 	again, err := selector.Pick(context.Background(), "claude", "claude-opus-5", opts(), auths)
 	if err != nil {
@@ -374,8 +361,6 @@ func TestSessionAffinityKeepsABoundSessionOnItsCredential(t *testing.T) {
 	if again.ID != "first-choice" {
 		t.Fatalf("second pick = %q, want first-choice: affinity must hold the binding", again.ID)
 	}
-
-
 
 	auths[0].Disabled = true
 	rebound, err := selector.Pick(context.Background(), "claude", "claude-opus-5", opts(), auths)
@@ -386,8 +371,6 @@ func TestSessionAffinityKeepsABoundSessionOnItsCredential(t *testing.T) {
 		t.Fatalf("failover pick = %q, want second-choice", rebound.ID)
 	}
 }
-
-
 
 func seedLongWindowAt(store *quota.Store, authID, windowID string, usedPercent float64, resetIn time.Duration) {
 	learnedAt := resetSoonestBase.Add(time.Second)

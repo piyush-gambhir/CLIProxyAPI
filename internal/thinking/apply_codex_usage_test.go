@@ -452,7 +452,6 @@ func TestApplyThinkingPreservesCodexTopLevelReasoningEffortBaseline(t *testing.T
 		t.Fatalf("ApplyThinking() error = %v", err)
 	}
 
-
 	if gotTopEffort := ojson.GetBytes(applied, "reasoning.effort").String(); gotTopEffort != "xhigh" {
 		t.Fatalf("ApplyThinking() top-level reasoning.effort = %q, want %q", gotTopEffort, "xhigh")
 	}
@@ -462,7 +461,6 @@ func TestApplyThinkingPreservesCodexTopLevelReasoningEffortBaseline(t *testing.T
 	if gotInputEffort := ojson.GetBytes(applied, "input.0.reasoning.effort").String(); gotInputEffort != "low" {
 		t.Fatalf("ApplyThinking() input[0].reasoning.effort = %q, want %q", gotInputEffort, "low")
 	}
-
 
 	effort := thinking.ExtractTranslatedReasoningEffort(applied, "codex")
 	if effort != "low" {

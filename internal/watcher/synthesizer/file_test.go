@@ -72,7 +72,6 @@ func TestFileSynthesizer_Synthesize_NonExistentDir(t *testing.T) {
 func TestFileSynthesizer_Synthesize_ValidAuthFile(t *testing.T) {
 	tempDir := t.TempDir()
 
-
 	authData := map[string]any{
 		"type":      "claude",
 		"email":     "test@example.com",
@@ -217,7 +216,6 @@ func TestFileSynthesizer_Synthesize_KimiAI(t *testing.T) {
 func TestFileSynthesizer_Synthesize_KimiDomainExplicitOverrides(t *testing.T) {
 	tempDir := t.TempDir()
 
-
 	f1 := filepath.Join(tempDir, "kimi-type-ai-domain.json")
 	d1, errMarshal1 := json.Marshal(map[string]any{
 		"type":          "kimi",
@@ -231,7 +229,6 @@ func TestFileSynthesizer_Synthesize_KimiDomainExplicitOverrides(t *testing.T) {
 	if errWrite := os.WriteFile(f1, d1, 0644); errWrite != nil {
 		t.Fatalf("write error: %v", errWrite)
 	}
-
 
 	f2 := filepath.Join(tempDir, "kimi-ai-type-com-domain.json")
 	d2, errMarshal2 := json.Marshal(map[string]any{
@@ -526,12 +523,10 @@ func (f multiAuthParserFunc) ParseAuths(ctx context.Context, req pluginapi.AuthP
 func TestFileSynthesizer_Synthesize_SkipsInvalidFiles(t *testing.T) {
 	tempDir := t.TempDir()
 
-
 	_ = os.WriteFile(filepath.Join(tempDir, "not-json.txt"), []byte("text content"), 0644)
 	_ = os.WriteFile(filepath.Join(tempDir, "invalid.json"), []byte("not valid json"), 0644)
 	_ = os.WriteFile(filepath.Join(tempDir, "empty.json"), []byte(""), 0644)
 	_ = os.WriteFile(filepath.Join(tempDir, "no-type.json"), []byte(`{"email": "test@example.com"}`), 0644)
-
 
 	validData, _ := json.Marshal(map[string]any{"type": "claude", "email": "valid@example.com"})
 	_ = os.WriteFile(filepath.Join(tempDir, "valid.json"), validData, 0644)
@@ -559,13 +554,11 @@ func TestFileSynthesizer_Synthesize_SkipsInvalidFiles(t *testing.T) {
 func TestFileSynthesizer_Synthesize_SkipsDirectories(t *testing.T) {
 	tempDir := t.TempDir()
 
-
 	subDir := filepath.Join(tempDir, "subdir.json")
 	err := os.Mkdir(subDir, 0755)
 	if err != nil {
 		t.Fatalf("failed to create subdir: %v", err)
 	}
-
 
 	validData, _ := json.Marshal(map[string]any{"type": "claude"})
 	_ = os.WriteFile(filepath.Join(tempDir, "valid.json"), validData, 0644)
@@ -612,7 +605,6 @@ func TestFileSynthesizer_Synthesize_RelativeID(t *testing.T) {
 	if len(auths) != 1 {
 		t.Fatalf("expected 1 auth, got %d", len(auths))
 	}
-
 
 	if auths[0].ID != "my-auth.json" {
 		t.Errorf("expected ID my-auth.json, got %s", auths[0].ID)

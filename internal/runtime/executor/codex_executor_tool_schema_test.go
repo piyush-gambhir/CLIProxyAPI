@@ -17,9 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 	var gotBody []byte
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +39,6 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 			"plan_type": "pro",
 		},
 	}
-
 
 	requestPayload := []byte(`{
 		"model": "gpt-5.5",
@@ -102,7 +98,6 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 		t.Fatalf("expected tools in upstream payload, got: %s", gotBody)
 	}
 
-
 	var t1Tool ojson.Result
 	for _, tool := range tools {
 		if tool.Get("name").String() == "t1" {
@@ -113,7 +108,6 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 	if !t1Tool.Exists() {
 		t1Tool = tools[0]
 	}
-
 
 	if t1Tool.Get("parameters.properties.action.oneOf").Exists() {
 		t.Fatalf("expected complex oneOf to be removed from tool parameters, got: %s", t1Tool.Get("parameters").Raw)
@@ -134,9 +128,6 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 		t.Fatalf("required list was dropped")
 	}
 }
-
-
-
 
 func TestCodexExecutorExecuteStream_ZeroTokenIncompleteResponseIsFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +157,6 @@ func TestCodexExecutorExecuteStream_ZeroTokenIncompleteResponseIsFailure(t *test
 		return
 	}
 
-
 	sawError := false
 	for chunk := range res.Chunks {
 		if chunk.Err != nil {
@@ -178,8 +168,6 @@ func TestCodexExecutorExecuteStream_ZeroTokenIncompleteResponseIsFailure(t *test
 		t.Fatalf("expected stream to fail on zero-token response.incomplete, but it completed without error")
 	}
 }
-
-
 
 func TestCodexExecutorExecuteStream_PartialDeltasIncompleteResponseIsSuccessful(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -226,8 +214,6 @@ func TestCodexExecutorExecuteStream_PartialDeltasIncompleteResponseIsSuccessful(
 		t.Fatalf("expected to receive output delta")
 	}
 }
-
-
 
 func TestCodexExecutorExecuteStream_BufferingPartialDeltasIncompleteResponseIsSuccessful(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -278,8 +264,6 @@ func TestCodexExecutorExecuteStream_BufferingPartialDeltasIncompleteResponseIsSu
 		t.Fatalf("expected to receive buffered output delta")
 	}
 }
-
-
 
 func TestCodexExecutorExecuteStream_EmptyDeltaDoesNotBypassZeroTokenFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -489,7 +473,6 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		]
 	}`)
 
-
 	_, errExecuteNonCodex := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.5",
 		Payload: requestPayload,
@@ -509,7 +492,6 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 	if gotType := toolMapNonCodex["exec_command"].Get("parameters.properties.yield_time_ms.type").String(); gotType != "number" {
 		t.Fatalf("expected non-Codex UA to preserve number, got %q", gotType)
 	}
-
 
 	gotBody = nil
 	_, errExecuteCodex := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
@@ -552,17 +534,14 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		}
 	}
 
-
 	unrelated := toolMap["unrelated_tool"]
 	if gotType := unrelated.Get("parameters.properties.unrelated_num.type").String(); gotType != "number" {
 		t.Fatalf("unrelated_tool property type = %q, want number", gotType)
 	}
 
-
 	if gotType := ojson.GetBytes(gotBody, "tools.#(name==\"collaboration\").tools.0.parameters.properties.timeout_ms.type").String(); gotType != "number" {
 		t.Fatalf("collaboration.wait_agent timeout_ms type = %q, want number", gotType)
 	}
-
 
 	if gotType := ojson.GetBytes(gotBody, "input.#(type==\"additional_tools\").tools.0.parameters.properties.yield_time_ms.type").String(); gotType != "number" {
 		t.Fatalf("input additional_tools yield_time_ms type = %q, want number", gotType)
@@ -570,7 +549,6 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 	if gotType := ojson.GetBytes(gotBody, "input.#(type==\"additional_tools\").tools.#(name==\"collaboration\").tools.0.parameters.properties.timeout_ms.type").String(); gotType != "number" {
 		t.Fatalf("input additional_tools collaboration.wait_agent timeout_ms type = %q, want number", gotType)
 	}
-
 
 	gotBody = nil
 	streamRes, errStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
@@ -594,7 +572,6 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 	if gotType := ojson.GetBytes(gotBody, "input.#(type==\"additional_tools\").tools.0.parameters.properties.yield_time_ms.type").String(); gotType != "number" {
 		t.Fatalf("HTTP stream input additional_tools yield_time_ms type = %q, want number", gotType)
 	}
-
 
 	gotBody = nil
 	_, errCompact := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
@@ -768,7 +745,6 @@ func TestCodexWebsocketsExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAge
 		t.Fatal("timed out waiting for upstream websocket payload")
 	}
 
-
 	_, errExecWS := exec.Execute(context.Background(), auth, req, opts)
 	if errExecWS != nil {
 		t.Fatalf("WS Execute() error = %v", errExecWS)
@@ -876,7 +852,6 @@ func TestCodexWebsocketsExecutor_UpgradeFallbackToHTTP_PreservesNumber(t *testin
 		Headers:      http.Header{"User-Agent": []string{"codex_cli_rs/0.1.0"}},
 	}
 
-
 	httpCapturedBody = nil
 	streamRes, errStream := exec.ExecuteStream(context.Background(), auth, req, opts)
 	if errStream != nil {
@@ -893,7 +868,6 @@ func TestCodexWebsocketsExecutor_UpgradeFallbackToHTTP_PreservesNumber(t *testin
 	if got := ojson.GetBytes(httpCapturedBody, "input.#(type==\"additional_tools\").tools.0.parameters.properties.yield_time_ms.type").String(); got != "number" {
 		t.Fatalf("stream fallback input additional_tools yield_time_ms type = %q, want number", got)
 	}
-
 
 	httpCapturedBody = nil
 	_, errNonStream := exec.Execute(context.Background(), auth, req, opts)

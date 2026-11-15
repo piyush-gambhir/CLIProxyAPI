@@ -9,10 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
 const (
 	codexToolSearchDeclaration = `{"type":"tool_search","execution":"client","description":"# Tool discovery\n\nSearches over deferred tool metadata with BM25 and exposes matching tools for the next model call.\n\nSome of the tools may not have been provided to you upfront, and you should use this tool (` + "`tool_search`" + `) to search for the required tools.","parameters":{"type":"object","properties":{"limit":{"type":"number","description":"Maximum number of tools to return. Defaults to 8."},"query":{"type":"string","description":"Search query for deferred tools."}},"required":["query"],"additionalProperties":false}}`
 
@@ -126,7 +122,6 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchHistoryReplaysAndActiva
 		t.Fatalf("turn 2 tools = %s, want %s", got, wantTurn2)
 	}
 
-
 	for _, name := range []string{"mcp__codex_apps__calendar_create_event", "lookup_order"} {
 		tool := turn2.Get(`tools.#(name=="` + name + `")`)
 		if !tool.Get("defer_loading").Bool() {
@@ -155,8 +150,6 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchHistoryReplaysAndActiva
 		toolResult.Get("content").Raw != wantContent {
 		t.Fatalf("tool_search_output replay = %s", toolResult.Raw)
 	}
-
-
 
 	turn3 := convertToolSearchRequest(t, codexToolSearchRequest(codexUserTurn, codexSearchCall1, codexSearchOutput1, codexNSCall, codexNSCallOutput, codexSearchCall2, codexSearchOutput2))
 	wantTurn3 := wantTurn2 + ",mcp__node_repl__js"
@@ -204,8 +197,6 @@ func TestConvertOpenAIResponsesRequestToClaude_WithoutToolSearchIsUnchanged(t *t
 		t.Fatalf("output changed:\n got: %s\nwant: %s", out, want)
 	}
 }
-
-
 
 var claudeToolSearchStream = []string{
 	`data: {"type":"message_start","message":{"id":"msg_ts","usage":{"input_tokens":1,"output_tokens":0}}}`,
@@ -366,10 +357,6 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchNameCollisionRoutesCons
 		`data: {"type":"message_stop"}`,
 	}, "\n")
 
-
-
-
-
 	for _, tc := range []struct {
 		name      string
 		tools     string
@@ -396,8 +383,6 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchNameCollisionRoutesCons
 			}
 		})
 	}
-
-
 
 	t.Run("user function first keeps history as text", func(t *testing.T) {
 		request := []byte(`{"model":"claude-sonnet-4-5","input":[` + strings.Join([]string{codexUserTurn, codexSearchCall1, codexSearchOutput1}, ",") +
@@ -466,8 +451,6 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchOutputWithoutToolsKeeps
 	}
 }
 
-
-
 func TestConvertOpenAIResponsesRequestToClaude_DeferredToolsDropCacheControl(t *testing.T) {
 	cached := `{"type":"tool_search_output","call_id":"call_search_1","status":"completed","execution":"client","tools":[` +
 		`{"type":"function","name":"cached_fn","description":"Cached.","cache_control":{"type":"ephemeral"},"defer_loading":true,"parameters":{"type":"object","properties":{}}},` +
@@ -481,11 +464,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeferredToolsDropCacheControl(t *
 		}
 	}
 }
-
-
-
-
-
 
 func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorKeepsToolsPrefixStable(t *testing.T) {
 	turn1 := convertToolSearchRequest(t, codexToolSearchRequest(codexUserTurn))
@@ -514,9 +492,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorKeepsToolsPrefixSta
 	}
 }
 
-
-
-
 func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorYieldsToClientToolName(t *testing.T) {
 	declared := func(name string) string {
 		return `{"type":"function","name":"` + name + `","description":"Client tool.","parameters":{"type":"object","properties":{}}}`
@@ -535,7 +510,6 @@ func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorYieldsToClientToolN
 		}
 	}
 }
-
 
 func TestConvertOpenAIResponsesRequestToClaude_NoDeferredAnchorWithoutNativeToolSearch(t *testing.T) {
 	userFunction := `{"type":"function","name":"tool_search","parameters":{"type":"object","properties":{"q":{"type":"string"}}}}`

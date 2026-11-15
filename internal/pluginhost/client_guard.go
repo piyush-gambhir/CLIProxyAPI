@@ -146,8 +146,6 @@ func (c *guardedPluginClient) Shutdown() {
 	c.ShutdownContext(context.Background())
 }
 
-
-
 func (c *guardedPluginClient) ShutdownContext(ctx context.Context) {
 	if c == nil {
 		return

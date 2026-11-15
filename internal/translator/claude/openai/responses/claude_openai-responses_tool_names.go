@@ -14,9 +14,6 @@ import (
 
 var claudeToolNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
-
-
-
 type claudeToolNames struct {
 	toClaude   map[string]string
 	fromClaude map[string]string
@@ -46,15 +43,12 @@ func buildClaudeToolNamesWithWinners(root ojson.Result, winners map[string]respo
 	return m
 }
 
-
 func (m claudeToolNames) claudeName(identity string) string {
 	if name, ok := m.toClaude[identity]; ok {
 		return name
 	}
 	return util.SanitizeClaudeFunctionName(identity)
 }
-
-
 
 func (m claudeToolNames) identity(claudeName string) string {
 	if identity, ok := m.fromClaude[claudeName]; ok {
@@ -114,8 +108,6 @@ func (m claudeToolNames) allocate(identities []string, taken map[string]bool) {
 		}
 	}
 }
-
-
 
 func responsesHistoryToolIdentities(root ojson.Result) []string {
 	var ids []string

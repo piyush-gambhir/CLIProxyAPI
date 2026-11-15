@@ -8,12 +8,8 @@ import (
 )
 
 const (
-
-
 	maxResponseModelLength = 128
 )
-
-
 
 func extractResponseModelEvent(payload []byte, provider string) (model string, terminal bool) {
 	data := jsonPayload(payload)
@@ -32,7 +28,6 @@ func extractResponseModelEvent(payload []byte, provider string) (model string, t
 		return extractGenericResponseModelEvent(data)
 	}
 }
-
 
 func extractClaudeResponseModelEvent(data []byte) (model string, terminal bool) {
 	eventType := ojson.GetBytesNoCopy(data, "type").String()
@@ -119,7 +114,6 @@ func extractClaudeFallbackIterationModel(iterations ojson.Result) string {
 	return strings.Clone(served)
 }
 
-
 func extractGeminiResponseModelEvent(data []byte) (model string, terminal bool) {
 	if !ojson.ValidBytes(data) {
 		return "", false
@@ -163,7 +157,6 @@ func extractGeminiResponseModelEvent(data []byte) (model string, terminal bool) 
 	}
 	return served, terminal
 }
-
 
 func extractGenericResponseModelEvent(data []byte) (model string, terminal bool) {
 	if !ojson.ValidBytes(data) {
@@ -242,14 +235,11 @@ func isInteractionsTerminal(eventType, status string) bool {
 	return false
 }
 
-
-
 func extractCodexResponseModelEvent(payload []byte) (model string, terminal bool) {
 	data := jsonPayload(payload)
 	if len(data) == 0 {
 		return "", false
 	}
-
 
 	carriesModel, terminal := codexResponseModelEventKind(ojson.GetBytesNoCopy(data, "type").String())
 	if !carriesModel {
@@ -258,7 +248,6 @@ func extractCodexResponseModelEvent(payload []byte) (model string, terminal bool
 	if !ojson.ValidBytes(data) {
 		return "", false
 	}
-
 
 	modelResult := ojson.GetBytesNoCopy(data, "response.model")
 	if modelResult.Type != ojson.String {
@@ -271,8 +260,6 @@ func extractCodexResponseModelEvent(payload []byte) (model string, terminal bool
 	return strings.Clone(model), terminal
 }
 
-
-
 func codexResponseModelEventKind(eventType string) (carriesModel bool, terminal bool) {
 	switch strings.TrimSpace(eventType) {
 	case "response.created", "response.in_progress":
@@ -284,8 +271,6 @@ func codexResponseModelEventKind(eventType string) (carriesModel bool, terminal 
 	}
 }
 
-
-
 func normalizeModelName(model string) string {
 	return strings.TrimSpace(thinking.ParseSuffix(strings.ToLower(strings.TrimSpace(model))).ModelName)
 }
@@ -296,8 +281,6 @@ func stripModelProviderPrefix(model string) string {
 	}
 	return model
 }
-
-
 
 func IsModelSubstituted(requested, served string) bool {
 	servedModel := normalizeModelName(served)

@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-
-
 func CredentialFileName(email string) string {
 	email = strings.TrimSpace(email)
 	if email == "" {

@@ -7,12 +7,6 @@ import (
 	"testing"
 )
 
-
-
-
-
-
-
 func TestCORSPreflightExplicitlyAllowsAuthorization(t *testing.T) {
 	server := newTestServer(t)
 
@@ -81,10 +75,6 @@ func TestCORSPreflightExplicitlyAllowsAuthorization(t *testing.T) {
 		})
 	}
 }
-
-
-
-
 
 func TestCORSPreflightEchoesRequestedAllowHeaders(t *testing.T) {
 	server := newTestServer(t)

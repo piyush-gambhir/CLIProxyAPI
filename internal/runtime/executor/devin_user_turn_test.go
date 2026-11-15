@@ -34,9 +34,6 @@ func requireDevinUnsupportedPart(t *testing.T, err error, wantType string) {
 	}
 }
 
-
-
-
 func TestDevinExecutorRefusesAnUnsendableMediaOnlyTurnBeforeCallingUpstream(t *testing.T) {
 	var upstreamCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

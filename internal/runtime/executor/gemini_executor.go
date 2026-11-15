@@ -1,6 +1,3 @@
-
-
-
 package executor
 
 import (
@@ -28,40 +25,25 @@ import (
 )
 
 const (
-
 	glEndpoint = "https://generativelanguage.googleapis.com"
 
-
 	glAPIVersion = "v1beta"
-
 
 	streamScannerBuffer = helps.StreamScannerBuffer
 )
 
-
-
 type GeminiExecutor struct {
-
 	cfg        *config.Config
 	identifier string
 }
-
-
-
-
-
-
-
 
 func NewGeminiExecutor(cfg *config.Config) *GeminiExecutor {
 	return &GeminiExecutor{cfg: cfg, identifier: "gemini"}
 }
 
-
 func NewGeminiInteractionsExecutor(cfg *config.Config) *GeminiExecutor {
 	return &GeminiExecutor{cfg: cfg, identifier: "gemini-interactions"}
 }
-
 
 func (e *GeminiExecutor) Identifier() string {
 	if e == nil || strings.TrimSpace(e.identifier) == "" {
@@ -70,14 +52,12 @@ func (e *GeminiExecutor) Identifier() string {
 	return e.identifier
 }
 
-
 func (e *GeminiExecutor) RequestToFormat(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) sdktranslator.Format {
 	if strings.EqualFold(strings.TrimSpace(e.Identifier()), "gemini-interactions") && nativeInteractionsSourceFormat(opts.SourceFormat) {
 		return sdktranslator.FormatInteractions
 	}
 	return sdktranslator.FormatGemini
 }
-
 
 func (e *GeminiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -95,7 +75,6 @@ func (e *GeminiExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Au
 	return nil
 }
 
-
 func (e *GeminiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("gemini executor: request is nil")
@@ -111,19 +90,6 @@ func (e *GeminiExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Aut
 	return httpClient.Do(httpReq)
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func (e *GeminiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
 	if opts.Alt == "responses/compact" {
@@ -138,7 +104,6 @@ func (e *GeminiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 
 	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
 	defer reporter.TrackFailure(ctx, &err)
-
 
 	from := opts.SourceFormat
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
@@ -288,7 +253,6 @@ func (e *GeminiExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	resp = cliproxyexecutor.Response{Payload: out, Headers: httpResp.Header.Clone()}
 	return resp, nil
 }
-
 
 func (e *GeminiExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	ctx = helps.EnsureSessionContext(ctx, opts, req.Payload)
@@ -907,7 +871,6 @@ func (e *GeminiExecutor) executeInteractionsStream(ctx context.Context, auth *cl
 	return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil
 }
 
-
 func (e *GeminiExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
@@ -1013,7 +976,6 @@ func (e *GeminiExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Aut
 	return cliproxyexecutor.Response{Payload: translated, Headers: resp.Header.Clone()}, nil
 }
 
-
 func (e *GeminiExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
@@ -1098,11 +1060,6 @@ func nativeInteractionsSourceFormat(format sdktranslator.Format) bool {
 	}
 }
 
-
-
-
-
-
 func sanitizeGeminiInteractionsUnsupportedInputIDs(body []byte) []byte {
 	return helps.SanitizeGeminiInteractionsUnsupportedInputIDs(body, false)
 }
@@ -1114,12 +1071,6 @@ func sanitizeGeminiInteractionsUnsupportedInputIDsDoc(doc *ojson.Doc) bool {
 func translateGeminiInteractionsRequestBody(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) ([]byte, error) {
 	return helps.TranslateGeminiInteractionsRequestBody(ctx, cfg, model, payload, opts, stream, isCompat)
 }
-
-
-
-
-
-
 
 func translateGeminiInteractionsRequestPair(ctx context.Context, cfg *config.Config, model string, payload []byte, opts cliproxyexecutor.Options, stream, isCompat bool) (original, working []byte, err error) {
 	return helps.TranslateGeminiInteractionsRequestPair(ctx, cfg, model, payload, opts, stream, isCompat)
@@ -1135,9 +1086,6 @@ func geminiInteractionsPayloadConfigInput(opts cliproxyexecutor.Options, payload
 	}
 	return opts.OriginalRequest
 }
-
-
-
 
 func geminiInteractionsSameByteSlice(a, b []byte) bool {
 	if len(a) != len(b) {
@@ -1278,6 +1226,5 @@ func fixGeminiImageAspectRatioDoc(modelName string, doc *ojson.Doc) bool {
 	_ = doc.Delete("generationConfig.imageConfig")
 	return true
 }
-
 
 func (e *GeminiExecutor) SupportsApplyPatch() bool { return e != nil }

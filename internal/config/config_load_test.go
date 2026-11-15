@@ -39,7 +39,6 @@ func uploadTestBcrypt(t *testing.T) string {
 	return string(hashed)
 }
 
-
 func uploadTestSecret(t *testing.T, data, section string) (string, bool) {
 	t.Helper()
 	var doc map[string]any
@@ -90,7 +89,6 @@ func TestPrepareConfigFileForUploadHashesPlaintextSecret(t *testing.T) {
 	}
 }
 
-
 func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 	hashed := uploadTestBcrypt(t)
 	for _, tc := range []struct {
@@ -133,7 +131,6 @@ func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 	}
 }
 
-
 func TestPrepareConfigFileForUploadIgnoresYAMLNullBesideStringNullSecret(t *testing.T) {
 	path := writeUploadTestConfig(t, "proxy-url: null\nmanagement:\n  secret-key: 'null'\n")
 
@@ -147,8 +144,6 @@ func TestPrepareConfigFileForUploadIgnoresYAMLNullBesideStringNullSecret(t *test
 		t.Fatalf("management.secret-key %q is not the bcrypt hash of the string secret:\n%s", secret, saved)
 	}
 }
-
-
 
 func TestPrepareConfigFileForUploadDropsConflictingLegacySecret(t *testing.T) {
 	hashed := uploadTestBcrypt(t)
@@ -207,8 +202,6 @@ func TestPrepareConfigFileForUploadLeavesSettledConfigUntouched(t *testing.T) {
 	}
 }
 
-
-
 func TestPrepareConfigFileForUploadReportsSecretItCannotHash(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
@@ -249,10 +242,6 @@ func TestPrepareConfigFileForUploadReportsSecretItCannotHash(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestPrepareConfigFileForUploadRefusesPlaintextKeptByReferences(t *testing.T) {
 	anchoredLegacy := "defaults: &legacy\n  secret-key: " + uploadTestPlaintextSecret + "\nremote-management: *legacy\nmanagement:\n  secret-key: "
 	for name, content := range map[string]string{
@@ -260,7 +249,6 @@ func TestPrepareConfigFileForUploadRefusesPlaintextKeptByReferences(t *testing.T
 		"scalar anchor":  "password: &password " + uploadTestPlaintextSecret + "\nmanagement:\n  secret-key: *password\n",
 		"merge key":      "defaults: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nmanagement:\n  <<: *management\n  allow-remote: true\n",
 		"shared anchor":  "management: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nother: *management\n",
-
 
 		"anchored legacy beside plaintext v8": anchoredLegacy + "current-plaintext-secret\n",
 		"anchored legacy beside hashed v8":    anchoredLegacy + "'" + uploadTestBcrypt(t) + "'\n",

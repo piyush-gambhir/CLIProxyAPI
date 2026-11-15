@@ -182,7 +182,6 @@ func TestDevinModelsRemoteFetchFallback(t *testing.T) {
 	origURLs := devinModelsURLs
 	defer func() { devinModelsURLs = origURLs }()
 
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	}))
@@ -195,14 +194,12 @@ func TestDevinModelsRemoteFetchFallback(t *testing.T) {
 		t.Fatal("expected non-empty initial Devin models")
 	}
 
-
 	tryRefreshDevinModels(context.Background(), "test failing refresh")
 
 	afterCount := len(GetDevinModels())
 	if afterCount != initialCount {
 		t.Fatalf("expected catalog to remain intact with %d models, got %d", initialCount, afterCount)
 	}
-
 
 	validUpdate := []byte(`{
 		"devin": [
@@ -240,7 +237,6 @@ func TestDevinModelsRemoteFetchFallback(t *testing.T) {
 	if !foundBuiltinSlow {
 		t.Fatalf("expected catalog to retain builtin swe-1-6-slow, got: %+v", updatedModels)
 	}
-
 
 	_, _ = loadDevinModelsFromBytes(embeddedDevinModelsJSON, "restore-embed")
 }
@@ -300,7 +296,6 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 		t.Fatalf("devin/swe-1-6-slow missing from GetDevinModels()")
 	}
 
-
 	lookupWithPrefix := LookupDevinModel("devin/swe-1-6-slow")
 	if lookupWithPrefix == nil {
 		t.Errorf("LookupDevinModel(\"devin/swe-1-6-slow\") returned nil")
@@ -309,7 +304,6 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 	if lookupWithoutPrefix == nil {
 		t.Errorf("LookupDevinModel(\"swe-1-6-slow\") returned nil")
 	}
-
 
 	if lookupWithPrefix != nil {
 		if lookupWithPrefix.ID != "devin/swe-1-6-slow" {
@@ -325,7 +319,6 @@ func TestDevinSWE16Slow_Issue6111(t *testing.T) {
 			t.Errorf("expected OwnedBy 'cognition', got %q", lookupWithPrefix.OwnedBy)
 		}
 	}
-
 
 	payloadWithoutSlow := []byte(`{"devin": [{"id": "devin/swe-2", "display_name": "SWE-2"}]}`)
 	if _, errUpdate := loadDevinModelsFromBytes(payloadWithoutSlow, "test-dynamic-update"); errUpdate != nil {
@@ -364,7 +357,6 @@ func TestWithDevinBuiltins(t *testing.T) {
 		t.Errorf("expected ID 'devin/swe-1-6-slow', got %q", builtins[0].ID)
 	}
 
-
 	existing := []*ModelInfo{
 		{ID: "devin/swe-2", DisplayName: "SWE-2"},
 	}
@@ -372,7 +364,6 @@ func TestWithDevinBuiltins(t *testing.T) {
 	if len(merged) != 2 {
 		t.Fatalf("expected 2 models, got %d", len(merged))
 	}
-
 
 	duplicate := []*ModelInfo{
 		{ID: "devin/swe-1-6-slow", DisplayName: "Old Display Name"},

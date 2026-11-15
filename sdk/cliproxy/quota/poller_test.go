@@ -11,9 +11,6 @@ import (
 	"time"
 )
 
-
-
-
 type recordingDoer struct {
 	mu       sync.Mutex
 	calls    []string
@@ -84,9 +81,6 @@ func newTestPoller(t *testing.T, targets []Target, doer *recordingDoer) (*Poller
 	t.Helper()
 	return newTestPollerWith(t, targets, doer, nil)
 }
-
-
-
 
 func newTestPollerWith(t *testing.T, targets []Target, doer *recordingDoer, tune func(*PollerConfig)) (*Poller, *Store, *fakeClock) {
 	t.Helper()
@@ -162,8 +156,6 @@ func TestPollerClaudeGapIsProviderWide(t *testing.T) {
 	}
 	poller, _, clock := newTestPoller(t, targets, doer)
 
-
-
 	poller.RunOnce(context.Background())
 	if got := doer.callCount(); got != 1 {
 		t.Fatalf("calls in the first pass = %d, want 1", got)
@@ -204,8 +196,6 @@ func TestPollerSkipsFreshCredentials(t *testing.T) {
 		{AuthID: "codex-1", Provider: "codex", AccessToken: "test-token"},
 	}, doer)
 
-
-
 	store.Observe(Identity{AuthID: "codex-1", Provider: "codex"},
 		map[string]Window{WindowWeekly: {UsedPercent: 5, Known: true}}, clock.Now())
 	poller.RunOnce(context.Background())
@@ -240,7 +230,6 @@ func TestPollerClaude429BacksOffProviderWideAndDoubles(t *testing.T) {
 
 	doer := &recordingDoer{body: claudeUsageBody, statuses: []int{http.StatusTooManyRequests}}
 
-
 	poller, store, clock := newTestPollerWith(t, []Target{
 		{AuthID: "claude-1", Provider: "claude", AccessToken: "test-token"},
 		{AuthID: "claude-2", Provider: "claude", AccessToken: "test-token"},
@@ -262,13 +251,11 @@ func TestPollerClaude429BacksOffProviderWideAndDoubles(t *testing.T) {
 		t.Fatal("a 429 must not write a reading")
 	}
 
-
 	clock.Advance(2 * time.Minute)
 	poller.RunOnce(context.Background())
 	if got := doer.callCount(); got != 1 {
 		t.Fatalf("calls during the backoff = %d, want 1", got)
 	}
-
 
 	clock.Advance(DefaultClaudeBackoffStart)
 	poller.RunOnce(context.Background())
@@ -299,7 +286,6 @@ func TestPollerClaudeBackoffIsCappedAndClearedOnSuccess(t *testing.T) {
 	if backoff != DefaultClaudeBackoffMax {
 		t.Fatalf("capped backoff = %s, want %s", backoff, DefaultClaudeBackoffMax)
 	}
-
 
 	doer.statuses = []int{http.StatusOK}
 	poller.RunOnce(context.Background())

@@ -12,8 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-
-
 type devinPayloadField struct {
 	name      string
 	kind      protowire.Type
@@ -60,8 +58,6 @@ var devinPayloadFields = map[protowire.Number]devinPayloadField{
 	21: {name: "model", kind: protowire.BytesType},
 }
 
-
-
 func DevinPayloadDefaultsSource(native, interactions []byte) []byte {
 	doc := ojson.NewDocString("{}")
 	for target, sources := range map[string][]string{
@@ -94,8 +90,6 @@ func DevinPayloadDefaultsSource(native, interactions []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func FinalizeDevinPayload(wire []byte, finalize PayloadFinalizer) ([]byte, []byte, error) {
 	view, errDecode := decodeDevinPayload(wire, devinPayloadFields)

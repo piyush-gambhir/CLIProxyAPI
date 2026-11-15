@@ -14,15 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 const ConfigV8ContextKey = "management.config-v8"
-
-
-
-
-
-
-
 
 func (h *Handler) ConfigV8(c *gin.Context) {
 	h.mu.Lock()
@@ -192,17 +184,12 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 		return
 	}
 
-
-
 	if err = WriteConfig(h.configFilePath, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": err.Error()})
 		return
 	}
 
 	next.Home = h.cfg.Home
-
-
-
 
 	if saved, errSaved := os.ReadFile(h.configFilePath); errSaved == nil {
 		c.Header("ETag", configV8ETag(config.ComputeSourceHash(saved)))
@@ -213,15 +200,9 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "config-version": 8})
 }
 
-
 func configV8ETag(hash string) string {
 	return `"` + hash + `"`
 }
-
-
-
-
-
 
 func ifMatchSatisfied(values []string, currentHash string) bool {
 	if len(values) == 0 {
@@ -239,8 +220,6 @@ func ifMatchSatisfied(values []string, currentHash string) bool {
 	}
 	return false
 }
-
-
 
 func splitEntityTagList(field string) []string {
 	parts := []string{}
@@ -261,10 +240,6 @@ func splitEntityTagList(field string) []string {
 }
 
 var v8ICEServersPath = []string{"oauth", "providers", "codex", "live-media-relay", "ice-servers"}
-
-
-
-
 
 func preserveV8TURNSecrets(root, before *yaml.Node) {
 	next := configV8Node(root, v8ICEServersPath)
@@ -321,8 +296,6 @@ func configV8Node(root *yaml.Node, parts []string) *yaml.Node {
 	return root
 }
 
-
-
 func deleteConfigV8Path(root *yaml.Node, parts []string) bool {
 	if root == nil || root.Kind != yaml.MappingNode || len(parts) == 0 {
 		return false
@@ -354,8 +327,6 @@ func cloneConfigV8Node(node *yaml.Node) *yaml.Node {
 	}
 	return &copy
 }
-
-
 
 func mergeConfigV8Patch(dst, src *yaml.Node) {
 	if dst.Kind != yaml.MappingNode || src.Kind != yaml.MappingNode {

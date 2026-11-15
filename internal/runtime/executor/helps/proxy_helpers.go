@@ -19,20 +19,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func NewProxyAwareHTTPClient(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, timeout time.Duration) (clientOut *http.Client) {
 	defer func() { clientOut = httptransport.Decorate(ctx, clientOut) }()
 	httpClient := &http.Client{}
@@ -40,9 +26,7 @@ func NewProxyAwareHTTPClient(ctx context.Context, cfg *config.Config, auth *clip
 		httpClient.Timeout = timeout
 	}
 
-
 	proxyURL := effectiveProxyURL(ctx, cfg, auth)
-
 
 	if proxyURL != "" {
 		if transport := pooledProxyTransport(proxyURL, cfg, auth); transport != nil {
@@ -53,7 +37,6 @@ func NewProxyAwareHTTPClient(ctx context.Context, cfg *config.Config, auth *clip
 		log.Debugf("failed to setup proxy from URL: %s, falling back to context transport", proxyutil.Redact(proxyURL))
 	}
 
-
 	if ctx != nil {
 		if rt, ok := ctx.Value("cliproxy.roundtripper").(http.RoundTripper); ok && rt != nil {
 			httpClient.Transport = rt
@@ -61,19 +44,12 @@ func NewProxyAwareHTTPClient(ctx context.Context, cfg *config.Config, auth *clip
 		}
 	}
 
-
-
-
 	if transport := pooledProxyTransport("", cfg, auth); transport != nil {
 		httpClient.Transport = transport
 	}
 
 	return httpClient
 }
-
-
-
-
 
 type proxyPoolKey struct {
 	publisher   uint64
@@ -85,10 +61,6 @@ type proxyPoolKey struct {
 	invalidIdle string
 }
 
-
-
-
-
 type proxyPoolKind uint8
 
 const (
@@ -97,53 +69,16 @@ const (
 )
 
 const (
-
-
-
-
-
-
-
-
-
-
-
-
-
 	proxyPoolDefaultIdleConnTimeout = 300 * time.Second
-
-
-
 
 	proxyPoolDefaultMaxIdleConnsPerHost = 2
 
-
-
-
-
-
-
 	proxyPoolKeepAlivePeriod = 30 * time.Second
-
-
-
-
-
-
-
-
-
-
 
 	proxyPoolCapacity = 512
 )
 
 var proxyTransportCache = NewTransportCache[proxyPoolKey](proxyPoolCapacity)
-
-
-
-
-
 
 var proxyPoolFence struct {
 	sync.RWMutex
@@ -152,18 +87,12 @@ var proxyPoolFence struct {
 	current        map[uint64]uint64
 }
 
-
-
 func RegisterProxyPoolPublisher() uint64 {
 	proxyPoolFence.Lock()
 	defer proxyPoolFence.Unlock()
 	proxyPoolFence.nextPublisher++
 	return proxyPoolFence.nextPublisher
 }
-
-
-
-
 
 func AdvanceProxyPoolGeneration(publisher uint64, cfg *config.Config) {
 	if cfg == nil {
@@ -179,20 +108,12 @@ func AdvanceProxyPoolGeneration(publisher uint64, cfg *config.Config) {
 	cfg.ProxyPoolPublisher = publisher
 	cfg.ProxyPoolGeneration = generation
 
-
-
-
-
 	toClose := proxyTransportCache.detachMatching(func(key proxyPoolKey) bool { return key.publisher == publisher })
 	proxyPoolFence.Unlock()
 	for _, t := range toClose {
 		t.CloseIdleConnections()
 	}
 }
-
-
-
-
 
 func RetireProxyPoolPublisher(publisher uint64) {
 	if publisher == 0 {
@@ -207,7 +128,6 @@ func RetireProxyPoolPublisher(publisher uint64) {
 	}
 }
 
-
 func ResetProxyTransports() { proxyTransportCache.Purge() }
 
 func pooledProxyTransport(proxyURL string, cfg *config.Config, auth *cliproxyauth.Auth) *http.Transport {
@@ -218,14 +138,8 @@ func pooledProxyTransport(proxyURL string, cfg *config.Config, auth *cliproxyaut
 		return tr
 	}
 
-
-
-
 	return buildProxyTransport(proxyURL)
 }
-
-
-
 
 func pooledTransport(kind proxyPoolKind, proxyURL string, cfg *config.Config, auth *cliproxyauth.Auth, build func() (*http.Transport, error)) (*http.Transport, bool) {
 	settings, enabled := resolveProxyPoolSettings(auth)
@@ -236,10 +150,6 @@ func pooledTransport(kind proxyPoolKind, proxyURL string, cfg *config.Config, au
 	if errParse != nil {
 		return nil, false
 	}
-
-
-
-
 
 	if kind == proxyPoolKindStandard && strings.TrimSpace(proxyURL) == "" {
 		if base, ok := http.DefaultTransport.(*http.Transport); !ok || base == nil {
@@ -280,12 +190,6 @@ func pooledTransport(kind proxyPoolKind, proxyURL string, cfg *config.Config, au
 		invalidIdle: invalidIdle,
 	}
 
-
-
-
-
-
-
 	if cfg != nil && cfg.ProxyPoolGeneration != 0 {
 		proxyPoolFence.RLock()
 		defer proxyPoolFence.RUnlock()
@@ -307,8 +211,6 @@ func pooledTransport(kind proxyPoolKind, proxyURL string, cfg *config.Config, au
 		tr.IdleConnTimeout = idle
 		tr.MaxIdleConnsPerHost = max
 
-
-
 		tr.MaxIdleConns = max
 		if dial := tr.DialContext; dial != nil {
 			tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -328,10 +230,6 @@ func pooledTransport(kind proxyPoolKind, proxyURL string, cfg *config.Config, au
 	}
 	return tr, true
 }
-
-
-
-
 
 func resolveProxyPoolSettings(auth *cliproxyauth.Auth) (config.ProxyConnectionPoolConfig, bool) {
 	override := proxyPoolOverride(auth)
@@ -355,12 +253,6 @@ func proxyPoolOverride(auth *cliproxyauth.Auth) *cliproxyauth.ProxyConnectionPoo
 	return auth.ProxyConnectionPool
 }
 
-
-
-
-
-
-
 func proxyPoolCacheTarget(setting proxyutil.Setting) (cacheProxy, poolLabel string) {
 	switch setting.Mode {
 	case proxyutil.ModeDirect:
@@ -377,15 +269,7 @@ func proxyPoolCacheTarget(setting proxyutil.Setting) (cacheProxy, poolLabel stri
 	}
 }
 
-
 const proxyPoolAnonymousScope = "anonymous"
-
-
-
-
-
-
-
 
 func proxyPoolScope(auth *cliproxyauth.Auth) string {
 	if auth == nil {
@@ -401,10 +285,6 @@ func proxyPoolScope(auth *cliproxyauth.Auth) string {
 			identity = "source:" + source
 		}
 	}
-
-
-
-
 
 	secret := proxyPoolCredentialSecretScope(auth)
 	if identity != "" && secret != "" {
@@ -437,8 +317,6 @@ func proxyPoolCredentialSecretScope(auth *cliproxyauth.Auth) string {
 	return ""
 }
 
-
-
 func proxyPoolSecretScope(prefix, secret string) string {
 	digest := sha256.Sum256([]byte(secret))
 	return prefix + hex.EncodeToString(digest[:8])
@@ -456,11 +334,6 @@ func authMetadataString(metadata map[string]any, key string) string {
 	return strings.TrimSpace(text)
 }
 
-
-
-
-
-
 func unpooledTransport(build func() (*http.Transport, error)) *http.Transport {
 	tr, errBuild := build()
 	if errBuild != nil {
@@ -472,9 +345,6 @@ func unpooledTransport(build func() (*http.Transport, error)) *http.Transport {
 	}
 	return tr
 }
-
-
-
 
 func buildPooledBaseTransport(proxyURL string) (*http.Transport, error) {
 	if strings.TrimSpace(proxyURL) == "" {
@@ -489,11 +359,6 @@ func buildPooledBaseTransport(proxyURL string) (*http.Transport, error) {
 	}
 	return tr, nil
 }
-
-
-
-
-
 
 func stampProxyKeepAlive(conn net.Conn) net.Conn {
 	tcp, ok := conn.(*net.TCPConn)
@@ -511,11 +376,8 @@ func stampProxyKeepAlive(conn net.Conn) net.Conn {
 
 var devinTransportCache = NewTransportCache[string](DefaultTransportCacheCapacity)
 
-
-
 func NewDevinHTTPClient(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, timeout time.Duration) (clientOut *http.Client) {
 	defer func() { clientOut = httptransport.Decorate(ctx, clientOut) }()
-
 
 	if cliproxyexecutor.RequestProxyURL(ctx) == "" && ctx != nil {
 		if rt, ok := ctx.Value("cliproxy.roundtripper").(http.RoundTripper); ok && rt != nil {
@@ -592,14 +454,6 @@ func effectiveProxyURL(ctx context.Context, cfg *config.Config, auth *cliproxyau
 	}
 	return ""
 }
-
-
-
-
-
-
-
-
 
 func buildProxyTransport(proxyURL string) *http.Transport {
 	transport, _, errBuild := proxyutil.BuildHTTPTransport(proxyURL)

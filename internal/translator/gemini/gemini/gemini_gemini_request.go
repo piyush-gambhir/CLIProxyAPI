@@ -1,6 +1,3 @@
-// Package gemini provides in-provider request normalization for Gemini API.
-// It ensures incoming v1beta requests meet minimal schema requirements
-// expected by Google's Generative Language API.
 package gemini
 
 import (
@@ -15,14 +12,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ConvertGeminiRequestToGemini normalizes Gemini v1beta requests.
-//   - Adds a default role for each content if missing or invalid.
-//     The first message defaults to "user", then alternates user/model when needed.
-//
-// It keeps the payload otherwise unchanged.
 func ConvertGeminiRequestToGemini(_ string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	rawJSON := inputRawJSON
-	// Fast path: if no contents field, only attach safety settings
+
 	contents := util.GetGJSONBytesNoCopy(rawJSON, "contents")
 	if !contents.Exists() {
 		return common.AttachDefaultSafetySettings(rawJSON, "safetySettings"), nil
@@ -86,7 +78,6 @@ func ConvertGeminiRequestToGemini(_ string, inputRawJSON []byte, _ bool) ([]byte
 		}
 	}
 
-	// Walk contents and fix roles
 	out := rawJSON
 	prevRole := ""
 	if contents.IsArray() {
@@ -163,18 +154,12 @@ func ConvertGeminiRequestToGemini(_ string, inputRawJSON []byte, _ bool) ([]byte
 		}
 	}
 
-	// Backfill empty functionResponse.name from the preceding functionCall.name.
-	// Some clients send function responses with empty names; the Gemini API rejects these.
 	out = backfillEmptyFunctionResponseNames(out)
 
 	out = common.AttachDefaultSafetySettings(out, "safetySettings")
 	return out, nil
 }
 
-// backfillEmptyFunctionResponseNames walks the contents array and for each
-// model turn containing functionCall parts, records the call names in order.
-// For the immediately following user/function turn containing functionResponse
-// parts, any empty name is replaced with the corresponding call name.
 func backfillEmptyFunctionResponseNames(data []byte) []byte {
 	contents := util.GetGJSONBytesNoCopy(data, "contents")
 	if !contents.Exists() {
@@ -210,7 +195,6 @@ func backfillEmptyFunctionResponseNames(data []byte) []byte {
 		role := content.Get("role").String()
 		contentRaw := []byte(content.Raw)
 
-		// Collect functionCall names from model turns.
 		if role == "model" {
 			var names []string
 			content.Get("parts").ForEach(func(_, part ojson.Result) bool {
@@ -224,7 +208,6 @@ func backfillEmptyFunctionResponseNames(data []byte) []byte {
 			return true
 		}
 
-		// Backfill empty functionResponse names from pending call names.
 		if len(pendingCallNames) > 0 {
 			responseIndex := 0
 			partsChanged := false

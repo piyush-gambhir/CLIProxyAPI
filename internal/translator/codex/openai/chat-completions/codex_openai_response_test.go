@@ -557,7 +557,6 @@ func TestConvertCodexResponseToOpenAI_StreamForwardsCacheWriteTokens(t *testing.
 	ctx := context.Background()
 	var param any
 
-
 	_ = ConvertCodexResponseToOpenAI(ctx, "gpt-5.4", nil, nil, []byte(`data: {"type":"response.created","response":{"id":"resp_123","created_at":1700000000,"model":"gpt-5.4"}}`), &param)
 
 	chunk := []byte(`data: {"type":"response.completed","response":{"id":"resp_123","created_at":1700000000,"model":"gpt-5.4","usage":{"input_tokens":100,"output_tokens":20,"total_tokens":120,"input_tokens_details":{"cached_tokens":30,"cache_write_tokens":40},"output_tokens_details":{"reasoning_tokens":5}}}}`)
@@ -827,7 +826,6 @@ func TestConvertCodexResponseToOpenAI_Issue5543_CacheWriteTokensAndServiceTier(t
 			t.Fatalf("expected delta chunk service_tier 'priority', got %q; payload=%s", got, string(deltaChunks[0]))
 		}
 
-
 		terminalWithoutTier := []byte(`data: {"type":"response.completed","response":{"id":"resp_stream","created_at":1700000000,"model":"example-model","usage":{"input_tokens":10,"output_tokens":5,"total_tokens":15}}}`)
 		termChunks := ConvertCodexResponseToOpenAI(ctx, "example-model", nil, nil, terminalWithoutTier, &param)
 		if len(termChunks) != 1 {
@@ -842,7 +840,6 @@ func TestConvertCodexResponseToOpenAI_Issue5543_CacheWriteTokensAndServiceTier(t
 		var param any
 		_ = ConvertCodexResponseToOpenAI(ctx, "example-model", nil, nil, []byte(`data: {"type":"response.created","response":{"id":"resp_seq","created_at":1700000000,"model":"example-model","service_tier":"default"}}`), &param)
 
-
 		_ = ConvertCodexResponseToOpenAI(ctx, "example-model", nil, nil, []byte(`data: {"type":"response.in_progress","response":{"id":"resp_seq","service_tier":"priority"}}`), &param)
 
 		deltaChunks := ConvertCodexResponseToOpenAI(ctx, "example-model", nil, nil, []byte(`data: {"type":"response.output_text.delta","delta":"hi"}`), &param)
@@ -852,7 +849,6 @@ func TestConvertCodexResponseToOpenAI_Issue5543_CacheWriteTokensAndServiceTier(t
 		if got := ojson.GetBytesNoCopy(deltaChunks[0], "service_tier").String(); got != "priority" {
 			t.Fatalf("expected in_progress tier 'priority', got %q; chunk=%s", got, string(deltaChunks[0]))
 		}
-
 
 		completedEvent := []byte(`data: {"type":"response.completed","response":{"id":"resp_seq","service_tier":"scale","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}`)
 		completedChunks := ConvertCodexResponseToOpenAI(ctx, "example-model", nil, nil, completedEvent, &param)
@@ -874,7 +870,6 @@ func TestConvertCodexResponseToOpenAI_Issue5543_CacheWriteTokensAndServiceTier(t
 		if got := ojson.GetBytesNoCopy(out, "usage.prompt_tokens_details.cached_creation_tokens").Raw; got != beyondInt64Val {
 			t.Fatalf("expected exact raw large cached_creation_tokens %s, got %s; payload=%s", beyondInt64Val, got, string(out))
 		}
-
 
 		var param any
 		chunk := append([]byte("data: "), raw...)
@@ -918,7 +913,6 @@ func TestConvertCodexResponseToOpenAI_Issue5543_CacheWriteTokensAndServiceTier(t
 			if ojson.GetBytesNoCopy(out, "usage.prompt_tokens_details.cached_creation_tokens").Exists() {
 				t.Fatalf("expected invalid cached_creation_tokens to be omitted; payload=%s", string(out))
 			}
-
 
 			var param any
 			chunk := append([]byte("data: "), raw...)
@@ -967,14 +961,12 @@ func TestConvertCodexResponseToOpenAI_RestoresNormalizedToolNames(t *testing.T) 
 		]
 	}`)
 
-
 	rawNonStream := []byte(`{"type":"response.completed","response":{"id":"resp_1","created_at":1700000000,"model":"gpt-5.6-sol","status":"completed","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2},"output":[{"type":"function_call","call_id":"call_1","name":"` + normalizedName + `","arguments":"{}"}]}}`)
 	outNonStream := ConvertCodexResponseToOpenAINonStream(ctx, "gpt-5.6-sol", originalRequest, nil, rawNonStream, nil)
 	gotNameNonStream := ojson.GetBytesNoCopy(outNonStream, "choices.0.message.tool_calls.0.function.name").String()
 	if gotNameNonStream != originalName {
 		t.Fatalf("non-stream expected restored name %q, got %q", originalName, gotNameNonStream)
 	}
-
 
 	var param any
 	rawStreamAdded := []byte(`data: {"type":"response.output_item.added","item":{"type":"function_call","call_id":"call_1","name":"` + normalizedName + `"}}`)
@@ -987,7 +979,6 @@ func TestConvertCodexResponseToOpenAI_RestoresNormalizedToolNames(t *testing.T) 
 		t.Fatalf("stream expected restored name %q, got %q", originalName, gotNameStream)
 	}
 }
-
 
 func TestApplyPatchCustomChatCompletionsWrapper(t *testing.T) {
 	for _, tc := range []struct {
@@ -1057,8 +1048,6 @@ func TestApplyPatchCustomChatCompletionsDoneFallback(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestApplyPatchChatCompletionNativeHistoryRoundTrip(t *testing.T) {
 	patch := "*** Begin Patch\n+中文😀 \"quoted\" \\path\\\n*** End Patch"

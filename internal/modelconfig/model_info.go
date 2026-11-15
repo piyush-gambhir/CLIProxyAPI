@@ -7,9 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-
-
-
 func ResolveModelInfo(name, modelType string, support *registry.ThinkingSupport) *registry.ModelInfo {
 	trimmedName := strings.TrimSpace(name)
 	baseName := strings.TrimSpace(thinking.ParseSuffix(trimmedName).ModelName)
@@ -22,7 +19,6 @@ func ResolveModelInfo(name, modelType string, support *registry.ThinkingSupport)
 	if support != nil {
 		normalized := NormalizeThinkingSupport(support)
 
-
 		if normalized.DisableType == "" && info.Thinking != nil {
 			normalized.DisableType = info.Thinking.DisableType
 		}
@@ -31,7 +27,6 @@ func ResolveModelInfo(name, modelType string, support *registry.ThinkingSupport)
 	info.UserDefined = false
 	return info
 }
-
 
 func NormalizeThinkingSupport(raw *registry.ThinkingSupport) *registry.ThinkingSupport {
 	if raw == nil {

@@ -389,7 +389,6 @@ func TestApplyModelRouterSkipsHostsWithoutRouters(t *testing.T) {
 	}
 }
 
-
 type routeModelOnlyHost struct {
 	called bool
 }
@@ -431,8 +430,6 @@ func TestApplyModelRouterRestoresQueryFromContext(t *testing.T) {
 	}
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, nil)
 	handler.SetModelRouterHost(host)
-
-
 
 	ctx := contextWithQuery(url.Values{"session": []string{"abc"}})
 	handler.applyModelRouter(ctx, "openai", "model", []byte(`{"model":"model"}`), false, modelExecutionOptions{})
@@ -614,7 +611,6 @@ func TestHandlerModelRouterProviderRouteUsesAuthManager(t *testing.T) {
 	handler.AuthManager = coreauth.NewManager(nil, nil, nil)
 
 	_, _, errMsg := handler.ExecuteWithAuthManager(context.Background(), "openai", originalModel, []byte(fmt.Sprintf(`{"model":%q}`, originalModel)), "")
-
 
 	if errMsg == nil {
 		t.Fatal("ExecuteWithAuthManager() error = nil, want auth selection error for routed provider")

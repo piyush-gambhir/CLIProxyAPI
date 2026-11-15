@@ -1,9 +1,3 @@
-
-
-
-
-
-
 package claude
 
 import (
@@ -32,19 +26,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 type ClaudeCodeAPIHandler struct {
 	*handlers.BaseAPIHandler
 }
-
-
-
-
-
-
-
-
 
 func NewClaudeCodeAPIHandler(apiHandlers *handlers.BaseAPIHandler) *ClaudeCodeAPIHandler {
 	return &ClaudeCodeAPIHandler{
@@ -52,23 +36,15 @@ func NewClaudeCodeAPIHandler(apiHandlers *handlers.BaseAPIHandler) *ClaudeCodeAP
 	}
 }
 
-
 func (h *ClaudeCodeAPIHandler) HandlerType() string {
 	return Claude
 }
-
 
 func (h *ClaudeCodeAPIHandler) Models() []map[string]any {
 
 	modelRegistry := registry.GetGlobalRegistry()
 	return modelRegistry.GetAvailableModels("claude")
 }
-
-
-
-
-
-
 
 func (h *ClaudeCodeAPIHandler) ClaudeMessages(c *gin.Context) {
 
@@ -84,9 +60,7 @@ func (h *ClaudeCodeAPIHandler) ClaudeMessages(c *gin.Context) {
 		return
 	}
 
-
 	rawJSON = rewriteClaudeDDModelInBody(rawJSON)
-
 
 	streamResult := ojson.GetBytesNoCopy(rawJSON, "stream")
 	if !streamResult.Exists() || streamResult.Type == ojson.False {
@@ -95,12 +69,6 @@ func (h *ClaudeCodeAPIHandler) ClaudeMessages(c *gin.Context) {
 		h.handleStreamingResponse(c, rawJSON)
 	}
 }
-
-
-
-
-
-
 
 func (h *ClaudeCodeAPIHandler) ClaudeCountTokens(c *gin.Context) {
 
@@ -115,7 +83,6 @@ func (h *ClaudeCodeAPIHandler) ClaudeCountTokens(c *gin.Context) {
 		})
 		return
 	}
-
 
 	rawJSON = rewriteClaudeDDModelInBody(rawJSON)
 
@@ -137,8 +104,6 @@ func (h *ClaudeCodeAPIHandler) ClaudeCountTokens(c *gin.Context) {
 	cliCancel()
 }
 
-
-
 func rewriteClaudeDDModelInBody(rawJSON []byte) []byte {
 	modelName := ojson.GetBytesNoCopy(rawJSON, "model").String()
 	resolved := claudemodels.ResolveClaudeModelIDPrefix(modelName)
@@ -152,25 +117,11 @@ func rewriteClaudeDDModelInBody(rawJSON []byte) []byte {
 	return updated
 }
 
-
-
-
-
-
 func (h *ClaudeCodeAPIHandler) ClaudeModels(c *gin.Context) {
 	cfg := h.CurrentConfig()
 	disableCloaking := cfg != nil && cfg.ClaudeCode.DisableCloakingModelList
 	h.WriteModelListResponse(c, h.HandlerType(), claudemodels.BuildResponse(h.Models(), disableCloaking))
 }
-
-
-
-
-
-
-
-
-
 
 func (h *ClaudeCodeAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
@@ -187,8 +138,6 @@ func (h *ClaudeCodeAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSO
 		cliCancel(errMsg.Error)
 		return
 	}
-
-
 
 	if len(resp) >= 2 && resp[0] == 0x1f && resp[1] == 0x8b {
 		gzReader, errGzip := gzip.NewReader(bytes.NewReader(resp))
@@ -214,15 +163,7 @@ func (h *ClaudeCodeAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSO
 	cliCancel()
 }
 
-
-
-
-
-
-
-
 func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byte) {
-
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
@@ -236,8 +177,6 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 	}
 
 	modelName := strings.Clone(ojson.GetBytesNoCopy(rawJSON, "model").String())
-
-
 
 	cliCtx, cliCancel := h.GetContextWithCancel(h, c, context.Background())
 
@@ -273,7 +212,6 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 		return
 	}
 	upstreamHeaders = resolvedHeaders
-
 
 	for {
 		select {
@@ -327,10 +265,8 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 				return
 			}
 
-
 			stopKeepAlive()
 			commitSSE()
-
 
 			var streamState claudeSSEStreamState
 			streamState.trailingNewlines = 2
@@ -343,7 +279,6 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 				_, _ = c.Writer.Write(chunk)
 				flusher.Flush()
 			}
-
 
 			h.forwardClaudeStreamWithState(c, flusher, func(err error) { cliCancel(err) }, dataChan, errChan, &streamState)
 			return
@@ -648,7 +583,6 @@ func (h *ClaudeCodeAPIHandler) WriteErrorResponse(c *gin.Context, msg *interface
 			if len(values) == 0 || handlers.IsCPAReservedResponseHeader(key) {
 				continue
 			}
-
 
 			if coreauth.HasTrustedRetryDeadline(msg.Error) && http.CanonicalHeaderKey(key) == "Retry-After" {
 				continue

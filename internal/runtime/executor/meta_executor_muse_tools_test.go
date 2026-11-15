@@ -15,8 +15,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestMetaExecutor_MuseToolsReachUpstream(t *testing.T) {
 	for _, format := range []string{"openai", "codex"} {
 		for _, stream := range []bool{false, true} {

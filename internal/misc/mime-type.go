@@ -1,11 +1,4 @@
-
-
-
 package misc
-
-
-
-
 
 var MimeTypes = map[string]string{
 	"ez":          "application/andrew-inset",

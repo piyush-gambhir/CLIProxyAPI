@@ -1,6 +1,5 @@
 package auth
 
-
 func IsConfigAPIKeyAuth(auth *Auth) bool {
 	if auth == nil {
 		return false

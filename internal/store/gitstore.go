@@ -27,12 +27,10 @@ import (
 )
 
 const (
-
 	gcInterval = 5 * time.Minute
 
 	gcPruneGracePeriod = 24 * time.Hour
 )
-
 
 type GitTokenStore struct {
 	mu        sync.Mutex
@@ -54,9 +52,6 @@ type resolvedRemoteBranch struct {
 	hash plumbing.Hash
 }
 
-
-
-
 func NewGitTokenStore(remote, username, password, branch string) *GitTokenStore {
 	return &GitTokenStore{
 		remote:   remote,
@@ -65,7 +60,6 @@ func NewGitTokenStore(remote, username, password, branch string) *GitTokenStore 
 		password: password,
 	}
 }
-
 
 func (s *GitTokenStore) SetBaseDir(dir string) {
 	s.mu.Lock()
@@ -95,11 +89,9 @@ func (s *GitTokenStore) SetBaseDir(dir string) {
 	s.dirLock.Unlock()
 }
 
-
 func (s *GitTokenStore) AuthDir() string {
 	return s.baseDirSnapshot()
 }
-
 
 func (s *GitTokenStore) ConfigPath() string {
 	s.dirLock.RLock()
@@ -109,7 +101,6 @@ func (s *GitTokenStore) ConfigPath() string {
 	}
 	return filepath.Join(s.configDir, "config.yaml")
 }
-
 
 func (s *GitTokenStore) EnsureRepository() error {
 	s.mu.Lock()
@@ -421,7 +412,6 @@ func (s *GitTokenStore) ensureRepositoryContextLocked(ctx context.Context) (errR
 	return nil
 }
 
-
 func (s *GitTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
 		return "", fmt.Errorf("auth filestore: auth is nil")
@@ -441,9 +431,6 @@ func (s *GitTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 	if path == "" {
 		return "", fmt.Errorf("auth filestore: missing file path attribute for %s", auth.ID)
 	}
-
-
-
 
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
@@ -526,7 +513,6 @@ func (s *GitTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 	return path, nil
 }
 
-
 func (s *GitTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -564,7 +550,6 @@ func (s *GitTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error) {
 	return entries, nil
 }
 
-
 func (s *GitTokenStore) Delete(_ context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -595,8 +580,6 @@ func (s *GitTokenStore) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-
-
 func (s *GitTokenStore) PersistAuthFiles(_ context.Context, message string, paths ...string) error {
 	if len(paths) == 0 {
 		return nil
@@ -623,8 +606,6 @@ func (s *GitTokenStore) PersistAuthFiles(_ context.Context, message string, path
 	if strings.TrimSpace(message) == "" {
 		message = "Sync watcher updates"
 	}
-
-
 
 	if _, errStat := os.Stat(filepath.Join(s.repoDirSnapshot(), ".git")); errStat == nil {
 		if handled, errGuard := s.guardWatcherAuthRemovalLocked(message, filtered); handled || errGuard != nil {
@@ -700,7 +681,6 @@ func (s *GitTokenStore) guardWatcherAuthRemovalLocked(message string, relPaths [
 	if hasExistingPath {
 		return false, nil
 	}
-
 
 	return true, nil
 }
@@ -959,8 +939,6 @@ func syncRemoteReferences(ctx context.Context, repo *git.Repository, authMethod 
 	return nil
 }
 
-
-
 func resolveRemoteDefaultBranch(ctx context.Context, repo *git.Repository, authMethod []client.Option) (resolvedRemoteBranch, error) {
 	if err := syncRemoteReferences(ctx, repo, authMethod); err != nil {
 		return resolvedRemoteBranch{}, fmt.Errorf("resolve remote default: sync remote refs: %w", err)
@@ -1100,8 +1078,6 @@ func reconcileRemoteWorktree(repo *git.Repository, worktree *git.Worktree, repoD
 			return fmt.Errorf("remote path %s conflicts with local change %s", changedPath, dirtyPath)
 		}
 	}
-
-
 
 	if errRestore := restoreHeadAndIndex(repo, worktree, baseRef); errRestore != nil {
 		return fmt.Errorf("restore pre-pull head: %w", errRestore)
@@ -1632,9 +1608,6 @@ func shouldFallbackToCurrentBranch(repo *git.Repository, err error) bool {
 	return headErr == nil
 }
 
-
-
-
 func checkoutRemoteDefaultBranch(ctx context.Context, repo *git.Repository, worktree *git.Worktree, authMethod []client.Option) error {
 	resolved, err := resolveRemoteDefaultBranch(ctx, repo, authMethod)
 	if err != nil {
@@ -1944,7 +1917,6 @@ func (s *GitTokenStore) pushRepositoryLocked(ctx context.Context, repo *git.Repo
 	return nil
 }
 
-
 func (s *GitTokenStore) rewriteHeadAsSingleCommit(repo *git.Repository, branch plumbing.ReferenceName, commitHash plumbing.Hash, message string, signature *object.Signature) error {
 	commitObj, err := repo.CommitObject(commitHash)
 	if err != nil {
@@ -2001,7 +1973,6 @@ func (s *GitTokenStore) maybeRunGC(repoDir string) {
 	}
 	_ = repo.RepackObjects(&git.RepackConfig{})
 }
-
 
 func (s *GitTokenStore) PersistConfig(_ context.Context) error {
 	s.mu.Lock()

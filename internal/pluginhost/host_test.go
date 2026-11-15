@@ -2106,7 +2106,6 @@ func TestHostApplyConfigWaitsForCanceledRecoveryReconfigureAndQuiescesAgainOnNex
 	h.ApplyConfig(context.Background(), versionedPluginHostConfig(t, pluginsDir, "1.0.0"))
 	writeVersionedPluginFile(t, pluginsDir, "alpha", "2.0.0")
 
-
 	h.ApplyConfig(context.Background(), versionedPluginHostConfig(t, pluginsDir, "2.0.0"))
 	if got := quiesceCalls.Load(); got != 1 {
 		t.Fatalf("quiesce calls after first replacement = %d, want 1", got)
@@ -2114,7 +2113,6 @@ func TestHostApplyConfigWaitsForCanceledRecoveryReconfigureAndQuiescesAgainOnNex
 	if !resourceOpen.Load() {
 		t.Fatal("expected rollback reconfigure to leave simulated resource open after partial failure")
 	}
-
 
 	recoveryCtx, cancelRecovery := context.WithCancel(context.Background())
 	recoveryDone := make(chan struct{})
@@ -2132,7 +2130,6 @@ func TestHostApplyConfigWaitsForCanceledRecoveryReconfigureAndQuiescesAgainOnNex
 	}
 	releaseRecoveryOnce.Do(func() { close(releaseRecoveryReconfigure) })
 	waitForHostTestSignal(t, recoveryDone, "canceled recovery ApplyConfig completion")
-
 
 	h.ApplyConfig(context.Background(), versionedPluginHostConfig(t, pluginsDir, "2.0.0"))
 	if got := quiesceCalls.Load(); got != 2 {
@@ -2846,7 +2843,6 @@ func TestHostCanceledInitializationDiscardsBlockedClient(t *testing.T) {
 
 	close(client.release)
 
-
 	waitForHostTestSignal(t, cleanupDone, "late load cleanup")
 	if got := client.shutdown.Load(); got != 1 {
 		t.Fatalf("blocked initialization client shutdown calls = %d, want 1", got)
@@ -2885,8 +2881,6 @@ func TestHostCancellationUnderMutationLockDoesNotInsertLoadedPlugin(t *testing.T
 	cancel()
 	h.mu.Unlock()
 	waitForHostTestSignal(t, applyDone, "canceled plugin apply")
-
-
 
 	waitForHostTestSignal(t, cleanupDone, "late load cleanup")
 	if got := client.shutdown.Load(); got != 1 {

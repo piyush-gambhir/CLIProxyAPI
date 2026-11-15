@@ -49,7 +49,6 @@ func removeShadowPluginDir(dir string) {
 
 func shadowPluginProcessAlive(pid int) bool {
 
-
 	errSignal := syscall.Kill(pid, 0)
 	return !errors.Is(errSignal, syscall.ESRCH)
 }

@@ -13,7 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
 type schedulerStrategy int
 
 const (
@@ -24,7 +23,6 @@ const (
 	schedulerStrategyWeightedRoundRobin schedulerStrategy = 3
 )
 
-
 type scheduledState int
 
 const (
@@ -34,13 +32,11 @@ const (
 	scheduledStateDisabled
 )
 
-
 type scheduledGenerationMeta struct {
 	epoch      uint64
 	generation uint64
 	updatedAt  time.Time
 }
-
 
 type authScheduler struct {
 	mu                  sync.Mutex
@@ -53,13 +49,11 @@ type authScheduler struct {
 	mixedWeightedStates map[string]*smoothWeightedState
 }
 
-
 type providerScheduler struct {
 	providerKey string
 	auths       map[string]*scheduledAuthMeta
 	modelShards map[string]*modelScheduler
 }
-
 
 type scheduledAuthMeta struct {
 	auth              *Auth
@@ -71,7 +65,6 @@ type scheduledAuthMeta struct {
 	registryEpoch     uint64
 }
 
-
 type modelScheduler struct {
 	modelKey        string
 	entries         map[string]*scheduledAuth
@@ -80,7 +73,6 @@ type modelScheduler struct {
 	blocked         cooldownQueue
 }
 
-
 type scheduledAuth struct {
 	meta        *scheduledAuthMeta
 	auth        *Auth
@@ -88,19 +80,16 @@ type scheduledAuth struct {
 	nextRetryAt time.Time
 }
 
-
 type readyBucket struct {
 	all readyView
 	ws  readyView
 }
-
 
 type readyView struct {
 	flat          []*scheduledAuth
 	lastPicked    string
 	weightedState smoothWeightedState
 }
-
 
 type cooldownQueue []*scheduledAuth
 
@@ -154,7 +143,6 @@ func restoreReadyViewCursors(view *readyView, state readyViewCursorState) {
 	view.weightedState.weights = weights
 }
 
-
 func newAuthScheduler(selector Selector) *authScheduler {
 	weighted := UnwrapWeightedRoundRobinSelector(selector)
 	return &authScheduler{
@@ -167,7 +155,6 @@ func newAuthScheduler(selector Selector) *authScheduler {
 		mixedWeightedStates: make(map[string]*smoothWeightedState),
 	}
 }
-
 
 func selectorStrategy(selector Selector) schedulerStrategy {
 	switch selector.(type) {
@@ -182,7 +169,6 @@ func selectorStrategy(selector Selector) schedulerStrategy {
 	}
 }
 
-
 func (s *authScheduler) setSelector(selector Selector) {
 	if s == nil {
 		return
@@ -194,8 +180,6 @@ func (s *authScheduler) setSelector(selector Selector) {
 	clear(s.mixedCursors)
 	clear(s.mixedWeightedStates)
 }
-
-
 
 func isSchedulableAuth(auth *Auth) (string, string, bool) {
 	if auth == nil || auth.Disabled || auth.Status == StatusDisabled {
@@ -211,8 +195,6 @@ func isSchedulableAuth(auth *Auth) (string, string, bool) {
 	}
 	return authID, providerKey, true
 }
-
-
 
 func (s *authScheduler) needsSyncFromMap(auths map[string]*Auth) bool {
 	if s == nil {
@@ -275,15 +257,12 @@ func (s *authScheduler) needsSyncFromMapLocked(auths map[string]*Auth) bool {
 	return false
 }
 
-
 func (s *authScheduler) rebuild(auths []*Auth) {
 	if s == nil {
 		return
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-
 
 	existingMetas := make(map[string]*scheduledAuthMeta)
 	existingShardCursors := make(map[string]map[string]map[int]readyBucketCursorState, len(s.providers))
@@ -370,7 +349,6 @@ func (s *authScheduler) rebuild(auths []*Auth) {
 	}
 }
 
-
 func (s *authScheduler) upsertAuth(auth *Auth) {
 	if s == nil {
 		return
@@ -380,9 +358,6 @@ func (s *authScheduler) upsertAuth(auth *Auth) {
 	s.upsertAuthLifecycleLocked(auth, time.Now())
 }
 
-
-
-
 func (s *authScheduler) upsertAuthResult(auth *Auth, targetModels []string, credentialScoped bool) {
 	if s == nil {
 		return
@@ -391,7 +366,6 @@ func (s *authScheduler) upsertAuthResult(auth *Auth, targetModels []string, cred
 	defer s.mu.Unlock()
 	s.upsertAuthResultLocked(auth, targetModels, credentialScoped, time.Now())
 }
-
 
 func (s *authScheduler) RecordRemovalTombstone(authID string, tombstoneEpoch uint64) {
 	if s == nil {
@@ -425,7 +399,6 @@ func (s *authScheduler) recordRemovalTombstoneLocked(authID string, tombstoneEpo
 	s.removeAuthFromProvidersLocked(authID)
 }
 
-
 func (s *authScheduler) removeAuth(authID string) {
 	if s == nil {
 		return
@@ -438,7 +411,6 @@ func (s *authScheduler) removeAuth(authID string) {
 	defer s.mu.Unlock()
 	s.removeAuthLocked(authID)
 }
-
 
 func (s *authScheduler) ResetAuthGeneration(authID string) {
 	if s == nil {
@@ -458,7 +430,6 @@ func (s *authScheduler) resetAuthGenerationLocked(authID string) {
 		delete(s.authGenerations, authID)
 	}
 }
-
 
 func (s *authScheduler) pickSingle(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, tried map[string]struct{}) (*Auth, error) {
 	return s.pickSingleWithStrategy(ctx, provider, model, opts, tried, schedulerStrategyCurrent)
@@ -538,7 +509,6 @@ func providerPrefersWebsocketTransport(providerKey string) bool {
 	}
 }
 
-
 func (s *authScheduler) pickMixed(ctx context.Context, providers []string, model string, opts cliproxyexecutor.Options, tried map[string]struct{}) (*Auth, string, error) {
 	return s.pickMixedWithStrategy(ctx, providers, model, opts, tried, schedulerStrategyCurrent)
 }
@@ -552,7 +522,6 @@ func (s *authScheduler) pickMixedWithStrategy(ctx context.Context, providers []s
 		return nil, "", &Error{Code: "provider_not_found", Message: "no provider supplied"}
 	}
 	if len(normalized) == 1 {
-
 
 		providerKey := normalized[0]
 		picked, errPick := s.pickSingleWithStrategy(ctx, providerKey, model, opts, tried, strategy)
@@ -735,7 +704,6 @@ func (s *authScheduler) pickMixedWithStrategy(ctx context.Context, providers []s
 	return nil, "", s.mixedUnavailableErrorLocked(normalized, model, predicate)
 }
 
-
 func (s *authScheduler) mixedUnavailableErrorLocked(providers []string, model string, predicate func(*scheduledAuth) bool) error {
 	now := time.Now()
 	total := 0
@@ -837,7 +805,6 @@ func (s *authScheduler) mixedUnavailableErrorLocked(providers []string, model st
 	return newAuthUnavailableErrorWithCause(earliest, now, lastCandidateErr)
 }
 
-
 func scheduledAuthPredicate(eligibility authSelectionEligibility, tried map[string]struct{}, pinnedAuthID string, requirePositiveWeight bool) func(*scheduledAuth) bool {
 	return func(entry *scheduledAuth) bool {
 		if entry == nil || entry.auth == nil || !eligibility.allows(entry.auth) {
@@ -858,7 +825,6 @@ func scheduledAuthPredicate(eligibility authSelectionEligibility, tried map[stri
 	}
 }
 
-
 func normalizeProviderKeys(providers []string) []string {
 	seen := make(map[string]struct{}, len(providers))
 	out := make([]string, 0, len(providers))
@@ -875,7 +841,6 @@ func normalizeProviderKeys(providers []string) []string {
 	}
 	return out
 }
-
 
 func containsProvider(providers []string, provider string) bool {
 	for _, candidate := range providers {
@@ -906,15 +871,9 @@ func (s *authScheduler) isStaleScheduledAuth(authID string, incomingEpoch, incom
 	return false
 }
 
-
 func (s *authScheduler) upsertAuthLocked(auth *Auth, now time.Time) {
 	s.upsertAuthLifecycleLocked(auth, now)
 }
-
-
-
-
-
 
 func (s *authScheduler) upsertAuthRebuildLocked(auth *Auth, existingMetas map[string]*scheduledAuthMeta, now time.Time) {
 	if auth == nil {
@@ -977,8 +936,6 @@ func (s *authScheduler) upsertAuthRebuildLocked(auth *Auth, existingMetas map[st
 	providerState.upsertAuthForModelsLocked(meta, nil, true, now)
 }
 
-
-
 func (s *authScheduler) upsertAuthLifecycleLocked(auth *Auth, now time.Time) {
 	if auth == nil {
 		return
@@ -1016,7 +973,6 @@ func (s *authScheduler) upsertAuthLifecycleLocked(auth *Auth, now time.Time) {
 	providerState.upsertAuthForModelsLocked(meta, nil, true, now)
 }
 
-
 func isCredentialBlocked(auth *Auth, supportedModelCount int, now time.Time) bool {
 	if auth == nil {
 		return true
@@ -1045,8 +1001,6 @@ func isCredentialBlocked(auth *Auth, supportedModelCount int, now time.Time) boo
 	return auth.Unavailable
 }
 
-
-
 func (s *authScheduler) upsertAuthResultLocked(auth *Auth, targetModels []string, credentialScoped bool, now time.Time) {
 	if auth == nil {
 		return
@@ -1058,11 +1012,7 @@ func (s *authScheduler) upsertAuthResultLocked(auth *Auth, targetModels []string
 
 	providerKey := executorKeyFromAuth(auth)
 
-
-
 	if s.isStaleScheduledAuth(authID, auth.RegistrationEpoch, auth.Generation, auth.UpdatedAt) {
-
-
 
 		if providerKey != "" {
 			if providerState := s.providers[providerKey]; providerState != nil {
@@ -1105,8 +1055,6 @@ func (s *authScheduler) upsertAuthResultLocked(auth *Auth, targetModels []string
 	meta := buildScheduledAuthMetaWithModelSet(auth, modelSet, currentRegEpoch)
 	s.authProviders[authID] = providerKey
 
-
-
 	modelCount := len(modelSet)
 	wasBlocked := false
 	if existingMeta != nil {
@@ -1116,7 +1064,6 @@ func (s *authScheduler) upsertAuthResultLocked(auth *Auth, targetModels []string
 	credentialAvailabilityChanged := wasBlocked != isBlocked
 
 	if modelSetChanged || credentialScoped || credentialAvailabilityChanged || len(targetModels) == 0 {
-
 
 		providerState.upsertAuthForModelsLocked(meta, nil, true, now)
 	} else {
@@ -1132,7 +1079,6 @@ func (s *authScheduler) removeAuthFromProvidersLocked(authID string) {
 		delete(s.authProviders, authID)
 	}
 }
-
 
 func (s *authScheduler) removeAuthLocked(authID string) {
 	if authID == "" {
@@ -1154,7 +1100,6 @@ func (s *authScheduler) removeAuthLocked(authID string) {
 	s.removeAuthFromProvidersLocked(authID)
 }
 
-
 func (s *authScheduler) ensureProviderLocked(providerKey string) *providerScheduler {
 	if s.providers == nil {
 		s.providers = make(map[string]*providerScheduler)
@@ -1170,7 +1115,6 @@ func (s *authScheduler) ensureProviderLocked(providerKey string) *providerSchedu
 	}
 	return providerState
 }
-
 
 func buildScheduledAuthMeta(auth *Auth) *scheduledAuthMeta {
 	var authID string
@@ -1198,7 +1142,6 @@ func buildScheduledAuthMetaWithModelSet(auth *Auth, modelSet map[string]struct{}
 	}
 }
 
-
 func supportedModelSetForAuth(authID string) map[string]struct{} {
 	authID = strings.TrimSpace(authID)
 	if authID == "" {
@@ -1222,11 +1165,9 @@ func supportedModelSetForAuth(authID string) map[string]struct{} {
 	return set
 }
 
-
 func (p *providerScheduler) upsertAuthLocked(meta *scheduledAuthMeta, now time.Time) {
 	p.upsertAuthForModelsLocked(meta, nil, true, now)
 }
-
 
 func (p *providerScheduler) upsertAuthForModelsLocked(meta *scheduledAuthMeta, targetModels []string, credentialScoped bool, now time.Time) {
 	if p == nil || meta == nil || meta.auth == nil {
@@ -1249,7 +1190,6 @@ func (p *providerScheduler) upsertAuthForModelsLocked(meta *scheduledAuthMeta, t
 
 	p.updateTargetShardsLocked(meta, targetModels, now)
 }
-
 
 func (p *providerScheduler) updateTargetShardsLocked(meta *scheduledAuthMeta, targetModels []string, now time.Time) {
 	if p == nil || meta == nil || meta.auth == nil {
@@ -1284,7 +1224,6 @@ func (p *providerScheduler) updateTargetShardsLocked(meta *scheduledAuthMeta, ta
 	}
 }
 
-
 func (p *providerScheduler) removeAuthLocked(authID string) {
 	if p == nil || authID == "" {
 		return
@@ -1296,7 +1235,6 @@ func (p *providerScheduler) removeAuthLocked(authID string) {
 		}
 	}
 }
-
 
 func (p *providerScheduler) ensureModelLocked(modelKey string, now time.Time) *modelScheduler {
 	if p == nil {
@@ -1322,7 +1260,6 @@ func (p *providerScheduler) ensureModelLocked(modelKey string, now time.Time) *m
 	return shard
 }
 
-
 func (m *scheduledAuthMeta) supportsModel(modelKey string) bool {
 	modelKey = canonicalModelLookupKey(modelKey)
 	if modelKey == "" {
@@ -1334,7 +1271,6 @@ func (m *scheduledAuthMeta) supportsModel(modelKey string) bool {
 	_, ok := m.supportedModelSet[modelKey]
 	return ok
 }
-
 
 func (m *modelScheduler) upsertEntryLocked(meta *scheduledAuthMeta, now time.Time) {
 	if m == nil || meta == nil || meta.auth == nil {
@@ -1377,7 +1313,6 @@ func (m *modelScheduler) upsertEntryLocked(meta *scheduledAuthMeta, now time.Tim
 	m.rebuildIndexesLocked()
 }
 
-
 func (m *modelScheduler) removeEntryLocked(authID string) {
 	if m == nil || authID == "" {
 		return
@@ -1388,7 +1323,6 @@ func (m *modelScheduler) removeEntryLocked(authID string) {
 	delete(m.entries, authID)
 	m.rebuildIndexesLocked()
 }
-
 
 func (m *modelScheduler) demoteExpiredTokensLocked(now time.Time) bool {
 	if m == nil || len(m.entries) == 0 {
@@ -1419,8 +1353,6 @@ func (m *modelScheduler) demoteExpiredTokensLocked(now time.Time) bool {
 	}
 	return changed
 }
-
-
 
 func (m *modelScheduler) promoteExpiredLocked(now time.Time) {
 	if m == nil {
@@ -1456,7 +1388,6 @@ func (m *modelScheduler) promoteExpiredLocked(now time.Time) {
 	}
 }
 
-
 func (m *modelScheduler) pickReadyLocked(preferWebsocket bool, strategy schedulerStrategy, predicate func(*scheduledAuth) bool) *Auth {
 	if m == nil {
 		return nil
@@ -1469,14 +1400,11 @@ func (m *modelScheduler) pickReadyLocked(preferWebsocket bool, strategy schedule
 	return m.pickReadyAtPriorityLocked(preferWebsocket, priorityReady, strategy, predicate)
 }
 
-
-
 func (m *modelScheduler) highestReadyPriorityLocked(preferWebsocket bool, predicate func(*scheduledAuth) bool) (int, bool) {
 	if m == nil {
 		return 0, false
 	}
 	if preferWebsocket {
-
 
 		for _, priority := range m.priorityOrder {
 			bucket := m.readyByPriority[priority]
@@ -1499,8 +1427,6 @@ func (m *modelScheduler) highestReadyPriorityLocked(preferWebsocket bool, predic
 	}
 	return 0, false
 }
-
-
 
 func (m *modelScheduler) pickReadyAtPriorityLocked(preferWebsocket bool, priority int, strategy schedulerStrategy, predicate func(*scheduledAuth) bool) *Auth {
 	if m == nil {
@@ -1549,7 +1475,6 @@ func (m *modelScheduler) readyCountAtPriorityLocked(preferWebsocket bool, priori
 	}
 	return count
 }
-
 
 func (m *modelScheduler) unavailableErrorLocked(provider, model string, predicate func(*scheduledAuth) bool) error {
 	now := time.Now()
@@ -1655,7 +1580,6 @@ func (m *modelScheduler) candidateErrorsLocked(model string, predicate func(*sch
 	return modelErr, modelTime, modelAuthID, authErr, authTime, authAuthID
 }
 
-
 func (m *modelScheduler) availabilitySummaryLocked(predicate func(*scheduledAuth) bool) (int, int, int, time.Time) {
 	if m == nil {
 		return 0, 0, 0, time.Time{}
@@ -1736,7 +1660,6 @@ func (m *modelScheduler) claudeCooldownSummaryLocked(fallbackProvider, model str
 	return true, earliest, earliestID, earliestSignals
 }
 
-
 func (m *modelScheduler) rebuildIndexesLocked() {
 	cursorStates := make(map[int]readyBucketCursorState, len(m.readyByPriority))
 	for priority, bucket := range m.readyByPriority {
@@ -1799,7 +1722,6 @@ func (m *modelScheduler) rebuildIndexesLocked() {
 	})
 }
 
-
 func buildReadyBucket(entries []*scheduledAuth) *readyBucket {
 	bucket := &readyBucket{}
 	bucket.all = buildReadyView(entries)
@@ -1813,11 +1735,9 @@ func buildReadyBucket(entries []*scheduledAuth) *readyBucket {
 	return bucket
 }
 
-
 func buildReadyView(entries []*scheduledAuth) readyView {
 	return readyView{flat: append([]*scheduledAuth(nil), entries...)}
 }
-
 
 func (v *readyView) pickFirst(predicate func(*scheduledAuth) bool) *scheduledAuth {
 	for _, entry := range v.flat {
@@ -1827,7 +1747,6 @@ func (v *readyView) pickFirst(predicate func(*scheduledAuth) bool) *scheduledAut
 	}
 	return nil
 }
-
 
 func (v *readyView) pickRoundRobin(predicate func(*scheduledAuth) bool) *scheduledAuth {
 	if len(v.flat) == 0 {
@@ -1849,8 +1768,6 @@ func (v *readyView) pickRoundRobin(predicate func(*scheduledAuth) bool) *schedul
 	return nil
 }
 
-
-
 func scheduledSuccessorIndex(entries []*scheduledAuth, lastID string) int {
 	if lastID == "" {
 		return 0
@@ -1863,7 +1780,6 @@ func scheduledSuccessorIndex(entries []*scheduledAuth, lastID string) int {
 	}
 	return index
 }
-
 
 func (v *readyView) pickWeighted(predicate func(*scheduledAuth) bool) *scheduledAuth {
 	if v == nil || len(v.flat) == 0 {

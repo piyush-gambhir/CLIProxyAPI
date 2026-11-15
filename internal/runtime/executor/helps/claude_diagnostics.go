@@ -48,14 +48,12 @@ const (
 	claudeIncomingHeadersContextKey claudeContextKey = "cpa_claude_incoming_headers"
 )
 
-
 func WithIncomingHeaders(ctx context.Context, headers http.Header) context.Context {
 	if headers == nil {
 		return ctx
 	}
 	return context.WithValue(ctx, claudeIncomingHeadersContextKey, headers)
 }
-
 
 func IncomingHeadersFromContext(ctx context.Context) http.Header {
 	if ctx == nil {
@@ -67,7 +65,6 @@ func IncomingHeadersFromContext(ctx context.Context) http.Header {
 	return nil
 }
 
-
 type ClaudeContinuityContext struct {
 	Key               string
 	Sequence          uint64
@@ -75,12 +72,9 @@ type ClaudeContinuityContext struct {
 	PreviousRequestID string
 	PromptID          string
 
-
-
 	PinnedDate  string
 	Initialized bool
 }
-
 
 func WithClaudeSessionID(ctx context.Context, sessionID string) context.Context {
 	if sessionID == "" {
@@ -88,7 +82,6 @@ func WithClaudeSessionID(ctx context.Context, sessionID string) context.Context 
 	}
 	return context.WithValue(ctx, claudeSessionIDContextKey, sessionID)
 }
-
 
 func ClaudeSessionIDFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -100,14 +93,12 @@ func ClaudeSessionIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-
 func WithClaudeContinuityContext(ctx context.Context, cc *ClaudeContinuityContext) context.Context {
 	if cc == nil {
 		return ctx
 	}
 	return context.WithValue(ctx, claudeContinuityContextKey, cc)
 }
-
 
 func ClaudeContinuityContextFromContext(ctx context.Context) *ClaudeContinuityContext {
 	if ctx == nil {
@@ -130,8 +121,6 @@ type claudeDiagnosticsEntry struct {
 	expiresAt         time.Time
 }
 
-
-
 type claudeSessionDatePin struct {
 	date      string
 	expiresAt time.Time
@@ -145,8 +134,6 @@ var claudeDiagnosticsState = struct {
 	nextSequence uint64
 	nextAccess   uint64
 }{entries: make(map[string]claudeDiagnosticsEntry), datePins: make(map[string]claudeSessionDatePin)}
-
-
 
 func ClaudeSessionDatePinKey(sessionID string) string {
 	sessionID = strings.TrimSpace(sessionID)
@@ -213,15 +200,10 @@ func storePermanentClaudeSessionDatePin(pinKey, date string) {
 	claudeDiagnosticsState.Unlock()
 }
 
-
-
 func IsClaudeSessionDatePinKVActive() bool {
 	_, kvMode, _ := currentClaudeSessionDatePinKVClient()
 	return kvMode
 }
-
-
-
 
 func LookupClaudeSessionDatePin(sessionID string, retention time.Duration) string {
 	pinKey := ClaudeSessionDatePinKey(sessionID)
@@ -257,7 +239,6 @@ func LookupClaudeSessionDatePin(sessionID string, retention time.Duration) strin
 	return lookupClaudeSessionDatePinLocked(pinKey, now)
 }
 
-
 func IsValidClaudePromptID(id string) bool {
 	id = strings.TrimSpace(id)
 	if !claudePromptIDPattern.MatchString(id) {
@@ -266,7 +247,6 @@ func IsValidClaudePromptID(id string) bool {
 	parsed, err := uuid.Parse(id)
 	return err == nil && parsed.Version() == 4 && parsed.Variant() == uuid.RFC4122
 }
-
 
 func ClaudeDeterministicPromptID(seed string) string {
 	digest := sha256.Sum256([]byte(seed))
@@ -280,11 +260,6 @@ func ClaudeDeterministicPromptID(seed string) string {
 		digest[10:16],
 	)
 }
-
-
-
-
-
 
 func BeginClaudeContinuity(credentialIdentity, sessionID string, isNewPromptTurn bool, explicitPromptID string) (key string, sequence uint64, previousMessageID, previousRequestID, promptID string) {
 	credentialIdentity = strings.TrimSpace(credentialIdentity)
@@ -326,14 +301,6 @@ func BeginClaudeContinuity(credentialIdentity, sessionID string, isNewPromptTurn
 	claudeDiagnosticsState.entries[key] = entry
 	return key, sequence, entry.previousMessageID, entry.previousRequestID, activePromptID
 }
-
-
-
-
-
-
-
-
 
 func PinClaudeSessionDate(key, sessionID, date string, retention time.Duration) string {
 	key = strings.TrimSpace(key)
@@ -448,18 +415,10 @@ func PinClaudeSessionDate(key, sessionID, date string, retention time.Duration) 
 	return pin.date
 }
 
-
-
-
-
-
 func BeginClaudeDiagnostics(credentialIdentity, sessionID string) (key string, sequence uint64, previousMessageID string) {
 	key, sequence, prevMsg, _, _ := BeginClaudeContinuity(credentialIdentity, sessionID, false, "")
 	return key, sequence, prevMsg
 }
-
-
-
 
 func CommitClaudeContinuity(key string, sequence uint64, messageID, requestID string, promptIDs ...string) {
 	key = strings.TrimSpace(key)
@@ -494,9 +453,6 @@ func CommitClaudeContinuity(key string, sequence uint64, messageID, requestID st
 	claudeDiagnosticsState.entries[key] = entry
 }
 
-
-
-
 func CommitClaudeDiagnostics(key string, sequence uint64, messageID string) {
 	CommitClaudeContinuity(key, sequence, messageID, "")
 }
@@ -517,8 +473,6 @@ func cleanupClaudeDiagnosticsLocked(now time.Time) {
 	}
 	claudeDiagnosticsState.lastCleanup = now
 }
-
-
 
 func evictClaudeSessionDatePinsLocked() {
 	if len(claudeDiagnosticsState.datePins) < claudeDiagnosticsMaxEntries {
@@ -567,12 +521,9 @@ func evictClaudeDiagnosticsLocked() {
 	}
 }
 
-
 func ResetClaudeDiagnosticsForTest() {
 	resetClaudeDiagnosticsForTest()
 }
-
-
 
 func ClaudeSessionDatePinExpiryForTest(sessionID string) time.Time {
 	pinKey := ClaudeSessionDatePinKey(sessionID)
@@ -587,8 +538,6 @@ func ClaudeSessionDatePinExpiryForTest(sessionID string) time.Time {
 	}
 	return pin.expiresAt
 }
-
-
 
 func ExpireClaudeDiagnosticsForTest(expireContinuity bool, pinExpiryOffset *time.Duration) {
 	claudeDiagnosticsState.Lock()
@@ -619,9 +568,6 @@ func resetClaudeDiagnosticsForTest() {
 	claudeDiagnosticsState.nextSequence = 0
 	claudeDiagnosticsState.nextAccess = 0
 }
-
-
-
 
 func IsClaudeNewPromptTurn(body []byte) bool {
 	if IsClaudeProbeOrHelperRequest(body) {
@@ -737,7 +683,6 @@ func isClaudeTitleHelperInstruction(body []byte) bool {
 
 func isClaudeTitleHelperRequest(body []byte) bool {
 
-
 	if !jsonMayContainASCII(body, "output_config", "naming a coding session", "Return a short title",
 		"Write the title in the predominant language") {
 		return false
@@ -749,9 +694,6 @@ func isClaudeTitleHelperRequest(body []byte) bool {
 		}
 		return false
 	}
-
-
-
 
 	matchesSystemTitleInstruction := func(t string) bool {
 		return strings.Contains(t, "naming a coding session") ||
@@ -789,20 +731,13 @@ func isClaudeTitleHelperRequest(body []byte) bool {
 	return false
 }
 
-
-
-
 func IsClaudeProbeOrHelperRequest(body []byte) bool {
 	return isClaudeProbeRequest(body) || isClaudeTitleHelperRequest(body)
 }
 
-
-
 func IsClaudeQuotaProbeRequest(body []byte) bool {
 	return isClaudeProbeRequest(body)
 }
-
-
 
 func IsClaudeSubagentRequest(headers http.Header, body []byte) bool {
 	if val := HeaderValueCaseInsensitive(headers, "X-Claude-Code-Agent-Id"); val != "" {
@@ -831,10 +766,7 @@ func IsClaudeSubagentRequest(headers http.Header, body []byte) bool {
 	return false
 }
 
-
-
 func ClaudePayloadHas1hTTL(payload []byte) bool {
-
 
 	if len(payload) == 0 || !jsonMayContainASCII(payload, `"1h"`) || !ojson.ValidBytes(payload) {
 		return false
@@ -881,9 +813,6 @@ func ClaudePayloadHas1hTTL(payload []byte) bool {
 	return has1h
 }
 
-
-
-
 func ClaudeSubagentRequests1h(headers http.Header, body []byte) bool {
 	if ClaudePayloadHas1hTTL(body) {
 		return true
@@ -891,7 +820,6 @@ func ClaudeSubagentRequests1h(headers http.Header, body []byte) bool {
 	betas := strings.Join(HeaderValuesCaseInsensitive(headers, "Anthropic-Beta"), ",")
 	return strings.Contains(betas, "extended-cache-ttl-2025-04-11")
 }
-
 
 func StripClaudeBillingTags(body []byte) []byte {
 	if len(body) == 0 {
@@ -903,7 +831,6 @@ func StripClaudeBillingTags(body []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
 
 func StripClaudeBillingTagsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -925,7 +852,6 @@ func StripClaudeBillingTagsDoc(doc *ojson.Doc) bool {
 	return false
 }
 
-
 func InjectClaudeBillingTags(body []byte, prevReq, promptID string) []byte {
 	if len(body) == 0 {
 		return body
@@ -936,7 +862,6 @@ func InjectClaudeBillingTags(body []byte, prevReq, promptID string) []byte {
 	}
 	return doc.Bytes()
 }
-
 
 func InjectClaudeBillingTagsDoc(doc *ojson.Doc, prevReq, promptID string) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -964,8 +889,6 @@ func InjectClaudeBillingTagsDoc(doc *ojson.Doc, prevReq, promptID string) bool {
 	}
 	return doc.Set("system.0.text", cleaned) == nil
 }
-
-
 
 func ExtractClaudeBillingTags(body []byte) (prevReq, promptID string) {
 	system := ojson.GetBytesNoCopy(body, "system")

@@ -1,4 +1,3 @@
-
 package session
 
 import (
@@ -41,7 +40,6 @@ type canonicalPart struct {
 
 var canonicalUUIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
-
 var CandidateSessionPrefixes = []string{
 	"lcp:v1:", "lcp:",
 	"codex:", "claude:", "header:", "session:",
@@ -49,10 +47,6 @@ var CandidateSessionPrefixes = []string{
 	"thread:", "clientreq:", "geminicache:",
 	"pck:", "user:", "execution:", "agy:", "derived:",
 }
-
-
-
-
 
 var knownSessionPrefixes = []string{
 	"lcp:v1:", "lcp:",
@@ -63,28 +57,15 @@ var knownSessionPrefixes = []string{
 	"pck:", "user:", "execution:", "agy:", "derived:",
 }
 
-
-
-
-
-
-
-
-
-
 func NormalizeToCanonicalUUID(rawID string) string {
 	clean := strings.TrimSpace(rawID)
 	if clean == "" {
 		return ""
 	}
 
-
 	if canonicalUUIDPattern.MatchString(clean) {
 		return strings.ToLower(clean)
 	}
-
-
-
 
 	for {
 		stripped := false
@@ -101,7 +82,6 @@ func NormalizeToCanonicalUUID(rawID string) string {
 		}
 	}
 
-
 	if clean == "" {
 		return ""
 	}
@@ -109,14 +89,12 @@ func NormalizeToCanonicalUUID(rawID string) string {
 		return strings.ToLower(clean)
 	}
 
-
 	if idx := strings.Index(clean, ":"); idx > 0 {
 		candidate := strings.TrimSpace(clean[idx+1:])
 		if canonicalUUIDPattern.MatchString(candidate) {
 			return strings.ToLower(candidate)
 		}
 	}
-
 
 	sum := sha256.Sum256([]byte("cpa:canonical-uuid:v1\x00" + clean))
 	u := [16]byte(sum[:16])
@@ -126,8 +104,6 @@ func NormalizeToCanonicalUUID(rawID string) string {
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
 		u[0:4], u[4:6], u[6:8], u[8:10], u[10:16])
 }
-
-
 
 func NormalizeExplicitID(raw string) string {
 	for _, r := range raw {
@@ -141,7 +117,6 @@ func NormalizeExplicitID(raw string) string {
 	}
 	return strings.Clone(raw)
 }
-
 
 func ClaudeMetadataIdentities(payload []byte) (sessionID, parentSessionID, agentID string) {
 	if len(payload) == 0 {
@@ -192,20 +167,15 @@ func ClaudeMetadataIdentities(payload []byte) (sessionID, parentSessionID, agent
 	return "", "", ""
 }
 
-
-
-
 func ClaudeMetadataSessionID(payload []byte) string {
 	sessionID, _, _ := ClaudeMetadataIdentities(payload)
 	return sessionID
 }
 
-
 func ClaudeMetadataParentSessionID(payload []byte) string {
 	_, parentSessionID, _ := ClaudeMetadataIdentities(payload)
 	return parentSessionID
 }
-
 
 func CallerScope(value string) string {
 	value = strings.TrimSpace(value)
@@ -216,7 +186,6 @@ func CallerScope(value string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-
 func DerivedID(metadata map[string]any) string {
 	if metadata == nil {
 		return ""
@@ -224,10 +193,6 @@ func DerivedID(metadata map[string]any) string {
 	value, _ := metadata[cliproxyexecutor.DerivedSessionIDMetadataKey].(string)
 	return strings.TrimSpace(value)
 }
-
-
-
-
 
 func Enrich(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Request, cliproxyexecutor.Options) {
 	payload := opts.OriginalRequest
@@ -262,7 +227,6 @@ func Enrich(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (clipro
 		}
 		return req, opts
 	}
-
 
 	if canonicalID := firstNormalizedMetadataID(cliproxyexecutor.CanonicalSessionIDMetadataKey, opts.Metadata, req.Metadata); canonicalID != "" {
 		req.Metadata = metadataWithoutKey(req.Metadata, cliproxyexecutor.DerivedSessionIDMetadataKey)
@@ -386,7 +350,6 @@ func hasExplicitSession(headers map[string][]string, payload []byte) bool {
 		return false
 	}
 
-
 	root := newSessionObject(util.ParseGJSONBytesNoCopy(payload))
 	reqRoot := root
 	req := root.Get("request")
@@ -487,7 +450,6 @@ func headerValue(headers map[string][]string, name string) string {
 	}
 	return ""
 }
-
 
 func DeriveID(format sdktranslator.Format, payload []byte, callerScope string) string {
 	if len(payload) == 0 {

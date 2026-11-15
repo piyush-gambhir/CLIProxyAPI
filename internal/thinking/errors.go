@@ -1,49 +1,25 @@
-
 package thinking
 
 import "net/http"
 
-
 type ErrorCode string
 
-
 const (
-
-
 	ErrInvalidSuffix ErrorCode = "INVALID_SUFFIX"
-
-
 
 	ErrUnknownLevel ErrorCode = "UNKNOWN_LEVEL"
 
-
-
 	ErrThinkingNotSupported ErrorCode = "THINKING_NOT_SUPPORTED"
-
-
 
 	ErrLevelNotSupported ErrorCode = "LEVEL_NOT_SUPPORTED"
 
-
-
 	ErrBudgetOutOfRange ErrorCode = "BUDGET_OUT_OF_RANGE"
-
-
 
 	ErrProviderMismatch ErrorCode = "PROVIDER_MISMATCH"
 )
 
-
-
-
-
-
-
-
 type ThinkingError struct {
-
 	Code ErrorCode
-
 
 	Message string
 
@@ -52,13 +28,9 @@ type ThinkingError struct {
 	Details map[string]interface{}
 }
 
-
-
-
 func (e *ThinkingError) Error() string {
 	return e.Message
 }
-
 
 func NewThinkingError(code ErrorCode, message string) *ThinkingError {
 	return &ThinkingError{
@@ -67,7 +39,6 @@ func NewThinkingError(code ErrorCode, message string) *ThinkingError {
 	}
 }
 
-
 func NewThinkingErrorWithModel(code ErrorCode, message, model string) *ThinkingError {
 	return &ThinkingError{
 		Code:    code,
@@ -75,7 +46,6 @@ func NewThinkingErrorWithModel(code ErrorCode, message, model string) *ThinkingE
 		Model:   model,
 	}
 }
-
 
 func (e *ThinkingError) StatusCode() int {
 	return http.StatusBadRequest

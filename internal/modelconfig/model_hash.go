@@ -11,7 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
 func ComputeOpenAICompatModelsHash(models []config.OpenAICompatibilityModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -25,7 +24,6 @@ func ComputeOpenAICompatModelsHash(models []config.OpenAICompatibilityModel) str
 	})
 	return hashJoined(keys)
 }
-
 
 func ComputeVertexCompatModelsHash(models []config.VertexCompatModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
@@ -45,7 +43,6 @@ func ComputeVertexCompatModelsHash(models []config.VertexCompatModel) string {
 	return hashJoined(keys)
 }
 
-
 func ComputeClaudeModelsHash(models []config.ClaudeModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -60,7 +57,6 @@ func ComputeClaudeModelsHash(models []config.ClaudeModel) string {
 	return hashJoined(keys)
 }
 
-
 func ComputeCodexModelsHash(models []config.CodexModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -74,7 +70,6 @@ func ComputeCodexModelsHash(models []config.CodexModel) string {
 	})
 	return hashJoined(keys)
 }
-
 
 func ComputeGeminiModelsHash(models []config.GeminiModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {

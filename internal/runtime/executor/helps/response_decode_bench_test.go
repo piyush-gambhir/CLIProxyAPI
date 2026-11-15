@@ -14,7 +14,6 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-
 func benchZstdSSE(b *testing.B, size int) []byte {
 	b.Helper()
 	r := rand.New(rand.NewSource(1))
@@ -38,7 +37,6 @@ func benchZstdSSE(b *testing.B, size int) []byte {
 
 var benchZstdHeader = http.Header{"Content-Encoding": {"zstd"}}
 
-
 func BenchmarkDecodeResponseBodyZstd(b *testing.B) {
 	for _, size := range []int{64 << 10, 2 << 20} {
 		wire := benchZstdSSE(b, size)
@@ -60,8 +58,6 @@ func BenchmarkDecodeResponseBodyZstd(b *testing.B) {
 		})
 	}
 }
-
-
 
 func BenchmarkDecodeResponseBodyOpenStreams(b *testing.B) {
 	const streams = 256
@@ -92,8 +88,6 @@ func BenchmarkDecodeResponseBodyOpenStreams(b *testing.B) {
 	}
 	b.ReportMetric(heap/float64(b.N), "heap-KiB/stream")
 }
-
-
 
 func BenchmarkDecodeResponseBodyUnlabeledFirstByte(b *testing.B) {
 	var blocked time.Duration

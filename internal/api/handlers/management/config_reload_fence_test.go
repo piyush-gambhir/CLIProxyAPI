@@ -14,8 +14,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
 func newIssue6631Handler(t *testing.T, raw string) (*Handler, string, *gin.Engine) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -83,7 +81,6 @@ func TestSetConfigIgnoresConfigLoadedBeforeManagementSave_Issue6631(t *testing.T
 func TestSetConfigAppliesCurrentFileAndNonFileConfigs_Issue6631(t *testing.T) {
 	h, path, _ := newIssue6631Handler(t, "request-retry: 3\n")
 
-
 	if errWrite := os.WriteFile(path, []byte("request-retry: 9\n"), 0o600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -98,7 +95,6 @@ func TestSetConfigAppliesCurrentFileAndNonFileConfigs_Issue6631(t *testing.T) {
 	if gotExternal != 9 {
 		t.Fatalf("request-retry after external edit = %d, want 9", gotExternal)
 	}
-
 
 	h.SetConfig(&config.Config{RequestRetry: 11})
 	h.mu.Lock()

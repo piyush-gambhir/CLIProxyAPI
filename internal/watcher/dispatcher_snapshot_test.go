@@ -17,7 +17,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
 func pauseAuthSnapshot(t *testing.T, w *Watcher, force bool) func() {
 	t.Helper()
 	originalSnapshot := snapshotCoreAuthsFunc
@@ -368,7 +367,6 @@ func TestRefreshAuthStatePreservesConcurrentProxyUpdate(t *testing.T) {
 
 			finishScan := pauseAuthSnapshot(t, w, false)
 
-
 			patched := registered.Clone()
 			patched.ProxyURL = testCase.newProxy
 			if testCase.newProxy == "" {
@@ -451,7 +449,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatal(errRegister)
 		}
 
-
 		if errWrite := os.WriteFile(path, []byte(`{"type":"codex","prefix":"pfx-edited"}`), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -461,8 +458,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatalf("expected 1 update for B, got %v", batchB)
 		}
 
-
-
 		if errWrite := os.WriteFile(path, []byte("{\n  \"prefix\": \"pfx-edited\",\n  \"type\": \"codex\"\n}\n"), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -470,7 +465,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 		if len(w.pendingOrder) != 0 {
 			t.Fatalf("expected reformatted B' to be deduplicated, got pending=%v", w.pendingOrder)
 		}
-
 
 		if _, errUpdate := manager.Update(ctx, batchB[0].Auth); errUpdate != nil {
 			t.Fatal(errUpdate)
@@ -506,7 +500,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatal(errRegister)
 		}
 
-
 		if errWrite := os.WriteFile(path, []byte(`{"type":"gemini-cli","prefix":"pfx-edited","ignored":"v1"}`), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -516,8 +509,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 			t.Fatalf("expected 1 update for B, got %v", batchB)
 		}
 
-
-
 		if errWrite := os.WriteFile(path, []byte(`{"type":"gemini-cli","prefix":"pfx-edited","ignored":"v2"}`), 0o600); errWrite != nil {
 			t.Fatal(errWrite)
 		}
@@ -526,7 +517,6 @@ func TestWatcherFileSnapshotReformatAndUnmappedChangeDoNotDropUpdate(t *testing.
 		if !okB2 || len(batchB2) != 1 {
 			t.Fatalf("expected follow-up update when file snapshot digest changed, got %v", batchB2)
 		}
-
 
 		if _, errUpdate := manager.Update(ctx, batchB[0].Auth); errUpdate != nil {
 			t.Fatal(errUpdate)
@@ -879,7 +869,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 				t.Fatal("expected initial add batch")
 			}
 
-
 			file, errOpen := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0o600)
 			if errOpen != nil {
 				t.Fatal(errOpen)
@@ -905,7 +894,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 				_ = file.Close()
 				t.Fatalf("expected no queued deletes during in-place write, got %#v", w.pendingUpdates)
 			}
-
 
 			if _, errSeek := file.Seek(0, 0); errSeek != nil {
 				_ = file.Close()
@@ -959,8 +947,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 					t.Fatal("expected initial add batch")
 				}
 
-
-
 				if errWrite := os.WriteFile(path, []byte(`{"type":"plugin","ids":["b","c"]}`), 0o600); errWrite != nil {
 					t.Fatal(errWrite)
 				}
@@ -976,7 +962,6 @@ func TestRefreshAuthStatePreservesIncompleteFileDuringInPlaceWrite(t *testing.T)
 					auths, incomplete := originalSnapshot(cfg, authDir, parser)
 					switch mode {
 					case "with_early_truncated_write_event":
-
 
 						w.handleEvent(fsnotify.Event{Name: path, Op: fsnotify.Write})
 					case "final_write_event_during_scan":

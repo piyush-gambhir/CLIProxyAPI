@@ -13,8 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func TestInterruptExecutionSessionCompletesDuringAuthCheck(t *testing.T) {
 	complete := make(chan struct{})
 	interruptCount := make(chan int, 1)
@@ -79,7 +77,6 @@ func TestInterruptExecutionSessionCompletesDuringAuthCheck(t *testing.T) {
 		t.Fatalf("completed interrupt = %v", errInterrupt)
 	}
 
-
 	if errWrite := client.WriteMessage(websocket.TextMessage, []byte("barrier")); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -92,8 +89,6 @@ func TestInterruptExecutionSessionCompletesDuringAuthCheck(t *testing.T) {
 		t.Fatal("upstream barrier timed out")
 	}
 }
-
-
 
 func TestInterruptExecutionSessionAfterTerminal(t *testing.T) {
 	for _, terminal := range []string{"response.completed", "response.done", "response.incomplete", "response.failed"} {

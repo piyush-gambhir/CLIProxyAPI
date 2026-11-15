@@ -18,12 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
 const (
 	shadowPluginPrefix           = "cliproxy-plugin-"
 	shadowPluginTempPrefix       = ".cliproxy-plugin-"
@@ -105,10 +99,6 @@ func cleanupShadowTempFilesOnce(dir string) {
 	}
 	removeStaleShadowTempFiles(cleaned)
 }
-
-
-
-
 
 func removeStaleShadowPluginDirs(baseDir string, currentPID int) {
 	entries, errRead := os.ReadDir(baseDir)

@@ -20,15 +20,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 type FileSynthesizer struct{}
-
 
 func NewFileSynthesizer() *FileSynthesizer {
 	return &FileSynthesizer{}
 }
-
 
 func (s *FileSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, error) {
 	out := make([]*coreauth.Auth, 0, 16)
@@ -78,8 +74,6 @@ func (s *FileSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, e
 	return out, nil
 }
 
-
-
 func SynthesizeAuthFile(ctx *SynthesisContext, fullPath string, data []byte) ([]*coreauth.Auth, error) {
 	return synthesizeFileAuths(ctx, fullPath, data)
 }
@@ -100,7 +94,6 @@ func synthesizeFileAuths(ctx *SynthesisContext, fullPath string, data []byte) ([
 	if errWeight := coreauth.ValidateAuthWeight(&coreauth.Auth{Metadata: metadata}); errWeight != nil {
 		return nil, fmt.Errorf("invalid weight in %s: %w", filepath.Base(fullPath), errWeight)
 	}
-
 
 	perAccountExcluded, errExcluded := ExtractExcludedModelsFromMetadata(metadata)
 	if errExcluded != nil {
@@ -351,9 +344,6 @@ func compactPluginAuths(auths []*coreauth.Auth) []*coreauth.Auth {
 	return out
 }
 
-
-
-
 func extractOAuthModelAliasesFromMetadata(metadata map[string]any) []config.OAuthModelAlias {
 	if metadata == nil {
 		return nil
@@ -515,12 +505,6 @@ func applyOpenAPIModelsAttribute(auth *coreauth.Auth, metadata map[string]any) {
 	}
 	auth.Attributes["openapi_models"] = strings.Join(names, ",")
 }
-
-
-
-
-
-
 
 func ExtractExcludedModelsFromMetadata(metadata map[string]any) ([]string, error) {
 	if metadata == nil {

@@ -2664,7 +2664,6 @@ func TestUsageAdapterNormalizesOmittedGenerateToTrue(t *testing.T) {
 		pluginID: "usage-generate",
 	}
 
-
 	adapter.HandleUsage(context.Background(), coreusage.Record{Provider: "provider", Model: "gpt-5.4"})
 	if !gotGenerate {
 		t.Fatalf("plugin Generate = %v, want true for omitted field", gotGenerate)
@@ -2740,7 +2739,6 @@ func TestUsageAdapterPropagatesResponseModelServiceTierAndStream(t *testing.T) {
 	if !gotRecord.Stream {
 		t.Fatalf("plugin Stream = %v, want true", gotRecord.Stream)
 	}
-
 
 	adapter.HandleUsage(context.Background(), coreusage.Record{
 		Provider: "provider",
@@ -2847,7 +2845,6 @@ func TestUsageAdapterPropagatesModalityTokenDetails(t *testing.T) {
 		},
 	})
 
-
 	textIn = 999
 	imageIn = 999
 	audioIn = 999
@@ -2888,7 +2885,6 @@ func TestUsageAdapterPropagatesModalityTokenDetails(t *testing.T) {
 	assertInt64Ptr("TextOutputTokens", got.TextOutputTokens, &textOut, 0)
 	assertInt64Ptr("ImageOutputTokens", got.ImageOutputTokens, &imageOut, 1056)
 	assertInt64Ptr("AudioOutputTokens", got.AudioOutputTokens, &audioOut, 42)
-
 
 	adapter.HandleUsage(context.Background(), coreusage.Record{
 		Provider: "openai",
@@ -4326,10 +4322,6 @@ func (failingReadCloser) Close() error {
 
 func TestInterceptRequest_ReadOnlyInterceptorDoesNotReplaceBody_Issue6101(t *testing.T) {
 
-
-
-
-
 	host := newHostWithRecords(capabilityRecord{
 		id: "read-only-observer",
 		plugin: pluginapi.Plugin{Capabilities: pluginapi.Capabilities{
@@ -4361,7 +4353,6 @@ func TestInterceptRequest_ReadOnlyInterceptorDoesNotReplaceBody_Issue6101(t *tes
 }
 
 func TestInterceptRequest_FirstPluginInPlaceMutationDiscardedIfEmptyOrFailed(t *testing.T) {
-
 
 	var plugin2ReceivedBody []byte
 	host := newHostWithRecords(
@@ -4408,7 +4399,6 @@ func TestInterceptRequest_FirstPluginInPlaceMutationDiscardedIfEmptyOrFailed(t *
 }
 
 func TestInterceptRequest_FirstPluginInPlaceMutationDiscardedOnError(t *testing.T) {
-
 
 	var plugin2ReceivedBody []byte
 	host := newHostWithRecords(
@@ -4724,8 +4714,6 @@ func (f funcRequestBodyPatcher) PatchRequestBody(ctx context.Context, body []byt
 func TestInterceptRequestBodyPatchValidationAndSequentialChaining(t *testing.T) {
 	rawInput := []byte(`{"model":"gpt-5","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <timezone>UTC</timezone>\n  <current_date>2026-04-19</current_date>\n</environment_context>"}]}]}`)
 
-
-
 	plugin1 := normalizeTestCapabilityRecord(capabilityRecord{
 		id: "01-tz-plugin",
 		plugin: pluginapi.Plugin{
@@ -4750,7 +4738,6 @@ func TestInterceptRequestBodyPatchValidationAndSequentialChaining(t *testing.T) 
 			},
 		},
 	})
-
 
 	plugin2 := normalizeTestCapabilityRecord(capabilityRecord{
 		id: "02-date-plugin",
@@ -4779,7 +4766,6 @@ func TestInterceptRequestBodyPatchValidationAndSequentialChaining(t *testing.T) 
 			},
 		},
 	})
-
 
 	var invalidCase int
 	plugin3 := normalizeTestCapabilityRecord(capabilityRecord{

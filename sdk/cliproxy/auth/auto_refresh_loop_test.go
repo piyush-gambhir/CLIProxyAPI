@@ -49,7 +49,6 @@ func TestNextRefreshCheckAt_DisabledWithInvalidGrantUnschedule(t *testing.T) {
 		return &d
 	})
 
-
 	normalDisabledAuth := &Auth{
 		ID:       "normal-disabled",
 		Provider: "disabled-schedule",
@@ -68,7 +67,6 @@ func TestNextRefreshCheckAt_DisabledWithInvalidGrantUnschedule(t *testing.T) {
 	if !got.Equal(want) {
 		t.Fatalf("nextRefreshCheckAt() = %s, want %s", got, want)
 	}
-
 
 	invalidGrantDisabledAuth := &Auth{
 		ID:       "invalid-grant-disabled",
@@ -229,7 +227,6 @@ func TestAuthAutoRefreshLoop_TimerWaitClampedForLongNextExpiry(t *testing.T) {
 		t.Fatalf("nextWait() = %v, want exactly %v", got, maxRefreshTimerWait)
 	}
 
-
 	shortNext := now.Add(10 * time.Second)
 	loop.upsert("a2", shortNext)
 	gotShort, okShort := loop.nextWait(now)
@@ -242,25 +239,20 @@ func TestAuthAutoRefreshLoop_PopDue_AfterSystemSuspendResume(t *testing.T) {
 	loop := newAuthAutoRefreshLoop(nil, 5*time.Second, 1)
 	beforeSleep := time.Date(2026, 4, 12, 10, 0, 0, 0, time.UTC)
 
-
 	scheduledRefresh := beforeSleep.Add(50 * time.Minute)
 	loop.upsert("gemini-oauth", scheduledRefresh)
-
 
 	wait, ok := loop.nextWait(beforeSleep)
 	if !ok || wait != maxRefreshTimerWait {
 		t.Fatalf("nextWait() before sleep = (%v, %t), want (%v, true)", wait, ok, maxRefreshTimerWait)
 	}
 
-
 	dueBefore := loop.popDue(beforeSleep)
 	if len(dueBefore) != 0 {
 		t.Fatalf("popDue() before sleep = %v, want empty", dueBefore)
 	}
 
-
 	afterResume := beforeSleep.Add(2 * time.Hour)
-
 
 	waitAfter, okAfter := loop.nextWait(afterResume)
 	if !okAfter || waitAfter != 0 {
@@ -280,8 +272,6 @@ func TestCodexDualRefreshScheduling(t *testing.T) {
 		return &d
 	})
 	mgr := NewManager(nil, nil, nil)
-
-
 
 	outerExp := now.Add(5 * 24 * time.Hour)
 	siwcExp := now.Add(15 * time.Minute)
@@ -326,7 +316,6 @@ func TestCodexDualRefreshScheduling(t *testing.T) {
 		t.Fatalf("siwc at now+10m: has=%v need=%v, want has=true need=true", hasSIWC, needSIWC)
 	}
 
-
 	auth.Metadata["expired"] = now.Add(20 * time.Hour).Format(time.RFC3339)
 	auth.Metadata["siwc"].(map[string]any)["expired"] = now.Add(50 * time.Minute).Format(time.RFC3339)
 	nextAt2, ok2 := nextRefreshCheckAt(now, auth, 5*time.Second)
@@ -368,7 +357,6 @@ func TestCodexUseSIWCActiveAccessTokenAndValidity(t *testing.T) {
 	if !auth.HasValidAccessToken(now) {
 		t.Fatal("HasValidAccessToken(use_siwc=true with valid SIWC) = false, want true")
 	}
-
 
 	auth.Metadata["expired"] = now.Add(5 * 24 * time.Hour).Format(time.RFC3339)
 	auth.Metadata["siwc"].(map[string]any)["expired"] = now.Add(-1 * time.Minute).Format(time.RFC3339)
@@ -500,7 +488,6 @@ func TestManagerRefreshOuterPreservesConcurrentSIWCBind(t *testing.T) {
 
 	<-exec.started
 
-
 	boundMeta := map[string]any{
 		"type":          "codex",
 		"access_token":  "outer-initial-access",
@@ -525,7 +512,6 @@ func TestManagerRefreshOuterPreservesConcurrentSIWCBind(t *testing.T) {
 
 	close(exec.release)
 	<-doneRefresh
-
 
 	finalAuth, ok := m.GetByID("codex-concurrent.json")
 	if !ok || finalAuth == nil {

@@ -111,8 +111,6 @@ func TestManager_ClientModelProjection_TransientCooldownExpiresWithForkedAlias(t
 		}
 	}
 
-
-
 	epoch := reg.ClientRegistrationEpoch(auth.ID)
 	staleUntil := time.Now().Add(-time.Second)
 	if !reg.ApplyClientModelProjections(auth.ID, epoch, snap.Generation, []registry.ClientModelProjection{
@@ -292,7 +290,6 @@ func TestManager_ClientModelProjection_CredentialQuotaIgnoresExpiredModelTransie
 	if !proj.SuspendUntil.Equal(recoverAt) {
 		t.Fatalf("expected SuspendUntil=%v, got %v", recoverAt, proj.SuspendUntil)
 	}
-
 
 	siblingProj := m.clientModelProjectionForAuth(auth, "grok-4.6", now)
 	if !siblingProj.Suspended || siblingProj.SuspendReason != "credential_quota" || !siblingProj.SuspendUntil.Equal(recoverAt) {

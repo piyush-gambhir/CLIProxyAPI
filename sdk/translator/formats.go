@@ -1,6 +1,5 @@
 package translator
 
-
 const (
 	FormatOpenAI         Format = "openai"
 	FormatOpenAIResponse Format = "openai-response"

@@ -24,8 +24,6 @@ import (
 
 var claudeDateReminderPattern = regexp.MustCompile(`Today's date is (\d{4}-\d{2}-\d{2})`)
 
-
-
 func extractClaudeCloakDate(t *testing.T, payload []byte) string {
 	t.Helper()
 	content := ojson.GetBytes(payload, "messages.0.content")
@@ -41,11 +39,6 @@ func extractClaudeCloakDate(t *testing.T, payload []byte) string {
 	t.Fatalf("no currentDate reminder found in first user message: %s", payload)
 	return ""
 }
-
-
-
-
-
 
 func TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight(t *testing.T) {
 	helps.ResetClaudeDiagnosticsForTest()
@@ -71,9 +64,6 @@ func TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight(t *testing.T) {
 	if date1 != cCtx1.PinnedDate {
 		t.Fatalf("first request date = %q, want pinned anchor %q", date1, cCtx1.PinnedDate)
 	}
-
-
-
 
 	parsedAnchor, errParse := time.Parse("2006-01-02", cCtx1.PinnedDate)
 	if errParse != nil {
@@ -106,16 +96,11 @@ func TestClaudeCloakedDateReminderPinnedToSessionAcrossMidnight(t *testing.T) {
 	}
 }
 
-
 type datePinRoundTripperFunc func(req *http.Request) (*http.Response, error)
 
 func (f datePinRoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
-
-
-
-
 
 func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 	helps.ResetClaudeDiagnosticsForTest()
@@ -178,7 +163,6 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		Headers:      http.Header{"X-Session-ID": []string{"date-pin-session-1"}},
 	}
 
-
 	mockTime = time.Date(2026, 8, 1, 23, 59, 0, 0, time.UTC)
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", http.RoundTripper(transport))
 	req := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(payload)}
@@ -186,12 +170,10 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		t.Fatalf("request 1 failed: %v", err)
 	}
 
-
 	mockTime = time.Date(2026, 8, 2, 0, 1, 0, 0, time.UTC)
 	if _, err := exec.Execute(ctx, auth, req, options); err != nil {
 		t.Fatalf("request 2 failed: %v", err)
 	}
-
 
 	if _, err := exec.ExecuteStream(ctx, auth, req, options); err != nil {
 		t.Fatalf("request 2b (stream) failed: %v", err)
@@ -221,7 +203,6 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		t.Fatalf("stream session date across midnight = %q, want pinned 2026-08-01", got)
 	}
 
-
 	options.Headers = http.Header{"X-Session-ID": []string{"date-pin-session-2"}}
 	if _, err := exec.Execute(ctx, auth, req, options); err != nil {
 		t.Fatalf("fresh session request failed: %v", err)
@@ -233,7 +214,6 @@ func TestClaudeCloakedDateReminderSessionByteStability(t *testing.T) {
 		t.Fatalf("fresh session date = %q, want current date 2026-08-02", got)
 	}
 }
-
 
 func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t *testing.T) {
 	helps.ResetClaudeDiagnosticsForTest()
@@ -272,7 +252,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		}, nil
 	})
 
-
 	cfg := &config.Config{
 		Payload: config.PayloadConfig{
 			Override: []config.PayloadRule{
@@ -295,7 +274,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 	}
 	exec := NewClaudeExecutor(cfg)
 
-
 	mockTime = time.Date(2026, 8, 1, 23, 59, 0, 0, time.UTC)
 	normalPayload := `{
 		"model": "claude-opus-5",
@@ -312,8 +290,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		t.Fatalf("request 1 failed: %v", err)
 	}
 
-
-
 	mockTime = time.Date(2026, 8, 2, 0, 1, 0, 0, time.UTC)
 	probePayload := `{
 		"model": "claude-opus-5",
@@ -325,7 +301,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 		t.Fatalf("request 2 (Execute) failed: %v", err)
 	}
 
-
 	req3 := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(probePayload)}
 	if _, err := exec.ExecuteStream(ctx, auth, req3, options); err != nil {
 		t.Fatalf("request 3 (ExecuteStream) failed: %v", err)
@@ -334,7 +309,6 @@ func TestClaudeCloakedDateReminderProbeOverrideDoesNotReinitializeSessionDate(t 
 	if len(capturedBodies) != 3 {
 		t.Fatalf("expected 3 captured bodies, got %d", len(capturedBodies))
 	}
-
 
 	if got := extractClaudeCloakDate(t, capturedBodies[1]); got != "2026-08-02" {
 		t.Fatalf("configured Execute request date = %q, want original probe date 2026-08-02", got)
@@ -350,7 +324,6 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 		t.Fatalf("kvstore.ShutdownLocal() setup error = %v", errShutdown)
 	}
 	helps.ResetClaudeDiagnosticsForTest()
-
 
 	dbPath := filepath.Join(t.TempDir(), "kv.db")
 	t.Cleanup(func() {
@@ -398,8 +371,6 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 		}, nil
 	})
 
-
-
 	zero := 0
 	cfg := &config.Config{
 		Claude: config.ClaudeConfig{SessionDatePinDays: &zero},
@@ -439,13 +410,10 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", http.RoundTripper(transport))
 	req := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(payload)}
 
-
 	mockTime = time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
 	if _, err := exec1.Execute(ctx, authA, req, options); err != nil {
 		t.Fatalf("request 1 failed: %v", err)
 	}
-
-
 
 	if errShutdown := kvstore.ShutdownLocal(); errShutdown != nil {
 		t.Fatalf("kvstore.ShutdownLocal() error = %v", errShutdown)
@@ -456,10 +424,7 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 	}
 	exec2 := NewClaudeExecutor(cfg)
 
-
-
 	mockTime = time.Date(2026, 9, 15, 14, 30, 0, 0, time.UTC)
-
 
 	if _, err := exec2.Execute(ctx, authB, req, options); err != nil {
 		t.Fatalf("request 2 after restart failed: %v", err)
@@ -484,9 +449,6 @@ func TestClaudeCloakedDateReminderPersistsAcrossRestartWithLocalBBoltKV(t *testi
 	if got := extractClaudeCloakDate(t, capturedBodies[1]); got != "2026-08-01" {
 		t.Fatalf("session date after restart = %q, want anchored 2026-08-01", got)
 	}
-
-
-
 
 	callerOptions := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatClaude,

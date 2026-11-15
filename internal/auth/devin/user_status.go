@@ -18,13 +18,11 @@ import (
 )
 
 const (
-	// DevinGetUserStatusPath is the Connect-RPC unary endpoint for seat management and quota.
 	DevinGetUserStatusPath = "/exa.seat_management_pb.SeatManagementService/GetUserStatus"
 
 	devinFingerprintHexLen = 732
 )
 
-// DevinUserStatus contains plan, quota, and account metadata returned by GetUserStatus.
 type DevinUserStatus struct {
 	Email                       string    `json:"email,omitempty"`
 	UserName                    string    `json:"user_name,omitempty"`
@@ -41,9 +39,6 @@ type DevinUserStatus struct {
 	PlanEnd                     time.Time `json:"plan_end,omitempty"`
 }
 
-// GenerateDeviceFingerprint generates a 732-character hex device fingerprint.
-// When seed is empty, it generates a cryptographically random 732-character hex string per request.
-// When seed is provided, it derives a deterministic 732-character hex fingerprint.
 func GenerateDeviceFingerprint(seed string) string {
 	if seed == "" {
 		var b [devinFingerprintHexLen / 2]byte
@@ -62,7 +57,6 @@ func GenerateDeviceFingerprint(seed string) string {
 	return sb.String()[:devinFingerprintHexLen]
 }
 
-// BuildGetUserStatusRequest serializes a Connect-RPC GetUserStatus request protobuf.
 func BuildGetUserStatusRequest(sessionToken, deviceFingerprint string) []byte {
 	if deviceFingerprint == "" {
 		deviceFingerprint = GenerateDeviceFingerprint(sessionToken)
@@ -100,7 +94,6 @@ func BuildGetUserStatusRequest(sessionToken, deviceFingerprint string) []byte {
 	return reqBytes
 }
 
-// ParseGetUserStatusResponse decodes the binary protobuf returned by GetUserStatus.
 func ParseGetUserStatusResponse(data []byte) (*DevinUserStatus, error) {
 	if len(data) == 0 {
 		return nil, errors.New("empty response data")
@@ -116,7 +109,7 @@ func ParseGetUserStatusResponse(data []byte) (*DevinUserStatus, error) {
 		rem = rem[n:]
 
 		if num == 1 && wireType == protowire.BytesType {
-			// Field 1: user_status
+
 			userStatusBytes, m := protowire.ConsumeBytes(rem)
 			if m <= 0 {
 				return nil, protowire.ParseError(m)
@@ -331,7 +324,6 @@ func parseSecondsSubfield(data []byte) int64 {
 	return 0
 }
 
-// FetchUserStatus queries Connect-RPC endpoint GetUserStatus for quota, plan, and user details.
 func (s *DevinAuthService) FetchUserStatus(ctx context.Context, sessionToken, deviceSeed string) (*DevinUserStatus, error) {
 	if s == nil || s.client == nil {
 		return nil, errors.New("devin auth service: uninitialized client")

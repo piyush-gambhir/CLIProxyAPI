@@ -12,8 +12,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestConvertClaudeRequestToOpenAI_ThinkingToReasoningContent(t *testing.T) {
 	tests := []struct {
 		name                    string
@@ -186,7 +184,6 @@ func TestConvertClaudeRequestToOpenAI_ThinkingToReasoningContent(t *testing.T) {
 			result, _ := ConvertClaudeRequestToOpenAI("test-model", []byte(tt.inputJSON), false)
 			resultJSON := util.ParseGJSONBytesNoCopy(result)
 
-
 			messages := resultJSON.Get("messages").Array()
 			if len(messages) < 1 {
 				if tt.wantHasReasoningContent || tt.wantHasContent {
@@ -195,7 +192,6 @@ func TestConvertClaudeRequestToOpenAI_ThinkingToReasoningContent(t *testing.T) {
 				return
 			}
 
-
 			var targetMsg ojson.Result
 			for i := len(messages) - 1; i >= 0; i-- {
 				if messages[i].Get("role").String() != "system" {
@@ -203,7 +199,6 @@ func TestConvertClaudeRequestToOpenAI_ThinkingToReasoningContent(t *testing.T) {
 					break
 				}
 			}
-
 
 			gotReasoningContent := targetMsg.Get("reasoning_content").String()
 			gotHasReasoningContent := targetMsg.Get("reasoning_content").Exists()
@@ -215,7 +210,6 @@ func TestConvertClaudeRequestToOpenAI_ThinkingToReasoningContent(t *testing.T) {
 			if gotReasoningContent != tt.wantReasoningContent {
 				t.Errorf("reasoning_content = %q, want %q", gotReasoningContent, tt.wantReasoningContent)
 			}
-
 
 			content := targetMsg.Get("content")
 
@@ -314,8 +308,6 @@ func TestConvertClaudeRequestToOpenAI_SignedThinkingCompatibility(t *testing.T) 
 		})
 	}
 }
-
-
 
 func TestConvertClaudeRequestToOpenAI_UnsignedThinkingOnlyMessageDropped(t *testing.T) {
 	inputJSON := `{
@@ -432,13 +424,6 @@ func TestConvertClaudeRequestToOpenAI_PreservesToolAdjacencyWithInterveningSyste
 	result, _ := ConvertClaudeRequestToOpenAI("gpt-5", []byte(inputJSON), false)
 	messages := ojson.GetBytesNoCopy(result, "messages").Array()
 
-
-
-
-
-
-
-
 	roles := make([]string, 0, len(messages))
 	for _, msg := range messages {
 		roles = append(roles, msg.Get("role").String())
@@ -447,7 +432,6 @@ func TestConvertClaudeRequestToOpenAI_PreservesToolAdjacencyWithInterveningSyste
 	if fmt.Sprintf("%v", roles) != fmt.Sprintf("%v", wantRoles) {
 		t.Fatalf("unexpected roles: got %v, want %v", roles, wantRoles)
 	}
-
 
 	if messages[2].Get("tool_call_id").String() != "call_1" {
 		t.Fatalf("expected tool message 0 to respond to call_1, got %q", messages[2].Get("tool_call_id").String())
@@ -627,8 +611,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultOrderAndContent(t *testing.T) {
 	resultJSON := util.ParseGJSONBytesNoCopy(result)
 	messages := resultJSON.Get("messages").Array()
 
-
-
 	if len(messages) != 3 {
 		t.Fatalf("Expected 3 messages, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
 	}
@@ -636,7 +618,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultOrderAndContent(t *testing.T) {
 	if messages[0].Get("role").String() != "assistant" || !messages[0].Get("tool_calls").Exists() {
 		t.Fatalf("Expected messages[0] to be assistant tool_calls, got %s: %s", messages[0].Get("role").String(), messages[0].Raw)
 	}
-
 
 	if messages[1].Get("role").String() != "tool" {
 		t.Fatalf("Expected messages[1] to be tool (must follow tool_calls), got %s", messages[1].Get("role").String())
@@ -647,7 +628,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultOrderAndContent(t *testing.T) {
 	if got := messages[1].Get("content").String(); got != "tool ok" {
 		t.Fatalf("Expected tool content %q, got %q", "tool ok", got)
 	}
-
 
 	if messages[2].Get("role").String() != "user" {
 		t.Fatalf("Expected messages[2] to be user, got %s", messages[2].Get("role").String())
@@ -683,7 +663,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultObjectContent(t *testing.T) {
 	result, _ := ConvertClaudeRequestToOpenAI("test-model", []byte(inputJSON), false)
 	resultJSON := util.ParseGJSONBytesNoCopy(result)
 	messages := resultJSON.Get("messages").Array()
-
 
 	if len(messages) != 2 {
 		t.Fatalf("Expected 2 messages, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
@@ -741,7 +720,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultTextAndImageContent(t *testing.T
 		t.Fatalf("Expected 3 messages, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
 	}
 
-
 	if got := messages[1].Get("role").String(); got != "tool" {
 		t.Fatalf("Expected second message role %q, got %q", "tool", got)
 	}
@@ -751,7 +729,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultTextAndImageContent(t *testing.T
 	if got := messages[1].Get("content").String(); got != "tool ok" {
 		t.Fatalf("Expected tool content %q, got %q", "tool ok", got)
 	}
-
 
 	relay := messages[2]
 	if got := relay.Get("role").String(); got != "user" {
@@ -809,7 +786,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultURLImageOnly(t *testing.T) {
 		t.Fatalf("Expected 3 messages, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
 	}
 
-
 	if got := messages[1].Get("content").String(); got != toolResultImagePlaceholder {
 		t.Fatalf("Expected tool content %q, got %q", toolResultImagePlaceholder, got)
 	}
@@ -862,7 +838,6 @@ func TestConvertClaudeRequestToOpenAI_ToolResultImageMergesIntoUserText(t *testi
 	result, _ := ConvertClaudeRequestToOpenAI("test-model", []byte(inputJSON), false)
 	resultJSON := util.ParseGJSONBytesNoCopy(result)
 	messages := resultJSON.Get("messages").Array()
-
 
 	if len(messages) != 3 {
 		t.Fatalf("Expected 3 messages, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
@@ -935,7 +910,6 @@ func TestConvertClaudeRequestToOpenAI_MultipleToolResultsWithImages(t *testing.T
 	resultJSON := util.ParseGJSONBytesNoCopy(result)
 	messages := resultJSON.Get("messages").Array()
 
-
 	if len(messages) != 4 {
 		t.Fatalf("Expected 4 messages, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
 	}
@@ -988,8 +962,6 @@ func TestConvertClaudeRequestToOpenAI_AssistantTextToolUseTextOrder(t *testing.T
 	resultJSON := util.ParseGJSONBytesNoCopy(result)
 	messages := resultJSON.Get("messages").Array()
 
-
-
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
 	}
@@ -998,7 +970,6 @@ func TestConvertClaudeRequestToOpenAI_AssistantTextToolUseTextOrder(t *testing.T
 	if assistantMsg.Get("role").String() != "assistant" {
 		t.Fatalf("Expected messages[0] to be assistant, got %s", assistantMsg.Get("role").String())
 	}
-
 
 	if !assistantMsg.Get("tool_calls").Exists() {
 		t.Fatalf("Expected assistant message to have tool_calls")
@@ -1009,7 +980,6 @@ func TestConvertClaudeRequestToOpenAI_AssistantTextToolUseTextOrder(t *testing.T
 	if got := assistantMsg.Get("tool_calls.0.function.name").String(); got != "do_work" {
 		t.Fatalf("Expected tool_call name %q, got %q", "do_work", got)
 	}
-
 
 	if got := assistantMsg.Get("content.0.text").String(); got != "pre" {
 		t.Fatalf("Expected content[0] text %q, got %q", "pre", got)
@@ -1040,7 +1010,6 @@ func TestConvertClaudeRequestToOpenAI_AssistantThinkingToolUseThinkingSplit(t *t
 	resultJSON := util.ParseGJSONBytesNoCopy(result)
 	messages := resultJSON.Get("messages").Array()
 
-
 	if len(messages) != 1 {
 		t.Fatalf("Expected 1 message, got %d. Messages: %s", len(messages), resultJSON.Get("messages").Raw)
 	}
@@ -1050,14 +1019,12 @@ func TestConvertClaudeRequestToOpenAI_AssistantThinkingToolUseThinkingSplit(t *t
 		t.Fatalf("Expected messages[0] to be assistant, got %s", assistantMsg.Get("role").String())
 	}
 
-
 	if got := assistantMsg.Get("content.0.text").String(); got != "pre" {
 		t.Fatalf("Expected content[0] text %q, got %q", "pre", got)
 	}
 	if got := assistantMsg.Get("content.1.text").String(); got != "post" {
 		t.Fatalf("Expected content[1] text %q, got %q", "post", got)
 	}
-
 
 	if !assistantMsg.Get("tool_calls").Exists() {
 		t.Fatalf("Expected assistant message to have tool_calls")
@@ -1219,14 +1186,12 @@ func TestConvertClaudeRequestToOpenAI_StripsUnsupportedUnicodePropertyEscapePatt
 		t.Fatalf("expected function.parameters in output: %s", output)
 	}
 
-
 	if params.Get("properties.field.pattern").Exists() {
 		t.Errorf("expected properties.field.pattern to be removed, got: %s", params.Get("properties.field.pattern").Raw)
 	}
 	if got := params.Get("properties.field.type").String(); got != "string" {
 		t.Errorf("expected properties.field.type == 'string', got %q", got)
 	}
-
 
 	if got := params.Get("properties.asset_id.pattern").String(); got != "^[0-9a-f]{32}$" {
 		t.Errorf("expected properties.asset_id.pattern preserved, got %q", got)
@@ -1271,11 +1236,9 @@ func TestConvertClaudeRequestToOpenAI_PreservesNonSchemaPatternKeys(t *testing.T
 		t.Fatalf("expected function.parameters in output: %s", output)
 	}
 
-
 	if params.Get("properties.real_schema.pattern").Exists() {
 		t.Errorf("expected real_schema.pattern to be removed, got: %s", params.Get("properties.real_schema").Raw)
 	}
-
 
 	if got := params.Get("properties.regex_config.default.pattern").String(); got != `\p{L}+` {
 		t.Errorf("expected default.pattern preserved, got %q", got)
@@ -1472,14 +1435,6 @@ func TestConvertClaudeRequestToOpenAI_ToolCallPairingByID(t *testing.T) {
 		roles = append(roles, m.Get("role").String())
 	}
 
-
-
-
-
-
-
-
-
 	if len(messages) != 6 {
 		t.Fatalf("expected 6 messages, got %d: %s", len(messages), result)
 	}
@@ -1526,15 +1481,10 @@ func TestConvertClaudeRequestToOpenAI_ToolCallPairing_OrphanAndIncompletePreserv
 	result, _ := ConvertClaudeRequestToOpenAI("deepseek-v4.1-flash", []byte(inputJSON), false)
 	messages := ojson.GetBytesNoCopy(result, "messages").Array()
 
-
-
 	roles := make([]string, 0, len(messages))
 	for _, m := range messages {
 		roles = append(roles, m.Get("role").String())
 	}
-
-
-
 
 	if len(messages) != 4 {
 		t.Fatalf("expected 4 messages, got %d: %s", len(messages), result)
@@ -1772,7 +1722,6 @@ func TestConvertClaudeRequestToOpenAI_NormalizesBooleanSubschemas(t *testing.T) 
 		t.Fatalf("parameters missing: %s", outputJSON.Raw)
 	}
 
-
 	patchItems := params.Get("properties.patch.items")
 	if !patchItems.Exists() || patchItems.Type == ojson.True || patchItems.Raw == "true" {
 		t.Fatalf("array items boolean subschema not normalized: %s", params.Get("properties.patch").Raw)
@@ -1781,39 +1730,32 @@ func TestConvertClaudeRequestToOpenAI_NormalizesBooleanSubschemas(t *testing.T) 
 		t.Fatalf("array items boolean subschema should be empty object {}: %s", patchItems.Raw)
 	}
 
-
 	anything := params.Get("properties.anything")
 	if !anything.Exists() || !anything.IsObject() || anything.Raw != "{}" {
 		t.Fatalf("boolean property subschema not normalized to empty object {}: %s", anything.Raw)
 	}
-
 
 	eitherBranch := params.Get("properties.either.anyOf.0")
 	if !eitherBranch.Exists() || !eitherBranch.IsObject() || eitherBranch.Raw != "{}" {
 		t.Fatalf("boolean anyOf branch not normalized to empty object {}: %s", eitherBranch.Raw)
 	}
 
-
 	wildcard := params.Get("$defs.wildcard")
 	if !wildcard.Exists() || !wildcard.IsObject() || wildcard.Raw != "{}" {
 		t.Fatalf("boolean $defs subschema not normalized to empty object {}: %s", wildcard.Raw)
 	}
 
-
 	if addProps := params.Get("additionalProperties"); !addProps.Exists() || addProps.Type != ojson.False {
 		t.Fatalf("additionalProperties: false must be preserved as boolean false, got: %s", addProps.Raw)
 	}
-
 
 	if nestedAddProps := params.Get("properties.nested_obj.additionalProperties"); !nestedAddProps.Exists() || nestedAddProps.Type != ojson.True {
 		t.Fatalf("nested additionalProperties: true must be preserved as boolean true, got: %s", nestedAddProps.Raw)
 	}
 
-
 	if disabled := params.Get("properties.disabled"); !disabled.Exists() || disabled.Type != ojson.False {
 		t.Fatalf("disabled: false must be preserved as boolean false, got: %s", disabled.Raw)
 	}
-
 
 	if defVal := params.Get("properties.enabled_flag.default"); !defVal.Exists() || defVal.Type != ojson.True {
 		t.Fatalf("enabled_flag.default should remain boolean true, got: %s", defVal.Raw)

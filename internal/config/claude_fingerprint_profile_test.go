@@ -35,9 +35,6 @@ func TestNormalizeClaudeFingerprintProfile(t *testing.T) {
 	}
 }
 
-
-
-
 func TestSanitizeClaudeKeysFingerprintProfile(t *testing.T) {
 	cfg := &Config{ClaudeKey: []ClaudeKey{
 		{APIKey: "a", FingerprintProfile: "  OAuth-CLI  "},

@@ -2,8 +2,6 @@ package executor
 
 import cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 
-
-
 func (e CodexExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	e.cfg = e.cfg.ForAPIKey()
 	return &e

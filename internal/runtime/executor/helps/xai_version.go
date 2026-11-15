@@ -17,10 +17,7 @@ import (
 )
 
 const (
-
-
 	DefaultXAIFallbackClientVersion = "1.0.46"
-
 
 	XAIClientVersionServerFloor = "1.0.13"
 
@@ -41,17 +38,11 @@ var (
 	xaiVersionRefreshed    chan struct{}
 )
 
-
-
-
 func GetXAIClientVersion() string {
 	xaiClientVersionMu.RLock()
 	defer xaiClientVersionMu.RUnlock()
 	return cachedXAIClientVersion
 }
-
-
-
 
 func StartXAIVersionUpdater(ctx context.Context, proxyURL string) {
 	if ctx == nil {
@@ -108,8 +99,6 @@ func refreshXAIClientVersion(ctx context.Context) {
 		log.WithField("version", version).Info("updated Grok CLI client version from npm")
 	}
 }
-
-
 
 func FetchXAINPMLatestVersion(ctx context.Context, client *http.Client) (string, error) {
 	if ctx == nil {
@@ -237,7 +226,6 @@ func notifyXAIVersionRefreshed() {
 	}
 }
 
-
 func OverrideXAINPMRegistryURLForTest(url string) func() {
 	xaiClientVersionMu.Lock()
 	oldURL := xaiNPMRegistryURL
@@ -250,7 +238,6 @@ func OverrideXAINPMRegistryURLForTest(url string) func() {
 	}
 }
 
-
 func SetXAIClientVersionForTest(version string) func() {
 	xaiClientVersionMu.Lock()
 	old := cachedXAIClientVersion
@@ -262,7 +249,6 @@ func SetXAIClientVersionForTest(version string) func() {
 		xaiClientVersionMu.Unlock()
 	}
 }
-
 
 func SetXAIVersionRefreshedHookForTest(ch chan struct{}) func() {
 	xaiClientVersionMu.Lock()

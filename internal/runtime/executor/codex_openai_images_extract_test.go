@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func imageGenItem(result, format string) []byte {
 	return []byte(`{"type":"image_generation_call","result":"` + result + `","output_format":"` + format + `"}`)
 }
@@ -53,7 +52,6 @@ func TestCodexExtractImageResults_FallbackToCollectedItemsOrdered(t *testing.T) 
 }
 
 func TestCodexExtractImageResults_PrefersCompletedOutputOverItems(t *testing.T) {
-
 
 	completed := []byte(`{"type":"response.completed","response":{"created_at":333,"output":[` +
 		string(imageGenItem("FROM_OUTPUT", "png")) + `]}}`)

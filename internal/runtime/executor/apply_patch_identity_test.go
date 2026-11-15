@@ -16,7 +16,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 func assertApplyPatchIdentityLifecycle(t *testing.T, events [][]byte, id, call, input string, index int, fragments []string) {
 	t.Helper()
 	counts := map[string]int{}

@@ -8,7 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
 func TestInteractionsApplyPatchSourceStopFragments(t *testing.T) {
 	for _, first := range []string{"item", "call", "neither", "ready"} {
 		for _, lateName := range []bool{false, true} {
@@ -159,7 +158,6 @@ func TestInteractionsApplyPatchSourceStopLateIdentityReplay(t *testing.T) {
 		}
 	}
 }
-
 
 func TestInteractionsApplyPatchSourceStopBeforeStart(t *testing.T) {
 	for _, before := range []string{`{"input":"p`, `{"input":"pq"}`} {

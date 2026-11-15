@@ -17,11 +17,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type CodexAuthenticator struct {
 	CallbackPort int
 }
-
 
 func NewCodexAuthenticator() *CodexAuthenticator {
 	return &CodexAuthenticator{CallbackPort: 1455}

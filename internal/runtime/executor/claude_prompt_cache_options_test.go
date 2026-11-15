@@ -227,7 +227,6 @@ func TestClaudeExecutor_PromptCacheOptionsMode_ImplicitOrMissing_PreservesAutoCa
 				t.Fatalf("Execute() error = %v", err)
 			}
 
-
 			if !ojson.GetBytes(seenBody, "system.0.cache_control").Exists() {
 				t.Fatalf("expected system cache_control in implicit mode: %s", string(seenBody))
 			}
@@ -580,8 +579,6 @@ func TestClaudeExecutor_CountTokens_StripsPromptCacheOptions(t *testing.T) {
 		t.Fatal("expected non-empty CountTokens payload")
 	}
 
-
-
 	upstreamResp, errUpstream := executor.countTokensUpstream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
 		Payload: originalReq,
@@ -667,7 +664,6 @@ func TestClaudeExecutor_PromptCacheOptionsMode_Explicit_ProbePreservesClient1hTT
 		"api_key":  "key-123",
 		"base_url": server.URL,
 	}}
-
 
 	originalReq := []byte(`{
 		"model": "claude-3-5-sonnet-20241022",
@@ -799,7 +795,6 @@ func TestClaudeExecutor_PromptCacheOptionsMode_Explicit_Cloaked_LegacyModelPrese
 		"api_key":  "key-123",
 		"base_url": server.URL,
 	}}
-
 
 	originalReq := []byte(`{
 		"model": "claude-3-5-haiku-20241022",

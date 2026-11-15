@@ -192,8 +192,6 @@ func TestCodexExecuteStreamSplitHandshakeExceedingLineBudgetReleasesBootstrapWit
 
 	stream.WriteString("event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"server_error\",\"code\":\"server_overloaded\",\"message\":\"The server had an error while processing your request.\",\"param\":\"input\"}}\n\n")
 
-
-
 	cfg := &config.Config{}
 	cfg.Codex.StreamBootstrapBuffering = true
 	executor := NewCodexExecutor(cfg)
@@ -219,12 +217,6 @@ func TestCodexExecuteStreamSplitHandshakeExceedingLineBudgetReleasesBootstrapWit
 }
 
 func TestCodexExecuteStreamEventExceedsBudgetWhileAssemblingReleasesStream(t *testing.T) {
-
-
-
-
-
-
 
 	var stream strings.Builder
 	stream.WriteString("event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_split\",\"model\":\"gpt-5.4\"}}\n\n")
@@ -354,7 +346,6 @@ func TestCodexExecuteStreamSplitCompletedAfterOutputAndClockAdvance(t *testing.T
 
 		clock.advance(20 * time.Second)
 
-
 		_, _ = w.Write([]byte("event: response.completed\ndata: " + completed[:cut] + "\ndata: " + completed[cut:] + "\n\n"))
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
@@ -420,7 +411,6 @@ func TestCodexExecuteStreamMixedFramingCommentInsideSplitEventCountsBudget(t *te
 }
 
 func TestCodexExecuteStreamEventExceedsByteBudgetWhileAssemblingReleasesStream(t *testing.T) {
-
 
 	var stream strings.Builder
 	stream.WriteString("data: {\"type\":\"response.in_progress\",\"items\":[\n")
@@ -512,7 +502,6 @@ func TestCodexVerifyInferenceTranslatesPayloadAndRequiresCompletedEvent_Issue578
 	registry.GetGlobalRegistry().RegisterClient(auth.ID, "codex", []*registry.ModelInfo{{ID: "gpt-5.4"}})
 	t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(auth.ID) })
 
-
 	sseResponse = "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"r1\",\"model\":\"gpt-5.4\"}}\n\n" +
 		"event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"delta\":\"response.completed [DONE]\"}\n\n" +
 		"event: response.incomplete\ndata: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"r1\",\"model\":\"gpt-5.4\",\"status\":\"incomplete\"}}\n\n"
@@ -523,7 +512,6 @@ func TestCodexVerifyInferenceTranslatesPayloadAndRequiresCompletedEvent_Issue578
 	if afterIncomp.InferenceVerified {
 		t.Fatal("InferenceVerified must remain false after incomplete stream")
 	}
-
 
 	chatStreamRes, errChatStream := manager.ExecuteStream(
 		ctx,
@@ -547,8 +535,6 @@ func TestCodexVerifyInferenceTranslatesPayloadAndRequiresCompletedEvent_Issue578
 	if afterChatIncomp.InferenceVerified {
 		t.Fatal("Chat Completions stream translated from response.incomplete must not mark InferenceVerified=true")
 	}
-
-
 
 	cfg.Codex.StreamBootstrapBuffering = true
 	sseResponse = "event: response.incomplete\ndata: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"r_buf\",\"model\":\"gpt-5.4\",\"status\":\"incomplete\",\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"partial\"}]}]}}\n\n"
@@ -575,7 +561,6 @@ func TestCodexVerifyInferenceTranslatesPayloadAndRequiresCompletedEvent_Issue578
 		t.Fatal("bootstrap-buffered response.incomplete without incomplete_details.reason must not mark InferenceVerified=true")
 	}
 	cfg.Codex.StreamBootstrapBuffering = false
-
 
 	sseResponse = "event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"r2\",\"model\":\"gpt-5.4\"}}\n\n" +
 		"event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"delta\":\"pong\"}\n\n" +

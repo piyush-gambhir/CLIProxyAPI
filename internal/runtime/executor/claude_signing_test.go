@@ -144,13 +144,11 @@ func TestClaudeCCHSigningEnabled(t *testing.T) {
 		{name: "official API key opt-in", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, cliFingerprint: true, origin: anthropicOrigin, want: true},
 		{name: "Kimi API key default", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, origin: "https://api.kimi.com/v1/messages", want: false},
 
-
 		{name: "Kimi API key opt-in", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, cliFingerprint: true, origin: "https://api.kimi.com/v1/messages", want: false},
 		{name: "gateway API key opt-in", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, cliFingerprint: true, origin: gatewayOrigin, want: false},
 		{name: "anthropic host over http opt-in", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, cliFingerprint: true, origin: "http://api.anthropic.com/v1/messages", want: false},
 		{name: "anthropic host explicit 443 opt-in", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, cliFingerprint: true, origin: "https://api.anthropic.com:443/v1/messages", want: true},
 		{name: "anthropic lookalike host opt-in", apiKey: "key-123", kind: claudeCCHUpstreamAnthropic, cliFingerprint: true, origin: "https://api.anthropic.com.evil.example/v1/messages", want: false},
-
 
 		{name: "Claude OAuth", apiKey: "sk-ant-oat-custom", kind: claudeCCHUpstreamAnthropic, origin: anthropicOrigin, want: true},
 		{name: "Claude OAuth custom gateway", apiKey: "sk-ant-oat-custom", kind: claudeCCHUpstreamAnthropic, origin: gatewayOrigin, want: true},

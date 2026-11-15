@@ -26,18 +26,11 @@ import (
 	cliproxysession "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/session"
 )
 
-
-
-
-
-
-
 type RoundRobinSelector struct {
 	mu         sync.Mutex
 	lastPicked map[string]string
 	maxKeys    int
 }
-
 
 type WeightedRoundRobinSelector struct {
 	mu         sync.Mutex
@@ -45,13 +38,9 @@ type WeightedRoundRobinSelector struct {
 	stateCount int
 	maxKeys    int
 
-
-
 	largeStates map[string]*weightedPoolState
 	largeOrder  []string
 }
-
-
 
 func UnwrapWeightedRoundRobinSelector(selector Selector) *WeightedRoundRobinSelector {
 	if weighted, ok := selector.(*WeightedRoundRobinSelector); ok {
@@ -89,9 +78,6 @@ func weightedSelectorStateModel(ctx context.Context, availabilityModel string) s
 	return availabilityModel
 }
 
-
-
-
 type FillFirstSelector struct{}
 
 type blockReason int
@@ -111,7 +97,6 @@ type modelCooldownError struct {
 	claudeCooldown bool
 	claudeSignals  map[string]string
 }
-
 
 func NewModelCooldownError(model, provider string, resetIn time.Duration) error {
 	return newModelCooldownErrorWithCause(model, provider, resetIn, nil)
@@ -220,7 +205,6 @@ var (
 	sanitizerWindowsUNCPathPattern         = regexp.MustCompile(`\\\\[^\r\n:,;'"<>]+\\[^\r\n:,;'"<>]+`)
 )
 
-
 func ExtractUpstreamErrorSummary(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -283,14 +267,12 @@ func sanitizeUpstreamErrorSummaryNoTruncate(s string) string {
 	s = sanitizerWindowsPathPattern.ReplaceAllString(s, "[REDACTED_PATH]")
 	s = sanitizerWindowsUNCPathPattern.ReplaceAllString(s, "[REDACTED_PATH]")
 
-
 	if loc := sanitizerPathConnectorPattern.FindStringSubmatchIndex(s); loc != nil {
 		firstPart := s[:loc[0]]
 		connRaw := s[loc[0] : loc[1]-1]
 		secondPart := "/" + s[loc[1]:]
 		return sanitizeUpstreamErrorSummaryNoTruncate(firstPart) + connRaw + sanitizeUpstreamErrorSummaryNoTruncate(secondPart)
 	}
-
 
 	var colonIdx = -1
 	knownErrorPrefixes := []string{
@@ -368,7 +350,6 @@ func sanitizeUpstreamErrorSummaryNoTruncate(s string) string {
 	return s
 }
 
-
 func SanitizeUpstreamErrorSummary(s string) string {
 	s = sanitizeUpstreamErrorSummaryNoTruncate(s)
 	runes := []rune(s)
@@ -395,7 +376,6 @@ func (e *modelCooldownError) resetSeconds() int64 {
 	}
 	return seconds
 }
-
 
 func (e *modelCooldownError) SafeResponseHeaders() http.Header {
 	headers := make(http.Header)
@@ -957,9 +937,6 @@ func getSelectorAvailableAuthsWithPriorityMode(ctx context.Context, auths []*Aut
 	if ctx != nil {
 		if validated, _ := ctx.Value(prevalidatedAuthCandidatesKey{}).(bool); validated && len(auths) > 0 {
 
-
-
-
 			if !allPriorities {
 				return highestPriorityAuths(auths), nil
 			}
@@ -1004,11 +981,6 @@ func getAvailableAuthsWithPriorityModeForRequest(ctx context.Context, auths []*A
 	return availableAuthsFromPriorityBuckets(availableByPriority, allPriorities), nil
 }
 
-
-
-
-
-
 func availableAuthsFromPriorityBuckets(availableByPriority map[int][]*Auth, allPriorities bool) []*Auth {
 	var candidates []*Auth
 	if allPriorities {
@@ -1039,9 +1011,6 @@ func availableAuthsFromPriorityBuckets(availableByPriority map[int][]*Auth, allP
 	return candidates
 }
 
-
-
-
 func highestPriorityAuths(auths []*Auth) []*Auth {
 	if len(auths) <= 1 {
 		return auths
@@ -1070,7 +1039,6 @@ func highestPriorityAuths(auths []*Auth) []*Auth {
 	return highest
 }
 
-
 func (s *RoundRobinSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	_ = opts
 	now := time.Now()
@@ -1096,10 +1064,6 @@ func (s *RoundRobinSelector) Pick(ctx context.Context, provider, model string, o
 	return picked, nil
 }
 
-
-
-
-
 func successorIndex(available []*Auth, lastID string) int {
 	if lastID == "" {
 		return 0
@@ -1110,8 +1074,6 @@ func successorIndex(available []*Auth, lastID string) int {
 	}
 	return index
 }
-
-
 
 func (s *RoundRobinSelector) ensureRotationKey(key string, limit int) {
 	if _, ok := s.lastPicked[key]; !ok && len(s.lastPicked) >= limit {
@@ -1129,7 +1091,6 @@ func positiveWeightAuths(auths []*Auth) []*Auth {
 	return weightedCandidates
 }
 
-
 func (s *WeightedRoundRobinSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	picked, reservation, errPick := s.reserveForRequest(ctx, provider, model, opts, auths, nil)
 	if errPick != nil {
@@ -1139,16 +1100,7 @@ func (s *WeightedRoundRobinSelector) Pick(ctx context.Context, provider, model s
 	return picked, nil
 }
 
-
-
-
-
 const maxSmoothWeightedStateEntries = 1024
-
-
-
-
-
 
 func (s *smoothWeightedState) prepare(weights map[string]int64) {
 	if len(weights) > s.peak {
@@ -1173,8 +1125,6 @@ func (s *smoothWeightedState) pruneLimit() int {
 	return maxSmoothWeightedStateEntries
 }
 
-
-
 func (s *smoothWeightedState) pruneStale(weights map[string]int64) {
 	limit := s.pruneLimit()
 	if len(s.current) <= limit && len(s.weights) <= limit {
@@ -1191,9 +1141,6 @@ func (s *smoothWeightedState) pruneStale(weights map[string]int64) {
 		}
 	}
 }
-
-
-
 
 func weightsConfigChanged(left, right map[string]int64) bool {
 	if len(left) == 0 {
@@ -1230,7 +1177,6 @@ func saturatingAddInt64(value, delta int64) int64 {
 	return value + delta
 }
 
-
 func (s *FillFirstSelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error) {
 	_ = opts
 	now := time.Now()
@@ -1241,7 +1187,6 @@ func (s *FillFirstSelector) Pick(ctx context.Context, provider, model string, op
 	available = preferCodexWebsocketAuths(ctx, provider, available)
 	return available[0], nil
 }
-
 
 func IsAuthAvailableForModel(auth *Auth, model string, now time.Time) bool {
 	blocked, _, _ := isAuthBlockedForModel(auth, model, now)
@@ -1347,9 +1292,6 @@ func isAuthBlockedForModelForRequest(ctx context.Context, auth *Auth, model stri
 	}
 	quotaExceeded := auth.Quota.Exceeded
 
-
-
-
 	if len(auth.ModelStates) > 0 && auth.Quota.Reason != "credential_quota" && !unavailable {
 		quotaExceeded = false
 	}
@@ -1380,9 +1322,6 @@ func availabilityBlock(unavailable, quotaExceeded bool, nextRetryAfter, nextReco
 	return true, blockReasonOther, time.Time{}
 }
 
-
-
-
 type SessionAffinitySelector struct {
 	fallback          Selector
 	cache             *SessionCache
@@ -1393,12 +1332,9 @@ type SessionAffinitySelector struct {
 }
 
 const (
-
 	SessionAffinityRebindOnAny = "any"
 
-
 	SessionAffinityRebindOnQuota = "quota"
-
 
 	SessionAffinityRebindOnNever = "never"
 )
@@ -1545,7 +1481,6 @@ func (s *SessionAffinitySelector) unavailableBoundAuthError(ctx context.Context,
 	}
 }
 
-
 type SessionAffinityConfig struct {
 	Fallback         Selector
 	TTL              time.Duration
@@ -1553,14 +1488,12 @@ type SessionAffinityConfig struct {
 	RebindOn         string
 }
 
-
 func NewSessionAffinitySelector(fallback Selector) *SessionAffinitySelector {
 	return NewSessionAffinitySelectorWithConfig(SessionAffinityConfig{
 		Fallback: fallback,
 		TTL:      time.Hour,
 	})
 }
-
 
 func NewSessionAffinitySelectorWithConfig(cfg SessionAffinityConfig) *SessionAffinitySelector {
 	if cfg.Fallback == nil {
@@ -1584,24 +1517,9 @@ func NewSessionAffinitySelectorWithConfig(cfg SessionAffinityConfig) *SessionAff
 	}
 }
 
-
-
 func (s *SessionAffinitySelector) Trees() *cliproxysession.InMemorySessionTreeStore {
 	return cliproxysession.NewInMemorySessionTreeStore(0, time.Hour)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (selected *Auth, errPick error) {
 	if ctx == nil {
@@ -1619,8 +1537,6 @@ func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model stri
 	}
 	opts.Metadata[cliproxyexecutor.SessionAffinityProviderMetadataKey] = provider
 	opts.Metadata[cliproxyexecutor.SessionAffinityModelMetadataKey] = model
-
-
 
 	explicitID, explicitFallbackID := extractExplicitSessionIDs(opts.Headers, opts.OriginalRequest, opts.Metadata)
 	if explicitID == "" {
@@ -1668,8 +1584,6 @@ func (s *SessionAffinitySelector) Pick(ctx context.Context, provider, model stri
 		entry.Debugf("session-affinity: no session ID extracted, falling back to default selector | provider=%s model=%s", provider, model)
 		return s.pickWithAffinityReservation(ctx, provider, model, opts, fallbackAuths, nil, &reservation)
 	}
-
-
 
 	available, err := getSelectorAvailableAuthsAcrossPriorities(ctx, availabilityCandidates, provider, model, now)
 	if err != nil && !s.rebindOnNever {
@@ -2086,14 +2000,12 @@ func selectorLogEntry(ctx context.Context) *log.Entry {
 	return log.NewEntry(log.StandardLogger())
 }
 
-
 func truncateSessionID(id string) string {
 	if len(id) <= 20 {
 		return id
 	}
 	return id[:8] + "..."
 }
-
 
 func (s *SessionAffinitySelector) Stop() {
 	if s == nil {
@@ -2107,8 +2019,6 @@ func (s *SessionAffinitySelector) Stop() {
 	}
 }
 
-
-
 func (s *SessionAffinitySelector) InvalidateAuth(authID string) {
 	if s == nil {
 		return
@@ -2121,14 +2031,9 @@ func (s *SessionAffinitySelector) InvalidateAuth(authID string) {
 	}
 }
 
-
-
-
 func (s *SessionAffinitySelector) ForgetAuth(authID string) {
 	s.ForgetAuthUpTo(authID, ^uint64(0), ^uint64(0))
 }
-
-
 
 func (s *SessionAffinitySelector) ForgetAuthUpTo(authID string, maxEpoch, maxGen uint64) {
 	if s == nil || authID == "" {
@@ -2144,9 +2049,6 @@ func (s *SessionAffinitySelector) ForgetAuthUpTo(authID string, maxEpoch, maxGen
 		forgetter.ForgetAuth(authID)
 	}
 }
-
-
-
 
 func (s *SessionAffinitySelector) LookupAffinity(provider, model, sessionID string, authFilters ...func(authID string) bool) (string, string) {
 	if s == nil || s.cache == nil {
@@ -2245,7 +2147,6 @@ func (s *SessionAffinitySelector) LookupAffinity(provider, model, sessionID stri
 	return "", "unbound"
 }
 
-
 func (s *SessionAffinitySelector) OnResult(res Result) {
 	if s == nil || res.AuthID == "" {
 		return
@@ -2269,17 +2170,12 @@ func (s *SessionAffinitySelector) OnResult(res Result) {
 
 	if res.Error != nil && shouldSkipCredentialCooldown(res.Error) {
 
-
 		return
 	}
 	if !res.Success && (s.rebindOnNever || (s.rebindOnQuotaOnly && !shouldRebindSessionAffinityOnError(res.Error))) {
 
-
 		return
 	}
-
-
-
 
 	if explicitID == "" && s.matcher != nil {
 		if namespace := lcpAffinityNamespace(ns, nsModel, res.Options.Metadata); namespace != "" {
@@ -2423,7 +2319,6 @@ func (s *SessionAffinitySelector) boundAuthForRequest(providers []string, model 
 	return "", false
 }
 
-
 func isGuardianRequest(headers http.Header) bool {
 	for key, values := range headers {
 		if strings.EqualFold(key, "X-Openai-Subagent") && len(values) > 0 {
@@ -2432,9 +2327,6 @@ func isGuardianRequest(headers http.Header) bool {
 	}
 	return false
 }
-
-
-
 
 func normalizedSessionCandidate(raw string) string {
 	return cliproxysession.NormalizeExplicitID(raw)
@@ -2450,7 +2342,6 @@ func isSubagentSession(primaryID, fallbackID string) bool {
 	return isHierarchyParent(primaryID, fallbackID)
 }
 
-
 func CanonicalSessionID(headers http.Header, payload []byte, metadata map[string]any) string {
 	if explicitID, _ := extractExplicitSessionIDs(headers, payload, metadata); explicitID != "" {
 		return cliproxysession.BoundSessionIdentity(explicitID)
@@ -2465,21 +2356,6 @@ func CanonicalSessionID(headers http.Header, payload []byte, metadata map[string
 	}
 	return cliproxysession.BoundSessionIdentity(ExtractSessionID(headers, payload, metadata))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ExtractSessionID(headers http.Header, payload []byte, metadata map[string]any) string {
 	primary, _ := extractSessionIDs(headers, payload, metadata)
@@ -2508,8 +2384,6 @@ func extractConversationAlias(payload []byte) string {
 	return ""
 }
 
-
-
 func extractExplicitSessionIDs(headers http.Header, payload []byte, metadata map[string]any) (string, string) {
 	info, ok := cliproxysession.ExtractSessionInfo(headers, payload, metadata)
 	if !ok || info.ClientType == "lcp" {
@@ -2530,9 +2404,6 @@ func extractExplicitSessionIDs(headers http.Header, payload []byte, metadata map
 	return info.SessionID, fallback
 }
 
-
-
-
 func extractSessionIDs(headers http.Header, payload []byte, metadata map[string]any) (string, string) {
 	if primaryID, fallbackID := extractExplicitSessionIDs(headers, payload, metadata); primaryID != "" {
 		return primaryID, fallbackID
@@ -2548,7 +2419,6 @@ func extractSessionIDs(headers http.Header, payload []byte, metadata map[string]
 
 func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 	var systemPrompt, firstUserMsg, firstAssistantMsg string
-
 
 	messages := ojson.GetBytesNoCopy(payload, "messages")
 	if messages.Exists() && messages.IsArray() {
@@ -2581,7 +2451,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 		})
 	}
 
-
 	if systemPrompt == "" {
 		topSystem := ojson.GetBytesNoCopy(payload, "system")
 		if topSystem.Exists() {
@@ -2598,7 +2467,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 			}
 		}
 	}
-
 
 	if systemPrompt == "" && firstUserMsg == "" {
 		sysInstr := ojson.GetBytesNoCopy(payload, "systemInstruction.parts")
@@ -2641,7 +2509,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 		}
 	}
 
-
 	if systemPrompt == "" && firstUserMsg == "" {
 		if instr := ojson.GetBytesNoCopy(payload, "instructions").String(); instr != "" {
 			systemPrompt = truncateString(instr, 100)
@@ -2655,7 +2522,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 					return true
 				}
 
-
 				if itemType != "" && itemType != "message" {
 					return true
 				}
@@ -2664,7 +2530,6 @@ func extractMessageHashIDs(payload []byte) (primaryID, fallbackID string) {
 				if itemType == "" && role == "" {
 					return true
 				}
-
 
 				content := item.Get("content")
 				var text string
@@ -2734,15 +2599,11 @@ func truncateString(s string, maxLen int) string {
 	return s
 }
 
-
-
-
 func extractMessageContent(content ojson.Result) string {
 
 	if content.Type == ojson.String {
 		return content.String()
 	}
-
 
 	if content.IsArray() {
 		var texts []string
@@ -2753,7 +2614,6 @@ func extractMessageContent(content ojson.Result) string {
 					texts = append(texts, text)
 				}
 			}
-
 
 			return true
 		})
@@ -2784,8 +2644,6 @@ func extractResponsesAPIContent(content ojson.Result) string {
 	}
 	return ""
 }
-
-
 
 func extractSessionID(payload []byte) string {
 	return ExtractSessionID(nil, payload, nil)

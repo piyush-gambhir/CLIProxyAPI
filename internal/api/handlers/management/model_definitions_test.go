@@ -264,7 +264,6 @@ func TestRefreshModelDefinitions_UpdatesCatalogAndReportsChangedProviders(t *tes
 		t.Fatal("expected claude-mgmt-refresh-7039 in GetStaticModelDefinitions after refresh")
 	}
 
-
 	generalPayload.Store([]byte("invalid-json"))
 	recFail := httptest.NewRecorder()
 	ctxFail, _ := gin.CreateTestContext(recFail)

@@ -11,12 +11,9 @@ import (
 
 type antigravityUseCreditsContextKey struct{}
 
-
-
 func WithAntigravityCredits(ctx context.Context) context.Context {
 	return context.WithValue(ctx, antigravityUseCreditsContextKey{}, true)
 }
-
 
 func AntigravityCreditsRequested(ctx context.Context) bool {
 	if ctx == nil {
@@ -26,10 +23,7 @@ func AntigravityCreditsRequested(ctx context.Context) bool {
 	return v
 }
 
-
-
 const AntigravityCreditsHintRefreshInterval = 10 * time.Minute
-
 
 type AntigravityCreditsHint struct {
 	Known           bool
@@ -40,14 +34,11 @@ type AntigravityCreditsHint struct {
 	UpdatedAt       time.Time
 }
 
-
-
 func IsAntigravityCreditsHintFresh(hint AntigravityCreditsHint, now time.Time) bool {
 	return hint.Known && !hint.UpdatedAt.IsZero() && now.Sub(hint.UpdatedAt) < AntigravityCreditsHintRefreshInterval
 }
 
 var antigravityCreditsHintByAuth sync.Map
-
 
 func SetAntigravityCreditsHint(authID string, hint AntigravityCreditsHint) {
 	authID = strings.TrimSpace(authID)
@@ -64,7 +55,6 @@ func SetAntigravityCreditsHint(authID string, hint AntigravityCreditsHint) {
 	antigravityCreditsHintByAuth.Store(authID, hint)
 }
 
-
 func GetAntigravityCreditsHint(authID string) (AntigravityCreditsHint, bool) {
 	hint, ok, err := GetAntigravityCreditsHintRequired(context.Background(), authID)
 	if err == nil {
@@ -72,7 +62,6 @@ func GetAntigravityCreditsHint(authID string) (AntigravityCreditsHint, bool) {
 	}
 	return AntigravityCreditsHint{}, false
 }
-
 
 func GetAntigravityCreditsHintRequired(ctx context.Context, authID string) (AntigravityCreditsHint, bool, error) {
 	authID = strings.TrimSpace(authID)
@@ -95,7 +84,6 @@ func GetAntigravityCreditsHintRequired(ctx context.Context, authID string) (Anti
 	}
 	return hint, true, nil
 }
-
 
 func HasKnownAntigravityCreditsHint(authID string) bool {
 	hint, ok := GetAntigravityCreditsHint(authID)

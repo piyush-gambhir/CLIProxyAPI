@@ -14,7 +14,6 @@ import (
 func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
@@ -37,11 +36,9 @@ func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(
 	})
 	server.server.Handler = engine
 
-
 	go func() {
 		_ = server.server.Serve(ln)
 	}()
-
 
 	reqDone := make(chan error, 1)
 	go func() {
@@ -60,9 +57,6 @@ func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(
 
 	<-reqStarted
 
-
-
-
 	expiredCtx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 	defer cancel()
 
@@ -76,7 +70,6 @@ func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(
 	if errStop != nil {
 		t.Fatalf("server.Stop error = %v, want nil for violent shutdown", errStop)
 	}
-
 
 	select {
 	case errReq := <-reqDone:

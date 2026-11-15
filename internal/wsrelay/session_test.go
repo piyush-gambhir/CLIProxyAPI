@@ -69,7 +69,6 @@ func TestPendingRequest_ConcurrentSendAndClose(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(3)
 
-
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 20; i++ {
@@ -83,13 +82,11 @@ func TestPendingRequest_ConcurrentSendAndClose(t *testing.T) {
 			}
 		}()
 
-
 		go func() {
 			defer wg.Done()
 			for range req.ch {
 			}
 		}()
-
 
 		go func() {
 			defer wg.Done()
@@ -133,7 +130,6 @@ func TestSession_Request_NoGoroutineLeakOnCompletion(t *testing.T) {
 	sess, clientConn, cleanup := newTestWebsocketPair(t)
 	defer cleanup()
 
-
 	go func() {
 		for {
 			var msg Message
@@ -168,7 +164,6 @@ func TestSession_Dispatch_NoSilentFrameLoss(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	s.pending.Store(reqID, req)
 
-
 	for i := 0; i < 10; i++ {
 		s.dispatch(Message{
 			ID:   reqID,
@@ -200,7 +195,6 @@ func TestSession_Cleanup_DeliversErrorFrameWhenBufferFull(t *testing.T) {
 	reqID := "req-err-cleanup-full"
 	req := newPendingRequest(context.Background())
 	s.pending.Store(reqID, req)
-
 
 	for i := 0; i < pendingChannelBuffer; i++ {
 		s.dispatch(Message{
@@ -235,7 +229,6 @@ func TestSession_Dispatch_TerminalDeliveredWhenBufferFullAndSessionClosing(t *te
 	reqID := "req-terminal-full"
 	req := newPendingRequest(context.Background())
 	s.pending.Store(reqID, req)
-
 
 	for i := 0; i < pendingChannelBuffer; i++ {
 		s.dispatch(Message{
@@ -310,7 +303,6 @@ func TestSession_SlowConsumer_UnblocksOnContextCancel(t *testing.T) {
 	req := newPendingRequest(ctx)
 	sess.pending.Store(reqID, req)
 
-
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{ID: reqID, Type: MessageTypeStreamChunk})
 	}
@@ -331,7 +323,6 @@ func TestSession_SlowConsumer_UnblocksOnContextCancel(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
-
 
 	cancel()
 
@@ -351,7 +342,6 @@ func TestSession_SlowConsumer_UnblocksOnSessionClose(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	sess.pending.Store(reqID, req)
 
-
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{ID: reqID, Type: MessageTypeStreamChunk})
 	}
@@ -372,7 +362,6 @@ func TestSession_SlowConsumer_UnblocksOnSessionClose(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
-
 
 	cleanupDone := make(chan struct{})
 	go func() {
@@ -403,7 +392,6 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnContextCancel(t *testing.T) {
 	req := newPendingRequest(ctx)
 	sess.pending.Store(reqID, req)
 
-
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{
 			ID:   reqID,
@@ -430,7 +418,6 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnContextCancel(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
-
 
 	cancel()
 
@@ -466,7 +453,6 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnSessionClose(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	sess.pending.Store(reqID, req)
 
-
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{
 			ID:   reqID,
@@ -493,7 +479,6 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnSessionClose(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
-
 
 	cleanupDone := make(chan struct{})
 	go func() {
@@ -538,7 +523,6 @@ func TestSession_SlowConsumer_TerminalError_SessionClose(t *testing.T) {
 	reqID := "req-terminal-err-sess-close"
 	req := newPendingRequest(context.Background())
 	sess.pending.Store(reqID, req)
-
 
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{

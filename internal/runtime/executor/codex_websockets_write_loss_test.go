@@ -19,9 +19,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 func TestCodexWebsocketWriteLossIsRecordedForNextContinuation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, errUpgrade := (&websocket.Upgrader{}).Upgrade(w, r, nil)
@@ -114,9 +111,6 @@ func (h *disconnectLogBarrierHook) Fire(entry *log.Entry) error {
 	}
 	return nil
 }
-
-
-
 
 func TestCodexWebsocketInvalidatePublishesLossEpochBeforeReleasingConnLock(t *testing.T) {
 	var dials atomic.Int32

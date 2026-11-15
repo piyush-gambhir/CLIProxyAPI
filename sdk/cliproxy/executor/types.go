@@ -8,31 +8,21 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 const RequestedModelMetadataKey = "requested_model"
-
-
 
 const RequestPathMetadataKey = "request_path"
 
-
 const DisallowFreeAuthMetadataKey = "disallow_free_auth"
-
 
 const AuthSelectionModelMetadataKey = "auth_selection_model"
 
-
 const ReasoningEffortMetadataKey = "reasoning_effort"
 
-
 const ServiceTierMetadataKey = "service_tier"
-
-
 
 const GenerateMetadataKey = "generate"
 
 const (
-
 	PinnedAuthMetadataKey = "pinned_auth_id"
 
 	SelectionIDMetadataKey = "selection_id"
@@ -49,17 +39,11 @@ const (
 
 	ExecutionSessionMetadataKey = "execution_session_id"
 
-
 	DerivedSessionIDMetadataKey = "derived_session_id"
-
-
 
 	LCPAffinitySessionIDMetadataKey = "lcp_affinity_session_id"
 
-
-
 	CanonicalSessionIDMetadataKey = "canonical_session_id"
-
 
 	ParentSessionIDMetadataKey = "parent_session_id"
 
@@ -75,24 +59,18 @@ const (
 
 	LCPAccessGenerationMetadataKey = "lcp_access_generation"
 
-
 	LCPFingerprintMetadataKey = "lcp_fingerprints"
-
 
 	LCPMinPrefixLengthMetadataKey = "lcp_min_prefix_length"
 
 	CallerScopeMetadataKey = "caller_scope"
-
-
 
 	SessionAffinityProviderMetadataKey = "session_affinity_provider"
 
 	SessionAffinityModelMetadataKey = "session_affinity_model"
 )
 
-
 type Request struct {
-
 	Model string
 
 	Payload []byte
@@ -102,15 +80,11 @@ type Request struct {
 	Metadata map[string]any
 }
 
-
 type RequestBeforeAuthInterceptor func(context.Context, RequestAfterAuthInterceptRequest) RequestAfterAuthInterceptResponse
-
 
 type RequestAfterAuthInterceptor func(context.Context, RequestAfterAuthInterceptRequest) RequestAfterAuthInterceptResponse
 
-
 type RequestAfterAuthInterceptRequest struct {
-
 	SourceFormat sdktranslator.Format
 
 	ToFormat sdktranslator.Format
@@ -128,9 +102,7 @@ type RequestAfterAuthInterceptRequest struct {
 	Metadata map[string]any
 }
 
-
 type RequestAfterAuthInterceptResponse struct {
-
 	Path string
 
 	Headers http.Header
@@ -148,7 +120,6 @@ type RequestAfterAuthInterceptResponse struct {
 	ResponseBody []byte
 }
 
-
 type RequestTerminatedError struct {
 	HTTPStatus int
 	Header     http.Header
@@ -159,14 +130,12 @@ func (e *RequestTerminatedError) Error() string {
 	return "request terminated by plugin"
 }
 
-
 func (e *RequestTerminatedError) StatusCode() int {
 	if e == nil {
 		return 0
 	}
 	return e.HTTPStatus
 }
-
 
 func (e *RequestTerminatedError) ResponseHeaders() http.Header {
 	if e == nil {
@@ -175,14 +144,12 @@ func (e *RequestTerminatedError) ResponseHeaders() http.Header {
 	return e.Header.Clone()
 }
 
-
 func (e *RequestTerminatedError) ResponseBody() []byte {
 	if e == nil {
 		return nil
 	}
 	return append([]byte(nil), e.Body...)
 }
-
 
 type WebSocketResponseEvent struct {
 	RequestID      string
@@ -199,12 +166,9 @@ type WebSocketResponseEvent struct {
 	Metadata       map[string]any
 }
 
-
 type WebSocketResponseObserver func(context.Context, WebSocketResponseEvent)
 
-
 type Options struct {
-
 	Stream bool
 
 	Alt string
@@ -216,7 +180,6 @@ type Options struct {
 	OriginalRequest []byte
 
 	SourceFormat sdktranslator.Format
-
 
 	ResponseFormat sdktranslator.Format
 
@@ -230,13 +193,10 @@ type Options struct {
 
 	ExecutionLifecycle ExecutionLifecycle
 
-
 	ProxyURL string
-
 
 	KeepTopLevelEffort bool
 }
-
 
 func (o *Options) EnsureMetadata() map[string]any {
 	if o.Metadata == nil {
@@ -245,7 +205,6 @@ func (o *Options) EnsureMetadata() map[string]any {
 	return o.Metadata
 }
 
-
 func ResponseFormatOrSource(opts Options) sdktranslator.Format {
 	if opts.ResponseFormat != "" {
 		return opts.ResponseFormat
@@ -253,11 +212,8 @@ func ResponseFormatOrSource(opts Options) sdktranslator.Format {
 	return opts.SourceFormat
 }
 
-
 type Response struct {
-
 	Payload []byte
-
 
 	Incomplete bool
 
@@ -266,55 +222,34 @@ type Response struct {
 	Headers http.Header
 }
 
-
 type StreamChunk struct {
-
 	Payload []byte
-
 
 	Incomplete bool
 
 	Err error
 }
 
-
-
 type StreamResult struct {
-
 	Headers http.Header
 
 	Chunks <-chan StreamChunk
 }
-
-
-
 
 type StatusError interface {
 	error
 	StatusCode() int
 }
 
-
-
-
 type RequestScopedError interface {
 	error
 	IsRequestScoped() bool
 }
 
-
-
-
-
 type StreamTruncatedError interface {
 	error
 	IsStreamTruncated() bool
 }
-
-
-
-
-
 
 type TransientRateLimitError interface {
 	error

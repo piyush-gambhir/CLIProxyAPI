@@ -7,7 +7,6 @@ import (
 	"testing"
 )
 
-
 func TestUnambiguousClaudeToolNames(t *testing.T) {
 	requests := []string{
 		``, `{`, `null`, `{"tools":null}`, `{"tools":{}}`,

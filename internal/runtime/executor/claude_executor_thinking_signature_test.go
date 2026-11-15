@@ -12,10 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
-
-
 func thinkingSignatureFixtures() []string {
 	return []string{
 		"ErUBCkYIBRgCKkDq+9zN/vQ7aB1c2dEf==",
@@ -26,8 +22,6 @@ func thinkingSignatureFixtures() []string {
 		strings.Repeat("EqQBCkYIBRgCKkD", 400) + "==",
 	}
 }
-
-
 
 func collectThinkingSignatures(t *testing.T, body []byte) []string {
 	t.Helper()
@@ -43,9 +37,6 @@ func collectThinkingSignatures(t *testing.T, body []byte) []string {
 	})
 	return found
 }
-
-
-
 
 func buildThinkingHistoryPayload(t *testing.T, signatures []string, firstUserText string) []byte {
 	t.Helper()
@@ -83,10 +74,6 @@ func buildThinkingHistoryPayload(t *testing.T, signatures []string, firstUserTex
 	}
 	return encoded
 }
-
-
-
-
 
 func TestClaudeThinkingSignaturesSurviveUpstreamPreparation(t *testing.T) {
 	signatures := thinkingSignatureFixtures()
@@ -133,13 +120,9 @@ func TestClaudeThinkingSignaturesSurviveUpstreamPreparation(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeThinkingSignaturesSurviveSensitiveWordObfuscation(t *testing.T) {
 	const sensitive = "proxy"
 	signature := "ErUBCkYIBRgC" + sensitive + "KkDq+9zN=="
-
 
 	payload := buildThinkingHistoryPayload(t, []string{signature}, "please use the "+sensitive+" now")
 

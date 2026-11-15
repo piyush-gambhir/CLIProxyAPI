@@ -12,13 +12,9 @@ import (
 	translatorcommon "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/common"
 )
 
-
-
-
 func ModelSupportsWebSearch(modelID string) bool {
 	info := registry.LookupModelInfo(modelID)
 	infoAG := registry.LookupModelInfo(modelID, "antigravity")
-
 
 	if info != nil && info.NativeCapabilities != nil && info.NativeCapabilities.WebSearch != nil && !*info.NativeCapabilities.WebSearch {
 		return false
@@ -27,14 +23,12 @@ func ModelSupportsWebSearch(modelID string) bool {
 		return false
 	}
 
-
 	if info != nil && info.NativeCapabilities != nil && info.NativeCapabilities.WebSearch != nil && *info.NativeCapabilities.WebSearch {
 		return true
 	}
 	if infoAG != nil && infoAG.NativeCapabilities != nil && infoAG.NativeCapabilities.WebSearch != nil && *infoAG.NativeCapabilities.WebSearch {
 		return true
 	}
-
 
 	if registry.AntigravityWebSearchModelFor(modelID) != "" {
 		return true
@@ -45,9 +39,6 @@ func ModelSupportsWebSearch(modelID string) bool {
 	return false
 }
 
-
-
-
 func isResponsesWebSearchToolType(toolType string) bool {
 	switch toolType {
 	case "web_search", "web_search_2025_08_26", "web_search_preview", "web_search_preview_2025_03_11":
@@ -56,7 +47,6 @@ func isResponsesWebSearchToolType(toolType string) bool {
 		return false
 	}
 }
-
 
 func HasResponsesWebSearchTool(root ojson.Result) bool {
 	tools := root.Get("tools")
@@ -70,7 +60,6 @@ func HasResponsesWebSearchTool(root ojson.Result) bool {
 	}
 	return false
 }
-
 
 func HasOnlyResponsesWebSearchTools(root ojson.Result) bool {
 	tools := root.Get("tools")
@@ -87,7 +76,6 @@ func HasOnlyResponsesWebSearchTools(root ojson.Result) bool {
 	}
 	return hasSearch
 }
-
 
 func AllowsResponsesWebSearchToolChoice(root ojson.Result) bool {
 	toolChoice := root.Get("tool_choice")
@@ -126,8 +114,6 @@ func AllowsResponsesWebSearchToolChoice(root ojson.Result) bool {
 	}
 	return false
 }
-
-
 
 func ExtractResponsesWebSearchQuery(root ojson.Result) string {
 	input := root.Get("input")
@@ -185,7 +171,6 @@ func ExtractResponsesWebSearchQuery(root ojson.Result) string {
 	return ""
 }
 
-
 func ExtractResponsesWebSearchAllowedDomains(root ojson.Result) []string {
 	tools := root.Get("tools")
 	if !tools.IsArray() {
@@ -210,7 +195,6 @@ func ExtractResponsesWebSearchAllowedDomains(root ojson.Result) []string {
 	return nil
 }
 
-
 func ExtractGroundingMetadata(root ojson.Result) ojson.Result {
 	if gm := root.Get("candidates.0.groundingMetadata"); gm.Exists() {
 		return gm
@@ -220,7 +204,6 @@ func ExtractGroundingMetadata(root ojson.Result) ojson.Result {
 	}
 	return ojson.Result{}
 }
-
 
 func ExtractGroundingQueries(groundingMetadata ojson.Result) []string {
 	var queries []string
@@ -233,7 +216,6 @@ func ExtractGroundingQueries(groundingMetadata ojson.Result) []string {
 	}
 	return queries
 }
-
 
 func ExtractGroundingSources(groundingMetadata ojson.Result) [][]byte {
 	chunks := groundingMetadata.Get("groundingChunks").Array()
@@ -255,7 +237,6 @@ func ExtractGroundingSources(groundingMetadata ojson.Result) [][]byte {
 	return sources
 }
 
-
 func BuildResponsesWebSearchCallItem(id string, query string, queries []string, sources [][]byte) []byte {
 	itemDoc := ojson.NewDocString(`{"id":"","type":"web_search_call","status":"completed","action":{"type":"search","query":""}}`)
 	_ = itemDoc.Set("id", id)
@@ -268,8 +249,6 @@ func BuildResponsesWebSearchCallItem(id string, query string, queries []string, 
 	}
 	return itemDoc.Bytes()
 }
-
-
 
 func HasValidWebGrounding(groundingMetadata ojson.Result) bool {
 	if !groundingMetadata.Exists() {
@@ -292,8 +271,6 @@ func HasValidWebGrounding(groundingMetadata ojson.Result) bool {
 	return false
 }
 
-
-
 func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 	if (!existingGM.Exists() || len(strings.TrimSpace(existingGM.Raw)) == 0) &&
 		(!newGM.Exists() || len(strings.TrimSpace(newGM.Raw)) == 0) {
@@ -307,7 +284,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 	}
 
 	mergedDoc := ojson.NewDocString(existingGM.Raw)
-
 
 	existingQueries := ExtractGroundingQueries(existingGM)
 	newQueries := ExtractGroundingQueries(newGM)
@@ -329,10 +305,8 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 		_ = mergedDoc.Set("webSearchQueries", mergedQueries)
 	}
 
-
 	existingChunks := existingGM.Get("groundingChunks").Array()
 	newChunks := newGM.Get("groundingChunks").Array()
-
 
 	cumulativeRemap := make(map[int]int)
 	if remapJSON := existingGM.Get("_chunkIndexRemap"); remapJSON.Exists() && remapJSON.IsObject() {
@@ -428,7 +402,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 		_ = mergedDoc.Set("_rawChunkCount", totalRawCount)
 	}
 
-
 	existingSupports := existingGM.Get("groundingSupports").Array()
 	newSupports := newGM.Get("groundingSupports").Array()
 
@@ -452,7 +425,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 			targetIdx := int64(oldIdx)
 			if isExisting {
 
-
 				shouldRemap := existingChunkCount == 0 || oldIdx >= existingChunkCount
 				if shouldRemap {
 					if target, ok := cumulativeRemap[oldIdx]; ok {
@@ -463,8 +435,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 					}
 				}
 			} else {
-
-
 
 				if target, ok := cumulativeRemap[oldIdx]; ok {
 					targetIdx = int64(target)
@@ -547,11 +517,9 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 		_ = mergedDoc.SetRaw("groundingSupports", supportsJSON)
 	}
 
-
 	if sep := newGM.Get("searchEntryPoint"); sep.Exists() {
 		_ = mergedDoc.SetRaw("searchEntryPoint", sep.Raw)
 	}
-
 
 	if rq := newGM.Get("retrievalQueries"); rq.Exists() && !existingGM.Get("retrievalQueries").Exists() {
 		_ = mergedDoc.SetRaw("retrievalQueries", rq.Raw)
@@ -559,8 +527,6 @@ func MergeGroundingMetadata(existingGM, newGM ojson.Result) ojson.Result {
 
 	return ojson.Parse(mergedDoc.String())
 }
-
-
 
 func MergeCitationAnnotations(existing, late [][]byte) [][]byte {
 	if len(existing) == 0 {
@@ -600,7 +566,6 @@ func MergeCitationAnnotations(existing, late [][]byte) [][]byte {
 	return result
 }
 
-
 func byteOffsetToRuneOffset(text string, byteOffset int64) int64 {
 	if byteOffset <= 0 {
 		return 0
@@ -612,7 +577,6 @@ func byteOffsetToRuneOffset(text string, byteOffset int64) int64 {
 	return int64(utf8.RuneCount(textBytes[:byteOffset]))
 }
 
-
 type GeminiPartMapping struct {
 	PartIndex      int
 	MessageIndex   int
@@ -620,14 +584,11 @@ type GeminiPartMapping struct {
 	PartText       string
 }
 
-
 type MessageRuneRange struct {
 	MessageIndex int
 	StartIndex   int64
 	EndIndex     int64
 }
-
-
 
 func mapByteOffsetsToRuneRanges(mappings []GeminiPartMapping, startByte, endByte int64) []MessageRuneRange {
 	if len(mappings) == 0 {
@@ -704,8 +665,6 @@ func mapByteOffsetsToRuneRanges(mappings []GeminiPartMapping, startByte, endByte
 	return ranges
 }
 
-
-
 func mapByteOffsetsToRuneRange(mappings []GeminiPartMapping, startByte, endByte int64) (int, int64, int64, bool) {
 	ranges := mapByteOffsetsToRuneRanges(mappings, startByte, endByte)
 	if len(ranges) == 0 {
@@ -714,16 +673,12 @@ func mapByteOffsetsToRuneRange(mappings []GeminiPartMapping, startByte, endByte 
 	return ranges[0].MessageIndex, ranges[0].StartIndex, ranges[0].EndIndex, true
 }
 
-
-
-
 func BuildResponsesURLCitationsForMessages(groundingMetadata ojson.Result, mappings []GeminiPartMapping, messageTexts []string) map[int][][]byte {
 	chunks := groundingMetadata.Get("groundingChunks").Array()
 	supports := groundingMetadata.Get("groundingSupports").Array()
 	if len(supports) == 0 || len(chunks) == 0 {
 		return nil
 	}
-
 
 	var coalescedMappings []GeminiPartMapping
 	for _, m := range mappings {
@@ -812,8 +767,6 @@ func BuildResponsesURLCitationsForMessages(groundingMetadata ojson.Result, mappi
 	}
 	return result
 }
-
-
 
 func BuildResponsesURLCitations(groundingMetadata ojson.Result, text ...string) [][]byte {
 	var fullText string

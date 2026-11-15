@@ -16,8 +16,6 @@ func ConvertInteractionsRequestToCodex(modelName string, inputRawJSON []byte, st
 
 }
 
-
-
 func convertInteractionsRequestToCodex(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	outDoc := ojson.NewDocString(`{"model":"","instructions":"","store":false,"input":[]}`)
@@ -198,8 +196,6 @@ func interactionsCodexReasoningSummary(cfg ojson.Result) string {
 	return ""
 }
 
-
-
 func appendInteractionsInputToCodex(items *[][]byte, input ojson.Result, modelName string) error {
 	if !input.Exists() {
 		return nil
@@ -227,8 +223,6 @@ func appendInteractionsInputToCodex(items *[][]byte, input ojson.Result, modelNa
 	run.End()
 	return run.Err()
 }
-
-
 
 func interactionsCodexUserRun(run *translatorcommon.UserRun, role string) *translatorcommon.UserRun {
 	if role == "user" {
@@ -283,7 +277,6 @@ func appendInteractionsStepToCodex(items *[][]byte, step ojson.Result, defaultRo
 	}
 }
 
-
 func appendInteractionsRoleTextToCodex(items *[][]byte, role, text string, run *translatorcommon.UserRun) {
 	appendInteractionsTextToCodex(items, role, text)
 	userRun := interactionsCodexUserRun(run, role)
@@ -313,9 +306,6 @@ func appendInteractionsContentToCodexItem(items *[][]byte, content ojson.Result,
 	}
 }
 
-
-
-
 func appendInteractionsContentPartToCodex(items *[][]byte, part ojson.Result, role string, run *translatorcommon.UserRun) {
 	item := interactionsCodexMessagePart(part, role)
 	if len(item) == 0 {
@@ -329,8 +319,6 @@ func appendInteractionsContentPartToCodex(items *[][]byte, part ojson.Result, ro
 		run.Add()
 	}
 }
-
-
 
 func interactionsCodexIsBlankText(item []byte) bool {
 	parsed := util.ParseGJSONBytesNoCopy(item)
@@ -448,9 +436,6 @@ func setInteractionsCodexRawIfDifferent(out []byte, path string, value ojson.Res
 	return updated
 }
 
-
-
-
 func ensureInteractionsCodexEncryptedContentIncludeDoc(doc *ojson.Doc, root ojson.Result) {
 	const reasoningEncryptedContent = "reasoning.encrypted_content"
 	include := root.Get("include")
@@ -468,16 +453,6 @@ func ensureInteractionsCodexEncryptedContentIncludeDoc(doc *ojson.Doc, root ojso
 	}
 	_ = doc.Set("include.-1", reasoningEncryptedContent)
 }
-
-
-
-
-
-
-
-
-
-
 
 func appendInteractionsThoughtToCodex(items *[][]byte, step ojson.Result, modelName string, emittedSignatures map[string]bool) {
 	text := interactionsCodexContentText(step.Get("content"))
@@ -498,8 +473,6 @@ func appendInteractionsThoughtToCodex(items *[][]byte, step ojson.Result, modelN
 		}
 	}
 }
-
-
 
 func interactionsThoughtStepSignature(step ojson.Result) string {
 	for _, path := range []string{"signature", "thought_signature", "thoughtSignature"} {
@@ -765,10 +738,6 @@ func interactionsCodexOutputString(value ojson.Result) string {
 	return ""
 }
 
-
-
-
-
 func interactionsCodexStepRole(step ojson.Result, inherited string) string {
 	if translatorcommon.IsInteractionsInstructionStep(step, inherited == "developer") {
 		return "developer"
@@ -854,7 +823,6 @@ func shortenCodexToolNameIfNeeded(name string) string {
 	}
 	return name[:limit]
 }
-
 
 func firstNonBlankString(root ojson.Result, paths ...string) string {
 	for _, path := range paths {

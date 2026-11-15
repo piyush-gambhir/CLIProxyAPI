@@ -195,7 +195,6 @@ func TestConvertGeminiRequestToClaude_AcceptsCamelInlineData(t *testing.T) {
 func TestConvertGeminiRequestToClaude_SplitsNonImageInlineDataByMIME(t *testing.T) {
 	out, _ := ConvertGeminiRequestToClaude("claude-sonnet-4", []byte(`{"contents":[{"role":"user","parts":[{"inlineData":{"mimeType":"audio/wav","data":"UklGRg=="}},{"inlineData":{"mimeType":"video/mp4","data":"AAAAIGZ0eXA="}},{"inlineData":{"mimeType":"application/pdf","data":"JVBERi0="}}]}]}`), false)
 
-
 	if got := ojson.GetBytesNoCopy(out, "messages.0.content.#").Int(); got != 1 {
 		t.Fatalf("user content has %d blocks, want only the document. Output: %s", got, string(out))
 	}
@@ -406,24 +405,20 @@ func TestConvertGeminiRequestToClaude_SanitizesToolNamesAndProvidesFallbackSchem
 
 	result, _ := ConvertGeminiRequestToClaude("claude-test", []byte(inputJSON), false)
 
-
 	toolName := ojson.GetBytesNoCopy(result, "tools.0.name").String()
 	if toolName != "mcp_server_get_data" {
 		t.Fatalf("tools.0.name = %q, want mcp_server_get_data. Output: %s", toolName, result)
 	}
-
 
 	schema := ojson.GetBytesNoCopy(result, "tools.0.input_schema")
 	if !schema.Exists() || schema.Get("type").String() != "object" {
 		t.Fatalf("tools.0.input_schema = %s, want object schema. Output: %s", schema, result)
 	}
 
-
 	toolUseName := ojson.GetBytesNoCopy(result, "messages.0.content.0.name").String()
 	if toolUseName != "mcp_server_get_data" {
 		t.Fatalf("messages.0.content.0.name = %q, want mcp_server_get_data. Output: %s", toolUseName, result)
 	}
-
 
 	toolChoiceName := ojson.GetBytesNoCopy(result, "tool_choice.name").String()
 	if toolChoiceName != "mcp_server_get_data" {

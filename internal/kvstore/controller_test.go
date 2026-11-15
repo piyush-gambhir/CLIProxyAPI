@@ -53,7 +53,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 		t.Fatalf("CurrentKVClient() type = %T, want *BoltStore", client1)
 	}
 
-
 	if errCfgAgain := ConfigureLocal(true, dbPath1); errCfgAgain != nil {
 		t.Fatalf("ConfigureLocal(true, dbPath1) second call error = %v", errCfgAgain)
 	}
@@ -64,7 +63,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 	if client1Again != bolt1 {
 		t.Fatalf("ConfigureLocal with identical path did not reuse *BoltStore instance: got %p, want %p", client1Again, bolt1)
 	}
-
 
 	if errCfg2 := ConfigureLocal(true, dbPath2); errCfg2 != nil {
 		t.Fatalf("ConfigureLocal(true, dbPath2) error = %v", errCfg2)
@@ -88,7 +86,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 		t.Fatalf("expected old BoltStore to be closed after switching path")
 	}
 
-
 	if errDisable := ConfigureLocal(false, ""); errDisable != nil {
 		t.Fatalf("ConfigureLocal(false, \"\") error = %v", errDisable)
 	}
@@ -100,7 +97,6 @@ func TestControllerConfigureLocalLifecycleAndReuse(t *testing.T) {
 
 func TestControllerConfigureLocalInvalidPathReportsUnavailableError(t *testing.T) {
 	resetControllerForTest(t)
-
 
 	invalidPath := t.TempDir()
 	errCfg := ConfigureLocal(true, invalidPath)
@@ -149,7 +145,6 @@ func TestControllerPrioritizesHomeProviderOverLocalBoltStore(t *testing.T) {
 		t.Fatalf("CurrentKVClient() returned %p, want Home provider client %p", client, homeStore)
 	}
 
-
 	expectedErr := errors.New("home kv store unavailable: not connected")
 	RegisterHomeProvider(func() (KVClient, bool, error) {
 		return nil, true, expectedErr
@@ -158,7 +153,6 @@ func TestControllerPrioritizesHomeProviderOverLocalBoltStore(t *testing.T) {
 	if !kvModeErr || clientErr != nil || !errors.Is(errHome, expectedErr) {
 		t.Fatalf("CurrentKVClient() with unavailable Home = (%v, %v, %v), want (nil, true, %v)", clientErr, kvModeErr, errHome, expectedErr)
 	}
-
 
 	RegisterHomeProvider(func() (KVClient, bool, error) {
 		return nil, false, nil

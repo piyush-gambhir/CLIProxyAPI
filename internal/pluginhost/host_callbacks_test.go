@@ -1741,7 +1741,6 @@ func TestDecodeHostHTTPRequestWithWireProfile(t *testing.T) {
 		HeaderProfile:          []string{"host", "user-agent"},
 	}
 
-
 	flatReq := rpcHostHTTPRequest{
 		HostCallbackID: "cb-1",
 		Method:         http.MethodPost,
@@ -1766,7 +1765,6 @@ func TestDecodeHostHTTPRequestWithWireProfile(t *testing.T) {
 		t.Fatalf("decoded header profile mismatch: %#v", decoded.WireProfile.HeaderProfile)
 	}
 
-
 	nestedReq := rpcHostHTTPRequest{
 		HostCallbackID: "cb-2",
 		Request: &httpRequest{
@@ -1789,7 +1787,6 @@ func TestDecodeHostHTTPRequestWithWireProfile(t *testing.T) {
 	if decodedNested.WireProfile == nil || !decodedNested.WireProfile.HTTP1Only {
 		t.Fatalf("decoded nested wire profile mismatch: %#v", decodedNested.WireProfile)
 	}
-
 
 	sdkReq := pluginapi.HTTPRequest{
 		Method:      http.MethodPost,
@@ -1913,19 +1910,16 @@ func TestModelExecutionErrorPreservesHTTPStatus(t *testing.T) {
 		t.Fatal("expected errors.Is(err, baseErr) to be true")
 	}
 
-
 	errNilBase := modelExecutionError(&interfaces.ErrorMessage{StatusCode: http.StatusServiceUnavailable})
 	if got := clienterror.HTTPStatusFromError(errNilBase); got != http.StatusServiceUnavailable {
 		t.Fatalf("clienterror.HTTPStatusFromError(nilBase) = %d, want %d", got, http.StatusServiceUnavailable)
 	}
-
 
 	matchingErr := testHostStatusError{error: errors.New("synthetic"), status: http.StatusTooManyRequests}
 	errMatching := modelExecutionError(&interfaces.ErrorMessage{StatusCode: http.StatusTooManyRequests, Error: matchingErr})
 	if errMatching != matchingErr {
 		t.Fatalf("expected errMatching to return original matchingErr, got %#v", errMatching)
 	}
-
 
 	errConflict := modelExecutionError(&interfaces.ErrorMessage{StatusCode: http.StatusServiceUnavailable, Error: matchingErr})
 	if got := clienterror.HTTPStatusFromError(errConflict); got != http.StatusServiceUnavailable {

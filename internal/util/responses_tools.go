@@ -11,7 +11,6 @@ import (
 	applypatch "github.com/router-for-me/CLIProxyAPI/v8/internal/client/codex/apply-patch"
 )
 
-
 type ResponsesToolIdentity struct {
 	Name       string
 	Namespace  string
@@ -21,15 +20,11 @@ type ResponsesToolIdentity struct {
 }
 
 const (
-
 	ResponsesToolSearchType = "tool_search"
 
 	ResponsesToolSearchExecutionClient = "client"
 
-
 	ResponsesToolSearchFunctionName = "tool_search"
-
-
 
 	ResponsesClientToolSearchKey = "\x00client_tool_search"
 
@@ -42,7 +37,6 @@ const (
 	responsesToolSearchDefaultParameters = `{"type":"object","properties":{"query":{"type":"string","description":"Search query for deferred tools."},"limit":{"type":"number","description":"Maximum number of tools to return."}},"required":["query"],"additionalProperties":false}`
 )
 
-
 type ResponsesToolDescriptor struct {
 	Name           string
 	LocalName      string
@@ -54,7 +48,6 @@ type ResponsesToolDescriptor struct {
 	Order          int
 	ClientSearch   bool
 }
-
 
 func QualifyResponsesNamespaceToolName(namespaceName, childName string) string {
 	childName = strings.TrimSpace(childName)
@@ -117,15 +110,10 @@ func responsesToolSourcesFromGetter(get func(string) ojson.Result, includeClient
 	return sources
 }
 
-
-
 func IsResponsesClientToolSearchDeclaration(tool ojson.Result) bool {
 	return strings.TrimSpace(tool.Get("type").String()) == ResponsesToolSearchType &&
 		strings.TrimSpace(tool.Get("execution").String()) == ResponsesToolSearchExecutionClient
 }
-
-
-
 
 func IsResponsesClientToolSearchItem(item ojson.Result) bool {
 	execution := strings.TrimSpace(item.Get("execution").String())
@@ -139,7 +127,6 @@ func responsesToolName(tool ojson.Result) string {
 	return strings.TrimSpace(tool.Get("function.name").String())
 }
 
-
 func ResponsesToolDescription(tool ojson.Result) string {
 	if description := tool.Get("description").String(); description != "" {
 		return description
@@ -150,7 +137,6 @@ func ResponsesToolDescription(tool ojson.Result) string {
 func responsesToolDescription(tool ojson.Result) string {
 	return ResponsesToolDescription(tool)
 }
-
 
 func ResponsesToolParameters(tool ojson.Result) ojson.Result {
 	for _, path := range []string{
@@ -171,11 +157,9 @@ func responsesToolParameters(tool ojson.Result) ojson.Result {
 	return ResponsesToolParameters(tool)
 }
 
-
 func CollectResponsesToolDescriptors(root ojson.Result) []ResponsesToolDescriptor {
 	return collectResponsesToolDescriptors(root, false)
 }
-
 
 func CollectResponsesToolDescriptorsDoc(doc *ojson.Doc) []ResponsesToolDescriptor {
 	if doc == nil || doc.Len() == 0 {
@@ -284,11 +268,9 @@ func responsesToolDescriptorPrecedes(left, right ResponsesToolDescriptor) bool {
 	return left.Order < right.Order
 }
 
-
 func CollectResponsesToolWinners(root ojson.Result) map[string]ResponsesToolDescriptor {
 	return collectResponsesToolWinnersFromDescriptors(CollectResponsesToolDescriptors(root))
 }
-
 
 func CollectResponsesToolWinnersDoc(doc *ojson.Doc) map[string]ResponsesToolDescriptor {
 	return collectResponsesToolWinnersFromDescriptors(CollectResponsesToolDescriptorsDoc(doc))
@@ -363,12 +345,9 @@ type responsesToolWinnerKey struct {
 	clientSearch bool
 }
 
-
 func BuildGeminiFunctionDeclarations(root ojson.Result) ([][]byte, map[string]string, map[string]ResponsesToolIdentity) {
 	return buildGeminiFunctionDeclarations(root, true)
 }
-
-
 
 func buildGeminiFunctionDeclarations(root ojson.Result, withDeclarations bool) ([][]byte, map[string]string, map[string]ResponsesToolIdentity) {
 	descriptors := collectResponsesToolDescriptors(root, true)
@@ -450,7 +429,6 @@ func buildGeminiFunctionDeclarations(root ojson.Result, withDeclarations bool) (
 			used[mappedName] = origName
 		}
 		if !userOwnsExactToolSearch {
-
 
 			if collidingOrig, taken := used[ResponsesToolSearchFunctionName]; taken && collidingOrig != ResponsesToolSearchFunctionName {
 				used[ResponsesToolSearchFunctionName] = ResponsesClientToolSearchKey
@@ -534,8 +512,6 @@ func buildGeminiFunctionDeclarations(root ojson.Result, withDeclarations bool) (
 		declarations = append(declarations, funcDeclDoc.Bytes())
 	}
 
-
-
 	for _, desc := range winningList {
 		if !desc.ClientSearch && desc.LocalName != "" && desc.LocalName != desc.Name {
 			if _, exists := forwardMap[desc.LocalName]; !exists {
@@ -557,7 +533,6 @@ func buildGeminiToolSearchParametersSchema(tool ojson.Result) []byte {
 	return []byte(responsesToolSearchDefaultParameters)
 }
 
-
 func ResponsesToolReverseIdentityMap(rawJSON []byte) map[string]ResponsesToolIdentity {
 	if len(rawJSON) == 0 || !ojson.ValidBytes(rawJSON) {
 		return nil
@@ -570,7 +545,6 @@ func ResponsesToolReverseIdentityMap(rawJSON []byte) map[string]ResponsesToolIde
 	return reverseMap
 }
 
-
 func MapResponsesToolName(forwardMap map[string]string, name string) string {
 	if mapped, ok := forwardMap[name]; ok && mapped != "" {
 		return mapped
@@ -578,15 +552,12 @@ func MapResponsesToolName(forwardMap map[string]string, name string) string {
 	return SanitizeFunctionName(name)
 }
 
-
-
 func MapResponsesClientToolSearchName(forwardMap map[string]string) string {
 	if mapped, ok := forwardMap[ResponsesClientToolSearchKey]; ok && mapped != "" {
 		return mapped
 	}
 	return ResponsesToolSearchFunctionName
 }
-
 
 func ConvertResponsesToolChoiceToGemini(toolChoice ojson.Result, forwardMap map[string]string) ([]byte, bool) {
 	if !toolChoice.Exists() {
@@ -650,7 +621,6 @@ func ConvertResponsesToolChoiceToGemini(toolChoice ojson.Result, forwardMap map[
 	}
 	return cfgDoc.Bytes(), true
 }
-
 
 func UnwrapResponsesCustomToolInput(arguments string) string {
 	arguments = strings.TrimSpace(arguments)

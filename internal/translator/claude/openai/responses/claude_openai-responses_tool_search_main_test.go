@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-
-
 func TestMain(m *testing.M) {
 	SetClientToolSearchEnabled(true)
 	os.Exit(m.Run())

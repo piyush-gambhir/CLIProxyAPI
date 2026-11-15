@@ -46,7 +46,6 @@ func TestGenerateDevinDeviceFingerprint(t *testing.T) {
 		}
 	}
 
-
 	fp2 := GenerateDevinDeviceFingerprint("seed-1")
 	if fp1 != fp2 {
 		t.Fatalf("fingerprints for same seed do not match: %s != %s", fp1, fp2)
@@ -101,7 +100,6 @@ func TestBuildDevinGetChatMessageRequest(t *testing.T) {
 		t.Fatal("encoded request is empty")
 	}
 
-
 	framed := WrapConnectEnvelope(req)
 	flag, readPayload, err := ReadConnectFrame(bytes.NewReader(framed))
 	if err != nil {
@@ -133,7 +131,6 @@ func TestBuildDevinGetChatMessageRequest_SensitiveWordsOnlyInSystemPrompt(t *tes
 	if bytes.Contains(reqWithSys, []byte("System prompt containing SECRET_TOKEN")) {
 		t.Fatalf("expected SECRET_TOKEN in system prompt to be obfuscated")
 	}
-
 
 	if !bytes.Contains(reqWithSys, []byte(`{"key":"SECRET_TOKEN"}`)) {
 		t.Fatalf("tool call arguments should preserve original raw text without obfuscation")
@@ -226,7 +223,6 @@ func TestBuildDevinGetChatMessageRequest_WithImages(t *testing.T) {
 		t.Fatal("encoded request with images is empty")
 	}
 
-
 	if !bytes.Contains(req, []byte("iVBORw0KGgoAAAANSUhEUgAA...")) {
 		t.Error("encoded payload missing image base64 data")
 	}
@@ -236,7 +232,6 @@ func TestBuildDevinGetChatMessageRequest_WithImages(t *testing.T) {
 }
 
 func TestParseDevinFrame(t *testing.T) {
-
 
 	var payload []byte
 	payload = appendFieldBytes(payload, 1, []byte("bot-uuid-123"))
@@ -325,7 +320,6 @@ func TestParseDevinTrailerError(t *testing.T) {
 		t.Errorf("status code = %d, want 504 for deadline_exceeded", code)
 	}
 
-
 	highDemandJSON := []byte(`{"error":{"code":"permission_denied","message":"The model is currently in high demand, please try again later (trace ID: 00000000000000000000000000000000)"}}`)
 	code, err = ParseDevinTrailerError(highDemandJSON)
 	if err == nil {
@@ -334,7 +328,6 @@ func TestParseDevinTrailerError(t *testing.T) {
 	if code != 429 {
 		t.Errorf("status code = %d, want 429 for transient high-demand permission_denied", code)
 	}
-
 
 	genuinePermJSON := []byte(`{"error":{"code":"permission_denied","message":"model access is not allowed for this account"}}`)
 	code, err = ParseDevinTrailerError(genuinePermJSON)
@@ -345,7 +338,6 @@ func TestParseDevinTrailerError(t *testing.T) {
 		t.Errorf("status code = %d, want 403 for genuine permission_denied", code)
 	}
 
-
 	resourceExhaustedJSON := []byte(`{"error":{"code":"resource_exhausted","message":"rate limit exceeded"}}`)
 	code, err = ParseDevinTrailerError(resourceExhaustedJSON)
 	if err == nil {
@@ -354,7 +346,6 @@ func TestParseDevinTrailerError(t *testing.T) {
 	if code != 429 {
 		t.Errorf("status code = %d, want 429 for resource_exhausted", code)
 	}
-
 
 	highDemandLowerJSON := []byte(`{"error":{"code":"permission_denied","message":"HIGH DEMAND: please retry"}}`)
 	code, err = ParseDevinTrailerError(highDemandLowerJSON)
@@ -429,7 +420,6 @@ func TestBuildDevinUpstreamLogBody(t *testing.T) {
 	}
 	temp := 0.5
 
-
 	logBody := BuildDevinUpstreamLogBody(
 		interactions,
 		false,
@@ -462,7 +452,6 @@ func TestBuildDevinUpstreamLogBody(t *testing.T) {
 	if !strings.Contains(bodyStr, `"name": "get_weather"`) {
 		t.Errorf("expected body to contain tool get_weather")
 	}
-
 
 	logBodyDirect := BuildDevinUpstreamLogBody(
 		interactions,
@@ -510,7 +499,6 @@ func TestBuildDevinGetChatMessageRequest_Field15TurnIndex(t *testing.T) {
 	sessID0 := "sess-turn0-" + uuid.New().String()
 	defer ResetDevinSessionTurnIndex(sessID0)
 
-
 	promptsTurn0 := []DevinPrompt{
 		{MessageID: "u1", Source: 1, Content: "hello"},
 	}
@@ -532,7 +520,6 @@ func TestBuildDevinGetChatMessageRequest_Field15TurnIndex(t *testing.T) {
 	sessIDTool := "sess-tool-" + uuid.New().String()
 	defer ResetDevinSessionTurnIndex(sessIDTool)
 
-
 	promptsTool := []DevinPrompt{
 		{MessageID: "u1", Source: 1, Content: "read file"},
 		{MessageID: "a1", Source: 2, Content: "calling tool"},
@@ -553,20 +540,17 @@ func TestBuildDevinGetChatMessageRequest_Field15SequentialCounter(t *testing.T) 
 		{MessageID: "u1", Source: 1, Content: "hi"},
 	}
 
-
 	req1 := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "", prompts, nil, nil, 1000, sessionID, "casc-1", nil)
 	_, sub1 := extractField15Subfields(t, req1)
 	if _, hasF2 := sub1[2]; hasF2 {
 		t.Errorf("Request 1 in fresh session should omit 15.2, got %v", sub1[2])
 	}
 
-
 	req2 := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "", prompts, nil, nil, 1000, sessionID, "casc-1", nil)
 	_, sub2 := extractField15Subfields(t, req2)
 	if sub2[2] != 1 {
 		t.Errorf("Request 2 should have 15.2 = 1, got %v", sub2[2])
 	}
-
 
 	req3 := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "", prompts, nil, nil, 1000, sessionID, "casc-1", nil)
 	_, sub3 := extractField15Subfields(t, req3)
@@ -587,7 +571,6 @@ func TestGenerateDevinDeviceFingerprint_RandomWhenEmptySeed(t *testing.T) {
 	if fp1 == fp2 {
 		t.Fatalf("fingerprints without explicit seed must be unique per call: %q == %q", fp1, fp2)
 	}
-
 
 	seeded1 := GenerateDevinDeviceFingerprint("my-stable-seed")
 	seeded2 := GenerateDevinDeviceFingerprint("my-stable-seed")
@@ -677,7 +660,6 @@ func TestParseDevinUsageField_HeadersAndField4(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 6, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 66)
 
-
 	var h1 []byte
 	h1 = protowire.AppendTag(h1, 1, protowire.BytesType)
 	h1 = protowire.AppendString(h1, "openai-version")
@@ -686,7 +668,6 @@ func TestParseDevinUsageField_HeadersAndField4(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 8, protowire.BytesType)
 	f7Bytes = protowire.AppendBytes(f7Bytes, h1)
 
-
 	var h2 []byte
 	h2 = protowire.AppendTag(h2, 1, protowire.BytesType)
 	h2 = protowire.AppendString(h2, "x-request-id")
@@ -694,7 +675,6 @@ func TestParseDevinUsageField_HeadersAndField4(t *testing.T) {
 	h2 = protowire.AppendString(h2, "req_5bb00ad48ae048119e3420bddf36257f")
 	f7Bytes = protowire.AppendTag(f7Bytes, 8, protowire.BytesType)
 	f7Bytes = protowire.AppendBytes(f7Bytes, h2)
-
 
 	var h3 []byte
 	h3 = protowire.AppendTag(h3, 1, protowire.BytesType)
@@ -752,7 +732,6 @@ func TestParseDevinUsageField_AnthropicRequestId(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 5, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 577)
 
-
 	var h []byte
 	h = protowire.AppendTag(h, 1, protowire.BytesType)
 	h = protowire.AppendString(h, "Request-Id")
@@ -786,7 +765,6 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 		dim = protowire.AppendTag(dim, 2, protowire.Fixed32Type)
 		dim = protowire.AppendFixed32(dim, math.Float32bits(val))
 
-
 		var metric []byte
 		metric = protowire.AppendTag(metric, 4, protowire.BytesType)
 		metric = protowire.AppendBytes(metric, dim)
@@ -794,7 +772,6 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 		metric = protowire.AppendString(metric, key)
 		return metric
 	}
-
 
 	var group []byte
 	group = protowire.AppendTag(group, 1, protowire.BytesType)
@@ -808,7 +785,6 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 
 	group = protowire.AppendTag(group, 2, protowire.BytesType)
 	group = protowire.AppendBytes(group, buildMetric("cached_input_tokens", 128.0))
-
 
 	var root []byte
 	root = protowire.AppendTag(root, 28, protowire.BytesType)
@@ -828,12 +804,10 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 		t.Errorf("cachedTokens = %d, want 128", cachedTokens)
 	}
 
-
 	p2, c2, ca2, found2 := ParseDevinResponseDimensionGroups(group)
 	if !found2 || p2 != 575 || c2 != 5 || ca2 != 128 {
 		t.Errorf("inner group ParseDevinResponseDimensionGroups = (%d,%d,%d,%t), want (575,5,128,true)", p2, c2, ca2, found2)
 	}
-
 
 	var latencyGroup []byte
 	latencyGroup = protowire.AppendTag(latencyGroup, 1, protowire.BytesType)
@@ -960,7 +934,6 @@ func TestRegressionIssue5910_UsageStatsCacheWriteTokens(t *testing.T) {
 
 	f7Bytes = protowire.AppendTag(f7Bytes, 2, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 3)
-
 
 	f7Bytes = protowire.AppendTag(f7Bytes, 4, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 14361)

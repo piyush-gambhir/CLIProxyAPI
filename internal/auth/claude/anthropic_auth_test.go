@@ -61,7 +61,6 @@ func TestRefreshTokens_UsesIndependentTimeout(t *testing.T) {
 	}
 }
 
-
 func jsonResponse(req *http.Request, body string) *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -183,7 +182,6 @@ func TestExchangeCodeForTokensUsesNative220ControlPlaneShape(t *testing.T) {
 			t.Fatalf("request order = %v, want %v", order, wantOrder)
 		}
 	}
-
 
 	wantBody := `{"grant_type":"authorization_code","code":"auth-code","redirect_uri":"` + RedirectURI + `","client_id":"` + ClientID + `","code_verifier":"verifier","state":"` + state + `"}`
 	if got := string(tokenBody); got != wantBody {

@@ -14,31 +14,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
-
-
-
-
-
-
-
-
 func LoadConfig(configFile string) (*Config, error) {
 	return LoadConfigOptional(configFile, false)
 }
-
 
 func ComputeSourceHash(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
-
-
-
-
-
-
 
 func PrepareConfigFileForUpload(configFile string) error {
 	data, errRead := os.ReadFile(configFile)
@@ -57,11 +40,6 @@ func PrepareConfigFileForUpload(configFile string) error {
 	}
 	return nil
 }
-
-
-
-
-
 
 func prepareConfigForUpload(data []byte) ([]byte, error) {
 	var cfg Config
@@ -98,10 +76,6 @@ func prepareConfigForUpload(data []byte) ([]byte, error) {
 	return cleaned, nil
 }
 
-
-
-
-
 func plaintextManagementSecrets(data []byte, effective string) []string {
 	candidates := []string{effective}
 	var doc yaml.Node
@@ -122,9 +96,6 @@ func plaintextManagementSecrets(data []byte, effective string) []string {
 	return plaintexts
 }
 
-
-
-
 func yamlScalarExists(node *yaml.Node, value string) bool {
 	if node.Kind == yaml.ScalarNode {
 		return node.ShortTag() != "!!null" && node.Value == value
@@ -141,8 +112,6 @@ func yamlScalarExists(node *yaml.Node, value string) bool {
 	return false
 }
 
-
-
 func managementSecretKeyPath(data []byte) []string {
 	var source yaml.Node
 	if yaml.Unmarshal(data, &source) == nil && len(source.Content) > 0 && yamlPath(expandConfigAliases(source.Content[0]), "management.secret-key") != nil {
@@ -150,9 +119,6 @@ func managementSecretKeyPath(data []byte) []string {
 	}
 	return []string{"remote-management", "secret-key"}
 }
-
-
-
 
 func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 
@@ -170,7 +136,6 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-
 	if optional && len(bytes.TrimSpace(data)) == 0 {
 		cfg := &Config{CredentialInFlight: DefaultCredentialInFlightConfig()}
 		cfg.NormalizePluginsConfig()
@@ -187,7 +152,6 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		}
 		return nil, errValidate
 	}
-
 
 	var cfg Config
 
@@ -240,16 +204,12 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, errValidate
 	}
 
-
-
 	if cfg.RemoteManagement.SecretKey != "" && !looksLikeBcrypt(cfg.RemoteManagement.SecretKey) {
 		hashed, errHash := hashSecret(cfg.RemoteManagement.SecretKey)
 		if errHash != nil {
 			return nil, fmt.Errorf("failed to hash remote management key: %w", errHash)
 		}
 		cfg.RemoteManagement.SecretKey = hashed
-
-
 
 		_ = SaveConfigPreserveCommentsUpdateNestedScalar(configFile, managementSecretKeyPath(data), hashed)
 	}
@@ -291,56 +251,38 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, errResolvePluginsDir
 	}
 
-
 	cfg.SanitizeGeminiKeys()
-
 
 	cfg.SanitizeInteractionsKeys()
 
-
 	cfg.SanitizeVertexCompatKeys()
-
 
 	cfg.SanitizeCodexKeys()
 
-
 	cfg.SanitizeXAIKeys()
-
 
 	cfg.SanitizeMetaKeys()
 
-
 	cfg.SanitizeCodexHeaderDefaults()
-
 
 	cfg.SanitizeClaudeHeaderDefaults()
 
-
 	cfg.SanitizeClaudeKeys()
-
 
 	cfg.SanitizeAntigravity()
 	cfg.SanitizeDevin()
 
-
 	cfg.SanitizeOpenAICompatibility()
-
 
 	cfg.OAuthExcludedModels = NormalizeOAuthExcludedModels(cfg.OAuthExcludedModels)
 
-
 	cfg.SanitizeOAuthModelAlias()
-
 
 	cfg.SanitizeOAuthSettings()
 
-
 	cfg.SanitizeOAuthRequestScopedErrors()
 
-
 	cfg.SanitizePayloadRules()
-
-
 
 	current, errRead := os.ReadFile(configFile)
 	if errRead != nil {
@@ -356,10 +298,7 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		}
 	}
 
-
-
 	cfg.SourceHash = ComputeSourceHash(data)
-
 
 	return &cfg, nil
 }

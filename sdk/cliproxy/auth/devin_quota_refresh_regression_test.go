@@ -10,11 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
-
-
-
-
 func devinRefreshAuthFixture(t *testing.T, id string) (*Manager, *Auth, string, string) {
 	t.Helper()
 	m := NewManager(nil, nil, nil)
@@ -108,8 +103,6 @@ func TestDevinQuotaExhaustionSchedulesRevalidation(t *testing.T) {
 	recoverAt := time.Now().Add(72 * time.Hour)
 	base := devinExhaustedAuth(t, m, auth.ID, model, sibling, recoverAt)
 
-
-
 	base.LastRefreshedAt = time.Now()
 	if m.shouldRefresh(base, time.Now()) {
 		t.Fatal("revalidation must respect its interval right after a refresh")
@@ -126,8 +119,6 @@ func TestDevinQuotaExhaustionSchedulesRevalidation(t *testing.T) {
 	if !m.shouldRefresh(base, time.Now()) {
 		t.Fatal("exhausted Devin credential past its revalidation interval must refresh")
 	}
-
-
 
 	healthy := &Auth{ID: "devin-healthy", Provider: "devin", Status: StatusActive, LastRefreshedAt: time.Now()}
 	if m.shouldRefresh(healthy, time.Now()) {
@@ -221,7 +212,6 @@ func TestDevinMarkResult_EnrollsExhaustedCredentialForRevalidation(t *testing.T)
 	loop := newAuthAutoRefreshLoop(m, 5*time.Second, 1)
 	m.refreshLoop = loop
 
-
 	loop.applyDirty(time.Now())
 	loop.mu.Lock()
 	_, scheduled := loop.index[auth.ID]
@@ -251,7 +241,6 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-propagated-sibling-6690")
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error: &Error{Code: "not_found", Message: "model missing", HTTPStatus: http.StatusNotFound},
@@ -262,7 +251,6 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 		t.Fatalf("sibling 404 block not established: %+v", sibState)
 	}
 	unrelatedDeadline := sibState.NextRetryAfter
-
 
 	retryAfter := 2 * time.Hour
 	m.MarkResult(context.Background(), Result{
@@ -275,7 +263,6 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 	if base.Quota.Reason != "credential_quota" {
 		t.Fatalf("expected credential_quota after propagation, got %+v", base.Quota)
 	}
-
 
 	updated := devinRefreshedObservation(base, "80%", "55%", time.Time{}, time.Time{})
 	if _, err := m.UpdateRefreshedAuth(context.Background(), base, updated); err != nil {
@@ -300,7 +287,6 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 func TestDevinRefresh_PreservesSiblingModelScoped429Block(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-sibling-429-6690")
-
 
 	longRetry := 12 * time.Hour
 	m.MarkResult(context.Background(), Result{
@@ -334,9 +320,6 @@ func TestDevinRefresh_PreservesSiblingModelScoped429Block(t *testing.T) {
 func TestDevinRefresh_PreservesSibling404UnderLongerQuota(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-sibling-404-long-6690")
-
-
-
 
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
@@ -397,7 +380,6 @@ func TestDevinRefresh_RepeatedPropagationReleasesHealthySibling(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-repeat-prop-6690")
 
-
 	m.MarkResult(context.Background(), Result{AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true})
 
 	for _, retry := range []time.Duration{2 * time.Hour, 6 * time.Hour} {
@@ -431,7 +413,6 @@ func TestDevinRefresh_OwnFailureAfterPropagationUpdatesIndependentLayer(t *testi
 		t.Run(tc.name, func(t *testing.T) {
 			withQuotaCooldownEnabled(t)
 			m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-own-after-prop-"+tc.name+"-6690")
-
 
 			quotaRetry := 2 * time.Hour
 			m.MarkResult(context.Background(), Result{
@@ -483,7 +464,6 @@ func TestDevinQuotaShadowSurvivesCooldownPersistenceReload(t *testing.T) {
 		CredentialScope: true,
 	})
 
-
 	m.mu.RLock()
 	records := m.cooldownStateRecordsForAuthLocked(m.auths[auth.ID], time.Now())
 	m.mu.RUnlock()
@@ -518,8 +498,6 @@ func TestDevinRefresh_AlternatingCredentialReportsFullyRelease(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-alternating-6690")
 
-
-
 	for _, mID := range []string{model, sibling} {
 		r := 2 * time.Hour
 		m.MarkResult(context.Background(), Result{
@@ -545,7 +523,6 @@ func TestDevinRefresh_AlternatingCredentialReportsFullyRelease(t *testing.T) {
 func TestDevinRefresh_OwnFailureUnderLongQuotaKeepsOwnDeadline(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-own-deadline-6690")
-
 
 	m.MarkResult(context.Background(), Result{AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true})
 	qr := 72 * time.Hour
@@ -624,8 +601,6 @@ func TestDevinRefresh_ReportingModelKeepsIndependentBlock(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-reporting-own-6690")
 
-
-
 	qr := 2 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -660,7 +635,6 @@ func TestDevinRefresh_ReportingModelKeepsIndependentBlock(t *testing.T) {
 func TestDevinRefresh_TwoWindowsNormalizeStaleWrap(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-two-windows-6690")
-
 
 	shortRetry := time.Minute
 	m.MarkResult(context.Background(), Result{
@@ -734,7 +708,6 @@ func TestDevinRefresh_AlternatingAfterReloadFullyReleases(t *testing.T) {
 		m2.restoreCooldownRecordLocked(record, time.Now())
 	}
 	m2.mu.Unlock()
-
 
 	m2.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
@@ -835,8 +808,6 @@ func TestDevinRefresh_InFlightCompositionKeepsExactOwnDeadline(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-inflight-exact-6690")
 
-
-
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -872,8 +843,6 @@ func TestDevinRefresh_ReportingModelKeepsModelScoped429(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, _ := devinRefreshAuthFixture(t, "devin-reporting-429-6690")
 
-
-
 	longRetry := 12 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -904,7 +873,6 @@ func TestDevinRefresh_ReportingModelKeepsModelScoped429(t *testing.T) {
 func TestDevinRefresh_LegacyLabelOnlySiblingReleases(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-legacy-label-6690")
-
 
 	recoverAt := time.Now().Add(72 * time.Hour)
 	seed, _ := m.GetByID(auth.ID)
@@ -943,8 +911,6 @@ func TestDevinRefresh_ExpiredWindowThenNewOwnFailurePreserved(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-expire-success-6690")
 
-
-
 	longRetry := 12 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -958,8 +924,6 @@ func TestDevinRefresh_ExpiredWindowThenNewOwnFailurePreserved(t *testing.T) {
 		RetryAfter:      &shortRetry,
 		CredentialScope: true,
 	})
-
-
 
 	seed, _ := m.GetByID(auth.ID)
 	past := time.Now().Add(-time.Hour)
@@ -980,7 +944,6 @@ func TestDevinRefresh_ExpiredWindowThenNewOwnFailurePreserved(t *testing.T) {
 	if _, err := m.Update(context.Background(), seed); err != nil {
 		t.Fatalf("expire seed: %v", err)
 	}
-
 
 	m.MarkResult(context.Background(), Result{AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true})
 
@@ -1032,7 +995,6 @@ func TestDevinRestorePreservesLiveUnwrappedIndependent(t *testing.T) {
 		t.Fatalf("seed live: %v", err)
 	}
 
-
 	staleRecord := CooldownStateRecord{
 		Provider: "devin", AuthID: auth.ID, Model: "claude-opus-5-5", Status: "cooling",
 		NextRetryAfter: time.Now().Add(72 * time.Hour), Reason: "credential_quota",
@@ -1060,8 +1022,6 @@ func TestDevinRestoreDoesNotCaptureCredentialDerivedLegacyQuota(t *testing.T) {
 	if _, err := m.Register(context.Background(), auth); err != nil {
 		t.Fatalf("register: %v", err)
 	}
-
-
 
 	live, _ := m.GetByID(auth.ID)
 	liveState := &ModelState{
@@ -1096,7 +1056,6 @@ func TestDevinRestoreDoesNotCaptureCredentialDerivedLegacyQuota(t *testing.T) {
 func TestDevinRestoreIndependentRecordUnderLiveWrapPreserved(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-restore-under-wrap-6690")
-
 
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
@@ -1225,8 +1184,6 @@ func TestDevinRefresh_RestoredKeepsUnrelatedModelCooldown(t *testing.T) {
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-refresh-unrelated-6690")
 	recoverAt := time.Now().Add(72 * time.Hour)
 	base := devinExhaustedAuth(t, m, auth.ID, model, sibling, recoverAt)
-
-
 
 	seed, _ := m.GetByID(auth.ID)
 	longBlock := time.Now().Add(120 * time.Hour)

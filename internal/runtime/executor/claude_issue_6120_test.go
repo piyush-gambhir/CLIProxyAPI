@@ -14,14 +14,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120(t *testing.T) {
 	ctx := directClaudeMessagesContext()
 	payload := []byte(`{"model":"claude-opus-5-5","system":[{"type":"text","text":"caller system"}],"messages":[{"role":"user","content":"hello"}]}`)
 	auth := directClaudeOAuthAuth()
-
 
 	gotPayload, cloaked, err := applyCloaking(ctx, &config.Config{}, auth, payload, "sk-ant-oat-direct-messages-test", false, true)
 	if err != nil {
@@ -33,7 +29,6 @@ func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120(t *testing.
 	if !ojson.GetBytes(gotPayload, "system.#(text==\"You are Claude Code, Anthropic's official CLI for Claude.\")").Exists() {
 		t.Fatal("expected cloaked payload to contain Claude Code CLI identity system block")
 	}
-
 
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -81,9 +76,6 @@ func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloak_Issue6120(t *testing.
 		t.Fatal("expected upstream body to contain Claude Code CLI identity system block")
 	}
 }
-
-
-
 
 func TestClaudeExecutor_DirectMessagesOAuthDefaultsToCloakStream_Issue6120(t *testing.T) {
 	var seenHeaders http.Header

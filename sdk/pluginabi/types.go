@@ -6,63 +6,25 @@ import (
 )
 
 const (
-
 	ABIVersion uint32 = 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	SchemaVersion uint32 = 10
 
-
 	SchemaVersionStreamChunkOmitRequestBody uint32 = 3
-
 
 	SchemaVersionWebSocketResponseObserver uint32 = 4
 
-
 	SchemaVersionStreamChunkOmitHistory uint32 = 5
-
 
 	SchemaVersionRawManagementResponse uint32 = 6
 
-
 	SchemaVersionRequestInterceptorOmitBody uint32 = 7
-
 
 	SchemaVersionFrontendAuthOmitBody uint32 = 7
 
-
 	SchemaVersionRequestInterceptorBodyPatch uint32 = 8
 
-
 	SchemaVersionMultiProviderModels uint32 = 9
-
 
 	SchemaVersionMultiAuthProviders uint32 = 10
 )
@@ -85,7 +47,6 @@ const (
 
 	MethodFrontendAuthIdentifier   = "frontend_auth.identifier"
 	MethodFrontendAuthAuthenticate = "frontend_auth.authenticate"
-
 
 	MethodSchedulerPick = "scheduler.pick"
 
@@ -152,39 +113,22 @@ const (
 	MethodHostRoutingResetCooldown = "host.routing.reset_cooldown"
 )
 
-
-
 const (
-
-
-
-
 	ErrorCodeCredentialQuota = "credential_quota"
-
-
 
 	ErrorCodeTransientRateLimit = "transient_rate_limit"
 
-
 	ErrorCodeRequestScoped = "request_scoped"
-
-
 
 	ErrorCodeForceCooldown = "force_cooldown"
 
-
-
 	ErrorCodeStreamTruncated = "stream_truncated"
-
 
 	ErrorCodeConnectionLifecycle = "connection_lifecycle"
 
-
 	ErrorCodeTransientTransport = "transient_transport"
 
-
 	ErrorCodeModelNotFound = "model_not_found"
-
 
 	ErrorCodeNotImplemented = "not_implemented"
 )
@@ -195,41 +139,17 @@ type Envelope struct {
 	Error  *Error          `json:"error,omitempty"`
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 type Error struct {
 	Code      string `json:"code"`
 	Message   string `json:"message"`
 	Retryable bool   `json:"retryable,omitempty"`
 
-
 	HTTPStatus int `json:"http_status,omitempty"`
-
-
-
-
 
 	RetryAfterSeconds int `json:"retry_after_seconds,omitempty"`
 
-
-
 	CredentialScoped bool `json:"credential_scoped,omitempty"`
 }
-
 
 func (e *Error) Error() string {
 	if e == nil {
@@ -238,14 +158,12 @@ func (e *Error) Error() string {
 	return e.Message
 }
 
-
 func (e *Error) ErrorCode() string {
 	if e == nil {
 		return ""
 	}
 	return e.Code
 }
-
 
 func (e *Error) StatusCode() int {
 	if e == nil {
@@ -254,14 +172,12 @@ func (e *Error) StatusCode() int {
 	return e.HTTPStatus
 }
 
-
 func (e *Error) IsCredentialScoped() bool {
 	if e == nil {
 		return false
 	}
 	return e.CredentialScoped || strings.EqualFold(strings.TrimSpace(e.Code), ErrorCodeCredentialQuota)
 }
-
 
 func (e *Error) IsRequestScoped() bool {
 	if e == nil || e.IsCredentialScoped() {
@@ -270,7 +186,6 @@ func (e *Error) IsRequestScoped() bool {
 	return strings.EqualFold(strings.TrimSpace(e.Code), ErrorCodeRequestScoped)
 }
 
-
 func (e *Error) IsTransientRateLimit() bool {
 	if e == nil || e.IsCredentialScoped() {
 		return false
@@ -278,14 +193,12 @@ func (e *Error) IsTransientRateLimit() bool {
 	return strings.EqualFold(strings.TrimSpace(e.Code), ErrorCodeTransientRateLimit)
 }
 
-
 func (e *Error) IsStreamTruncated() bool {
 	if e == nil || e.IsCredentialScoped() {
 		return false
 	}
 	return strings.EqualFold(strings.TrimSpace(e.Code), ErrorCodeStreamTruncated)
 }
-
 
 func NewError(code, message string, httpStatus ...int) *Error {
 	status := 0
@@ -298,7 +211,6 @@ func NewError(code, message string, httpStatus ...int) *Error {
 		HTTPStatus: status,
 	}
 }
-
 
 func NewErrorEnvelope(code, message string, httpStatus ...int) ([]byte, error) {
 	return json.Marshal(Envelope{

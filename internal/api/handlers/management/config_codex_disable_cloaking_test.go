@@ -19,7 +19,6 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 		configFilePath: writeTestConfigFile(t),
 	}
 
-
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/codex-api-key", strings.NewReader(`{"index":0,"value":{"disable-codex-cloaking":true}}`))
@@ -32,7 +31,6 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 	if h.cfg.CodexKey[0].DisableCodexCloaking == nil || !*h.cfg.CodexKey[0].DisableCodexCloaking {
 		t.Fatalf("disable-codex-cloaking = %v, want true", h.cfg.CodexKey[0].DisableCodexCloaking)
 	}
-
 
 	rec2 := httptest.NewRecorder()
 	ctx2, _ := gin.CreateTestContext(rec2)
@@ -47,7 +45,6 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 		t.Fatalf("disable-codex-cloaking = %v, want false", h.cfg.CodexKey[0].DisableCodexCloaking)
 	}
 
-
 	rec3 := httptest.NewRecorder()
 	ctx3, _ := gin.CreateTestContext(rec3)
 	ctx3.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/codex-api-key", strings.NewReader(`{"index":0,"value":{"disable-codex-cloaking":null}}`))
@@ -60,7 +57,6 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 	if h.cfg.CodexKey[0].DisableCodexCloaking != nil {
 		t.Fatalf("disable-codex-cloaking = %v, want nil", h.cfg.CodexKey[0].DisableCodexCloaking)
 	}
-
 
 	rec4 := httptest.NewRecorder()
 	ctx4, _ := gin.CreateTestContext(rec4)

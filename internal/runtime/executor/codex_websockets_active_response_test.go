@@ -13,10 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 	received := make(chan string, 8)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +26,6 @@ func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 				t.Errorf("close upstream: %v", errClose)
 			}
 		}()
-
 
 		for _, payload := range []string{
 			`{"type":"response.created","response":{"id":"r1"}}`,
@@ -99,11 +94,9 @@ func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 	read()
 	read()
 
-
 	if errInterrupt := interrupt(`{"type":"response.interrupt","response_id":"r1"}`); errInterrupt != nil {
 		t.Fatalf("interrupt active r1 after queued failure = %v, want nil (forwarded)", errInterrupt)
 	}
-
 
 	if errUnknown := interrupt(`{"type":"response.interrupt","response_id":"unknown"}`); !errors.Is(errUnknown, cliproxyexecutor.ErrUpstreamWebsocketInterruptRejected) {
 		t.Fatalf("unknown interrupt during r1 = %v, want ErrUpstreamWebsocketInterruptRejected", errUnknown)
@@ -111,15 +104,12 @@ func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 
 	read()
 
-
-
 	if errTerminal := interrupt(`{"type":"response.interrupt","response_id":"r1"}`); errTerminal != nil {
 		t.Fatalf("interrupt completed r1 = %v, want nil (already terminal)", errTerminal)
 	}
 	if errUnknown := interrupt(`{"type":"response.interrupt","response_id":"unknown-2"}`); !errors.Is(errUnknown, cliproxyexecutor.ErrUpstreamWebsocketInterruptRejected) {
 		t.Fatalf("unknown interrupt after completion = %v, want ErrUpstreamWebsocketInterruptRejected", errUnknown)
 	}
-
 
 	if errWrite := client.WriteMessage(websocket.TextMessage, []byte("barrier")); errWrite != nil {
 		t.Fatal(errWrite)

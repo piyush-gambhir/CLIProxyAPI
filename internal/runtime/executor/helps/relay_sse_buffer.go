@@ -2,15 +2,12 @@ package helps
 
 import "bytes"
 
-
-
 type RelaySSEBuffer struct {
 	pending   []byte
 	sse       bool
 	scan      int
 	lineStart int
 }
-
 
 func (b *RelaySSEBuffer) Feed(chunk []byte) [][]byte {
 	b.pending = append(b.pending, chunk...)
@@ -56,7 +53,6 @@ func (b *RelaySSEBuffer) Feed(chunk []byte) [][]byte {
 	}
 	return frames
 }
-
 
 func (b *RelaySSEBuffer) Finish() [][]byte {
 	if len(b.pending) == 0 {

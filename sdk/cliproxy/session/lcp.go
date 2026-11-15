@@ -37,8 +37,6 @@ var (
 	thinkPattern   = regexp.MustCompile(`(?is)\s*<(?:think|thinking)>.*?</(?:think|thinking)>\s*`)
 )
 
-
-
 type CanonicalPart struct {
 	Kind         string `json:"kind"`
 	MIME         string `json:"mime,omitempty"`
@@ -48,13 +46,10 @@ type CanonicalPart struct {
 	Sampled      bool   `json:"sampled,omitempty"`
 }
 
-
 type CanonicalTurn struct {
 	Role  string          `json:"role"`
 	Parts []CanonicalPart `json:"parts"`
 }
-
-
 
 func FastTurnFingerprint(turn CanonicalTurn) string {
 	turn = normalizeCanonicalTurn(turn)
@@ -83,8 +78,6 @@ func writeFingerprintField(hash interface{ Write([]byte) (int, error) }, value s
 	_, _ = hash.Write([]byte(value))
 	_, _ = hash.Write([]byte("\x00"))
 }
-
-
 
 func ExtractCanonicalTurns(format sdktranslator.Format, payload []byte) []CanonicalTurn {
 	if len(payload) == 0 {
@@ -436,10 +429,6 @@ func computeHexSHA256(data string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-
-
-
-
 func limitCanonicalParts(parts, added []CanonicalPart) []CanonicalPart {
 	if len(added) == 0 {
 		return parts
@@ -630,7 +619,6 @@ func formatEqual(left, right sdktranslator.Format) bool {
 	return strings.EqualFold(strings.TrimSpace(left.String()), strings.TrimSpace(right.String()))
 }
 
-
 type MerklePrefixMatch struct {
 	AuthID          string
 	SessionID       string
@@ -642,7 +630,6 @@ type MerklePrefixMatch struct {
 	AccessNumber    uint64
 }
 
-
 type MerklePrefixMatcherConfig struct {
 	TTL       time.Duration
 	MaxTurns  int
@@ -652,10 +639,6 @@ type MerklePrefixMatcherConfig struct {
 
 	NowFunc func() time.Time
 }
-
-
-
-
 
 type MerklePrefixMatcher struct {
 	mu            sync.Mutex
@@ -697,11 +680,9 @@ type lcpGroup struct {
 	lastAccessNumber  uint64
 }
 
-
 func NewMerklePrefixMatcher(ttl time.Duration) *MerklePrefixMatcher {
 	return NewMerklePrefixMatcherWithConfig(MerklePrefixMatcherConfig{TTL: ttl})
 }
-
 
 func NewMerklePrefixMatcherWithConfig(cfg MerklePrefixMatcherConfig) *MerklePrefixMatcher {
 	if cfg.TTL <= 0 {
@@ -742,8 +723,6 @@ func (m *MerklePrefixMatcher) now() time.Time {
 	return time.Now()
 }
 
-
-
 func (m *MerklePrefixMatcher) Prepare(turns []CanonicalTurn) ([]string, int) {
 	if m == nil {
 		return nil, 0
@@ -751,15 +730,12 @@ func (m *MerklePrefixMatcher) Prepare(turns []CanonicalTurn) ([]string, int) {
 	return m.fingerprints(turns), minimumAffinityPrefixLength(turns)
 }
 
-
-
 func (m *MerklePrefixMatcher) PrepareExt(turns []CanonicalTurn) (fingerprints []string, minPrefixLength int, tailFingerprints []string, envDigest string) {
 	if m == nil {
 		return nil, 0, nil, ""
 	}
 	return m.fingerprints(turns), minimumAffinityPrefixLength(turns), m.tailFingerprints(turns), EnvironmentDigest(turns)
 }
-
 
 func EnvironmentDigest(turns []CanonicalTurn) string {
 	hash := sha256.New()
@@ -818,7 +794,6 @@ func extractTailFingerprints(fingerprints []string) []string {
 	return append([]string(nil), fingerprints[start:]...)
 }
 
-
 func (m *MerklePrefixMatcher) Match(namespace string, turns []CanonicalTurn) (MerklePrefixMatch, bool) {
 	fingerprints, minPrefixLength, tailFingerprints, envDigest := m.PrepareExt(turns)
 	return m.MatchFingerprintsWithContext(namespace, fingerprints, tailFingerprints, envDigest, minPrefixLength)
@@ -841,11 +816,9 @@ func (m *MerklePrefixMatcher) sanitizeFingerprints(fingerprints []string, minPre
 	return fingerprints, minPrefixLength, true
 }
 
-
 func (m *MerklePrefixMatcher) MatchFingerprints(namespace string, fingerprints []string, minPrefixLength int) (MerklePrefixMatch, bool) {
 	return m.MatchFingerprintsWithContext(namespace, fingerprints, extractTailFingerprints(fingerprints), fallbackEnvironmentDigest(fingerprints, minPrefixLength), minPrefixLength)
 }
-
 
 func (m *MerklePrefixMatcher) MatchFingerprintsWithContext(namespace string, fingerprints, tailFingerprints []string, envDigest string, minPrefixLength int) (MerklePrefixMatch, bool) {
 	if m == nil || namespace == "" {
@@ -871,18 +844,15 @@ func (m *MerklePrefixMatcher) MatchFingerprintsWithContext(namespace string, fin
 	return match, true
 }
 
-
 func (m *MerklePrefixMatcher) Bind(namespace string, turns []CanonicalTurn, authID string) string {
 	fingerprints, minPrefixLength, tailFingerprints, envDigest := m.PrepareExt(turns)
 	return m.BindFingerprintsWithContext(namespace, fingerprints, tailFingerprints, envDigest, minPrefixLength, authID).SessionID
 }
 
-
 func (m *MerklePrefixMatcher) BindWithResult(namespace string, turns []CanonicalTurn, authID string) MerklePrefixBindResult {
 	fingerprints, minPrefixLength, tailFingerprints, envDigest := m.PrepareExt(turns)
 	return m.BindFingerprintsWithContext(namespace, fingerprints, tailFingerprints, envDigest, minPrefixLength, authID)
 }
-
 
 type MerklePrefixBindResult struct {
 	SessionID       string
@@ -893,16 +863,13 @@ type MerklePrefixBindResult struct {
 	AccessNumber    uint64
 }
 
-
 func (m *MerklePrefixMatcher) BindFingerprints(namespace string, fingerprints []string, minPrefixLength int, authID string) string {
 	return m.BindFingerprintsWithResult(namespace, fingerprints, minPrefixLength, authID).SessionID
 }
 
-
 func (m *MerklePrefixMatcher) BindFingerprintsWithResult(namespace string, fingerprints []string, minPrefixLength int, authID string) MerklePrefixBindResult {
 	return m.BindFingerprintsWithContext(namespace, fingerprints, extractTailFingerprints(fingerprints), fallbackEnvironmentDigest(fingerprints, minPrefixLength), minPrefixLength, authID)
 }
-
 
 func (m *MerklePrefixMatcher) BindFingerprintsWithContext(namespace string, fingerprints, tailFingerprints []string, envDigest string, minPrefixLength int, authID string) MerklePrefixBindResult {
 	if m == nil || strings.TrimSpace(namespace) == "" || strings.TrimSpace(authID) == "" {
@@ -924,17 +891,14 @@ func (m *MerklePrefixMatcher) BindFingerprintsWithContext(namespace string, fing
 	return m.bindLocked(namespace, fingerprints, tailFingerprints, envDigest, minPrefixLength, strings.TrimSpace(authID), m.now())
 }
 
-
 func (m *MerklePrefixMatcher) Touch(namespace string, turns []CanonicalTurn, authID string) bool {
 	fingerprints, minPrefixLength, tailFingerprints, envDigest := m.PrepareExt(turns)
 	return m.TouchFingerprintsWithContext(namespace, fingerprints, tailFingerprints, envDigest, minPrefixLength, authID)
 }
 
-
 func (m *MerklePrefixMatcher) TouchFingerprints(namespace string, fingerprints []string, minPrefixLength int, authID string) bool {
 	return m.TouchFingerprintsWithContext(namespace, fingerprints, extractTailFingerprints(fingerprints), fallbackEnvironmentDigest(fingerprints, minPrefixLength), minPrefixLength, authID)
 }
-
 
 func (m *MerklePrefixMatcher) TouchFingerprintsWithContext(namespace string, fingerprints, tailFingerprints []string, envDigest string, minPrefixLength int, authID string) bool {
 	if m == nil || strings.TrimSpace(namespace) == "" || strings.TrimSpace(authID) == "" {
@@ -956,18 +920,14 @@ func (m *MerklePrefixMatcher) TouchFingerprintsWithContext(namespace string, fin
 	return m.touchLocked(namespace, fingerprints, tailFingerprints, envDigest, minPrefixLength, strings.TrimSpace(authID), m.now())
 }
 
-
 func (m *MerklePrefixMatcher) Remove(namespace string, turns []CanonicalTurn, authID string) bool {
 	fingerprints, _ := m.Prepare(turns)
 	return m.RemoveFingerprints(namespace, fingerprints, authID)
 }
 
-
 func (m *MerklePrefixMatcher) RemoveFingerprints(namespace string, fingerprints []string, authID string) bool {
 	return m.RemoveFingerprintsBefore(namespace, fingerprints, authID, 0)
 }
-
-
 
 func (m *MerklePrefixMatcher) RemoveFingerprintsBefore(namespace string, fingerprints []string, authID string, maxGeneration uint64) bool {
 	if m == nil || namespace == "" || authID == "" || len(fingerprints) == 0 {
@@ -1003,8 +963,6 @@ func (m *MerklePrefixMatcher) RemoveFingerprintsBefore(namespace string, fingerp
 	return true
 }
 
-
-
 func (m *MerklePrefixMatcher) RemoveSessionBefore(namespace, sessionID, authID string, maxGeneration uint64) bool {
 	if m == nil || namespace == "" || sessionID == "" || authID == "" {
 		return false
@@ -1032,7 +990,6 @@ func (m *MerklePrefixMatcher) RemoveSessionBefore(namespace, sessionID, authID s
 	return len(toRemove) > 0
 }
 
-
 func (m *MerklePrefixMatcher) InvalidateAuth(authID string) {
 	if m == nil || authID == "" {
 		return
@@ -1048,7 +1005,6 @@ func (m *MerklePrefixMatcher) InvalidateAuth(authID string) {
 	}
 }
 
-
 func (m *MerklePrefixMatcher) Clear() {
 	if m == nil {
 		return
@@ -1060,12 +1016,8 @@ func (m *MerklePrefixMatcher) Clear() {
 	m.groupCount = 0
 	m.prefixCount = 0
 
-
-
 	m.mu.Unlock()
 }
-
-
 
 func (m *MerklePrefixMatcher) LookupSession(sessionID string) (authIDs []string, namespace string, ok bool) {
 	if m == nil || sessionID == "" {
@@ -1173,7 +1125,6 @@ func (m *MerklePrefixMatcher) touchLocked(namespace string, fingerprints, tailFi
 			if existing.authID == "home-pending" || existing.authID == "" {
 				existing.authID = authID
 			} else {
-
 
 				return false
 			}
@@ -1428,11 +1379,7 @@ func (m *MerklePrefixMatcher) matchLocked(namespace string, fingerprints, tailFi
 		isFork := false
 		nodeKind := best.nodeKind
 
-
-
-
 		if bestLength < len(best.fingerprints) && len(fingerprints) > bestLength {
-
 
 			if compactionMatch, okCompaction := m.matchCompactionLocked(ns, namespace, fingerprints, tailFingerprints, envDigest, prefixKeys, minPrefixLength, bestLength, now); okCompaction {
 				return compactionMatch, true
@@ -1533,7 +1480,6 @@ func (m *MerklePrefixMatcher) matchCompactionLocked(ns *lcpNamespace, namespace 
 	if hasOverflow || len(maxCandidates) == 0 {
 		return MerklePrefixMatch{}, false
 	}
-
 
 	var leaves []*lcpGroup
 	for _, c1 := range maxCandidates {
@@ -1636,9 +1582,6 @@ func isCompactionOverlap(fullCandLen, candTailLen, candEnd int, fullParentLen, p
 		}
 	}
 
-
-
-
 	return (candEnd-overlap+1 > 0) || parentStart > 0
 }
 
@@ -1664,7 +1607,6 @@ func newestMatchingGroup(bucket map[string]*lcpGroup, fingerprints []string, now
 		if group == nil || !now.Before(group.expiresAt) || group.minPrefixLength > len(fingerprints) || len(group.fingerprints) < len(fingerprints) || !equalStrings(group.fingerprints[:len(fingerprints)], fingerprints) {
 			continue
 		}
-
 
 		if best == nil || len(group.fingerprints) > len(best.fingerprints) ||
 			(len(group.fingerprints) == len(best.fingerprints) &&

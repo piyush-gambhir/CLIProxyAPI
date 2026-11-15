@@ -14,9 +14,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 type xaiSpeechRequestError struct {
 	statusErr
 }
@@ -24,8 +21,6 @@ type xaiSpeechRequestError struct {
 func (xaiSpeechRequestError) IsRequestScoped() bool {
 	return true
 }
-
-
 
 var xaiSpeechModelUnavailablePatterns = [...]string{
 	"model_not_found",
@@ -41,8 +36,6 @@ var xaiSpeechModelUnavailablePatterns = [...]string{
 	"not available for your plan",
 	"not available for your account",
 }
-
-
 
 func xaiSpeechModelUnavailable(body []byte) bool {
 	if !ojson.ValidBytes(body) {
@@ -66,10 +59,6 @@ func xaiSpeechModelUnavailableText(text string) bool {
 	return false
 }
 
-
-
-
-
 func xaiSpeechStatusErr(code int, body []byte) error {
 	err := xaiStatusErr(code, body)
 	if err.code == http.StatusNotFound && !xaiSpeechModelUnavailable(body) {
@@ -89,7 +78,6 @@ func (e *XAIExecutor) executeSpeech(ctx context.Context, auth *cliproxyauth.Auth
 	token, _ := xaiCreds(auth)
 	requestURL := xaiSpeechRequestURL(auth)
 	logXAIResolvedBaseURL(ctx, strings.TrimSuffix(requestURL, xaiTTSPath))
-
 
 	doc := ojson.NewDoc(req.Payload)
 	helps.FinalizePayloadDoc(helps.WithPayloadFinalizer(ctx, helps.NewPayloadFinalizer(e.cfg, e.Identifier(), model, "openai", "", req.Payload, req, opts)), doc)

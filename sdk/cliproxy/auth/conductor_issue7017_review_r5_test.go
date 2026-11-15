@@ -8,10 +8,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 func TestIssue7017ExpiredOwnQuotaDoesNotBlockTransientRetry(t *testing.T) {
 	model := "gpt-6.1-sol"
 	expired := time.Now().Add(-time.Hour)

@@ -22,10 +22,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 	for _, buffering := range []bool{false, true} {
 		name := "unbuffered"
@@ -52,7 +48,6 @@ func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 
 					return
 				}
-
 
 				w.Header().Set("Content-Type", "text/event-stream")
 				w.WriteHeader(http.StatusOK)
@@ -96,7 +91,6 @@ func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 				t.Fatal(errRegister)
 			}
 
-
 			req := cliproxyexecutor.Request{
 				Model:   model,
 				Payload: []byte(fmt.Sprintf(`{"model":%q,"input":"hello","stream":true}`, model)),
@@ -138,9 +132,6 @@ func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestCodexStreamDisconnectExhaustionNotInvalidRequestError(t *testing.T) {
 	const model = "gpt-6-astra"
@@ -200,9 +191,6 @@ func TestCodexStreamDisconnectExhaustionNotInvalidRequestError(t *testing.T) {
 		t.Fatalf("error.type = %q, want server_error", errorResp.Error.Type)
 	}
 }
-
-
-
 
 func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 	for _, buffering := range []bool{false, true} {
@@ -289,7 +277,6 @@ func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 				streamBody += string(chunk.Payload)
 			}
 
-
 			if !strings.Contains(streamBody, "MOCK_A_PARTIAL") {
 				t.Fatalf("expected partial output MOCK_A_PARTIAL in stream body, got: %s", streamBody)
 			}
@@ -302,15 +289,12 @@ func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 			gotAttempts := append([]string(nil), attempts...)
 			mu.Unlock()
 
-
 			if len(gotAttempts) != 1 || gotAttempts[0] != "account-a" {
 				t.Fatalf("attempts = %v, want [account-a] (partial output must not replay to B)", gotAttempts)
 			}
 		})
 	}
 }
-
-
 
 func TestCodexStreamAbnormalDisconnectBeforeOutputFailsOver(t *testing.T) {
 	const model = "gpt-6-astra"
@@ -338,7 +322,6 @@ func TestCodexStreamAbnormalDisconnectBeforeOutputFailsOver(t *testing.T) {
 			}
 			return
 		}
-
 
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)

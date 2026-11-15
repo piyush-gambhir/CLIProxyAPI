@@ -5,11 +5,6 @@ import (
 	"strings"
 )
 
-
-
-
-
-
 func UpdateAvailable(installed, latest string) bool {
 	installed = normalizeVersion(installed)
 	latest = normalizeVersion(latest)
@@ -30,9 +25,6 @@ func normalizeVersion(version string) string {
 	}
 	return version
 }
-
-
-
 
 func compareVersions(a, b string) (int, bool) {
 	segmentsA := strings.Split(a, ".")

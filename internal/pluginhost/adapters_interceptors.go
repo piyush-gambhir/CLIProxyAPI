@@ -164,7 +164,6 @@ func (h *Host) interceptRequest(ctx context.Context, req pluginapi.RequestInterc
 				}
 			}
 
-
 			if interceptor == nil || !requestInterceptorOmitsBody(record, beforeAuth) {
 				continue
 			}
@@ -245,7 +244,6 @@ func (h *Host) interceptRequest(ctx context.Context, req pluginapi.RequestInterc
 	return current
 }
 
-
 func (h *Host) CompleteRequest(ctx context.Context, completion pluginapi.RequestCompletion) {
 	h.CompleteRequestExcept(ctx, completion, "")
 }
@@ -290,7 +288,6 @@ func (h *Host) ObserveWebSocketResponseEventExcept(ctx context.Context, event pl
 		h.callWebSocketResponseObserver(ctx, record, observer, next)
 	}
 }
-
 
 func (h *Host) CompleteRequestExcept(ctx context.Context, completion pluginapi.RequestCompletion, skipPluginID string) {
 	if h == nil {
@@ -373,7 +370,6 @@ func (h *Host) InterceptStreamChunkExcept(ctx context.Context, req pluginapi.Str
 		nextReq.RequestHeaders = cloneHeader(req.RequestHeaders)
 		nextReq.ResponseHeaders = cloneHeader(current.Headers)
 
-
 		if req.ChunkIndex != pluginapi.StreamChunkHeaderInitIndex && streamChunkOmitsRequestBodies(record.plugin.SchemaVersion) {
 			nextReq.OriginalRequest = nil
 			nextReq.RequestBody = nil
@@ -382,7 +378,6 @@ func (h *Host) InterceptStreamChunkExcept(ctx context.Context, req pluginapi.Str
 			nextReq.RequestBody = bytes.Clone(req.RequestBody)
 		}
 		nextReq.Body = bytes.Clone(current.Body)
-
 
 		if req.ChunkIndex != pluginapi.StreamChunkHeaderInitIndex && streamChunkOmitsHistory(record.plugin.SchemaVersion) {
 			nextReq.HistoryChunks = nil
@@ -418,9 +413,6 @@ func (h *Host) HasStreamInterceptors() bool {
 	return false
 }
 
-
-
-
 func (h *Host) StreamChunkPayloadIncludesRequestBody() bool {
 	if h == nil {
 		return false
@@ -439,9 +431,6 @@ func (h *Host) StreamChunkPayloadIncludesRequestBody() bool {
 func streamChunkOmitsRequestBodies(schemaVersion uint32) bool {
 	return schemaVersion >= pluginabi.SchemaVersionStreamChunkOmitRequestBody
 }
-
-
-
 
 func (h *Host) StreamChunkPayloadIncludesHistory() bool {
 	if h == nil {

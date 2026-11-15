@@ -7,8 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/api/handlers/management"
 )
 
-
-
 func (s *Server) registerManagementV8Routes() {
 	const prefix = "/v8/management"
 	s.engine.GET(prefix+"/oauth/callback", s.managementAvailabilityMiddleware(), s.mgmt.GetOAuthCallbackV8)

@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (m *Manager) SetRetryConfig(retry int, maxRetryInterval time.Duration, maxRetryCredentials int) {
 	if m == nil {
 		return
@@ -31,7 +30,6 @@ func (m *Manager) SetRetryConfig(retry int, maxRetryInterval time.Duration, maxR
 	m.maxRetryCredentials.Store(int32(maxRetryCredentials))
 	m.maxRetryInterval.Store(maxRetryInterval.Nanoseconds())
 }
-
 
 func (m *Manager) RegisterExecutor(executor ProviderExecutor) {
 	if executor == nil {
@@ -69,7 +67,6 @@ func (m *Manager) RegisterExecutor(executor ProviderExecutor) {
 	}
 }
 
-
 func (m *Manager) UnregisterExecutor(provider string) {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	if provider == "" {
@@ -79,7 +76,6 @@ func (m *Manager) UnregisterExecutor(provider string) {
 	delete(m.executors, provider)
 	m.mu.Unlock()
 }
-
 
 func (m *Manager) Register(ctx context.Context, auth *Auth) (*Auth, error) {
 	if auth == nil {
@@ -139,8 +135,6 @@ func (m *Manager) Register(ctx context.Context, auth *Auth) (*Auth, error) {
 	auth.Generation = 1
 	aliasTableBeforeSave := m.oauthModelAlias.Load()
 
-
-
 	if errPersist := m.persistLocked(ctx, auth); errPersist != nil {
 		log.WithFields(log.Fields{"auth_id": auth.ID, "credential": auth.ID, "provider": auth.Provider}).Warnf("failed to persist registered auth %s (%s): %v", auth.Provider, auth.ID, errPersist)
 	}
@@ -188,26 +182,17 @@ const (
 	updateModePrepare
 )
 
-
-
 func (m *Manager) UpdatePreparedAuth(ctx context.Context, base, updated *Auth) (*Auth, error) {
 	return m.updateInternal(ctx, base, updated, updateModePrepare)
 }
-
-
 
 func (m *Manager) UpdateRefreshedAuth(ctx context.Context, base, updated *Auth) (*Auth, error) {
 	return m.updateInternal(ctx, base, updated, updateModeRefresh)
 }
 
-
 func (m *Manager) Update(ctx context.Context, auth *Auth) (*Auth, error) {
 	return m.updateInternal(ctx, nil, auth, updateModeReplace)
 }
-
-
-
-
 
 func (m *Manager) Modify(ctx context.Context, id string, expectedEpoch uint64, edit func(*Auth) error) (*Auth, bool, error) {
 	id = strings.TrimSpace(id)
@@ -268,9 +253,6 @@ func (m *Manager) updateInternal(ctx context.Context, base, auth *Auth, mode upd
 	return committedAuth, err
 }
 
-
-
-
 func (m *Manager) finishAuthUpdate(ctx context.Context, committed *Auth, persistCooldown bool) {
 	if committed == nil {
 		return
@@ -289,14 +271,6 @@ func (m *Manager) finishAuthUpdate(ctx context.Context, committed *Auth, persist
 	}
 }
 
-
-
-
-
-
-
-
-
 func (m *Manager) updateInternalLocked(ctx context.Context, base, auth *Auth, mode updateAuthMode) (committedAuth *Auth, committed bool, persistCooldown bool, err error) {
 	if auth == nil || auth.ID == "" {
 		return nil, false, false, nil
@@ -313,7 +287,6 @@ func (m *Manager) updateInternalLocked(ctx context.Context, base, auth *Auth, mo
 		if !ok || existing == nil {
 			return nil, false, false, nil
 		}
-
 
 		if !auth.FileSnapshotMatchesDisk() {
 			m.mu.RLock()
@@ -343,7 +316,6 @@ func (m *Manager) updateInternalLocked(ctx context.Context, base, auth *Auth, mo
 		if auth.CodexRefreshPatch == nil || !auth.CodexRefreshPatch.CanApplyTo(existing.Metadata) {
 			current := existing.Clone()
 			m.mu.Unlock()
-
 
 			return current, false, false, nil
 		}
@@ -504,8 +476,6 @@ func (m *Manager) updateInternalLocked(ctx context.Context, base, auth *Auth, mo
 			applyPreservedRenewalState(existing, auth, mode, now)
 		}
 
-
-
 		devinQuotaRestored := mode == updateModeRefresh && applyDevinQuotaRestoration(auth, existing, now)
 		if devinQuotaRestored {
 			cooldownStateChanged = true
@@ -576,7 +546,6 @@ func (m *Manager) updateInternalLocked(ctx context.Context, base, auth *Auth, mo
 		}
 	}
 	auth.EnsureIndex()
-
 
 	existingBeforeSave := existing.Clone()
 	refreshPatchBeforeSave := auth.CodexRefreshPatch
@@ -675,13 +644,9 @@ func equalErrorPtr(a, b *Error) bool {
 	return a.Code == b.Code && a.Message == b.Message && a.Retryable == b.Retryable && a.HTTPStatus == b.HTTPStatus
 }
 
-
-
 func (m *Manager) Remove(ctx context.Context, id string) {
 	m.RemoveIf(ctx, id, nil)
 }
-
-
 
 func (m *Manager) RemoveIf(ctx context.Context, id string, predicate func(*Auth) bool) bool {
 	if m == nil {
@@ -788,9 +753,7 @@ func (m *Manager) forgetWeightedAuthUpTo(authID string, maxEpoch, maxGen uint64)
 	}
 }
 
-
 func (m *Manager) Load(ctx context.Context) error {
-
 
 	lockCtx := ctx
 	if lockCtx == nil {

@@ -75,7 +75,6 @@ func TestSynthesizeAuthFileKeepsCredentialWithInvalidExcludedModels(t *testing.T
 	ctx := &SynthesisContext{Config: &config.Config{}, AuthDir: authDir, Now: time.Date(2026, time.October, 10, 12, 0, 0, 0, time.UTC)}
 	badPath := filepath.Join(authDir, "bad.json")
 
-
 	for _, tc := range []struct {
 		raw  string
 		want string
@@ -102,7 +101,6 @@ func TestSynthesizeAuthFileKeepsCredentialWithInvalidExcludedModels(t *testing.T
 	if len(pluginAuths) != 1 || pluginAuths[0].Attributes["excluded_models"] != "a" {
 		t.Fatalf("plugin auths = %+v, want one auth keeping the valid rule", pluginAuths)
 	}
-
 
 	if errWrite := os.WriteFile(badPath, []byte(`{"type":"claude","email":"bad@example.test","excluded_models":123}`), 0o600); errWrite != nil {
 		t.Fatalf("write bad auth file: %v", errWrite)

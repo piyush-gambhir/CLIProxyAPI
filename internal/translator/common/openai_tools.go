@@ -7,10 +7,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// AlignOpenAIToolCallMessages reorders tool result messages to immediately follow
-// the assistant message that issued their matching tool_calls by tool_call_id.
-// It preserves original message order, content parts, reasoning fields, and numeric
-// precision, while leaving ambiguous, orphan, and incomplete histories untouched.
 func AlignOpenAIToolCallMessages(messages [][]byte, extraAmbiguousIDs ...string) [][]byte {
 	if len(messages) <= 1 {
 		return messages
@@ -46,7 +42,7 @@ func AlignOpenAIToolCallMessages(messages [][]byte, extraAmbiguousIDs ...string)
 					for _, tc := range rawCalls {
 						callID := tc.Get("id").String()
 						if callID == "" {
-							// Empty tool_call_id cannot be safely matched.
+
 							ambiguousCallIDs[""] = true
 							hasEmptyCallID = true
 							continue
@@ -96,7 +92,7 @@ func AlignOpenAIToolCallMessages(messages [][]byte, extraAmbiguousIDs ...string)
 		if ast.hasInvalidOrEmptyID {
 			continue
 		}
-		// Verify completeness and ambiguity for this assistant.
+
 		isEligible := true
 		matchedToolIndices := make([]int, 0, len(ast.callIDs))
 
@@ -107,13 +103,13 @@ func AlignOpenAIToolCallMessages(messages [][]byte, extraAmbiguousIDs ...string)
 			}
 			indices := toolMsgIndicesByCallID[callID]
 			if len(indices) != 1 {
-				// Incomplete or orphan: exactly one tool message must match.
+
 				isEligible = false
 				break
 			}
 			toolIdx := indices[0]
 			if toolIdx <= ast.msgIndex {
-				// Causal order violation: tool result before assistant.
+
 				isEligible = false
 				break
 			}
@@ -124,10 +120,8 @@ func AlignOpenAIToolCallMessages(messages [][]byte, extraAmbiguousIDs ...string)
 			continue
 		}
 
-		// Sort tool message indices to preserve their relative order.
 		sort.Ints(matchedToolIndices)
 
-		// Check if tool messages already immediately follow this assistant.
 		alreadyAdjacent := true
 		for offset, toolIdx := range matchedToolIndices {
 			if toolIdx != ast.msgIndex+offset+1 {

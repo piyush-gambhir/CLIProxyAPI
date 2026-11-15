@@ -59,10 +59,6 @@ func TestReproPermanentOAuthFailureClassification(t *testing.T) {
 			manager.RegisterExecutor(executor)
 			defer manager.StopAutoRefresh()
 
-
-
-
-
 			failed := &coreauth.Auth{
 				ID: failedID, Provider: "codex", Status: coreauth.StatusError,
 				Unavailable: true, StatusMessage: "unauthorized",
@@ -128,8 +124,6 @@ func TestReproPermanentOAuthFailureClassification(t *testing.T) {
 			if executor.calls.Load() != 0 {
 				t.Errorf("terminal auth reached executor %d times", executor.calls.Load())
 			}
-
-
 
 			healthy := &coreauth.Auth{ID: healthyID, Provider: "codex", Status: coreauth.StatusActive}
 			if _, errRegisterHealthy := manager.Register(context.Background(), healthy); errRegisterHealthy != nil {

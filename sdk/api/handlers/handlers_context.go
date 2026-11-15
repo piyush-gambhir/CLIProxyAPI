@@ -69,7 +69,6 @@ func markNestedExecution(ctx context.Context) {
 	}
 }
 
-
 func WithPinnedAuthID(ctx context.Context, authID string) context.Context {
 	authID = strings.TrimSpace(authID)
 	if authID == "" {
@@ -81,7 +80,6 @@ func WithPinnedAuthID(ctx context.Context, authID string) context.Context {
 	return context.WithValue(ctx, pinnedAuthContextKey{}, authID)
 }
 
-
 func WithSelectedAuthIDCallback(ctx context.Context, callback func(string)) context.Context {
 	if callback == nil {
 		return ctx
@@ -91,7 +89,6 @@ func WithSelectedAuthIDCallback(ctx context.Context, callback func(string)) cont
 	}
 	return context.WithValue(ctx, selectedAuthCallbackContextKey{}, callback)
 }
-
 
 func WithFinalizedResponseFormatCallback(ctx context.Context, callback func(string)) context.Context {
 	if callback == nil {
@@ -103,7 +100,6 @@ func WithFinalizedResponseFormatCallback(ctx context.Context, callback func(stri
 	return context.WithValue(ctx, finalizedResponseFormatCallbackContextKey{}, callback)
 }
 
-
 func WithOriginalRequest(ctx context.Context, rawJSON []byte) context.Context {
 	if len(rawJSON) == 0 {
 		return ctx
@@ -113,8 +109,6 @@ func WithOriginalRequest(ctx context.Context, rawJSON []byte) context.Context {
 	}
 	return context.WithValue(ctx, originalRequestContextKey{}, cloneBytes(rawJSON))
 }
-
-
 
 func (h *BaseAPIHandler) PrepareStreamModelRoute(ctx context.Context, handlerType string, modelName string, rawJSON []byte) (context.Context, bool) {
 	if ctx == nil {
@@ -128,15 +122,12 @@ func (h *BaseAPIHandler) PrepareStreamModelRoute(ctx context.Context, handlerTyp
 
 func preparedModelRouteFromContext(ctx context.Context, skipRouterPluginID string) (modelRouteDecision, bool) {
 
-
-
 	if ctx == nil || strings.TrimSpace(skipRouterPluginID) != "" {
 		return modelRouteDecision{}, false
 	}
 	decision, ok := ctx.Value(preparedModelRouteContextKey{}).(modelRouteDecision)
 	return decision, ok
 }
-
 
 func PreparedStreamPluginExecutor(ctx context.Context) string {
 	decision, ok := preparedModelRouteFromContext(ctx, "")
@@ -146,7 +137,6 @@ func PreparedStreamPluginExecutor(ctx context.Context) string {
 	return strings.TrimSpace(decision.ExecutorPluginID)
 }
 
-
 func PreparedStreamProviderRoute(ctx context.Context) (string, string) {
 	decision, ok := preparedModelRouteFromContext(ctx, "")
 	if !ok {
@@ -154,7 +144,6 @@ func PreparedStreamProviderRoute(ctx context.Context) (string, string) {
 	}
 	return strings.TrimSpace(decision.Provider), strings.TrimSpace(decision.Model)
 }
-
 
 func WithExecutionSessionID(ctx context.Context, sessionID string) context.Context {
 	sessionID = strings.TrimSpace(sessionID)
@@ -167,16 +156,12 @@ func WithExecutionSessionID(ctx context.Context, sessionID string) context.Conte
 	return context.WithValue(ctx, executionSessionContextKey{}, sessionID)
 }
 
-
 func WithDisallowFreeAuth(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, disallowFreeAuthContextKey{}, true)
 }
-
-
-
 
 func headersFromContext(ctx context.Context) http.Header {
 	if ctx == nil {
@@ -187,10 +172,6 @@ func headersFromContext(ctx context.Context) http.Header {
 	}
 	return nil
 }
-
-
-
-
 
 func queryFromContext(ctx context.Context) url.Values {
 	if ctx == nil {

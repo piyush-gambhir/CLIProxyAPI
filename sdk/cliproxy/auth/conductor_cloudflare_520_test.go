@@ -19,7 +19,6 @@ func TestIsCloudflareChallengeErrorMessage_ExcludesOriginErrors(t *testing.T) {
 		t.Fatalf("expected minimal origin error not to be classified as cloudflare challenge")
 	}
 
-
 	challenges := []string{
 		"cf-mitigated: challenge",
 		`<html><body><script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1"></script></body></html>`,
@@ -65,7 +64,6 @@ func TestManager_MarkResult_Cloudflare520OriginError_NotTreatedAsChallenge(t *te
 		t.Fatalf("expected model state to be present")
 	}
 
-
 	if state.Quota.Exceeded {
 		t.Fatalf("expected Quota.Exceeded to be false for 520 origin error")
 	}
@@ -79,11 +77,9 @@ func TestManager_MarkResult_Cloudflare520OriginError_NotTreatedAsChallenge(t *te
 		t.Fatalf("expected StatusMessage to preserve upstream error, got %q", state.StatusMessage)
 	}
 
-
 	if state.LastError == nil || state.LastError.HTTPStatus != 520 {
 		t.Fatalf("expected LastError to retain HTTP 520, got %#v", state.LastError)
 	}
-
 
 	if !state.Unavailable {
 		t.Fatalf("expected model to be marked unavailable during transient cooldown")
@@ -389,7 +385,6 @@ func TestManager_MarkResult_HTTP503_TransientCooldown_RespectsDisabledAndHint(t 
 		}
 	}
 
-
 	{
 		prevTransient := transientErrorCooldownSeconds.Load()
 		transientErrorCooldownSeconds.Store(0)
@@ -512,7 +507,6 @@ func TestIsCloudflareChallengeError(t *testing.T) {
 		t.Fatalf("expected 520 error not to be cloudflare challenge")
 	}
 
-
 	err403 := &Error{
 		HTTPStatus: http.StatusForbidden,
 		Message:    "cf-mitigated: challenge",
@@ -521,12 +515,10 @@ func TestIsCloudflareChallengeError(t *testing.T) {
 		t.Fatalf("expected 403 challenge error to be recognized")
 	}
 
-
 	plainChallenge := errors.New("challenge-platform orchestrate script blocked")
 	if !isCloudflareChallengeError(plainChallenge) {
 		t.Fatalf("expected plain challenge error to be recognized")
 	}
-
 
 	plainOrigin := errors.New("Web server is returning an unknown error between Cloudflare and origin")
 	if isCloudflareChallengeError(plainOrigin) {

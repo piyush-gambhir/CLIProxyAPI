@@ -145,7 +145,6 @@ func TestManager_TerminalOAuthFailure_ReturnsTerminalAuthError(t *testing.T) {
 				t.Fatalf("status = %d, want %d", authErr.StatusCode(), http.StatusServiceUnavailable)
 			}
 
-
 			healthy := &Auth{ID: healthyID, Provider: "codex", Status: StatusActive}
 			if _, errRegisterHealthy := manager.Register(ctx, healthy); errRegisterHealthy != nil {
 				t.Fatalf("register healthy auth: %v", errRegisterHealthy)
@@ -231,7 +230,6 @@ func TestManager_TerminalOAuthFailure_OverridesPreexistingModelStateError(t *tes
 			t.Cleanup(func() {
 				registry.GetGlobalRegistry().UnregisterClient(authID)
 			})
-
 
 			manager.refreshAuth(ctx, auth.ID)
 
@@ -579,9 +577,7 @@ func TestManager_RefreshAuth_PreservesConcurrentCooldownMutationDuringRefresh(t 
 		close(refreshDone)
 	}()
 
-
 	<-executor.started
-
 
 	manager.mu.Lock()
 	if current := manager.auths[auth.ID]; current != nil {
@@ -590,7 +586,6 @@ func TestManager_RefreshAuth_PreservesConcurrentCooldownMutationDuringRefresh(t 
 		current.StatusMessage = "cooling_503"
 	}
 	manager.mu.Unlock()
-
 
 	close(executor.release)
 	<-refreshDone
@@ -631,7 +626,6 @@ func TestScheduler_ReadyAuthDemotedWhenTokenExpires(t *testing.T) {
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
 	got, errPick := manager.scheduler.pickSingle(ctx, "codex", "gpt-5-short-test", cliproxyexecutor.Options{}, nil)
 	if errPick != nil {
 		t.Fatalf("pickSingle() before expiry error = %v", errPick)
@@ -639,7 +633,6 @@ func TestScheduler_ReadyAuthDemotedWhenTokenExpires(t *testing.T) {
 	if got == nil || got.ID != auth.ID {
 		t.Fatalf("pickSingle() got = %v, want %q", got, auth.ID)
 	}
-
 
 	pastExpiry := time.Now().Add(-10 * time.Minute).Format(time.RFC3339)
 	manager.mu.Lock()
@@ -659,7 +652,6 @@ func TestScheduler_ReadyAuthDemotedWhenTokenExpires(t *testing.T) {
 	}
 	manager.scheduler.mu.Unlock()
 	manager.mu.Unlock()
-
 
 	gotAfter, errPickAfter := manager.scheduler.pickSingle(ctx, "codex", "gpt-5-short-test", cliproxyexecutor.Options{}, nil)
 	if errPickAfter == nil && gotAfter != nil {
@@ -715,10 +707,7 @@ func TestManager_RefreshAuth_PreservesConcurrentProxyURLAndMetadata(t *testing.T
 		close(refreshDone)
 	}()
 
-
 	<-executor.started
-
-
 
 	currentAuth, ok := manager.GetByID(auth.ID)
 	if !ok {
@@ -731,7 +720,6 @@ func TestManager_RefreshAuth_PreservesConcurrentProxyURLAndMetadata(t *testing.T
 		t.Fatalf("concurrent update failed: %v", errUpdate)
 	}
 
-
 	close(executor.release)
 	<-refreshDone
 
@@ -740,11 +728,9 @@ func TestManager_RefreshAuth_PreservesConcurrentProxyURLAndMetadata(t *testing.T
 		t.Fatalf("expected auth %q after refresh", auth.ID)
 	}
 
-
 	if gotToken, _ := updated.Metadata["access_token"].(string); gotToken != "refreshed-access-token" {
 		t.Fatalf("access_token = %q, want refreshed-access-token", gotToken)
 	}
-
 
 	if updated.ProxyURL != "http://127.0.0.1:7890" {
 		t.Fatalf("ProxyURL = %q, want http://127.0.0.1:7890", updated.ProxyURL)
@@ -755,7 +741,6 @@ func TestManager_RefreshAuth_PreservesConcurrentProxyURLAndMetadata(t *testing.T
 	if gotCustom, _ := updated.Metadata["custom_field"].(string); gotCustom != "custom_value" {
 		t.Fatalf("Metadata[custom_field] = %q, want custom_value", gotCustom)
 	}
-
 
 	mockStore.mu.Lock()
 	persisted := mockStore.auths[auth.ID]
@@ -842,7 +827,6 @@ func TestManager_RefreshAuth_InPlaceMutatingExecutorNonTokenMetadataAndConcurren
 		t.Fatalf("expected auth %q after refresh", auth.ID)
 	}
 
-
 	if gotToken, _ := updated.Metadata["access_token"].(string); gotToken != "new-access-token" {
 		t.Fatalf("access_token = %q, want new-access-token", gotToken)
 	}
@@ -897,7 +881,6 @@ func TestManager_RefreshAuth_ConcurrentlyClearedProxyNotResurrected(t *testing.T
 
 	<-executor.started
 
-
 	currentAuth, ok := manager.GetByID(auth.ID)
 	if !ok {
 		t.Fatalf("auth not found: %s", auth.ID)
@@ -915,7 +898,6 @@ func TestManager_RefreshAuth_ConcurrentlyClearedProxyNotResurrected(t *testing.T
 	if !ok {
 		t.Fatalf("expected auth %q after refresh", auth.ID)
 	}
-
 
 	if updated.ProxyURL != "" {
 		t.Fatalf("ProxyURL = %q, want empty string", updated.ProxyURL)
@@ -962,7 +944,6 @@ func TestManager_RefreshAuth_StaleRegistrationEpochDiscarded(t *testing.T) {
 
 	<-executor.started
 
-
 	manager.Remove(ctx, auth.ID)
 	newAuth := &Auth{
 		ID:       "re-register-auth",
@@ -1000,7 +981,6 @@ func TestManager_RefreshAuth_RestoresStatusFromErrorToActive(t *testing.T) {
 		release:                       make(chan struct{}),
 	}
 	manager.RegisterExecutor(executor)
-
 
 	auth := &Auth{
 		ID:            "error-status-auth",
@@ -1102,7 +1082,6 @@ func TestManager_PrepareRequestAuth_DoesNotRollbackConcurrentlyRefreshedToken(t 
 
 	<-executor.started
 
-
 	current, ok := manager.GetByID(auth.ID)
 	if !ok {
 		t.Fatalf("auth not found: %s", auth.ID)
@@ -1148,10 +1127,8 @@ func TestManager_Persist_SkipPersistAdvancesWatermarkAndBlocksOlderGeneration(t 
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
 	gen1Auth, _ := manager.GetByID(auth.ID)
 	gen1Auth.Metadata["stale_sentinel"] = "must_not_persist"
-
 
 	watcherAuth := gen1Auth.Clone()
 	delete(watcherAuth.Metadata, "stale_sentinel")
@@ -1162,11 +1139,9 @@ func TestManager_Persist_SkipPersistAdvancesWatermarkAndBlocksOlderGeneration(t 
 		t.Fatalf("watcher update failed: %v", errUpdate)
 	}
 
-
 	if errPersist := manager.persist(ctx, gen1Auth); errPersist != nil {
 		t.Fatalf("persist error: %v", errPersist)
 	}
-
 
 	mockStore.mu.Lock()
 	savedImmediately := mockStore.auths[auth.ID]
@@ -1247,7 +1222,6 @@ func TestManager_RefreshAuth_BothModifyProxy_UserTakesPrecedenceAndConsistent(t 
 
 	<-executor.started
 
-
 	current, ok := manager.GetByID(auth.ID)
 	if !ok {
 		t.Fatalf("auth not found: %s", auth.ID)
@@ -1265,7 +1239,6 @@ func TestManager_RefreshAuth_BothModifyProxy_UserTakesPrecedenceAndConsistent(t 
 	if !ok {
 		t.Fatalf("expected auth %q after refresh", auth.ID)
 	}
-
 
 	if finalAuth.ProxyURL != "http://user-preferred.proxy:9090" {
 		t.Fatalf("ProxyURL = %q, want user value http://user-preferred.proxy:9090", finalAuth.ProxyURL)
@@ -1314,7 +1287,6 @@ func TestManager_RefreshAuth_PreservesConcurrentModelCooldown(t *testing.T) {
 	}()
 
 	<-executor.started
-
 
 	current, ok := manager.GetByID(auth.ID)
 	if !ok {

@@ -6,10 +6,6 @@ import (
 	"strings"
 )
 
-
-
-
-
 func InspectAntigravityClaudeCAQSSignature(rawSignature string) (*ClaudeCAISSignatureInfo, error) {
 	sig := stripClaudeSignaturePrefix(rawSignature)
 	if len(sig) == 0 || len(sig) > MaxClaudeThinkingSignatureLen {
@@ -34,8 +30,6 @@ func InspectAntigravityClaudeCAQSSignature(rawSignature string) (*ClaudeCAISSign
 	if errInspect != nil {
 		return nil, fmt.Errorf("invalid Antigravity CAQS payload: %w", errInspect)
 	}
-
-
 
 	if info.EnvelopeVersion != 4 ||
 		info.Infrastructure == nil || *info.Infrastructure != 2 ||

@@ -99,7 +99,6 @@ func startCodexMockOAuthServers(t *testing.T, idToken string) (proxyURL string, 
 		http.Error(w, "proxy only supports CONNECT", http.StatusBadRequest)
 	}))
 
-
 	origTransport := http.DefaultTransport
 	http.DefaultTransport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -167,7 +166,6 @@ func TestCodexExecutorRefresh_MissingPlanTypeDefaultsToFree(t *testing.T) {
 	if newStorage.PlanType != "free" {
 		t.Errorf("newStorage.PlanType = %q, want free", newStorage.PlanType)
 	}
-
 
 	tempDir := t.TempDir()
 	store := fileauth.NewFileTokenStore()
@@ -243,7 +241,6 @@ func TestCodexExecutorRefresh_ExtractsPlanTypeWhenPresent(t *testing.T) {
 	if newStorage.PlanType != "team" {
 		t.Errorf("newStorage.PlanType = %q, want team", newStorage.PlanType)
 	}
-
 
 	tempDir := t.TempDir()
 	store := fileauth.NewFileTokenStore()
@@ -412,7 +409,6 @@ func TestCodexExecutorRefreshSelectiveAndDual(t *testing.T) {
 	executor := NewCodexExecutor(&config.Config{AuthDir: t.TempDir()})
 	now := time.Now()
 
-
 	*outerCount, *siwcCount = 0, 0
 	authSIWCOnly := &cliproxyauth.Auth{
 		ID:       "codex-siwc-only",
@@ -449,7 +445,6 @@ func TestCodexExecutorRefreshSelectiveAndDual(t *testing.T) {
 	if siwc1["access_token"] != "siwc-access-refreshed" || siwc1["device_id"] != "e61bbe28-07ef-466d-8e5d-a344f94ab305" || siwc1["client_id"] != "oaiapp_test1" {
 		t.Fatalf("siwc1 unexpected: %#v", siwc1)
 	}
-
 
 	*outerCount, *siwcCount = 0, 0
 	authOuterOnly := &cliproxyauth.Auth{
@@ -488,7 +483,6 @@ func TestCodexExecutorRefreshSelectiveAndDual(t *testing.T) {
 		t.Fatalf("siwc2 mutated: %#v", siwc2)
 	}
 
-
 	*outerCount, *siwcCount = 0, 0
 	authBoth := &cliproxyauth.Auth{
 		ID:       "codex-both",
@@ -526,7 +520,6 @@ func TestCodexExecutorRefreshSelectiveAndDual(t *testing.T) {
 		t.Fatalf("siwc3 unexpected: %#v", siwc3)
 	}
 
-
 	*outerCount, *siwcCount = 0, 0
 	failSIWC = true
 	authPartial := &cliproxyauth.Auth{
@@ -562,8 +555,6 @@ func TestCodexExecutorRefreshSelectiveAndDual(t *testing.T) {
 		t.Fatalf("failed siwc should keep old token for retry, got: %#v", siwc4)
 	}
 
-
-
 	failSIWC = false
 	*outerCount, *siwcCount = 0, 0
 	authRejectedSIWC := &cliproxyauth.Auth{
@@ -595,8 +586,6 @@ func TestCodexExecutorRefreshSelectiveAndDual(t *testing.T) {
 	if ref5.Metadata["siwc"].(map[string]any)["access_token"] != "siwc-access-refreshed" {
 		t.Fatalf("rejected SIWC token was not refreshed: %#v", ref5.Metadata["siwc"])
 	}
-
-
 
 	*outerCount, *siwcCount = 0, 0
 	tmpDir := t.TempDir()
@@ -749,7 +738,6 @@ func TestCodexExecutorUseSIWCExecuteAndStream(t *testing.T) {
 		t.Fatalf("User-Agent = %q, want %q (client UA must not override SIWC UA)", got, codexSIWCUserAgent(nil))
 	}
 
-
 	var customCfg config.Config
 	customCfg.Codex.SignInWithChatGPTIdentifier = "MyCustomSIWCAgent"
 	customExec := NewCodexExecutor(&customCfg)
@@ -777,7 +765,6 @@ func TestCodexExecutorUseSIWCExecuteAndStream(t *testing.T) {
 	if gotBody["store"] != false || gotBody["stream"] != true {
 		t.Fatalf("store/stream = %v/%v, want false/true", gotBody["store"], gotBody["stream"])
 	}
-
 
 	cfgWithRules := &config.Config{
 		Payload: config.PayloadConfig{
@@ -861,7 +848,6 @@ func TestCodexWebsocketsExecutorUseSIWCExecuteAndStream(t *testing.T) {
 		},
 	}
 
-
 	authDefaultURL := auth.Clone()
 	delete(authDefaultURL.Attributes, "base_url")
 	wsExecDefault := NewCodexWebsocketsExecutor(&config.Config{})
@@ -940,7 +926,6 @@ func TestCodexWebsocketsExecutorUseSIWCExecuteAndStream(t *testing.T) {
 		}
 	}
 
-
 	gotFrame = nil
 	sr, errStream := autoExec.ExecuteStream(wsCtx, auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.4",
@@ -965,7 +950,6 @@ func TestCodexWebsocketsExecutorUseSIWCExecuteAndStream(t *testing.T) {
 			t.Fatalf("ExecuteStream field %q should be omitted in SIWC WebSocket frame: %#v", forbidden, gotFrame)
 		}
 	}
-
 
 	authMissing := auth.Clone()
 	delete(authMissing.Metadata, "siwc")
@@ -1009,7 +993,6 @@ func TestCodexExecutorUseSIWCFailsClosedWhenMissingSIWCToken(t *testing.T) {
 	if errStream == nil {
 		t.Fatal("expected ExecuteStream to fail when use_siwc=true and siwc access_token is missing")
 	}
-
 
 	authWithAPIKey := auth.Clone()
 	authWithAPIKey.Attributes = map[string]string{"api_key": "sk-outer-attr"}
@@ -1097,7 +1080,6 @@ func TestCodexExecutorUseSIWCImageRequestsBypassSIWCAndUseDirectImagesEndpoint(t
 		t.Fatalf("stream Authorization = %q, want Bearer outer-img-token", gotHeaders.Get("Authorization"))
 	}
 
-
 	editOpts := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FromString("openai-image"),
 		Headers:      http.Header{"User-Agent": []string{"Python-urllib/3.14"}, "Content-Type": []string{"application/json"}},
@@ -1116,7 +1098,6 @@ func TestCodexExecutorUseSIWCImageRequestsBypassSIWCAndUseDirectImagesEndpoint(t
 	if gotHeaders.Get("Authorization") != "Bearer outer-img-token" {
 		t.Fatalf("edit Authorization = %q, want Bearer outer-img-token", gotHeaders.Get("Authorization"))
 	}
-
 
 	authNoOuterToken := auth.Clone()
 	delete(authNoOuterToken.Metadata, "access_token")
@@ -1138,7 +1119,6 @@ func TestCodexExecutorRefreshHomeModeRefreshesSIWCWhenOnlySIWCDue(t *testing.T) 
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	cfg.Home.Enabled = true
 	executor := NewCodexExecutor(cfg)
-
 
 	authSIWCOnly := &cliproxyauth.Auth{
 		ID:       "codex-home-siwc-only",
@@ -1169,8 +1149,6 @@ func TestCodexExecutorRefreshHomeModeRefreshesSIWCWhenOnlySIWCDue(t *testing.T) 
 	if ref.Metadata["siwc"].(map[string]any)["access_token"] != "siwc-access-refreshed" {
 		t.Fatalf("Home mode SIWC-only did not refresh siwc: %#v", ref.Metadata["siwc"])
 	}
-
-
 
 	tmpDir := t.TempDir()
 	homeFile := filepath.Join(tmpDir, "codex-home-outer.json")
@@ -1247,12 +1225,10 @@ func TestCodexExecutorRefreshSerializesUnderFileLockAndSkipsAlreadyRotatedToken(
 	}
 	auth2 := auth1.Clone()
 
-
 	ref1, err1 := exec1.Refresh(context.Background(), auth1)
 	if err1 != nil {
 		t.Fatalf("exec1.Refresh error: %v", err1)
 	}
-
 
 	ref2, err2 := exec2.Refresh(context.Background(), auth2)
 	if err2 != nil {
@@ -1265,8 +1241,6 @@ func TestCodexExecutorRefreshSerializesUnderFileLockAndSkipsAlreadyRotatedToken(
 		ref2.Metadata["siwc"].(map[string]any)["access_token"] != "siwc-access-refreshed" {
 		t.Fatalf("both callers should hold the refreshed SIWC token: ref1=%#v ref2=%#v", ref1.Metadata["siwc"], ref2.Metadata["siwc"])
 	}
-
-
 
 	*outerCount, *siwcCount = 0, 0
 	pathABC := filepath.Join(tmpDir, "codex-abc.json")
@@ -1328,7 +1302,6 @@ func TestCodexExecutorRefreshSerializesUnderFileLockAndSkipsAlreadyRotatedToken(
 		savedABC["siwc"].(map[string]any)["access_token"] != "siwc-access-refreshed" {
 		t.Fatalf("A->B->C lost refreshed C tokens on disk: %#v", savedABC)
 	}
-
 
 	*outerCount, *siwcCount = 0, 0
 	corruptPath := filepath.Join(tmpDir, "codex-corrupt.json")
@@ -1442,7 +1415,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 			reqPayload := []byte(`{"model":"gpt-5.4","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"hi"}]}],"prompt_cache_options":{"ttl":"30m"},"prompt_cache_key":"sess-codex"}`)
 			headers := http.Header{"User-Agent": []string{ua}}
 
-
 			_, errExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 				Model:   "gpt-5.4",
 				Payload: reqPayload,
@@ -1475,7 +1447,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 				t.Fatalf("PayloadFinalizer override missing: service_tier=%v", gotBody["service_tier"])
 			}
 
-
 			_, errNonCodex := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 				Model:   "gpt-5.4",
 				Payload: reqPayload,
@@ -1499,7 +1470,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 				t.Fatalf("Non-Codex SIWC request should strip empty instructions, got %#v", gotBody["instructions"])
 			}
 
-
 			authWithoutSIWCToken := auth.Clone()
 			delete(authWithoutSIWCToken.Metadata, "siwc")
 			sr, errStream := executor.ExecuteStream(context.Background(), authWithoutSIWCToken, cliproxyexecutor.Request{
@@ -1517,7 +1487,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 			if got := gotHeaders.Get("Authorization"); got != "Bearer outer-non-siwc-token" {
 				t.Fatalf("ExecuteStream Authorization = %q, want Bearer outer-non-siwc-token", got)
 			}
-
 
 			_, errCompact := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 				Model:   "gpt-5.4",
@@ -1542,8 +1511,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 			if gotBody["temperature"] != 0.5 {
 				t.Fatalf("compact temperature should be preserved for Codex client, got %v", gotBody["temperature"])
 			}
-
-
 
 			authDefaultBase := auth.Clone()
 			delete(authDefaultBase.Attributes, "base_url")
@@ -1588,7 +1555,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 				t.Fatalf("non-Codex client request = (%s, %s), want (https://api.openai.com/v1/responses, Bearer siwc-token-must-not-be-used)", capturedURLs[1], capturedAuths[1])
 			}
 
-
 			wsExec := NewCodexWebsocketsExecutor(cfg)
 			preparedWS, errPrepWS := wsExec.prepareCodexWebsocketStream(context.Background(), authDefaultBase, cliproxyexecutor.Request{
 				Model:   "gpt-5.4",
@@ -1609,8 +1575,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 			if got := headerValueCaseInsensitive(preparedWS.wsHeaders, "ChatGPT-Account-ID"); got != "acct-non-siwc" {
 				t.Fatalf("wsHeaders ChatGPT-Account-ID = %q, want acct-non-siwc", got)
 			}
-
-
 
 			upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
 			var wsHandshakes []string
@@ -1666,7 +1630,6 @@ func TestCodexExecutorCodexClientIgnoresUseSIWC(t *testing.T) {
 				t.Fatalf("wsHandshakes = %v, want [Bearer siwc-token-must-not-be-used, Bearer outer-non-siwc-token]", wsHandshakes)
 			}
 
-
 			authMissingOuter := authDefaultBase.Clone()
 			delete(authMissingOuter.Metadata, "access_token")
 			if _, errMissingOuter := executor.Execute(ctxRT, authMissingOuter, cliproxyexecutor.Request{
@@ -1711,7 +1674,6 @@ func TestCodexExecutorForceRefreshRejectedRefreshTokenWithoutDiskRotation_Issue7
 		Attributes:           map[string]string{cliproxyauth.AttributePath: diskPath, cliproxyauth.AttributeSource: diskPath},
 		Metadata:             cloneSIWCMap(diskData),
 	}
-
 
 	_, errRefresh := executor.Refresh(cliproxyauth.WithForceRefresh(context.Background()), auth.Clone())
 	if errRefresh == nil {

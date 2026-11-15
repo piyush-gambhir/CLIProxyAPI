@@ -352,12 +352,10 @@ func TestHostHTTPClientWireProfile_ProxyPriorityOverContextRoundTripper(t *testi
 	}))
 	t.Cleanup(proxyServer.Close)
 
-
 	auth := &coreauth.Auth{
 		ProxyURL: proxyServer.URL,
 	}
 	client := New().newHTTPClient(auth)
-
 
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", &dummyRoundTripper{})
 
@@ -397,10 +395,8 @@ func TestHostHTTPClientWireProfile_HTTPToHTTPSRedirect(t *testing.T) {
 	}))
 	t.Cleanup(httpServer.Close)
 
-
 	host := New()
 	client := host.newHTTPClient(nil).(*hostHTTPClient)
-
 
 	customTransport := httpsServer.Client().Transport.(*http.Transport).Clone()
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", customTransport)
@@ -566,7 +562,6 @@ func TestHostHTTPClientWireProfile_HTTPSTargetThroughSOCKS5Proxy(t *testing.T) {
 	}
 	client := New().newHTTPClient(auth)
 
-
 	tlsTransport := httpsBackend.Client().Transport.(*http.Transport).Clone()
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", tlsTransport)
 
@@ -694,14 +689,12 @@ func TestHostHTTPClientWireProfile_CustomHTTPMethod(t *testing.T) {
 func TestHostHTTPClientWireProfile_CustomTLSDialerRejectsHTTP2(t *testing.T) {
 	t.Parallel()
 
-
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	server.EnableHTTP2 = true
 	server.StartTLS()
 	t.Cleanup(server.Close)
-
 
 	customTransport := server.Client().Transport.(*http.Transport).Clone()
 	customTransport.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -830,7 +823,6 @@ func TestHostHTTPClientWireProfile_CONNECTProxyAuthPrecedence(t *testing.T) {
 		receivedAuthHeader <- req.Header.Get("Proxy-Authorization")
 		_, _ = conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 
-
 		buf := make([]byte, 1024)
 		_, _ = conn.Read(buf)
 	}()
@@ -846,7 +838,6 @@ func TestHostHTTPClientWireProfile_CONNECTProxyAuthPrecedence(t *testing.T) {
 		Host:   proxyListener.Addr().String(),
 		User:   url.UserPassword("user", "pass"),
 	}
-
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -1214,7 +1205,6 @@ func TestHostHTTPClientWireProfile_CustomTLSDialerUsedForHTTPSProxy(t *testing.T
 
 func TestHostHTTPClientWireProfile_HTTPSProxyForwardingHTTPS_WithCustomTLSDialer(t *testing.T) {
 	t.Parallel()
-
 
 	backendServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

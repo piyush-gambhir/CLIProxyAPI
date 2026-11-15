@@ -60,7 +60,6 @@ func TestClaudeExecutor_ExecuteStream_Translated_ClientDisconnectAfterTerminalEv
 			flusher.Flush()
 		}
 
-
 		select {
 		case <-r.Context().Done():
 		case <-upstreamClosed:
@@ -257,7 +256,6 @@ func TestClaudeExecutor_ExecuteStream_DoesNotDrainOrReuseUpstreamConnectionAfter
 		w.Header().Set("Content-Type", "text/event-stream")
 		_, _ = w.Write([]byte(streamData))
 		w.(http.Flusher).Flush()
-
 
 		select {
 		case <-release:

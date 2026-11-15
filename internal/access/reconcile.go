@@ -12,10 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
 func ReconcileProviders(oldCfg, newCfg *config.Config, existing []sdkaccess.Provider) (result []sdkaccess.Provider, added, updated, removed []string, err error) {
 	_ = oldCfg
 	if newCfg == nil {
@@ -75,9 +71,6 @@ func ReconcileProviders(oldCfg, newCfg *config.Config, existing []sdkaccess.Prov
 
 	return result, added, updated, removed, nil
 }
-
-
-
 
 func ApplyAccessProviders(manager *sdkaccess.Manager, oldCfg, newCfg *config.Config) (bool, error) {
 	if manager == nil || newCfg == nil {

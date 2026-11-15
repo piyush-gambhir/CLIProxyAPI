@@ -10,8 +10,6 @@ import (
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/kimi"
 )
 
-
-
 func TestKimiK28ClaudeMessagesMaxPreservesMax(t *testing.T) {
 	models := registry.GetKimiModels()
 	reg := registry.GetGlobalRegistry()
@@ -28,7 +26,6 @@ func TestKimiK28ClaudeMessagesMaxPreservesMax(t *testing.T) {
 		t.Fatalf("output_config.effort = %q, want max", got)
 	}
 }
-
 
 func TestKimiClaudeMessagesMaxClampsToHigh(t *testing.T) {
 	models := registry.GetKimiModels()

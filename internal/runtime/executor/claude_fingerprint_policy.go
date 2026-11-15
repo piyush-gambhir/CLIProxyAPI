@@ -19,26 +19,7 @@ const (
 	claudeFingerprintProfileAttr          = "fingerprint_profile"
 )
 
-
-
-
-
-
 var claudeFingerprintProfileWarned sync.Map
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 type claudeFingerprintPolicy struct {
 	AuthIsOAuthToken     bool
@@ -90,17 +71,11 @@ func claudeFingerprintProfileFromConfig(cfg *config.Config, auth *cliproxyauth.A
 	return normalizeClaudeFingerprintProfile(entry.FingerprintProfile)
 }
 
-
-
-
-
 func resolveClaudeFingerprintPolicy(cfg *config.Config, auth *cliproxyauth.Auth, apiKey string) claudeFingerprintPolicy {
-
 
 	authIsOAuth := isClaudeOAuthToken(apiKey)
 	profile := claudeFingerprintProfileFromConfig(cfg, auth)
 	profileClaudeCodeCLI := authIsOAuth || profile == claudeFingerprintProfileClaudeCodeCLI
-
 
 	injectDiagnostics := profileClaudeCodeCLI
 	if cfg != nil && cfg.ClaudeHeaderDefaults.InjectDiagnostics != nil && !*cfg.ClaudeHeaderDefaults.InjectDiagnostics {
@@ -118,18 +93,6 @@ func resolveClaudeFingerprintPolicy(cfg *config.Config, auth *cliproxyauth.Auth,
 		OAuthCancellation:    authIsOAuth,
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 func applyClaudeCLIIdentity(body []byte, auth *cliproxyauth.Auth, apiKey, upstreamURL, sessionID string, synthesize bool) ([]byte, error) {
 	doc := ojson.NewDoc(body)

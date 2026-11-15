@@ -6,9 +6,6 @@ import (
 	"unicode"
 )
 
-
-
-
 func CredentialFileName(email, planType, hashAccountID string, includeProviderPrefix bool) string {
 	email = strings.TrimSpace(email)
 	plan := normalizePlanTypeForFilename(planType)

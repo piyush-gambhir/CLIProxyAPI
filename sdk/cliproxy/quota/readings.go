@@ -1,14 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
 package quota
 
 import (
@@ -18,10 +7,7 @@ import (
 	"time"
 )
 
-
-
 const (
-
 	WindowFiveHour = "five_hour"
 
 	WindowSevenDay = "seven_day"
@@ -36,8 +22,6 @@ const (
 	sevenDayWindow = 7 * 24 * time.Hour
 )
 
-
-
 func defaultWindowLength(window string) time.Duration {
 	switch window {
 	case WindowFiveHour:
@@ -49,9 +33,7 @@ func defaultWindowLength(window string) time.Duration {
 	}
 }
 
-
 type Window struct {
-
 	UsedPercent float64
 
 	ResetAt time.Time
@@ -65,7 +47,6 @@ type Window struct {
 	HardLimited bool
 }
 
-
 func (w Window) length(window string) time.Duration {
 	if w.WindowMinutes > 0 {
 		return time.Duration(w.WindowMinutes) * time.Minute
@@ -73,9 +54,7 @@ func (w Window) length(window string) time.Duration {
 	return defaultWindowLength(window)
 }
 
-
 type Reading struct {
-
 	AuthID string
 
 	Provider string
@@ -89,7 +68,6 @@ type Reading struct {
 	Windows map[string]Window
 }
 
-
 func (r Reading) clone() Reading {
 	out := r
 	if len(r.Windows) > 0 {
@@ -101,16 +79,10 @@ func (r Reading) clone() Reading {
 	return out
 }
 
-
 func (r Reading) Window(id string) (Window, bool) {
 	window, ok := r.Windows[id]
 	return window, ok
 }
-
-
-
-
-
 
 type Store struct {
 	mu      sync.RWMutex
@@ -118,7 +90,6 @@ type Store struct {
 	byAuth  map[string]*Reading
 	ingests uint64
 }
-
 
 func NewStore(now func() time.Time) *Store {
 	if now == nil {
@@ -132,13 +103,10 @@ var (
 	defaultStore     *Store
 )
 
-
-
 func DefaultStore() *Store {
 	defaultStoreOnce.Do(func() { defaultStore = NewStore(time.Now) })
 	return defaultStore
 }
-
 
 type Identity struct {
 	AuthID   string
@@ -146,9 +114,6 @@ type Identity struct {
 	FileName string
 	Plan     string
 }
-
-
-
 
 func (s *Store) Observe(id Identity, windows map[string]Window, learnedAt time.Time) bool {
 	authID := strings.TrimSpace(id.AuthID)
@@ -191,7 +156,6 @@ func (s *Store) Observe(id Identity, windows map[string]Window, learnedAt time.T
 			continue
 		}
 
-
 		if exists && previous.HardLimited && !window.HardLimited {
 			if previous.ResetAt.IsZero() || !window.LearnedAt.Before(previous.ResetAt) {
 				previous.HardLimited = false
@@ -214,12 +178,6 @@ func (s *Store) Observe(id Identity, windows map[string]Window, learnedAt time.T
 	}
 	return changed
 }
-
-
-
-
-
-
 
 func (s *Store) MarkHardLimited(id Identity, exceeded bool, recoverAt time.Time) bool {
 	authID := strings.TrimSpace(id.AuthID)
@@ -282,7 +240,6 @@ func (s *Store) MarkHardLimited(id Identity, exceeded bool, recoverAt time.Time)
 	}
 	if len(entry.Windows) == 0 {
 
-
 		entry.Windows[WindowFiveHour] = Window{HardLimited: true, LearnedAt: now, ResetAt: recoverAt}
 		if entry.FetchedAt.Before(now) {
 			entry.FetchedAt = now
@@ -299,9 +256,6 @@ func (s *Store) MarkHardLimited(id Identity, exceeded bool, recoverAt time.Time)
 	return changed
 }
 
-
-
-
 func (s *Store) Lookup(authID string) (Reading, bool) {
 	authID = strings.TrimSpace(authID)
 	if s == nil || authID == "" {
@@ -316,8 +270,6 @@ func (s *Store) Lookup(authID string) (Reading, bool) {
 	}
 	return normalizeReading(entry.clone(), now), true
 }
-
-
 
 func (s *Store) Snapshot() map[string]Reading {
 	if s == nil {
@@ -337,7 +289,6 @@ func (s *Store) Snapshot() map[string]Reading {
 	return out
 }
 
-
 func (s *Store) FetchedAt(authID string) time.Time {
 	authID = strings.TrimSpace(authID)
 	if s == nil || authID == "" {
@@ -351,7 +302,6 @@ func (s *Store) FetchedAt(authID string) time.Time {
 	return time.Time{}
 }
 
-
 func (s *Store) Forget(authID string) {
 	authID = strings.TrimSpace(authID)
 	if s == nil || authID == "" {
@@ -361,7 +311,6 @@ func (s *Store) Forget(authID string) {
 	delete(s.byAuth, authID)
 	s.mu.Unlock()
 }
-
 
 func (s *Store) Retain(authIDs []string) {
 	if s == nil {
@@ -382,7 +331,6 @@ func (s *Store) Retain(authIDs []string) {
 	s.mu.Unlock()
 }
 
-
 func (s *Store) Ingests() uint64 {
 	if s == nil {
 		return 0
@@ -391,7 +339,6 @@ func (s *Store) Ingests() uint64 {
 	defer s.mu.RUnlock()
 	return s.ingests
 }
-
 
 func (s *Store) AuthIDs() []string {
 	if s == nil {
@@ -414,15 +361,12 @@ func (s *Store) clock() time.Time {
 	return s.now()
 }
 
-
 func normalizeReading(reading Reading, now time.Time) Reading {
 	for key, window := range reading.Windows {
 		reading.Windows[key] = normalizeWindow(key, window, now)
 	}
 	return reading
 }
-
-
 
 func normalizeWindow(id string, window Window, now time.Time) Window {
 	if window.ResetAt.IsZero() || window.ResetAt.After(now) {
@@ -434,7 +378,6 @@ func normalizeWindow(id string, window Window, now time.Time) Window {
 	window.ResetAt = now.Add(length)
 	return window
 }
-
 
 func clampPercent(value float64) float64 {
 	if value < 0 {

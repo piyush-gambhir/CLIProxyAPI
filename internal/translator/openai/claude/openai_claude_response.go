@@ -1,8 +1,3 @@
-
-
-
-
-
 package claude
 
 import (
@@ -22,14 +17,11 @@ var (
 	dataTag = []byte("data:")
 )
 
-
 type ConvertOpenAIResponseToAnthropicParams struct {
 	MessageID   string
 	Model       string
 	CreatedAt   int64
 	ToolNameMap map[string]string
-
-
 
 	SawToolCall bool
 
@@ -53,7 +45,6 @@ type ConvertOpenAIResponseToAnthropicParams struct {
 
 	ToolCallBlockIndexes map[int]int
 
-
 	OmittedToolCallIndexes map[int]int
 
 	TextContentBlockIndex int
@@ -71,42 +62,24 @@ type ConvertOpenAIResponseToAnthropicParams struct {
 	UsageCachedTokens     int64
 	UsageCacheWriteTokens int64
 
-
 	ToolNameMapResolved bool
-
-
 
 	StreamResolved  bool
 	StreamRequested bool
 }
-
 
 type InterleavedContentChunk struct {
 	Type string
 	Text string
 }
 
-
 type ToolCallAccumulator struct {
 	ID        string
 	Name      string
 	Arguments strings.Builder
 
-
 	StartEmitted bool
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertOpenAIResponseToClaude(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -148,7 +121,6 @@ func ConvertOpenAIResponseToClaude(_ context.Context, _ string, originalRequestR
 		}
 		state.ToolNameMapResolved = true
 	}
-
 
 	if bytes.Equal(bytes.TrimSpace(rawJSON), []byte("[DONE]")) {
 		return convertOpenAIDoneToAnthropic(state)
@@ -217,11 +189,9 @@ func terminalOpenAIFinishReason(param *ConvertOpenAIResponseToAnthropicParams) s
 	return "stop"
 }
 
-
 func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAIResponseToAnthropicParams) [][]byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	var results [][]byte
-
 
 	if param.MessageID == "" {
 		param.MessageID = strings.Clone(root.Get("id").String())
@@ -233,8 +203,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 		param.CreatedAt = root.Get("created").Int()
 	}
 
-
-
 	if delta := root.Get("choices.0.delta"); delta.Exists() {
 		if !param.MessageStarted {
 
@@ -244,14 +212,11 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 			results = append(results, translatorcommon.AppendSSEEventBytes(nil, "message_start", messageStartDoc.Bytes(), 2))
 			param.MessageStarted = true
 
-
 		}
-
 
 		for _, reasoningText := range collectOpenAIObjectReasoningTexts(delta) {
 			emitStreamingThinkingDelta(param, reasoningText, &results)
 		}
-
 
 		if content := delta.Get("content"); content.Exists() {
 			if content.IsArray() {
@@ -274,7 +239,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 				emitStreamingTextDelta(param, content.String(), &results)
 			}
 		}
-
 
 		if toolCalls := delta.Get("tool_calls"); toolCalls.Exists() && toolCalls.IsArray() {
 			if param.ToolCallsAccumulator == nil {
@@ -311,32 +275,23 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 					}
 				}
 
-
 				if _, exists := param.ToolCallsAccumulator[index]; !exists {
 					param.ToolCallsAccumulator[index] = &ToolCallAccumulator{}
 				}
 
 				accumulator := param.ToolCallsAccumulator[index]
 
-
-
-
 				if incomingID != "" && !accumulator.StartEmitted {
 					accumulator.ID = strings.Clone(incomingID)
 				}
 
-
 				if function := toolCall.Get("function"); function.Exists() {
-
-
-
 
 					if !accumulator.StartEmitted {
 						if name := function.Get("name"); name.Exists() && name.Type == ojson.String && name.String() != "" {
 							accumulator.Name = strings.Clone(util.MapToolName(param.ToolNameMap, name.String()))
 						}
 					}
-
 
 					if args := function.Get("arguments"); args.Exists() {
 						argsText := args.String()
@@ -345,11 +300,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 						}
 					}
 				}
-
-
-
-
-
 
 				if !accumulator.StartEmitted && accumulator.Name != "" && accumulator.ID != "" && !param.ContentBlocksStopped {
 					if param.OpenToolCallIndex == -1 {
@@ -361,7 +311,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 			})
 		}
 	}
-
 
 	if finishReason := root.Get("choices.0.finish_reason"); finishReason.Exists() && finishReason.String() != "" {
 		reason := finishReason.String()
@@ -384,20 +333,13 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 
 		finalizeOpenAIAnthropicContentBlocks(param, &results)
 
-
 	}
-
 
 	usage := root.Get("usage")
 	hasUsage := usage.Exists() && usage.Type != ojson.Null
 	if hasUsage {
 		param.UsageInputTokens, param.UsageOutputTokens, param.UsageCachedTokens, param.UsageCacheWriteTokens = extractOpenAIUsage(usage)
 	}
-
-
-
-
-
 
 	isTrailingUsageChunk := hasUsage && !root.Get("choices.0").Exists() &&
 		(param.FinishReason != "" || param.SawToolCall || param.TextContentBlockStarted || param.ThinkingContentBlockStarted || param.ContentAccumulator.Len() > 0 || len(param.InterleavedContentChunks) > 0)
@@ -410,7 +352,6 @@ func convertOpenAIStreamingChunkToAnthropic(rawJSON []byte, param *ConvertOpenAI
 
 	return results
 }
-
 
 func convertOpenAIDoneToAnthropic(param *ConvertOpenAIResponseToAnthropicParams) [][]byte {
 	var results [][]byte
@@ -426,14 +367,12 @@ func convertOpenAIDoneToAnthropic(param *ConvertOpenAIResponseToAnthropicParams)
 	return results
 }
 
-
 func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
 	outDoc := ojson.NewDocString(`{"id":"","type":"message","role":"assistant","model":"","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}`)
 	_ = outDoc.Set("id", root.Get("id").String())
 	_ = outDoc.Set("model", root.Get("model").String())
-
 
 	if choices := root.Get("choices"); choices.Exists() && choices.IsArray() && len(choices.Array()) > 0 {
 		choice := choices.Array()[0]
@@ -450,7 +389,6 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 
 		hasToolCall := false
 		appendOpenAINonStreamingMessageContent(choice.Get("message.content"), nil, &contentBlocks, &hasToolCall)
-
 
 		if toolCalls := choice.Get("message.tool_calls"); toolCalls.Exists() && toolCalls.IsArray() {
 			toolCalls.ForEach(func(_, toolCall ojson.Result) bool {
@@ -480,12 +418,10 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 			translatorcommon.SetRawArrayItemsDoc(outDoc, "content", contentBlocks)
 		}
 
-
 		if finishReason := choice.Get("finish_reason"); finishReason.Exists() || hasToolCall {
 			_ = outDoc.Set("stop_reason", mapOpenAINonStreamFinishReasonToAnthropic(finishReason.String(), hasToolCall))
 		}
 	}
-
 
 	if usage := root.Get("usage"); usage.Exists() {
 		inputTokens, outputTokens, cachedTokens, cacheWriteTokens := extractOpenAIUsage(usage)
@@ -501,7 +437,6 @@ func convertOpenAINonStreamingToAnthropic(rawJSON []byte) [][]byte {
 
 	return [][]byte{outDoc.Bytes()}
 }
-
 
 func mapOpenAIFinishReasonToAnthropic(openAIReason string) string {
 	switch openAIReason {
@@ -602,7 +537,6 @@ func emitStreamingTextDelta(param *ConvertOpenAIResponseToAnthropicParams, text 
 	}
 	if param.OpenToolCallIndex != -1 {
 
-
 		if n := len(param.InterleavedContentChunks); n > 0 && param.InterleavedContentChunks[n-1].Type == "text" {
 			param.InterleavedContentChunks[n-1].Text += text
 		} else {
@@ -631,7 +565,6 @@ func emitStreamingTextDelta(param *ConvertOpenAIResponseToAnthropicParams, text 
 	_ = contentDeltaDoc.Set("index", param.TextContentBlockIndex)
 	_ = contentDeltaDoc.Set("delta.text", text)
 	*results = append(*results, translatorcommon.AppendSSEEventBytes(nil, "content_block_delta", contentDeltaDoc.Bytes(), 2))
-
 
 	param.ContentAccumulator.WriteString(text)
 }
@@ -798,12 +731,6 @@ func emitToolUseStart(param *ConvertOpenAIResponseToAnthropicParams, openAIToolI
 	param.OpenToolCallIndex = openAIToolIndex
 }
 
-
-
-
-
-
-
 func emitBelatedToolUseStart(param *ConvertOpenAIResponseToAnthropicParams, openAIToolIndex int, accumulator *ToolCallAccumulator, results *[][]byte) bool {
 	if accumulator == nil {
 		return false
@@ -832,7 +759,6 @@ func finalizeSingleToolCall(param *ConvertOpenAIResponseToAnthropicParams, openA
 		}
 	}
 	blockIndex := param.toolContentBlockIndex(openAIToolIndex)
-
 
 	if accumulator.Arguments.Len() > 0 {
 		inputDeltaDoc := ojson.NewDocString(`{"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":""}}`)
@@ -942,16 +868,6 @@ func toolCallAccumulatorIndexes(accumulators map[int]*ToolCallAccumulator) []int
 	sort.Ints(indexes)
 	return indexes
 }
-
-
-
-
-
-
-
-
-
-
 
 func ConvertOpenAIResponseToClaudeNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	_ = requestRawJSON

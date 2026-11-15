@@ -136,7 +136,6 @@ func TestSessionAffinityGuardianParentCredential(t *testing.T) {
 				guardianTestPick(t, selector, reviewProvider, tt.reviewModel, childOpts, []*Auth{authA}, "auth-a")
 			}
 
-
 			parentAuth, errParent := selector.Pick(context.Background(), tt.provider, "gpt-6.1-sol", parentOpts, []*Auth{authB})
 			if errParent != nil {
 				t.Fatalf("parent Pick() error = %v", errParent)
@@ -286,7 +285,6 @@ func TestSessionAffinityGuardianMixedProviderIsolation(t *testing.T) {
 	guardianTestPick(t, selector, "mixed", "openai-parent-model", parentOpts, []*Auth{authC}, "auth-c")
 	guardianTestPick(t, selector, "mixed", "review-model", guardianTestOptions("codex-review", "main-thread"), []*Auth{authA, authB}, "auth-b")
 	guardianTestPick(t, selector, "codex", "review-model", guardianTestOptions("direct-review", "main-thread"), []*Auth{authA, authB}, "auth-b")
-
 
 	guardianTestPick(t, selector, "mixed", "parent-model", guardianTestOptions("codex-only", ""), []*Auth{authB}, "auth-b")
 	authD := &Auth{ID: "auth-d", Provider: "openai"}

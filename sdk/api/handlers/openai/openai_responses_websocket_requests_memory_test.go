@@ -415,9 +415,6 @@ func responsesWebsocketManyItemsTranscriptFixture(transcriptSize int) ([]byte, [
 	return []byte(lastRequest.String()), []byte(lastResponseOutput.String()), appendInput.String()
 }
 
-
-
-
 type referenceResponsesWebsocketInputItem struct {
 	raw      json.RawMessage
 	itemType string

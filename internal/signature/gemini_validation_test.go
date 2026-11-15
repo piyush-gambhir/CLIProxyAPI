@@ -130,12 +130,10 @@ func TestInspectGeminiThoughtSignature_RejectsMalformedToolInvocationPayload(t *
 		t.Fatal("truncated inner protobuf payload should not be a known envelope")
 	}
 
-
 	noTink := testGemini3ThoughtSignature([]byte{0x08, 0x02, 0x12, 0x04, 0x99, 0x98, 0x97, 0x96})
 	if info, err := InspectGeminiThoughtSignature(noTink, GeminiThoughtSignatureValidationOptions{RequireKnownEnvelope: true}); err == nil && info.KnownEnvelope {
 		t.Fatal("protobuf payload without Tink 0x01 prefix should not be a known envelope")
 	}
-
 
 	pureVarint := testGemini3ThoughtSignature([]byte{0x08, 0x02, 0x10, 0x05})
 	if info, err := InspectGeminiThoughtSignature(pureVarint, GeminiThoughtSignatureValidationOptions{RequireKnownEnvelope: true}); err == nil && info.KnownEnvelope {
@@ -189,10 +187,6 @@ func TestInspectGeminiThoughtSignature_AcceptsGemini3WrappedUUIDEnvelope(t *test
 	}
 }
 
-
-
-
-
 func TestInspectGeminiThoughtSignature_RejectsGemini25Field1Envelope(t *testing.T) {
 	sig := testGemini25ThoughtSignature([]byte{0x01, 0x8f}, []byte{0x01, 0x90, 0x91})
 
@@ -211,7 +205,6 @@ func TestInspectGeminiThoughtSignature_RejectsGemini25Field1Envelope(t *testing.
 		t.Fatal("KnownEnvelope should be false for the retired field-1 envelope")
 	}
 
-
 	decision := DecideSignatureCompatibility(SignatureProviderGemini, sig, SignatureBlockKindGeminiModelPart)
 	if decision.Action != SignatureActionReplaceWithGeminiBypass {
 		t.Fatalf("action = %q, want %q", decision.Action, SignatureActionReplaceWithGeminiBypass)
@@ -222,7 +215,6 @@ func TestInspectGeminiThoughtSignature_RejectsGemini25Field1Envelope(t *testing.
 }
 
 func TestInspectGeminiThoughtSignature_RejectsMalformedKnownEnvelope(t *testing.T) {
-
 
 	sig := testGemini3ThoughtSignature([]byte{0x02, 0x0c, 0x39})
 
@@ -648,10 +640,6 @@ func agyGeminiThoughtSignatureSamplesPath() (string, bool) {
 	return path, true
 }
 
-
-
-
-
 func testGeminiBareTinkSignature(n int) string {
 	if n < geminiBareTinkMinLen {
 		n = geminiBareTinkMinLen
@@ -707,8 +695,6 @@ func TestInspectGeminiThoughtSignature_AcceptsVertexBareTinkEnvelope(t *testing.
 
 func TestInspectGeminiThoughtSignature_RejectsShortBareTinkEnvelope(t *testing.T) {
 
-
-
 	sig := testGeminiThoughtSignature(append([]byte{0x01, 0x8f, 0x3d}, make([]byte, 10)...))
 
 	if _, err := InspectGeminiThoughtSignature(sig, GeminiThoughtSignatureValidationOptions{RequireKnownEnvelope: true}); err == nil {
@@ -726,8 +712,6 @@ func TestInspectGeminiThoughtSignature_RejectsShortBareTinkEnvelope(t *testing.T
 func TestDetectSignatureProvider_VertexBareTinkNeverClaimsOtherFamilies(t *testing.T) {
 	sig := testGeminiBareTinkSignature(405)
 
-
-
 	if got := DetectSignatureProviderForBlock(sig, SignatureBlockKindClaudeThinking); got != SignatureProviderGemini {
 		t.Fatalf("Claude-thinking block detection = %q, want %q (bare-Tink stays Gemini-shaped)", got, SignatureProviderGemini)
 	}
@@ -737,7 +721,6 @@ func TestDetectSignatureProvider_VertexBareTinkNeverClaimsOtherFamilies(t *testi
 }
 
 func TestInspectGeminiThoughtSignature_BareTinkRequiresVertexKeyID(t *testing.T) {
-
 
 	payload := []byte{0x01, 0x69, 0x14, 0x7d, 0x13}
 	for len(payload) < 405 {

@@ -47,7 +47,6 @@ func TestApplyAuthExcludedModelsMeta_OAuthProvider(t *testing.T) {
 
 	synthesizer.ApplyAuthExcludedModelsMeta(auth, nil, "oauth")
 
-
 	for _, key := range []string{"excluded_models", "excluded_models_hash"} {
 		if got, ok := auth.Attributes[key]; ok {
 			t.Fatalf("expected %s to be absent, got %q", key, got)
@@ -208,7 +207,6 @@ func TestReloadConfigIfChanged_TriggersOnChangeAndSkipsUnchanged(t *testing.T) {
 	if reloads != 1 {
 		t.Fatalf("expected first reload to trigger callback once, got %d", reloads)
 	}
-
 
 	w.reloadConfigIfChanged()
 	if reloads != 1 {
@@ -1185,7 +1183,6 @@ func TestHandleEventAtomicReplaceDelayedStatPreservesClient(t *testing.T) {
 		normalized: {"token.json": mockAuth},
 	}
 
-
 	errChan := make(chan error, 1)
 	go func() {
 		time.Sleep(60 * time.Millisecond)
@@ -1196,7 +1193,6 @@ func TestHandleEventAtomicReplaceDelayedStatPreservesClient(t *testing.T) {
 	if errWrite := <-errChan; errWrite != nil {
 		t.Fatalf("async WriteFile failed: %v", errWrite)
 	}
-
 
 	w.clientsMutex.RLock()
 	_, stillKnown := w.lastAuthHashes[normalized]
@@ -1414,7 +1410,6 @@ func TestReloadConfigFiltersAffectedOAuthProviders(t *testing.T) {
 	}
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
-
 	if err := os.WriteFile(filepath.Join(authDir, "provider-b.json"), []byte(`{"type":"provider-b","email":"b@example.com"}`), 0o644); err != nil {
 		t.Fatalf("failed to write auth file: %v", err)
 	}
@@ -1526,7 +1521,6 @@ func TestReloadConfigRedispatchesUnchangedAuthForGlobalOAuthExclusionChange(t *t
 	w.refreshAuthState(false)
 	initial := nextUpdate("initial load")
 
-
 	if ok := w.reloadConfig(); !ok {
 		t.Fatal("expected reloadConfig to succeed")
 	}
@@ -1636,7 +1630,6 @@ func TestNormalizeAuthNil(t *testing.T) {
 		t.Fatal("expected normalizeAuth(nil) to return nil")
 	}
 }
-
 
 type stubStore struct {
 	mu              sync.Mutex
@@ -1972,7 +1965,6 @@ func TestReloadConfigUpdatesAuthDirWatchAndSnapshots(t *testing.T) {
 		t.Fatalf("expected cred-a.json and shared.json in initial updates, got %v", initialSeen)
 	}
 
-
 	writeConfig(dirB)
 	w.ReloadConfigIfChanged()
 
@@ -2015,7 +2007,6 @@ func TestReloadConfigUpdatesAuthDirWatchAndSnapshots(t *testing.T) {
 	if len(fileSnapshot) != 1 || fileSnapshot[0].ID != "cred-b.json" {
 		t.Fatalf("expected SnapshotAuthFile(credBPath) ID=cred-b.json, got %+v", fileSnapshot)
 	}
-
 
 	credA2Path := filepath.Join(dirA, "cred-a2.json")
 	if errWriteA2 := os.WriteFile(credA2Path, []byte(`{"type":"codex","email":"a2@example.com"}`), 0o600); errWriteA2 != nil {
@@ -2143,7 +2134,6 @@ func TestAddOrUpdateClientDiscardsStaleDirEventAcrossAuthDirSwitch(t *testing.T)
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for addOrUpdateClientLocked to reach synthesis")
 	}
-
 
 	w.SetConfig(&config.Config{AuthDir: dirB})
 	w.refreshAuthState(false)

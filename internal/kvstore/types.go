@@ -1,5 +1,3 @@
-
-
 package kvstore
 
 import (
@@ -11,9 +9,7 @@ import (
 	"time"
 )
 
-
 var ErrCompareAndSwapUnsupported = errors.New("kvstore: compare-and-swap command is not supported")
-
 
 type KVSetOptions struct {
 	EX time.Duration
@@ -21,7 +17,6 @@ type KVSetOptions struct {
 	NX bool
 	XX bool
 }
-
 
 type KVClient interface {
 	KVGet(ctx context.Context, key string) ([]byte, bool, error)
@@ -35,7 +30,6 @@ type KVClient interface {
 	KVMGet(ctx context.Context, keys ...string) ([][]byte, []bool, error)
 	KVMSet(ctx context.Context, pairs map[string][]byte) error
 }
-
 
 func BuildSetArgs(key string, value []byte, opts KVSetOptions) ([]any, error) {
 	key = strings.TrimSpace(key)
@@ -67,7 +61,6 @@ func BuildSetArgs(key string, value []byte, opts KVSetOptions) ([]any, error) {
 	}
 	return args, nil
 }
-
 
 func DurationCeil(value time.Duration, unit time.Duration) int64 {
 	if value <= 0 || unit <= 0 {

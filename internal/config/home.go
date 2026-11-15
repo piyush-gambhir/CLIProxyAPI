@@ -1,6 +1,5 @@
 package config
 
-
 type HomeConfig struct {
 	Enabled                 bool          `yaml:"enabled" json:"enabled"`
 	NodeID                  string        `yaml:"-" json:"-"`
@@ -9,7 +8,6 @@ type HomeConfig struct {
 	DisableClusterDiscovery bool          `yaml:"disable-cluster-discovery" json:"-"`
 	TLS                     HomeTLSConfig `yaml:"tls" json:"-"`
 }
-
 
 type HomeTLSConfig struct {
 	Enable              bool   `yaml:"enable" json:"-"`
@@ -20,8 +18,6 @@ type HomeTLSConfig struct {
 	ClientKey           string `yaml:"-" json:"-"`
 	UseTargetServerName bool   `yaml:"-" json:"-"`
 }
-
-
 
 func NormalizeHomePort(port int) int {
 	if port <= 0 {

@@ -12,11 +12,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
-
 func TestAddOrUpdateClientDiscardedSnapshotResentAfterInPlaceRewrite(t *testing.T) {
 	const initial = `{"type":"codex","email":"a@b.c","disabled":false,"prefix":"pfx-0"}`
 	const edit = `{"type":"codex","email":"a@b.c","disabled":false,"prefix":"pfx-1"}`
@@ -141,7 +136,6 @@ func TestRereadDiscardedFileSnapshotPreservesKnownFileForRemoveEvent(t *testing.
 		t.Fatal("the edit was not queued")
 	}
 
-
 	if errRemove := os.Remove(path); errRemove != nil {
 		t.Fatal(errRemove)
 	}
@@ -154,7 +148,6 @@ func TestRereadDiscardedFileSnapshotPreservesKnownFileForRemoveEvent(t *testing.
 	}
 
 	w.RereadDiscardedFileSnapshot(snapshot.Auth)
-
 
 	w.handleEvent(fsnotify.Event{Name: path, Op: fsnotify.Remove})
 	deleteUpdate, ok := takeQueuedAuthUpdate(w, "acct.json")

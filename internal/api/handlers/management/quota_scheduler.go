@@ -11,17 +11,12 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/quota"
 )
 
-
-
-
 type quotaWindowPayload struct {
 	UsedPercent float64 `json:"used_percent"`
 	ResetAt     string  `json:"reset_at,omitempty"`
 	Known       bool    `json:"known"`
 	HardLimited bool    `json:"hard_limited"`
 }
-
-
 
 type quotaAccountPayload struct {
 	Provider  string              `json:"provider"`
@@ -33,8 +28,6 @@ type quotaAccountPayload struct {
 	Fable     *quotaWindowPayload `json:"fable,omitempty"`
 }
 
-
-
 type quotaRankingPayload struct {
 	Auth          string  `json:"auth"`
 	Provider      string  `json:"provider"`
@@ -44,7 +37,6 @@ type quotaRankingPayload struct {
 	RankingWindow string  `json:"ranking_window,omitempty"`
 }
 
-
 type quotaSchedulerStatusPayload struct {
 	Accounts    map[string]quotaAccountPayload `json:"accounts"`
 	Strategy    string                         `json:"strategy"`
@@ -52,21 +44,7 @@ type quotaSchedulerStatusPayload struct {
 	Ranking     []quotaRankingPayload          `json:"ranking"`
 }
 
-
-
-
 var quotaStoreForStatus = quota.DefaultStore
-
-
-
-
-
-
-
-
-
-
-
 
 func (h *Handler) GetQuotaSchedulerStatus(c *gin.Context) {
 	now := time.Now().UTC()
@@ -76,7 +54,6 @@ func (h *Handler) GetQuotaSchedulerStatus(c *gin.Context) {
 	if h != nil && h.authManager != nil {
 		auths = h.authManager.List()
 	}
-
 
 	coreauth.IngestAuthQuota(store, auths, now)
 
@@ -99,8 +76,6 @@ func (h *Handler) GetQuotaSchedulerStatus(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, payload)
 }
-
-
 
 func (h *Handler) quotaRanking(store *quota.Store, auths []*coreauth.Auth, now time.Time) []quotaRankingPayload {
 	guard := h.fiveHourGuardPercent()
@@ -145,7 +120,6 @@ func (h *Handler) quotaRanking(store *quota.Store, auths []*coreauth.Auth, now t
 	return out
 }
 
-
 func (h *Handler) routingStrategyName() string {
 	if h == nil || h.cfg == nil {
 		return "round-robin"
@@ -156,7 +130,6 @@ func (h *Handler) routingStrategyName() string {
 	return strings.TrimSpace(h.cfg.Routing.Strategy)
 }
 
-
 func (h *Handler) fiveHourGuardPercent() float64 {
 	if h == nil || h.cfg == nil {
 		return quota.DefaultFiveHourGuardPercent
@@ -166,7 +139,6 @@ func (h *Handler) fiveHourGuardPercent() float64 {
 	}
 	return quota.DefaultFiveHourGuardPercent
 }
-
 
 func quotaWindowOf(reading quota.Reading, id string) *quotaWindowPayload {
 	window, ok := reading.Window(id)

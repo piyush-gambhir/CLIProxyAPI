@@ -29,7 +29,6 @@ func patchSend(t *testing.T, b *ApplyPatchResponsesBridge, event []byte) [][]byt
 	return out
 }
 
-// Raw source fragments must survive decoding without inventing a final snapshot.
 func TestApplyPatchResponsesBridgeDeltaAndFourCompletions(t *testing.T) {
 	for _, late := range []bool{false, true} {
 		t.Run(fmt.Sprintf("late=%v", late), func(t *testing.T) {
@@ -276,7 +275,7 @@ func TestApplyPatchResponsesContinuationNoInventedPreview(t *testing.T) {
 }
 
 func TestApplyPatchResponsesContinuationAllMatchedProvenance(t *testing.T) {
-	// Every key can select patch provenance, including a record other than the first match.
+
 	keys := []string{"output_index", "item_id", "call_id"}
 	for _, patchKey := range keys {
 		for _, firstKey := range keys {

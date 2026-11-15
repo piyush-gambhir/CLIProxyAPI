@@ -53,8 +53,6 @@ func (m *Manager) loadAPIKeyModelRouting() *apiKeyModelRoutingSnapshot {
 	return snapshot
 }
 
-
-
 func ResolvedAPIKeyModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo, bool) {
 	modelInfo, ok := req.Metadata[resolvedAPIKeyModelInfoMetadataKey].(*registry.ModelInfo)
 	if !ok || modelInfo == nil {
@@ -62,7 +60,6 @@ func ResolvedAPIKeyModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo,
 	}
 	return modelInfo, true
 }
-
 
 func ResolvedModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo, bool) {
 	if modelInfo, ok := req.Metadata[resolvedHomeModelInfoMetadataKey].(*registry.ModelInfo); ok && modelInfo != nil {
@@ -74,15 +71,10 @@ func ResolvedModelInfo(req cliproxyexecutor.Request) (*registry.ModelInfo, bool)
 	return ResolvedAPIKeyModelInfo(req)
 }
 
-
-
 func ResolvedHomeModelOptions(req cliproxyexecutor.Request) (internalconfig.OpenAICompatibilityModel, bool) {
 	options, ok := req.Metadata[resolvedHomeModelOptionsMetadataKey].(internalconfig.OpenAICompatibilityModel)
 	return options, ok
 }
-
-
-
 
 func CodexAPIKeyModelIsCompat(cfg *internalconfig.Config, auth *Auth, model string) bool {
 	if cfg == nil || auth == nil || !strings.EqualFold(strings.TrimSpace(auth.Provider), "codex") {
@@ -124,8 +116,6 @@ func CodexAPIKeyModelIsCompat(cfg *internalconfig.Config, auth *Auth, model stri
 	}
 	return false
 }
-
-
 
 func homeAPIKeyModelOptions(auth *Auth, model, routeModel string) (internalconfig.OpenAICompatibilityModel, bool) {
 	var empty internalconfig.OpenAICompatibilityModel
@@ -497,7 +487,6 @@ func addConfiguredModelCapability(out map[string][]apiKeyModelCapabilityRoute, n
 	}
 	return modelInfo
 }
-
 
 func isVertexOpenAPIConfigModel(model string) bool {
 	base := strings.TrimSpace(thinking.ParseSuffix(model).ModelName)

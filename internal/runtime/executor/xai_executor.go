@@ -31,8 +31,6 @@ const (
 	xaiXSearchToolType         = "x_search"
 	xaiMaxTools                = 200
 
-
-
 	xaiCodexAppNamespaceName    = "codex_app"
 	xaiAutomationUpdateToolName = "automation_update"
 
@@ -51,9 +49,6 @@ const (
 	xaiTokenAuthValue           = "xai-grok-cli"
 	xaiClientVersionHeader      = "x-grok-client-version"
 
-
-
-
 	xaiClientVersionFallback      = helps.DefaultXAIFallbackClientVersion
 	xaiClientVersionValue         = xaiClientVersionFallback
 	xaiClientIdentifierHeader     = "x-grok-client-identifier"
@@ -64,37 +59,27 @@ const (
 	xaiUsingAPIAttr = "using_api"
 )
 
-
-
 var xaiXSearchToolJSON = []byte(`{"type":"x_search"}`)
-
 
 type XAIExecutor struct {
 	cfg *config.Config
 }
 
-
 func NewXAIExecutor(cfg *config.Config) *XAIExecutor {
 	return &XAIExecutor{cfg: cfg}
 }
-
-
 
 func xaiClientVersion() string {
 	return helps.GetXAIClientVersion()
 }
 
-
-
 func StartXAIVersionUpdater(ctx context.Context, proxyURL string) {
 	helps.StartXAIVersionUpdater(ctx, proxyURL)
 }
 
-
 func (e *XAIExecutor) Identifier() string {
 	return "xai"
 }
-
 
 func (e *XAIExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -115,7 +100,6 @@ func (e *XAIExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth)
 	return nil
 }
 
-
 func (e *XAIExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("xai executor: request is nil")
@@ -130,6 +114,5 @@ func (e *XAIExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, 
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
 	return httpClient.Do(httpReq)
 }
-
 
 func (e *XAIExecutor) SupportsApplyPatch() bool { return e != nil }

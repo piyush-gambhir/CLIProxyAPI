@@ -18,7 +18,6 @@ import (
 const userAgent = "CLIProxyAPI"
 const maxPluginStoreRedirects = 10
 
-
 type HTTPDoer = httpfetch.Doer
 
 type Client struct {
@@ -61,8 +60,6 @@ func (c Client) FetchRegistry(ctx context.Context) (Registry, error) {
 	return registry, nil
 }
 
-
-
 func (c Client) FetchLatestRelease(ctx context.Context, plugin Plugin) (Release, error) {
 	owner, repo, errRepository := GitHubRepositoryParts(plugin.Repository)
 	if errRepository != nil {
@@ -83,7 +80,6 @@ func (c Client) FetchLatestRelease(ctx context.Context, plugin Plugin) (Release,
 	}
 	return release, nil
 }
-
 
 func (c Client) FetchReleaseByTag(ctx context.Context, plugin Plugin, tag string) (Release, error) {
 	owner, repo, errRepository := GitHubRepositoryParts(plugin.Repository)
@@ -110,8 +106,6 @@ func (c Client) FetchReleaseByTag(ctx context.Context, plugin Plugin, tag string
 	}
 	return release, nil
 }
-
-
 
 func ReleaseVersion(release Release) (string, error) {
 	version := normalizeVersion(release.TagName)

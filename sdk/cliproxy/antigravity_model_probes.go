@@ -7,8 +7,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 type antigravityModelRefreshRequest struct {
 	ctx           context.Context
 	auth          *coreauth.Auth
@@ -24,9 +22,6 @@ type antigravityHintPersistRequest struct {
 	hints    antigravityModelCapabilityHints
 	cancel   context.CancelFunc
 }
-
-
-
 
 func (s *Service) queueAntigravityModelRefresh(ctx context.Context, auth *coreauth.Auth, provider string) {
 	if s == nil || auth == nil || auth.ID == "" || auth.Disabled || s.antigravityHomeEnabled() {
@@ -116,8 +111,6 @@ func (s *Service) executeAntigravityModelRefresh(request *antigravityModelRefres
 	}
 }
 
-
-
 type antigravityAccountProbe struct {
 	auth      *coreauth.Auth
 	routeKey  string
@@ -141,7 +134,6 @@ func (s *Service) beginAntigravityAccountProbe(parent context.Context, auth *cor
 	var changes <-chan struct{}
 	var unsubscribe func()
 	if s.coreManager != nil {
-
 
 		changes, unsubscribe = s.coreManager.WatchAuthChanges(auth.ID)
 	}
@@ -202,7 +194,6 @@ func (s *Service) beginAntigravityAccountProbe(parent context.Context, auth *cor
 	return ctx, cleanup, true
 }
 
-
 func (s *Service) antigravityAccountProbeCurrent(probe *antigravityAccountProbe) bool {
 	if s.antigravityHomeEnabled() {
 		return false
@@ -220,9 +211,6 @@ func (s *Service) antigravityAccountProbeCurrent(probe *antigravityAccountProbe)
 		antigravityAuthModelSettingsEqual(current, probe.auth) &&
 		s.antigravityCapabilityKey(current) == probe.routeKey && strings.TrimSpace(token) == probe.token
 }
-
-
-
 
 func (s *Service) queueAntigravityHintPersistence(ctx context.Context, auth *coreauth.Auth, expectedKey, endpoint string, hints antigravityModelCapabilityHints) {
 	if s == nil || s.coreManager == nil || auth == nil || auth.ID == "" || auth.Disabled || expectedKey == "" || hints.ModelIDs == nil || hints.revision == 0 || s.antigravityHomeEnabled() {
@@ -356,7 +344,6 @@ func (s *Service) cancelStaleAntigravityProbes(authID string) {
 		for probe := range probes {
 			if !s.antigravityAccountProbeCurrent(probe) {
 				probe.cancel()
-
 
 				antigravityCapabilityGroup.Forget(probe.flightKey)
 				delete(probes, probe)

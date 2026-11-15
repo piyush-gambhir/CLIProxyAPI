@@ -62,7 +62,6 @@ func CachedUserID(apiKey string) string {
 	return generateFakeUserID()
 }
 
-
 func CachedUserIDRequired(ctx context.Context, apiKey string) (string, error) {
 	newUserID := func() (string, error) {
 		sessionID, errSessionID := CachedSessionIDRequired(ctx, apiKey)

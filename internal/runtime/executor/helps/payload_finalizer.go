@@ -13,8 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 type PayloadFinalizer func([]byte) []byte
 
 var (
@@ -28,7 +26,6 @@ func payloadFinalizerKeyPtr(f PayloadFinalizer) uintptr {
 	}
 	return reflect.ValueOf(f).Pointer()
 }
-
 
 func (f PayloadFinalizer) FinalizeDoc(doc *ojson.Doc) {
 	if f == nil || doc == nil {
@@ -46,7 +43,6 @@ func (f PayloadFinalizer) FinalizeDoc(doc *ojson.Doc) {
 	updated := f(doc.Bytes())
 	*doc = *ojson.NewDoc(updated)
 }
-
 
 func NewPayloadFinalizer(cfg *config.Config, executor, model, protocol, root string, original []byte, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, auths ...*cliproxyauth.Auth) PayloadFinalizer {
 	requestedModel := PayloadRequestedModel(opts, req.Model)
@@ -91,11 +87,9 @@ func NewPayloadFinalizer(cfg *config.Config, executor, model, protocol, root str
 
 type payloadFinalizerKey struct{}
 
-
 func WithPayloadFinalizer(ctx context.Context, finalize PayloadFinalizer) context.Context {
 	return context.WithValue(ctx, payloadFinalizerKey{}, finalize)
 }
-
 
 func FinalizePayload(ctx context.Context, body []byte) []byte {
 	if finalize, ok := ctx.Value(payloadFinalizerKey{}).(PayloadFinalizer); ok && finalize != nil {
@@ -103,8 +97,6 @@ func FinalizePayload(ctx context.Context, body []byte) []byte {
 	}
 	return body
 }
-
-
 
 func FinalizePayloadDoc(ctx context.Context, doc *ojson.Doc) {
 	if doc == nil {

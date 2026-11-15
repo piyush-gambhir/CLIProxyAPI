@@ -14,9 +14,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
 func issue6530EffectiveContents(body []byte) []ojson.Result {
 	var effective []ojson.Result
 	for _, content := range ojson.GetBytes(body, "request.contents").Array() {
@@ -36,8 +33,6 @@ func issue6530EffectiveContents(body []byte) []ojson.Result {
 	}
 	return effective
 }
-
-
 
 func issue6530AcceptedTail(content ojson.Result) bool {
 	return content.Get("role").String() == "user" || content.Get("parts.0.functionResponse").Exists()

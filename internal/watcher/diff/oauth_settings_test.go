@@ -28,7 +28,6 @@ func TestDiffOAuthSettingsChanges(t *testing.T) {
 
 	changes, affected := DiffOAuthSettingsChanges(oldMap, newMap)
 
-
 	expectContains := func(slice []string, expected string) {
 		t.Helper()
 		found := false

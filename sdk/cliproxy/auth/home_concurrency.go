@@ -20,12 +20,10 @@ const (
 
 var ErrMalformedHomeConcurrencyTuple = errors.New("malformed Home concurrency tuple")
 
-
 type HomeConcurrencyBusyError struct {
 	cause      *Error
 	retryAfter time.Duration
 }
-
 
 func NewHomeConcurrencyBusyError(message string, retryAfter time.Duration) error {
 	message = strings.TrimSpace(message)
@@ -50,7 +48,6 @@ func (e *HomeConcurrencyBusyError) Error() string {
 	}
 	return e.cause.Error()
 }
-
 
 func (e *HomeConcurrencyBusyError) Unwrap() error {
 	if e == nil {
@@ -94,7 +91,6 @@ func validateAccountedHomeConcurrencyTuple(tuple homeConcurrencyTuple) error {
 	}
 	return nil
 }
-
 
 func canonicalHomeConcurrencyModelKey(model string) string {
 	if !utf8.ValidString(model) {
@@ -278,14 +274,10 @@ func verifyAccountedHomeConcurrencyIdentity(tuple homeConcurrencyTuple, auth *Au
 	return nil
 }
 
-
-
 func SafeResponseHeaders(err error) http.Header {
-
 
 	var exhausted *homeRetryRoundExhaustedError
 	if errors.As(err, &exhausted) && exhausted != nil {
-
 
 		if retryAfter := exhausted.RetryAfter(); retryAfter != nil {
 			return safeRetryAfterHeader(*retryAfter)

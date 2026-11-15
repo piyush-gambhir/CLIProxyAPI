@@ -55,7 +55,6 @@ type certificatePaths struct {
 	CACert     string
 }
 
-
 func ConfigFromJWT(ctx context.Context, rawJWT string) (config.HomeConfig, error) {
 	claims, errClaims := parseHomeJWTClaims(rawJWT)
 	if errClaims != nil {

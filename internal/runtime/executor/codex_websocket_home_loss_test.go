@@ -23,8 +23,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 type completedWriteBarrierListener struct {
 	net.Listener
 	armed   atomic.Bool
@@ -72,8 +70,6 @@ func (d *homeLossDispatcher) RPopAuthWithConstraints(ctx context.Context, model,
 	d.pinnedAuthID.Store(pinnedAuthID)
 	return d.RPopAuth(ctx, model, sessionID, headers, authCount)
 }
-
-
 
 type homeLossFixture struct {
 	dials, creates atomic.Int32
@@ -204,8 +200,6 @@ func (f *homeLossFixture) read(t *testing.T, kind string) []byte {
 	return raw
 }
 
-
-
 func (f *homeLossFixture) holdUntilReleased(t *testing.T) {
 	t.Helper()
 	f.send(t, `{"type":"response.create","model":"model-a","input":[{"role":"user","content":"original full context"}]}`)
@@ -230,10 +224,6 @@ func (f *homeLossFixture) finish(t *testing.T) {
 		t.Fatalf("releases=%d dispatches=%d", f.dispatcher.releases.Load(), f.dispatcher.calls.Load())
 	}
 }
-
-
-
-
 
 func TestCodexHomeUpstreamLossDoesNotReplay(t *testing.T) {
 	f := newHomeLossFixture(t)

@@ -14,8 +14,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func responsesMidSessionPayload(model string) []byte {
 	return []byte(`{"model":"` + model + `","instructions":"Top rule","input":[` +
 		`{"role":"user","content":[{"type":"input_text","text":"hi"}]},` +
@@ -74,9 +72,6 @@ func claudeSystemTurnTexts(body []byte) []string {
 	return texts
 }
 
-
-
-
 func TestResponsesMidSessionSystemItemStaysInPlace(t *testing.T) {
 	const model = "claude-sonnet-5"
 	for name, call := range responsesPlacementCalls {
@@ -101,9 +96,6 @@ func TestResponsesMidSessionSystemItemStaysInPlace(t *testing.T) {
 	}
 }
 
-
-
-
 func TestResponsesMidSessionSystemItemKeepsTopLevelPathForLegacyModel(t *testing.T) {
 	const model = "claude-sonnet-4-5"
 	upstream := &midSystemUpstream{}
@@ -120,8 +112,6 @@ func TestResponsesMidSessionSystemItemKeepsTopLevelPathForLegacyModel(t *testing
 		t.Fatalf("want both instructions in source order; body=%s", upstream.body)
 	}
 }
-
-
 
 func TestResponsesMidSessionSystemItemDroppedByStrictCloaking(t *testing.T) {
 	const model = "claude-sonnet-5"
@@ -144,8 +134,6 @@ func TestResponsesMidSessionSystemItemDroppedByStrictCloaking(t *testing.T) {
 	}
 }
 
-
-
 func TestResponsesMidSessionSystemItemUncloakedStaysTopLevel(t *testing.T) {
 	const model = "claude-sonnet-5"
 	upstream := &midSystemUpstream{}
@@ -162,10 +150,6 @@ func TestResponsesMidSessionSystemItemUncloakedStaysTopLevel(t *testing.T) {
 		t.Fatalf("system = %s, want both instructions in source order; body=%s", system, upstream.body)
 	}
 }
-
-
-
-
 
 func TestResponsesUnsupportedSystemPartStillRejected(t *testing.T) {
 	for _, test := range []struct {
@@ -201,9 +185,6 @@ func TestResponsesUnsupportedSystemPartStillRejected(t *testing.T) {
 	}
 }
 
-
-
-
 func TestResponsesMidSessionSystemItemLocalCountTokensKeepsTopLevel(t *testing.T) {
 	const model = "claude-sonnet-5"
 	for _, attributes := range []map[string]string{
@@ -226,9 +207,6 @@ func TestResponsesMidSessionSystemItemLocalCountTokensKeepsTopLevel(t *testing.T
 		}
 	}
 }
-
-
-
 
 func TestResponsesMidSessionSystemItemLateLegacyOverrideRejected(t *testing.T) {
 	upstream := &midSystemUpstream{}

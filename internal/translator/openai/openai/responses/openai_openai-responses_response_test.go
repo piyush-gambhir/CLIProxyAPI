@@ -42,7 +42,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 	}{
 		{
 
-
 			name: "late usage after finish reason",
 			in: []string{
 				`data: {"id":"resp_late_usage","object":"chat.completion.chunk","created":1773896263,"model":"model","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"call_late_usage","type":"function","function":{"name":"read","arguments":""}}]},"finish_reason":null}]}`,
@@ -57,7 +56,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 			totalTokens:    18,
 		},
 		{
-
 
 			name: "usage on finish reason chunk",
 			in: []string{
@@ -82,7 +80,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 		},
 		{
 
-
 			name: "no usage chunk",
 			in: []string{
 				`data: {"id":"resp_no_usage","object":"chat.completion.chunk","created":1773896263,"model":"model","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"call_no_usage","type":"function","function":{"name":"read","arguments":""}}]},"finish_reason":null}]}`,
@@ -101,7 +98,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 			var createdData ojson.Result
 			var inProgressData ojson.Result
 			var completedData ojson.Result
-
 
 			var param any
 
@@ -143,14 +139,12 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ResponseCompleted
 				t.Fatalf("response.in_progress models = %q, want gpt-5.4", got)
 			}
 
-
 			if !tt.hasUsage {
 				if completedData.Get("response.usage").Exists() {
 					t.Fatalf("expected response.completed to omit usage when none was provided, got %s", completedData.Get("response.usage").Raw)
 				}
 				return
 			}
-
 
 			if got := completedData.Get("response.usage.input_tokens").Int(); got != tt.inputTokens {
 				t.Fatalf("unexpected response.usage.input_tokens: got %d want %d", got, tt.inputTokens)
@@ -1594,7 +1588,6 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ChunkWithContentA
 		t.Fatalf("expected exactly 1 response.completed, got %d", completedCount)
 	}
 
-
 	wantOrder := []string{
 		"added:reasoning:0",
 		"done:reasoning:0",
@@ -1610,11 +1603,9 @@ func TestConvertOpenAIChatCompletionsResponseToOpenAIResponses_ChunkWithContentA
 		}
 	}
 
-
 	if len(addedItemIDs) != 2 || addedItemIDs[0] == addedItemIDs[1] {
 		t.Fatalf("expected 2 distinct item IDs, got %v", addedItemIDs)
 	}
-
 
 	if got := completedData.Get("response.output.0.summary.0.text").String(); got != "Thinking part 1, Just professional." {
 		t.Fatalf("unexpected completed reasoning: got %q", got)

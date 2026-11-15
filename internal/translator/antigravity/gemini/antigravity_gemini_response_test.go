@@ -87,7 +87,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-
 	chunk1 := []byte(`data: {"response":{"candidates":[{"content":{"parts":[{"thought":true,"text":"Thinking..."}],"role":"model"}}],"usageMetadata":{"promptTokenCount":100,"totalTokenCount":150,"thoughtsTokenCount":50},"modelVersion":"gemini-3.7-flash","responseId":"resp-123"}}`)
 	results1 := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, chunk1, &param)
 	if len(results1) != 1 {
@@ -97,7 +96,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 		t.Fatalf("chunk1 should not have finishReason yet, got %q", fr)
 	}
 
-
 	doneResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(doneResults) != 1 {
 		t.Fatalf("expected synthetic terminal chunk on [DONE], got %d results", len(doneResults))
@@ -106,7 +104,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 	if fr := ojson.GetBytesNoCopy(synthetic, "candidates.0.finishReason").String(); fr != "STOP" {
 		t.Fatalf("synthetic chunk finishReason = %q, want STOP", fr)
 	}
-
 
 	if role := ojson.GetBytesNoCopy(synthetic, "candidates.0.content.role").String(); role != "model" {
 		t.Fatalf("synthetic chunk content role = %q, want model", role)
@@ -128,7 +125,6 @@ func TestConvertAntigravityResponseToGeminiStream_SynthesizesFinishReasonOnDoneW
 		t.Fatalf("synthetic chunk responseId = %q, want resp-123", rid)
 	}
 
-
 	dupResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(dupResults) != 0 {
 		t.Fatalf("duplicate [DONE] should yield 0 results, got %d", len(dupResults))
@@ -139,7 +135,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotDuplicateFinishReasonWh
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-
 	chunk1 := []byte(`data: {"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"},"finishReason":"STOP"}],"modelVersion":"gemini-3.7-flash"}}`)
 	results1 := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, chunk1, &param)
 	if len(results1) != 1 {
@@ -148,7 +143,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotDuplicateFinishReasonWh
 	if fr := ojson.GetBytesNoCopy(results1[0], "candidates.0.finishReason").String(); fr != "STOP" {
 		t.Fatalf("chunk1 finishReason = %q, want STOP", fr)
 	}
-
 
 	doneResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(doneResults) != 0 {
@@ -159,10 +153,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotDuplicateFinishReasonWh
 func TestConvertAntigravityResponseToGeminiStream_CarriesFilteredUsageIntoSyntheticTerminal(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
-
-
-
-
 
 	filtered := []byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"}}],"modelVersion":"gemini-3.7-flash","responseId":"resp-filtered","cpaUsageMetadata":{"promptTokenCount":42,"candidatesTokenCount":7,"totalTokenCount":49}}}`)
 	results := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, filtered, &param)
@@ -192,8 +182,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotFinalizeEmptyUpstreamSt
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
 
-
-
 	doneResults := ConvertAntigravityResponseToGemini(ctx, "gemini-3.7-flash", nil, nil, []byte("[DONE]"), &param)
 	if len(doneResults) != 0 {
 		t.Fatalf("empty stream must not synthesize a terminal chunk, got %d results: %s", len(doneResults), doneResults[0])
@@ -203,8 +191,6 @@ func TestConvertAntigravityResponseToGeminiStream_DoesNotFinalizeEmptyUpstreamSt
 func TestConvertAntigravityResponseToGeminiStream_ResponseFreeEventDoesNotStartStream(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "alt", "")
 	var param any
-
-
 
 	for _, chunk := range [][]byte{
 		[]byte(`{}`),

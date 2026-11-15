@@ -31,25 +31,21 @@ func TestInstanceID_PersistenceAndFormat(t *testing.T) {
 		ResetCachedInstanceID()
 	}()
 
-
 	id1 := GetOrGenerateInstanceID(tmpDir)
 	if len(id1) != 4 {
 		t.Errorf("expected 4-char hex ID, got %s (len %d)", id1, len(id1))
 	}
-
 
 	id2 := GetOrGenerateInstanceID(tmpDir)
 	if id1 != id2 {
 		t.Errorf("expected persistent ID %s, got %s", id1, id2)
 	}
 
-
 	name1 := FormatInstanceName("", id1)
 	expectedName := "CPA-" + id1
 	if name1 != expectedName {
 		t.Errorf("expected %s, got %s", expectedName, name1)
 	}
-
 
 	ResetCachedInstanceID()
 	var wg sync.WaitGroup
@@ -68,7 +64,6 @@ func TestInstanceID_PersistenceAndFormat(t *testing.T) {
 		}
 	}
 
-
 	tmpDirB, errB := os.MkdirTemp("", "cpa-discovery-test-b-*")
 	if errB == nil {
 		defer func() {
@@ -81,7 +76,6 @@ func TestInstanceID_PersistenceAndFormat(t *testing.T) {
 			t.Errorf("expected 4-char hex ID for dir B, got %s", idB)
 		}
 	}
-
 
 	name2 := FormatInstanceName("My-Custom-Node", id1)
 	if name2 != "My-Custom-Node-"+id1 {
@@ -262,7 +256,6 @@ func TestValidation_ServiceTypeAndLabels(t *testing.T) {
 		t.Errorf("expected valid, got: %v", err)
 	}
 
-
 	invalidTypes := []string{
 		"ai-gateway._tcp",
 		"_ai-gateway.tcp",
@@ -277,7 +270,6 @@ func TestValidation_ServiceTypeAndLabels(t *testing.T) {
 			t.Errorf("expected invalid for %q, got nil", it)
 		}
 	}
-
 
 	if s := sanitizeSubtype("responses"); s != SubtypeResponses {
 		t.Errorf("expected %s, got %s", SubtypeResponses, s)
@@ -304,8 +296,6 @@ func TestValidation_ServiceTypeAndLabels(t *testing.T) {
 	if s := sanitizeSubtype("_" + strings.Repeat("a", 63)); s != "" {
 		t.Error("expected 63-character subtype payload to be rejected")
 	}
-
-
 
 	longChinese := strings.Repeat("网", 22)
 	truncated := sanitizeInstanceName(longChinese)
@@ -353,7 +343,6 @@ func TestInterfaceFiltering_Helpers(t *testing.T) {
 			t.Errorf("expected %s not to be accepted by the default physical LAN allow-list", name)
 		}
 	}
-
 
 	if !matchesAny("docker0", []string{"docker*"}) {
 		t.Errorf("expected wildcard match for docker*")
@@ -418,7 +407,6 @@ func TestFilterInterfaces_RealMachine(t *testing.T) {
 		t.Fatalf("unexpected error filtering interfaces: %v", err)
 	}
 
-
 	for _, iface := range ifaces {
 		name := strings.ToLower(iface.Name)
 		if isVirtualOrTunnel(name) {
@@ -429,7 +417,6 @@ func TestFilterInterfaces_RealMachine(t *testing.T) {
 
 func TestAdvertiser_IdempotenceAndShutdown(t *testing.T) {
 	adv := NewZeroconfAdvertiser()
-
 
 	if err := adv.Stop(); err != nil {
 		t.Errorf("unexpected error stopping unstarted advertiser: %v", err)
@@ -455,16 +442,13 @@ func TestAdvertiser_IdempotenceAndShutdown(t *testing.T) {
 		return
 	}
 
-
 	if errSecond := adv.Start(ctx, spec); errSecond == nil {
 		t.Errorf("expected error on duplicate Start(), got nil")
 	}
 
-
 	if errStop := adv.Stop(); errStop != nil {
 		t.Errorf("unexpected error on Stop(): %v", errStop)
 	}
-
 
 	if errStop2 := adv.Stop(); errStop2 != nil {
 		t.Errorf("unexpected error on second Stop(): %v", errStop2)
@@ -509,7 +493,6 @@ func TestAdvertiserAndBrowser_Integration(t *testing.T) {
 	browser := NewZeroconfBrowser(ifaces...)
 	results, err := browser.Browse(browseCtx, DefaultServiceType, DefaultDomain)
 	if err != nil {
-
 
 		if strings.Contains(err.Error(), "open mDNS sockets") {
 			t.Skipf("skipping live multicast browse: %v", err)
@@ -808,7 +791,6 @@ func TestZeroconfAdvertiser_Start_ProxyHostAndPerInterfaceIPs(t *testing.T) {
 		t.Fatalf("shutdowns = %d, want 1", srv.shutdowns)
 	}
 
-
 	advBound := NewZeroconfAdvertiser()
 	advBound.osHostname = func() (string, error) { return "devbox.local", nil }
 	advBound.interfaceIPs = func([]net.Interface) []string { return append([]string(nil), allIPs...) }
@@ -917,7 +899,6 @@ func TestBuildHostAddressReplyAndGoodbyePacket(t *testing.T) {
 		t.Fatalf("expected multicast AAAA reply for %s", hostFQDN)
 	}
 
-
 	nsecAAAA, _ := buildHostAddressReply(makeQuery(hostFQDN, dnsmessage.TypeAAAA, false), hostFQDN, []string{"192.0.2.10"}, false)
 	if !hasHostAddressRecord(nsecAAAA, hostFQDN, false) {
 		t.Fatal("expected IPv4-only AAAA query reply to include NSEC answer and Additional A record")
@@ -954,7 +935,6 @@ func TestBuildHostAddressReplyAndGoodbyePacket(t *testing.T) {
 	if otherReply, _ := buildHostAddressReply(makeQuery("other.local.", dnsmessage.TypeA, false), hostFQDN, ips, false); len(otherReply) != 0 {
 		t.Fatalf("expected no reply for unrelated hostname, got %d bytes", len(otherReply))
 	}
-
 
 	qName, _ := dnsmessage.NewName(hostFQDN)
 	probeBuilder := dnsmessage.NewBuilder(nil, dnsmessage.Header{})
@@ -1015,7 +995,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatalf("registered host after collisions = %q, want cpa-8f3b-3", gotHost)
 	}
 
-
 	skippedHost, errSkip := resolveAdvertisedHost(
 		context.Background(),
 		"CPA-8F3B",
@@ -1031,7 +1010,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatalf("resolveAdvertisedHost(skip OS hostname) = %q, %v; want cpa-8f3b-3, nil", skippedHost, errSkip)
 	}
 
-
 	if exhausted, errExhausted := resolveAdvertisedHost(
 		context.Background(),
 		"CPA-8F3B",
@@ -1045,7 +1023,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	); errExhausted == nil {
 		t.Fatalf("expected error when all collision attempts are exhausted, got host=%q", exhausted)
 	}
-
 
 	if _, errV6Fail := probeHostConflictOnLAN(
 		context.Background(),
@@ -1077,8 +1054,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		}
 	}
 
-
-
 	peerV6ProbePkt, errPeerV6 := buildHostProbeQuery("cpa-8f3b.local.", 200, []string{"2001:db8::10"})
 	if errPeerV6 != nil {
 		t.Fatalf("buildHostProbeQuery(v6): %v", errPeerV6)
@@ -1086,8 +1061,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if !isHostProbeConflict(peerV6ProbePkt, "cpa-8f3b.local.", []string{"192.0.2.10"}, 50000, 50001) {
 		t.Fatal("expected IPv4-only proposer to detect conflict against peer IPv6 authority probe")
 	}
-
-
 
 	for i := 0; i < 100; i++ {
 		conflictCh := make(chan bool, 1)
@@ -1101,8 +1074,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 			t.Fatalf("iteration %d: awaitProbeConflictResult = %v, %v; want true, nil", i, gotConflict, errAwait)
 		}
 	}
-
-
 
 	peerProbePkt, errPeerPkt := buildHostProbeQuery("cpa-8f3b.local.", 200, []string{"192.0.2.20"})
 	if errPeerPkt != nil {
@@ -1123,7 +1094,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if isOwnLoopbackProbe(peerProbePkt, []byte("different-query"), &net.UDPAddr{IP: net.IPv4(192, 0, 2, 10), Port: 50000}, map[int]struct{}{50000: {}}, ifaces) {
 		t.Fatal("expected packet with different payload not to be treated as own loopback probe")
 	}
-
 
 	sendCount := 0
 	conflictCh2 := make(chan bool, 1)
@@ -1183,7 +1153,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatalf("runHostProbeSchedule(no conflict) = conflict=%v err=%v sends=%d; want false, nil, %d", gotNoConflict, errSchedAll, sendCountAll, mdnsHostProbeCount)
 	}
 
-
 	prematureDoneCh := make(chan struct{})
 	close(prematureDoneCh)
 	var detectedPremature atomic.Bool
@@ -1199,8 +1168,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	); errPremature == nil {
 		t.Fatal("expected error when probe readers terminate prematurely before probe window completes")
 	}
-
-
 
 	var reboundHosts []string
 	var rebindMu sync.Mutex
@@ -1241,7 +1208,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	}
 	onLinkPeer := &net.UDPAddr{IP: net.IPv4(192, 0, 2, 77), Port: mdnsPort}
 
-
 	responder.handlePacket(conflictRespPkt, 1, &net.UDPAddr{IP: net.IPv4(203, 0, 113, 77), Port: mdnsPort})
 	responder.handlePacket(conflictRespPkt, 1, &net.UDPAddr{IP: net.IPv4(192, 0, 2, 77), Port: 54321})
 	if responder.currentHostFQDN() != "cpa-8f3b.local." || len(reboundHosts) != 0 {
@@ -1255,7 +1221,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if oldInner.shutdownCount() != 1 {
 		t.Fatalf("oldInner shutdowns = %d, want 1", oldInner.shutdownCount())
 	}
-
 
 	cnameTarget, _ := dnsmessage.NewName("alias-target.local.")
 	cnameBuilder := dnsmessage.NewBuilder(nil, dnsmessage.Header{Response: true, Authoritative: true})
@@ -1273,7 +1238,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if !isHostProbeConflict(cnamePkt, "cpa-8f3b.local.", []string{"192.0.2.10"}, 50000, mdnsPort) {
 		t.Fatal("expected CNAME response for target host to be detected as conflict")
 	}
-
 
 	failOldInner := &fakeZeroconfServer{}
 	failResponder := &hostRecordResponder{
@@ -1314,7 +1278,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if exhaustResponder.currentHostFQDN() != "" || exhaustOldInner.shutdownCount() != 1 {
 		t.Fatalf("after exhausted attempts: hostFQDN=%q oldShutdowns=%d, want empty (withdrawn) / 1", exhaustResponder.currentHostFQDN(), exhaustOldInner.shutdownCount())
 	}
-
 
 	concOldInner := &fakeZeroconfServer{}
 	enteredRebind := make(chan struct{})
@@ -1365,7 +1328,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatalf("concurrent conflict: created=%d oldShutdowns=%d newShutdowns=%d", len(createdServers), concOldInner.shutdownCount(), createdServers[0].shutdownCount())
 	}
 
-
 	truncatedAns := conflictRespPkt[:len(conflictRespPkt)-2]
 	if got := extractHostAnswerIPs(truncatedAns, "cpa-8f3b.local."); len(got) != 0 {
 		t.Fatalf("expected empty IPs on truncated answer packet, got %v", got)
@@ -1374,8 +1336,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if _, gotAuth, _ := extractHostAuthorityIPs(truncatedAuth, "cpa-8f3b.local."); len(gotAuth) != 0 {
 		t.Fatalf("expected empty IPs on truncated authority packet, got %v", gotAuth)
 	}
-
-
 
 	if realIfaces, _ := FilterInterfaces(nil, nil); len(realIfaces) > 0 {
 		boundResp := &hostRecordResponder{
@@ -1409,8 +1369,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		}
 	}
 
-
-
 	dotCfg := parseMDNSServiceConfig("office.v1-8F3B", DefaultServiceType, DefaultDomain, 8317, []string{"product=cliproxyapi"})
 	dotAnnPkt := buildServicePacket(dotCfg, "cpa-office-v1-8f3b.local.", []string{"192.0.2.10"}, mdnsServiceRecordTTL)
 	if !bytes.Contains(dotAnnPkt, []byte("\x0eoffice.v1-8F3B")) {
@@ -1423,8 +1381,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatal("expected unicast probe reply on disallowed interface and foreign subnet to be rejected")
 	}
 	svcCfg := parseMDNSServiceConfig("CPA-8F3B", DefaultServiceType+","+SubtypeResponses, DefaultDomain, 8317, []string{"product=cliproxyapi"})
-
-
 
 	svcQName, _ := dnsmessage.NewName("_ai-gateway._tcp.local.")
 	knownDotTarget, _ := dnsmessage.NewName("office" + string(dotInLabelSentinel) + "v1-1234._ai-gateway._tcp.local.")
@@ -1470,7 +1426,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatal("expected off-link query source 203.0.113.99 to be rejected by isOnLinkSource")
 	}
 
-
 	mcastSubResp := &hostRecordResponder{
 		baseHost: "cpa-8f3b",
 		osHost:   "devbox",
@@ -1489,8 +1444,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatalf("expected multicast conflict from different subnet on same link to rename to cpa-8f3b-2.local., got %q", mcastSubResp.currentHostFQDN())
 	}
 
-
-
 	enumQName, _ := dnsmessage.NewName("_services._dns-sd._udp.local.")
 	mixedBuilder := dnsmessage.NewBuilder(nil, dnsmessage.Header{ID: 88})
 	_ = mixedBuilder.StartQuestions()
@@ -1508,7 +1461,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if combinedReplies[0].unicast || combinedReplies[1].unicast || !combinedReplies[2].unicast {
 		t.Fatalf("expected [multicast, multicast, unicast] replies, got [%v, %v, %v]", combinedReplies[0].unicast, combinedReplies[1].unicast, combinedReplies[2].unicast)
 	}
-
 
 	schedResp := &hostRecordResponder{
 		svc:      svcCfg,
@@ -1546,8 +1498,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 		t.Fatalf("canceled scheduleServiceAnnouncements count = %d, want 1", got)
 	}
 
-
-
 	var sentFQDNs []string
 	fenceResp := &hostRecordResponder{
 		baseHost: "cpa-8f3b",
@@ -1579,7 +1529,6 @@ func TestResolveAdvertisedHost_CollisionStepping(t *testing.T) {
 	if len(sentFQDNs) != 1 || sentFQDNs[0] != "cpa-8f3b-2.local." {
 		t.Fatalf("sentFQDNs = %v, want [cpa-8f3b-2.local.]", sentFQDNs)
 	}
-
 
 	dupBuilder := dnsmessage.NewBuilder(nil, dnsmessage.Header{ID: 99})
 	_ = dupBuilder.StartQuestions()

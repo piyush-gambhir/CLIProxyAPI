@@ -50,7 +50,7 @@ func TestApplyPatchInputDecoderStringFragments(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			for split := 0; split <= len(test.arguments); split++ {
 				checkApplyPatchFragments(t, []string{test.arguments[:split], test.arguments[split:]}, test.arguments, test.want)
-				// A final snapshot can complete a pending escape or UTF-8 character.
+
 				checkApplyPatchFragments(t, []string{test.arguments[:split]}, test.arguments, test.want)
 			}
 			fragments := make([]string, len(test.arguments))

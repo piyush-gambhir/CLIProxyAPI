@@ -13,8 +13,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
-
 type antigravityRemovalExecutor struct {
 	coreauth.ProviderExecutor
 	onClose func()
@@ -53,7 +51,6 @@ func TestAntigravityRemovalInvalidatesAuthBeforeRegistry(t *testing.T) {
 			if reg.ClientRegistrationEpoch(auth.ID) != initialEpoch {
 				t.Error("registry epoch advanced before runtime auth invalidation")
 			}
-
 
 			svc.refreshAntigravityModels(t.Context())
 			svc.scheduleAntigravityModelRefresh(t.Context(), auth)
@@ -140,7 +137,6 @@ func TestAntigravityCachedRegistrationPreservesCooldownWhileProbePending(t *test
 			if reg.ApplyClientModelProjections(auth.ID, reg.ClientRegistrationEpoch(auth.ID), current.Generation-1, []registry.ClientModelProjection{{ModelID: model}}) {
 				t.Error("cached publication accepted a stale scheduling projection")
 			}
-
 
 			unblock()
 			svc.WaitAntigravityProbes()

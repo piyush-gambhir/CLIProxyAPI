@@ -24,7 +24,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
 func (h *Handler) DownloadAuthFile(c *gin.Context) {
 	name := strings.TrimSpace(c.Query("name"))
 	if isUnsafeAuthFileName(name) {
@@ -48,7 +47,6 @@ func (h *Handler) DownloadAuthFile(c *gin.Context) {
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", name))
 	c.Data(200, "application/json", data)
 }
-
 
 func (h *Handler) UploadAuthFile(c *gin.Context) {
 	if h.authManager == nil {
@@ -137,7 +135,6 @@ func (h *Handler) UploadAuthFile(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{"status": "ok"})
 }
-
 
 func (h *Handler) DeleteAuthFile(c *gin.Context) {
 	if h.authManager == nil {

@@ -1019,7 +1019,6 @@ func TestStreaming_InterleavedContentAndToolUse_StrictSequentialBlocks(t *testin
 
 	assertSequentialContentBlocks(t, events)
 
-
 	var toolDeltas []sseEvent
 	for _, e := range events {
 		if e.Type == "content_block_delta" && ojson.Get(e.Payload, "delta.type").String() == "input_json_delta" {
@@ -1092,11 +1091,6 @@ func TestStreaming_InterleavedTextAndThinkingPreservesOrder(t *testing.T) {
 
 	assertSequentialContentBlocks(t, events)
 
-
-
-
-
-
 	var blockStarts []string
 	for _, e := range events {
 		if e.Type == "content_block_start" {
@@ -1112,7 +1106,6 @@ func TestStreaming_InterleavedTextAndThinkingPreservesOrder(t *testing.T) {
 			t.Fatalf("block %d type = %q, want %q", i, blockStarts[i], want)
 		}
 	}
-
 
 	var textDeltas []string
 	var thinkingDeltas []string
@@ -1313,7 +1306,6 @@ func TestStreaming_EmptyReasoningContentFallsBackToReasoning(t *testing.T) {
 func TestNonStream_ReasoningFieldEmitsThinkingBlock(t *testing.T) {
 	rawJSON := []byte(`{"id":"chatcmpl-1","object":"chat.completion","model":"deepseek","choices":[{"index":0,"message":{"role":"assistant","content":"Done","reasoning":"Thought process"},"finish_reason":"stop"}]}`)
 
-
 	out := ConvertOpenAIResponseToClaudeNonStream(context.Background(), "", nil, nil, rawJSON, nil)
 	content := ojson.GetBytesNoCopy(out, "content").Array()
 	var thinkingTexts []string
@@ -1325,7 +1317,6 @@ func TestNonStream_ReasoningFieldEmitsThinkingBlock(t *testing.T) {
 	if len(thinkingTexts) != 1 || thinkingTexts[0] != "Thought process" {
 		t.Fatalf("expected non-stream content to contain thinking block 'Thought process', got %v (output: %s)", thinkingTexts, string(out))
 	}
-
 
 	var paramAny any
 	emitted := ConvertOpenAIResponseToClaude(context.Background(), "", []byte(`{"stream":false}`), nil, append([]byte("data: "), rawJSON...), &paramAny)
@@ -1479,7 +1470,6 @@ func TestConvertOpenAIResponseToClaude_StreamFlagResolvedOncePerStream(t *testin
 		t.Fatalf("expected streaming events on first chunk, got %q", bytes.Join(first, nil))
 	}
 
-
 	second := ConvertOpenAIResponseToClaude(context.Background(), "test-model", nil, nil, []byte(streamFlagTestChunk), &param)
 	if !bytes.Contains(bytes.Join(second, nil), []byte("content_block_delta")) {
 		t.Fatalf("expected cached stream flag to be reused on subsequent chunks, got %q", bytes.Join(second, nil))
@@ -1492,8 +1482,6 @@ func TestConvertOpenAIResponseToClaude_ToolNameMapResolvedOnceWhenNoTools(t *tes
 	if !bytes.Contains(bytes.Join(first, nil), []byte("content_block_delta")) {
 		t.Fatalf("expected streaming events on first chunk, got %q", bytes.Join(first, nil))
 	}
-
-
 
 	toolChunk := `data: {"id":"chatcmpl_1","model":"test-model","created":1,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"bash","arguments":"{}"}}]},"finish_reason":null}]}`
 	laterReqWithTools := []byte(`{"model":"m","stream":true,"tools":[{"name":"Bash"}]}`)
@@ -1515,7 +1503,6 @@ func TestConvertOpenAIResponseToClaude_NonStreamingRequestStaysNonStreaming(t *t
 		if bytes.Contains(joined, []byte("content_block_delta")) {
 			t.Fatalf("request %s must not produce streaming events, got %q", original, joined)
 		}
-
 
 		second := ConvertOpenAIResponseToClaude(context.Background(), "test-model", []byte(`{"model":"m","stream":true}`), nil, []byte(streamFlagTestChunk), &param)
 		secondJoined := bytes.Join(second, nil)
@@ -1789,7 +1776,6 @@ func TestNonStream_ContentPartsArrayThinkingAndBlockOrder(t *testing.T) {
 	if len(emittedBlocks) != 2 || emittedBlocks[0].Get("type").String() != "thinking" || emittedBlocks[0].Get("thinking").String() != "First thought." || emittedBlocks[1].Get("type").String() != "text" || emittedBlocks[1].Get("text").String() != "hello" {
 		t.Fatalf("convertOpenAINonStreamingToAnthropic blocks = %s, want [thinking, text]", string(emitted[0]))
 	}
-
 
 	topLevelReasoningResp := []byte(`{"id":"chatcmpl-2","object":"chat.completion","model":"deepseek","choices":[{"index":0,"message":{"role":"assistant","content":"Final answer","reasoning_content":"Step by step"},"finish_reason":"stop"}]}`)
 	outTopLevel := ConvertOpenAIResponseToClaudeNonStream(context.Background(), "", nil, nil, topLevelReasoningResp, nil)

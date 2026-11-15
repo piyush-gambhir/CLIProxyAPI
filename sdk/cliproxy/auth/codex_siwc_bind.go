@@ -15,9 +15,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
 func (m *Manager) BindCodexSIWC(ctx context.Context, id string, expectedEpoch uint64, expectedAccount string, tokenData *codex.CodexSIWCTokenData) (*Auth, error) {
 	if m == nil || strings.TrimSpace(id) == "" || expectedEpoch == 0 || tokenData == nil || strings.TrimSpace(tokenData.AccessToken) == "" || strings.TrimSpace(tokenData.RefreshToken) == "" || strings.TrimSpace(tokenData.ClientID) == "" {
 		return nil, fmt.Errorf("bind SIWC: invalid target or token data")
@@ -70,7 +67,6 @@ func (m *Manager) BindCodexSIWC(ctx context.Context, id string, expectedEpoch ui
 			return fmt.Errorf("bind SIWC: backing account changed")
 		}
 
-
 		var raw map[string]json.RawMessage
 		if errJSON := json.Unmarshal(data, &raw); errJSON != nil {
 			return errJSON
@@ -103,7 +99,6 @@ func (m *Manager) BindCodexSIWC(ctx context.Context, id string, expectedEpoch ui
 		disk["siwc"] = replacement
 		disk["use_siwc"] = true
 
-
 		m.mu.Lock()
 		current := m.auths[id]
 		if current == nil || current.RegistrationEpoch != expectedEpoch {
@@ -114,7 +109,6 @@ func (m *Manager) BindCodexSIWC(ctx context.Context, id string, expectedEpoch ui
 		updated.Metadata = disk
 		updated.Storage = nil
 		updated.CodexRefreshPatch = nil
-
 
 		delete(updated.Attributes, "use_siwc")
 		if disabled, ok := disk["disabled"].(bool); ok {
@@ -177,7 +171,6 @@ func codexBindingHasOuter(metadata map[string]any) bool {
 	refresh, _ := metadata["refresh_token"].(string)
 	return strings.TrimSpace(access) != "" && strings.TrimSpace(refresh) != ""
 }
-
 
 func (m *Manager) codexBindingPath(auth *Auth) (string, error) {
 	source := strings.ToLower(authAttribute(auth, AttributeSource))

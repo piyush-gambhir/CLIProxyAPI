@@ -61,8 +61,6 @@ func TestSplitRelayFrames(t *testing.T) {
 	}
 }
 
-
-
 func streamThroughRelay(t *testing.T, source sdktranslator.Format, chunks []string) (string, error) {
 	t.Helper()
 
@@ -162,9 +160,6 @@ func streamThroughRelay(t *testing.T, source sdktranslator.Format, chunks []stri
 	return out.String(), streamErr
 }
 
-
-
-
 func TestAIStudioStreamTranslatesEveryFrameOfAChunk(t *testing.T) {
 	formats := []struct {
 		name            string
@@ -217,7 +212,6 @@ func TestAIStudioStreamTranslatesEveryFrameOfAChunk(t *testing.T) {
 		})
 	}
 }
-
 
 func TestAIStudioStreamKeepsPrettyJSONChunkWhole(t *testing.T) {
 	pretty := "{\n  \"candidates\": [\n    {\"content\": {\"role\": \"model\", \"parts\": [{\"text\": \"PPP\"}]},\n\n     \"finishReason\": \"STOP\"}\n  ],\n  \"usageMetadata\": {\"promptTokenCount\": 11, \"candidatesTokenCount\": 4, \"totalTokenCount\": 15}\n}\n"

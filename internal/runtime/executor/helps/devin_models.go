@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-
 var knownDevinSuffixes = []string{
 	"-none",
 	"-low",
@@ -50,12 +49,10 @@ var knownDevinSuffixes = []string{
 	"_thinking",
 }
 
-
 var specialDevinAliases = map[string]string{
 	"claude-haiku-4-5": "MODEL_PRIVATE_11",
 	"gpt-4-1":          "MODEL_CHAT_GPT_4_1_2025_04_14",
 }
-
 
 func HasDevinEffortSuffix(model string) bool {
 	lower := strings.ToLower(strings.TrimSpace(model))
@@ -66,7 +63,6 @@ func HasDevinEffortSuffix(model string) bool {
 	}
 	return false
 }
-
 
 func NormalizeThinkingLevel(level string, budgetTokens int) string {
 	normalized := strings.ToLower(strings.TrimSpace(level))
@@ -95,27 +91,20 @@ func NormalizeThinkingLevel(level string, budgetTokens int) string {
 	return ""
 }
 
-
-
-
-
 func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetTokens int) string {
 	model := strings.TrimSpace(rawModel)
 	if model == "" {
 		return "swe-2-high"
 	}
 
-
 	cleanModel := model
 	if strings.HasPrefix(strings.ToLower(cleanModel), "devin/") {
 		cleanModel = cleanModel[6:]
 	}
 
-
 	if HasDevinEffortSuffix(cleanModel) {
 		return cleanModel
 	}
-
 
 	parsedSuffix := thinking.ParseSuffix(cleanModel)
 	baseModel := strings.TrimSpace(parsedSuffix.ModelName)
@@ -126,14 +115,10 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		thinkingLevel = strings.TrimSpace(cleanModel[colonIdx+1:])
 	}
 
-
-
-
 	rawLevel := strings.ToLower(strings.TrimSpace(thinkingLevel))
 	effort := NormalizeThinkingLevel(thinkingLevel, budgetTokens)
 	lowerBase := strings.ToLower(baseModel)
 	canonicalBase := strings.ReplaceAll(lowerBase, ".", "-")
-
 
 	if alias, exists := specialDevinAliases[canonicalBase]; exists {
 		return alias
@@ -165,7 +150,6 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		return "MODEL_CLAUDE_4_5_OPUS"
 	}
 
-
 	modelInfo := registry.LookupDevinModel(canonicalBase)
 	if modelInfo == nil && canonicalBase != lowerBase {
 		modelInfo = registry.LookupDevinModel(lowerBase)
@@ -175,7 +159,6 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 	if modelInfo != nil && modelInfo.Thinking != nil && len(modelInfo.Thinking.Levels) > 0 {
 		allowedLevels = modelInfo.Thinking.Levels
 	}
-
 
 	switch canonicalBase {
 	case "swe-1-7":
@@ -221,8 +204,6 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		return canonicalBase
 	}
 
-
-
 	if strings.HasSuffix(canonicalBase, "-lightning") {
 		stem := strings.TrimSuffix(canonicalBase, "-lightning")
 		if HasDevinEffortSuffix(stem) {
@@ -237,19 +218,15 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 		return stem + "-" + clamped + "-lightning"
 	}
 
-
 	if len(allowedLevels) == 0 {
 		return canonicalBase
 	}
-
-
 
 	if base, isFast := strings.CutSuffix(rawLevel, "-fast"); isFast && devinLevelIndex(base) != -1 {
 		defaultEffort := selectDefaultDevinEffort(canonicalBase, allowedLevels)
 		clamped := clampEffort(base, allowedLevels, defaultEffort)
 		return canonicalBase + "-" + clamped + "-fast"
 	}
-
 
 	defaultEffort := selectDefaultDevinEffort(canonicalBase, allowedLevels)
 	clamped := clampEffort(effort, allowedLevels, defaultEffort)

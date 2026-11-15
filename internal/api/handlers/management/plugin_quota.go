@@ -41,7 +41,6 @@ func (r credentialQuotaRequest) resolveAuthIndex() string {
 	return ""
 }
 
-
 func (h *Handler) GetQuotaProviders(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusOK, gin.H{"providers": []any{}})
@@ -56,7 +55,6 @@ func (h *Handler) GetQuotaProviders(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"providers": host.QuotaProviders(c.Request.Context())})
 }
-
 
 func (h *Handler) FetchCredentialQuota(c *gin.Context) {
 	var body credentialQuotaRequest
@@ -113,7 +111,6 @@ func (h *Handler) FetchCredentialQuota(c *gin.Context) {
 		}
 	}
 
-
 	if auth.Metadata != nil {
 		if rawProbe, okProbe := auth.Metadata["quota_probe"]; okProbe && rawProbe != nil {
 			if probeMap, okMap := rawProbe.(map[string]any); okMap {
@@ -132,7 +129,6 @@ func (h *Handler) FetchCredentialQuota(c *gin.Context) {
 
 	c.JSON(http.StatusNotImplemented, gin.H{"error": "no quota provider available for credential"})
 }
-
 
 func (h *Handler) ResetCredentialQuota(c *gin.Context) {
 	var body credentialQuotaRequest
@@ -235,7 +231,6 @@ func (h *Handler) ResetCredentialQuota(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-
 func (h *Handler) GetPluginQuota(c *gin.Context) {
 	pluginID := strings.TrimSpace(c.Param("id"))
 	authIndex := strings.TrimSpace(c.Query("auth_index"))
@@ -248,7 +243,6 @@ func (h *Handler) GetPluginQuota(c *gin.Context) {
 	}
 	h.fetchQuotaForPlugin(c, pluginID, authIndex)
 }
-
 
 func (h *Handler) FetchPluginQuota(c *gin.Context) {
 	pluginID := strings.TrimSpace(c.Param("id"))
@@ -298,7 +292,6 @@ func (h *Handler) fetchQuotaForPlugin(c *gin.Context, pluginID, authIndex string
 	}
 	c.JSON(http.StatusOK, quotaResp)
 }
-
 
 func (h *Handler) ResetPluginQuota(c *gin.Context) {
 	pluginID := strings.TrimSpace(c.Param("id"))

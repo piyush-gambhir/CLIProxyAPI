@@ -66,7 +66,6 @@ func TestCatalogPolicyHotReload(t *testing.T) {
 	UpdateModelCatalogSources(CatalogSources{}, false)
 	awaitSource(general, embeddedCatalogSource)
 
-
 	cancel()
 	codexCatalogUpdater.mu.Lock()
 	generation := codexCatalogUpdater.generation

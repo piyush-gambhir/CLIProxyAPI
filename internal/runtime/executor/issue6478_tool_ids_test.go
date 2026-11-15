@@ -59,8 +59,6 @@ func issue6478AssertPortableIDs(t *testing.T, ids []string) {
 	}
 }
 
-
-
 func TestIssue6478_DevinClaudeOutputAndToolResultRoundTrip(t *testing.T) {
 	var frames []byte
 	for i, call := range issue6478Calls {

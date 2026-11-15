@@ -203,8 +203,6 @@ func TestExecuteStreamRPCWithMockTavily(t *testing.T) {
 		TavilyAPIKeys: []string{"k"},
 	})
 
-
-
 	_ = server
 	claudeBody := []byte(`{"messages":[{"role":"user","content":"Perform a web search for the query: q"}],"tools":[{"type":"web_search_20250305","name":"web_search"}]}`)
 	client := newTavilyClientWithOptions([]string{"k"}, server.Client(), server.URL)

@@ -153,10 +153,6 @@ func assertClaudeCredentialIdentity(t *testing.T, body []byte, headers http.Head
 	}
 }
 
-
-
-
-
 func assertClaudeCountTokensIdentity(t *testing.T, body []byte, headers http.Header) {
 	t.Helper()
 	if got := ojson.GetBytes(body, "metadata"); got.Exists() {
@@ -770,7 +766,6 @@ func TestApplyClaudeHeaders_EmptyAPIKey_OmitsAuthHeaders(t *testing.T) {
 		t.Fatalf("Custom-Token = %q, want custom-secret", got)
 	}
 
-
 	req2, _ := http.NewRequest(http.MethodPost, "https://custom-claude.example.com/v1/messages", nil)
 	req2.Header.Set("Authorization", "Bearer preexisting-bearer")
 	req2.Header.Set("x-api-key", "preexisting-key")
@@ -837,8 +832,6 @@ func TestClaudeExecutor_NonClaudeRequestUsesClaudeCode220CLIFingerprint(t *testi
 	if got := system[1].Get("cache_control.type").String(); got != "ephemeral" {
 		t.Fatalf("system[1].cache_control.type = %q, want ephemeral", got)
 	}
-
-
 
 	if system[1].Get("cache_control.ttl").Exists() {
 		t.Fatalf("API-key request must not carry a 1h body ttl: %s", system[1].Raw)
@@ -1631,7 +1624,6 @@ func TestApplyClaudeToolPrefix_WithToolReference(t *testing.T) {
 }
 
 func TestSanitizeClaudeWebSearchDomains(t *testing.T) {
-
 
 	input := []byte(`{"tools":[{"type":"web_search_20250305","name":"web_search","allowed_domains":["anthropic.com"],"blocked_domains":[],"max_uses":8}]}`)
 	out := sanitizeClaudeWebSearchDomains(input)
@@ -2485,10 +2477,6 @@ func TestClaudeExecutor_ExecuteStreamOpenAIResponseTranslatesCacheAndTrailingUsa
 	}
 }
 
-
-
-
-
 func TestClaudeExecutor_ExecuteStreamDecodesCompressedSSE(t *testing.T) {
 	firstData := `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hi"}}`
 	secondData := `{"type":"message_stop"}`
@@ -2834,10 +2822,6 @@ func TestClaudeExecutor_CountTokensCloakMatchesMeasuredDirectAnthropicShape(t *t
 	}
 }
 
-
-
-
-
 func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *testing.T) {
 	const callerSystem = "third party ACMECORP orchestrator rules"
 	const sensitiveWord = "ACMECORP"
@@ -2884,11 +2868,9 @@ func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *te
 				t.Fatalf("countTokensUpstream() error = %v", errCount)
 			}
 
-
 			if got := ojson.GetBytes(upstreamBody, "system"); got.Exists() {
 				t.Fatalf("cloaked count system = %s, want absent", got.Raw)
 			}
-
 
 			var decodedTexts []string
 			sawSystemRole := false
@@ -2920,9 +2902,6 @@ func TestClaudeExecutor_CountTokensCloakRelocatesCallerSystemAndObfuscates(t *te
 		})
 	}
 }
-
-
-
 
 func TestClaudeExecutor_CountTokensCloakStrictModeDropsCallerSystem(t *testing.T) {
 	var upstreamBody []byte
@@ -3485,8 +3464,6 @@ func TestNormalizeCacheControlTTL_DowngradesLaterOneHourBlocks(t *testing.T) {
 
 func TestNormalizeCacheControlTTL_PreservesOriginalBytesWhenNoChange(t *testing.T) {
 
-
-
 	payload := []byte(`{"tools":[{"name":"t1","cache_control":{"type":"ephemeral","ttl":"1h"}}],"system":[{"type":"text","text":"<system-reminder>foo & bar</system-reminder>","cache_control":{"type":"ephemeral","ttl":"1h"}}],"messages":[{"role":"user","content":[{"type":"text","text":"hello"}]}]}`)
 
 	out := normalizeCacheControlTTL(payload)
@@ -3635,11 +3612,9 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		]
 	}`)
 
-
 	if got := countCacheControls(payload); got != 1 {
 		t.Fatalf("countCacheControls = %d, want 1 (null cache_control must not be counted)", got)
 	}
-
 
 	out := enforceCacheControlLimit(payload, 4)
 	if got := countCacheControls(out); got != 1 {
@@ -3651,7 +3626,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 	if ojson.GetBytes(out, "messages.0.content.0.cache_control.type").String() != "ephemeral" {
 		t.Fatalf("messages.0.content.0.cache_control.type = %q, want ephemeral", ojson.GetBytes(out, "messages.0.content.0.cache_control.type").String())
 	}
-
 
 	toolsPayload := []byte(`{
 		"tools": [{"name": "tool1", "description": "desc", "cache_control": null}]
@@ -3679,7 +3653,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		t.Fatalf("injectMessagesCacheControl should inject cache_control when existing value is null, got %q", got)
 	}
 
-
 	excessWithNullPayload := []byte(`{
 		"tools": [
 			{"name": "t1", "cache_control": {"type": "ephemeral"}},
@@ -3702,7 +3675,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 		]
 	}`)
 
-
 	outExcess := enforceCacheControlLimit(excessWithNullPayload, 4)
 	if got := countCacheControls(outExcess); got != 4 {
 		t.Fatalf("countCacheControls after enforce with excess = %d, want 4", got)
@@ -3713,7 +3685,6 @@ func TestClaudeExecutor_NullCacheControlIgnored(t *testing.T) {
 	if !ojson.GetBytes(outExcess, "tools.2.cache_control").Exists() {
 		t.Fatalf("last tool cache_control should be preserved")
 	}
-
 
 	mixedTTLPayload := []byte(`{
 		"system": [
@@ -3914,9 +3885,6 @@ func TestEnsureModelMaxTokens_SkipsUnregisteredModel(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeExecutor_ExecuteStream_SetsIdentityAcceptEncoding(t *testing.T) {
 	var gotEncoding, gotAccept string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3957,9 +3925,6 @@ func TestClaudeExecutor_ExecuteStream_SetsIdentityAcceptEncoding(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeExecutor_Execute_SetsCompressedAcceptEncoding(t *testing.T) {
 	var gotEncoding, gotAccept string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3994,9 +3959,6 @@ func TestClaudeExecutor_Execute_SetsCompressedAcceptEncoding(t *testing.T) {
 		t.Errorf("Accept = %q, want %q", gotAccept, "application/json")
 	}
 }
-
-
-
 
 func TestClaudeExecutor_ExecuteStream_GzipSuccessBodyDecoded(t *testing.T) {
 	var buf bytes.Buffer
@@ -4081,8 +4043,6 @@ func TestDecodeResponseBodyStackedRepeatedHeaders(t *testing.T) {
 	}
 }
 
-
-
 func TestDecodeResponseBody_MagicByteGzipNoHeader(t *testing.T) {
 	const plaintext = "data: {\"type\":\"message_stop\"}\n"
 
@@ -4106,8 +4066,6 @@ func TestDecodeResponseBody_MagicByteGzipNoHeader(t *testing.T) {
 		t.Errorf("decoded = %q, want %q", got, plaintext)
 	}
 }
-
-
 
 func TestDecodeResponseBody_MagicByteZstdNoHeader(t *testing.T) {
 	const plaintext = "data: {\"type\":\"message_stop\"}\n"
@@ -4136,8 +4094,6 @@ func TestDecodeResponseBody_MagicByteZstdNoHeader(t *testing.T) {
 	}
 }
 
-
-
 func TestDecodeResponseBody_PlainTextNoHeader(t *testing.T) {
 	const plaintext = "data: {\"type\":\"message_stop\"}\n"
 	rc := io.NopCloser(strings.NewReader(plaintext))
@@ -4155,10 +4111,6 @@ func TestDecodeResponseBody_PlainTextNoHeader(t *testing.T) {
 		t.Errorf("decoded = %q, want %q", got, plaintext)
 	}
 }
-
-
-
-
 
 func TestClaudeExecutor_ExecuteStream_GzipNoContentEncodingHeader(t *testing.T) {
 	var buf bytes.Buffer
@@ -4207,10 +4159,6 @@ func TestClaudeExecutor_ExecuteStream_GzipNoContentEncodingHeader(t *testing.T) 
 	}
 }
 
-
-
-
-
 func TestClaudeExecutor_Execute_GzipErrorBodyNoContentEncodingHeader(t *testing.T) {
 	const errJSON = `{"type":"error","error":{"type":"invalid_request_error","message":"test error"}}`
 
@@ -4248,9 +4196,6 @@ func TestClaudeExecutor_Execute_GzipErrorBodyNoContentEncodingHeader(t *testing.
 		t.Errorf("error message should contain decompressed JSON, got: %q", err.Error())
 	}
 }
-
-
-
 
 func TestClaudeExecutor_ExecuteStream_GzipErrorBodyNoContentEncodingHeader(t *testing.T) {
 	const errJSON = `{"type":"error","error":{"type":"invalid_request_error","message":"stream test error"}}`
@@ -4290,8 +4235,6 @@ func TestClaudeExecutor_ExecuteStream_GzipErrorBodyNoContentEncodingHeader(t *te
 	}
 }
 
-
-
 func TestClaudeExecutor_ExecuteStream_AcceptEncodingOverrideCannotBypassIdentity(t *testing.T) {
 	var gotEncoding string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -4328,9 +4271,6 @@ func TestClaudeExecutor_ExecuteStream_AcceptEncodingOverrideCannotBypassIdentity
 		t.Errorf("Accept-Encoding = %q; stream path must enforce identity regardless of auth.Attributes override", gotEncoding)
 	}
 }
-
-
-
 
 func assertClaudeMidConversationSystemMessage(t *testing.T, body []byte, messageIndex int, wantText, wantTTL string) {
 	t.Helper()
@@ -4392,9 +4332,6 @@ func assertClaudeCodeCurrentDateBlockAt(t *testing.T, block ojson.Result, now ti
 		t.Fatalf("currentDate block must not contain cache_control: %s", block.Raw)
 	}
 }
-
-
-
 
 func assertEphemeralUserTextBlock(t *testing.T, block ojson.Result, wantText, wantTTL string) {
 	t.Helper()
@@ -4512,9 +4449,6 @@ func TestClaudeCallerCurrentDateSeedsOnlyFirstAnchor(t *testing.T) {
 		t.Fatalf("later caller date = %q, want established anchor 2026-08-01", got)
 	}
 
-
-
-
 	nearExpiry := time.Second
 	helps.ExpireClaudeDiagnosticsForTest(true, &nearExpiry)
 	before := helps.ClaudeSessionDatePinExpiryForTest("caller-date-session")
@@ -4539,12 +4473,10 @@ func TestInjectClaudeCodeCurrentDateStripsCallerReminderFromStringContent(t *tes
 		t.Fatalf("string caller date = %q, want 2026-08-01", got)
 	}
 
-
 	legacy := injectClaudeCodeCurrentDate(payload, "2026-08-01")
 	if got := strings.Count(string(legacy), "Today's date is"); got != 2 {
 		t.Fatalf("legacy payload has %d date reminders, want 2: %s", got, legacy)
 	}
-
 
 	stripped := injectClaudeCodeCurrentDate(stripFirstUserClaudeCodeCurrentDateReminder(payload), "2026-08-01")
 	if got := strings.Count(string(stripped), "Today's date is"); got != 1 {
@@ -4686,8 +4618,6 @@ func TestInjectClaudeCodeCurrentDateFollowsAllLeadingToolResults(t *testing.T) {
 	assertClaudeCodeCurrentDateBlockAt(t, content[2], fixed)
 }
 
-
-
 func TestCheckSystemInstructionsWithMode_StringSystemPreserved(t *testing.T) {
 	payload := []byte(`{"model":"claude-opus-5","system":"You are a helpful assistant.","messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"},{"role":"user","content":"follow-up"}]}`)
 
@@ -4809,7 +4739,6 @@ func TestCheckSystemInstructionsWithMode_LegacyModelKeepsSystemBlocksSeparate(t 
 	assertEphemeralUserTextBlock(t, content[3], "hi", "")
 }
 
-
 func TestCheckSystemInstructionsWithMode_StringSystemStrict(t *testing.T) {
 	payload := []byte(`{"system":"You are a helpful assistant.","messages":[{"role":"user","content":"hi"}]}`)
 
@@ -4827,7 +4756,6 @@ func TestCheckSystemInstructionsWithMode_StringSystemStrict(t *testing.T) {
 	assertEphemeralUserTextBlock(t, content[1], "hi", "")
 }
 
-
 func TestCheckSystemInstructionsWithMode_EmptyStringSystemIgnored(t *testing.T) {
 	payload := []byte(`{"system":"","messages":[{"role":"user","content":"hi"}]}`)
 
@@ -4844,7 +4772,6 @@ func TestCheckSystemInstructionsWithMode_EmptyStringSystemIgnored(t *testing.T) 
 	assertClaudeCodeCurrentDateBlock(t, content[0])
 	assertEphemeralUserTextBlock(t, content[1], "hi", "")
 }
-
 
 func TestCheckSystemInstructionsWithMode_ArraySystemStillWorks(t *testing.T) {
 	payload := []byte(`{"model":"claude-opus-5","system":[{"type":"text","text":"Be concise."}],"messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"},{"role":"user","content":"follow-up"}]}`)
@@ -5109,8 +5036,6 @@ func TestCheckSystemInstructionsWithMode_AdvisorToolResultPreservesTopLevelSyste
 
 	out := checkSystemInstructionsWithMode(payload, false)
 
-
-
 	if got := ojson.GetBytes(out, "messages.#").Int(); got != 4 {
 		t.Fatalf("messages count = %d, want 4 (no mid-conversation system splice): %s", got, out)
 	}
@@ -5121,7 +5046,6 @@ func TestCheckSystemInstructionsWithMode_AdvisorToolResultPreservesTopLevelSyste
 			t.Fatalf("messages[%d].role = %q, want %q", idx, got, wantRole)
 		}
 	}
-
 
 	systemBlocks := ojson.GetBytes(out, "system").Array()
 	if len(systemBlocks) != 4 {
@@ -5169,8 +5093,6 @@ func TestRelocateClaudeSystemPromptForCountTokens_AdvisorToolResultLeavesMessage
 	}`)
 
 	out := relocateClaudeSystemPromptForCountTokens(payload, false)
-
-
 
 	systemBlocks := ojson.GetBytes(out, "system").Array()
 	if len(systemBlocks) != 2 {
@@ -5330,7 +5252,6 @@ func TestCheckSystemInstructionsWithMode_NormalTextWithAdvisorWordDoesNotBypassM
 
 	out := checkSystemInstructionsWithMode(payload, false)
 
-
 	if got := ojson.GetBytes(out, "messages.#").Int(); got != 5 {
 		t.Fatalf("messages count = %d, want 5 (user + 2 system messages + assistant + user): %s", got, out)
 	}
@@ -5446,9 +5367,6 @@ func TestCheckSystemInstructionsWithMode_ToolResultWithAdvisorRedactedResult(t *
 
 func TestCheckSystemInstructionsWithMode_ClientToolNamedAdvisorRelocatesSystemPrompt(t *testing.T) {
 
-
-
-
 	payload := []byte(`{
 		"model": "claude-opus-5",
 		"system": [
@@ -5476,8 +5394,6 @@ func TestCheckSystemInstructionsWithMode_ClientToolNamedAdvisorRelocatesSystemPr
 	}`)
 
 	out := checkSystemInstructionsWithMode(payload, false)
-
-
 
 	systemBlocks := ojson.GetBytes(out, "system").Array()
 	if len(systemBlocks) != 2 {
@@ -5525,7 +5441,6 @@ func TestRelocateClaudeSystemPromptForCountTokens_ClientToolNamedAdvisorRelocate
 	}
 	assertClaudeMidConversationSystemMessage(t, out, 1, "caller guidance", "")
 }
-
 
 func TestCheckSystemInstructionsWithMode_StringWithSpecialChars(t *testing.T) {
 	payload := []byte(`{"model":"claude-opus-5","system":"Use <xml> tags & \"quotes\" in output.","messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"},{"role":"user","content":"follow-up"}]}`)
@@ -5972,7 +5887,6 @@ func TestClaudeOAuthMetadataSensitiveWordsReplaceAndDisabledCloaking(t *testing.
 
 func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 
-
 	optionsOnlyAuth := &cliproxyauth.Auth{
 		Provider: "claude",
 		Attributes: map[string]string{
@@ -5990,7 +5904,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 	}
 	payload := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"You are Codex, an agent based on GPT-5. Contact ACME, Inc. or Beta Inc."}]}]}`)
 
-
 	cfgDisabled := &config.Config{
 		Home:                   config.HomeConfig{Enabled: true},
 		DisableClaudeCloakMode: true,
@@ -6002,8 +5915,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 	if didCloakDisabled {
 		t.Fatalf("expected didCloak=false when DisableClaudeCloakMode=true and cloak.mode is omitted, got body=%s", outDisabled)
 	}
-
-
 
 	cfgEnabled := &config.Config{
 		Home: config.HomeConfig{Enabled: true},
@@ -6022,8 +5933,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("rewritten text = %q, want %q", gotText, wantText)
 	}
 
-
-
 	emptyCloakAuth := &cliproxyauth.Auth{
 		Provider:   "claude",
 		Attributes: map[string]string{"api_key": "sk-ant-empty-cloak", "auth_kind": cliproxyauth.AuthKindAPIKey},
@@ -6036,7 +5945,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 		t.Fatalf("empty cloak block with DisableClaudeCloakMode=true: didCloak=%v, err=%v", didEmptyDisabled, errEmptyDis)
 	}
 
-
 	explicitAlwaysAuth := &cliproxyauth.Auth{
 		Provider:   "claude",
 		Attributes: map[string]string{"api_key": "sk-ant-explicit-always", "auth_kind": cliproxyauth.AuthKindAPIKey},
@@ -6045,8 +5953,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 	if _, didExplicit, errExplicit := applyCloaking(context.Background(), cfgDisabled, explicitAlwaysAuth, payload, "sk-ant-explicit-always", false, false); errExplicit != nil || !didExplicit {
 		t.Fatalf("explicit mode=always failed to override DisableClaudeCloakMode=true: didCloak=%v, err=%v", didExplicit, errExplicit)
 	}
-
-
 
 	_, didCloakStandalone, errStandalone := applyCloaking(context.Background(), &config.Config{}, explicitAlwaysAuth, payload, "sk-ant-explicit-always", false, false)
 	if errStandalone != nil || didCloakStandalone {
@@ -6068,8 +5974,6 @@ func TestHomeV8ClaudeCloakCredentialOptions(t *testing.T) {
 	if got := sliceBlocks[len(sliceBlocks)-1].Get("text").String(); !strings.Contains(got, "A\u200BCME, Inc.") || strings.Contains(got, "Beta I\u200Bnc.") {
 		t.Fatalf("unexpected []string sensitive-words obfuscation: %q", got)
 	}
-
-
 
 	done := make(chan struct{})
 	go func() {
@@ -6447,11 +6351,9 @@ func TestClaudeExecutor_TitleHelperWithSystemPromptIsolated(t *testing.T) {
 		t.Fatalf("Execute error: %v", err)
 	}
 
-
 	if ojson.GetBytes(seenBody, "diagnostics").Exists() {
 		t.Fatalf("expected title helper to omit diagnostics, got: %s", ojson.GetBytes(seenBody, "diagnostics").Raw)
 	}
-
 
 	credID := claudeDiagnosticsCredentialIdentity(auth)
 	_, _, prevMsg := helps.BeginClaudeDiagnostics(credID, "session-title-1")
@@ -6488,7 +6390,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 
 	executor := NewClaudeExecutor(cfg)
 
-
 	subagentPayload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"do task"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -6511,7 +6412,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 		}
 	}
 
-
 	probePayload := []byte(`{"model":"claude-sonnet-5","max_tokens":1,"messages":[{"role":"user","content":"probe"}]}`)
 	_, err = executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -6530,7 +6430,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 			t.Fatalf("probe system block must not carry ttl: 1h, got: %s", blk.Raw)
 		}
 	}
-
 
 	mainPayload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"hello"}]}`)
 	_, err = executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
@@ -6555,7 +6454,6 @@ func TestClaudeExecutor_SubagentAndProbeOmit1hCacheTTLAndBeta(t *testing.T) {
 	if !has1h {
 		t.Fatalf("main thread request system block must carry ttl: 1h, got: %s", ojson.GetBytes(seenBody, "system").Raw)
 	}
-
 
 	confirmedSubagentPayload := []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"task"}]}`)
 	_, err = executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
@@ -6620,7 +6518,6 @@ func TestClaudeExecutor_PayloadOverrideFableModelLeavesBuiltinsUnchanged(t *test
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	if got := ojson.GetBytes(seenBody, "model").String(); got != "claude-sonnet-5" {
 		t.Fatalf("model = %q, want claude-sonnet-5", got)
 	}
@@ -6676,7 +6573,6 @@ func TestClaudeExecutor_PayloadOverrideNonFableModelDoesNotInjectFableBuiltins(t
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	if got := ojson.GetBytes(seenBody, "model").String(); got != "claude-fable-5-1" {
 		t.Fatalf("model = %q, want claude-fable-5-1", got)
@@ -6735,7 +6631,6 @@ func TestClaudeExecutor_PayloadOverridePreservesExplicitFallbacks(t *testing.T) 
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	fallbacks := ojson.GetBytes(seenBody, "fallbacks").Array()
 	if len(fallbacks) != 1 || fallbacks[0].Get("model").String() != "claude-opus-5" {
@@ -6849,7 +6744,6 @@ func TestClaudeExecutor_PayloadMaxTokensOverrideDoesNotReclassifyBuiltins(t *tes
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	if got := ojson.GetBytes(seenBody, "max_tokens").Int(); got != 1 {
 		t.Fatalf("max_tokens = %d, want 1", got)
@@ -7001,7 +6895,6 @@ func TestClaudeExecutor_CallerOwnedDiagnosticsPreservedOnProbe(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	if got := ojson.GetBytes(seenBody, "diagnostics.caller_custom_key").String(); got != "val123" {
 		t.Fatalf("caller diagnostics must be preserved, got: %s", ojson.GetBytes(seenBody, "diagnostics").Raw)
 	}
@@ -7050,7 +6943,6 @@ func TestClaudeExecutor_PayloadOverrideParentThinkingPreventsDisplayUpdates(t *t
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	if ojson.GetBytes(seenBody, "thinking.display").Exists() {
 		t.Fatalf("thinking.display must not be injected when parent thinking was overridden, got: %s", ojson.GetBytes(seenBody, "thinking").Raw)
@@ -7206,7 +7098,6 @@ func TestClaudeExecutor_PayloadOverrideProbeWithExplicitDiagnosticsPreserved(t *
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	if got := ojson.GetBytes(seenBody, "diagnostics.operator_custom").String(); got != "custom_value_123" {
 		t.Fatalf("operator custom diagnostics must be preserved, got: %s", ojson.GetBytes(seenBody, "diagnostics").Raw)
@@ -7393,7 +7284,6 @@ func TestClaudeExecutor_PayloadFableThinkingAdaptiveToDisabledKeepsBuiltinDispla
 
 	executor := NewClaudeExecutor(cfg)
 
-
 	payload := []byte(`{"model":"claude-fable-5-1","thinking":{"type":"adaptive"},"messages":[{"role":"user","content":"test"}]}`)
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -7402,7 +7292,6 @@ func TestClaudeExecutor_PayloadFableThinkingAdaptiveToDisabledKeepsBuiltinDispla
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	if ojson.GetBytes(seenBody, "thinking.display").String() != "updates" {
 		t.Fatalf("thinking.display must remain untouched by the thinking.type override, got: %s", ojson.GetBytes(seenBody, "thinking").Raw)
@@ -7426,7 +7315,6 @@ func TestClaudeExecutor_UncloakedProbePreservesCallerBillingTags(t *testing.T) {
 	cfg := &config.Config{
 		ClaudeKey: []config.ClaudeKey{{
 			APIKey: "sk-ant-api03-uncloaked-test",
-
 		}},
 	}
 	auth := &cliproxyauth.Auth{
@@ -7449,7 +7337,6 @@ func TestClaudeExecutor_UncloakedProbePreservesCallerBillingTags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	gotSystem := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.Contains(gotSystem, "cc_prompt_id=00000000-0000-4000-8000-000000000001") {
@@ -7664,7 +7551,6 @@ func TestClaudeExecutor_SensitiveWordsDoNotCorruptBillingHeaderTags(t *testing.T
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	billingText := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.HasPrefix(billingText, "x-anthropic-billing-header: cc_version=") {
 		t.Fatalf("billing header must start cleanly without obfuscation, got: %q", billingText)
@@ -7855,8 +7741,6 @@ func TestClaudeExecutor_UserTitlePromptWithoutSchemaTreatedAsNormalTurn(t *testi
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
-
 	has1h := false
 	for _, blk := range ojson.GetBytes(seenBody, "system").Array() {
 		if blk.Get("cache_control.ttl").String() == "1h" {
@@ -7922,7 +7806,6 @@ func TestClaudeExecutor_PayloadOverrideRawPreservesExplicitFallbacks(t *testing.
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	fallbacks := ojson.GetBytes(seenBody, "fallbacks").Array()
 	if len(fallbacks) != 1 || fallbacks[0].Get("model").String() != "claude-opus-5" {
 		t.Fatalf("explicit raw payload fallback override must be preserved, got: %s", ojson.GetBytes(seenBody, "fallbacks").Raw)
@@ -7974,7 +7857,6 @@ func TestClaudeExecutor_PayloadFilterFallbacksPreservesRemovalOnFable(t *testing
 	if err != nil {
 		t.Fatalf("Execute error = %v", err)
 	}
-
 
 	if ojson.GetBytes(seenBody, "fallbacks").Exists() {
 		t.Fatalf("fallbacks must remain deleted after payload filter, got: %s", ojson.GetBytes(seenBody, "fallbacks").Raw)
@@ -8102,10 +7984,6 @@ func TestNormalizeClaudeSamplingForUpstream_AfterForcedToolChoiceRemovesTemperat
 	}
 }
 
-
-
-
-
 func TestNormalizeClaudeSamplingForUpstreamNativeKeepsMeasuredHelperTemperature(t *testing.T) {
 
 	payload := []byte(`{"model":"claude-haiku-4-5-20251001","messages":[{"role":"user","content":[{"type":"text","text":"helper probe"}]}],"system":[{"type":"text","text":"Return a short title."}],"tools":[],"metadata":{"user_id":"u"},"max_tokens":32000,"thinking":{"type":"disabled"},"temperature":1,"output_config":{"format":{"type":"json_schema"}},"stream":true}`)
@@ -8119,10 +7997,6 @@ func TestNormalizeClaudeSamplingForUpstreamNativeKeepsMeasuredHelperTemperature(
 		t.Fatalf("confirmed native must preserve the measured temperature, got %q", got.Raw)
 	}
 }
-
-
-
-
 
 func TestNormalizeClaudeSamplingForUpstreamNativeDropsOnlyRejectedCombinations(t *testing.T) {
 	tests := []struct {
@@ -8534,7 +8408,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	callerCtx := context.WithValue(context.Background(), "gin", ginCtx)
 	callerScope := session.CallerScope("sk-downstream-pi-caller")
 
-
 	streamRes, errStream := executor.ExecuteStream(callerCtx, auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8550,7 +8423,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	}
 	for range streamRes.Chunks {
 	}
-
 
 	replayStreamRes, errReplayStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
@@ -8568,7 +8440,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	for range replayStreamRes.Chunks {
 	}
 
-
 	if _, errExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8581,7 +8452,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 		t.Fatalf("replay Execute() error = %v", errExec)
 	}
 
-
 	if _, errCount := executor.countTokensUpstream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
 		Payload: payload,
@@ -8593,7 +8463,6 @@ func TestClaudeExecutor_CallerScopeMetadataReproducesOAuthMCPToolAliases(t *test
 	}); errCount != nil {
 		t.Fatalf("replay CountTokens() error = %v", errCount)
 	}
-
 
 	defaultStreamRes, errDefaultStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-5",
@@ -8645,11 +8514,8 @@ func TestRemapOAuthToolNames_MixedCaseNamesRemainDistinct(t *testing.T) {
 	}
 }
 
-
-
 func TestReverseRemapOAuthToolNamesFromStreamLine_HonorsPerRequestMap(t *testing.T) {
 	reverseMap := map[string]string{"Glob": "glob"}
-
 
 	bashLine := []byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_01","name":"Bash","input":{}}}`)
 	out, errReverse := reverseRemapOAuthToolNamesFromStreamLine(bashLine, reverseMap)
@@ -8662,7 +8528,6 @@ func TestReverseRemapOAuthToolNamesFromStreamLine_HonorsPerRequestMap(t *testing
 	if bytes.Contains(out, []byte(`"name":"bash"`)) {
 		t.Fatalf("Bash must not be lowercased, got: %s", string(out))
 	}
-
 
 	globLine := []byte(`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_02","name":"Glob","input":{}}}`)
 	out, errReverse = reverseRemapOAuthToolNamesFromStreamLine(globLine, reverseMap)
@@ -9031,9 +8896,6 @@ func TestInsertClaudeMidConversationSystemMessages_IsIdempotent(t *testing.T) {
 	assertClaudeMidConversationSystemMessage(t, first, 2, texts[1], "")
 }
 
-
-
-
 func TestClaudeCodeCLIBetas_MatchesObservedClientMatrix(t *testing.T) {
 	const constants = "claude-code-20250219,interleaved-thinking-2025-05-14,redact-thinking-2026-02-12,context-management-2025-06-27,prompt-caching-scope-2026-01-05"
 
@@ -9267,8 +9129,6 @@ func TestClaudeCodeCLIBetas_MatchesObservedClientMatrix(t *testing.T) {
 		},
 		{
 
-
-
 			name:  "2.1.258 main thread capture with inline tools and afk-mode",
 			body:  `{"model":"claude-fable-5-1","tools":[{"name":"Read"}],"thinking":{"type":"adaptive"}}`,
 			oauth: true,
@@ -9408,14 +9268,6 @@ func TestClaudeCodeCLIBetas_MatchesObservedClientMatrix(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
-
-
 func TestWithClaudeAdvisorToolBeta_InsertsBeforeTrailingBetas(t *testing.T) {
 	const head = "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,mid-conversation-system-2026-04-07"
 	tests := []struct {
@@ -9486,7 +9338,6 @@ func TestApplyClaudeHeaders_DefaultPreservesCallerBetas(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": "key-caller-betas"}}
 	body := []byte(`{"model":"claude-opus-4-6"}`)
 
-
 	directReq := newClaudeHeaderTestRequest(t, incoming)
 	if errApply := applyClaudeHeaders(directReq, auth, "key-caller-betas", false, nil, body, nil, incoming, false); errApply != nil {
 		t.Fatalf("applyClaudeHeaders() error = %v", errApply)
@@ -9494,7 +9345,6 @@ func TestApplyClaudeHeaders_DefaultPreservesCallerBetas(t *testing.T) {
 	if got := directReq.Header.Get("Anthropic-Beta"); got != "caller-only-beta" {
 		t.Fatalf("Anthropic-Beta = %q, want caller beta on api.anthropic.com", got)
 	}
-
 
 	gatewayReq := httptest.NewRequest(http.MethodPost, "https://api.kimi.com/coding/v1/messages", nil)
 	gatewayReq = gatewayReq.WithContext(directReq.Context())
@@ -9505,8 +9355,6 @@ func TestApplyClaudeHeaders_DefaultPreservesCallerBetas(t *testing.T) {
 		t.Fatalf("Anthropic-Beta = %q, want caller beta preserved on non-Anthropic upstream", got)
 	}
 }
-
-
 
 func TestInjectClaudeCodeContextManagement(t *testing.T) {
 	const captured = `{"edits":[{"type":"clear_thinking_20251015","keep":"all"}]}`
@@ -9538,9 +9386,6 @@ func TestInjectClaudeCodeContextManagement(t *testing.T) {
 		t.Fatalf("caller context_management was modified: %s", callerOwnedGot)
 	}
 
-
-
-
 	for _, test := range []struct {
 		name    string
 		payload string
@@ -9564,13 +9409,6 @@ func TestInjectClaudeCodeContextManagement(t *testing.T) {
 		})
 	}
 }
-
-
-
-
-
-
-
 
 func TestClaudeCodeContextManagementNeverOutlivesEligibleThinking(t *testing.T) {
 	for _, test := range []struct {
@@ -9832,9 +9670,6 @@ func TestClaudeExecutorPayloadOverrideDisabledThinking(t *testing.T) {
 
 	for _, stream := range []bool{false, true} {
 
-
-
-
 		name := "forced tool choice drops automatic context management execute"
 		if stream {
 			name += " stream"
@@ -10008,11 +9843,6 @@ func TestValidateClaudeCallerSystemBlocksAcceptsTextOnly(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestValidateClaudeCallerSystemBlocksRejectsNonTextBlock(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -10077,8 +9907,6 @@ func TestApplyCloakingRejectsNonTextCallerSystemBlock(t *testing.T) {
 	}
 }
 
-
-
 func TestApplyCloakingStrictModeIgnoresNonTextCallerSystemBlock(t *testing.T) {
 	cfg := &config.Config{
 		ClaudeKey: []config.ClaudeKey{{
@@ -10100,9 +9928,6 @@ func TestApplyCloakingStrictModeIgnoresNonTextCallerSystemBlock(t *testing.T) {
 		t.Fatalf("system blocks = %d, want the 2 Claude Code blocks", got)
 	}
 }
-
-
-
 
 func TestClaudeExecutor_CountTokensRejectsNonTextCallerSystemBlock(t *testing.T) {
 	upstreamCalled := false
@@ -10128,9 +9953,6 @@ func TestClaudeExecutor_CountTokensRejectsNonTextCallerSystemBlock(t *testing.T)
 		t.Fatal("countTokensUpstream() called upstream, want local rejection")
 	}
 }
-
-
-
 
 func TestClaudeExecutor_CacheTTLIsPairedWithExtendedCacheTTLBeta(t *testing.T) {
 	tests := []struct {
@@ -10193,7 +10015,6 @@ func TestClaudeExecutor_CacheTTLIsPairedWithExtendedCacheTTLBeta(t *testing.T) {
 			if gotBeta != test.wantBeta {
 				t.Fatalf("extended-cache-ttl declared = %v, want %v: %s", gotBeta, test.wantBeta, seenHeaders.Get("Anthropic-Beta"))
 			}
-
 
 			if (gotTTL == "1h") != gotBeta {
 				t.Fatalf("body ttl %q and extended-cache-ttl beta %v disagree", gotTTL, gotBeta)
@@ -10380,12 +10201,10 @@ func TestClaudeExecutor_ProbeStripsCaller1hTTLAndBetas(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	rawBody := string(seenBody)
 	if strings.Contains(rawBody, `"ttl":"1h"`) || strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("probe body must have ttl stripped, got: %s", rawBody)
 	}
-
 
 	betas := seenHeaders.Get("Anthropic-Beta")
 	for _, forbidden := range []string{
@@ -10450,12 +10269,10 @@ func TestClaudeExecutor_SubagentPreservesCaller1hTTLAndExtendedCacheBeta(t *test
 		t.Fatalf("Execute error = %v", err)
 	}
 
-
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("subagent body must preserve ttl: 1h when requested, got: %s", rawBody)
 	}
-
 
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
@@ -10547,7 +10364,6 @@ func TestClaudeExecutor_CloakModePrefersStoredPrevReqOverCallerFake(t *testing.T
 	executor := NewClaudeExecutor(cfg)
 	headers := http.Header{"Session-Id": []string{"sess-test-001"}}
 
-
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
 		Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"turn 1"}]}`),
@@ -10558,7 +10374,6 @@ func TestClaudeExecutor_CloakModePrefersStoredPrevReqOverCallerFake(t *testing.T
 	if err != nil {
 		t.Fatalf("Turn 1 Execute error = %v", err)
 	}
-
 
 	fakeCallerPayload := []byte(`{
 		"model": "claude-sonnet-5",
@@ -10735,9 +10550,6 @@ func TestClaudeExecutor_ChatCompletionsDefaultMaxTokensAndPayloadDefaultRule(t *
 		}
 	})
 }
-
-
-
 
 const preservedThinkingTestSignature = "CAISqwIKiAEIEBgCKkBHRlRBsNiptQUWfPoOhuQKwi5LnncZVO9bB5jqOs76D7uBtgktML0zqJtNmLHXHHcgD6lk4MQu4QBXzFd1lbC3Mg5jbGF1ZGUtZmFibGUtNTgBQgh0aGlua2luZ1okZDk3NDM5NzUtNGJiMC00OTM2LTllMjgtZDViMGQyMWJkYzQ4EgxCGh+XVFFFeySAjtAaDL/A1LltGu6MMJ+eXSIwsN0oBpDrqLv22UBfkMnTotnIbkvkOyb9xZHgigG6OZVHaI3gThm+maLKmgO5PrFLKlDFYp+YZksy/wKwszJlnLTPzAK+NUlfzagOE1ymtZTXhAYK260XyFYmg/te/C231+Fr/hoX+EJoUBnrn0gD7hqMISOT+TaFEuOXYsN517GfaxgB"
 

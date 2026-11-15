@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-
 func TestResponsesCompatibilityDigest(t *testing.T) {
 	requests := [][]byte{
 		responsesPerfRequest(0), responsesPerfRequest(10), responsesPerfRequest(100),

@@ -291,8 +291,6 @@ func TestClaudeCodeTLSClientHelloSpecMatches220Capture(t *testing.T) {
 func TestClaudeCodeTLSResumptionIsWireSafe(t *testing.T) {
 	t.Parallel()
 
-
-
 	spec := claudeCodeTLSClientHelloSpec()
 	last := spec.Extensions[len(spec.Extensions)-1]
 	if _, ok := last.(*tls.UtlsPreSharedKeyExtension); !ok {
@@ -301,8 +299,6 @@ func TestClaudeCodeTLSResumptionIsWireSafe(t *testing.T) {
 	if _, ok := spec.Extensions[len(spec.Extensions)-2].(*tls.UtlsPaddingExtension); !ok {
 		t.Fatalf("extension before pre_shared_key = %T, want *tls.UtlsPaddingExtension", spec.Extensions[len(spec.Extensions)-2])
 	}
-
-
 
 	cfg := newClaudeCodeTLSConfig("api.anthropic.com", tls.NewLRUClientSessionCache(claudeCodeSessionCacheCapacity))
 	if cfg.ClientSessionCache == nil {
@@ -492,7 +488,6 @@ func captureClaudeCodeClientHello(t *testing.T) []byte {
 			t.Errorf("close server pipe: %v", errClose)
 		}
 	})
-
 
 	cfg := newClaudeCodeTLSConfig("api.anthropic.com", tls.NewLRUClientSessionCache(claudeCodeSessionCacheCapacity))
 	tlsConn := tls.UClient(clientConn, cfg, tls.HelloCustom)

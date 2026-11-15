@@ -476,7 +476,6 @@ func TestResponsesSSEFramerRepairErrorPayloadCalculatesCorrectSequenceNumber(t *
 		t.Fatalf("first frame error sequence_number = %d, want 0", p1.SequenceNumber)
 	}
 
-
 	framer2 := &responsesSSEFramer{}
 	var out2 bytes.Buffer
 	framer2.WriteChunk(&out2, []byte("event: response.created\ndata: {\"type\":\"response.created\",\"sequence_number\":0}\n\n"))
@@ -577,7 +576,6 @@ func TestResponsesStreamErrorTextPreservesTokenCountersAndLargeInts(t *testing.T
 		Error:      errors.New(inputJSON),
 	}
 	out := responsesStreamErrorText(errMsg, http.StatusBadRequest)
-
 
 	if !strings.Contains(out, "9007199254740993") {
 		t.Fatalf("large integer precision was lost: %s", out)
@@ -723,22 +721,17 @@ func TestResponsesSSEFramer_FiltersDataOnlyPrivateEventsAndNonJSON(t *testing.T)
 	var output bytes.Buffer
 	framer := &responsesSSEFramer{failureEvent: "error"}
 
-
 	dataOnlyPrivateFrame := []byte("data: {\"type\":\"codex.rate_limits\",\"rate_limits\":{\"primary\":{\"used_percent\":42}}}\n\n")
 	framer.WriteChunk(&output, dataOnlyPrivateFrame)
-
 
 	nonJSONPrivateFrame := []byte("event: codex.rate_limits\ndata: not-json-data\n\n")
 	framer.WriteChunk(&output, nonJSONPrivateFrame)
 
-
 	eventOnlyPrivateFrame := []byte("event: codex.response.metadata\n\n")
 	framer.WriteChunk(&output, eventOnlyPrivateFrame)
 
-
 	createdFrame := []byte("event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp-1\"}}\n\n")
 	framer.WriteChunk(&output, createdFrame)
-
 
 	completedFrame := []byte("event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp-1\",\"status\":\"completed\"}}\n\n")
 	framer.WriteChunk(&output, completedFrame)

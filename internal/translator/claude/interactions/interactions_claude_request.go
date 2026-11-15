@@ -15,8 +15,6 @@ func ConvertInteractionsRequestToClaude(modelName string, inputRawJSON []byte, s
 
 }
 
-
-
 func convertInteractionsRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	var run interactionsClaudeUserRun
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
@@ -35,10 +33,6 @@ func convertInteractionsRequestToClaude(modelName string, inputRawJSON []byte, s
 	return outDoc.Bytes(), run.drops.Err()
 }
 
-
-
-
-
 type interactionsClaudeUserRun struct {
 	drops    translatorcommon.UserTurnDrops
 	sendable int
@@ -51,7 +45,6 @@ func (r *interactionsClaudeUserRun) add() {
 func (r *interactionsClaudeUserRun) drop(partType string) {
 	r.drops.Drop(partType)
 }
-
 
 func (r *interactionsClaudeUserRun) end() {
 	r.drops.EndTurn(r.sendable)
@@ -207,10 +200,6 @@ func appendInteractionsInputItemToClaude(accumulator *translatorcommon.ClaudeMes
 	}
 }
 
-
-
-
-
 func appendInteractionsStepToClaude(accumulator *translatorcommon.ClaudeMessageAccumulator, step ojson.Result, defaultRole string, instruction bool, run *interactionsClaudeUserRun) {
 	role := defaultRole
 	if stepRole := step.Get("role").String(); stepRole == "user" || stepRole == "assistant" {
@@ -292,8 +281,6 @@ func interactionsContentToClaude(part ojson.Result, role string) []byte {
 			textPart, _ = ojson.SetBytes(textPart, "text", text)
 			return textPart
 		}
-
-
 
 		if role != "user" && (part.Get("data").String() != "" || part.Get("file_data").String() != "") {
 			textPart := []byte(`{"type":"text","text":""}`)
@@ -489,9 +476,6 @@ func interactionsClaudeText(value ojson.Result) string {
 	return ""
 }
 
-
-
-
 func interactionsClaudeMediaPart(part ojson.Result, claudeType string) ([]byte, bool) {
 	mimeType := firstClaudeInteractionsExisting(part, "mime_type", "mimeType", "media_type", "mediaType").String()
 	data := firstClaudeInteractionsExisting(part, "data", "file_data", "fileData").String()
@@ -521,8 +505,6 @@ func interactionsClaudeMediaPart(part ojson.Result, claudeType string) ([]byte, 
 	return nil, false
 }
 
-
-
 func interactionsClaudeDroppedMedia(part ojson.Result) string {
 	switch partType := part.Get("type").String(); partType {
 	case "image", "audio", "video", "document":
@@ -533,9 +515,6 @@ func interactionsClaudeDroppedMedia(part ojson.Result) string {
 	return ""
 }
 
-
-
-
 func interactionsClaudeDroppedPart(part ojson.Result) string {
 	if mediaType := interactionsClaudeDroppedMedia(part); mediaType != "" {
 		return mediaType
@@ -545,8 +524,6 @@ func interactionsClaudeDroppedPart(part ojson.Result) string {
 	}
 	return ""
 }
-
-
 
 func interactionsClaudePartIsSendable(converted []byte) bool {
 	block := util.ParseGJSONBytesNoCopy(converted)

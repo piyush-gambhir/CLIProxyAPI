@@ -6,15 +6,11 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 func IsGeminiTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
-
 
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
@@ -26,7 +22,6 @@ func IsGeminiTokenEvent(payload []byte) bool {
 			return false
 		}
 	}
-
 
 	if ojson.GetBytesNoCopy(payload, "error.message").Exists() || ojson.GetBytesNoCopy(payload, "error").Exists() || ojson.GetBytesNoCopy(payload, "response.error").Exists() {
 		return true
@@ -62,7 +57,6 @@ func IsGeminiTokenEvent(payload []byte) bool {
 			}
 		}
 
-
 		if len(candidate.Get("finishReason").String()) > 0 {
 			return true
 		}
@@ -70,9 +64,6 @@ func IsGeminiTokenEvent(payload []byte) bool {
 
 	return false
 }
-
-
-
 
 func ObserveGeminiTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {

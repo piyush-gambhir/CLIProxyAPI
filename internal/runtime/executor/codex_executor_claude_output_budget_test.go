@@ -90,7 +90,6 @@ func TestCodexClaudeOutputBudgetBoundariesAndPayloadRules(t *testing.T) {
 		{name: "zero remains invalid", field: `,"max_tokens":0`, want: "0"},
 		{name: "negative remains invalid", field: `,"max_tokens":-1`, want: "-1"},
 
-
 		{name: "fractional input truncated by translator", field: `,"max_tokens":1.5`, want: "16"},
 		{name: "non-numeric input", field: `,"max_tokens":"1"`},
 		{

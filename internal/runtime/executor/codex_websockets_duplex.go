@@ -22,19 +22,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 type codexDuplexConnectionError struct{ cause error }
 
 func (e *codexDuplexConnectionError) Error() string         { return e.cause.Error() }
 func (e *codexDuplexConnectionError) Unwrap() error         { return e.cause }
 func (e *codexDuplexConnectionError) IsRequestScoped() bool { return true }
-
-
-
-
-
 
 func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 	ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options,
@@ -43,9 +35,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 	initialReporter *helps.UsageReporter, headers http.Header, unlock func(),
 ) *cliproxyexecutor.StreamResult {
 	streamCtx, cancel := context.WithCancel(ctx)
-
-
-
 
 	followupCtx := ctx
 	writerFollowupCtx := streamCtx
@@ -64,13 +53,10 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 	}
 	writeErrors := make(chan writerFailure, 1)
 
-
 	var metadataMu sync.Mutex
 	pending := []*codexWebsocketPrepared{initial}
 
-
 	type codexSteerSubmission struct{ parent, eventID string }
-
 
 	type codexAcceptedSteer struct{ parent, eventID, successorID string }
 	var unacknowledgedSteers []codexSteerSubmission
@@ -141,11 +127,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 		}
 	}
 
-
 	inputReady := make(chan struct{})
 	writerDone := make(chan struct{})
 	var pendingCreates [][]byte
-
 
 	var consumedPayload []byte
 	readyForCreate := func() bool {
@@ -190,7 +174,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				"status": status,
 				"error":  errBody,
 			})
-
 
 			select {
 			case out <- cliproxyexecutor.StreamChunk{Payload: payload}:
@@ -478,7 +461,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			payload = createDoc.Bytes()
 			nextReq, nextOpts := req, opts
 
-
 			nextReq.Model = req.Model
 			nextReq.Payload = payload
 			nextOpts.OriginalRequest = payload
@@ -507,8 +489,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					fail(fmt.Errorf("websocket credential is no longer enabled"))
 					return false
 				}
-
-
 
 				snapshotDoc := ojson.NewDoc([]byte("{}"))
 				if reasoning := ojson.GetBytesNoCopy(nextReq.Payload, "reasoning"); reasoning.Exists() {
@@ -684,7 +664,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				}
 				if !cliproxyexecutor.WebsocketAuthEnabled(streamCtx, auth.ID) {
 
-
 					fail(fmt.Errorf("websocket credential is no longer enabled"))
 					return
 				}
@@ -761,8 +740,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					}
 					metadataMu.Unlock()
 
-
-
 					if !cliproxyexecutor.WebsocketAuthEnabled(streamCtx, auth.ID) {
 						fail(fmt.Errorf("websocket credential is no longer enabled"))
 						return
@@ -806,7 +783,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 		defer func() {
 			cancel()
 
-
 			e.invalidateUpstreamConnWithoutDisconnectNotify(sess, conn, "duplex_closed", nil)
 			<-writerDone
 			sess.clearActive(conn, readCh)
@@ -842,7 +818,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 						connectionErr = errRead
 					}
 					if lost := codexWebsocketTurnTransportError(errRead); !preserveClassification && cliproxyexecutor.IsUpstreamWebsocketTurnError(lost) {
-
 
 						cancel()
 						<-writerDone
@@ -949,7 +924,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				responseID = createdResponseID
 				latestTurnResponseID = createdResponseID
 
-
 				snapshot := *current
 				snapshot.originalPayload, snapshot.wsHeaders = nil, nil
 				snapshotDoc := ojson.NewDoc([]byte("{}"))
@@ -982,7 +956,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			helps.AppendCodexAPIWebsocketResponse(ctx, e.cfg, payload)
 			helps.EmitWebSocketResponseEvent(ctx, opts, auth, e.Identifier(), req.Model, payload)
 
-
 			if strings.HasPrefix(eventType, "response.steer.") {
 				id := strings.Clone(ojson.GetBytesNoCopy(payload, "steer.id").String())
 				parent := strings.Clone(ojson.GetBytesNoCopy(payload, "steer.previous_response_id").String())
@@ -1011,7 +984,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					releaseSteeringSettings(parent)
 				case "response.steer.pending":
 
-
 					waitingParent = parent
 				}
 				metadataMu.Unlock()
@@ -1034,8 +1006,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				var status interface{ StatusCode() int }
 				if errors.As(credentialErr, &status) && (status.StatusCode() == http.StatusUnauthorized || status.StatusCode() == http.StatusForbidden || status.StatusCode() == http.StatusTooManyRequests) {
 
-
-
 					reporter.PublishFailure(ctx, credentialErr)
 					if send(cliproxyexecutor.StreamChunk{Payload: payload}) {
 						send(cliproxyexecutor.StreamChunk{Err: credentialErr})
@@ -1050,8 +1020,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					failedID = ojson.GetBytesNoCopy(payload, "response_id").String()
 				}
 				metadataMu.Lock()
-
-
 
 				currentFailure := failedID != "" && failedID == responseID
 				ambiguous := failedID == "" && ((len(pending) > 0 && responseActive) || len(unacknowledgedSteers) > 0)
@@ -1069,8 +1037,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				wakeWriter()
 				if ambiguous {
 
-
-
 					connectionErr := &codexDuplexConnectionError{cause: fmt.Errorf("cannot associate websocket failure with a response or pending create")}
 					reporter.PublishFailure(ctx, connectionErr)
 					if send(cliproxyexecutor.StreamChunk{Payload: payload}) {
@@ -1081,8 +1047,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			}
 			restoreMultiAgent := !eventPrepared.multiAgentV2Conflict && (eventPrepared.optimizeMultiAgentV2 || sess.isMultiAgentV2Optimized(conn))
 			payload = helps.RestoreCodexMultiAgentV2Response(payload, restoreMultiAgent)
-
-
 
 			var terminalErr, replayErr error
 			if wsErr, ok := parseCodexWebsocketErrorWithCooling(payload, e.modelLevelCooling()); ok {
@@ -1163,7 +1127,6 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				wakeWriter()
 			}
 			if establishing {
-
 
 				close(inputReady)
 			}

@@ -237,8 +237,6 @@ func normalizeModelRegistrationResponse(resp pluginapi.ModelRegistrationResponse
 	}}
 }
 
-
-
 func (h *Host) RegisterModels(ctx context.Context, modelRegistry modelRegistry) {
 	if h == nil || modelRegistry == nil {
 		return
@@ -339,8 +337,6 @@ func (h *Host) RegisterModels(ctx context.Context, modelRegistry modelRegistry) 
 	h.modelRegistrations = nextModelRegistrations
 	h.pluginModelRegistrations = nextPluginModelRegistrations
 }
-
-
 
 func (h *Host) HasAuthModelProvider(provider string) bool {
 	if h == nil {

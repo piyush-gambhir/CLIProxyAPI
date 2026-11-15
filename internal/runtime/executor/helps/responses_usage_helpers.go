@@ -6,9 +6,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 func EnsureResponsesUsageDetails(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -18,7 +15,6 @@ func EnsureResponsesUsageDetails(payload []byte) []byte {
 	if len(trimmed) == 0 {
 		return payload
 	}
-
 
 	if trimmed[0] == '{' {
 		if ojson.GetBytesNoCopy(trimmed, "object").String() == "response.compaction" {
@@ -30,7 +26,6 @@ func EnsureResponsesUsageDetails(payload []byte) []byte {
 		}
 		return doc.Bytes()
 	}
-
 
 	if bytes.Contains(payload, []byte("data:")) {
 		lines := bytes.Split(payload, []byte("\n"))
@@ -68,8 +63,6 @@ func EnsureResponsesUsageDetails(payload []byte) []byte {
 
 	return payload
 }
-
-
 
 func EnsureResponsesUsageDetailsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {

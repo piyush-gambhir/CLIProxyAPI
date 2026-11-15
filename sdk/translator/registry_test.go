@@ -130,7 +130,6 @@ func TestTranslateRequest_FallbackNormalizesModel(t *testing.T) {
 				t.Errorf("payload was modified when it should not have been:\ngot:  %s\nwant: %s", got, tt.payload)
 			}
 
-
 			for _, key := range []string{"input", "stream"} {
 				orig := ojson.Get(tt.payload, key)
 				if !orig.Exists() {
@@ -399,7 +398,6 @@ func TestRequestEnvelopePreservesRegisteredTransformDispatch(t *testing.T) {
 	if withMetadata.ModelInfo != modelInfo {
 		t.Fatal("pipeline did not preserve request-scoped model info")
 	}
-
 
 	r.Register(from, to, func(string, []byte, bool) ([]byte, error) {
 		return []byte(`{"source":"custom"}`), nil

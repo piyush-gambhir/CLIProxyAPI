@@ -52,7 +52,6 @@ func applyPatchTestPayloads(chunk []byte) [][]byte {
 	return payloads
 }
 
-
 func applyPatchTestFrames(protocol, name string) (string, string) {
 	args := applyPatchTestPartial + applyPatchTestRemainder
 	switch protocol {
@@ -159,7 +158,6 @@ func applyPatchTestWireField(data []byte, target protowire.Number) []byte {
 	return nil
 }
 
-
 func newApplyPatchTestGateway(t *testing.T, exec cliproxyauth.ProviderExecutor, auth *cliproxyauth.Auth) *httptest.Server {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -183,8 +181,6 @@ func newApplyPatchTestGateway(t *testing.T, exec cliproxyauth.ProviderExecutor, 
 	t.Cleanup(server.Close)
 	return server
 }
-
-
 
 func TestApplyPatchBridgeLiveHTTPPreviewMatrix(t *testing.T) {
 	for _, tc := range []struct {
@@ -493,8 +489,6 @@ func TestApplyPatchBridgeOrdinaryFunctionControl(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestApplyPatchBridgeKimiReusedClientControls(t *testing.T) {
 	for _, source := range []sdktranslator.Format{sdktranslator.FormatOpenAI, sdktranslator.FormatClaude} {

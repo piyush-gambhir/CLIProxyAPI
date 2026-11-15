@@ -23,15 +23,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 type ClaudeExecutor struct {
 	cfg                     *config.Config
 	requestLogProvider      string
 	upstreamModelNormalizer func(string) string
 	oauthProfileFetcher     claudeOAuthProfileFetcher
-
 
 	oauthToolAliases *claudeOAuthToolAliasStore
 }
@@ -88,8 +84,6 @@ func sanitizeClaudeMessagesForClaudeUpstreamWithDebugDoc(ctx context.Context, do
 	if doc == nil {
 		return false
 	}
-
-
 
 	changed := sigcompat.RestoreCodexCommentaryMarkersDoc(doc) > 0
 	preserveEmpty := len(preserveEmptyThinkingBlocks) > 0 && preserveEmptyThinkingBlocks[0]
@@ -228,11 +222,6 @@ func stripClaudeToolUseProvenanceFieldsDoc(doc *ojson.Doc, partPath string) bool
 	return changed
 }
 
-
-
-
-
-
 func sanitizeClaudeWebSearchDomains(body []byte) []byte {
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	if !tools.Exists() || !tools.IsArray() {
@@ -298,13 +287,7 @@ func logClaudeSignatureSanitizeReport(ctx context.Context, baseModel string, rep
 	helps.LogWithRequestID(ctx).WithFields(fields).Debug("claude executor: sanitized signature history before upstream")
 }
 
-
-
 const defaultModelMaxTokens = 1024
-
-
-
-
 
 func stripTranslatedDefaultMaxTokens(from sdktranslator.Format, originalPayload, originalTranslated []byte) []byte {
 	if len(originalTranslated) == 0 || from == sdktranslator.FormatClaude {
@@ -389,13 +372,6 @@ func claudeWebSearchResultCacheCredentialScope(auth *cliproxyauth.Auth) string {
 
 var _ cliproxyauth.NativeToolSearchSupport = (*ClaudeExecutor)(nil)
 
-
-
-
-
-
-
-
 func (e *ClaudeExecutor) SupportsNativeToolSearch(auth *cliproxyauth.Auth, upstreamModel string) bool {
 	return e.supportsNativeToolSearch(responsesclaude.ClientToolSearchEnabled(), auth, upstreamModel)
 }
@@ -414,15 +390,6 @@ func (e *ClaudeExecutor) supportsNativeToolSearch(toolSearch bool, auth *cliprox
 	entry := resolveClaudeKeyConfig(e.cfg, auth)
 	return entry != nil && entry.NativeToolSearch
 }
-
-
-
-
-
-
-
-
-
 
 func (e *ClaudeExecutor) applyNativeToolSearchFallback(ctx context.Context, auth *cliproxyauth.Auth, from sdktranslator.Format, upstreamModel string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (context.Context, cliproxyexecutor.Request, cliproxyexecutor.Options) {
 	if from != sdktranslator.FormatOpenAIResponse {
@@ -446,14 +413,6 @@ func (e *ClaudeExecutor) applyNativeToolSearchFallback(ctx context.Context, auth
 	log.Debugf("claude executor: native tool search unavailable, removed tool_search from request (model=%s)", upstreamModel)
 	return ctx, req, opts
 }
-
-
-
-
-
-
-
-
 
 func (e *ClaudeExecutor) pinResponsesSystemItemPlacement(ctx context.Context, auth *cliproxyauth.Auth, from sdktranslator.Format, upstreamModel string, policy claudeWirePolicy, settings claudeCloakSettings) context.Context {
 	if from != sdktranslator.FormatOpenAIResponse {
@@ -536,7 +495,6 @@ func setClaudeResponseModel(payload []byte, model string) ([]byte, bool) {
 	return doc.Bytes(), true
 }
 
-
 func (e *ClaudeExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -564,7 +522,6 @@ func (e *ClaudeExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Au
 	return nil
 }
 
-
 func (e *ClaudeExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("claude executor: request is nil")
@@ -579,6 +536,5 @@ func (e *ClaudeExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Aut
 	httpClient := helps.NewUtlsHTTPClient(ctx, e.cfg, auth, 0)
 	return httpClient.Do(httpReq)
 }
-
 
 func (e *ClaudeExecutor) SupportsApplyPatch() bool { return e != nil }

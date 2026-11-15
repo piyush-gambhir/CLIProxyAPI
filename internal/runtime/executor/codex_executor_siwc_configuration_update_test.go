@@ -16,10 +16,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func TestStripCodexSIWCUnsupportedFieldsConfigurationUpdates(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -273,9 +269,6 @@ func TestCodexExecutorUseSIWCKeepsSuffixEffortOverConfigurationUpdate(t *testing
 		_, _ = w.Write([]byte(`data: {"type":"response.completed","response":{"id":"resp_siwc_suffix","object":"response","status":"completed","model":"gpt-6-astra","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ok"}]}],"usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}}` + "\n\n"))
 	}))
 	defer server.Close()
-
-
-
 
 	executor := NewCodexExecutor(&config.Config{})
 	_, err := executor.Execute(context.Background(), codexSIWCAuthForUpdateTest(server.URL), cliproxyexecutor.Request{

@@ -297,7 +297,6 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 	futureJWT := makeTestJWT(futureTime.Unix())
 	pastJWT := makeTestJWT(pastTime.Unix())
 
-
 	authOnlyJWT := &Auth{
 		Metadata: map[string]any{
 			"access_token": futureJWT,
@@ -310,7 +309,6 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 	if exp.Unix() != futureTime.Unix() {
 		t.Fatalf("ExpirationTime() = %v (unix %d), want %v (unix %d)", exp, exp.Unix(), futureTime, futureTime.Unix())
 	}
-
 
 	authStaleExpired := &Auth{
 		Metadata: map[string]any{
@@ -326,7 +324,6 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 		t.Fatalf("ExpirationTime() with stale expired metadata = %v, want JWT future exp %v", expStale, futureTime)
 	}
 
-
 	authPastJWT := &Auth{
 		Metadata: map[string]any{
 			"expired":      pastTime.Format(time.RFC3339),
@@ -341,7 +338,6 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 		t.Fatalf("ExpirationTime() = %v, want past time", expPast)
 	}
 
-
 	authExpiredAccessFutureID := &Auth{
 		Metadata: map[string]any{
 			"access_token": pastJWT,
@@ -354,7 +350,6 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 	if exp, ok := authExpiredAccessFutureID.AccessTokenExpirationTime(); !ok || !exp.Before(time.Now()) {
 		t.Fatalf("AccessTokenExpirationTime() = (%v, %t), want past time and true", exp, ok)
 	}
-
 
 	authNoAccess := &Auth{
 		Metadata: map[string]any{

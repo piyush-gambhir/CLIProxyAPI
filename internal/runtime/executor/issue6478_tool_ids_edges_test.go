@@ -106,7 +106,6 @@ func TestIssue6478_DevinReservedPrefixStatelessFragmentedRoundTrip(t *testing.T)
 			}
 			idsByMode = append(idsByMode, ids)
 
-
 			fresh := NewDevinExecutor(&config.Config{})
 			req.Payload = issue6478History(ids)
 			opts.OriginalRequest = req.Payload

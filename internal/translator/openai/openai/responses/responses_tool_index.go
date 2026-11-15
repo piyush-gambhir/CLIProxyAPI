@@ -13,8 +13,6 @@ type responsesToolIdentity struct {
 	name      string
 }
 
-
-
 type responsesToolIndex struct {
 	declarations []responsesToolDeclaration
 	byChat       map[string]responsesToolDeclaration

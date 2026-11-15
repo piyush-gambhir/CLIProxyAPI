@@ -315,7 +315,6 @@ func TestManagerExecuteAndStream_ExpiredNegativeCreditsHintRecoversDuringModelCo
 				t.Fatalf("register auth: %v", errRegister)
 			}
 
-
 			SetAntigravityCreditsHint(authID, AntigravityCreditsHint{
 				Known:     true,
 				Available: false,
@@ -333,7 +332,6 @@ func TestManagerExecuteAndStream_ExpiredNegativeCreditsHintRecoversDuringModelCo
 			if len(executor.executeCreditsRequested) != 0 || len(executor.streamCreditsRequested) != 0 {
 				t.Fatalf("executor calls during fresh negative hint = (%d, %d), want (0, 0)", len(executor.executeCreditsRequested), len(executor.streamCreditsRequested))
 			}
-
 
 			SetAntigravityCreditsHint(authID, AntigravityCreditsHint{
 				Known:     true,

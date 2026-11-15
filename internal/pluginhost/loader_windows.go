@@ -45,11 +45,6 @@ var (
 	windowsHostCallCallback    = syscall.NewCallback(windowsHostCall)
 	windowsHostFreeCallback    = syscall.NewCallback(windowsHostFree)
 
-
-
-
-
-
 	windowsResidentHostState sync.Map
 )
 
@@ -93,7 +88,6 @@ func (dynamicLibraryLoader) Open(file pluginFile, host *Host) (pluginClient, err
 	}
 	proc, errProc := dll.FindProc("cliproxy_plugin_init")
 	if errProc != nil {
-
 
 		return nil, errProc
 	}
@@ -209,13 +203,6 @@ func (c *dynamicLibraryClient) closeAfterOpenFailure() {
 	c.close()
 }
 
-
-
-
-
-
-
-
 func (c *dynamicLibraryClient) close() {
 	if c == nil {
 		return
@@ -231,9 +218,6 @@ func (c *dynamicLibraryClient) close() {
 	c.api.call = 0
 	c.api.freeBuffer = 0
 	if c.hostCtx != nil {
-
-
-
 
 		windowsHostCallbackEntries.Delete(*c.hostCtx)
 	}

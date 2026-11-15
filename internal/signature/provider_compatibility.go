@@ -11,21 +11,11 @@ const (
 	SignatureProviderGeminiBypass SignatureProvider = "gemini_bypass"
 	SignatureProviderGPT          SignatureProvider = "gpt"
 
-
 	SignatureProviderKimi SignatureProvider = "kimi"
-
-
-
-
-
 
 	SignatureProviderGrok SignatureProvider = "grok"
 
 	SignatureProviderSWE SignatureProvider = "swe"
-
-
-
-
 
 	SignatureProviderMeta SignatureProvider = "meta"
 )
@@ -61,17 +51,11 @@ type SignatureCompatibilityDecision struct {
 	Reason               string
 }
 
-
-
 func SignatureProviderFromModelName(modelName string) SignatureProvider {
 	lower := strings.ToLower(strings.TrimSpace(modelName))
 	if lower == "" {
 		return SignatureProviderUnknown
 	}
-
-
-
-
 
 	candidate := lower
 	if idx := strings.LastIndexAny(lower, "/:"); idx >= 0 && idx < len(lower)-1 {
@@ -115,9 +99,6 @@ func signatureProviderFromModelNameValue(lower string) SignatureProvider {
 	}
 }
 
-
-
-
 func isMetaMuseModelName(lower string) bool {
 	if lower == "muse" ||
 		strings.HasPrefix(lower, "muse-") ||
@@ -138,36 +119,7 @@ func isMetaMuseModelName(lower string) bool {
 	return false
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const selfDescribingSignatureFirstChars = "ACEQRg"
-
-
-
-
-
-
 
 func base64AlphabetSet(extra string) [256]bool {
 	var set [256]bool
@@ -186,12 +138,6 @@ func base64AlphabetSet(extra string) [256]bool {
 	return set
 }
 
-
-
-
-
-
-
 func maybeSelfDescribingSignatureEnvelope(rawSignature string) bool {
 	if rawSignature == "" {
 		return false
@@ -199,17 +145,9 @@ func maybeSelfDescribingSignatureEnvelope(rawSignature string) bool {
 	return strings.IndexByte(selfDescribingSignatureFirstChars, rawSignature[0]) >= 0
 }
 
-
-
-
-
 func DetectSignatureProvider(rawSignature string) SignatureProvider {
 	return DetectSignatureProviderForBlock(rawSignature, SignatureBlockKindUnknown)
 }
-
-
-
-
 
 func DetectSignatureProviderForBlock(rawSignature string, blockKind SignatureBlockKind) SignatureProvider {
 	sig := strings.TrimSpace(rawSignature)
@@ -218,7 +156,6 @@ func DetectSignatureProviderForBlock(rawSignature string, blockKind SignatureBlo
 	}
 
 	if prefixedProvider, unprefixed, ok := SplitSignatureProviderPrefix(sig); ok {
-
 
 		if strings.Contains(unprefixed, "#") {
 			return SignatureProviderUnknown
@@ -250,35 +187,12 @@ func DetectSignatureProviderForBlock(rawSignature string, blockKind SignatureBlo
 		return SignatureProviderUnknown
 	}
 
-
-
 	if IsGeminiThoughtSignatureBypass(sig) {
 		return SignatureProviderGeminiBypass
 	}
 	if strings.HasPrefix(sig, "sealed.v1.") {
 		return SignatureProviderSWE
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	if maybeSelfDescribingSignatureEnvelope(sig) {
 		if IsValidGPTReasoningSignature(sig) {
@@ -298,10 +212,6 @@ func DetectSignatureProviderForBlock(rawSignature string, blockKind SignatureBlo
 		}
 	}
 
-
-
-
-
 	if IsValidKimiThinkingSignature(sig) {
 		return SignatureProviderKimi
 	}
@@ -313,13 +223,9 @@ func IsSignatureCompatibleWithProvider(targetProvider SignatureProvider, rawSign
 	return decision.Compatible
 }
 
-
-
 func DecideSignatureCompatibility(targetProvider SignatureProvider, rawSignature string, blockKind SignatureBlockKind) SignatureCompatibilityDecision {
 	return DecideSignatureCompatibilityForModel(targetProvider, "", rawSignature, blockKind)
 }
-
-
 
 func DecideSignatureCompatibilityForModel(targetProvider SignatureProvider, targetModel string, rawSignature string, blockKind SignatureBlockKind) SignatureCompatibilityDecision {
 	targetProvider = normalizeSignatureTargetProvider(targetProvider)
@@ -334,8 +240,6 @@ func DecideSignatureCompatibilityForModel(targetProvider SignatureProvider, targ
 		BlockKind:        blockKind,
 	}
 
-
-
 	if targetProvider == SignatureProviderClaude && detected == SignatureProviderClaude &&
 		strings.HasPrefix(SignaturePayloadWithoutProviderPrefix(rawSignature), "Q") {
 		decision.Action = SignatureActionDropBlock
@@ -344,7 +248,6 @@ func DecideSignatureCompatibilityForModel(targetProvider SignatureProvider, targ
 	}
 
 	if signatureProviderMatchesTarget(targetProvider, detected) {
-
 
 		if normalized := normalizeCompatibleSignatureForProvider(targetProvider, rawSignature, blockKind); normalized != "" {
 			decision.Compatible = true
@@ -380,16 +283,9 @@ func DecideSignatureCompatibilityForModel(targetProvider SignatureProvider, targ
 		decision.Reason = "Meta Muse requires its native encrypted_content envelope and has no cross-provider bypass sentinel"
 	case SignatureProviderKimi:
 
-
-
-
-
-
 		decision.Action = SignatureActionDropSignature
 		decision.Reason = "Kimi does not validate replayed thinking signatures, so the block survives without one"
 	case SignatureProviderGrok:
-
-
 
 		decision.Action = SignatureActionDropBlock
 		decision.Reason = "xAI verifies encrypted_content on replay and rejects foreign or mutated blobs"
@@ -412,10 +308,6 @@ func SplitSignatureProviderPrefix(rawSignature string) (SignatureProvider, strin
 	return provider, strings.TrimSpace(rest), true
 }
 
-
-
-
-
 func SignatureProviderFromCachePrefix(prefix string) SignatureProvider {
 	switch strings.ToLower(strings.TrimSpace(prefix)) {
 	case "claude", "anthropic", "cais", "claude-cais", "claude_cais", "ccmax", "claude-code-max", "claude_code_max":
@@ -431,9 +323,6 @@ func SignatureProviderFromCachePrefix(prefix string) SignatureProvider {
 	}
 }
 
-
-
-
 func SignaturePayloadWithoutProviderPrefix(rawSignature string) string {
 	if _, unprefixed, ok := SplitSignatureProviderPrefix(rawSignature); ok {
 		return unprefixed
@@ -441,14 +330,9 @@ func SignaturePayloadWithoutProviderPrefix(rawSignature string) string {
 	return strings.TrimSpace(rawSignature)
 }
 
-
-
-
 func CompatibleSignatureForProvider(targetProvider SignatureProvider, rawSignature string) (string, bool) {
 	return CompatibleSignatureForProviderBlock(targetProvider, rawSignature, SignatureBlockKindUnknown)
 }
-
-
 
 func CompatibleSignatureForProviderBlock(targetProvider SignatureProvider, rawSignature string, blockKind SignatureBlockKind) (string, bool) {
 	decision := DecideSignatureCompatibility(targetProvider, rawSignature, blockKind)
@@ -457,10 +341,6 @@ func CompatibleSignatureForProviderBlock(targetProvider SignatureProvider, rawSi
 	}
 	return decision.NormalizedSignature, true
 }
-
-
-
-
 
 func CompatibleAntigravityClaudeThinkingSignature(rawSignature string) (string, bool) {
 	if DetectSignatureProviderForBlock(rawSignature, SignatureBlockKindClaudeThinking) != SignatureProviderClaude {
@@ -475,10 +355,6 @@ func CompatibleAntigravityClaudeThinkingSignature(rawSignature string) (string, 
 	}
 	return normalized, true
 }
-
-
-
-
 
 func claudeCompatibleSignatureReason(targetProvider SignatureProvider, rawSignature, targetModel string) string {
 	const genericReason = "signature provider matches target provider"
@@ -527,8 +403,6 @@ func signatureProviderMatchesTarget(target, detected SignatureProvider) bool {
 	case SignatureProviderKimi:
 		return detected == SignatureProviderKimi
 	default:
-
-
 
 		return false
 	}
@@ -582,9 +456,6 @@ func isRecognizedGeminiProviderSignature(rawSignature string, blockKind Signatur
 	}
 	return false
 }
-
-
-
 
 func IsRecognizedReasoningSignature(rawSignature string) bool {
 	sig := strings.TrimSpace(rawSignature)

@@ -7,9 +7,6 @@ import (
 	"testing"
 )
 
-
-
-
 func TestConfiguredTLSHandshakeTimeoutErrorIdentity(t *testing.T) {
 	err := NewConfiguredTLSHandshakeTimeoutError(context.DeadlineExceeded)
 	if err == nil {
@@ -29,10 +26,6 @@ func TestConfiguredTLSHandshakeTimeoutErrorIdentity(t *testing.T) {
 		t.Fatalf("NewConfiguredTLSHandshakeTimeoutError(nil) = %v, want nil", got)
 	}
 }
-
-
-
-
 
 type contextIdentityError struct {
 	target error
@@ -74,9 +67,6 @@ func (e *multiContextIdentityError) Unwrap() []error {
 	}
 	return e.children
 }
-
-
-
 
 func TestIsConfiguredTLSHandshakeTimeoutErrorCallerContextWins(t *testing.T) {
 	configured := NewConfiguredTLSHandshakeTimeoutError(context.DeadlineExceeded)

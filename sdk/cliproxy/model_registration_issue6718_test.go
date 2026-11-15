@@ -30,13 +30,6 @@ func captureSupersededRegistrationLogs(t *testing.T) *logtest.Hook {
 	return hook
 }
 
-
-
-
-
-
-
-
 func TestModelRegistrationSupersededDuringCompletionReconcilesLatest_Issue6718(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-6718", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}
 	manager := coreauth.NewManager(nil, &coreauth.RoundRobinSelector{}, nil)
@@ -62,8 +55,6 @@ func TestModelRegistrationSupersededDuringCompletionReconcilesLatest_Issue6718(t
 			current.Attributes = make(map[string]string)
 		}
 
-
-
 		current.Metadata = map[string]any{"model_cache": map[string]any{"realm": "cn"}}
 		current.Attributes["note"] = "models snapshot written"
 		if _, errUpdate := manager.Update(t.Context(), current); errUpdate != nil {
@@ -85,10 +76,6 @@ func TestModelRegistrationSupersededDuringCompletionReconcilesLatest_Issue6718(t
 		t.Fatal("models vanished: superseded registration was discarded without reconciling the latest auth (issue #6718)")
 	}
 }
-
-
-
-
 
 func TestModelRegistrationSupersededPublicationLogsWarning_Issue6718(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-6718-warn", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}
@@ -141,13 +128,6 @@ func TestModelRegistrationSupersededPublicationLogsWarning_Issue6718(t *testing.
 	t.Fatalf("superseded publication was discarded silently, no warning logged; entries=%#v", hook.AllEntries())
 }
 
-
-
-
-
-
-
-
 func TestModelRegistrationSupersededByEpochAdvanceReconcilesLatest_Issue6718(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-6718-epoch", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}
 	manager := coreauth.NewManager(nil, &coreauth.RoundRobinSelector{}, nil)
@@ -175,7 +155,6 @@ func TestModelRegistrationSupersededByEpochAdvanceReconcilesLatest_Issue6718(t *
 			t.Fatal(errUpdate)
 		}
 
-
 		reg.RegisterClient(id, "other-provider", []*ModelInfo{{ID: "unrelated-model"}})
 	}}
 	auth := &coreauth.Auth{ID: id, Provider: "compat-6718-epoch", Prefix: "prefix-6718", Status: coreauth.StatusActive, Runtime: runtime, Attributes: map[string]string{"auth_kind": "apikey", "compat_name": "compat-6718-epoch", "provider_key": "compat-6718-epoch"}}
@@ -193,10 +172,6 @@ func TestModelRegistrationSupersededByEpochAdvanceReconcilesLatest_Issue6718(t *
 		t.Fatal("models vanished after an epoch-only supersede without reconciling the latest auth (issue #6718)")
 	}
 }
-
-
-
-
 
 func TestModelRegistrationSupersededByDisableUnregisters_Issue6718(t *testing.T) {
 	cfg := &config.Config{SDKConfig: config.SDKConfig{ForceModelPrefix: true}, OpenAICompatibility: []config.OpenAICompatibility{{Name: "compat-6718-off", Models: []config.OpenAICompatibilityModel{{Name: "upstream-model", Alias: "alias"}}}}}
@@ -319,11 +294,6 @@ func newIssue6718PluginService(t *testing.T, provider string, handle func(call i
 	return service, manager, plugin, registered
 }
 
-
-
-
-
-
 func TestPluginModelRegistrationWritebackRecomputesLatestOnce_Issue6718(t *testing.T) {
 	const provider = "issue6718-plugin"
 	var service *Service
@@ -363,10 +333,6 @@ func TestPluginModelRegistrationWritebackRecomputesLatestOnce_Issue6718(t *testi
 	}
 }
 
-
-
-
-
 func TestPluginModelRegistrationInvalidAuthUpdateDoesNotRetry_Issue6718(t *testing.T) {
 	const provider = "issue6718-invalid"
 	hook := captureSupersededRegistrationLogs(t)
@@ -391,9 +357,6 @@ func TestPluginModelRegistrationInvalidAuthUpdateDoesNotRetry_Issue6718(t *testi
 	}
 	t.Fatalf("real commit error was not logged with its cause; entries=%#v", hook.AllEntries())
 }
-
-
-
 
 func TestPluginModelRegistrationCanceledContextDoesNotRetry_Issue6718(t *testing.T) {
 	const provider = "issue6718-cancel"

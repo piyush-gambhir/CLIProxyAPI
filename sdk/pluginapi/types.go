@@ -1,4 +1,3 @@
-
 package pluginapi
 
 import (
@@ -9,20 +8,15 @@ import (
 	"time"
 )
 
-
 type Plugin struct {
-
 	Metadata Metadata
 
 	Capabilities Capabilities
 
-
 	SchemaVersion uint32
 }
 
-
 type Metadata struct {
-
 	Name string
 
 	Version string
@@ -36,11 +30,9 @@ type Metadata struct {
 	ConfigFields []ConfigField
 }
 
-
 type ConfigFieldType string
 
 const (
-
 	ConfigFieldTypeString ConfigFieldType = "string"
 
 	ConfigFieldTypeNumber ConfigFieldType = "number"
@@ -56,9 +48,7 @@ const (
 	ConfigFieldTypeObject ConfigFieldType = "object"
 )
 
-
 type ConfigField struct {
-
 	Name string
 
 	Type ConfigFieldType
@@ -70,16 +60,12 @@ type ConfigField struct {
 	Description string
 }
 
-
 type Capabilities struct {
-
 	ModelRegistrar ModelRegistrar
 
 	ModelProvider ModelProvider
 
 	AuthProvider AuthProvider
-
-
 
 	AuthProviders []AuthProvider
 
@@ -87,24 +73,17 @@ type Capabilities struct {
 
 	FrontendAuthProviderExclusive bool
 
-
-
-
 	FrontendAuthProviderOmitBody bool
 
 	FrontendAuthOmitBody bool
 
 	Scheduler Scheduler
 
-
-
 	SchedulerAcrossPriorities bool
-
 
 	ModelRouter ModelRouter
 
 	Executor ProviderExecutor
-
 
 	ExecutorModelScope ExecutorModelScope
 
@@ -124,25 +103,15 @@ type Capabilities struct {
 
 	RequestInterceptor RequestInterceptor
 
-
-
 	RequestInterceptorOmitBodyBefore bool
-
-
 
 	RequestInterceptorOmitBodyAfter bool
 
-
 	RequestBodyPatcherBefore RequestBodyPatcher
-
 
 	RequestBodyPatcherAfter RequestBodyPatcher
 
-
-
 	RequestInterceptorPatchBodyBefore bool
-
-
 
 	RequestInterceptorPatchBodyAfter bool
 
@@ -165,11 +134,9 @@ type Capabilities struct {
 	QuotaProvider QuotaProvider
 }
 
-
 type ExecutorModelScope string
 
 const (
-
 	ExecutorModelScopeBoth ExecutorModelScope = "both"
 
 	ExecutorModelScopeStatic ExecutorModelScope = "static"
@@ -177,9 +144,7 @@ const (
 	ExecutorModelScopeOAuth ExecutorModelScope = "oauth"
 )
 
-
 type ModelInfo struct {
-
 	ID string
 
 	Object string
@@ -219,9 +184,7 @@ type ModelInfo struct {
 	UserDefined bool
 }
 
-
 type ThinkingSupport struct {
-
 	Min int
 
 	Max int
@@ -230,15 +193,12 @@ type ThinkingSupport struct {
 
 	DynamicAllowed bool
 
-
 	DisableType string
 
 	Levels []string
 }
 
-
 type HostConfigSummary struct {
-
 	AuthDir string
 
 	ProxyURL string
@@ -250,17 +210,13 @@ type HostConfigSummary struct {
 	ExcludedModels map[string][]string
 }
 
-
 type ModelAlias struct {
-
 	Name string
 
 	Alias string
 }
 
-
 type AuthData struct {
-
 	Provider string
 
 	ID string
@@ -284,9 +240,7 @@ type AuthData struct {
 	NextRefreshAfter time.Time
 }
 
-
 type AuthParseRequest struct {
-
 	Provider string
 
 	Path string
@@ -298,16 +252,13 @@ type AuthParseRequest struct {
 	Host HostConfigSummary
 }
 
-
 type AuthParseResponse struct {
-
 	Handled bool
 
 	Auth AuthData
 
 	Auths []AuthData
 }
-
 
 type AuthProvider interface {
 	Identifier() string
@@ -317,16 +268,12 @@ type AuthProvider interface {
 	RefreshAuth(context.Context, AuthRefreshRequest) (AuthRefreshResponse, error)
 }
 
-
-
 type MultiAuthProvider interface {
 	AuthProvider
 	Identifiers() []string
 }
 
-
 type AuthProviderEntry struct {
-
 	Identifier string `json:"identifier"`
 
 	Name string `json:"name,omitempty"`
@@ -334,16 +281,12 @@ type AuthProviderEntry struct {
 	Logo string `json:"logo,omitempty"`
 }
 
-
-
 type AuthProviderEntries interface {
 	AuthProvider
 	AuthEntries() []AuthProviderEntry
 }
 
-
 type AuthLoginStartRequest struct {
-
 	Provider string
 
 	BaseURL string
@@ -355,9 +298,7 @@ type AuthLoginStartRequest struct {
 	Metadata map[string]any
 }
 
-
 type AuthLoginStartResponse struct {
-
 	Provider string
 
 	URL string
@@ -369,9 +310,7 @@ type AuthLoginStartResponse struct {
 	Metadata map[string]any
 }
 
-
 type AuthLoginPollRequest struct {
-
 	Provider string
 
 	State string
@@ -383,11 +322,9 @@ type AuthLoginPollRequest struct {
 	Metadata map[string]any
 }
 
-
 type AuthLoginStatus string
 
 const (
-
 	AuthLoginStatusPending AuthLoginStatus = "pending"
 
 	AuthLoginStatusSuccess AuthLoginStatus = "success"
@@ -395,9 +332,7 @@ const (
 	AuthLoginStatusError AuthLoginStatus = "error"
 )
 
-
 type AuthLoginPollResponse struct {
-
 	Status AuthLoginStatus
 
 	Message string
@@ -407,9 +342,7 @@ type AuthLoginPollResponse struct {
 	Auths []AuthData
 }
 
-
 type AuthRefreshRequest struct {
-
 	AuthID string
 
 	AuthProvider string
@@ -425,61 +358,42 @@ type AuthRefreshRequest struct {
 	HTTPClient HostHTTPClient `json:"-"`
 }
 
-
 type AuthRefreshResponse struct {
-
 	Auth AuthData
 
 	NextRefreshAfter time.Time
 }
 
-
-
-
 type ModelRegistrar interface {
 	RegisterModels(context.Context, ModelRegistrationRequest) (ModelRegistrationResponse, error)
 }
 
-
 type ModelRegistrationRequest struct {
-
 	Plugin Metadata
 
 	MultiProviderModels bool `json:"multi_provider_models,omitempty"`
 }
 
-
 type ProviderModels struct {
-
 	Provider string `json:"provider,omitempty"`
 
 	Models []ModelInfo `json:"models,omitempty"`
 }
 
-
 type ModelRegistrationResponse struct {
-
 	Provider string
 
 	Models []ModelInfo
 
-
-
-
-
 	Registrations []ProviderModels `json:"registrations,omitempty"`
 }
-
-
 
 type ModelProvider interface {
 	StaticModels(context.Context, StaticModelRequest) (ModelResponse, error)
 	ModelsForAuth(context.Context, AuthModelRequest) (ModelResponse, error)
 }
 
-
 type StaticModelRequest struct {
-
 	Plugin Metadata
 
 	Host HostConfigSummary
@@ -487,9 +401,7 @@ type StaticModelRequest struct {
 	MultiProviderModels bool `json:"multi_provider_models,omitempty"`
 }
 
-
 type AuthModelRequest struct {
-
 	Plugin Metadata
 
 	AuthID string
@@ -507,28 +419,22 @@ type AuthModelRequest struct {
 	HTTPClient HostHTTPClient `json:"-"`
 }
 
-
 type ModelResponse struct {
-
 	Provider string
 
 	Models []ModelInfo
-
 
 	Registrations []ProviderModels `json:"registrations,omitempty"`
 
 	AuthUpdate AuthData
 }
 
-
 type FrontendAuthProvider interface {
 	Identifier() string
 	Authenticate(context.Context, FrontendAuthRequest) (FrontendAuthResponse, error)
 }
 
-
 type FrontendAuthRequest struct {
-
 	Method string
 
 	Path string
@@ -539,13 +445,10 @@ type FrontendAuthRequest struct {
 
 	Body []byte
 
-
 	DecodedBody []byte
 }
 
-
 type FrontendAuthResponse struct {
-
 	Authenticated bool
 
 	Principal string
@@ -558,7 +461,6 @@ type FrontendAuthResponse struct {
 }
 
 const (
-
 	SchedulerBuiltinRoundRobin = "round-robin"
 
 	SchedulerBuiltinFillFirst = "fill-first"
@@ -566,20 +468,15 @@ const (
 	SelectionIDMetadataKey = "selection_id"
 )
 
-
 type Scheduler interface {
 	Pick(context.Context, SchedulerPickRequest) (SchedulerPickResponse, error)
 }
-
-
 
 type ModelRouter interface {
 	RouteModel(context.Context, ModelRouteRequest) (ModelRouteResponse, error)
 }
 
-
 type SchedulerPickRequest struct {
-
 	Plugin Metadata
 
 	Provider string
@@ -595,17 +492,13 @@ type SchedulerPickRequest struct {
 	Candidates []SchedulerAuthCandidate
 }
 
-
 type SchedulerOptions struct {
-
 	Headers map[string][]string
 
 	Metadata map[string]any
 }
 
-
 type SchedulerAuthCandidate struct {
-
 	ID string
 
 	Provider string
@@ -619,16 +512,12 @@ type SchedulerAuthCandidate struct {
 	Metadata map[string]any
 }
 
-
 type SchedulerPickResponse struct {
-
 	AuthID string
 
 	DelegateBuiltin string
 
 	Handled bool
-
-
 
 	Reject bool
 
@@ -636,7 +525,6 @@ type SchedulerPickResponse struct {
 
 	RejectCode string
 }
-
 
 func (r *SchedulerPickResponse) UnmarshalJSON(data []byte) error {
 	type rawResponse struct {
@@ -690,9 +578,7 @@ func (r *SchedulerPickResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 type ModelRouteRequest struct {
-
 	Plugin Metadata
 
 	PluginID string
@@ -711,16 +597,12 @@ type ModelRouteRequest struct {
 
 	Metadata map[string]any
 
-
-
 	AvailableProviders []string
 }
-
 
 type ModelRouteTargetKind string
 
 const (
-
 	ModelRouteTargetSelf ModelRouteTargetKind = "self"
 
 	ModelRouteTargetExecutor ModelRouteTargetKind = "executor"
@@ -728,24 +610,17 @@ const (
 	ModelRouteTargetProvider ModelRouteTargetKind = "provider"
 )
 
-
-
-
-
 type ModelRouteResponse struct {
-
 	Handled bool
 
 	TargetKind ModelRouteTargetKind
 
 	Target string
 
-
 	TargetModel string
 
 	Reason string
 }
-
 
 type ProviderExecutor interface {
 	Identifier() string
@@ -755,17 +630,12 @@ type ProviderExecutor interface {
 	HttpRequest(context.Context, ExecutorHTTPRequest) (ExecutorHTTPResponse, error)
 }
 
-
-
-
 type HostHTTPClient interface {
 	Do(context.Context, HTTPRequest) (HTTPResponse, error)
 	DoStream(context.Context, HTTPRequest) (HTTPStreamResponse, error)
 }
 
-
 type HostModelExecutionRequest struct {
-
 	EntryProtocol string `json:"entry_protocol"`
 
 	ExitProtocol string `json:"exit_protocol"`
@@ -786,19 +656,14 @@ type HostModelExecutionRequest struct {
 
 	AuthID string `json:"auth_id,omitempty"`
 
-
 	ProxyURL string `json:"proxy_url,omitempty"`
 
 	Path string `json:"path,omitempty"`
 
-
-
 	CallerScope string `json:"caller_scope,omitempty"`
 }
 
-
 type HostModelExecutionResponse struct {
-
 	StatusCode int `json:"status_code"`
 
 	Headers http.Header `json:"headers"`
@@ -806,9 +671,7 @@ type HostModelExecutionResponse struct {
 	Body []byte `json:"body"`
 }
 
-
 type HostModelStreamResponse struct {
-
 	StatusCode int `json:"status_code"`
 
 	Headers http.Header `json:"headers"`
@@ -816,15 +679,11 @@ type HostModelStreamResponse struct {
 	StreamID string `json:"stream_id"`
 }
 
-
 type HostModelStreamReadRequest struct {
-
 	StreamID string `json:"stream_id"`
 }
 
-
 type HostModelStreamReadResponse struct {
-
 	Payload []byte `json:"payload"`
 
 	Error string `json:"error"`
@@ -832,14 +691,11 @@ type HostModelStreamReadResponse struct {
 	Done bool `json:"done"`
 }
 
-
 type HostModelStreamCloseRequest struct {
-
 	StreamID string `json:"stream_id"`
 }
 
 type HostRecentRequestEntry struct {
-
 	Time string `json:"time"`
 
 	Success int64 `json:"success"`
@@ -847,9 +703,7 @@ type HostRecentRequestEntry struct {
 	Failed int64 `json:"failed"`
 }
 
-
 type HostAuthFileEntry struct {
-
 	ID string `json:"id,omitempty"`
 
 	AuthIndex string `json:"auth_index,omitempty"`
@@ -911,15 +765,11 @@ type HostAuthFileEntry struct {
 	RecentRequests []HostRecentRequestEntry `json:"recent_requests,omitempty"`
 }
 
-
 type HostAuthGetRequest struct {
-
 	AuthIndex string `json:"auth_index"`
 }
 
-
 type HostAuthGetResponse struct {
-
 	AuthIndex string `json:"auth_index"`
 
 	Name string `json:"name,omitempty"`
@@ -929,43 +779,31 @@ type HostAuthGetResponse struct {
 	JSON json.RawMessage `json:"json"`
 }
 
-
 type HostAuthGetRuntimeResponse struct {
-
 	Auth HostAuthFileEntry `json:"auth"`
 }
 
-
 type HostAuthSaveRequest struct {
-
 	Name string `json:"name"`
 
 	JSON json.RawMessage `json:"json"`
 }
 
-
 type HostAuthSaveResponse struct {
-
 	Name string `json:"name"`
 
 	Path string `json:"path"`
 }
 
-
 type HostAuthModelsRequest struct {
-
 	AuthIndex string `json:"auth_index,omitempty"`
 }
 
-
 type HostAuthModelsResponse struct {
-
 	Credentials []HostAuthModels `json:"credentials"`
 }
 
-
 type HostAuthModels struct {
-
 	ID string `json:"id"`
 
 	AuthIndex string `json:"auth_index"`
@@ -975,7 +813,6 @@ type HostAuthModels struct {
 	Models []string `json:"models"`
 }
 
-
 const (
 	HostAffinityStatusBound       = "bound"
 	HostAffinityStatusUnbound     = "unbound"
@@ -983,9 +820,7 @@ const (
 	HostAffinityStatusUnsupported = "unsupported"
 )
 
-
 type HostAffinityLookupRequest struct {
-
 	Provider string `json:"provider"`
 
 	Model string `json:"model"`
@@ -993,9 +828,7 @@ type HostAffinityLookupRequest struct {
 	SessionID string `json:"session_id"`
 }
 
-
 type HostAffinityLookupResponse struct {
-
 	Status string `json:"status"`
 
 	AuthIndex string `json:"auth_index,omitempty"`
@@ -1007,23 +840,17 @@ type HostAffinityLookupResponse struct {
 	Unavailable bool `json:"unavailable,omitempty"`
 }
 
-
 type HostRoutingResetCooldownRequest struct {
-
 	AuthIndex string `json:"auth_index"`
 }
 
-
 type HostRoutingResetCooldownResponse struct {
-
 	AuthIndex string `json:"auth_index"`
 
 	Models []string `json:"models,omitempty"`
 }
 
-
 type HTTPWireProfile struct {
-
 	HTTP1Only bool `json:"http1_only,omitempty"`
 
 	DisableAutoCompression bool `json:"disable_auto_compression,omitempty"`
@@ -1031,9 +858,7 @@ type HTTPWireProfile struct {
 	HeaderProfile []string `json:"header_profile,omitempty"`
 }
 
-
 type HTTPRequest struct {
-
 	Method string
 
 	URL string
@@ -1045,9 +870,7 @@ type HTTPRequest struct {
 	WireProfile *HTTPWireProfile `json:"wire_profile,omitempty"`
 }
 
-
 type HTTPResponse struct {
-
 	StatusCode int
 
 	Headers http.Header
@@ -1055,9 +878,7 @@ type HTTPResponse struct {
 	Body []byte
 }
 
-
 type HTTPStreamResponse struct {
-
 	StatusCode int
 
 	Headers http.Header
@@ -1065,17 +886,13 @@ type HTTPStreamResponse struct {
 	Chunks <-chan HTTPStreamChunk
 }
 
-
 type HTTPStreamChunk struct {
-
 	Payload []byte
 
 	Err error
 }
 
-
 type ExecutorHTTPRequest struct {
-
 	AuthID string
 
 	AuthProvider string
@@ -1097,9 +914,7 @@ type ExecutorHTTPRequest struct {
 	HTTPClient HostHTTPClient `json:"-"`
 }
 
-
 type ExecutorHTTPResponse struct {
-
 	StatusCode int
 
 	Headers http.Header
@@ -1107,9 +922,7 @@ type ExecutorHTTPResponse struct {
 	Body []byte
 }
 
-
 type ExecutorRequest struct {
-
 	AuthID string
 
 	AuthProvider string
@@ -1143,9 +956,7 @@ type ExecutorRequest struct {
 	HTTPClient HostHTTPClient `json:"-"`
 }
 
-
 type ExecutorResponse struct {
-
 	Payload []byte
 
 	Headers http.Header
@@ -1153,77 +964,60 @@ type ExecutorResponse struct {
 	Metadata map[string]any
 }
 
-
 type ExecutorStreamResponse struct {
-
 	Headers http.Header
 
 	Chunks <-chan ExecutorStreamChunk
 }
 
-
 type ExecutorStreamChunk struct {
-
 	Payload []byte
 
 	Err error
 }
 
-
 type RequestTranslator interface {
 	TranslateRequest(context.Context, RequestTransformRequest) (PayloadResponse, error)
 }
-
 
 type RequestNormalizer interface {
 	NormalizeRequest(context.Context, RequestTransformRequest) (PayloadResponse, error)
 }
 
-
 type ResponseTranslator interface {
 	TranslateResponse(context.Context, ResponseTransformRequest) (PayloadResponse, error)
 }
 
-
 type ResponseNormalizer interface {
 	NormalizeResponse(context.Context, ResponseTransformRequest) (PayloadResponse, error)
 }
-
 
 type RequestInterceptor interface {
 	InterceptRequestBeforeAuth(context.Context, RequestInterceptRequest) (RequestInterceptResponse, error)
 	InterceptRequestAfterAuth(context.Context, RequestInterceptRequest) (RequestInterceptResponse, error)
 }
 
-
 type RequestLifecyclePlugin interface {
 	HandleRequestComplete(context.Context, RequestCompletion) error
 }
-
 
 type ResponseInterceptor interface {
 	InterceptResponse(context.Context, ResponseInterceptRequest) (ResponseInterceptResponse, error)
 }
 
-
 type StreamChunkInterceptor interface {
 	InterceptStreamChunk(context.Context, StreamChunkInterceptRequest) (StreamChunkInterceptResponse, error)
 }
-
 
 type WebSocketResponseObserver interface {
 	ObserveWebSocketResponseEvent(context.Context, WebSocketResponseEvent) error
 }
 
-
 const StreamChunkHeaderInitIndex = -1
-
 
 const CallerScopeMetadataKey = "caller_scope"
 
-
 type RequestTransformRequest struct {
-
 	FromFormat string
 
 	ToFormat string
@@ -1235,9 +1029,7 @@ type RequestTransformRequest struct {
 	Body []byte
 }
 
-
 type ResponseTransformRequest struct {
-
 	FromFormat string
 
 	ToFormat string
@@ -1253,9 +1045,7 @@ type ResponseTransformRequest struct {
 	Body []byte
 }
 
-
 type RequestInterceptRequest struct {
-
 	RequestID string
 
 	TraceID string
@@ -1274,15 +1064,12 @@ type RequestInterceptRequest struct {
 
 	Body []byte
 
-
 	CallerScope string
 
 	Metadata map[string]any
 }
 
-
 type RequestInterceptResponse struct {
-
 	Path string `json:"path,omitempty"`
 
 	Headers http.Header
@@ -1304,15 +1091,11 @@ type RequestInterceptResponse struct {
 	ResponseBody []byte
 }
 
-
-
 type RequestBodyPatcher interface {
 	PatchRequestBody(context.Context, []byte) (RequestBodyPatchResponse, error)
 }
 
-
 type RequestBodyEdit struct {
-
 	Start int `json:"start"`
 
 	End int `json:"end"`
@@ -1322,18 +1105,13 @@ type RequestBodyEdit struct {
 	ReplacementBytes []byte `json:"replacement_bytes,omitempty"`
 }
 
-
 type RequestBodyPatchResponse struct {
-
-
 	Edits []RequestBodyEdit `json:"edits,omitempty"`
 }
-
 
 type RequestCompletionOutcome string
 
 const (
-
 	RequestCompletionSucceeded RequestCompletionOutcome = "succeeded"
 
 	RequestCompletionFailed RequestCompletionOutcome = "failed"
@@ -1342,7 +1120,6 @@ const (
 
 	RequestCompletionCanceled RequestCompletionOutcome = "canceled"
 )
-
 
 type RequestCompletion struct {
 	RequestID      string
@@ -1359,7 +1136,6 @@ type RequestCompletion struct {
 	Metadata       map[string]any
 }
 
-
 type ResponseInterceptRequest struct {
 	RequestID       string
 	SourceFormat    string
@@ -1375,16 +1151,13 @@ type ResponseInterceptRequest struct {
 	Metadata        map[string]any
 }
 
-
 type ResponseInterceptResponse struct {
-
 	Headers http.Header
 
 	Body []byte
 
 	ClearHeaders []string
 }
-
 
 type StreamChunkInterceptRequest struct {
 	RequestID       string
@@ -1394,22 +1167,10 @@ type StreamChunkInterceptRequest struct {
 	RequestHeaders  http.Header
 	ResponseHeaders http.Header
 
-
-
-
-
-
 	OriginalRequest []byte
-
 
 	RequestBody []byte
 	Body        []byte
-
-
-
-
-
-
 
 	HistoryChunks [][]byte
 
@@ -1418,19 +1179,15 @@ type StreamChunkInterceptRequest struct {
 	Metadata map[string]any
 }
 
-
 type StreamChunkInterceptResponse struct {
-
 	Headers http.Header
 
 	Body []byte
 
 	ClearHeaders []string
 
-
 	DropChunk bool
 }
-
 
 type WebSocketResponseEvent struct {
 	RequestID      string
@@ -1447,15 +1204,11 @@ type WebSocketResponseEvent struct {
 	Metadata       map[string]any
 }
 
-
 type PayloadResponse struct {
-
 	Body []byte
 }
 
-
 type ThinkingConfig struct {
-
 	Mode string
 
 	Budget int
@@ -1463,9 +1216,7 @@ type ThinkingConfig struct {
 	Level string
 }
 
-
 type ThinkingApplyRequest struct {
-
 	Provider string
 
 	Model ModelInfo
@@ -1475,40 +1226,30 @@ type ThinkingApplyRequest struct {
 	Body []byte
 }
 
-
 type ThinkingApplier interface {
-
 	Identifier() string
 
 	ApplyThinking(context.Context, ThinkingApplyRequest) (PayloadResponse, error)
 }
 
-
 type UsagePlugin interface {
 	HandleUsage(context.Context, UsageRecord)
 }
-
 
 type CommandLinePlugin interface {
 	RegisterCommandLine(context.Context, CommandLineRegistrationRequest) (CommandLineRegistrationResponse, error)
 	ExecuteCommandLine(context.Context, CommandLineExecutionRequest) (CommandLineExecutionResponse, error)
 }
 
-
 type CommandLineRegistrationRequest struct {
-
 	Plugin Metadata
 }
 
-
 type CommandLineRegistrationResponse struct {
-
 	Flags []CommandLineFlag
 }
 
-
 type CommandLineFlag struct {
-
 	Name string
 
 	Usage string
@@ -1518,9 +1259,7 @@ type CommandLineFlag struct {
 	DefaultValue string
 }
 
-
 type CommandLineFlagValue struct {
-
 	Name string
 
 	Type string
@@ -1530,9 +1269,7 @@ type CommandLineFlagValue struct {
 	Set bool
 }
 
-
 type CommandLineExecutionRequest struct {
-
 	Plugin Metadata
 
 	Program string
@@ -1548,9 +1285,7 @@ type CommandLineExecutionRequest struct {
 	TriggeredFlags map[string]CommandLineFlagValue
 }
 
-
 type CommandLineExecutionResponse struct {
-
 	Stdout []byte
 
 	Stderr []byte
@@ -1560,14 +1295,11 @@ type CommandLineExecutionResponse struct {
 	ExitCode int
 }
 
-
 type ManagementAPI interface {
 	RegisterManagement(context.Context, ManagementRegistrationRequest) (ManagementRegistrationResponse, error)
 }
 
-
 type ManagementRegistrationRequest struct {
-
 	Plugin Metadata
 
 	BasePath string
@@ -1575,17 +1307,13 @@ type ManagementRegistrationRequest struct {
 	ResourceBasePath string
 }
 
-
 type ManagementRegistrationResponse struct {
-
 	Routes []ManagementRoute
 
 	Resources []ResourceRoute
 }
 
-
 type ManagementRoute struct {
-
 	Method string
 
 	Path string
@@ -1597,9 +1325,7 @@ type ManagementRoute struct {
 	Handler ManagementHandler
 }
 
-
 type ResourceRoute struct {
-
 	Path string
 
 	Menu string
@@ -1609,14 +1335,11 @@ type ResourceRoute struct {
 	Handler ManagementHandler
 }
 
-
 type ManagementHandler interface {
 	HandleManagement(context.Context, ManagementRequest) (ManagementResponse, error)
 }
 
-
 type ManagementRequest struct {
-
 	Method string
 
 	Path string
@@ -1628,21 +1351,15 @@ type ManagementRequest struct {
 	Body []byte
 }
 
-
 type ManagementResponse struct {
-
 	StatusCode int
 
 	Headers http.Header
 
-
-
 	Body []byte
 }
 
-
 type UsageRecord struct {
-
 	RequestID string
 
 	TraceID string
@@ -1681,13 +1398,11 @@ type UsageRecord struct {
 
 	ServiceTier string
 
-
 	EffectiveServiceTier string
 
 	ResponseServiceTier string
 
 	ResponseModel string
-
 
 	Generate bool
 
@@ -1708,17 +1423,13 @@ type UsageRecord struct {
 	ResponseHeaders http.Header
 }
 
-
 type UsageFailure struct {
-
 	StatusCode int
 
 	Body string
 }
 
-
 type UsageDetail struct {
-
 	InputTokens int64
 
 	OutputTokens int64
@@ -1732,7 +1443,6 @@ type UsageDetail struct {
 	CacheCreationTokens int64
 
 	TotalTokens int64
-
 
 	TextInputTokens *int64
 
@@ -1757,9 +1467,7 @@ type UsageDetail struct {
 	AudioOutputTokens *int64
 }
 
-
 type QuotaProvider interface {
-
 	Identifier() string
 
 	DescribeQuota(context.Context, QuotaDescribeRequest) (QuotaDescribeResponse, error)
@@ -1769,15 +1477,11 @@ type QuotaProvider interface {
 	ResetQuota(context.Context, QuotaResetRequest) (QuotaResetResponse, error)
 }
 
-
 type QuotaDescribeRequest struct {
-
 	Plugin Metadata `json:"plugin,omitempty"`
 }
 
-
 type QuotaDescribeResponse struct {
-
 	SupportedProviders []string `json:"supported_providers,omitempty"`
 
 	DisplayName string `json:"display_name,omitempty"`
@@ -1785,9 +1489,7 @@ type QuotaDescribeResponse struct {
 	SupportsReset bool `json:"supports_reset,omitempty"`
 }
 
-
 type QuotaFetchRequest struct {
-
 	AuthIndex string `json:"auth_index"`
 
 	AuthID string `json:"auth_id"`
@@ -1805,13 +1507,11 @@ type QuotaFetchRequest struct {
 	HTTPClient HostHTTPClient `json:"-"`
 }
 
-
 type QuotaSubscription struct {
 	Plan     string `json:"plan,omitempty"`
 	TierName string `json:"tierName,omitempty"`
 	TierID   string `json:"tierId,omitempty"`
 }
-
 
 func (s *QuotaSubscription) UnmarshalJSON(data []byte) error {
 	type Alias QuotaSubscription
@@ -1834,12 +1534,10 @@ func (s *QuotaSubscription) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 type QuotaGroup struct {
 	DisplayName string        `json:"displayName,omitempty"`
 	Buckets     []QuotaBucket `json:"buckets,omitempty"`
 }
-
 
 func (g *QuotaGroup) UnmarshalJSON(data []byte) error {
 	type Alias QuotaGroup
@@ -1858,14 +1556,12 @@ func (g *QuotaGroup) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 type QuotaBucket struct {
 	Window            string  `json:"window,omitempty"`
 	RemainingFraction float64 `json:"remainingFraction"`
 	ResetTime         string  `json:"resetTime,omitempty"`
 	Description       string  `json:"description,omitempty"`
 }
-
 
 func (b *QuotaBucket) UnmarshalJSON(data []byte) error {
 	type Alias QuotaBucket
@@ -1891,8 +1587,6 @@ func (b *QuotaBucket) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
-
 type QuotaMetric struct {
 	Key      string  `json:"key"`
 	Label    string  `json:"label"`
@@ -1902,14 +1596,12 @@ type QuotaMetric struct {
 	Currency string  `json:"currency,omitempty"`
 }
 
-
 type QuotaFetchResponse struct {
 	Subscription       *QuotaSubscription `json:"subscription,omitempty"`
 	Summary            []QuotaMetric      `json:"summary,omitempty"`
 	ServerTimeOffsetMs int64              `json:"serverTimeOffsetMs,omitempty"`
 	Groups             []QuotaGroup       `json:"groups,omitempty"`
 }
-
 
 func (r *QuotaFetchResponse) UnmarshalJSON(data []byte) error {
 	type Alias QuotaFetchResponse
@@ -1928,9 +1620,7 @@ func (r *QuotaFetchResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 type QuotaResetRequest struct {
-
 	AuthIndex string `json:"auth_index"`
 
 	AuthID string `json:"auth_id"`
@@ -1947,7 +1637,6 @@ type QuotaResetRequest struct {
 
 	HTTPClient HostHTTPClient `json:"-"`
 }
-
 
 type QuotaResetResponse struct {
 	Success bool   `json:"success"`

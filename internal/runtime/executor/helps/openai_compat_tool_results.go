@@ -15,8 +15,6 @@ const (
 	claudeToolResultImagePlaceholder = "[Tool returned image content; the images follow in the next user message.]"
 )
 
-
-
 func ShouldNormalizeOpenAIToolResultsForModel(compat *config.OpenAICompatibility, upstreamModel, requestedModel string) bool {
 	if compat == nil {
 		return false
@@ -29,9 +27,6 @@ func ShouldNormalizeOpenAIToolResultsForModel(compat *config.OpenAICompatibility
 	return normalize
 }
 
-
-
-
 func NormalizeOpenAIToolResultsTextOnly(payload []byte) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -42,8 +37,6 @@ func NormalizeOpenAIToolResultsTextOnly(payload []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func NormalizeOpenAIToolResultsTextOnlyDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {

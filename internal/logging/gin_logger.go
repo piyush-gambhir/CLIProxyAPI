@@ -1,6 +1,3 @@
-
-
-
 package logging
 
 import (
@@ -16,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 var aiAPIPrefixes = []string{
 	"/v1",
 	"/v1beta",
@@ -29,26 +25,15 @@ const (
 	creditsUsedKey = "__antigravity_credits_used__"
 )
 
-
-
-
-
-
-
-
-
-
 func GinLogrusLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := util.MaskSensitiveQuery(c.Request.URL.RawQuery)
 
-
 		if strings.HasPrefix(path, "/v8/management/oauth/") {
 			raw = ""
 		}
-
 
 		var requestID string
 		if isAIAPIPath(path) {
@@ -64,7 +49,6 @@ func GinLogrusLogger() gin.HandlerFunc {
 		}
 
 		c.Next()
-
 
 		if path == "/healthz" && (c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead) &&
 			c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
@@ -115,7 +99,6 @@ func GinLogrusLogger() gin.HandlerFunc {
 	}
 }
 
-
 func isAIAPIPath(path string) bool {
 	for _, prefix := range aiAPIPrefixes {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
@@ -124,12 +107,6 @@ func isAIAPIPath(path string) bool {
 	}
 	return false
 }
-
-
-
-
-
-
 
 func GinLogrusRecovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
@@ -147,8 +124,6 @@ func GinLogrusRecovery() gin.HandlerFunc {
 		c.AbortWithStatus(http.StatusInternalServerError)
 	})
 }
-
-
 
 func SkipGinRequestLogging(c *gin.Context) {
 	if c == nil {

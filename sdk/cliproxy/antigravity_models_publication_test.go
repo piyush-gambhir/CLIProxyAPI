@@ -63,7 +63,6 @@ func TestAntigravityRegistryPublicationFencesCacheRevision(t *testing.T) {
 		t.Fatal("new empty catalog not applied")
 	}
 
-
 	newest := antigravityModelCapabilityHints{ModelIDs: map[string]struct{}{"gemini-3.1-flash-lite": {}}, revision: 3}
 	antigravityCapabilityMu.Lock()
 	entry := antigravityCapabilityCache[key]

@@ -13,8 +13,6 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
-
-
 func wellFormedCodexSSEStream() string {
 	var stream strings.Builder
 	stream.WriteString("event: response.created\ndata: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\",\"model\":\"gpt-5.4\"}}\n\n")
@@ -210,8 +208,6 @@ func TestCodexSSEScannerBoundsAnEventToTheLineLimit(t *testing.T) {
 
 func TestCodexSSEScannerAssemblesAnEventOfThousandsOfLinesQuickly(t *testing.T) {
 
-
-
 	item := func(i int) string {
 		return fmt.Sprintf(`{"type":"message","content":[{"type":"output_text","text":"%s"}]}`, strings.Repeat(string(rune('a'+i%26)), 960))
 	}
@@ -277,7 +273,6 @@ func TestCodexSSEScannerReadsLineByLineWhileAssemblyIsOff(t *testing.T) {
 		t.Fatalf("lines = %q\nwant    %q", got, want)
 	}
 }
-
 
 type codexSSEChunkReader struct {
 	chunks []string

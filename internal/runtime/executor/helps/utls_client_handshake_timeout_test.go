@@ -20,11 +20,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
 func silentTLSListener(t *testing.T) (addr string, drained <-chan struct{}) {
 	t.Helper()
 	listener, errListen := net.Listen("tcp", "127.0.0.1:0")
@@ -45,18 +40,12 @@ func silentTLSListener(t *testing.T) (addr string, drained <-chan struct{}) {
 		}
 		defer func() {
 
-
 			_ = conn.Close()
 		}()
 		_, _ = io.Copy(io.Discard, conn)
 	}()
 	return listener.Addr().String(), done
 }
-
-
-
-
-
 
 func TestClaudeCodeTLSHandshakeTimeoutBoundsSilentPeer(t *testing.T) {
 	addr, drained := silentTLSListener(t)
@@ -95,10 +84,6 @@ func TestClaudeCodeTLSHandshakeTimeoutBoundsSilentPeer(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestClaudeCodeTLSHandshakeTimeoutZeroKeepsUnboundedWait(t *testing.T) {
 	clientConn, serverConn := net.Pipe()
 	t.Cleanup(func() {
@@ -121,8 +106,6 @@ func TestClaudeCodeTLSHandshakeTimeoutZeroKeepsUnboundedWait(t *testing.T) {
 		}
 		dialDone <- errDial
 	}()
-
-
 
 	header := make([]byte, 5)
 	if _, errRead := io.ReadFull(serverConn, header); errRead != nil {
@@ -149,10 +132,6 @@ func TestClaudeCodeTLSHandshakeTimeoutZeroKeepsUnboundedWait(t *testing.T) {
 		t.Fatal("TLS handshake did not stop after caller context cancellation")
 	}
 }
-
-
-
-
 
 func TestUtlsRoundTripperHandshakeTimeoutBoundsSilentPeer(t *testing.T) {
 	clientConn, serverConn := net.Pipe()
@@ -200,10 +179,6 @@ func TestUtlsRoundTripperHandshakeTimeoutBoundsSilentPeer(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestUtlsRoundTripperWithoutHandshakeBoundWaitsForCaller(t *testing.T) {
 	clientConn, serverConn := net.Pipe()
 	t.Cleanup(func() {
@@ -231,10 +206,6 @@ func TestUtlsRoundTripperWithoutHandshakeBoundWaitsForCaller(t *testing.T) {
 		connectionDone <- errConnect
 	}()
 
-
-
-
-
 	select {
 	case errConnect := <-connectionDone:
 		t.Fatalf("createConnection returned before caller cancellation: %v", errConnect)
@@ -251,8 +222,6 @@ func TestUtlsRoundTripperWithoutHandshakeBoundWaitsForCaller(t *testing.T) {
 		t.Fatal("Chrome-path TLS handshake did not stop after caller context cancellation")
 	}
 }
-
-
 
 type deadlineRecordingConn struct {
 	net.Conn
@@ -274,15 +243,8 @@ func (c *deadlineRecordingConn) SetWriteDeadline(deadline time.Time) error {
 	return c.Conn.SetWriteDeadline(deadline)
 }
 
-
-
-
-
-
-
 func TestClaudeCodeTLSHandshakeTimeoutPreservesSuccessfulConnection(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-
 
 		certificate := newResumptionTestCertificateAt(t, time.Now())
 		roots := x509.NewCertPool()
@@ -330,16 +292,12 @@ func TestClaudeCodeTLSHandshakeTimeoutPreservesSuccessfulConnection(t *testing.T
 				return
 			}
 
-
 			time.Sleep(time.Second)
 			response := "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}"
 			if _, errWrite := io.WriteString(server, response); errWrite != nil {
 				serverDone <- fmt.Errorf("server write response: %w", errWrite)
 				return
 			}
-
-
-
 
 			serverDone <- nil
 		}()
@@ -355,9 +313,6 @@ func TestClaudeCodeTLSHandshakeTimeoutPreservesSuccessfulConnection(t *testing.T
 			t.Fatal("successful TLS handshake did not complete")
 		}
 		defer func() {
-
-
-
 
 			if errClose := serverConn.Close(); errClose != nil && !errors.Is(errClose, net.ErrClosed) && !errors.Is(errClose, io.ErrClosedPipe) {
 				t.Errorf("close server connection before client: %v", errClose)
@@ -403,12 +358,6 @@ func TestClaudeCodeTLSHandshakeTimeoutPreservesSuccessfulConnection(t *testing.T
 		}
 	})
 }
-
-
-
-
-
-
 
 func TestNewUtlsHTTPClientStampsConfiguredHandshakeBound(t *testing.T) {
 	capture := func(seen *time.Duration) http.RoundTripper {

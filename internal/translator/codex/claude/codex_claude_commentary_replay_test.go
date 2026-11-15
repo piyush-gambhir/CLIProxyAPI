@@ -8,9 +8,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 const testCommentaryMarkerSignature = codexCommentarySignatureMarker
 
 func TestConvertCodexResponseToClaudeNonStream_CommentaryCarriesInternalMarker(t *testing.T) {

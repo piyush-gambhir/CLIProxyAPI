@@ -13,25 +13,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type XAIAuthenticator struct{}
-
 
 func NewXAIAuthenticator() Authenticator {
 	return &XAIAuthenticator{}
 }
 
-
 func (XAIAuthenticator) Provider() string {
 	return "xai"
 }
-
 
 func (XAIAuthenticator) RefreshLead() *time.Duration {
 	lead := xaiauth.RefreshLead()
 	return &lead
 }
-
 
 func (a XAIAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {

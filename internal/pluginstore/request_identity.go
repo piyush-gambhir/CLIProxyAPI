@@ -16,14 +16,10 @@ type preparedPluginStoreAuth struct {
 	authenticated bool
 }
 
-
-
 func (c Client) LatestReleaseCacheKey(plugin Plugin) (string, error) {
 	_, key, errPrepare := c.PrepareLatestRelease(plugin)
 	return key, errPrepare
 }
-
-
 
 func (c Client) PrepareLatestRelease(plugin Plugin) (Client, string, error) {
 	owner, repo, errRepository := GitHubRepositoryParts(plugin.Repository)

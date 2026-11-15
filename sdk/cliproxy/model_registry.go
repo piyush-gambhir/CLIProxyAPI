@@ -10,15 +10,11 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-
 type ModelInfo = registry.ModelInfo
-
 
 type ClientModelProjection = registry.ClientModelProjection
 
-
 type ModelRegistryHook = registry.ModelRegistryHook
-
 
 type ModelRegistry interface {
 	RegisterClient(clientID, clientProvider string, models []*ModelInfo)
@@ -37,20 +33,13 @@ type ModelRegistry interface {
 	ApplyClientModelCapabilities(clientID string, expectedEpoch uint64, mutate func(modelID string, info *ModelInfo)) bool
 }
 
-
 func GlobalModelRegistry() ModelRegistry {
 	return registry.GetGlobalRegistry()
 }
 
-
 func SetGlobalModelRegistryHook(hook ModelRegistryHook) {
 	registry.GetGlobalRegistry().SetHook(hook)
 }
-
-
-
-
-
 
 type modelRegistrationFence struct {
 	globalExclusions          map[string]diff.ExcludedModelsSummary
@@ -93,9 +82,6 @@ func newModelRegistrationFence(a *coreauth.Auth, cfg *config.Config) modelRegist
 	}
 }
 
-
-
-
 func (f modelRegistrationFence) withAuth(a *coreauth.Auth) modelRegistrationFence {
 	if a == nil {
 		return f
@@ -124,9 +110,6 @@ func (f modelRegistrationFence) publishIfCurrent(s *Service, authID string, publ
 		if s != nil && !f.disabled && f.authKind != coreauth.AuthKindAPIKey && strings.TrimSpace(f.attributes["excluded_models"]) == "" {
 			s.cfgMu.RLock()
 			defer s.cfgMu.RUnlock()
-
-
-
 
 			for _, provider := range [2]string{f.exclusionProvider, f.fallbackExclusionProvider} {
 				if provider == "" {

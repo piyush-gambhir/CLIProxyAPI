@@ -81,7 +81,6 @@ func promoteOpenAIResponsesReasoningTextToSummaryDoc(itemDoc *ojson.Doc, content
 type metaSignaturePolicy int
 
 const (
-
 	metaSignatureForeign metaSignaturePolicy = iota
 
 	metaSignatureNativeOnly
@@ -104,19 +103,6 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithCompat(ctx context.Cont
 func sanitizeOpenAIResponsesReasoningEncryptedContentWithCompatDoc(ctx context.Context, provider string, doc *ojson.Doc, isCompat bool) bool {
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithCompatModelDoc(ctx, provider, doc, isCompat, "")
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func resolveResponsesSignatureTargetModel(baseModel string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) string {
 	if signature.SignatureProviderFromModelName(baseModel) != signature.SignatureProviderUnknown {
@@ -175,14 +161,6 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentKeepForeignDoc(ctx context.
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx, provider, doc, false, true, metaSignatureForeign, signature.SignatureProviderUnknown, false)
 }
 
-
-
-
-
-
-
-
-
 func sanitizeOpenAIResponsesReasoningEncryptedContentForMeta(ctx context.Context, provider string, body []byte) []byte {
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithOptions(ctx, provider, body, false, true, metaSignatureNativeOnly, signature.SignatureProviderMeta, false)
 }
@@ -190,12 +168,6 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentForMeta(ctx context.Context
 func sanitizeOpenAIResponsesReasoningEncryptedContentForMetaDoc(ctx context.Context, provider string, doc *ojson.Doc) bool {
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx, provider, doc, false, true, metaSignatureNativeOnly, signature.SignatureProviderMeta, false)
 }
-
-
-
-
-
-
 
 func sanitizeOpenAIResponsesReasoningEncryptedContentForMetaBaseURL(ctx context.Context, provider string, body []byte, baseURL string) []byte {
 	doc := ojson.NewDoc(body)
@@ -266,19 +238,9 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx context.
 		provider = "openai responses upstream"
 	}
 
-
-
-
-
-
 	stripOrphanReasoningIDs := !doc.Get("store").Bool()
 
 	items := inputResult.Array()
-
-
-
-
-
 
 	var rebuilt []byte
 	itemsWritten := 0
@@ -296,7 +258,6 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx context.
 		if rebuilt != nil {
 			return
 		}
-
 
 		rebuilt = make([]byte, 0, len(inputResult.Raw))
 		rebuilt = append(rebuilt, '[')
@@ -325,11 +286,6 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx context.
 			return itemDoc
 		}
 		changed := false
-
-
-
-
-
 
 		content := item.Get("content")
 		if !isCompat && content.IsArray() && len(content.Array()) > 0 {

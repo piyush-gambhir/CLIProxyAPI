@@ -1,5 +1,3 @@
-
-
 package watcher
 
 import (
@@ -123,13 +121,11 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	now := time.Now()
 	log.Debugf("file system event detected: %s %s", event.Op.String(), event.Name)
 
-
 	if isConfigEvent {
 		log.Debugf("config file change details - operation: %s, timestamp: %s", event.Op.String(), now.Format("2006-01-02 15:04:05.000"))
 		w.scheduleConfigReload()
 		return
 	}
-
 
 	w.authRescanMu.Lock()
 	defer w.authRescanMu.Unlock()
@@ -144,7 +140,6 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 			return
 		}
 
-
 		time.Sleep(replaceCheckDelay)
 		if !w.isPathInAuthDir(normalizedName, w.currentAuthDir()) {
 			return
@@ -153,8 +148,6 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		if _, statErr := os.Stat(event.Name); statErr == nil {
 			statSucceeded = true
 		} else if w.isKnownAuthFile(event.Name) {
-
-
 
 			for attempt := 0; attempt < 3; attempt++ {
 				time.Sleep(25 * time.Millisecond)
@@ -194,8 +187,6 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	}
 }
 
-
-
 func (w *Watcher) observeAuthFile(path string) {
 	normalized := w.normalizeAuthPath(path)
 	if normalized == "" {
@@ -211,7 +202,6 @@ func (w *Watcher) observeAuthFile(path string) {
 	}
 	w.fileObservations[normalized]++
 	if w.activeAuthScans > 0 {
-
 
 		if _, known := w.lastAuthHashes[normalized]; known {
 			w.lastAuthHashes[normalized] = ""

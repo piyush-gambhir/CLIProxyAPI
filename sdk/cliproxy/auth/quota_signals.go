@@ -13,8 +13,6 @@ const (
 	maxQuotaSignalValue   = 512
 )
 
-
-
 func ProviderSupportsQuotaObservation(provider string) bool {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "claude", "codex", "devin":
@@ -23,17 +21,6 @@ func ProviderSupportsQuotaObservation(provider string) bool {
 		return false
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
 
 func (q *QuotaState) ObserveResponseHeadersForProvider(provider string, headers http.Header, observedAt time.Time) bool {
 	if q == nil {
@@ -54,8 +41,6 @@ func (q *QuotaState) ObserveResponseHeadersForProvider(provider string, headers 
 	return true
 }
 
-
-
 func (q *QuotaState) ClearObservationSignals() bool {
 	if q == nil || (len(q.Signals) == 0 && q.ObservedAt.IsZero()) {
 		return false
@@ -65,8 +50,6 @@ func (q *QuotaState) ClearObservationSignals() bool {
 	return true
 }
 
-
-
 func cooldownFieldsOf(q QuotaState) QuotaState {
 	return QuotaState{
 		Exceeded:      q.Exceeded,
@@ -75,9 +58,6 @@ func cooldownFieldsOf(q QuotaState) QuotaState {
 		BackoffLevel:  q.BackoffLevel,
 	}
 }
-
-
-
 
 func applyCooldownFields(dst *QuotaState, cooldown QuotaState) {
 	if dst == nil {
@@ -115,7 +95,6 @@ func sanitizePersistedClaudeCooldownSignals(raw map[string]string) map[string]st
 	return rejectedClaudeSignalsForCooldown("claude", headers)
 }
 
-
 func collectQuotaSignals(provider string, headers http.Header) map[string]string {
 	if len(headers) == 0 {
 		return nil
@@ -140,7 +119,6 @@ func collectQuotaSignals(provider string, headers http.Header) map[string]string
 		return nil
 	}
 
-
 	sort.Slice(names, func(i, j int) bool {
 		ri, rj := quotaSignalRetentionRank(names[i]), quotaSignalRetentionRank(names[j])
 		if ri != rj {
@@ -157,9 +135,6 @@ func collectQuotaSignals(provider string, headers http.Header) map[string]string
 	}
 	return signals
 }
-
-
-
 
 func validQuotaSignalValue(value string) bool {
 	if value == "" || len(value) > maxQuotaSignalValue {
@@ -205,9 +180,6 @@ func isQuotaSignalHeaderForProvider(provider, name string) bool {
 	}
 	if strings.HasPrefix(name, "x-ratelimit-") {
 
-
-
-
 		return provider == "codex"
 	}
 	if !strings.HasPrefix(name, "x-codex-") {
@@ -220,9 +192,6 @@ func isQuotaSignalHeaderForProvider(provider, name string) bool {
 		strings.HasPrefix(name, "x-codex-credits-") {
 		return true
 	}
-
-
-
 
 	for _, marker := range []string{
 		"-allowed",
@@ -240,9 +209,6 @@ func isQuotaSignalHeaderForProvider(provider, name string) bool {
 	}
 	return false
 }
-
-
-
 
 func mergeQuotaObservation(target, source QuotaState) QuotaState {
 	if source.ObservedAt.IsZero() || source.ObservedAt.Before(target.ObservedAt) {

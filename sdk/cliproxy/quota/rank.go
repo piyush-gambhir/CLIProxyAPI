@@ -6,20 +6,11 @@ import (
 	"time"
 )
 
-
-
-
-
 const DefaultFiveHourGuardPercent = 90.0
-
-
 
 const minHoursToReset = 0.25
 
-
-
 const (
-
 	ReasonRanked = "ranked"
 
 	ReasonGuarded = "five_hour_guard"
@@ -37,20 +28,15 @@ const (
 	ReasonLongWindowHardLimited = "long_window_hard_limited"
 )
 
-
 type Candidate struct {
-
 	AuthID string
 
 	Provider string
 
-
 	Reading Reading
 }
 
-
 type RankOptions struct {
-
 	Model string
 
 	FiveHourGuardPercent float64
@@ -58,9 +44,7 @@ type RankOptions struct {
 	Now time.Time
 }
 
-
 type Ranked struct {
-
 	AuthID string
 
 	Provider string
@@ -79,17 +63,6 @@ type Ranked struct {
 
 	ResetAt time.Time
 }
-
-
-
-
-
-
-
-
-
-
-
 
 func Rank(candidates []Candidate, opts RankOptions) []Ranked {
 	now := opts.Now
@@ -110,7 +83,6 @@ func Rank(candidates []Candidate, opts RankOptions) []Ranked {
 	return out
 }
 
-
 func rankOne(candidate Candidate, modelWindow string, guard float64, now time.Time) Ranked {
 	result := Ranked{
 		AuthID:   candidate.AuthID,
@@ -118,8 +90,6 @@ func rankOne(candidate Candidate, modelWindow string, guard float64, now time.Ti
 		Usable:   true,
 		Reason:   ReasonNoData,
 	}
-
-
 
 	if short, ok := candidate.Reading.Window(WindowFiveHour); ok {
 		switch {
@@ -143,14 +113,12 @@ func rankOne(candidate Candidate, modelWindow string, guard float64, now time.Ti
 	windowID, window, ok := rankingWindow(candidate.Reading, modelWindow)
 	if !ok {
 
-
 		return result
 	}
 	result.Known = true
 	result.RankingWindow = windowID
 	result.ResetAt = window.ResetAt
 	result.Urgency = Urgency(window, now)
-
 
 	if result.Usable {
 		result.Reason = ReasonRanked
@@ -170,9 +138,6 @@ func rankOne(candidate Candidate, modelWindow string, guard float64, now time.Ti
 	return result
 }
 
-
-
-
 func Urgency(window Window, now time.Time) float64 {
 	left := 100 - clampPercent(window.UsedPercent)
 	if left < 0 {
@@ -188,13 +153,6 @@ func Urgency(window Window, now time.Time) float64 {
 	}
 	return left / hours
 }
-
-
-
-
-
-
-
 
 func rankingWindow(reading Reading, modelWindow string) (string, Window, bool) {
 	mainID, main, hasMain := longWindow(reading)
@@ -215,7 +173,6 @@ func rankingWindow(reading Reading, modelWindow string) (string, Window, bool) {
 	return mainID, main, true
 }
 
-
 func longWindow(reading Reading) (string, Window, bool) {
 	for _, id := range []string{WindowSevenDay, WindowWeekly} {
 		if window, ok := reading.Window(id); ok && window.Known {
@@ -223,14 +180,11 @@ func longWindow(reading Reading) (string, Window, bool) {
 		}
 	}
 
-
 	if window, ok := reading.Window(WindowFiveHour); ok && window.Known {
 		return WindowFiveHour, window, true
 	}
 	return "", Window{}, false
 }
-
-
 
 func PerModelWindow(model string) string {
 	if strings.Contains(strings.ToLower(strings.TrimSpace(model)), "fable") {
@@ -238,7 +192,6 @@ func PerModelWindow(model string) string {
 	}
 	return ""
 }
-
 
 func lessRanked(left, right Ranked) bool {
 	if left.Usable != right.Usable {

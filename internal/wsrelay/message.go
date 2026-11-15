@@ -1,6 +1,5 @@
 package wsrelay
 
-
 type Message struct {
 	ID      string         `json:"id"`
 	Type    string         `json:"type"`
@@ -8,7 +7,6 @@ type Message struct {
 }
 
 const (
-
 	MessageTypeHTTPReq = "http_request"
 
 	MessageTypeHTTPResp = "http_response"

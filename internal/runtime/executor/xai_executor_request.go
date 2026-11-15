@@ -59,13 +59,6 @@ type xaiNamespaceToolRef struct {
 	children     map[string]struct{}
 }
 
-
-
-
-
-
-
-
 type xaiClientToolKey struct {
 	namespace string
 	name      string
@@ -147,7 +140,6 @@ func (e *XAIExecutor) prepareResponsesRequestToDoc(ctx context.Context, req clip
 		}
 	}
 
-
 	clientDeclaredTools := collectXAIClientDeclaredToolKeysDoc(doc)
 	normalizeXAIToolsWithFoldDoc(doc, shouldFold)
 	promoteXAIAdditionalToolsDoc(doc)
@@ -157,16 +149,12 @@ func (e *XAIExecutor) prepareResponsesRequestToDoc(ctx context.Context, req clip
 		aliasXAIClientWebSearchFunctionDoc(doc, webSearchAlias, namespaceTools)
 	}
 
-
 	normalizeXAINamespaceToolChoiceWithFoldDoc(doc, shouldFold)
-
 
 	pruneXAIOrphanedToolChoiceDoc(doc)
 	normalizeXAIForcedWebSearchToolChoiceDoc(doc)
 	normalizeXAIForcedImageGenerationToolChoiceDoc(doc)
 	normalizeXAIToolChoiceForToolsDoc(doc)
-
-
 
 	if e.cfg != nil && e.cfg.XAI.InjectXSearch && !xaiToolChoiceRequiresHostedToolOnlyAnyDoc(doc) {
 		ensureXAINativeXSearchToolDoc(doc)
@@ -185,7 +173,6 @@ func (e *XAIExecutor) prepareResponsesRequestToDoc(ctx context.Context, req clip
 	normalizeXAIInputReasoningItemsDoc(doc)
 	sanitizeXAIInputEncryptedContentWithOptionsDoc(doc, true)
 	normalizeCodexInstructionsDoc(doc)
-
 
 	_ = doc.Delete("stop")
 	if xaiBytesMayContainImageRef(body) {
@@ -257,8 +244,6 @@ func xaiCreds(auth *cliproxyauth.Auth) (token, baseURL string) {
 	return token, baseURL
 }
 
-
-
 func xaiUsingAPI(auth *cliproxyauth.Auth) bool {
 	if auth == nil {
 		return true
@@ -292,14 +277,6 @@ func xaiUsingAPI(auth *cliproxyauth.Auth) bool {
 	return !strings.EqualFold(xaiMetadataString(auth.Metadata, "auth_kind"), "oauth")
 }
 
-
-
-
-
-
-
-
-
 func xaiChatBaseURL(auth *cliproxyauth.Auth) string {
 	_, baseURL := xaiCreds(auth)
 	if xaiUsingAPI(auth) {
@@ -313,10 +290,6 @@ func xaiChatBaseURL(auth *cliproxyauth.Auth) string {
 	}
 	return xaiauth.CLIChatProxyBaseURL
 }
-
-
-
-
 
 func xaiCompactBaseURL(auth *cliproxyauth.Auth) string {
 	_, baseURL := xaiCreds(auth)
@@ -338,7 +311,6 @@ func xaiIsCLIChatProxyBaseURL(baseURL string) bool {
 	return xaiNormalizeBaseURL(baseURL) == xaiNormalizeBaseURL(xaiauth.CLIChatProxyBaseURL)
 }
 
-
 func xaiBaseURLSource(baseURL string) string {
 	switch {
 	case xaiIsDefaultAPIBaseURL(baseURL):
@@ -349,7 +321,6 @@ func xaiBaseURLSource(baseURL string) string {
 		return "custom"
 	}
 }
-
 
 func logXAIResolvedBaseURL(ctx context.Context, baseURL string) {
 	helps.LogWithRequestID(ctx).Infof("xai: using base_url=%s source=%s", baseURL, xaiBaseURLSource(baseURL))
@@ -397,12 +368,6 @@ func applyXAICustomHeaders(r *http.Request, auth *cliproxyauth.Auth, clientHeade
 	}
 	util.ApplyCustomHeadersFromAttrs(r, attrs, clientHeaders...)
 }
-
-
-
-
-
-
 
 func applyXAIChatHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, stream bool, sessionID string, clientHeaders ...http.Header) {
 	if xaiUsingAPI(auth) || !xaiIsCLIChatProxyBaseURL(xaiChatBaseURL(auth)) {
@@ -469,14 +434,6 @@ func xaiImageEndpointPath(opts cliproxyexecutor.Options) string {
 	}
 	return xaiDefaultImageEndpointPath
 }
-
-
-
-
-
-
-
-
 
 func xaiBytesMayContainImageRef(b []byte) bool {
 	return bytes.Contains(b, []byte(`"image"`)) ||
@@ -1136,8 +1093,6 @@ func xaiIsSpeechRequest(opts cliproxyexecutor.Options) bool {
 	return opts.SourceFormat.String() == xaiSpeechHandlerType
 }
 
-
-
 func xaiSpeechRequestURL(auth *cliproxyauth.Auth) string {
 	return strings.TrimSuffix(xaiCompactBaseURL(auth), "/") + xaiTTSPath
 }
@@ -1219,18 +1174,12 @@ func preserveXAIResponsesOutputControlsDoc(doc *ojson.Doc, source []byte, from s
 	return changed
 }
 
-
-
-
 var xaiGrokImageGenerationMinVersion = xaiGrokVersion{major: 4, minor: 6}
 
 type xaiGrokVersion struct {
 	major int
 	minor int
 }
-
-
-
 
 func xaiSupportsNativeImageGeneration(model string) bool {
 	name := strings.ToLower(strings.TrimSpace(thinking.ParseSuffix(model).ModelName))
@@ -1304,12 +1253,6 @@ func xaiCompareGrokVersion(a, b xaiGrokVersion) int {
 	return 0
 }
 
-
-
-
-
-
-
 func ensureXAINativeXSearchTool(body []byte) []byte {
 	if !ojson.ValidBytes(body) {
 		return body
@@ -1344,8 +1287,6 @@ func ensureXAINativeXSearchToolDoc(doc *ojson.Doc) bool {
 	return changed
 }
 
-
-
 func ensureXAINativeXSearchAllowedTools(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !ensureXAINativeXSearchAllowedToolsDoc(doc) {
@@ -1373,8 +1314,6 @@ func ensureXAINativeXSearchAllowedToolsDoc(doc *ojson.Doc) bool {
 	}
 	return doc.SetRawBytes("tool_choice.tools.-1", xaiXSearchToolJSON) == nil
 }
-
-
 
 func xaiHasClientWebSearchFunction(body []byte, namespaceTools map[string]xaiNamespaceToolRef) bool {
 	if !ojson.ValidBytes(body) {
@@ -1406,7 +1345,6 @@ func xaiHasClientWebSearchFunctionResult(tools ojson.Result, namespaceTools map[
 	}
 	return false
 }
-
 
 func xaiBodyHasToolNamed(body []byte, name string) bool {
 	return xaiToolsOrInputHaveToolNamed(ojson.GetBytesNoCopy(body, "tools"), ojson.GetBytesNoCopy(body, "input"), name)
@@ -1444,8 +1382,6 @@ func xaiToolsOrInputHaveToolNamed(tools, input ojson.Result, name string) bool {
 	return false
 }
 
-
-
 func xaiResolveClientWebSearchAlias(body []byte) string {
 	candidate := xaiClientWebSearchAlias
 	if !xaiBodyHasToolNamed(body, candidate) {
@@ -1471,8 +1407,6 @@ func xaiResolveClientWebSearchAliasDoc(doc *ojson.Doc) string {
 		}
 	}
 }
-
-
 
 func aliasXAIClientWebSearchInput(body []byte, alias string, namespaceTools map[string]xaiNamespaceToolRef) []byte {
 	if !ojson.ValidBytes(body) || alias == "" {
@@ -1511,10 +1445,6 @@ func aliasXAIClientWebSearchInputDoc(doc *ojson.Doc, alias string, namespaceTool
 	return changed
 }
 
-
-
-
-
 func aliasXAIClientWebSearchFunction(body []byte, alias string, namespaceTools map[string]xaiNamespaceToolRef) []byte {
 	if !ojson.ValidBytes(body) || alias == "" {
 		return body
@@ -1547,7 +1477,6 @@ func aliasXAIClientWebSearchFunctionDoc(doc *ojson.Doc, alias string, namespaceT
 			}
 		}
 	}
-
 
 	choice := doc.Get("tool_choice")
 	if choice.IsObject() {
@@ -1595,14 +1524,11 @@ func aliasXAIClientWebSearchFunctionDoc(doc *ojson.Doc, alias string, namespaceT
 		}
 	}
 
-
 	if aliasXAIClientWebSearchInputDoc(doc, alias, namespaceTools) {
 		changed = true
 	}
 	return changed
 }
-
-
 
 func normalizeXAIForcedWebSearchToolChoice(body []byte) []byte {
 	return normalizeXAIForcedHostedToolChoice(body, xaiWebSearchToolType)
@@ -1612,8 +1538,6 @@ func normalizeXAIForcedWebSearchToolChoiceDoc(doc *ojson.Doc) bool {
 	return normalizeXAIForcedHostedToolChoiceDoc(doc, xaiWebSearchToolType)
 }
 
-
-
 func normalizeXAIForcedImageGenerationToolChoice(body []byte) []byte {
 	return normalizeXAIForcedHostedToolChoice(body, xaiImageGenerationToolType)
 }
@@ -1621,14 +1545,6 @@ func normalizeXAIForcedImageGenerationToolChoice(body []byte) []byte {
 func normalizeXAIForcedImageGenerationToolChoiceDoc(doc *ojson.Doc) bool {
 	return normalizeXAIForcedHostedToolChoiceDoc(doc, xaiImageGenerationToolType)
 }
-
-
-
-
-
-
-
-
 
 func normalizeXAIForcedHostedToolChoice(body []byte, toolType string) []byte {
 	doc := ojson.NewDoc(body)
@@ -1771,10 +1687,6 @@ func xaiSetToolChoiceString(body []byte, value string) []byte {
 	return updated
 }
 
-
-
-
-
 func pruneXAIOrphanedToolChoice(body []byte) []byte {
 	if !ojson.ValidBytes(body) {
 		return body
@@ -1851,9 +1763,6 @@ func pruneXAIAllowedToolsChoiceDoc(doc *ojson.Doc, available map[xaiToolChoiceKe
 	}
 	return doc.SetRawBytes("tool_choice.tools", helps.JoinRawJSONArray(filtered)) == nil
 }
-
-
-
 
 type xaiToolChoiceKey struct {
 	toolType string
@@ -2338,9 +2247,6 @@ func clampXAIToolsLimitDoc(doc *ojson.Doc, maxTools int, refs map[string]xaiName
 	return true
 }
 
-
-
-
 func xaiDeduplicatedToolName(tool ojson.Result) string {
 	switch strings.TrimSpace(tool.Get("type").String()) {
 	case xaiFunctionToolType, xaiCustomToolType, xaiNamespaceToolType:
@@ -2349,10 +2255,6 @@ func xaiDeduplicatedToolName(tool ojson.Result) string {
 		return ""
 	}
 }
-
-
-
-
 
 func promoteXAIAdditionalTools(body []byte) []byte {
 	if !ojson.ValidBytes(body) {
@@ -2499,10 +2401,6 @@ func normalizeXAIToolArrayWithNamespaces(tools ojson.Result, keepImageGeneration
 	return helps.JoinRawJSONArray(filtered), true, true
 }
 
-
-
-
-
 func normalizeXAIToolChoiceForTools(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !normalizeXAIToolChoiceForToolsDoc(doc) {
@@ -2550,9 +2448,6 @@ func normalizeXAIToolChoiceForToolsDoc(doc *ojson.Doc) bool {
 	}
 	return changed
 }
-
-
-
 
 func normalizeXAINamespaceToolChoice(body []byte) []byte {
 	return normalizeXAINamespaceToolChoiceWithFold(body, xaiShouldFoldNamespaceTools(body, false))
@@ -2635,12 +2530,7 @@ func normalizeXAINamespaceToolChoiceWithFoldDoc(doc *ojson.Doc, shouldFold bool)
 	return true
 }
 
-
-
-
 var xaiUnsupportedWebSearchFields = [...]string{"external_web_access", "search_context_size"}
-
-
 
 func stripUnsupportedXAIWebSearchFields(raw []byte) ([]byte, []string, bool) {
 	doc := ojson.NewDoc(raw)
@@ -2744,7 +2634,6 @@ func normalizeXAITool(tool ojson.Result, namespaceName string, keepImageGenerati
 		}
 		changed = true
 	}
-
 
 	if toolType == xaiFunctionToolType && xaiFunctionParametersNeedSimplificationFields(tool.Get("type").String(), getField("name").String(), getField("parameters"), namespaceName) {
 		td := ensureToolDoc()

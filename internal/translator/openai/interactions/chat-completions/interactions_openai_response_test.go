@@ -335,7 +335,6 @@ func TestConvertInteractionsResponseToOpenAIStreamToolCall_ContiguousZeroBasedIn
 		out = append(out, ConvertInteractionsResponseToOpenAI(context.Background(), "devin/swe-2", nil, nil, chunk, &param)...)
 	}
 
-
 	var firstToolStart []byte
 	var secondToolStart []byte
 	for _, chunk := range out {
@@ -403,7 +402,6 @@ func TestConvertInteractionsResponseToOpenAI_ContentFilterFinishReason(t *testin
 	if finishChunk == nil {
 		t.Fatalf("expected finish_reason 'content_filter' for stream, got: %s", string(bytes.Join(out, []byte("\n"))))
 	}
-
 
 	raw := []byte(`{"id":"i1","model":"devin/swe-2","status":"incomplete","finish_reason":"content_filter","steps":[{"type":"model_output","content":[{"type":"text","text":"blocked"}]}]}`)
 	outNonStream := ConvertInteractionsResponseToOpenAINonStream(context.Background(), "devin/swe-2", nil, nil, raw, nil)

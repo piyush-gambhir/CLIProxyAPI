@@ -102,8 +102,6 @@ func TestNormalizeClaudeToolPropertyNamesDocFallsBackForDeepSchemas(t *testing.T
 	}
 }
 
-
-
 func TestClaudeSchemaHasRejectedPropertyKeyFollowsSchemaPositions(t *testing.T) {
 	rejected := `{"type":"object","properties":{"not[labels]":{"type":"string"}}}`
 	accepted := `{"type":"object","properties":{"value":{"type":"string"}}}`

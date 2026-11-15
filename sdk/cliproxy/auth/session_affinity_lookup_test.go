@@ -38,7 +38,6 @@ func TestSessionAffinitySelector_LookupAffinity(t *testing.T) {
 		}
 		originalExpiresAt := initialEntry.expiresAt
 
-
 		for i := 0; i < 10; i++ {
 			authID, status := selector.LookupAffinity("anthropic", "claude-3-7-sonnet", "sess-alpha")
 			if status != "bound" || authID != authA.ID {
@@ -97,15 +96,12 @@ func TestManager_LookupSessionAffinity_RemovedAuth(t *testing.T) {
 	}
 	selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*Auth{authA})
 
-
 	found, status := manager.LookupSessionAffinity("anthropic", "claude-3-7-sonnet", "sess-remove")
 	if status != "bound" || found == nil || found.ID != authA.ID {
 		t.Fatalf("expected bound, got status=%s found=%v", status, found)
 	}
 
-
 	manager.Remove(context.Background(), authA.ID)
-
 
 	foundAfter, statusAfter := manager.LookupSessionAffinity("anthropic", "claude-3-7-sonnet", "sess-remove")
 	if statusAfter != "unbound" || foundAfter != nil {
@@ -136,12 +132,10 @@ func TestSessionAffinitySelector_LookupAffinity_LCP(t *testing.T) {
 		t.Fatalf("expected LCPAffinitySessionIDMetadataKey in opts.Metadata, got %#v", opts.Metadata)
 	}
 
-
 	authID, status := selector.LookupAffinity("openai", "gpt-4o", lcpSessionID)
 	if status != "bound" || authID != authA.ID {
 		t.Fatalf("LCP lookup failed: status=%s authID=%s, want bound %s", status, authID, authA.ID)
 	}
-
 
 	bareHash := strings.TrimPrefix(lcpSessionID, "lcp:v1:")
 	authIDBare, statusBare := selector.LookupAffinity("openai", "gpt-4o", bareHash)
@@ -149,15 +143,12 @@ func TestSessionAffinitySelector_LookupAffinity_LCP(t *testing.T) {
 		t.Fatalf("LCP bare hash lookup failed: status=%s authID=%s, want bound %s", statusBare, authIDBare, authA.ID)
 	}
 
-
 	for i := 0; i < 5; i++ {
 		aID, st := selector.LookupAffinity("openai", "gpt-4o", lcpSessionID)
 		if st != "bound" || aID != authA.ID {
 			t.Fatalf("repeated LCP lookup failed at %d: %s %s", i, st, aID)
 		}
 	}
-
-
 
 	optsGrown := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{"messages":[{"role":"system","content":"test-lcp-sys"},{"role":"user","content":"test-lcp-user"},{"role":"assistant","content":"reply"},{"role":"user","content":"turn2"}]}`),
@@ -201,12 +192,10 @@ func TestSessionAffinitySelector_LookupAffinity_ExactCaseModel(t *testing.T) {
 	}
 	lcpSessionID := opts.Metadata[cliproxyexecutor.LCPAffinitySessionIDMetadataKey].(string)
 
-
 	authID, status := selector.LookupAffinity("openai", "ModelA", lcpSessionID)
 	if status != "bound" || authID != authA.ID {
 		t.Fatalf("exact case ModelA failed: status=%s auth=%s, want bound %s", status, authID, authA.ID)
 	}
-
 
 	authIDLower, statusLower := selector.LookupAffinity("openai", "modela", lcpSessionID)
 	if statusLower != "unbound" || authIDLower != "" {
@@ -235,12 +224,9 @@ func TestManager_LookupSessionAffinity_CrossProviderMixedIsolation(t *testing.T)
 	sessionID := "cross-prov-session"
 	model := "gpt-4o"
 
-
 	selector.cache.Set("openai::header:"+sessionID+"::"+model, authOpenAI.ID)
 
 	selector.cache.Set("mixed::header:"+sessionID+"::"+model, authAnthropic.ID)
-
-
 
 	found, status := manager.LookupSessionAffinity("openai", model, sessionID)
 	if status != "bound" || found == nil || found.ID != authOpenAI.ID {
@@ -267,12 +253,10 @@ func TestSessionAffinitySelector_LookupAffinity_ModelWithColons(t *testing.T) {
 	}
 	lcpSessionID := opts.Metadata[cliproxyexecutor.LCPAffinitySessionIDMetadataKey].(string)
 
-
 	authID, status := selector.LookupAffinity("openai", "team::ModelA", lcpSessionID)
 	if status != "bound" || authID != authA.ID {
 		t.Fatalf("team::ModelA lookup failed: status=%s auth=%s, want bound %s", status, authID, authA.ID)
 	}
-
 
 	authIDOther, statusOther := selector.LookupAffinity("openai", "team", lcpSessionID)
 	if statusOther != "unbound" || authIDOther != "" {

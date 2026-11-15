@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-
-
-
-
 func TestGenerateFilenameRejectsPathSeparators(t *testing.T) {
 	logger := &FileRequestLogger{}
 	cases := []string{
@@ -45,8 +41,6 @@ func TestGenerateFilenameRejectsPathSeparators(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestGenerateFilenameKeepsOrdinaryPaths(t *testing.T) {
 	logger := &FileRequestLogger{}

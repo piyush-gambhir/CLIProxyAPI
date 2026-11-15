@@ -17,8 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 type xaiInternalXSearchResponseFilter struct {
 	enabled              bool
 	clientDeclaredTools  map[xaiClientToolKey]struct{}
@@ -85,11 +83,6 @@ func xaiRequestHasNativeXSearchDoc(doc *ojson.Doc) bool {
 	return false
 }
 
-
-
-
-
-
 func collectXAIClientDeclaredToolKeys(body []byte) map[xaiClientToolKey]struct{} {
 	return collectXAIClientDeclaredToolKeysResults(ojson.GetBytesNoCopy(body, "tools"), ojson.GetBytesNoCopy(body, "input"))
 }
@@ -147,8 +140,6 @@ func collectXAIClientDeclaredToolKeysResults(toolsResult, inputResult ojson.Resu
 	return keys
 }
 
-
-
 func xaiEffectiveDeclaredToolType(toolType string) string {
 	if strings.TrimSpace(toolType) == xaiCustomToolType {
 		return xaiFunctionToolType
@@ -165,11 +156,6 @@ func xaiIsInternalXSearchToolName(name string) bool {
 	}
 }
 
-
-
-
-
-
 func xaiResponseCallDeclaredType(itemType string) string {
 	switch strings.TrimSpace(itemType) {
 	case "function_call":
@@ -181,26 +167,9 @@ func xaiResponseCallDeclaredType(itemType string) string {
 	}
 }
 
-
-
-
 func xaiIsInternalXSearchCallID(callID string) bool {
 	return strings.HasPrefix(strings.TrimSpace(callID), "xs_call")
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func xaiIsInternalXSearchCall(item ojson.Result, clientDeclaredTools map[xaiClientToolKey]struct{}) bool {
 	itemType := strings.TrimSpace(item.Get("type").String())
@@ -218,11 +187,9 @@ func xaiIsInternalXSearchCall(item ojson.Result, clientDeclaredTools map[xaiClie
 		return false
 	}
 
-
 	if xaiIsInternalXSearchCallID(item.Get("call_id").String()) {
 		return true
 	}
-
 
 	if _, declared := clientDeclaredTools[xaiClientToolKey{namespace: namespace, name: name, toolType: declaredType}]; declared {
 		return false
@@ -593,10 +560,6 @@ func restoreXAINamespaceToolCalls(data []byte, refs map[string]xaiNamespaceToolR
 	return restorer.restore(data)
 }
 
-
-
-
-
 func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 	if alias == "" || !bytes.Contains(data, []byte(alias)) {
 		return data
@@ -606,7 +569,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 	}
 	doc := ojson.NewDoc(data)
 	changed := false
-
 
 	if strings.TrimSpace(doc.Get("item.namespace").String()) == "" {
 		if strings.TrimSpace(doc.Get("item.name").String()) == alias {
@@ -620,7 +582,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 			}
 		}
 	}
-
 
 	respOutput := doc.Get("response.output")
 	if respOutput.IsArray() {
@@ -641,7 +602,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 		}
 	}
 
-
 	topOutput := doc.Get("output")
 	if topOutput.IsArray() {
 		for idx, item := range topOutput.Array() {
@@ -661,7 +621,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 		}
 	}
 
-
 	if strings.TrimSpace(doc.Get("namespace").String()) == "" {
 		if strings.TrimSpace(doc.Get("name").String()) == alias {
 			if doc.Set("name", xaiWebSearchToolType) == nil {
@@ -675,9 +634,6 @@ func restoreXAIClientWebSearchName(data []byte, alias string) []byte {
 	}
 	return doc.Bytes()
 }
-
-
-
 
 func normalizeXAIObjectRootUnionBranchTypes(tool []byte) ([]byte, bool, bool) {
 	doc := ojson.NewDoc(tool)
@@ -755,8 +711,6 @@ func isXAICodexAppAutomationUpdate(toolName, namespaceName string) bool {
 	}
 	return false
 }
-
-
 
 func xaiFunctionParametersNeedSimplification(tool ojson.Result, namespaceName string) bool {
 	return xaiFunctionParametersNeedSimplificationFields(tool.Get("type").String(), tool.Get("name").String(), tool.Get("parameters"), namespaceName)
@@ -1310,8 +1264,6 @@ func xaiPatchCompletedOutput(eventData []byte, outputItemsByIndex map[int64][]by
 	return patched
 }
 
-
-
 const xaiFreeUsageExhaustedCooldown = 24 * time.Hour
 
 const (
@@ -1577,20 +1529,12 @@ func xaiTerminalFailureStatus(eventData []byte, doc *ojson.Doc) int {
 	}
 }
 
-
-
-
-
-
-
-
 func xaiStatusErr(code int, body []byte) statusErr {
 	err := statusErr{code: code, msg: string(body)}
 	if len(body) == 0 {
 		return err
 	}
 	if code == http.StatusForbidden && isXAIBadCredentialsBody(body) {
-
 
 		err.code = http.StatusUnauthorized
 		return err
@@ -1617,10 +1561,6 @@ func xaiStatusErr(code int, body []byte) statusErr {
 	}
 	return err
 }
-
-
-
-
 
 func isXAIBadCredentialsBody(body []byte) bool {
 	for _, path := range []string{"code", "error.code", "body.error.code"} {

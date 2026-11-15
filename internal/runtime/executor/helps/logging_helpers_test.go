@@ -138,8 +138,6 @@ func TestRecordAPIRequestAsyncCapturePolicySurvivesGinContextReuse(t *testing.T)
 	cancel()
 	callbackCtx := context.WithoutCancel(socketCtx)
 
-
-
 	ginCtx.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
 	RecordAPIRequest(parent, &config.Config{}, UpstreamRequestLog{Body: []byte("new-http-request")})
 	var callbacks sync.WaitGroup
@@ -180,7 +178,6 @@ func TestDeferredAPIResponseCapturedAndAlignedAcrossAttempts(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "gin", ginCtx)
 	cfg := &config.Config{}
 
-
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{
 		URL:    "https://api.example.com/v1/responses",
 		Method: http.MethodPost,
@@ -193,7 +190,6 @@ func TestDeferredAPIResponseCapturedAndAlignedAcrossAttempts(t *testing.T) {
 	if capture.HasPayload() {
 		t.Fatal("HasPayload = true before any response details were recorded")
 	}
-
 
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{
 		URL:    "https://api.example.com/v1/responses",
@@ -216,7 +212,6 @@ func TestDeferredAPIResponseCapturedAndAlignedAcrossAttempts(t *testing.T) {
 	AppendAPIResponseChunk(ctx, cfg, []byte("event: response.created"))
 	AppendAPIResponseChunk(ctx, cfg, []byte(`data: {"type":"response.created"}`))
 	RecordAPIResponseError(ctx, cfg, errors.New("stream disconnected"))
-
 
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{
 		URL:    "https://api.example.com/v1/responses",
@@ -267,8 +262,6 @@ func TestDeferredAPIResponseBodyTruncatedAndBoundedAcrossAttempts(t *testing.T) 
 	ginCtx, _ := gin.CreateTestContext(httptest.NewRecorder())
 	ctx := context.WithValue(context.Background(), "gin", ginCtx)
 	cfg := &config.Config{}
-
-
 
 	largePayload := bytes.Repeat([]byte("a"), 2<<20)
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{Method: http.MethodPost})

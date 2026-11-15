@@ -15,8 +15,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
 func benchSSEEvents(n int) []string {
 	r := rand.New(rand.NewSource(1))
 	words := strings.Fields("the function return error context request response model input output tool call result value index token cache stream event message content type text file path line")
@@ -52,7 +50,6 @@ func benchCompressionEngine(events []string, hold <-chan struct{}, started *sync
 	return engine
 }
 
-
 func BenchmarkResponseCompressionSSE(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	for _, n := range []int{20, 500} {
@@ -84,12 +81,9 @@ func BenchmarkResponseCompressionSSE(b *testing.B) {
 	}
 }
 
-
 func BenchmarkResponseCompressionOpenStreams(b *testing.B) {
 	benchmarkResponseCompressionOpenStreams(b, false)
 }
-
-
 
 func BenchmarkResponseCompressionOpenStreamsAfterShortResponse(b *testing.B) {
 	benchmarkResponseCompressionOpenStreams(b, true)
@@ -130,7 +124,6 @@ func benchmarkResponseCompressionOpenStreams(b *testing.B, afterShortResponse bo
 				hold := make(chan struct{})
 				var started, done sync.WaitGroup
 				engine := benchCompressionEngine(events, hold, &started)
-
 
 				runtime.GC()
 				runtime.GC()

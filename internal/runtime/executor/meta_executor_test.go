@@ -73,7 +73,6 @@ func TestMetaExecutor_MetaCredsResolution(t *testing.T) {
 		_ = os.WriteFile(authPath, []byte(content), 0600)
 		t.Setenv("MUSE_AUTH_PATH", authPath)
 
-
 		baseURL, token := metaCreds(nil)
 		if token != "" {
 			t.Errorf("expected empty token for nil auth, got %s", token)
@@ -81,7 +80,6 @@ func TestMetaExecutor_MetaCredsResolution(t *testing.T) {
 		if baseURL != "https://api.meta.ai/v1" {
 			t.Errorf("expected default base URL, got %s", baseURL)
 		}
-
 
 		emptyAuth := &cliproxyauth.Auth{}
 		_, token = metaCreds(emptyAuth)
@@ -112,11 +110,9 @@ func TestMetaExecutor_ParseRetryAfter(t *testing.T) {
 		t.Errorf("unexpected retryAfter duration: %v", *retryAfter)
 	}
 
-
 	if got := parseMetaRetryAfter(http.StatusOK, body, now); got != nil {
 		t.Errorf("expected nil for 200 OK")
 	}
-
 
 	pastBody := []byte(mapToJSON(map[string]any{
 		"error": map[string]any{
@@ -375,7 +371,6 @@ func TestMetaExecutor_PrepareConcurrentAccounts(t *testing.T) {
 	t.Setenv("META_MINT_URL", server.URL+"/key")
 	exec := NewMetaExecutor(&config.Config{})
 
-
 	var wg sync.WaitGroup
 	auth1 := &cliproxyauth.Auth{
 		ID:       "meta-acct1",
@@ -411,14 +406,11 @@ func TestMetaExecutor_PrepareConcurrentAccounts(t *testing.T) {
 		}()
 	}
 
-
 	entryWg.Wait()
 	close(ready)
 
-
 	<-serverStarted
 	inFlight.Wait()
-
 
 	auth2 := &cliproxyauth.Auth{ID: "meta-acct2", Provider: "meta", Metadata: map[string]any{"dca_token": "dca:acct2"}}
 	if _, err := manager.Register(context.Background(), auth2); err != nil {
@@ -468,7 +460,6 @@ func TestMetaExecutor_Execute_DCARecovery(t *testing.T) {
 
 	cfg := &config.Config{}
 	exec := NewMetaExecutor(cfg)
-
 
 	auth := &cliproxyauth.Auth{
 		Provider: "meta",
@@ -1686,7 +1677,6 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		]
 	}`)
 
-
 	gotBody = nil
 	_, errExecNonCodex := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "muse-spark-1.3",
@@ -1702,7 +1692,6 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		t.Fatalf("expected non-Codex UA to preserve number, got %q", gotType)
 	}
 
-
 	gotBody = nil
 	_, errExecNilHeaders := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "muse-spark-1.3",
@@ -1716,7 +1705,6 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 	if gotType := ojson.GetBytes(gotBody, "tools.0.parameters.properties.yield_time_ms.type").String(); gotType != "number" {
 		t.Fatalf("expected nil headers to preserve number, got %q", gotType)
 	}
-
 
 	gotBody = nil
 	_, errExec := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
@@ -1757,11 +1745,9 @@ func TestMetaExecutor_NormalizesToolFieldsForCodexUserAgent(t *testing.T) {
 		}
 	}
 
-
 	if gotType := ojson.GetBytes(gotBody, "input.#(type==\"additional_tools\").tools.0.parameters.properties.yield_time_ms.type").String(); gotType != "integer" {
 		t.Fatalf("Meta Execute additional_tools yield_time_ms type = %q, want integer", gotType)
 	}
-
 
 	gotBody = nil
 	streamResult, errStream := exec.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
@@ -1809,9 +1795,6 @@ func TestMetaExecutor_Execute_PreservesMuseReasoningEncryptedContent_Issue6450(t
 			"base_url": server.URL,
 		},
 	}
-
-
-
 
 	museEncryptedContent := "Q-PaDgE"
 	for len(museEncryptedContent) < 1426 {

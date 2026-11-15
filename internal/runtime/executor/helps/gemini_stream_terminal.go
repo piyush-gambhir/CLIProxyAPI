@@ -7,7 +7,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
 func IsGeminiTerminalStreamChunk(chunk []byte) bool {
 	for _, line := range bytes.Split(chunk, []byte("\n")) {
 		trimmed := bytes.TrimSpace(line)

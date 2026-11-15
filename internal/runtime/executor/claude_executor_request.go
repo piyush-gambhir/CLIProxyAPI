@@ -58,13 +58,6 @@ const (
 	claudeMessageThreadsBeta         = "message-threads-2026-08-12"
 )
 
-
-
-
-
-
-
-
 var claudeCodeCLIConstantBetas = []string{
 	"interleaved-thinking-2025-05-14",
 	claudeRedactThinkingBeta,
@@ -72,18 +65,11 @@ var claudeCodeCLIConstantBetas = []string{
 	"prompt-caching-scope-2026-01-05",
 }
 
-
-
-
 var claudeCodeTrailingBetas = []string{
 	claudeServerSideFallbackBeta,
 	claudeFallbackCreditBeta,
 	claudeStructuredOutputsBeta,
 }
-
-
-
-
 
 var claudeManagedBetaSet = func() map[string]bool {
 	managed := []string{
@@ -129,53 +115,6 @@ func isManagedClaudeBeta(beta string) bool {
 	return claudeManagedBetaSet[strings.TrimSpace(beta)]
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func claudeCodeCLIBetas(body []byte, requested map[string]bool, oauthToken bool) string {
 	betas := make([]string, 0, len(claudeCodeCLIConstantBetas)+len(claudeCodeTrailingBetas)+12)
 	isProbeOrHelper := helps.IsClaudeProbeOrHelperRequest(body)
@@ -218,7 +157,6 @@ func claudeCodeCLIBetas(body []byte, requested map[string]bool, oauthToken bool)
 			betas = append(betas, claudeInlineToolsBeta)
 		}
 	} else {
-
 
 		if claudeIncludePerTurnControl(body, requested) {
 			betas = append(betas, claudePerTurnControlBeta)
@@ -311,8 +249,6 @@ func claudeCanonicalModel(model string) string {
 	return model
 }
 
-
-
 func isClaudeOpus55Model(model string) bool {
 	model = claudeCanonicalModel(model)
 	return model == "claude-opus-5-5" || strings.HasPrefix(model, "claude-opus-5-5[")
@@ -336,9 +272,6 @@ func isClaudeHaiku55Model(model string) bool {
 	return model == "claude-haiku-5-5" || strings.HasPrefix(model, "claude-haiku-5-5-") || strings.HasPrefix(model, "claude-haiku-5-5[") || model == "claude-haiku-5.5" || strings.HasPrefix(model, "claude-haiku-5.5-") || strings.HasPrefix(model, "claude-haiku-5.5[")
 }
 
-
-
-
 func isClaudeFable51OnlyModel(model string) bool {
 	m := claudeCanonicalModel(model)
 	for _, target := range []string{"fable-5-1", "fable-5.1"} {
@@ -353,18 +286,9 @@ func isClaudeFable51OnlyModel(model string) bool {
 	return false
 }
 
-
-
-
-
-
 func isClaudePreservedThinkingModel(model string) bool {
 	return isClaudeOpus55Model(model) || isClaudeSonnet55Model(model) || isClaudeHaiku55Model(model) || isClaudeFable51OnlyModel(model) || isClaudeFable52Model(model)
 }
-
-
-
-
 
 func claudeThinkingTypeAcceptsBlockBinding(model, thinkingType string) bool {
 	switch strings.ToLower(strings.TrimSpace(thinkingType)) {
@@ -376,9 +300,6 @@ func claudeThinkingTypeAcceptsBlockBinding(model, thinkingType string) bool {
 		return false
 	}
 }
-
-
-
 
 func claudeBodyHasSignedThinkingBlock(body []byte) bool {
 	return claudeMessagesHaveSignedThinkingBlock(ojson.GetBytesNoCopy(body, "messages"))
@@ -407,18 +328,6 @@ func claudeMessagesHaveSignedThinkingBlock(messages ojson.Result) bool {
 	})
 	return found
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 func applyClaudePreservedThinkingBinding(body []byte) []byte {
 	if len(body) == 0 {
@@ -454,9 +363,6 @@ func applyClaudePreservedThinkingBindingDoc(doc *ojson.Doc) bool {
 	return doc.Set("thinking.block_binding.prefix_mismatch_behavior", "drop_block") == nil
 }
 
-
-
-
 func claudeModelUsesProgressDisplay(model string) bool {
 	return isClaudeOpus55Model(model) || isClaudeFable51Model(model) || isClaudeFable52Model(model) ||
 		isClaudeSonnet5Model(model) || isClaudeSonnet55Model(model) || isClaudeHaiku55Model(model)
@@ -471,9 +377,6 @@ func isClaudeFable52Model(model string) bool {
 	}
 	return false
 }
-
-
-
 
 func applyClaudeCloakThinkingDisplay(body []byte, callerOwned bool) []byte {
 	if callerOwned || len(body) == 0 {
@@ -509,9 +412,6 @@ func claudeModelHasPerTurnEffort(model string) bool {
 		isClaudeHaiku55Model(model)
 }
 
-
-
-
 func claudeModelHasPerTurnTiming(model string) bool {
 	model = claudeCanonicalModel(model)
 	if isClaudeHaiku55Model(model) {
@@ -522,8 +422,6 @@ func claudeModelHasPerTurnTiming(model string) bool {
 		strings.HasPrefix(model, "claude-mythos-5-2") ||
 		strings.HasPrefix(model, "claude-mythos-5.2")
 }
-
-
 
 func claudeIncludePerTurnControl(body []byte, requested map[string]bool) bool {
 	if requested[claudePerTurnControlBeta] {
@@ -612,14 +510,6 @@ func claudeThinkingDisplayUpdates(body []byte) bool {
 	return display.Type == ojson.String && strings.EqualFold(strings.TrimSpace(display.String()), "updates")
 }
 
-
-
-
-
-
-
-
-
 func claudeBodyUsesAdvancedToolUse(body []byte) bool {
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	if !tools.IsArray() {
@@ -637,8 +527,6 @@ func claudeBodyUsesAdvancedToolUse(body []byte) bool {
 	return false
 }
 
-
-
 func claudeBodyHasAdvisorTool(body []byte) bool {
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	if !tools.IsArray() {
@@ -653,26 +541,10 @@ func claudeBodyHasAdvisorTool(body []byte) bool {
 	return false
 }
 
-
-
-
-
-
-
-
-
-
-
 func claudeThinkingDisplaySet(body []byte) bool {
 	display := ojson.GetBytesNoCopy(body, "thinking.display")
 	return display.Type == ojson.String && strings.TrimSpace(display.String()) != ""
 }
-
-
-
-
-
-
 
 func claudeRequestUsesFastMode(body []byte, requested map[string]bool) bool {
 	if requested[claudeFastModeBeta] {
@@ -681,10 +553,6 @@ func claudeRequestUsesFastMode(body []byte, requested map[string]bool) bool {
 	speed := ojson.GetBytesNoCopy(body, "speed")
 	return speed.Type == ojson.String && strings.EqualFold(strings.TrimSpace(speed.String()), "fast")
 }
-
-
-
-
 
 var claudeCountTokensBetas = []string{
 	claudeCodeBeta,
@@ -725,18 +593,6 @@ func withClaudeCountTokensOAuthBeta(betas string) string {
 	return strings.Join(parts, ",")
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 func withClaudeOAuthCredentialBetas(betas string, includeExtendedCacheTTL bool) string {
 	parts := make([]string, 0, 16)
 	seen := make(map[string]bool)
@@ -774,7 +630,6 @@ func withoutClaudeBeta(betas, removeBeta string) string {
 	return strings.Join(res, ",")
 }
 
-
 func withClaudeBetaAppended(betas, beta string) string {
 	beta = strings.TrimSpace(beta)
 	if beta == "" {
@@ -805,11 +660,6 @@ func withClaudeExtendedCacheTTLBeta(betas string) string {
 	}
 	return strings.Join(parts, ",")
 }
-
-
-
-
-
 
 func withClaudeAdvisorToolBeta(betas string) string {
 	if strings.TrimSpace(betas) == "" {
@@ -844,9 +694,6 @@ func withClaudeAdvisorToolBeta(betas string) string {
 	return strings.Join(parts, ",")
 }
 
-
-
-
 type claudeEntitlementError struct {
 	statusErr
 }
@@ -872,16 +719,6 @@ func (e claudeRateLimitError) IsRequestScoped() bool {
 	return false
 }
 
-
-
-
-
-
-
-
-
-
-
 func classifyClaudeUpstreamError(statusCode int, headers http.Header, body []byte) error {
 	return classifyClaudeUpstreamErrorWithCooling(statusCode, headers, body, false)
 }
@@ -905,8 +742,6 @@ func classifyClaudeUpstreamErrorWithCooling(statusCode int, headers http.Header,
 	return err
 }
 
-
-
 func claudeBodyIndicatesFastModeCredits(body []byte) bool {
 	message := strings.ToLower(ojson.GetBytesNoCopy(body, "error.message").String())
 	if message == "" {
@@ -916,8 +751,6 @@ func claudeBodyIndicatesFastModeCredits(body []byte) bool {
 		(strings.Contains(message, "fast") &&
 			(strings.Contains(message, "usage credits") || strings.Contains(message, "credits are required")))
 }
-
-
 
 func claudeRequestedBetas(incomingBetas string, extraBetas []string) map[string]bool {
 	requested := make(map[string]bool)
@@ -934,18 +767,9 @@ func claudeRequestedBetas(incomingBetas string, extraBetas []string) map[string]
 	return requested
 }
 
-
-
-
-
-
-
-
 func isAnthropicUpstreamURL(u *url.URL) bool {
 	return helps.IsAnthropicUpstreamURL(u)
 }
-
-
 
 func isAnthropicUpstreamBase(baseURL string) bool {
 	parsed, err := url.Parse(strings.TrimSpace(baseURL))
@@ -954,8 +778,6 @@ func isAnthropicUpstreamBase(baseURL string) bool {
 	}
 	return isAnthropicUpstreamURL(parsed)
 }
-
-
 
 func extractAndRemoveBetas(body []byte) ([]string, []byte) {
 	doc := ojson.NewDoc(body)
@@ -1000,9 +822,6 @@ func claudeToolChoiceForcesToolUseDoc(doc *ojson.Doc) bool {
 	return toolChoiceType == "any" || toolChoiceType == "tool"
 }
 
-
-
-
 func disableThinkingIfToolChoiceForced(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !disableThinkingIfToolChoiceForcedDoc(doc) {
@@ -1020,7 +839,6 @@ func disableThinkingIfToolChoiceForcedDoc(doc *ojson.Doc) bool {
 			changed = true
 		}
 
-
 		if doc.Delete("output_config.effort") == nil {
 			changed = true
 		}
@@ -1033,20 +851,6 @@ func disableThinkingIfToolChoiceForcedDoc(doc *ojson.Doc) bool {
 	}
 	return false
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func normalizeClaudeSamplingForUpstream(body []byte, nativeOwned bool) []byte {
 	doc := ojson.NewDoc(body)
@@ -1099,7 +903,6 @@ func normalizeClaudeSamplingForUpstreamDoc(doc *ojson.Doc, nativeOwned bool) boo
 		return changed
 	}
 
-
 	if doc.Get("temperature").Exists() && doc.Get("top_p").Exists() {
 		if doc.Delete("top_p") == nil {
 			changed = true
@@ -1115,9 +918,6 @@ func claudeResponseContentEncoding(header http.Header) string {
 func decodeResponseBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
 	return helps.DecodeResponseBody(body, http.Header{"Content-Encoding": {contentEncoding}})
 }
-
-
-
 
 func claudeCredentialUsesOAuth(auth *cliproxyauth.Auth, apiKey string) bool {
 	if isClaudeOAuthToken(apiKey) {
@@ -1215,9 +1015,6 @@ func applyClaudeHeadersWithNativeProfile(
 		hd = cfg.ClaudeHeaderDefaults
 	}
 
-
-
-
 	credentialUsesBearer := claudeCredentialUsesOAuth(auth, apiKey)
 	useAPIKey := !credentialUsesBearer
 	fp := resolveClaudeFingerprintPolicy(cfg, auth, apiKey)
@@ -1281,10 +1078,6 @@ func applyClaudeHeadersWithNativeProfile(
 			baseBetas = withClaudeAdvisorToolBeta(baseBetas)
 		}
 
-
-
-
-
 		if useOAuthBetas {
 			if countTokens {
 				baseBetas = withClaudeCountTokensOAuthBeta(baseBetas)
@@ -1329,7 +1122,6 @@ func applyClaudeHeadersWithNativeProfile(
 	}
 	if preserveCallerFingerprint {
 
-
 		if strings.EqualFold(strings.TrimSpace(ojson.GetBytesNoCopy(body, "speed").String()), "fast") {
 			appendBeta(claudeFastModeBeta)
 		}
@@ -1337,13 +1129,6 @@ func applyClaudeHeadersWithNativeProfile(
 			appendBeta(beta)
 		}
 	} else {
-
-
-
-
-
-
-
 
 		if !confirmedClaudeCode && incomingBetas != "" {
 			for _, beta := range strings.Split(incomingBetas, ",") {
@@ -1404,13 +1189,9 @@ func applyClaudeHeadersWithNativeProfile(
 			baseBetas = withoutClaudeBeta(baseBetas, claudeServerSideFallbackBeta)
 		}
 
-
-
 		if ojson.GetBytesNoCopy(body, "thinking.block_binding").Exists() {
 			baseBetas = withClaudeBetaAppended(baseBetas, claudeThinkingBindingBeta)
 		}
-
-
 
 		emittedBetas := baseBetas
 		for _, beta := range hd.AnthropicBetaStrip {
@@ -1443,9 +1224,6 @@ func applyClaudeHeadersWithNativeProfile(
 		misc.EnsureHeader(r.Header, incomingHeaders, "Accept", defaultAccept)
 		misc.EnsureHeader(r.Header, incomingHeaders, "Accept-Encoding", defaultAcceptEncoding)
 
-
-
-
 		uaSourceHeaders := incomingHeaders
 		if wirePolicy.Uncloak && helps.IsClaudeCodeUserAgent(helps.HeaderValueCaseInsensitive(incomingHeaders, "User-Agent")) {
 			uaSourceHeaders = nil
@@ -1467,11 +1245,6 @@ func applyClaudeHeadersWithNativeProfile(
 			attrs = auth.Attributes
 		}
 		util.ApplyCustomHeadersFromAttrs(r, attrs, incomingHeaders)
-
-
-
-
-
 
 		restoreCallerTransport := func() {
 			resetHeader := func(name, fallback string) {
@@ -1508,11 +1281,9 @@ func applyClaudeHeadersWithNativeProfile(
 	identityHeader("X-Stainless-Runtime", "node")
 	identityHeader("X-Stainless-Lang", "js")
 
-
 	if confirmedClaudeCode && helps.HeaderValueCaseInsensitive(incomingHeaders, "X-Stainless-Async") == "async" {
 		r.Header.Set("X-Stainless-Async", "async")
 	}
-
 
 	if !countTokens {
 		identityHeader("X-Stainless-Timeout", hdrDefault(hd.Timeout, "600"))
@@ -1521,8 +1292,6 @@ func applyClaudeHeadersWithNativeProfile(
 			r.Header.Set("X-Stainless-Timeout", incomingTimeout)
 		}
 	}
-
-
 
 	sessionID := ""
 	for _, candidate := range sessionIDs {
@@ -1555,7 +1324,6 @@ func applyClaudeHeadersWithNativeProfile(
 		}
 	}
 
-
 	if confirmedClaudeCode {
 		for _, hdr := range []string{
 			"X-Claude-Code-Request-Class",
@@ -1570,14 +1338,6 @@ func applyClaudeHeadersWithNativeProfile(
 		}
 	}
 
-
-
-
-
-
-
-
-
 	incomingClientRequestID := helps.HeaderValueCaseInsensitive(incomingHeaders, "x-client-request-id")
 	if hd.ClientRequestID != config.ClaudeClientRequestIDOff && (isAnthropicBase || (helperProfile && incomingClientRequestID != "")) {
 		if hd.ClientRequestID != config.ClaudeClientRequestIDPassthrough {
@@ -1588,9 +1348,6 @@ func applyClaudeHeadersWithNativeProfile(
 	}
 	r.Header.Set("Connection", "keep-alive")
 
-
-
-
 	applyTransportNegotiation := func() {
 		if helperProfile {
 			identityHeader("Accept", "application/json")
@@ -1598,8 +1355,6 @@ func applyClaudeHeadersWithNativeProfile(
 			return
 		}
 		if stream && !isAnthropicBase {
-
-
 
 			r.Header.Set("Accept", "text/event-stream")
 			r.Header.Set("Accept-Encoding", "identity")
@@ -1609,8 +1364,6 @@ func applyClaudeHeadersWithNativeProfile(
 		r.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
 	}
 	applyTransportNegotiation()
-
-
 
 	if wirePolicy.ExplicitNever && confirmedClaudeCode {
 		helps.ApplyClaudeLegacyDeviceHeaders(r, incomingHeaders, cfg, true, true)
@@ -1634,34 +1387,21 @@ func applyClaudeHeadersWithNativeProfile(
 	}
 	util.ApplyCustomHeadersFromAttrs(r, attrs, incomingHeaders)
 
-
-
-
-
-
 	if isAnthropicBase {
 		applyBetaHeader()
 		applyTransportNegotiation()
 	} else if stream {
-
 
 		applyTransportNegotiation()
 	}
 	return nil
 }
 
-
-
-
-
 func doClaudeUpstreamRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	applyClaudeWireHeaderCasing(req)
 	cliproxyexecutor.MarkUpstreamAttempt(req.Context())
 	return client.Do(req)
 }
-
-
-
 
 var claudeWireHeaderCasing = map[string]string{
 	"X-Stainless-Os":      "X-Stainless-OS",
@@ -1672,24 +1412,6 @@ var claudeWireHeaderCasing = map[string]string{
 
 	"Anthropic-Dangerous-Direct-Browser-Access": "anthropic-dangerous-direct-browser-access",
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func applyClaudeWireHeaderCasing(r *http.Request) {
 	if r == nil || r.Header == nil || !isAnthropicUpstreamURL(r.URL) {
@@ -1718,8 +1440,6 @@ func claudeCreds(a *cliproxyauth.Auth) (apiKey, baseURL string) {
 	}
 	return
 }
-
-
 
 func claudePayloadHasMidSystemMessage(payload []byte) bool {
 	return claudeMessagesHaveMidSystemMessage(ojson.GetBytesNoCopy(payload, "messages"))
@@ -1854,8 +1574,6 @@ type claudeMCPAliasOptions struct {
 
 func resolveClaudeMCPAliasOptions(ctx context.Context, metadataSets ...map[string]any) claudeMCPAliasOptions {
 
-
-
 	secret := callerScopeFromMetadataSets(metadataSets...)
 	if secret == "" {
 		secret = session.CallerScope(helps.APIKeyFromContext(ctx))
@@ -1875,8 +1593,6 @@ func callerScopeFromMetadataSets(metadataSets ...map[string]any) string {
 	return ""
 }
 
-
-
 func prepareClaudeOAuthToolNamesForUpstream(body []byte, mcpAliases claudeMCPAliasOptions) ([]byte, map[string]string) {
 	return remapOAuthToolNamesWithOptions(body, mcpAliases)
 }
@@ -1892,18 +1608,6 @@ func restoreClaudeOAuthToolNamesFromResponse(body []byte, reverseMap map[string]
 func restoreClaudeOAuthToolNamesFromStreamLine(line []byte, reverseMap map[string]string) ([]byte, error) {
 	return reverseRemapOAuthToolNamesFromStreamLine(line, reverseMap)
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 func remapOAuthToolNames(body []byte) ([]byte, map[string]string) {
 	return remapOAuthToolNamesWithOptions(body, claudeMCPAliasOptions{secret: "cpa-claude-mcp-default-caller"})
@@ -1923,10 +1627,6 @@ func remapOAuthToolNamesWithOptions(body []byte, mcpAliases claudeMCPAliasOption
 	return remapOAuthToolNamesWithOptionsLegacy(body, mcpAliases)
 }
 
-
-
-
-
 func remapOAuthToolNamesWithBatchedEdits(body []byte, mcpAliases claudeMCPAliasOptions) ([]byte, map[string]string, bool) {
 	if !ojson.ValidBytes(body) {
 		return nil, nil, false
@@ -1935,14 +1635,10 @@ func remapOAuthToolNamesWithBatchedEdits(body []byte, mcpAliases claudeMCPAliasO
 	reverseMap := make(map[string]string)
 	recordRename := func(original, renamed string) {
 
-
 		if _, exists := reverseMap[renamed]; !exists {
 			reverseMap[renamed] = original
 		}
 	}
-
-
-
 
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	forwardMap := make(map[string]string)
@@ -2009,11 +1705,8 @@ func remapOAuthToolNamesWithBatchedEdits(body []byte, mcpAliases claudeMCPAliasO
 	}
 	appendStringEdit := func(result ojson.Result, replacement string) bool {
 
-
 		return appendRawEdit(result, `"`+replacement+`"`)
 	}
-
-
 
 	toolsNeedRewrite := false
 	if tools.Exists() && tools.IsArray() {
@@ -2075,7 +1768,6 @@ func remapOAuthToolNamesWithBatchedEdits(body []byte, mcpAliases claudeMCPAliasO
 		}
 	}
 
-
 	toolChoice := ojson.GetBytesNoCopy(body, "tool_choice")
 	if toolChoice.Get("type").String() == "tool" {
 		nameResult := toolChoice.Get("name")
@@ -2087,8 +1779,6 @@ func remapOAuthToolNamesWithBatchedEdits(body []byte, mcpAliases claudeMCPAliasO
 			recordRename(tcName, newName)
 		}
 	}
-
-
 
 	messages := ojson.GetBytesNoCopy(body, "messages")
 	validOffsets := true
@@ -2438,9 +2128,6 @@ func remapOAuthToolNamesWithOptionsDoc(doc *ojson.Doc, mcpAliases claudeMCPAlias
 	return reverseMap, changed
 }
 
-
-
-
 func remapOAuthToolNamesWithOptionsLegacy(body []byte, mcpAliases claudeMCPAliasOptions) ([]byte, map[string]string) {
 	doc := ojson.NewDoc(body)
 	reverseMap, changed := remapOAuthToolNamesWithOptionsDoc(doc, mcpAliases)
@@ -2449,14 +2136,6 @@ func remapOAuthToolNamesWithOptionsLegacy(body []byte, mcpAliases claudeMCPAlias
 	}
 	return doc.Bytes(), reverseMap
 }
-
-
-
-
-
-
-
-
 
 func claudeToolChangeNamePath(part ojson.Result) string {
 	switch part.Get("tool.type").String() {
@@ -2512,8 +2191,6 @@ func newClaudeMCPAliasResolver(reverseMap map[string]string) claudeMCPAliasResol
 	for alias, original := range reverseMap {
 		if alias == original {
 
-
-
 			resolver.passthroughs = append(resolver.passthroughs, original)
 			continue
 		}
@@ -2530,8 +2207,6 @@ func newClaudeMCPAliasResolver(reverseMap map[string]string) claudeMCPAliasResol
 	}
 	return resolver
 }
-
-
 
 func (resolver claudeMCPAliasResolver) restorePassthroughWrapped(tail string) (string, bool) {
 	if tail == "" {
@@ -2575,12 +2250,6 @@ func claudeMCPAliasServer(name string) string {
 	}
 	return server
 }
-
-
-
-
-
-
 
 func recordPassthroughMCPTools(recordRename func(original, renamed string), forwardMap map[string]string, passthrough []string) {
 	if len(forwardMap) == 0 {
@@ -2645,8 +2314,6 @@ func (resolver claudeMCPAliasResolver) resolve(name string) (string, bool, error
 		}
 	}
 
-
-
 	if matchCount == 0 {
 		var suffixMatches []claudeMCPAliasEntry
 		for _, entry := range resolver.aliases {
@@ -2658,7 +2325,6 @@ func (resolver claudeMCPAliasResolver) resolve(name string) (string, bool, error
 			matchedOriginal = suffixMatches[0].original
 			matchCount = 1
 		} else if len(suffixMatches) > 1 {
-
 
 			longest := suffixMatches[0]
 			tie := false
@@ -2679,7 +2345,6 @@ func (resolver claudeMCPAliasResolver) resolve(name string) (string, bool, error
 		}
 		if matchCount == 1 {
 
-
 			log.Debugf("claude oauth mcp alias: recovered drifted tool name %q as %q via semantic suffix", name, matchedOriginal)
 		}
 	}
@@ -2692,26 +2357,16 @@ func (resolver claudeMCPAliasResolver) resolve(name string) (string, bool, error
 
 	if len(resolver.passthroughs) > 0 {
 
-
-
 		if original, ok := resolver.restorePassthroughWrapped(suffix); ok {
 			log.Debugf("claude oauth mcp alias: recovered %q as caller-owned tool %q", name, original)
 			return original, true, nil
 		}
-
-
-
 
 		reprefixed := "mcp__" + suffix
 		if original, exact := resolver.exact[reprefixed]; exact && original == reprefixed {
 			log.Debugf("claude oauth mcp alias: recovered hybrid passthrough tool name %q as %q via exact prefix", name, original)
 			return original, true, nil
 		}
-
-
-
-
-
 
 		matchedPassthrough := ""
 		passthroughMatches := 0
@@ -2739,9 +2394,6 @@ func (resolver claudeMCPAliasResolver) resolve(name string) (string, bool, error
 	log.Warnf("claude oauth mcp alias: cannot restore tool name %q: no unique request-local match; forwarding it unchanged", name)
 	return "", false, nil
 }
-
-
-
 
 func reverseRemapOAuthToolNames(body []byte, reverseMap map[string]string) ([]byte, error) {
 	if len(reverseMap) == 0 {
@@ -2839,8 +2491,6 @@ func reverseRemapOAuthToolNames(body []byte, reverseMap map[string]string) ([]by
 	}
 	return doc.Bytes(), nil
 }
-
-
 
 func reverseRemapOAuthToolNamesFromStreamLine(line []byte, reverseMap map[string]string) ([]byte, error) {
 	if len(reverseMap) == 0 {
@@ -2954,13 +2604,10 @@ func applyClaudeToolPrefixDoc(doc *ojson.Doc, prefix string) bool {
 	}
 	changed := false
 
-
-
 	builtinTools := helps.AugmentClaudeBuiltinToolRegistry(nil, nil)
 
 	if tools := doc.Get("tools"); tools.Exists() && tools.IsArray() {
 		tools.ForEach(func(index, tool ojson.Result) bool {
-
 
 			if tool.Get("type").Exists() && tool.Get("type").String() != "" {
 				if n := strings.Clone(tool.Get("name").String()); n != "" {

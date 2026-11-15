@@ -132,7 +132,6 @@ func TestCurrentKVClientBridgesLocalBoltStoreAndPrioritizesHome(t *testing.T) {
 		t.Fatalf("CurrentKVClient() type = %T, want *kvstore.BoltStore", client)
 	}
 
-
 	homeClient, _ := newRedisCommandTestClient(t, func(args []string) string {
 		return "+OK\r\n"
 	})

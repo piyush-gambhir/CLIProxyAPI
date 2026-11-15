@@ -12,15 +12,9 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 type weightedAccountingPoolKey struct{}
 
-
-
 type weightedTransportProviderKey struct{}
-
-
 
 type weightedReservation struct {
 	selector        *WeightedRoundRobinSelector
@@ -36,8 +30,6 @@ type weightedReservation struct {
 	finished        bool
 }
 
-
-
 func (s *SessionAffinitySelector) pickWithAffinityReservation(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth, bound *Auth, reservation **weightedReservation) (*Auth, error) {
 	weighted, ok := s.fallback.(*WeightedRoundRobinSelector)
 	if !ok {
@@ -50,8 +42,6 @@ func (s *SessionAffinitySelector) pickWithAffinityReservation(ctx context.Contex
 	*reservation = pending
 	return picked, errPick
 }
-
-
 
 func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth, bound *Auth) (*Auth, *weightedReservation, error) {
 	if ctx == nil {
@@ -103,7 +93,6 @@ func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, prov
 	} else {
 		authID = bound.ID
 
-
 		priority := authPriority(bound)
 		for _, auth := range auths {
 			if authPriority(auth) == priority {
@@ -140,8 +129,6 @@ func (s *WeightedRoundRobinSelector) reserveForRequest(ctx context.Context, prov
 	}
 	return picked, pending, nil
 }
-
-
 
 type weightedPoolMember struct {
 	id       string
@@ -197,8 +184,6 @@ func memberOlderOrEqual(member weightedPoolMember, maxEpoch, maxGen uint64) bool
 	return member.regGen <= maxGen
 }
 
-
-
 type weightedPoolState struct {
 	route           string
 	members         []weightedPoolMember
@@ -210,9 +195,6 @@ type weightedPoolState struct {
 	nextMemberEpoch uint64
 	lastActiveIDs   []string
 }
-
-
-
 
 const maxExactWeightedPoolMembers = maxSmoothWeightedStateEntries
 
@@ -241,8 +223,6 @@ func sortedWeightedIDs(weights map[string]int64) []string {
 	return ids
 }
 
-
-
 func weightedPoolStateKey(route string, weights map[string]int64) [32]byte {
 	return weightedPoolDigest(route, sortedWeightedIDs(weights))
 }
@@ -261,8 +241,6 @@ func weightedPoolDigest(route string, ids []string) [32]byte {
 	}
 	return sha256.Sum256(identity)
 }
-
-
 
 func (s *weightedPoolState) matches(route string, ids []string) bool {
 	if s.route != route || len(s.members) != len(ids) {
@@ -330,8 +308,6 @@ func (s *weightedPoolState) prepareWithVersions(weights []int64, versions []weig
 	}
 }
 
-
-
 func (s *WeightedRoundRobinSelector) reserve(route string, available []*Auth, authID string) (*Auth, *weightedReservation) {
 	return s.reserveScoped(route, inferredWeightedPoolPriority(available), "", available, authID)
 }
@@ -345,9 +321,6 @@ func (s *WeightedRoundRobinSelector) reserveScoped(route string, priority int, t
 	}
 	return s.reservePoolScoped(route, priority, transportClass, available, weights, ids, authID)
 }
-
-
-
 
 func (s *WeightedRoundRobinSelector) reservePool(route string, available []*Auth, weights []int64, ids []string, authID string) (*Auth, *weightedReservation) {
 	return s.reservePoolScoped(route, inferredWeightedPoolPriority(available), "", available, weights, ids, authID)
@@ -418,7 +391,6 @@ func (s *WeightedRoundRobinSelector) reservePoolScoped(route string, priority in
 	if picked == nil {
 		return nil, nil
 	}
-
 
 	if authID != "" && !state.boundChargeFits(pickedMember, total) {
 		return picked, nil
@@ -732,14 +704,9 @@ func (s *weightedPoolState) chargeDynamic(ids []string, epochs []uint64, selecte
 	}
 }
 
-
-
 func (s *WeightedRoundRobinSelector) ForgetAuth(authID string) {
 	s.ForgetAuthUpTo(authID, ^uint64(0), ^uint64(0))
 }
-
-
-
 
 func (s *WeightedRoundRobinSelector) ForgetAuthUpTo(authID string, maxEpoch, maxGen uint64) {
 	if s == nil || authID == "" {
@@ -791,7 +758,6 @@ func (s *WeightedRoundRobinSelector) ForgetAuthUpTo(authID string, maxEpoch, max
 	}
 }
 
-
 func (r *weightedReservation) finish(committed bool) {
 	if r == nil {
 		return
@@ -828,8 +794,6 @@ func (r *weightedReservation) finish(committed bool) {
 	}
 }
 
-
-
 func (s *weightedPoolState) adjustPending(selected int, total int64, release bool) {
 	for i := range s.members {
 		member := &s.members[i]
@@ -844,11 +808,7 @@ func (s *weightedPoolState) adjustPending(selected int, total int64, release boo
 	}
 }
 
-
 const maxSmoothWeightedCreditRounds int64 = 32
-
-
-
 
 func (s *weightedPoolState) boundChargeFits(selected int, totalWeight int64) bool {
 	limit := int64(math.MaxInt64)
@@ -876,7 +836,6 @@ func (s *weightedPoolState) charge(selected int, bound bool) {
 	}
 	if !bound || s.boundChargeFits(selected, totalWeight) {
 
-
 		for i := range s.members {
 			member := &s.members[i]
 			member.current = saturatingAddInt64(member.current, member.weight)
@@ -889,9 +848,6 @@ func (s *weightedPoolState) charge(selected int, bound bool) {
 	}
 }
 
-
-
-
 func (s *weightedPoolState) boundCredits(totalWeight int64) {
 	limit := int64(math.MaxInt64)
 	if totalWeight <= math.MaxInt64/maxSmoothWeightedCreditRounds {
@@ -903,8 +859,6 @@ func (s *weightedPoolState) boundCredits(totalWeight int64) {
 		maxCredit = max(maxCredit, member.current)
 	}
 
-
-
 	minOffset := saturatingAddInt64(maxCredit, -limit)
 	maxOffset := saturatingAddInt64(minCredit, limit)
 	var offset int64
@@ -913,7 +867,6 @@ func (s *weightedPoolState) boundCredits(totalWeight int64) {
 	} else if maxOffset < 0 {
 		offset = maxOffset
 	}
-
 
 	for i := range s.members {
 		member := &s.members[i]

@@ -1,5 +1,3 @@
-
-
 package management
 
 import (
@@ -30,12 +28,9 @@ type attemptInfo struct {
 	lastActivity time.Time
 }
 
-
 const attemptCleanupInterval = 1 * time.Hour
 
-
 const attemptMaxIdleTime = 2 * time.Hour
-
 
 type Handler struct {
 	cfg                     *config.Config
@@ -71,7 +66,6 @@ type configReloadSnapshot struct {
 	generation uint64
 }
 
-
 func NewHandler(cfg *config.Config, configFilePath string, manager *coreauth.Manager) *Handler {
 	envSecret, _ := os.LookupEnv("MANAGEMENT_PASSWORD")
 	envSecret = strings.TrimSpace(envSecret)
@@ -89,8 +83,6 @@ func NewHandler(cfg *config.Config, configFilePath string, manager *coreauth.Man
 	return h
 }
 
-
-
 func (h *Handler) startAttemptCleanup() {
 	go func() {
 		ticker := time.NewTicker(attemptCleanupInterval)
@@ -100,8 +92,6 @@ func (h *Handler) startAttemptCleanup() {
 		}
 	}()
 }
-
-
 
 func (h *Handler) purgeStaleAttempts() {
 	now := time.Now()
@@ -119,13 +109,9 @@ func (h *Handler) purgeStaleAttempts() {
 	}
 }
 
-
 func NewHandlerWithoutConfigFilePath(cfg *config.Config, manager *coreauth.Manager) *Handler {
 	return NewHandler(cfg, "", manager)
 }
-
-
-
 
 func (h *Handler) SetConfig(cfg *config.Config) {
 	if h == nil {
@@ -141,15 +127,11 @@ func (h *Handler) SetConfig(cfg *config.Config) {
 	h.cfg = cloned
 }
 
-
 func (h *Handler) configSnapshot() *config.Config {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.cfg
 }
-
-
-
 
 func (h *Handler) oauthConfigWithProxy(proxyURL string) *config.Config {
 	cfg := h.configSnapshot()
@@ -171,9 +153,6 @@ func (h *Handler) oauthConfigWithProxy(proxyURL string) *config.Config {
 	return cloned
 }
 
-
-
-
 func (h *Handler) isStaleConfigFileSnapshotLocked(cfg *config.Config) bool {
 	if cfg == nil || cfg.SourceHash == "" || h.configFilePath == "" {
 		return false
@@ -184,7 +163,6 @@ func (h *Handler) isStaleConfigFileSnapshotLocked(cfg *config.Config) bool {
 	}
 	return config.ComputeSourceHash(data) != cfg.SourceHash
 }
-
 
 func (h *Handler) SetAuthManager(manager *coreauth.Manager) {
 	if h == nil {
@@ -197,7 +175,6 @@ func (h *Handler) SetAuthManager(manager *coreauth.Manager) {
 	h.mu.Unlock()
 }
 
-
 func (h *Handler) SetPluginHost(host *pluginhost.Host) {
 	if h == nil {
 		return
@@ -209,7 +186,6 @@ func (h *Handler) SetPluginHost(host *pluginhost.Host) {
 	h.mu.Unlock()
 }
 
-
 func (h *Handler) SetConfigReloadHook(hook func(context.Context, *config.Config)) {
 	if h == nil {
 		return
@@ -218,8 +194,6 @@ func (h *Handler) SetConfigReloadHook(hook func(context.Context, *config.Config)
 	h.configReloadHook = hook
 	h.mu.Unlock()
 }
-
-
 
 func (h *Handler) reloadSnapshotConfigLocked() configReloadSnapshot {
 	if h == nil || h.cfg == nil {
@@ -232,8 +206,6 @@ func (h *Handler) reloadSnapshotConfigLocked() configReloadSnapshot {
 	}
 }
 
-
-
 func (h *Handler) saveConfigAndSnapshotLocked(c *gin.Context) (configReloadSnapshot, bool) {
 	if errSave := config.SaveConfigPreserveComments(h.configFilePath, h.cfg, c.GetBool(ConfigV8ContextKey)); errSave != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save config: %v", errSave)})
@@ -241,8 +213,6 @@ func (h *Handler) saveConfigAndSnapshotLocked(c *gin.Context) (configReloadSnaps
 	}
 	return h.reloadSnapshotConfigLocked(), true
 }
-
-
 
 func (h *Handler) reloadConfigAfterManagementSave(ctx context.Context, snapshot configReloadSnapshot) {
 	if h == nil || snapshot.cfg == nil || snapshot.generation == 0 {
@@ -272,8 +242,6 @@ func (h *Handler) reloadConfigAfterManagementSave(ctx context.Context, snapshot 
 	h.mu.Unlock()
 }
 
-
-
 func (h *Handler) reloadConfigAfterManagementSaveAsync(ctx context.Context, snapshot configReloadSnapshot) {
 	if h == nil || snapshot.cfg == nil || snapshot.generation == 0 {
 		return
@@ -292,9 +260,7 @@ func (h *Handler) reloadConfigAfterManagementSaveAsync(ctx context.Context, snap
 	}()
 }
 
-
 func (h *Handler) SetLocalPassword(password string) { h.localPassword = password }
-
 
 func (h *Handler) SetLogDirectory(dir string) {
 	if dir == "" {
@@ -308,18 +274,13 @@ func (h *Handler) SetLogDirectory(dir string) {
 	h.logDir = dir
 }
 
-
 func (h *Handler) SetPostAuthHook(hook coreauth.PostAuthHook) {
 	h.postAuthHook = hook
 }
 
-
 func (h *Handler) SetPostAuthPersistHook(hook coreauth.PostAuthHook) {
 	h.postAuthPersistHook = hook
 }
-
-
-
 
 func (h *Handler) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -330,7 +291,6 @@ func (h *Handler) Middleware() gin.HandlerFunc {
 
 		clientIP := c.ClientIP()
 		localClient := clientIP == "127.0.0.1" || clientIP == "::1"
-
 
 		var provided string
 		if ah := c.GetHeader("Authorization"); ah != "" {
@@ -353,8 +313,6 @@ func (h *Handler) Middleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-
 
 func (h *Handler) AuthenticateManagementKey(clientIP string, localClient bool, provided string) (bool, int, string) {
 	const maxFailures = 5
@@ -457,8 +415,6 @@ func (h *Handler) AuthenticateManagementKey(clientIP string, localClient bool, p
 	return true, 0, ""
 }
 
-
-
 func (h *Handler) persistLocked(c *gin.Context) bool {
 
 	if err := config.SaveConfigPreserveComments(h.configFilePath, h.cfg, c.GetBool(ConfigV8ContextKey)); err != nil {
@@ -474,8 +430,6 @@ func (h *Handler) persistLocked(c *gin.Context) bool {
 	h.reloadConfigAfterManagementSaveAsync(reqCtx, snapshot)
 	return true
 }
-
-
 
 func (h *Handler) updateBoolField(c *gin.Context, set func(bool)) {
 	var body struct {

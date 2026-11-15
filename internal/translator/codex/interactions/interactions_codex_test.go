@@ -130,7 +130,6 @@ func TestConvertInteractionsRequestToCodexWithToolMessagesDirect(t *testing.T) {
 		t.Fatalf("input.0.content.0.text = %q, want hi. Output: %s", got, string(out))
 	}
 
-
 	if got := ojson.GetBytesNoCopy(out, "input.1.type").String(); got != "function_call" {
 		t.Fatalf("input.1.type = %q, want function_call. Output: %s", got, string(out))
 	}
@@ -274,8 +273,6 @@ func TestConvertCodexResponseToInteractionsStreamCompletesAfterSteps(t *testing.
 	}
 }
 
-
-
 func testInteractionsMetaSignature() string {
 	return "Q-PaDgE" + strings.Repeat("A", 1419)
 }
@@ -392,7 +389,6 @@ func TestConvertCodexResponseToInteractionsStream_ReasoningSignature(t *testing.
 		t.Fatalf("events = %s, want %s", names, want)
 	}
 
-
 	var param2 any
 	var events2 [][]byte
 	for _, chunk := range [][]byte{
@@ -450,8 +446,6 @@ func TestConvertInteractionsRequestToCodex_ThoughtSignatureTargetMismatch(t *tes
 	metaSig := testInteractionsMetaSignature()
 	payload := []byte(`{"model":"gpt-5.4","input":[{"type":"thought","signature":"` + metaSig + `","content":[{"type":"text","text":"thinking"}],"id":"step_1"}]}`)
 
-
-
 	out, _ := ConvertInteractionsRequestToCodex("gpt-5.4", payload, false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 0 {
 		t.Fatalf("input len = %d, want 0 (mismatched thought dropped). Output: %s", got, string(out))
@@ -461,27 +455,20 @@ func TestConvertInteractionsRequestToCodex_ThoughtSignatureTargetMismatch(t *tes
 func TestConvertInteractionsRequestToCodex_DropsEmptyThoughtSteps(t *testing.T) {
 	metaSig := testInteractionsMetaSignature()
 
-
-
 	out, _ := ConvertInteractionsRequestToCodex("gpt-5.4", []byte(`{"input":[{"type":"user_input","content":[{"type":"text","text":"hi"}]},{"type":"thought","signature":"`+metaSig+`"}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 1 {
 		t.Fatalf("input len = %d, want 1 (thought step dropped). Output: %s", got, string(out))
 	}
-
 
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought"}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 0 {
 		t.Fatalf("input len = %d, want 0. Output: %s", got, string(out))
 	}
 
-
-
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought","signature":"`+metaSig+`"},{"type":"thought","signature":"`+metaSig+`"}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 1 {
 		t.Fatalf("input len = %d, want 1 (duplicate without text dropped). Output: %s", got, string(out))
 	}
-
-
 
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"user_input","content":[{"type":"text","text":"hi"}]},{"type":"thought","content":[{"type":"text","text":"thinking"}]},{"type":"function_call","name":"lookup","call_id":"call_1","arguments":{"q":"x"}}]}`), false)
 	items := ojson.GetBytesNoCopy(out, "input").Array()
@@ -494,18 +481,15 @@ func TestConvertInteractionsRequestToCodex_ThoughtSignatureVariants(t *testing.T
 	metaSig := testInteractionsMetaSignature()
 	gptSig := testInteractionsGPTSignature()
 
-
 	out, _ := ConvertInteractionsRequestToCodex("gpt-5.4", []byte(`{"input":[{"type":"thought","signature":"gpt#`+gptSig+`"}]}`), false)
 	if got := ojson.GetBytesNoCopy(out, "input.0.encrypted_content").String(); got != gptSig {
 		t.Fatalf("prefixed GPT signature should normalize to native payload. Output: %s", string(out))
 	}
 
-
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought","thought_signature":"`+metaSig+`"}]}`), false)
 	if got := ojson.GetBytesNoCopy(out, "input.0.encrypted_content").String(); got != metaSig {
 		t.Fatalf("thought_signature field should be accepted. Output: %s", string(out))
 	}
-
 
 	out, _ = ConvertInteractionsRequestToCodex("muse-spark-1.3", []byte(`{"input":[{"type":"thought","signature":"`+metaSig+`","content":[{"type":"text","text":"one"}]},{"type":"thought","signature":"`+metaSig+`","content":[{"type":"text","text":"two"}]}]}`), false)
 	if got := len(ojson.GetBytesNoCopy(out, "input").Array()); got != 1 {

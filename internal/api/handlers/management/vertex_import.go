@@ -14,7 +14,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
 func (h *Handler) ImportVertexCredential(c *gin.Context) {
 	if h == nil || h.cfg == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "config unavailable"})

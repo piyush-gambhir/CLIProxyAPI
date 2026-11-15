@@ -91,11 +91,6 @@ func TestInspectGrokEncryptedContent_RejectsGeminiThoughtSignatureEnvelope(t *te
 	}
 }
 
-
-
-
-
-
 func TestInspectGrokEncryptedContent_RetiredGemini25Field1Envelope(t *testing.T) {
 	sample := testGemini25Field1ThoughtSignatureEnvelope()
 	if IsValidGeminiThoughtSignature(sample, GeminiThoughtSignatureValidationOptions{RequireKnownEnvelope: true}) {
@@ -139,11 +134,6 @@ func TestInspectGrokEncryptedContent_RejectsAntigravityClaudeThinkingSignature(t
 	}
 }
 
-
-
-
-
-
 func TestInspectGrokEncryptedContent_RejectsClaudeCAISSignature(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -175,9 +165,6 @@ func TestInspectGrokEncryptedContent_RejectsClaudeCAISSignature(t *testing.T) {
 	}
 }
 
-
-
-
 func TestInspectGrokEncryptedContent_RejectsProviderCachePrefix(t *testing.T) {
 	for _, prefix := range []string{"claude#", "anthropic#", "gemini#", "openai#", "codex#"} {
 		sample := prefix + testUnpaddedClaudeCAISSignature()
@@ -186,10 +173,6 @@ func TestInspectGrokEncryptedContent_RejectsProviderCachePrefix(t *testing.T) {
 		}
 	}
 }
-
-
-
-
 
 func TestInspectGrokEncryptedContent_ThresholdMargins(t *testing.T) {
 	const shortestObservedDecodedLen = 50
@@ -303,10 +286,6 @@ func testUnpaddedClaudeThinkingSignature() string {
 	return testClaudeThinkingSignatureWithOpaqueLen(35)
 }
 
-
-
-
-
 func testUnpaddedClaudeCAISSignature() string {
 	for suffix := 0; suffix < 8; suffix++ {
 		parts := defaultClaudeCAISParts("claude-opus-5" + strings.Repeat("x", suffix))
@@ -371,11 +350,6 @@ func TestSignatureProviderFromModelName_Grok(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestDetectSignatureProvider_NeverClassifiesGrok(t *testing.T) {
 	path, ok := grokEncryptedContentSamplesPath()
 	if !ok {
@@ -405,9 +379,6 @@ func TestDetectSignatureProvider_NeverClassifiesGrok(t *testing.T) {
 	}
 }
 
-
-
-
 func TestDecideSignatureCompatibility_GrokDropsBlock(t *testing.T) {
 	decision := DecideSignatureCompatibility(SignatureProviderGrok, observedFable5Sample, SignatureBlockKindUnknown)
 	if decision.Compatible {
@@ -419,7 +390,6 @@ func TestDecideSignatureCompatibility_GrokDropsBlock(t *testing.T) {
 }
 
 func TestInspectGrokEncryptedContent_AcceptsPayloadStartingWithTinkPrefixByte(t *testing.T) {
-
 
 	for seed := 0; seed < 4096; seed++ {
 		buf := make([]byte, 0, 256)

@@ -1596,7 +1596,6 @@ func (r *hostRecordResponder) Shutdown() {
 	})
 }
 
-
 type ZeroconfAdvertiser struct {
 	mu                sync.Mutex
 	server            zeroconfServer
@@ -1607,7 +1606,6 @@ type ZeroconfAdvertiser struct {
 	osHostname        func() (string, error)
 	probeHostConflict hostConflictProbeFunc
 }
-
 
 func NewZeroconfAdvertiser() *ZeroconfAdvertiser {
 	return &ZeroconfAdvertiser{}
@@ -1625,8 +1623,6 @@ func cleanHostname(h string) string {
 	}
 	return h
 }
-
-
 
 func extractCleanHost() string {
 	h, err := os.Hostname()
@@ -1657,9 +1653,6 @@ func sanitizeDNSLabel(s string) string {
 	}
 	return strings.Trim(b.String(), "-")
 }
-
-
-
 
 func buildAdvertisedHost(instanceName, osHost string) string {
 	clean := sanitizeDNSLabel(instanceName)
@@ -1900,8 +1893,6 @@ func canonicalHostRecordList(ips []string) [][]byte {
 	}
 	return dedup
 }
-
-
 
 func compareHostRecordSets(localIPs, peerIPs []string) int {
 	ours := canonicalHostRecordList(localIPs)
@@ -2442,7 +2433,6 @@ func extractInterfaceAddrs(addrs []net.Addr) []string {
 	return append(v4, v6LinkLocal...)
 }
 
-
 func extractInterfaceIPs(ifaces []net.Interface) []string {
 	var ips []string
 	for _, iface := range ifaces {
@@ -2514,8 +2504,6 @@ func resolveRegisterProxyIPs(ifaces []net.Interface, advertisedIPs []string, goo
 	}
 	return ips, nil
 }
-
-
 
 func (a *ZeroconfAdvertiser) Start(ctx context.Context, spec ServiceSpec) (err error) {
 	if ctx != nil && ctx.Err() != nil {
@@ -2657,7 +2645,6 @@ func (a *ZeroconfAdvertiser) Start(ctx context.Context, spec ServiceSpec) (err e
 	return nil
 }
 
-
 func (a *ZeroconfAdvertiser) Stop() error {
 	a.mu.Lock()
 	a.closed = true
@@ -2676,11 +2663,9 @@ func (a *ZeroconfAdvertiser) Stop() error {
 	return nil
 }
 
-
 type ZeroconfBrowser struct {
 	ifaces []net.Interface
 }
-
 
 func NewZeroconfBrowser(ifaces ...net.Interface) *ZeroconfBrowser {
 	return &ZeroconfBrowser{ifaces: append([]net.Interface(nil), ifaces...)}
@@ -2711,7 +2696,6 @@ func browseEntryWithinLimits(entry *zeroconf.ServiceEntry) bool {
 	}
 	return true
 }
-
 
 func (b *ZeroconfBrowser) Browse(ctx context.Context, serviceType, domain string) ([]DiscoveredService, error) {
 	if ctx == nil {
@@ -2779,11 +2763,9 @@ func parseTXTList(value string) []string {
 	return result
 }
 
-
 func (b *ZeroconfBrowser) BrowseWithFallback(ctx context.Context) ([]DiscoveredService, error) {
 	return b.BrowseWithFallbackServiceType(ctx, DefaultServiceType)
 }
-
 
 func (b *ZeroconfBrowser) BrowseWithFallbackServiceType(ctx context.Context, serviceType string) ([]DiscoveredService, error) {
 	if strings.TrimSpace(serviceType) == "" {
@@ -2793,7 +2775,6 @@ func (b *ZeroconfBrowser) BrowseWithFallbackServiceType(ctx context.Context, ser
 	if errMain != nil && len(allGateways) == 0 {
 		return nil, errMain
 	}
-
 
 	var cpaGateways []DiscoveredService
 	var otherGateways []DiscoveredService
@@ -2807,8 +2788,6 @@ func (b *ZeroconfBrowser) BrowseWithFallbackServiceType(ctx context.Context, ser
 
 	return append(cpaGateways, otherGateways...), nil
 }
-
-
 
 func entryToDiscovered(e *zeroconf.ServiceEntry) (DiscoveredService, bool) {
 	port := e.Port

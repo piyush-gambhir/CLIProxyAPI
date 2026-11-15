@@ -19,7 +19,6 @@ const (
 
 var claudeCodeSessionSuffixPattern = regexp.MustCompile(`_session_([a-f0-9-]+)$`)
 
-
 func ExtractClaudeCodeSessionID(ctx context.Context, payload []byte, headers http.Header) string {
 	if sessionID := claudeCodeHeader(ctx, headers, ClaudeCodeSessionHeader); sessionID != "" {
 		return sessionID
@@ -27,14 +26,12 @@ func ExtractClaudeCodeSessionID(ctx context.Context, payload []byte, headers htt
 	return extractClaudeCodeSessionIDFromPayload(payload)
 }
 
-
 func ExtractClaudeCodeAgentID(ctx context.Context, headers http.Header) string {
 	if agentID := claudeCodeHeader(ctx, headers, ClaudeCodeAgentHeader); agentID != "" {
 		return agentID
 	}
 	return ClaudeCodeMainAgentID
 }
-
 
 func ClaudeCodeExecutionScope(ctx context.Context, payload []byte, headers http.Header) (string, bool) {
 	sessionID := ExtractClaudeCodeSessionID(ctx, payload, headers)
@@ -56,11 +53,9 @@ func claudeCodeHeader(ctx context.Context, headers http.Header, name string) str
 	return ""
 }
 
-
 func HeaderValueCaseInsensitive(headers http.Header, name string) string {
 	return headerValueCaseInsensitive(headers, name)
 }
-
 
 func HeaderValuesCaseInsensitive(headers http.Header, name string) []string {
 	if headers == nil {
@@ -115,7 +110,6 @@ func extractClaudeCodeSessionIDFromPayload(payload []byte) string {
 	}
 	return ""
 }
-
 
 func ClaudeCodePromptCache(ctx context.Context, modelName string, payload []byte, headers http.Header) (CodexCache, bool, error) {
 	modelName = strings.TrimSpace(modelName)

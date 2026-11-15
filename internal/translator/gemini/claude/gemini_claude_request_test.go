@@ -266,20 +266,18 @@ func TestConvertClaudeRequestToGemini_PreservesToolPairingWithInterveningSystemM
 		t.Fatalf("expected 3 merged contents (user, model, user), got %d: %s", len(contents), output)
 	}
 
-	// First turn: user
 	if contents[0].Get("role").String() != "user" {
 		t.Fatalf("expected turn 0 role user, got %s", contents[0].Get("role").String())
 	}
-	// Second turn: model (2 function calls)
+
 	if contents[1].Get("role").String() != "model" {
 		t.Fatalf("expected turn 1 role model, got %s", contents[1].Get("role").String())
 	}
-	// Third turn: user (1 system reminder + 2 aligned function responses)
+
 	if contents[2].Get("role").String() != "user" {
 		t.Fatalf("expected turn 2 role user, got %s", contents[2].Get("role").String())
 	}
 
-	// Verify response ordering matches call ordering (toolu_1, then toolu_2)
 	parts := contents[2].Get("parts").Array()
 	var respIDs []string
 	for _, p := range parts {
@@ -350,7 +348,7 @@ func TestConvertClaudeRequestToGemini_StructuredToolResult(t *testing.T) {
 	if !fr.Exists() {
 		t.Fatalf("expected functionResponse part, contents=%s", ojson.GetBytesNoCopy(output, "contents").Raw)
 	}
-	// The text block must remain structured JSON, not a double-encoded string blob.
+
 	if got := fr.Get("response.result.text").String(); got != "alpha" {
 		t.Fatalf("expected structured result text 'alpha', got result=%s", fr.Get("response.result").Raw)
 	}
@@ -358,7 +356,7 @@ func TestConvertClaudeRequestToGemini_StructuredToolResult(t *testing.T) {
 	if len(parts) != 1 {
 		t.Fatalf("expected 1 part (functionResponse with nested inlineData), got %d: %s", len(parts), ojson.GetBytesNoCopy(output, "contents.1").Raw)
 	}
-	// The image block must be nested under functionResponse.parts as inlineData, not emitted as a sibling part.
+
 	img := fr.Get("parts.0.inlineData")
 	if !img.Exists() {
 		t.Fatalf("expected functionResponse.parts.0.inlineData to exist, got %s", fr.Raw)
@@ -568,7 +566,7 @@ func TestConvertClaudeRequestToGemini_StringToolResult(t *testing.T) {
 	if !fr.Exists() {
 		t.Fatalf("expected functionResponse part, contents=%s", ojson.GetBytesNoCopy(output, "contents").Raw)
 	}
-	// String content must not be double-encoded: result should be exactly "alpha".
+
 	if got := fr.Get("response.result").String(); got != "alpha" {
 		t.Fatalf("expected result 'alpha', got '%s' (raw=%s)", got, fr.Get("response.result").Raw)
 	}
@@ -610,8 +608,6 @@ func TestConvertClaudeRequestToGemini_ToolResultWithTrailingSystemReminderReorde
 		t.Fatalf("expected 2 parts in user response turn, got %d: %s", len(userParts), contents[2].Raw)
 	}
 
-	// Text part must precede functionResponse part to prevent Vertex AI 400
-	// ("Requests ending with a model turn are not supported").
 	if !userParts[0].Get("text").Exists() {
 		t.Fatalf("expected parts[0] to be text part, got: %s", userParts[0].Raw)
 	}
@@ -839,7 +835,7 @@ func TestConvertClaudeRequestToGemini_FunctionResponseJSONRef(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToGemini_Issue5960_DocumentPreservation(t *testing.T) {
-	// Case 1: basic user document with base64 PDF
+
 	pdfInput := []byte(`{
 		"model": "gemini-2.5-pro",
 		"messages": [
@@ -870,7 +866,6 @@ func TestConvertClaudeRequestToGemini_Issue5960_DocumentPreservation(t *testing.
 		t.Fatalf("expected inline_data.data JVBERi0xLjQK, got %q (output: %s)", gotData, string(pdfOut))
 	}
 
-	// Mixed text and PDF document preserves both in order
 	mixedInput := []byte(`{
 		"model": "gemini-2.5-pro",
 		"messages": [
@@ -902,7 +897,6 @@ func TestConvertClaudeRequestToGemini_Issue5960_DocumentPreservation(t *testing.
 		t.Fatalf("expected second part to be inline_data PDF, got %s", mixedParts[1].Raw)
 	}
 
-	// Multiple PDFs interleaved with text
 	interleavedInput := []byte(`{
 		"model": "gemini-2.5-pro",
 		"messages": [
@@ -939,7 +933,6 @@ func TestConvertClaudeRequestToGemini_Issue5960_DocumentPreservation(t *testing.
 		t.Fatalf("expected PDF data to be preserved in order, got: %s", string(interleavedOut))
 	}
 
-	// Prevent empty turn when all content parts are skipped/unsupported
 	unsupportedInput := []byte(`{
 		"model": "gemini-2.5-pro",
 		"messages": [

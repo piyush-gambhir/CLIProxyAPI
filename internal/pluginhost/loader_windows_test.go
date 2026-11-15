@@ -71,8 +71,6 @@ func TestWindowsClosedClientKeepsResidentHostState(t *testing.T) {
 		t.Fatalf("plugin shutdown calls = %d, want %d", gotShutdowns, shutdownsBefore+1)
 	}
 
-
-
 	methodBytes, errMethod := syscall.BytePtrFromString("host.log")
 	if errMethod != nil {
 		t.Fatalf("BytePtrFromString() error = %v", errMethod)

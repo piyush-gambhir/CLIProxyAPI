@@ -1,6 +1,3 @@
-
-
-
 package util
 
 import (
@@ -21,12 +18,6 @@ var ipServices = []string{
 	"https://icanhazip.com",
 	"https://ipinfo.io/ip",
 }
-
-
-
-
-
-
 
 func getPublicIP() (string, error) {
 	for _, service := range ipServices {
@@ -64,13 +55,6 @@ func getPublicIP() (string, error) {
 	return "", fmt.Errorf("all IP services failed")
 }
 
-
-
-
-
-
-
-
 func getOutboundIP() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
@@ -90,12 +74,6 @@ func getOutboundIP() (string, error) {
 	return localAddr.IP.String(), nil
 }
 
-
-
-
-
-
-
 func GetIPAddress() string {
 	publicIP, err := getPublicIP()
 	if err == nil {
@@ -111,11 +89,6 @@ func GetIPAddress() string {
 	log.Errorf("Failed to get any IP address: %v", err)
 	return "127.0.0.1"
 }
-
-
-
-
-
 
 func PrintSSHTunnelInstructions(port int) {
 	ipAddress := GetIPAddress()

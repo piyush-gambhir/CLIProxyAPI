@@ -82,7 +82,6 @@ func TestContextWithRequestedModelAliasPropagatesAndClearsSelectionID(t *testing
 		t.Fatalf("SelectionIDFromContext = %q, want sel-123", got)
 	}
 
-
 	clearedCtx := contextWithRequestedModelAlias(ctx, cliproxyexecutor.Options{
 		Metadata: map[string]any{
 			cliproxyexecutor.SelectionIDMetadataKey: "",

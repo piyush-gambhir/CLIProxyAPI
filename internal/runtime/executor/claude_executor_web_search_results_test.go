@@ -19,8 +19,6 @@ import (
 
 const claudeWebSearchExecutorResults = `[{"type":"web_search_result","url":"https://example.com/a","title":"A","encrypted_content":"enc-a","page_age":null},{"type":"web_search_result","url":"https://example.com/b","title":"B","encrypted_content":"enc-b","page_age":null}]`
 
-
-
 func claudeWebSearchUpstream(t *testing.T, bodies *[][]byte, mu *sync.Mutex) http.Handler {
 	t.Helper()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +142,6 @@ func runClaudeWebSearchScenario(t *testing.T, cfg *config.Config, stream bool, r
 const (
 	claudeWebSearchExecutorUser = `{"type":"message","role":"user","content":[{"type":"input_text","text":"search for q"}]}`
 
-
 	claudeWebSearchExecutorHistory = claudeWebSearchExecutorUser +
 		`,{"type":"web_search_call","id":"ws_srvtoolu_01abc","status":"completed","action":{"type":"search","query":"q"}},` +
 		`{"type":"message","role":"assistant","content":[{"type":"output_text","text":"found two pages","annotations":[{"type":"web_search_result_location","url":"https://example.com/a","title":"A","cited_text":"found two pages","encrypted_index":"IDX_A"}]}]},` +
@@ -227,8 +224,6 @@ func TestClaudeExecutor_WebSearchResultCacheDisabledByDefault(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestClaudeExecutor_WebSearchResultRestoreRunsBeforePayloadRules(t *testing.T) {
 	cfg := enabledClaudeWebSearchCacheConfig()

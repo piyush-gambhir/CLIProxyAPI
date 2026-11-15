@@ -15,8 +15,6 @@ import (
 
 func goldenHash(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
 
-
-
 func normalizeEvents(t *testing.T, raw []byte) []byte {
 	t.Helper()
 	var out []byte
@@ -112,9 +110,6 @@ func claudeEchoRequests() []struct {
 		{"history-calls", []byte(`{"model":"gpt-5","tools":` + nsTools + `,"input":[{"type":"function_call","call_id":"c0","name":"read","namespace":"editor","arguments":"{}"},{"type":"function_call_output","call_id":"c0","output":"ok"}]}`)},
 	}
 }
-
-
-
 
 var claudeEchoGoldenHashes = map[string][2]string{
 	"nil":            {"ab4bf61de3306512dcde13cdabb426c55226319673cc766c18751d1f41009dad", "99221176860da000324aab10d71af05082ec1ea3752234a85adfa300283d24ee"},
@@ -253,9 +248,6 @@ func egChunks(names []string) [][]byte {
 	)
 	return out
 }
-
-
-
 
 func TestClaudeEchoGoldenEdgeCases(t *testing.T) {
 	want := map[string][2]string{

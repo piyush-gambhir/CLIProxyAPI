@@ -8,16 +8,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func ApplyThinkingWithSourcePayload(body, currentSourcePayload, originalSourcePayload []byte, model, fromFormat, toFormat, providerKey string) ([]byte, error) {
 	summary := translatedRequestSummaryConfig(body, currentSourcePayload, originalSourcePayload, model, fromFormat, toFormat)
 	return thinking.ApplyThinkingWithSummary(body, model, fromFormat, toFormat, providerKey, summary)
 }
-
-
 
 func ApplyThinkingWithSourcePayloadDoc(doc *ojson.Doc, currentSourcePayload, originalSourcePayload []byte, model, fromFormat, toFormat, providerKey string) error {
 	if doc == nil {
@@ -26,11 +20,6 @@ func ApplyThinkingWithSourcePayloadDoc(doc *ojson.Doc, currentSourcePayload, ori
 	summary := translatedRequestSummaryConfigDoc(doc, currentSourcePayload, originalSourcePayload, model, fromFormat, toFormat)
 	return thinking.ApplyThinkingWithSummaryDoc(doc, model, fromFormat, toFormat, providerKey, summary)
 }
-
-
-
-
-
 
 func translatedRequestSummaryConfig(body, currentSourcePayload, originalSourcePayload []byte, model, fromFormat, toFormat string) thinking.SummaryConfig {
 	fromFormat = strings.ToLower(strings.TrimSpace(fromFormat))
@@ -56,20 +45,14 @@ func translatedRequestSummaryConfig(body, currentSourcePayload, originalSourcePa
 	to := sdktranslator.FromString(toFormat)
 	if !sdktranslator.HasRequestTransformer(from, to) {
 
-
 		return thinking.SummaryConfig{}
 	}
 
 	candidate := thinking.ApplySummaryConfigForModel(body, toFormat, model, currentSummary)
 	if thinking.ExtractExplicitSummaryConfig(candidate, toFormat).Mode != thinking.SummaryUnspecified {
 
-
-
 		return thinking.SummaryConfig{}
 	}
-
-
-
 
 	return currentSummary
 }

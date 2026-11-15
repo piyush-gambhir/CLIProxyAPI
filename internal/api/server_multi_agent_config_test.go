@@ -37,10 +37,6 @@ func TestModelsMultiAgentClientConfigAndReload(t *testing.T) {
 				want bool
 			}{
 
-
-
-
-
 				{"omitted", "{}", false},
 				{"enabled", "client: {codex: {optimize-multi-agent-v2: true}}", true},
 				{"disabled", "client: {codex: {optimize-multi-agent-v2: false}}", false},
@@ -77,7 +73,6 @@ func TestModelsMultiAgentClientConfigAndReload(t *testing.T) {
 						if entry["slug"] != modelID {
 							continue
 						}
-
 
 						want := any("v2")
 						if value, present := entry["multi_agent_version"]; !present || value != want {

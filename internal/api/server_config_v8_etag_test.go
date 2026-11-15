@@ -10,9 +10,6 @@ import (
 	proxyconfig "github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
-
 func TestConfigV8ETagExposedForCORS(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "test-management-key")
 

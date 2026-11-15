@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
 func TestProxyPoolGenerationRejectsOldSnapshotAfterReload(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -58,11 +57,6 @@ func TestProxyPoolGenerationRejectsOldSnapshotAfterReload(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -80,7 +74,6 @@ func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 		t.Fatal("first publisher did not pool")
 	}
 
-
 	secondCfg := &config.Config{}
 	AdvanceProxyPoolGeneration(secondPublisher, secondCfg)
 	if got := pooledProxyTransport("direct", firstCfg, auth); got != firstTransport {
@@ -90,12 +83,10 @@ func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 		t.Fatalf("cache holds %d pools, want the first publisher's pool only", got)
 	}
 
-
 	secondTransport := pooledProxyTransport("direct", secondCfg, auth)
 	if secondTransport == nil || secondTransport == firstTransport {
 		t.Fatal("publishers share one pool")
 	}
-
 
 	nextFirst := firstCfg.CloneForRuntime()
 	AdvanceProxyPoolGeneration(firstPublisher, nextFirst)
@@ -111,15 +102,9 @@ func TestProxyPoolFenceIsPerPublisher(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestProxyPoolUnfencedSnapshotStillPools(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
-
 
 	AdvanceProxyPoolGeneration(RegisterProxyPoolPublisher(), &config.Config{})
 
@@ -135,7 +120,6 @@ func TestProxyPoolUnfencedSnapshotStillPools(t *testing.T) {
 	if pooledProxyTransport("direct", plain, auth) != pooled {
 		t.Fatal("unfenced snapshot did not reuse its pool")
 	}
-
 
 	retired := &config.Config{ProxyPoolPublisher: plain.ProxyPoolPublisher}
 	proxyPoolFence.RLock()

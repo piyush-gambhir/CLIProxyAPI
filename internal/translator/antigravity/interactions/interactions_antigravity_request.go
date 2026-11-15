@@ -15,8 +15,6 @@ func ConvertInteractionsRequestToAntigravity(modelName string, inputRawJSON []by
 
 }
 
-
-
 func convertInteractionsRequestToAntigravity(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	functionNameMap := util.SanitizedFunctionNameMap(inputRawJSON)
@@ -217,8 +215,6 @@ func copyInteractionsReasoningToAntigravityDoc(outDoc *ojson.Doc, root ojson.Res
 	}
 	if effort != "" {
 
-
-
 		if effort == "auto" {
 			_ = outDoc.Set("request.generationConfig.thinkingConfig.thinkingBudget", -1)
 		} else {
@@ -314,14 +310,10 @@ type antigravityInteractionsInputContext struct {
 	lastStepType     string
 	pendingSignature string
 
-
 	run translatorcommon.UserRun
 
 	instruction bool
 }
-
-
-
 
 func (ctx *antigravityInteractionsInputContext) userRun(role string) *translatorcommon.UserRun {
 	if role == "user" && !ctx.instruction {
@@ -330,7 +322,6 @@ func (ctx *antigravityInteractionsInputContext) userRun(role string) *translator
 	ctx.run.End()
 	return nil
 }
-
 
 func (ctx *antigravityInteractionsInputContext) appendText(role, text string) {
 	appendAntigravityTextContent(&ctx.items, role, text)
@@ -380,9 +371,6 @@ func appendInteractionsInputToAntigravity(items *[][]byte, input ojson.Result) e
 	return ctx.run.Err()
 }
 
-
-
-
 func appendInteractionsContentBlockItem(ctx *antigravityInteractionsInputContext, item ojson.Result) bool {
 	switch strings.ToLower(strings.TrimSpace(item.Get("type").String())) {
 	case "text", "image", "audio", "video", "document":
@@ -392,8 +380,6 @@ func appendInteractionsContentBlockItem(ctx *antigravityInteractionsInputContext
 	if item.Get("content").Exists() || item.Get("steps").Exists() || item.Get("parts").Exists() {
 		return false
 	}
-
-
 
 	if item.Get("role").Exists() {
 		return false
@@ -774,8 +760,6 @@ func appendInteractionsContentListToAntigravity(ctx *antigravityInteractionsInpu
 		ctx.appendText(role, content.String())
 	}
 }
-
-
 
 func appendInteractionsContentPartToAntigravity(items *[][]byte, role string, part ojson.Result, run *translatorcommon.UserRun) {
 	partJSON := appendInteractionsContentToAntigravityPart(nil, part, false)

@@ -1,13 +1,10 @@
-
 package antigravity
-
 
 const (
 	ClientID     = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
 	ClientSecret = "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"
 	CallbackPort = 51121
 )
-
 
 var Scopes = []string{
 	"https://www.googleapis.com/auth/cloud-platform",
@@ -18,13 +15,11 @@ var Scopes = []string{
 	"https://www.googleapis.com/auth/experimentsandconfigs",
 }
 
-
 const (
 	TokenEndpoint    = "https://oauth2.googleapis.com/token"
 	AuthEndpoint     = "https://accounts.google.com/o/oauth2/v2/auth"
 	UserInfoEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo?alt=json"
 )
-
 
 const (
 	APIEndpoint      = "https://cloudcode-pa.googleapis.com"

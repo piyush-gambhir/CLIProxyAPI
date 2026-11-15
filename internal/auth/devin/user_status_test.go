@@ -32,7 +32,7 @@ func TestBuildGetUserStatusRequest(t *testing.T) {
 }
 
 func buildMockUserStatusResponse() []byte {
-	// PlanInfo
+
 	var planInfo []byte
 	planInfo = protowire.AppendTag(planInfo, 2, protowire.BytesType)
 	planInfo = protowire.AppendString(planInfo, "Pro")
@@ -46,42 +46,34 @@ func buildMockUserStatusResponse() []byte {
 	planInfo = protowire.AppendTag(planInfo, 33, protowire.BytesType)
 	planInfo = protowire.AppendBytes(planInfo, orgInfo)
 
-	// PlanStatus
 	var planStatus []byte
 	planStatus = protowire.AppendTag(planStatus, 1, protowire.BytesType)
 	planStatus = protowire.AppendBytes(planStatus, planInfo)
 
-	// plan_start
 	var planStart []byte
 	planStart = protowire.AppendTag(planStart, 1, protowire.VarintType)
 	planStart = protowire.AppendVarint(planStart, 1789087364)
 	planStatus = protowire.AppendTag(planStatus, 2, protowire.BytesType)
 	planStatus = protowire.AppendBytes(planStatus, planStart)
 
-	// plan_end
 	var planEnd []byte
 	planEnd = protowire.AppendTag(planEnd, 1, protowire.VarintType)
 	planEnd = protowire.AppendVarint(planEnd, 1791679364)
 	planStatus = protowire.AppendTag(planStatus, 3, protowire.BytesType)
 	planStatus = protowire.AppendBytes(planStatus, planEnd)
 
-	// daily quota: 100%
 	planStatus = protowire.AppendTag(planStatus, 14, protowire.VarintType)
 	planStatus = protowire.AppendVarint(planStatus, 100)
 
-	// weekly quota: 50%
 	planStatus = protowire.AppendTag(planStatus, 15, protowire.VarintType)
 	planStatus = protowire.AppendVarint(planStatus, 50)
 
-	// daily reset: 1789200000
 	planStatus = protowire.AppendTag(planStatus, 17, protowire.VarintType)
 	planStatus = protowire.AppendVarint(planStatus, 1789200000)
 
-	// weekly reset: 1789286400
 	planStatus = protowire.AppendTag(planStatus, 18, protowire.VarintType)
 	planStatus = protowire.AppendVarint(planStatus, 1789286400)
 
-	// UserStatus
 	var userStatus []byte
 	userStatus = protowire.AppendTag(userStatus, 3, protowire.BytesType)
 	userStatus = protowire.AppendString(userStatus, "testuser")
@@ -98,7 +90,6 @@ func buildMockUserStatusResponse() []byte {
 	userStatus = protowire.AppendTag(userStatus, 36, protowire.BytesType)
 	userStatus = protowire.AppendString(userStatus, "user-id-456")
 
-	// Top-level response: Field 1 is UserStatus
 	var resp []byte
 	resp = protowire.AppendTag(resp, 1, protowire.BytesType)
 	resp = protowire.AppendBytes(resp, userStatus)
@@ -209,7 +200,6 @@ func TestLiveDevinUserStatus(t *testing.T) {
 		t.Skip("invalid auths/devin-cli.json, skipping")
 	}
 
-	// Route through local mitmproxy / direct
 	proxyURL, _ := url.Parse("http://127.0.0.1:28082")
 	transport := &http.Transport{
 		Proxy: http.ProxyURL(proxyURL),

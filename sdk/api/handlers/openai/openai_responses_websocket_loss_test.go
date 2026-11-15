@@ -29,8 +29,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
-
 type lossFixture struct {
 	t           *testing.T
 	base        *handlers.BaseAPIHandler
@@ -39,7 +37,6 @@ type lossFixture struct {
 	creates     atomic.Int32
 	authIDs     sync.Map
 }
-
 
 func newLossFixture(t *testing.T, steering bool, script func(index int, c *websocket.Conn, read func() []byte), access ...sdkaccess.Provider) *lossFixture {
 	t.Helper()
@@ -139,7 +136,6 @@ func (f *lossFixture) create(extra string) {
 	f.send(fmt.Sprintf(`{"type":"response.create","model":"loss-model","input":[]%s}`, extra))
 }
 
-
 func (f *lossFixture) next() []byte {
 	f.t.Helper()
 	_ = f.client.SetReadDeadline(time.Now().Add(10 * time.Second))
@@ -171,8 +167,6 @@ func (f *lossFixture) awaitCompleted() {
 		}
 	}
 }
-
-
 
 func (f *lossFixture) awaitProbeCompleted() {
 	f.t.Helper()
@@ -218,7 +212,6 @@ func TestResponsesWebsocketUpstreamLossKeepsDownstreamOpen(t *testing.T) {
 		t.Fatalf("loss error = %s", lost)
 	}
 
-
 	f.create(`,"previous_response_id":"r1"`)
 	f.create("")
 	if got := ojson.GetBytesNoCopy(f.nextError(), "error.code").String(); got != "previous_response_not_found" {
@@ -249,8 +242,6 @@ func TestResponsesWebsocketIdleUpstreamEOFIsSilent(t *testing.T) {
 	f.create("")
 	f.awaitCompleted()
 	<-closed
-
-
 
 	f.create(`,"previous_response_id":"r2"`)
 	if got := ojson.GetBytesNoCopy(f.nextError(), "error.code").String(); got != "previous_response_not_found" {
@@ -296,8 +287,6 @@ func TestResponsesWebsocketDuplexLossReportsEveryOperation(t *testing.T) {
 	}
 }
 
-
-
 func runAcceptedSteer(t *testing.T, successor bool, failure string) {
 	const accepted = `{"type":"response.steer.accepted","steer":{"id":"st1","previous_response_id":"r1"}}`
 	steered := make(chan struct{})
@@ -334,10 +323,6 @@ func runAcceptedSteer(t *testing.T, successor bool, failure string) {
 		}
 	}
 
-
-
-
-
 	if failure != "" {
 		f.nextError()
 	} else if successor {
@@ -355,11 +340,9 @@ func TestResponsesWebsocketDuplexLossAcceptedSteer(t *testing.T) {
 	}
 }
 
-
 func TestResponsesWebsocketDuplexLossSuccessorFailedWithoutID(t *testing.T) {
 	runAcceptedSteer(t, true, `{"type":"error","status":500,"error":{"type":"server_error","message":"boom"}}`)
 }
-
 
 func TestResponsesWebsocketLossCarriesEventIDWithoutSteering(t *testing.T) {
 	f := newLossFixture(t, false, func(index int, c *websocket.Conn, read func() []byte) {
@@ -372,9 +355,6 @@ func TestResponsesWebsocketLossCarriesEventIDWithoutSteering(t *testing.T) {
 		t.Fatalf("error = %s, want lost for c1", p)
 	}
 }
-
-
-
 
 func TestResponsesWebsocketDuplexLossBetweenTurnsReportsOnce(t *testing.T) {
 	for _, tc := range []struct {
@@ -407,8 +387,6 @@ func TestResponsesWebsocketDuplexLossBetweenTurnsReportsOnce(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestResponsesWebsocketDuplexLossAfterRefusedCreateIsSilent(t *testing.T) {
 	provider := &revocableWebsocketAccessProvider{}
@@ -452,9 +430,6 @@ func (h *turn2BarrierModelRouterHost) RouteModel(_ context.Context, _ pluginapi.
 	return pluginapi.ModelRouteResponse{}, false
 }
 
-
-
-
 func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 	turn2Reached := make(chan struct{})
 	eofProcessed := make(chan struct{})
@@ -492,8 +467,6 @@ func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 	f.awaitCompleted()
 	<-eofProcessed
 
-
-
 	f.create(`,"event_id":"c3"`)
 	f.send(`{"type":"response.interrupt","response_id":"r1"}`)
 	if interruptErr := f.nextError(); ojson.GetBytesNoCopy(interruptErr, "status").Int() != http.StatusBadRequest {
@@ -511,8 +484,6 @@ func TestResponsesWebsocketQueuedInputBeforeIdleEOFIsNotSent(t *testing.T) {
 		t.Fatalf("connections=%d creates=%d, want 2 and 2 (c1 and c3 only)", f.connections.Load(), f.creates.Load())
 	}
 }
-
-
 
 func TestResponsesWebsocketLossBeforeResponseCreatedIgnoresContinueRule(t *testing.T) {
 	f := newLossFixture(t, false, func(index int, c *websocket.Conn, read func() []byte) {
@@ -539,8 +510,6 @@ func TestResponsesWebsocketLossBeforeResponseCreatedIgnoresContinueRule(t *testi
 		t.Fatalf("after recovery: connections=%d creates=%d, want 2 and 2", f.connections.Load(), f.creates.Load())
 	}
 }
-
-
 
 func TestResponsesWebsocketQueuedContinuationBeforeIdleEOFIs409(t *testing.T) {
 	turn2Reached := make(chan struct{})
@@ -725,8 +694,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 				t.Cleanup(downstream.Close)
 				wsURL := "ws" + strings.TrimPrefix(downstream.URL, "http") + "/v1/responses"
 
-
-
 				conn1, resp1, errDial1 := websocket.DefaultDialer.Dial(wsURL, nil)
 				if resp1 != nil && resp1.Body != nil {
 					defer func() {
@@ -794,7 +761,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 					t.Fatalf("after followup on conn1: authBConns=%d authBCreates=%d, want 1 and 2", authBConns.Load(), authBCreates.Load())
 				}
 
-
 				authA429Next.Store(false)
 				conn2, resp2, errDial2 := websocket.DefaultDialer.Dial(wsURL, nil)
 				if resp2 != nil && resp2.Body != nil {
@@ -836,7 +802,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 					t.Fatalf("after request 2: authACreates=%d authBCreates=%d, want 2 and 2", authACreates.Load(), authBCreates.Load())
 				}
 
-
 				authA429Next.Store(true)
 				req3 := fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":"resp-a-2","input":[{"type":"message","id":"msg-3","role":"user","content":"continuation"}]}`, modelName)
 				if errWrite := conn2.WriteMessage(websocket.TextMessage, []byte(req3)); errWrite != nil {
@@ -851,7 +816,6 @@ func TestResponsesWebsocketEarly429RetriesAnotherCredentialWithoutClosingDownstr
 				if authACreates.Load() != 3 || authBCreates.Load() != 2 {
 					t.Fatalf("after continuation failure: authACreates=%d authBCreates=%d, want 3 and 2 (must not replay previous_response_id on auth-b)", authACreates.Load(), authBCreates.Load())
 				}
-
 
 				authA429Next.Store(true)
 				authB429Next.Store(true)
@@ -985,7 +949,6 @@ func TestResponsesWebsocketTerminal429WhenAllCredentialsExhaustedOrCooling(t *te
 	t.Cleanup(downstream.Close)
 	wsURL := "ws" + strings.TrimPrefix(downstream.URL, "http") + "/v1/responses"
 
-
 	conn1, resp1, errDial1 := websocket.DefaultDialer.Dial(wsURL, nil)
 	if resp1 != nil && resp1.Body != nil {
 		defer func() {
@@ -1018,8 +981,6 @@ func TestResponsesWebsocketTerminal429WhenAllCredentialsExhaustedOrCooling(t *te
 		}
 	}
 
-
-
 	return429.Store(true)
 	req2 := fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":"resp-single-1","input":[{"type":"message","id":"msg-2","role":"user","content":"followup"}]}`, modelName)
 	if errWrite := conn1.WriteMessage(websocket.TextMessage, []byte(req2)); errWrite != nil {
@@ -1048,8 +1009,6 @@ func TestResponsesWebsocketTerminal429WhenAllCredentialsExhaustedOrCooling(t *te
 	if _, extraFrame, errAfter := conn1.ReadMessage(); errAfter == nil {
 		t.Fatalf("expected socket close after terminal 429 error frame, got frame: %s", extraFrame)
 	}
-
-
 
 	conn2, resp2, errDial2 := websocket.DefaultDialer.Dial(wsURL, nil)
 	if resp2 != nil && resp2.Body != nil {

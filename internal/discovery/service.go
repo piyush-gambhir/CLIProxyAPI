@@ -13,8 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 func ResolveDiscoveryStateDir() string {
 	if writable := util.WritablePath(); writable != "" {
 		return filepath.Join(writable, "discovery")
@@ -27,8 +25,6 @@ func ResolveDiscoveryStateDir() string {
 	}
 	return ""
 }
-
-
 
 func validateServiceType(st string) error {
 	st = strings.TrimSpace(st)
@@ -63,8 +59,6 @@ func validateServiceType(st string) error {
 	return nil
 }
 
-
-
 func sanitizeSubtype(sub string) string {
 	sub = strings.TrimSpace(sub)
 	if sub == "" {
@@ -92,8 +86,6 @@ func sanitizeSubtype(sub string) string {
 	}
 	return sub
 }
-
-
 
 func normalizeBrowseQuery(service, domain string) (string, string, error) {
 	domain = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
@@ -148,8 +140,6 @@ func truncateRunesTo(s string, maxBytes int) string {
 	return s
 }
 
-
-
 func sanitizeInstanceName(name string) string {
 	var b strings.Builder
 	for _, r := range name {
@@ -188,7 +178,6 @@ func interfaceHasIP(iface net.Interface, target net.IP) bool {
 	return false
 }
 
-
 func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpec, error) {
 	if cfg == nil {
 		return ServiceSpec{}, fmt.Errorf("discovery: config is nil")
@@ -198,16 +187,13 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 	}
 	discCfg := cfg.Discovery
 
-
 	stateDir := ResolveDiscoveryStateDir()
 	instanceID := GetOrGenerateInstanceID(stateDir)
-
 
 	instanceName := FormatInstanceName(discCfg.ServiceName, instanceID)
 	if instanceName == "" {
 		instanceName = DefaultInstancePrefix + instanceID
 	}
-
 
 	serviceType := strings.TrimSpace(discCfg.ServiceType)
 	if serviceType == "" {
@@ -215,7 +201,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 	} else if errST := validateServiceType(serviceType); errST != nil {
 		return ServiceSpec{}, fmt.Errorf("discovery: invalid service-type: %w", errST)
 	}
-
 
 	var subtypes []string
 	rawSubtypes := discCfg.Subtypes
@@ -236,7 +221,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 	if len(subtypes) == 0 {
 		subtypes = []string{SubtypeChatCompletions}
 	}
-
 
 	ifaces, err := FilterInterfaces(discCfg.Interfaces.Include, discCfg.Interfaces.Exclude)
 	if err != nil {
@@ -285,7 +269,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 		return ServiceSpec{}, fmt.Errorf("discovery: no advertised address matches bind host %q", bindHost)
 	}
 
-
 	txtOpts := DefaultTXTOptions()
 	txtOpts.InstanceID = instanceID
 	txtOpts.TLS = tlsEnabled
@@ -310,8 +293,6 @@ func BuildServiceSpec(cfg *config.Config, port int, tlsEnabled bool) (ServiceSpe
 		AdvertisedIPs: advertisedIPs,
 	}, nil
 }
-
-
 
 func protocolsFromSubtypes(subtypes []string) []string {
 	protocols := make([]string, 0, len(subtypes))

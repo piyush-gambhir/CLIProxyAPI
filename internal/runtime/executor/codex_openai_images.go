@@ -734,7 +734,6 @@ func (e *CodexExecutor) directOpenAIImageModel(auth *cliproxyauth.Auth, req clip
 		return routeModel
 	}
 
-
 	if entry := e.resolveCodexConfig(auth); entry != nil {
 		for _, configured := range entry.Models {
 			name := strings.TrimSpace(configured.Name)
@@ -1058,15 +1057,6 @@ func codexMultipartFileToDataURL(fileHeader *multipart.FileHeader) (string, erro
 	return base64.EncodeDataURL(mediaType, data), nil
 }
 
-
-
-
-
-
-
-
-
-
 func codexExtractImageResults(completed []byte, itemsByIndex map[int64][]byte, fallback [][]byte) (results []codexImageCallResult, createdAt int64, usageRaw []byte, firstMeta codexImageCallResult, err error) {
 	if ojson.GetBytesNoCopy(completed, "type").String() != "response.completed" {
 		return nil, 0, nil, codexImageCallResult{}, fmt.Errorf("unexpected event type")
@@ -1109,7 +1099,6 @@ func codexExtractImageResults(completed []byte, itemsByIndex map[int64][]byte, f
 			appendItem(item)
 		}
 	} else if len(itemsByIndex) > 0 || len(fallback) > 0 {
-
 
 		results = make([]codexImageCallResult, 0, len(itemsByIndex)+len(fallback))
 		if len(itemsByIndex) > 0 {

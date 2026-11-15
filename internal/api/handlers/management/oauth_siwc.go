@@ -29,8 +29,6 @@ type siwcOAuthService interface {
 	ExchangeSIWCCodeForTokens(ctx context.Context, code, clientID, redirectURI, deviceID string, pkce *codex.PKCECodes) (*codex.CodexSIWCTokenData, error)
 }
 
-
-
 type siwcBindSession struct {
 	mu           sync.Mutex
 	owner        *Handler
@@ -63,8 +61,6 @@ func siwcBindEligible(auth *coreauth.Auth) bool {
 	return strings.TrimSpace(authAttribute(auth, "path")) != ""
 }
 
-
-
 func resolveSIWCBindFile(authDir, path string) (string, map[string]any, error) {
 	dir, errResolve := util.ResolveAuthDir(authDir)
 	if errResolve != nil || strings.TrimSpace(dir) == "" {
@@ -92,7 +88,6 @@ func resolveSIWCBindFile(authDir, path string) (string, map[string]any, error) {
 			return "", nil, errAbs
 		}
 	}
-
 
 	originalInfo, errLstat := os.Lstat(path)
 	if errLstat != nil || !originalInfo.Mode().IsRegular() {
@@ -134,8 +129,6 @@ func resolveSIWCBindFile(authDir, path string) (string, map[string]any, error) {
 	}
 	return realPath, metadata, nil
 }
-
-
 
 func (h *Handler) GetSIWCStatus(c *gin.Context) {
 	if h == nil {
@@ -188,9 +181,6 @@ func (h *Handler) GetSIWCStatus(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"status": string(target.CodexSIWCStatus(time.Now()))})
 }
-
-
-
 
 func (h *Handler) StartSIWCBind(c *gin.Context) {
 	var req struct {
@@ -290,9 +280,6 @@ func (s *oauthSessionStore) registerSIWC(state string, flow *siwcBindSession) bo
 	s.sessions[state] = oauthSession{Provider: "codex", Source: oauthSessionSourceBuiltin, SIWC: flow, CreatedAt: now, ExpiresAt: now.Add(siwcBindTTL)}
 	return true
 }
-
-
-
 
 func (s *oauthSessionStore) claimSIWCCommit(state string, flow *siwcBindSession) bool {
 	s.mu.Lock()
@@ -407,8 +394,6 @@ func (h *Handler) handleOAuthCallbackV8(c *gin.Context, req siwcCallbackRequest)
 	go flow.exchange(state, code, clientID)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
-
-
 
 func (flow *siwcBindSession) fail(state, message string) {
 	SetOAuthSessionError(state, message)

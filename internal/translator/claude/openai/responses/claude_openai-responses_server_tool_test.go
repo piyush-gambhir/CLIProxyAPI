@@ -11,8 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
 func claudeWebSearchStreamChunks() [][]byte {
 	return [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_ws","usage":{"input_tokens":1,"output_tokens":0}}}`),
@@ -80,8 +78,6 @@ func TestClaudeWebSearchBlocksBecomeWebSearchCallItemNonStream(t *testing.T) {
 	}
 }
 
-
-
 func TestWebSearchCallItemReplaysAsClaudeServerToolBlocks(t *testing.T) {
 	raw := responsesRequestFromItems(`{
 		"type":"web_search_call","id":"ws_srvtoolu_1","status":"completed",
@@ -115,9 +111,6 @@ func TestWebSearchCallItemReplaysAsClaudeServerToolBlocks(t *testing.T) {
 		t.Fatalf("result encrypted_content = %q, want ENC_A", got)
 	}
 }
-
-
-
 
 func TestWebSearchCallWithoutEncryptedContentReplaysEmptyResults(t *testing.T) {
 	raw := responsesRequestFromItems(`{
@@ -187,8 +180,6 @@ func TestRefusalPartReplaysAsClaudeText(t *testing.T) {
 	}
 }
 
-
-
 func TestRoundTripPreservesReachableClaudeBlocks(t *testing.T) {
 	chunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_rt","usage":{"input_tokens":1,"output_tokens":0}}}`),
@@ -241,11 +232,6 @@ func TestRoundTripPreservesReachableClaudeBlocks(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestWebSearchCallIDNormalisedToClaudeServerToolPattern(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
@@ -279,8 +265,6 @@ func TestWebSearchCallWithoutIDProducesNoBlocks(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestClaudeWebSearchWithoutResultBlockStillEmitsItem(t *testing.T) {
 	chunks := [][]byte{
@@ -334,9 +318,6 @@ func TestUnmappedServerToolProducesNoItem(t *testing.T) {
 	}
 }
 
-
-
-
 func TestWebSearchResultWithoutMatchingUseKeepsContinuationResult(t *testing.T) {
 	chunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_ws","usage":{"input_tokens":1,"output_tokens":0}}}`),
@@ -375,9 +356,6 @@ func TestWebSearchResultWithoutMatchingUseKeepsContinuationResult(t *testing.T) 
 	check(t, util.ParseGJSONBytesNoCopy(output))
 }
 
-
-
-
 func TestWebSearchCallQueryAcceptsNativeOpenAIActionShapes(t *testing.T) {
 	for _, tc := range []struct{ name, action, want string }{
 		{"search with query", `{"type":"search","query":"go release","queries":["go release"]}`, "go release"},
@@ -393,8 +371,6 @@ func TestWebSearchCallQueryAcceptsNativeOpenAIActionShapes(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestClaudeWebSearchWithEmptyResultsKeepsEmptyList(t *testing.T) {
 	chunks := [][]byte{
@@ -445,7 +421,6 @@ func TestClaudeWebSearchErrorResultSurvivesRoundTrip(t *testing.T) {
 	if got := errBlock.Get("error_code").String(); got != "rate_limited" {
 		t.Fatalf("results[0].error_code = %q, want rate_limited", got)
 	}
-
 
 	req, _ := json.Marshal(map[string]any{"model": "claude-test", "input": []json.RawMessage{json.RawMessage(outputItems[0].Raw)}})
 	replayed, _ := ConvertOpenAIResponsesRequestToClaude("claude-test", req, false)
@@ -498,7 +473,6 @@ func TestTextSearchTextOrderPreservedInStreamingAndReplay(t *testing.T) {
 		t.Fatalf("item 2 must have citation with encrypted_index IDX_ORD, got: %s", items[2].Raw)
 	}
 
-
 	var lines []string
 	for _, ch := range chunks {
 		lines = append(lines, string(ch))
@@ -521,8 +495,6 @@ func TestTextSearchTextOrderPreservedInStreamingAndReplay(t *testing.T) {
 	if nonStreamItems[2].Get("content.0.annotations.0.encrypted_index").String() != "IDX_ORD" {
 		t.Fatalf("non-stream item 2 citation encrypted_index = %q, want IDX_ORD", nonStreamItems[2].Get("content.0.annotations.0.encrypted_index").String())
 	}
-
-
 
 	var rawItems []json.RawMessage
 	for _, it := range items {

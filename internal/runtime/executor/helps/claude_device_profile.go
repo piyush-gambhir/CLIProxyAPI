@@ -152,7 +152,6 @@ func defaultClaudeDeviceProfile(cfg *config.Config) ClaudeDeviceProfile {
 	return profile
 }
 
-
 func mapStainlessOS() string {
 	switch runtime.GOOS {
 	case "darwin":
@@ -167,7 +166,6 @@ func mapStainlessOS() string {
 		return "Other::" + runtime.GOOS
 	}
 }
-
 
 func mapStainlessArch() string {
 	switch runtime.GOARCH {
@@ -211,9 +209,6 @@ func shouldUpgradeClaudeDeviceProfile(candidate, current ClaudeDeviceProfile) bo
 	}
 	return candidate.version.Compare(current.version) > 0
 }
-
-
-
 
 func plausibleClaudeCLIVersion(candidate, baseline claudeCLIVersion) bool {
 	return candidate.major == baseline.major &&
@@ -285,8 +280,6 @@ func pinClaudeDeviceProfilePlatform(profile, baseline ClaudeDeviceProfile) Claud
 	return profile
 }
 
-
-
 func normalizeClaudeDeviceProfile(profile, baseline ClaudeDeviceProfile) ClaudeDeviceProfile {
 	profile = pinClaudeDeviceProfilePlatform(profile, baseline)
 	if !meetsClaudeDeviceProfileBaseline(profile, baseline) {
@@ -350,9 +343,6 @@ func claudeDeviceProfileScopeKey(auth *cliproxyauth.Auth, apiKey string) string 
 		return "global"
 	}
 }
-
-
-
 
 func claudeDeviceProfileSubclientScope(profile ClaudeDeviceProfile, configs ...*config.Config) string {
 	var cfg *config.Config
@@ -418,7 +408,6 @@ func ResolveClaudeDeviceProfile(auth *cliproxyauth.Auth, apiKey string, headers 
 	}
 	return profile
 }
-
 
 func ResolveClaudeDeviceProfileRequired(ctx context.Context, auth *cliproxyauth.Auth, apiKey string, headers http.Header, cfg *config.Config) (ClaudeDeviceProfile, error) {
 	client, homeMode, errClient := currentClaudeDeviceProfileKVClient()
@@ -617,8 +606,6 @@ func (value claudeDeviceProfileKVValue) ToProfile() ClaudeDeviceProfile {
 	return profile
 }
 
-
-
 func ApplyClaudeDeviceProfileHeaders(r *http.Request, profile ClaudeDeviceProfile, requestUserAgent ...string) {
 	if r == nil {
 		return
@@ -649,8 +636,6 @@ func ApplyClaudeDeviceProfileHeaders(r *http.Request, profile ClaudeDeviceProfil
 	r.Header.Set("X-Stainless-Os", profile.OS)
 	r.Header.Set("X-Stainless-Arch", profile.Arch)
 }
-
-
 
 func DefaultClaudeVersion(cfg *config.Config) string {
 	profile := defaultClaudeDeviceProfile(cfg)
@@ -703,8 +688,6 @@ func ApplyClaudeLegacyDeviceHeaders(r *http.Request, ginHeaders http.Header, cfg
 			return
 		}
 	}
-
-
 
 	r.Header.Set("X-Stainless-Runtime-Version", profile.RuntimeVersion)
 	r.Header.Set("X-Stainless-Package-Version", profile.PackageVersion)

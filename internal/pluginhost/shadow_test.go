@@ -252,8 +252,6 @@ func TestShadowCopyPluginConcurrentPublishNeverUnlinksExistingTarget(t *testing.
 		t.Fatalf("hashPluginFile() error = %v", errHash)
 	}
 
-
-
 	racerTmp := filepath.Join(dir, shadowPluginTempPrefix+"racer"+testPluginLibraryExtension())
 	if errWrite := os.WriteFile(racerTmp, content, 0o644); errWrite != nil {
 		t.Fatalf("WriteFile(racerTmp) error = %v", errWrite)
@@ -351,7 +349,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		t.Fatalf("shadowCopyPlugin(v1) error = %v", errV1)
 	}
 
-
 	v2Path := filepath.Join(platformDir, "alpha-v2.0.0"+ext)
 	if errWrite := os.WriteFile(v2Path, []byte("alpha-v2"), 0o644); errWrite != nil {
 		t.Fatalf("WriteFile(v2Path) error = %v", errWrite)
@@ -367,8 +364,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 	if _, errStat := os.Stat(v2Shadow); errStat != nil {
 		t.Fatalf("Stat(v2Shadow %s) error = %v, want preserved because v2 exists in sourceDir", v2Shadow, errStat)
 	}
-
-
 
 	detachedV2Path := filepath.Join(t.TempDir(), "alpha-v2.0.0"+ext)
 	if errWrite := os.WriteFile(detachedV2Path, []byte("alpha-v2"), 0o644); errWrite != nil {
@@ -393,8 +388,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 	if _, errStat := os.Stat(v2Shadow); !os.IsNotExist(errStat) {
 		t.Fatalf("Stat(v2Shadow %s) after guard released error = %v, want not exist", v2Shadow, errStat)
 	}
-
-
 
 	v2ShadowRe, errV2Re := shadowCopyPluginToDir(v2File, shadowDir)
 	if errV2Re != nil {
@@ -424,7 +417,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		t.Fatalf("Stat(v2ShadowRe %s) after interleaved guard acquisition error = %v, want preserved", v2ShadowRe, errStat)
 	}
 
-
 	pruneShadowDirForSourceDir(shadowDir, platformDir, nil)
 	if _, errStat := os.Stat(v2ShadowRe); errStat != nil {
 		t.Fatalf("Stat(v2ShadowRe %s) with empty keepNames while guard active error = %v, want preserved", v2ShadowRe, errStat)
@@ -433,8 +425,6 @@ func TestPruneShadowDirPreservesConcurrentlyInstalledPluginAndLiveGuard(t *testi
 		releaseInterleavedGuard()
 		releaseInterleavedGuard = nil
 	}
-
-
 
 	cmd := exec.Command(os.Args[0], "-test.run=^TestShadowHelperHoldLockAndExit$")
 	cmd.Env = append(
@@ -672,7 +662,6 @@ func TestRemoveStaleShadowPluginDirsOnlyRemovesDeadProcesses(t *testing.T) {
 	liveDir := filepath.Join(base, shadowPluginProcessDirName(currentPID))
 	deadDir := filepath.Join(base, shadowPluginProcessDirName(deadPID))
 	otherDir := filepath.Join(base, "unrelated")
-
 
 	liveOther, liveOtherPID := startWaitingProcess(t)
 	if liveOtherPID == currentPID || liveOtherPID == deadPID {

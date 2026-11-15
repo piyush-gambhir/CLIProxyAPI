@@ -47,60 +47,6 @@ type apiCallResponse struct {
 	Body       string              `json:"body"`
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func (h *Handler) APICall(c *gin.Context) {
 	var body apiCallRequest
 	if errBindJSON := c.ShouldBindJSON(&body); errBindJSON != nil {
@@ -648,8 +594,6 @@ func metaTokenFromAuth(auth *coreauth.Auth) string {
 	}
 	return ""
 }
-
-
 
 type metaManagementPreparer struct {
 	executor *executor.MetaExecutor

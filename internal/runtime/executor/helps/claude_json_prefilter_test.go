@@ -34,8 +34,6 @@ func TestJSONMayContainASCII(t *testing.T) {
 	}
 }
 
-
-
 func TestPrefilteredClassifiersKeepEscapedMatches(t *testing.T) {
 	escapedTitle := `{"model":"m","system":[{"type":"text","text":"You are naming a\u0020coding session."}],` +
 		`"messages":[{"role":"user","content":"hi"}]}`
@@ -64,9 +62,6 @@ func TestPrefilteredClassifiersKeepEscapedMatches(t *testing.T) {
 		t.Fatal("5m ttl must not count as 1h")
 	}
 }
-
-
-
 
 func largeClaudeCodeBody(n int) []byte {
 	var b strings.Builder
@@ -107,8 +102,6 @@ func BenchmarkClaudePayloadHas1hTTLLarge(b *testing.B) {
 		}
 	}
 }
-
-
 
 func BenchmarkClaudePayloadHas1hTTLLargeEscapeFallback(b *testing.B) {
 	body := largeClaudeCodeBody(1500)

@@ -18,7 +18,6 @@ func (s *PostgresStore) refreshTable() string {
 	return s.fullTableName(name + "_refresh_journal")
 }
 
-
 func (s *PostgresStore) RefreshClaim(ctx context.Context, key string) (bool, error) {
 	if s == nil || s.db == nil {
 		return false, fmt.Errorf("postgres refresh journal is unavailable")
@@ -34,10 +33,6 @@ func (s *PostgresStore) RefreshClaim(ctx context.Context, key string) (bool, err
 	count, errCount := result.RowsAffected()
 	return count == 1, errCount
 }
-
-
-
-
 
 func (s *PostgresStore) ensureRefreshSchema(ctx context.Context) error {
 	s.refreshSchemaMu.Lock()

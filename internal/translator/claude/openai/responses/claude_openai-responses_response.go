@@ -21,8 +21,6 @@ type claudeToResponsesState struct {
 
 	ToolSearch bool
 
-
-
 	RequestEcho             responsesRequestEcho
 	ToolWinners             map[string]responsesToolDescriptor
 	ToolNames               claudeToolNames
@@ -66,7 +64,6 @@ type claudeToResponsesState struct {
 	ReasoningSignature  string
 	ReasoningIndex      int
 	ReasoningItems      []claudeResponsesReasoningItem
-
 
 	WebSearchByBlock  map[int]*claudeResponsesWebSearchItem
 	WebSearchByToolID map[string]*claudeResponsesWebSearchItem
@@ -117,19 +114,7 @@ type claudeResponsesUsageTokens struct {
 
 var dataTag = []byte("data:")
 
-
-
-
-
-
-
-
 const ClaudeResponsesRedactedThinkingPrefix = "claude-redacted-thinking:"
-
-
-
-
-
 
 func claudeReasoningCarrier(contentBlock ojson.Result) string {
 	if contentBlock.Get("type").String() == "redacted_thinking" {
@@ -177,24 +162,14 @@ func claudeResponsesIncompleteDetails(stopReason string) ([]byte, bool) {
 		return []byte(`{"reason":"max_output_tokens"}`), true
 	case "refusal":
 
-
-
 		return []byte(`{"reason":"content_filter"}`), true
 	}
 	return nil, false
 }
 
-
-
-
-
-
 func claudeStopReasonPauseTurn(stopReason string) bool {
 	return strings.EqualFold(strings.TrimSpace(stopReason), "pause_turn")
 }
-
-
-
 
 func claudeResponsesWebSearchStatus(stopReason, status string, hasResults bool) string {
 	if !hasResults && (claudeStopReasonPauseTurn(stopReason) || strings.EqualFold(strings.TrimSpace(stopReason), "tool_use")) {
@@ -227,11 +202,6 @@ func pickRequestJSON(originalRequestRawJSON, requestRawJSON []byte) []byte {
 	}
 	return nil
 }
-
-
-
-
-
 
 type responsesRequestEcho struct {
 	instructions          string
@@ -429,10 +399,6 @@ func (e responsesRequestEcho) applyDoc(doc *ojson.Doc, prefix string) {
 	}
 }
 
-
-
-
-
 func (st *claudeToResponsesState) applyFunctionCallNamespaceFieldsDoc(doc *ojson.Doc, qualifiedName string, itemPath string) {
 	qualifiedName = strings.TrimSpace(qualifiedName)
 	name, namespace := qualifiedName, ""
@@ -486,8 +452,6 @@ func (st *claudeToResponsesState) functionOutputIndex(blockIndex int) int {
 	return index
 }
 
-
-
 func (st *claudeToResponsesState) startWebSearch(blockIndex int, toolUseID string) *claudeResponsesWebSearchItem {
 	item := &claudeResponsesWebSearchItem{ToolUseID: toolUseID, OutputIndex: st.allocateOutputIndex()}
 	st.WebSearchByBlock[blockIndex] = item
@@ -495,8 +459,6 @@ func (st *claudeToResponsesState) startWebSearch(blockIndex int, toolUseID strin
 	st.WebSearchItems = append(st.WebSearchItems, item)
 	return item
 }
-
-
 
 func (st *claudeToResponsesState) finalizeWebSearchWithStatus(item *claudeResponsesWebSearchItem, status string, nextSeq func() int) [][]byte {
 	if item == nil || item.Emitted {
@@ -511,20 +473,14 @@ func (st *claudeToResponsesState) finalizeWebSearchWithStatus(item *claudeRespon
 	return [][]byte{emitEvent("response.output_item.done", doneDoc.Bytes())}
 }
 
-
-
 func (st *claudeToResponsesState) isApplyPatch(name string) bool {
 	d, ok := st.ToolWinners[st.ToolNames.identity(name)]
 	return ok && d.toolType == "custom" && applypatch.IsCustomTool(d.tool)
 }
 
-
-
 func (st *claudeToResponsesState) isToolSearch(name string) bool {
 	return st.ToolWinners[st.ToolNames.identity(name)].clientSearch
 }
-
-
 
 func validateApplyPatchSnapshots(previous, current string) error {
 	var call translatorcommon.ApplyPatchCallState
@@ -536,9 +492,6 @@ func validateApplyPatchSnapshots(previous, current string) error {
 	_, _, errFinishArguments := call.FinishArguments(current)
 	return errFinishArguments
 }
-
-
-
 
 func finishClaudeApplyPatchArguments(call *translatorcommon.ApplyPatchCallState, arguments, snapshot string) (string, string, error) {
 	if snapshot == "" {
@@ -896,7 +849,6 @@ func newClaudeToResponsesState(requestJSON []byte, toolSearch bool) *claudeToRes
 	}
 }
 
-
 func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = newClaudeToResponsesState(pickRequestJSON(originalRequestRawJSON, requestRawJSON), ClientToolSearchEnabledFor(ctx))
@@ -905,7 +857,6 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 	if st.ToolInputError() != nil || st.CompletedEmitted {
 		return nil
 	}
-
 
 	if !bytes.HasPrefix(rawJSON, dataTag) {
 		return [][]byte{}
@@ -1007,7 +958,6 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 		idx := int(root.Get("index").Int())
 		typ := cb.Get("type").String()
 
-
 		if typ != "text" {
 			out = append(out, st.finalizeAssistantMessage(nextSeq)...)
 		}
@@ -1018,7 +968,6 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 
 		for prevIdx := range st.FuncCallIDs {
 			if !st.FuncItemDone[prevIdx] && prevIdx != idx {
-
 
 				if (st.isApplyPatch(st.FuncNames[prevIdx]) || st.FuncNames[prevIdx] == "") && !st.FuncBlockStopped[prevIdx] {
 					continue
@@ -1102,7 +1051,6 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			}
 			if !st.FuncItemAdded[idx] {
 
-
 				if callID != "" || oldID == "" {
 					st.FuncCallIDs[idx] = callID
 				}
@@ -1116,14 +1064,11 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				st.FuncArgsBuf[idx] = &strings.Builder{}
 			}
 
-
 			if input := cb.Get("input"); input.Exists() && (!input.IsObject() || len(input.Map()) > 0) {
-
 
 				if errValidateApplyPatchSnapshots := validateApplyPatchSnapshots(st.FuncInputSnapshot[idx], input.Raw); errValidateApplyPatchSnapshots != nil && st.FuncInputSnapshotErrors[idx] == nil {
 					st.FuncInputSnapshotErrors[idx] = errValidateApplyPatchSnapshots
 				}
-
 
 				if st.FuncItemDone[idx] {
 					if patchCall := st.ApplyPatchCalls[fmt.Sprint(idx)]; patchCall != nil {
@@ -1144,7 +1089,6 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 		} else if typ == "server_tool_use" {
 			if name := cb.Get("name").String(); name != claudeWebSearchToolName {
 
-
 				log.Debugf("claude->responses: unmapped server_tool_use %q at block %d", name, idx)
 			} else {
 				item := st.startWebSearch(idx, strings.Clone(cb.Get("id").String()))
@@ -1156,14 +1100,10 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			}
 		} else if typ == "web_search_tool_result" {
 
-
-
 			toolUseID := strings.Clone(cb.Get("tool_use_id").String())
 			if item := st.WebSearchByToolID[toolUseID]; item != nil {
 				item.Results = claudeWebSearchResultsToResponses(cb.Get("content"))
 			} else if toolUseID != "" {
-
-
 
 				item := st.startWebSearch(idx, toolUseID)
 				item.Results = claudeWebSearchResultsToResponses(cb.Get("content"))
@@ -1331,7 +1271,6 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			_ = completedDoc.SetRawBytes("response.fallbacks", st.Fallbacks.ArrayBytes())
 		}
 
-
 		outputsWrapperDoc := ojson.NewDocString(`{"arr":[]}`)
 		hasOutputs := false
 
@@ -1462,13 +1401,8 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 	return noSSEOutput(out)
 }
 
-
 func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	rawJSON, nativeModel := translatorcommon.ClaudeMessagesJSONToSSE(rawJSON)
-
-
-
-
 
 	var chunks [][]byte
 	remaining := rawJSON
@@ -1495,9 +1429,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		*param = st
 	}
 
-
 	outDoc := ojson.NewDocString(`{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null,"incomplete_details":null,"output":[],"usage":{"input_tokens":0,"input_tokens_details":{"cached_tokens":0},"output_tokens":0,"output_tokens_details":{},"total_tokens":0}}`)
-
 
 	var (
 		responseID    string
@@ -1544,7 +1476,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		blockToItem[blockIndex] = item
 		return item
 	}
-
 
 	for _, ch := range chunks {
 		root := util.ParseGJSONBytesNoCopy(ch)
@@ -1670,7 +1601,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 				item.callID = toolUseID
 				webSearchByToolID[toolUseID] = item
 
-
 				if input := cb.Get("input"); input.IsObject() && claudeWebSearchQuery(input.Raw) != "" {
 					item.args.WriteString(input.Raw)
 				}
@@ -1679,7 +1609,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 				if item := webSearchByToolID[toolUseID]; item != nil {
 					item.results = claudeWebSearchResultsToResponses(cb.Get("content"))
 				} else if toolUseID != "" {
-
 
 					item := newOutputItem("web_search_call", idx)
 					item.id = responsesWebSearchCallID(toolUseID)
@@ -1743,7 +1672,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 
 		case "content_block_stop":
 
-
 		case "message_delta":
 			usage := root.Get("usage")
 			usageTokens.Merge(usage)
@@ -1760,7 +1688,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		}
 	}
 
-
 	_, responseStatus, incompleteDetails := claudeResponsesTerminalState(stopReason)
 	_ = outDoc.Set("id", responseID)
 	_ = outDoc.Set("created_at", createdAt)
@@ -1772,10 +1699,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		_ = outDoc.Set("end_turn", false)
 	}
 
-
 	st.RequestEcho.applyDoc(outDoc, "")
-
-
 
 	if nativeModel != "" {
 		_ = outDoc.Set("model", nativeModel)
@@ -1787,7 +1711,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		_ = outDoc.SetRawBytes("fallback", latestFB)
 		_ = outDoc.SetRawBytes("fallbacks", fallbacks.ArrayBytes())
 	}
-
 
 	outputs := make([][]byte, 0, len(outputItems))
 	for i, outputItem := range outputItems {
@@ -1867,7 +1790,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		_ = outDoc.SetRawBytes("output", translatorcommon.JoinRawArray(outputs))
 	}
 
-
 	inputTokens, outputTokens, totalTokens, cachedTokens := usageTokens.OpenAIResponsesUsage()
 	if inputTokens != 0 {
 		_ = outDoc.Set("usage.input_tokens", inputTokens)
@@ -1897,7 +1819,6 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 
 	return outDoc.Bytes()
 }
-
 
 func (st *claudeToResponsesState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.CompletedEmitted {

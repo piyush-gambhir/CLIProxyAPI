@@ -7,9 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
 func TestMaskSensitiveQueryMasksValue(t *testing.T) {
 	secretKey := "sk-secret-client-key"
 

@@ -17,14 +17,9 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func ClaudeAgentSessionUUID(headers http.Header, originalPayload, translatedPayload []byte, metadataSets ...map[string]any) string {
 	return claudeAgentSessionUUID(headers, originalPayload, translatedPayload, metadataSets...)
 }
-
-
-
 
 func ClaudeAgentSessionUUIDForRequest(headers http.Header, originalPayload, translatedPayload []byte, confirmedClaudeCode bool, metadataSets ...map[string]any) string {
 	if !confirmedClaudeCode {
@@ -42,11 +37,9 @@ func ClaudeAgentSessionUUIDForRequest(headers http.Header, originalPayload, tran
 
 type claudeExecutionMetadataKey struct{}
 
-
 func WithClaudeExecutionMetadata(ctx context.Context, present bool) context.Context {
 	return context.WithValue(ctx, claudeExecutionMetadataKey{}, present)
 }
-
 
 func ClaudeExecutionMetadataFromContext(ctx context.Context) bool {
 	if v, ok := ctx.Value(claudeExecutionMetadataKey{}).(bool); ok {
@@ -54,8 +47,6 @@ func ClaudeExecutionMetadataFromContext(ctx context.Context) bool {
 	}
 	return false
 }
-
-
 
 func ClaudeRequestHasExecutionMetadata(metadataSets ...map[string]any) bool {
 	for _, metadata := range metadataSets {
@@ -125,8 +116,6 @@ var currentClaudeCredentialDevicePoolKVClient = func() (claudeCredentialDevicePo
 	client, homeMode, errClient := homekv.CurrentKVClient()
 	return client, homeMode, errClient
 }
-
-
 
 func EnsureClaudeCredentialDevicePoolRequired(ctx context.Context, auth *cliproxyauth.Auth) ([]string, error) {
 	if auth == nil {
@@ -212,7 +201,6 @@ func EnsureClaudeCredentialDevicePoolRequired(ctx context.Context, auth *cliprox
 	claudeauth.StoreDeviceIDPool(&auth.Metadata, deviceIDs)
 	return deviceIDs, nil
 }
-
 
 func ClaudeCredentialAccountUUID(auth *cliproxyauth.Auth) string {
 	if auth == nil {
@@ -738,7 +726,6 @@ func validateClaudeDocMetadataRoot(doc *ojson.Doc) error {
 	return nil
 }
 
-
 func ApplyClaudeCredentialMetadata(payload []byte, auth *cliproxyauth.Auth, sessionID string) ([]byte, string, error) {
 	doc := ojson.NewDoc(payload)
 	deviceID, errApply := ApplyClaudeCredentialMetadataDoc(doc, auth, sessionID)
@@ -747,7 +734,6 @@ func ApplyClaudeCredentialMetadata(payload []byte, auth *cliproxyauth.Auth, sess
 	}
 	return doc.Bytes(), deviceID, nil
 }
-
 
 func ApplyClaudeCredentialMetadataDoc(doc *ojson.Doc, auth *cliproxyauth.Auth, sessionID string) (string, error) {
 	if doc == nil {

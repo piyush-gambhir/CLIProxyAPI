@@ -13,26 +13,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type MetaAuthenticator struct{}
-
 
 func NewMetaAuthenticator() Authenticator {
 	return &MetaAuthenticator{}
 }
 
-
 func (MetaAuthenticator) Provider() string {
 	return "meta"
 }
 
-
-
-
 func (MetaAuthenticator) RefreshLead() *time.Duration {
 	return nil
 }
-
 
 func (a MetaAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {

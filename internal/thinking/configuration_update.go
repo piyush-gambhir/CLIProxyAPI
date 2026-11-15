@@ -10,7 +10,6 @@ func isResponsesFormat(format string) bool {
 	return format == "codex" || format == "openai-response"
 }
 
-
 func extractConfigurationUpdateConfig(body []byte) ThinkingConfig {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return ThinkingConfig{}
@@ -54,16 +53,6 @@ func extractConfigurationUpdateConfigFromInput(input ojson.Result) ThinkingConfi
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 func CollapseConfigurationUpdates(body []byte, keepTopLevelEffort ...bool) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body
@@ -74,8 +63,6 @@ func CollapseConfigurationUpdates(body []byte, keepTopLevelEffort ...bool) []byt
 	}
 	return doc.Bytes()
 }
-
-
 
 func CollapseConfigurationUpdatesDoc(doc *ojson.Doc, keepTopLevelEffort ...bool) {
 	_ = collapseConfigurationUpdatesDoc(doc, true, keepTopLevelEffort...)
@@ -98,17 +85,13 @@ func collapseConfigurationUpdatesDoc(doc *ojson.Doc, docValid bool, keepTopLevel
 	return modified
 }
 
-
 func StripConfigurationUpdates(body []byte) []byte {
 	return stripConfigurationUpdates(body)
 }
 
-
 func StripConfigurationUpdatesDoc(doc *ojson.Doc) {
 	_ = stripConfigurationUpdatesDoc(doc, true)
 }
-
-
 
 func stripConfigurationUpdates(body []byte) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
@@ -145,7 +128,6 @@ func stripConfigurationUpdatesDoc(doc *ojson.Doc, docValid bool) bool {
 	}
 	return doc.SetRaw("input", "["+strings.Join(kept, ",")+"]") == nil
 }
-
 
 func stripResponsesEffort(body []byte) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {

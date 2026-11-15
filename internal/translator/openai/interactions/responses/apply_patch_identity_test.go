@@ -61,7 +61,6 @@ func TestInteractionsApplyPatchNamedLateIdentity(t *testing.T) {
 	}
 }
 
-
 func TestInteractionsApplyPatchFirstLateIDAccepted(t *testing.T) {
 	var param any
 	patchSend(&param, patchStep("step.start", map[string]any{"type": "function_call", "id": "item_2", "name": "functions__apply_patch"}))
@@ -96,7 +95,6 @@ func TestInteractionsApplyPatchNamedLateIdentityEvidence(t *testing.T) {
 		})
 	}
 }
-
 
 func TestInteractionsApplyPatchUnresolvedAllKeys(t *testing.T) {
 	for _, partial := range []bool{false, true} {

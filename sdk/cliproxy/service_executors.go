@@ -20,11 +20,9 @@ type openAICompatibilityRegistrationCache struct {
 	byIndex map[int]*openAICompatibilityRegistrationEntry
 }
 
-
 var pluginHostHasAuthProvider = func(host *pluginhost.Host, provider string) bool {
 	return host != nil && host.HasAuthProvider(provider)
 }
-
 
 var pluginHostHasAuthModelProvider = func(host *pluginhost.Host, provider string) bool {
 	return host != nil && host.HasAuthModelProvider(provider)
@@ -195,7 +193,6 @@ func (s *Service) registerAvailableExecutors(ctx context.Context, opts executorR
 		return
 	}
 
-
 	if opts.includeBaseline {
 		s.registerExecutorsForAuths(baselineExecutorAuths(), opts.forceReplaceAuths)
 	}
@@ -279,8 +276,6 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 		return
 	}
 
-
-
 	if a.Disabled {
 		return
 	}
@@ -339,14 +334,9 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 			return
 		}
 
-
 		s.registerOpenAICompatProviderExecutor(providerKey, a, cfg, forceReplace, true)
 	}
 }
-
-
-
-
 
 func (s *Service) registerOpenAICompatProviderExecutor(providerKey string, auth *coreauth.Auth, cfg *config.Config, forceReplace bool, respectNonOwned bool) {
 	if s == nil || s.coreManager == nil {
@@ -444,14 +434,6 @@ func shouldUpgradeOpenAICompatToPluginRefresh(existing, next coreauth.ProviderEx
 	return bareOpenAICompat
 }
 
-
-
-
-
-
-
-
-
 func (s *Service) registerResolvedModelsForAuthFenced(a *coreauth.Auth, fence modelRegistrationFence, providerKey string, models []*ModelInfo) bool {
 	if a == nil || a.ID == "" {
 		return true
@@ -483,10 +465,6 @@ func (s *Service) registerResolvedModelsForAuthFenced(a *coreauth.Auth, fence mo
 	return true
 }
 
-
-
-
-
 func (s *Service) unregisterModelsForAuthFenced(a *coreauth.Auth, fence modelRegistrationFence) bool {
 	if a == nil || a.ID == "" {
 		return true
@@ -504,9 +482,6 @@ func (s *Service) pluginModelsForProvider(providerKey string) []*ModelInfo {
 	}
 	return s.pluginHost.ModelsForProvider(providerKey)
 }
-
-
-
 
 func (s *Service) appendPluginModels(providerKey string, models []*ModelInfo, excluded []string) []*ModelInfo {
 	pluginModels := applyExcludedModels(s.pluginModelsForProvider(providerKey), excluded)
@@ -550,13 +525,6 @@ func (s *Service) tryRegisterPluginModelsForAuth(ctx context.Context, a *coreaut
 func (s *Service) tryRegisterPluginModelsForAuthWithConfig(ctx context.Context, cfg *config.Config, a *coreauth.Auth, provider, authKind string, excluded []string) (bool, bool) {
 	return s.tryRegisterPluginModelsForAuthWithConfigFenced(ctx, cfg, a, newModelRegistrationFence(a, cfg), provider, authKind, excluded)
 }
-
-
-
-
-
-
-
 
 func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Context, cfg *config.Config, a *coreauth.Auth, fence modelRegistrationFence, provider, authKind string, excluded []string) (bool, bool) {
 	if s == nil || s.pluginHost == nil || a == nil {
@@ -603,9 +571,6 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 		updated, committed, errUpdate := s.coreManager.UpdateIfRegistrationCurrent(ctx, a, result.Auth)
 		if errUpdate != nil {
 
-
-
-
 			log.WithFields(log.Fields{"auth_id": a.ID, "provider": providerKey}).Warnf("plugin model registration for auth %s failed to commit its auth update: %v", a.ID, errUpdate)
 			return true, true
 		}
@@ -613,8 +578,6 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 			activeAuth = updated.Clone()
 			pluginAuthCommitted = true
 		} else {
-
-
 
 			log.WithFields(log.Fields{"auth_id": a.ID, "provider": providerKey}).Warnf("plugin model registration for auth %s was superseded before its auth update could commit; discarded the stale plugin result", a.ID)
 			return true, false
@@ -649,10 +612,6 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 	models = applyOAuthModelAliasForAuth(cfg, providerKey, activeAuthKind, activeAuth.Attributes, models)
 	publicationFence := fence
 	if pluginAuthCommitted {
-
-
-
-
 
 		publicationFence = fence.withAuth(activeAuth)
 	}

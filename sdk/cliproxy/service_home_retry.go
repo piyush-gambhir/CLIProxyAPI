@@ -8,8 +8,6 @@ const (
 	homeSubscriberStablePeriod = 30 * time.Second
 )
 
-
-
 type homeSubscriberRetryBackoff struct {
 	delay time.Duration
 }

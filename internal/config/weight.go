@@ -7,9 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
 const MaxCredentialWeight = int(credentialweight.Max)
-
 
 func ValidateCredentialWeight(weight *int) error {
 	if weight == nil {
@@ -108,7 +106,6 @@ func validateOpenAICompatibilityWeightNodes(sequence *yaml.Node) error {
 	}
 	return nil
 }
-
 
 func (cfg *Config) ValidateCredentialWeights() error {
 	if cfg == nil {

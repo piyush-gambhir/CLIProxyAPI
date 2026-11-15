@@ -10,10 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
 const maxRefreshTimerWait = 30 * time.Second
 
 type authAutoRefreshLoop struct {
@@ -392,8 +388,6 @@ func (l *authAutoRefreshLoop) remove(authID string) {
 	delete(l.index, authID)
 }
 
-
-
 func (m *Manager) nextRefreshCheckAt(now time.Time, auth *Auth, interval time.Duration) (time.Time, bool) {
 	if m.codexAutoRefreshUnavailable(auth, now) {
 		return time.Time{}, false
@@ -408,11 +402,6 @@ func nextRefreshCheckAt(now time.Time, auth *Auth, interval time.Duration) (time
 	if hasUnauthorizedAuthFailure(auth) || hasDisabledInvalidGrantFailure(auth) {
 		return time.Time{}, false
 	}
-
-
-
-
-
 
 	if _, hasEvaluator := auth.Runtime.(RefreshEvaluator); hasEvaluator {
 

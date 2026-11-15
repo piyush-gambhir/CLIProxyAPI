@@ -13,7 +13,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
 func weightedStateForTest(t *testing.T, selector *WeightedRoundRobinSelector, route string, ids ...string) *weightedPoolState {
 	t.Helper()
 	weights := make(map[string]int64, len(ids))

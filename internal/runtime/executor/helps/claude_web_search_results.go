@@ -20,9 +20,6 @@ var (
 	claudeWebSearchCitationMarker   = []byte(`"web_search_result_location"`)
 )
 
-
-
-
 func WithClaudeWebSearchResultRestore(ctx context.Context, sessionKey string, ttl ...time.Duration) context.Context {
 	if strings.TrimSpace(sessionKey) == "" {
 		return ctx
@@ -36,15 +33,9 @@ func WithClaudeWebSearchResultRestore(ctx context.Context, sessionKey string, tt
 	})
 }
 
-
-
-
-
 func RecordClaudeWebSearchResults(sessionKey string, data []byte, ttl time.Duration, limit int) {
 	RecordClaudeWebSearchResultsContext(context.Background(), sessionKey, data, ttl, limit)
 }
-
-
 
 func RecordClaudeWebSearchResultsContext(ctx context.Context, sessionKey string, data []byte, ttl time.Duration, limit int) {
 	if strings.TrimSpace(sessionKey) == "" || !bytes.Contains(data, claudeWebSearchToolResultMarker) {
@@ -80,22 +71,13 @@ func recordClaudeWebSearchResultBlock(ctx context.Context, sessionKey string, bl
 	cache.CacheClaudeWebSearchResultBestEffort(ctx, sessionKey, strings.Clone(block.Get("tool_use_id").String()), []byte(content.Raw), ttl, limit)
 }
 
-
-
-
-
 func RestoreClaudeWebSearchResults(body []byte, sessionKey string, ttl ...time.Duration) []byte {
 	return RestoreClaudeWebSearchResultsContext(context.Background(), body, sessionKey, ttl...)
 }
 
-
-
 func RestoreClaudeWebSearchResultsDoc(doc *ojson.Doc, sessionKey string, ttl ...time.Duration) bool {
 	return RestoreClaudeWebSearchResultsContextDoc(context.Background(), doc, sessionKey, ttl...)
 }
-
-
-
 
 func RestoreClaudeWebSearchResultsContext(ctx context.Context, body []byte, sessionKey string, ttl ...time.Duration) []byte {
 	if !bytes.Contains(body, claudeWebSearchToolResultMarker) {
@@ -110,10 +92,6 @@ func RestoreClaudeWebSearchResultsContext(ctx context.Context, body []byte, sess
 	}
 	return doc.Bytes()
 }
-
-
-
-
 
 func RestoreClaudeWebSearchResultsContextDoc(ctx context.Context, doc *ojson.Doc, sessionKey string, ttl ...time.Duration) bool {
 	if doc == nil || doc.Len() == 0 {

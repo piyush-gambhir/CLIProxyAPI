@@ -17,20 +17,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type AntigravityAuthenticator struct{}
-
 
 func NewAntigravityAuthenticator() Authenticator { return &AntigravityAuthenticator{} }
 
-
 func (AntigravityAuthenticator) Provider() string { return "antigravity" }
-
 
 func (AntigravityAuthenticator) RefreshLead() *time.Duration {
 	return new(30 * time.Minute)
 }
-
 
 func (AntigravityAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error) {
 	if cfg == nil {
@@ -172,7 +167,6 @@ waitForCallback:
 		return nil, fmt.Errorf("antigravity: empty email returned from user info")
 	}
 
-
 	projectID := ""
 	if accessToken != "" {
 		fetchedProjectID, errProject := authSvc.FetchProjectID(ctx, accessToken)
@@ -243,16 +237,13 @@ func startAntigravityCallbackServer(port int) (*http.Server, int, <-chan callbac
 	return srv, port, resultCh, nil
 }
 
-
 func FetchAntigravityProjectID(ctx context.Context, accessToken string, httpClient *http.Client) (string, error) {
 	cfg := &config.Config{}
 	authSvc := antigravity.NewAntigravityAuth(cfg, httpClient)
 	return authSvc.FetchProjectID(ctx, accessToken)
 }
 
-
 const AntigravityDefaultCallbackPort = antigravity.CallbackPort
-
 
 type AntigravityTokenResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -261,35 +252,26 @@ type AntigravityTokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-
 func AntigravityDefaultCallbackURI() string {
 	return fmt.Sprintf("http://localhost:%d/oauth-callback", AntigravityDefaultCallbackPort)
 }
-
 
 func AntigravityUserAgent() string {
 	return misc.AntigravityUserAgent()
 }
 
-
-
 func StartAntigravityVersionUpdater(ctx context.Context) {
 	misc.StartAntigravityVersionUpdater(ctx)
 }
-
-
 
 func AntigravityRequestUserAgent(userAgent string) string {
 	return misc.AntigravityRequestUserAgent(userAgent)
 }
 
-
-
 func BuildAntigravityAuthURL(state, redirectURI string) string {
 	authSvc := antigravity.NewAntigravityAuth(nil, nil)
 	return authSvc.BuildAuthURL(state, redirectURI)
 }
-
 
 func ExchangeAntigravityCode(ctx context.Context, code, redirectURI string, httpClient *http.Client) (*AntigravityTokenResponse, error) {
 	if strings.TrimSpace(redirectURI) == "" {
@@ -311,12 +293,10 @@ func ExchangeAntigravityCode(ctx context.Context, code, redirectURI string, http
 	}, nil
 }
 
-
 func FetchAntigravityUserInfo(ctx context.Context, accessToken string, httpClient *http.Client) (string, error) {
 	authSvc := antigravity.NewAntigravityAuth(nil, httpClient)
 	return authSvc.FetchUserInfo(ctx, accessToken)
 }
-
 
 func BuildAntigravityAuth(tokenResp *AntigravityTokenResponse, email, projectID string) *coreauth.Auth {
 	if tokenResp == nil {
@@ -354,8 +334,6 @@ func BuildAntigravityAuth(tokenResp *AntigravityTokenResponse, email, projectID 
 		Metadata: metadata,
 	}
 }
-
-
 
 func CompleteAntigravityOAuth(ctx context.Context, code, redirectURI string, httpClient *http.Client) (*coreauth.Auth, error) {
 	tokenResp, errExchange := ExchangeAntigravityCode(ctx, code, redirectURI, httpClient)

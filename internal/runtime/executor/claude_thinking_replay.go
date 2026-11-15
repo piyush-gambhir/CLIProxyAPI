@@ -16,7 +16,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type claudeThinkingReplayScope = kimiThinkingReplayScope
 
 func claudeThinkingReplayEnabled(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) bool {
@@ -32,7 +31,6 @@ func claudeThinkingReplayEnabled(auth *cliproxyauth.Auth, req cliproxyexecutor.R
 	apiKey, _ := claudeCreds(auth)
 	return strings.TrimSpace(apiKey) != "" && !isClaudeOAuthToken(apiKey)
 }
-
 
 func claudeThinkingReplayScopeFromRequest(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) claudeThinkingReplayScope {
 	sessionKey := codexReasoningReplaySessionKey(ctx, sdktranslator.FormatClaude, req, opts, req.Payload)

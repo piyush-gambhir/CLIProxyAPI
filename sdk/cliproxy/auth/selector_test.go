@@ -282,8 +282,6 @@ func TestWeightedRoundRobinSelectorPick_SubsetFilteringDoesNotResetAccumulatorOr
 	authD := &Auth{ID: "auth-d"}
 	subsetPool := []*Auth{authB, authC, authD}
 
-
-
 	retryCounts := make(map[string]int)
 	for index := 0; index < 30; index++ {
 		got, errPick := selector.Pick(context.Background(), "provider", "model", cliproxyexecutor.Options{}, subsetPool)
@@ -308,18 +306,15 @@ func TestSmoothWeightedStatePrepare_KeepsCreditsForTransientSubsetsAndBoundsGrow
 	state.current["a"] = -2
 	state.current["b"] = 1
 
-
 	state.prepare(map[string]int64{"b": 1})
 	if state.current["a"] != -2 || state.current["b"] != 1 {
 		t.Fatalf("credits after subset prepare = %#v, want a:-2 b:1", state.current)
 	}
 
-
 	state.prepare(map[string]int64{"b": 5})
 	if len(state.current) != 0 {
 		t.Fatalf("credits after weight change = %#v, want empty", state.current)
 	}
-
 
 	for index := 0; index < maxSmoothWeightedStateEntries*3; index++ {
 		state.prepare(map[string]int64{fmt.Sprintf("churn-%d", index): 5})
@@ -726,9 +721,6 @@ func TestRoundRobinSelectorPick_ResumesRotationAcrossRetryExclusions(t *testing.
 		auths = append(auths, &Auth{ID: id})
 	}
 
-
-
-
 	selector := &RoundRobinSelector{}
 	const requests = 50
 	firstAttempt := make(map[string]int)
@@ -766,8 +758,6 @@ func TestRoundRobinSelectorPick_ResumesRotationAcrossRetryExclusions(t *testing.
 
 func TestWeightedRoundRobinSelectorPick_KeepsWeightRatiosWhenCandidatesAreExcluded(t *testing.T) {
 	t.Parallel()
-
-
 
 	selector := &WeightedRoundRobinSelector{}
 	authA := &Auth{ID: "auth-a", Attributes: map[string]string{AttributeWeight: "5"}}
@@ -910,10 +900,8 @@ func TestSessionAffinitySelector_SameSessionSameAuth(t *testing.T) {
 		{ID: "auth-c"},
 	}
 
-
 	payload := []byte(`{"metadata":{"user_id":"user_xxx_account__session_ac980658-63bd-4fb3-97ba-8da64cb1e344"}}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: payload}
-
 
 	first, err := selector.Pick(context.Background(), "claude", "claude-3", opts, auths)
 	if err != nil {
@@ -922,7 +910,6 @@ func TestSessionAffinitySelector_SameSessionSameAuth(t *testing.T) {
 	if first == nil {
 		t.Fatalf("Pick() returned nil")
 	}
-
 
 	for i := 0; i < 10; i++ {
 		got, err := selector.Pick(context.Background(), "claude", "claude-3", opts, auths)
@@ -959,7 +946,6 @@ func TestSessionAffinitySelector_ThinkingSuffixVariantsPreserveBindingAndRelease
 		t.Fatalf("first Pick() returned nil")
 	}
 
-
 	second, errSecond := selector.Pick(context.Background(), "anthropic", "claude-sonnet-4-5(high)", opts, auths)
 	if errSecond != nil {
 		t.Fatalf("second Pick() error = %v", errSecond)
@@ -968,7 +954,6 @@ func TestSessionAffinitySelector_ThinkingSuffixVariantsPreserveBindingAndRelease
 		t.Fatalf("second Pick() auth.ID = %q, want %q (thinking suffix variant should keep session stickiness)", second.ID, first.ID)
 	}
 
-
 	third, errThird := selector.Pick(context.Background(), "anthropic", "claude-sonnet-4-5(medium)", opts, auths)
 	if errThird != nil {
 		t.Fatalf("third Pick() error = %v", errThird)
@@ -976,7 +961,6 @@ func TestSessionAffinitySelector_ThinkingSuffixVariantsPreserveBindingAndRelease
 	if third.ID != first.ID {
 		t.Fatalf("third Pick() auth.ID = %q, want %q (thinking suffix variant should keep session stickiness)", third.ID, first.ID)
 	}
-
 
 	optsWithMetadata := cliproxyexecutor.Options{
 		OriginalRequest: payload,
@@ -993,7 +977,6 @@ func TestSessionAffinitySelector_ThinkingSuffixVariantsPreserveBindingAndRelease
 		Error:    &Error{Code: "rate_limited", Message: "rate limited"},
 		Options:  optsWithMetadata,
 	})
-
 
 	next, errNext := selector.Pick(context.Background(), "anthropic", "claude-sonnet-4-5", opts, auths)
 	if errNext != nil {
@@ -1085,7 +1068,6 @@ func TestSessionAffinitySelector_NoSessionFallback(t *testing.T) {
 		{ID: "auth-c"},
 	}
 
-
 	payload := []byte(`{"model":"claude-3"}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: payload}
 
@@ -1110,7 +1092,6 @@ func TestSessionAffinitySelector_DifferentSessionsDifferentAuths(t *testing.T) {
 		{ID: "auth-c"},
 	}
 
-
 	session1 := []byte(`{"metadata":{"user_id":"user_xxx_account__session_11111111-1111-1111-1111-111111111111"}}`)
 	session2 := []byte(`{"metadata":{"user_id":"user_xxx_account__session_22222222-2222-2222-2222-222222222222"}}`)
 
@@ -1119,8 +1100,6 @@ func TestSessionAffinitySelector_DifferentSessionsDifferentAuths(t *testing.T) {
 
 	auth1, _ := selector.Pick(context.Background(), "claude", "claude-3", opts1, auths)
 	auth2, _ := selector.Pick(context.Background(), "claude", "claude-3", opts2, auths)
-
-
 
 	for i := 0; i < 5; i++ {
 		got1, _ := selector.Pick(context.Background(), "claude", "claude-3", opts1, auths)
@@ -1153,12 +1132,10 @@ func TestSessionAffinitySelector_FailoverWhenAuthUnavailable(t *testing.T) {
 	payload := []byte(`{"metadata":{"user_id":"user_xxx_account__session_failover-test-uuid"}}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: payload}
 
-
 	first, err := selector.Pick(context.Background(), "claude", "claude-3", opts, auths)
 	if err != nil {
 		t.Fatalf("Pick() error = %v", err)
 	}
-
 
 	availableWithoutFirst := make([]*Auth, 0, len(auths)-1)
 	for _, a := range auths {
@@ -1167,7 +1144,6 @@ func TestSessionAffinitySelector_FailoverWhenAuthUnavailable(t *testing.T) {
 		}
 	}
 
-
 	second, err := selector.Pick(context.Background(), "claude", "claude-3", opts, availableWithoutFirst)
 	if err != nil {
 		t.Fatalf("Pick() after failover error = %v", err)
@@ -1175,7 +1151,6 @@ func TestSessionAffinitySelector_FailoverWhenAuthUnavailable(t *testing.T) {
 	if second.ID == first.ID {
 		t.Fatalf("Pick() after failover returned same auth %q, expected different", first.ID)
 	}
-
 
 	for i := 0; i < 5; i++ {
 		got, _ := selector.Pick(context.Background(), "claude", "claude-3", opts, availableWithoutFirst)
@@ -1187,7 +1162,6 @@ func TestSessionAffinitySelector_FailoverWhenAuthUnavailable(t *testing.T) {
 
 func TestExtractSessionID_NestedRequestSubagent(t *testing.T) {
 	t.Parallel()
-
 
 	payloadAgent := []byte(`{
 		"request": {
@@ -1205,7 +1179,6 @@ func TestExtractSessionID_NestedRequestSubagent(t *testing.T) {
 		t.Fatalf("extractExplicitSessionIDs() = (%q, %q), want (session:root:agent:worker, session:root)", primary, fallback)
 	}
 
-
 	payloadSubagent := []byte(`{
 		"request": {
 			"sessionId": "root",
@@ -1221,7 +1194,6 @@ func TestExtractSessionID_NestedRequestSubagent(t *testing.T) {
 	if primary != "session:root:agent:worker" || fallback != "session:root" {
 		t.Fatalf("extractExplicitSessionIDs() = (%q, %q), want (session:root:agent:worker, session:root)", primary, fallback)
 	}
-
 
 	payloadParent := []byte(`{
 		"request": {
@@ -1240,7 +1212,6 @@ func TestExtractSessionID_NestedRequestSubagent(t *testing.T) {
 		t.Fatalf("extractExplicitSessionIDs() = (%q, %q), want (session:root:agent:worker, session:parent-root)", primary, fallback)
 	}
 
-
 	payloadPCKShadow := []byte(`{
 		"prompt_cache_key": "",
 		"request": {
@@ -1254,7 +1225,6 @@ func TestExtractSessionID_NestedRequestSubagent(t *testing.T) {
 
 func TestExtractSessionID_ClaudeCodePriorityOverHeader(t *testing.T) {
 	t.Parallel()
-
 
 	headers := make(http.Header)
 	headers.Set("X-Session-ID", "header-session-id")
@@ -1270,7 +1240,6 @@ func TestExtractSessionID_ClaudeCodePriorityOverHeader(t *testing.T) {
 
 func TestExtractSessionID_ClaudeCodePriorityOverIdempotencyKey(t *testing.T) {
 	t.Parallel()
-
 
 	metadata := map[string]any{"idempotency_key": "idem-12345"}
 	payload := []byte(`{"metadata":{"user_id":"user_xxx_account__session_ac980658-63bd-4fb3-97ba-8da64cb1e344"}}`)
@@ -1335,8 +1304,6 @@ func TestExtractSessionID_CodexSessionIDPriorityOverClientRequestID(t *testing.T
 	}
 }
 
-
-
 func TestExtractSessionID_IdempotencyKey(t *testing.T) {
 	t.Parallel()
 
@@ -1391,7 +1358,6 @@ func TestExtractSessionID_DerivedSessionAndExplicitPriority(t *testing.T) {
 func TestExtractSessionID_MessageHashFallback(t *testing.T) {
 	t.Parallel()
 
-
 	firstRequestPayload := []byte(`{"messages":[{"role":"user","content":"Hello world"}]}`)
 	shortHash := ExtractSessionID(nil, firstRequestPayload, nil)
 	if shortHash == "" {
@@ -1400,7 +1366,6 @@ func TestExtractSessionID_MessageHashFallback(t *testing.T) {
 	if !strings.HasPrefix(shortHash, "msg:") {
 		t.Errorf("ExtractSessionID() = %q, want prefix 'msg:'", shortHash)
 	}
-
 
 	multiTurnPayload := []byte(`{"messages":[
 		{"role":"user","content":"Hello world"},
@@ -1415,7 +1380,6 @@ func TestExtractSessionID_MessageHashFallback(t *testing.T) {
 		t.Error("Full hash should differ from short hash (includes assistant)")
 	}
 
-
 	fullHash2 := ExtractSessionID(nil, multiTurnPayload, nil)
 	if fullHash != fullHash2 {
 		t.Errorf("ExtractSessionID() not stable: got %q then %q", fullHash, fullHash2)
@@ -1424,7 +1388,6 @@ func TestExtractSessionID_MessageHashFallback(t *testing.T) {
 
 func TestExtractSessionID_ClaudeAPITopLevelSystem(t *testing.T) {
 	t.Parallel()
-
 
 	arraySystem := []byte(`{
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}],
@@ -1435,7 +1398,6 @@ func TestExtractSessionID_ClaudeAPITopLevelSystem(t *testing.T) {
 		t.Errorf("ExtractSessionID() with array system = %q, want msg:* prefix", got1)
 	}
 
-
 	stringSystem := []byte(`{
 		"messages": [{"role": "user", "content": "Hello"}],
 		"system": "You are Claude Code"
@@ -1444,7 +1406,6 @@ func TestExtractSessionID_ClaudeAPITopLevelSystem(t *testing.T) {
 	if got2 == "" || !strings.HasPrefix(got2, "msg:") {
 		t.Errorf("ExtractSessionID() with string system = %q, want msg:* prefix", got2)
 	}
-
 
 	multiTurn := []byte(`{
 		"messages": [
@@ -1466,7 +1427,6 @@ func TestExtractSessionID_ClaudeAPITopLevelSystem(t *testing.T) {
 func TestExtractSessionID_GeminiFormat(t *testing.T) {
 	t.Parallel()
 
-
 	payload := []byte(`{
 		"systemInstruction": {"parts": [{"text": "You are a helpful assistant."}]},
 		"contents": [
@@ -1483,12 +1443,10 @@ func TestExtractSessionID_GeminiFormat(t *testing.T) {
 		t.Errorf("ExtractSessionID() = %q, want prefix 'msg:'", got)
 	}
 
-
 	got2 := ExtractSessionID(nil, payload, nil)
 	if got != got2 {
 		t.Errorf("ExtractSessionID() not stable: got %q then %q", got, got2)
 	}
-
 
 	differentPayload := []byte(`{
 		"systemInstruction": {"parts": [{"text": "You are a helpful assistant."}]},
@@ -1902,14 +1860,11 @@ func TestSessionAffinitySelector_MultiModelSession(t *testing.T) {
 	})
 	defer selector.Stop()
 
-
 	authA := &Auth{ID: "auth-a"}
 	authB := &Auth{ID: "auth-b"}
 
-
 	payload := []byte(`{"metadata":{"user_id":"user_xxx_account__session_multi-model-test"}}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: payload}
-
 
 	authsForModelA := []*Auth{authA}
 	pickedA, err := selector.Pick(context.Background(), "provider", "model-a", opts, authsForModelA)
@@ -1920,7 +1875,6 @@ func TestSessionAffinitySelector_MultiModelSession(t *testing.T) {
 		t.Fatalf("Pick() for model-a = %q, want auth-a", pickedA.ID)
 	}
 
-
 	authsForModelB := []*Auth{authB}
 	pickedB, err := selector.Pick(context.Background(), "provider", "model-b", opts, authsForModelB)
 	if err != nil {
@@ -1930,7 +1884,6 @@ func TestSessionAffinitySelector_MultiModelSession(t *testing.T) {
 		t.Fatalf("Pick() for model-b = %q, want auth-b", pickedB.ID)
 	}
 
-
 	pickedA2, err := selector.Pick(context.Background(), "provider", "model-a", opts, authsForModelA)
 	if err != nil {
 		t.Fatalf("Pick() for model-a (2nd) error = %v", err)
@@ -1938,7 +1891,6 @@ func TestSessionAffinitySelector_MultiModelSession(t *testing.T) {
 	if pickedA2.ID != "auth-a" {
 		t.Fatalf("Pick() for model-a (2nd) = %q, want auth-a", pickedA2.ID)
 	}
-
 
 	for i := 0; i < 5; i++ {
 		gotA, _ := selector.Pick(context.Background(), "provider", "model-a", opts, authsForModelA)
@@ -1955,7 +1907,6 @@ func TestSessionAffinitySelector_MultiModelSession(t *testing.T) {
 func TestExtractSessionID_MultimodalContent(t *testing.T) {
 	t.Parallel()
 
-
 	firstRequestPayload := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"Hello world"},{"type":"image","source":{"data":"..."}}]}]}`)
 	shortHash := ExtractSessionID(nil, firstRequestPayload, nil)
 	if shortHash == "" {
@@ -1964,7 +1915,6 @@ func TestExtractSessionID_MultimodalContent(t *testing.T) {
 	if !strings.HasPrefix(shortHash, "msg:") {
 		t.Errorf("ExtractSessionID() = %q, want prefix 'msg:'", shortHash)
 	}
-
 
 	multiTurnPayload := []byte(`{"messages":[
 		{"role":"user","content":[{"type":"text","text":"Hello world"},{"type":"image","source":{"data":"..."}}]},
@@ -1978,7 +1928,6 @@ func TestExtractSessionID_MultimodalContent(t *testing.T) {
 	if fullHash == shortHash {
 		t.Error("Full hash should differ from short hash")
 	}
-
 
 	differentPayload := []byte(`{"messages":[
 		{"role":"user","content":[{"type":"text","text":"Different content"}]},
@@ -2003,10 +1952,8 @@ func TestSessionAffinitySelector_CrossProviderIsolation(t *testing.T) {
 	authClaude := &Auth{ID: "auth-claude"}
 	authGemini := &Auth{ID: "auth-gemini"}
 
-
 	payload := []byte(`{"metadata":{"user_id":"user_xxx_account__session_cross-provider-test"}}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: payload}
-
 
 	pickedClaude, err := selector.Pick(context.Background(), "claude", "claude-3", opts, []*Auth{authClaude})
 	if err != nil {
@@ -2016,7 +1963,6 @@ func TestSessionAffinitySelector_CrossProviderIsolation(t *testing.T) {
 		t.Fatalf("Pick() for claude = %q, want auth-claude", pickedClaude.ID)
 	}
 
-
 	pickedGemini, err := selector.Pick(context.Background(), "gemini", "gemini-2.5-pro", opts, []*Auth{authGemini})
 	if err != nil {
 		t.Fatalf("Pick() for gemini error = %v", err)
@@ -2024,7 +1970,6 @@ func TestSessionAffinitySelector_CrossProviderIsolation(t *testing.T) {
 	if pickedGemini.ID != "auth-gemini" {
 		t.Fatalf("Pick() for gemini = %q, want auth-gemini", pickedGemini.ID)
 	}
-
 
 	for i := 0; i < 5; i++ {
 		gotC, _ := selector.Pick(context.Background(), "claude", "claude-3", opts, []*Auth{authClaude})
@@ -2046,12 +1991,10 @@ func TestSessionCache_GetAndRefresh(t *testing.T) {
 
 	cache.Set("session1", "auth1")
 
-
 	got, ok := cache.GetAndRefresh("session1")
 	if !ok || got != "auth1" {
 		t.Fatalf("GetAndRefresh() = %q, %v, want auth1, true", got, ok)
 	}
-
 
 	time.Sleep(60 * time.Millisecond)
 	got, ok = cache.GetAndRefresh("session1")
@@ -2059,14 +2002,11 @@ func TestSessionCache_GetAndRefresh(t *testing.T) {
 		t.Fatalf("GetAndRefresh() after 60ms = %q, %v, want auth1, true", got, ok)
 	}
 
-
-
 	time.Sleep(60 * time.Millisecond)
 	got, ok = cache.GetAndRefresh("session1")
 	if !ok || got != "auth1" {
 		t.Fatalf("GetAndRefresh() after refresh = %q, %v, want auth1, true (TTL should have been refreshed)", got, ok)
 	}
-
 
 	time.Sleep(110 * time.Millisecond)
 	got, ok = cache.GetAndRefresh("session1")
@@ -2130,7 +2070,6 @@ func TestSessionAffinitySelector_Concurrent(t *testing.T) {
 
 	payload := []byte(`{"metadata":{"user_id":"user_xxx_account__session_concurrent-test"}}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: payload}
-
 
 	first, err := selector.Pick(context.Background(), "claude", "claude-3", opts, auths)
 	if err != nil {
@@ -2516,7 +2455,6 @@ func TestManagerSetSelectorUncomparableTypes(t *testing.T) {
 	sel1 := uncomparableSelector{fn: func() {}}
 	sel2 := uncomparableSelector{fn: func() {}}
 
-
 	manager.SetSelector(sel1)
 	manager.SetSelector(sel2)
 	manager.SetSelector(nil)
@@ -2526,7 +2464,6 @@ func TestManagerSetSelectorSameInstanceDoesNotStop(t *testing.T) {
 	t.Parallel()
 	mockSelector := &mockStoppableSelector{}
 	manager := NewManager(nil, mockSelector, nil)
-
 
 	manager.SetSelector(mockSelector)
 	if mockSelector.stopped {
@@ -2585,7 +2522,6 @@ func TestSessionAffinitySelector_LongCompositeIDBoundConsistency(t *testing.T) {
 		t.Fatalf("canonical ID %q missing hash separator", canonicalID)
 	}
 
-
 	resolvedID := CanonicalSessionID(opts.Headers, opts.OriginalRequest, opts.Metadata)
 	if resolvedID != canonicalID {
 		t.Fatalf("CanonicalSessionID %q != metadata canonical %q", resolvedID, canonicalID)
@@ -2607,12 +2543,10 @@ func TestSessionAffinitySelector_DerivedIDBoundConsistencyOnResult(t *testing.T)
 		},
 	}
 
-
 	pickedAuth, err := selector.Pick(context.Background(), "openai", "gpt-5.4", opts, auths)
 	if err != nil || pickedAuth == nil {
 		t.Fatalf("Pick failed: %v", err)
 	}
-
 
 	res := Result{
 		AuthID:   pickedAuth.ID,
@@ -2622,7 +2556,6 @@ func TestSessionAffinitySelector_DerivedIDBoundConsistencyOnResult(t *testing.T)
 		Options:  opts,
 	}
 	selector.OnResult(res)
-
 
 	reverseAuths := []*Auth{{ID: "auth-b"}, {ID: "auth-a"}}
 	secondPicked, err := selector.Pick(context.Background(), "openai", "gpt-5.4", opts, reverseAuths)
@@ -2637,7 +2570,6 @@ func TestSessionAffinitySelector_DerivedIDBoundConsistencyOnResult(t *testing.T)
 func TestExtractExplicitSessionIDs_EnhancedHarnesses(t *testing.T) {
 	t.Parallel()
 
-
 	rooHeaders := http.Header{}
 	rooHeaders.Set("X-Task-ID", "task-abc-1")
 	rooHeaders.Set("X-Parent-Task-ID", "task-root-1")
@@ -2650,7 +2582,6 @@ func TestExtractExplicitSessionIDs_EnhancedHarnesses(t *testing.T) {
 		t.Fatalf("ParentSessionIDMetadataKey = %v, want task:task-root-1", meta[cliproxyexecutor.ParentSessionIDMetadataKey])
 	}
 
-
 	clawPayload := []byte(`{"sessionId":"claw-c-1","forkSource":{"sessionId":"claw-p-1"}}`)
 	metaClaw := map[string]any{}
 	primary, fallback = extractExplicitSessionIDs(nil, clawPayload, metaClaw)
@@ -2660,7 +2591,6 @@ func TestExtractExplicitSessionIDs_EnhancedHarnesses(t *testing.T) {
 	if isFork, ok := metaClaw[cliproxyexecutor.IsForkMetadataKey].(bool); !ok || !isFork {
 		t.Fatalf("OpenClaw IsForkMetadataKey = %v, want true", metaClaw[cliproxyexecutor.IsForkMetadataKey])
 	}
-
 
 	selector := NewSessionAffinitySelector(&RoundRobinSelector{})
 	defer selector.Stop()
@@ -2680,7 +2610,6 @@ func TestExtractExplicitSessionIDs_EnhancedHarnesses(t *testing.T) {
 		Success:  true,
 		Options:  parentOpts,
 	})
-
 
 	subagentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{

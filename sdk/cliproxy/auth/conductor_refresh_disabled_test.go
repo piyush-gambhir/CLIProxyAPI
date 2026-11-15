@@ -63,7 +63,6 @@ func TestRefreshAuthForRequest_NormalDisabledAuth_RefreshesTokenSuccessfully(t *
 	executor := &mockOAuthErrorExecutor{id: "test-provider"}
 	manager.RegisterExecutor(executor)
 
-
 	auth := &Auth{
 		ID:       "normal-disabled-auth",
 		Provider: "test-provider",
@@ -117,7 +116,6 @@ func TestRefreshAuthForRequest_DisabledAuth_InvalidGrant_NeverRetries(t *testing
 		t.Fatalf("Register error: %v", err)
 	}
 
-
 	_, errRefresh := manager.refreshAuthForRequest(ctx, auth.ID, "")
 	if errRefresh == nil {
 		t.Fatalf("expected refresh error, got nil")
@@ -137,7 +135,6 @@ func TestRefreshAuthForRequest_DisabledAuth_InvalidGrant_NeverRetries(t *testing
 	if !current.NextRefreshAfter.IsZero() {
 		t.Fatalf("NextRefreshAfter = %v, want zero time (never refresh)", current.NextRefreshAfter)
 	}
-
 
 	callsBefore := executor.refreshCalls.Load()
 	_, errSecond := manager.refreshAuthForRequest(ctx, auth.ID, "")
@@ -179,7 +176,6 @@ func TestRefreshAuthForRequest_EnabledAuth_InvalidGrant_ExponentialBackoff(t *te
 		t.Fatalf("Register error: %v", err)
 	}
 
-
 	t1 := time.Now()
 	_, _ = manager.refreshAuthForRequest(ctx, auth.ID, "")
 	manager.mu.RLock()
@@ -196,7 +192,6 @@ func TestRefreshAuthForRequest_EnabledAuth_InvalidGrant_ExponentialBackoff(t *te
 		t.Fatalf("attempt 1: backoff diff = %v, want ~1m", diff1)
 	}
 
-
 	t2 := time.Now()
 	_, _ = manager.refreshAuthForRequest(ctx, auth.ID, "")
 	manager.mu.RLock()
@@ -209,7 +204,6 @@ func TestRefreshAuthForRequest_EnabledAuth_InvalidGrant_ExponentialBackoff(t *te
 	if diff2 < 110*time.Second || diff2 > 130*time.Second {
 		t.Fatalf("attempt 2: backoff diff = %v, want ~2m", diff2)
 	}
-
 
 	t3 := time.Now()
 	_, _ = manager.refreshAuthForRequest(ctx, auth.ID, "")
@@ -256,7 +250,6 @@ func TestManager_AutoRefreshLoop_DisabledAuthWithInvalidGrantNeverRefreshes(t *t
 
 	manager.StartAutoRefresh(ctx, 10*time.Millisecond)
 	defer manager.StopAutoRefresh()
-
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -313,7 +306,6 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 	lead := CodexOuterRefreshLead
 	setRefreshLeadFactory(t, "codex", func() *time.Duration { return &lead })
 
-
 	exp := now.Add(66 * time.Hour)
 	payload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"exp":%d}`, exp.Unix())))
 	accessToken := "eyJhbGciOiJub25lIn0." + payload + ".sig"
@@ -343,7 +335,6 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("Register error: %v", errReg)
 	}
 
-
 	m.refreshAuth(ctx, a.ID)
 	got, _ := m.GetByID(a.ID)
 	if got == nil {
@@ -358,8 +349,6 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 	if !got.NextRefreshAfter.Equal(exp) {
 		t.Fatalf("NextRefreshAfter = %v, want access token expiry %v", got.NextRefreshAfter, exp)
 	}
-
-
 
 	m.mu.Lock()
 	m.auths[a.ID].NextRefreshAfter = now.Add(-time.Second)
@@ -383,7 +372,6 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 	if ex.RefreshCalls() != 1 {
 		t.Fatalf("upstream RefreshCalls = %d, want 1", ex.RefreshCalls())
 	}
-
 
 	m.mu.Lock()
 	m.auths[a.ID].NextRefreshAfter = time.Time{}
@@ -413,7 +401,6 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("Generation bumped from %d to %d without due refresh", gen0, afterLoop.Generation)
 	}
 
-
 	afterExp := exp.Add(time.Second)
 	m.mu.RLock()
 	cur = m.auths[a.ID]
@@ -423,8 +410,6 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 	if shouldRefExpired || okExpired {
 		t.Fatalf("at access token expiry for disabled credential: shouldRefresh=%v scheduled=%v, want false/false", shouldRefExpired, okExpired)
 	}
-
-
 
 	expPast := now.Add(-time.Hour)
 	expiredPayload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"exp":%d}`, expPast.Unix())))

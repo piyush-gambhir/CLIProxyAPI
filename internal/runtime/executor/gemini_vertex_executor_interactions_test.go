@@ -127,7 +127,6 @@ func TestGeminiVertexInteractions_ServiceAccount_ExecuteStream(t *testing.T) {
 	var gotQuery string
 	var gotRevision string
 
-
 	largeOutput := strings.Repeat("A", 1024*1024)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +255,6 @@ func TestGeminiVertexInteractions_ServiceAccount_WithoutOptIn_UsesGenerateConten
 		t.Fatal(errUnmarshal)
 	}
 
-
 	auth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-global-no-optin",
 		Provider: "vertex",
@@ -327,7 +325,6 @@ func TestGeminiVertexInteractions_RegionalServiceAccount_UsesStandardBridge(t *t
 	if errUnmarshal := json.Unmarshal(testVertexServiceAccountJSON(t, server.URL+"/token"), &sa); errUnmarshal != nil {
 		t.Fatal(errUnmarshal)
 	}
-
 
 	auth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-regional",
@@ -442,7 +439,6 @@ func TestGeminiVertexInteractions_APIKey_WithoutOptIn_UsesGenerateContent(t *tes
 		_, _ = w.Write([]byte(`{"responseId":"resp1","candidates":[{"content":{"parts":[{"text":"relay ok"}]},"finishReason":"STOP"}]}`))
 	}))
 	defer server.Close()
-
 
 	auth := &cliproxyauth.Auth{
 		ID:       "vertex-relay-key",

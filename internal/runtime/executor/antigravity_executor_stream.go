@@ -22,7 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (_ *cliproxyexecutor.StreamResult, err error) {
 	if opts.Alt == "responses/compact" {
 		return nil, statusErr{code: http.StatusBadRequest, msg: "streaming not supported for /responses/compact"}
@@ -107,8 +106,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 	baseURL := resolveAntigravityRequestBaseURL(auth)
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	httpClient = reporter.TrackHTTPClient(httpClient)
-
-
 
 	if useCredits {
 		if injectEnabledCreditTypesDoc(doc) {
@@ -195,7 +192,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 		return nil, err
 	}
 
-
 	if useCredits {
 		clearAntigravityCreditsFailureState(auth)
 	}
@@ -234,7 +230,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				stopDeliverySupport()
 			}
 
-
 			if terminalDelivered {
 				commitReplay()
 			}
@@ -271,7 +266,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 			if replayAccumulator != nil {
 				replayAccumulator.ObserveSSELine(line)
 			}
-
 
 			streamUsage.ObserveAntigravityStream(line)
 
@@ -312,7 +306,6 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				return
 			}
 			processPayload := func(p []byte) bool {
-
 
 				p = helps.JSONPayload(helps.FilterSSEUsageMetadata(append([]byte("data: "), p...)))
 				if len(p) == 0 {
@@ -421,13 +414,8 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 			}
 		} else if ctx.Err() == nil {
 
-
-
-
-
 			tail := helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, []byte("[DONE]"), &param, claudeInputTokens)
 			helps.RecordApplyPatchStreamFailure(ctx, param, reporter, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage})
-
 
 			commitReplay()
 			for i := range tail {

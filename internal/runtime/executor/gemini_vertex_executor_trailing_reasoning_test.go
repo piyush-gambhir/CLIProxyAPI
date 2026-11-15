@@ -23,8 +23,6 @@ const (
 	issue6630ReasoningItem = `{"type":"reasoning","id":"rs_test_1","summary":[{"type":"summary_text","text":"I should say hi briefly."}]}`
 )
 
-
-
 func issue6630VertexContents(t *testing.T, cfg *config.Config, authMode string, stream bool, input string) string {
 	t.Helper()
 	const okBody = `{"candidates":[{"content":{"role":"model","parts":[{"text":"hi"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2}}`
@@ -95,8 +93,6 @@ func issue6630VertexContents(t *testing.T, cfg *config.Config, authMode string, 
 	return ojson.GetBytes(<-captured, "contents").Raw
 }
 
-
-
 func issue6630AssertContents(t *testing.T, got, want string) {
 	t.Helper()
 	var gotValue, wantValue any
@@ -110,8 +106,6 @@ func issue6630AssertContents(t *testing.T, got, want string) {
 		t.Fatalf("upstream contents = %s, want %s", got, want)
 	}
 }
-
-
 
 func TestGeminiVertexDropsTrailingReasoningTurn(t *testing.T) {
 	const signature = "EjQKMgEMOdbHO0Gd+c9Mxk4ELwPGbpCEcp2mFfYYLix2UVtBH3fL8GECc4+JITVnHF4qZDsA"
@@ -155,8 +149,6 @@ func TestGeminiVertexDropsTrailingReasoningTurn(t *testing.T) {
 		}
 	}
 }
-
-
 
 func TestGeminiVertexTrailingReasoningDropPrecedesPayloadRules(t *testing.T) {
 	const configured = `[{"role":"user","parts":[{"text":"configured"}]},{"role":"model","parts":[{"text":"configured thought","thought":true}]}]`

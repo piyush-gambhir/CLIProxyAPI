@@ -17,8 +17,6 @@ import (
 
 var antigravityInteractionsSessions = cache.NewInteractionsSessionCache()
 
-
-
 type AntigravityInteractionsState struct {
 	key         string
 	id          string
@@ -35,8 +33,6 @@ func interactionsDigest(value any) string {
 	return hex.EncodeToString(sum[:])
 }
 
-
-
 func PrepareAntigravityInteractions(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, model string, body []byte) (*AntigravityInteractionsState, []byte) {
 	doc := ojson.NewDoc(body)
 	state, mutated := prepareAntigravityInteractionsDoc(auth, req, opts, model, doc)
@@ -45,7 +41,6 @@ func PrepareAntigravityInteractions(auth *cliproxyauth.Auth, req cliproxyexecuto
 	}
 	return state, doc.Bytes()
 }
-
 
 func PrepareAntigravityInteractionsDoc(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options, model string, doc *ojson.Doc) *AntigravityInteractionsState {
 	state, _ := prepareAntigravityInteractionsDoc(auth, req, opts, model, doc)
@@ -83,7 +78,6 @@ func prepareAntigravityInteractionsDoc(auth *cliproxyauth.Auth, req cliproxyexec
 		if lastUser < 0 {
 			return state, false
 		}
-
 
 		prefix := make([]json.RawMessage, 0, lastUser+1)
 		for _, step := range input[:lastUser+1] {
@@ -130,8 +124,6 @@ func prepareAntigravityInteractionsDoc(auth *cliproxyauth.Auth, req cliproxyexec
 	_ = doc.Set("input", results)
 	return state, true
 }
-
-
 
 func (s *AntigravityInteractionsState) Observe(payload []byte) {
 	if s == nil || s.key == "" {

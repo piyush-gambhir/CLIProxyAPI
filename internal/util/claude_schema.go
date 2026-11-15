@@ -4,8 +4,6 @@ import "encoding/json"
 
 const emptyClaudeToolInputSchema = `{"type":"object","properties":{}}`
 
-
-
 func NormalizeClaudeToolInputSchema(schema []byte) []byte {
 	var root map[string]json.RawMessage
 	if len(schema) == 0 || json.Unmarshal(schema, &root) != nil || root == nil {
@@ -121,24 +119,6 @@ func mergeClaudeSchemaRequired(root map[string]json.RawMessage, branchRequired j
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func HasUnsupportedUnicodePropertyEscape(pattern string) bool {
 	for i := 0; i < len(pattern); i++ {
 		if pattern[i] != '\\' {
@@ -159,7 +139,6 @@ func HasUnsupportedUnicodePropertyEscape(pattern string) bool {
 	return false
 }
 
-
 var SchemaMapKeywords = [...]string{
 	"properties",
 	"$defs",
@@ -168,7 +147,6 @@ var SchemaMapKeywords = [...]string{
 	"dependentSchemas",
 	"dependencies",
 }
-
 
 var SchemaValueKeywords = [...]string{
 	"items",

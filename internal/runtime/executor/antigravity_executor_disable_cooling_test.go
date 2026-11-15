@@ -44,14 +44,12 @@ func TestAntigravityDisableCooling_ShortCooldownBypassedInHomeMode(t *testing.T)
 	now := time.Now()
 	duration := 30 * time.Second
 
-
 	if errMark := markAntigravityShortCooldownRequired(context.Background(), auth, modelName, now, duration); errMark != nil {
 		t.Fatalf("markAntigravityShortCooldownRequired() error = %v", errMark)
 	}
 	if client.setCount != 0 {
 		t.Fatalf("KVSet count = %d, want 0 when DisableCooling is true", client.setCount)
 	}
-
 
 	antigravityShortCooldownByAuth = sync.Map{}
 	client.values[antigravityShortCooldownKVKey(auth, modelName)] = []byte("9999999999999999999")
@@ -62,7 +60,6 @@ func TestAntigravityDisableCooling_ShortCooldownBypassedInHomeMode(t *testing.T)
 	if inCooldown || remaining > 0 {
 		t.Fatalf("inCooldown = %v, remaining = %v, want false/0 when DisableCooling is true", inCooldown, remaining)
 	}
-
 
 	client.setCount = 0
 	upstreamResp := `{"error":{"code":429,"message":"Rate limit exceeded","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"RATE_LIMIT_EXCEEDED"}]}}`
@@ -162,14 +159,12 @@ func TestAntigravityDisableCooling_AuthOverrideBypassesShortCooldown(t *testing.
 	now := time.Now()
 	duration := 30 * time.Second
 
-
 	if errMark := markAntigravityShortCooldownRequired(context.Background(), auth, modelName, now, duration); errMark != nil {
 		t.Fatalf("markAntigravityShortCooldownRequired() error = %v", errMark)
 	}
 	if _, loaded := antigravityShortCooldownByAuth.Load(antigravityShortCooldownKey(auth, modelName)); loaded {
 		t.Fatalf("antigravityShortCooldownByAuth stored key, want skipped for auth with disable_cooling override")
 	}
-
 
 	antigravityShortCooldownByAuth.Store(antigravityShortCooldownKey(auth, modelName), now.Add(time.Hour))
 	inCooldown, remaining, errRead := antigravityIsInShortCooldownRequired(context.Background(), auth, modelName, now)
@@ -179,7 +174,6 @@ func TestAntigravityDisableCooling_AuthOverrideBypassesShortCooldown(t *testing.
 	if inCooldown || remaining > 0 {
 		t.Fatalf("inCooldown = %v, remaining = %v, want false/0 when auth has disable_cooling override", inCooldown, remaining)
 	}
-
 
 	antigravityShortCooldownByAuth = sync.Map{}
 	upstreamResp := `{"error":{"code":429,"message":"Rate limit exceeded","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"RATE_LIMIT_EXCEEDED"}]}}`

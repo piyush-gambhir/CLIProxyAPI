@@ -549,7 +549,6 @@ func TestRPCAuthIdentifierEntriesAndMetadataFallback(t *testing.T) {
 		t.Fatalf("OAuthProviderEntries = %#v, want %#v", infos[0].OAuthProviderEntries, wantEntries)
 	}
 
-
 	rawWireClient := &lifecycleTestClient{call: func(_ context.Context, method string, _ []byte) ([]byte, error) {
 		switch method {
 		case pluginabi.MethodPluginRegister:
@@ -891,7 +890,6 @@ func TestRPCSchedulerAndUsageSelectionIDCompatibility(t *testing.T) {
 		t.Fatalf("decodedUsage.SelectionID = %q, want %q", decodedUsage.SelectionID, "sel-rpc-123")
 	}
 
-
 	type legacyUsageRecord struct {
 		Provider  string
 		Model     string
@@ -981,7 +979,6 @@ func TestUsageRecordRPCModalityTokenCounters(t *testing.T) {
 		got.CachedAudioTokens != nil || got.AudioOutputTokens != nil {
 		t.Fatalf("expected absent modality counters to remain nil over RPC, got %+v", got)
 	}
-
 
 	type legacyUsageDetail struct {
 		InputTokens         int64
@@ -1107,7 +1104,6 @@ func TestRPCRequestBodyPatchRawCABIAndSchemaVersionGate(t *testing.T) {
 		t.Fatalf("called methods = %v, want [%s %s]", clientV8.methods, pluginabi.MethodPluginRegister, pluginabi.MethodRequestPatchBodyBefore)
 	}
 
-
 	if !bytes.Equal(clientV8.rawRequests[1], rawInput) {
 		t.Fatalf("raw C ABI request = %s, want exact rawInput %s", clientV8.rawRequests[1], rawInput)
 	}
@@ -1119,7 +1115,6 @@ func TestRPCRequestBodyPatchRawCABIAndSchemaVersionGate(t *testing.T) {
 		t.Fatalf("patched body = %s, want %s", resp.Body, wantPatched)
 	}
 
-
 	afterResp := host.InterceptRequestAfterAuth(context.Background(), pluginapi.RequestInterceptRequest{
 		Model: "gpt-5",
 		Body:  rawInput,
@@ -1127,7 +1122,6 @@ func TestRPCRequestBodyPatchRawCABIAndSchemaVersionGate(t *testing.T) {
 	if afterResp.Body != nil {
 		t.Fatalf("no-op patch returned non-nil Body = %s, want nil to reuse original body", afterResp.Body)
 	}
-
 
 	clientV7 := &recordingRawPatchClient{
 		schemaVersion: pluginabi.SchemaVersionRequestInterceptorOmitBody,

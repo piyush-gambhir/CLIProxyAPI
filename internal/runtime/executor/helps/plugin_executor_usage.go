@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
 )
 
-
 func ParsePluginExecutorResponseUsage(protocol string, payload []byte) usage.Detail {
 	if len(payload) == 0 {
 		return usage.Detail{}
@@ -30,9 +29,6 @@ func ParsePluginExecutorResponseUsage(protocol string, payload []byte) usage.Det
 	}
 }
 
-
-
-
 func parseResponsesPluginExecutorUsage(payload []byte) usage.Detail {
 	detail, ok := ParseCodexUsage(payload)
 	if ok && (hasNonZeroTokenUsage(detail) || hasStructuredUsageDetail(detail)) {
@@ -50,7 +46,6 @@ func parseResponsesPluginExecutorUsage(payload []byte) usage.Detail {
 	}
 	return openAIDetail
 }
-
 
 func ObservePluginExecutorStreamUsage(protocol string, payload []byte, buffer *StreamUsageBuffer) {
 	if buffer == nil || len(payload) == 0 {
@@ -82,7 +77,6 @@ func ObservePluginExecutorStreamUsage(protocol string, payload []byte, buffer *S
 					return
 				}
 
-
 				if detail, ok := ParseCodexUsageWithOutputItems(jsonBytes, buffer.responsesOutputByIndex, buffer.responsesOutputFallback); ok && (hasNonZeroTokenUsage(detail) || hasStructuredUsageDetail(detail)) {
 					buffer.Observe(detail, true)
 					return
@@ -96,7 +90,6 @@ func ObservePluginExecutorStreamUsage(protocol string, payload []byte, buffer *S
 		})
 	}
 }
-
 
 func ObservePluginExecutorStreamTTFT(protocol string, reporter *UsageReporter, payload []byte) {
 	if reporter == nil || len(payload) == 0 {
@@ -147,7 +140,6 @@ func parseClaudeStreamLine(line []byte) (usage.Detail, bool) {
 	return parseClaudeUsageNode(usageNode), true
 }
 
-
 func ObserveMergedStreamUsage(buffer *StreamUsageBuffer, update usage.Detail) {
 	if buffer == nil {
 		return
@@ -159,7 +151,6 @@ func ObserveMergedStreamUsage(buffer *StreamUsageBuffer, update usage.Detail) {
 	}
 	buffer.Observe(update, true)
 }
-
 
 func MergeStreamUsageDetail(existing, update usage.Detail) usage.Detail {
 	merged := update
@@ -490,7 +481,6 @@ func detailOutputExcludesReasoning(detail usage.Detail) (bool, bool) {
 	return false, false
 }
 
-
 func IterateStreamLines(payload []byte, fn func(line []byte)) {
 	for _, line := range bytes.Split(payload, []byte("\n")) {
 		trimmed := bytes.TrimSpace(line)
@@ -500,7 +490,6 @@ func IterateStreamLines(payload []byte, fn func(line []byte)) {
 		fn(trimmed)
 	}
 }
-
 
 func ExtractStreamJSONPayload(line []byte) []byte {
 	trimmed := bytes.TrimSpace(line)

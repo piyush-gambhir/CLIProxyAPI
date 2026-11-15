@@ -95,10 +95,8 @@ func TestCacheSignature_BasicStorageAndRetrieval(t *testing.T) {
 	text := "This is some thinking text content"
 	signature := "abc123validSignature1234567890123456789012345678901234567890"
 
-	// Store signature
 	CacheSignature(testModelName, text, signature)
 
-	// Retrieve signature
 	retrieved := GetCachedSignature(testModelName, text)
 	if retrieved != signature {
 		t.Errorf("Expected signature '%s', got '%s'", signature, retrieved)
@@ -249,12 +247,10 @@ func TestCacheSignature_DifferentModelGroups(t *testing.T) {
 func TestCacheSignature_NotFound(t *testing.T) {
 	ClearSignatureCache("")
 
-	// Non-existent session
 	if got := GetCachedSignature(testModelName, "some text"); got != "" {
 		t.Errorf("Expected empty string for nonexistent session, got '%s'", got)
 	}
 
-	// Existing session but different text
 	CacheSignature(testModelName, "text-a", "sigA12345678901234567890123456789012345678901234567890")
 	if got := GetCachedSignature(testModelName, "text-b"); got != "" {
 		t.Errorf("Expected empty string for different text, got '%s'", got)
@@ -264,10 +260,9 @@ func TestCacheSignature_NotFound(t *testing.T) {
 func TestCacheSignature_EmptyInputs(t *testing.T) {
 	ClearSignatureCache("")
 
-	// All empty/invalid inputs should be no-ops
 	CacheSignature(testModelName, "", "sig12345678901234567890123456789012345678901234567890")
 	CacheSignature(testModelName, "text", "")
-	CacheSignature(testModelName, "text", "short") // Too short
+	CacheSignature(testModelName, "text", "short")
 
 	if got := GetCachedSignature(testModelName, "text"); got != "" {
 		t.Errorf("Expected empty after invalid cache attempts, got '%s'", got)
@@ -278,7 +273,7 @@ func TestCacheSignature_ShortSignatureRejected(t *testing.T) {
 	ClearSignatureCache("")
 
 	text := "Some text"
-	shortSig := "abc123" // Less than 50 chars
+	shortSig := "abc123"
 
 	CacheSignature(testModelName, text, shortSig)
 
@@ -346,7 +341,6 @@ func TestHasValidSignature(t *testing.T) {
 func TestCacheSignature_TextHashCollisionResistance(t *testing.T) {
 	ClearSignatureCache("")
 
-	// Different texts should produce different hashes
 	text1 := "First thinking text"
 	text2 := "Second thinking text"
 	sig1 := "signature1_1234567890123456789012345678901234567890123456"
@@ -384,33 +378,26 @@ func TestCacheSignature_Overwrite(t *testing.T) {
 	sig2 := "secondSignature1234567890123456789012345678901234567890"
 
 	CacheSignature(testModelName, text, sig1)
-	CacheSignature(testModelName, text, sig2) // Overwrite
+	CacheSignature(testModelName, text, sig2)
 
 	if got := GetCachedSignature(testModelName, text); got != sig2 {
 		t.Errorf("Expected overwritten signature '%s', got '%s'", sig2, got)
 	}
 }
 
-// Note: TTL expiration test is tricky to test without mocking time
-// We test the logic path exists but actual expiration would require time manipulation
 func TestCacheSignature_ExpirationLogic(t *testing.T) {
 	ClearSignatureCache("")
 
-	// This test verifies the expiration check exists
-	// In a real scenario, we'd mock time.Now()
 	text := "text"
 	sig := "validSig1234567890123456789012345678901234567890123456"
 
 	CacheSignature(testModelName, text, sig)
 
-	// Fresh entry should be retrievable
 	if got := GetCachedSignature(testModelName, text); got != sig {
 		t.Errorf("Fresh entry should be retrievable, got '%s'", got)
 	}
 
-	// We can't easily test actual expiration without time mocking
-	// but the logic is verified by the implementation
-	_ = time.Now() // Acknowledge we're not testing time passage
+	_ = time.Now()
 }
 
 func TestSignatureModeSetters_LogAtInfoLevel(t *testing.T) {

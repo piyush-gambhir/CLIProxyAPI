@@ -10,8 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/clienterror"
 )
 
-
-
 func (h *Handler) RefreshAuthFiles(c *gin.Context) {
 	if h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})

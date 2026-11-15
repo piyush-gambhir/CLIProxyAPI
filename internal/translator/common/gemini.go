@@ -6,17 +6,10 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// IsGeminiThoughtPart reports whether a Gemini part contains hidden model thought.
 func IsGeminiThoughtPart(part ojson.Result) bool {
 	return part.Get("thought").Bool()
 }
 
-// MergeAdjacentGeminiContents merges consecutive user Content turns.
-// Mid-conversation system messages in Claude requests are downgraded to user
-// reminder turns. When followed or preceded by other user turns or tool results,
-// their parts are merged into a single user turn.
-// Consecutive model turns are strictly kept unmerged to avoid shifting part
-// indices and breaking cryptographic thought signatures and reasoning replay.
 func MergeAdjacentGeminiContents(contents [][]byte) [][]byte {
 	if len(contents) <= 1 {
 		return contents
@@ -57,13 +50,10 @@ func MergeAdjacentGeminiContents(contents [][]byte) [][]byte {
 	return merged
 }
 
-// ContentHasGeminiFunctionCall reports whether a Gemini content turn contains any functionCall part.
 func ContentHasGeminiFunctionCall(content []byte) bool {
 	return GeminiPartsHaveFunctionCall(ojson.GetBytesNoCopy(content, "parts"))
 }
 
-// GeminiPartsHaveFunctionCall reports whether a parsed Gemini parts array contains any functionCall part
-// without copying or re-parsing the enclosing content raw bytes.
 func GeminiPartsHaveFunctionCall(parts ojson.Result) bool {
 	hasFC := false
 	parts.ForEach(func(_, part ojson.Result) bool {
@@ -76,13 +66,10 @@ func GeminiPartsHaveFunctionCall(parts ojson.Result) bool {
 	return hasFC
 }
 
-// ContentHasGeminiFunctionResponse reports whether a Gemini content turn contains any functionResponse part.
 func ContentHasGeminiFunctionResponse(content []byte) bool {
 	return GeminiPartsHaveFunctionResponse(ojson.GetBytesNoCopy(content, "parts"))
 }
 
-// GeminiPartsHaveFunctionResponse reports whether a parsed Gemini parts array contains any functionResponse part
-// without copying or re-parsing the enclosing content raw bytes.
 func GeminiPartsHaveFunctionResponse(parts ojson.Result) bool {
 	hasFR := false
 	parts.ForEach(func(_, part ojson.Result) bool {
@@ -95,7 +82,6 @@ func GeminiPartsHaveFunctionResponse(parts ojson.Result) bool {
 	return hasFR
 }
 
-// GeminiPartFunctionCall returns the functionCall or snake_case function_call object from a Gemini part.
 func GeminiPartFunctionCall(part ojson.Result) ojson.Result {
 	if fc := part.Get("functionCall"); fc.Exists() {
 		return fc
@@ -103,7 +89,6 @@ func GeminiPartFunctionCall(part ojson.Result) ojson.Result {
 	return part.Get("function_call")
 }
 
-// GeminiPartFunctionResponse returns the functionResponse or snake_case function_response object from a Gemini part.
 func GeminiPartFunctionResponse(part ojson.Result) ojson.Result {
 	if fr := part.Get("functionResponse"); fr.Exists() {
 		return fr
@@ -111,9 +96,6 @@ func GeminiPartFunctionResponse(part ojson.Result) ojson.Result {
 	return part.Get("function_response")
 }
 
-// NormalizeGeminiTurnRole maps a Gemini content role to "user" or "assistant",
-// inferring missing or unrecognized roles from functionCall/functionResponse parts
-// or alternating from previousRole (matching Gemini ingress normalization).
 func NormalizeGeminiTurnRole(rawRole string, parts ojson.Result, previousRole string) string {
 	switch strings.ToLower(strings.TrimSpace(rawRole)) {
 	case "model", "assistant":
@@ -134,11 +116,6 @@ func NormalizeGeminiTurnRole(rawRole string, parts ojson.Result, previousRole st
 	}
 }
 
-// ReorderGeminiUserParts reorders parts within a Gemini user turn so that
-// text parts (such as prompt text and system reminders) precede functionResponse
-// parts. This resolves upstream provider validation failures (such as Google Cloud
-// Vertex AI returning 400 "Requests ending with a model turn are not supported" when
-// functionResponse is followed by text in the same turn).
 func ReorderGeminiUserParts(parts [][]byte) [][]byte {
 	hasFR := false
 	hasTrailingText := false
@@ -167,8 +144,6 @@ func ReorderGeminiUserParts(parts [][]byte) [][]byte {
 	return append(promptParts, toolParts...)
 }
 
-// MergeAdjacentGeminiUserContents merges consecutive user Content turns,
-// but leaves turns containing functionResponse unmerged to preserve tool-call/response boundaries.
 func MergeAdjacentGeminiUserContents(contents [][]byte) [][]byte {
 	if len(contents) <= 1 {
 		return contents
@@ -209,11 +184,6 @@ func MergeAdjacentGeminiUserContents(contents [][]byte) [][]byte {
 	return merged
 }
 
-// SplitGeminiFunctionResponseTurns separates functionResponse parts from
-// other user parts. Gemini/Antigravity requires a function response turn to
-// immediately follow the model turn containing the corresponding call; text
-// or reminders in the same user turn or intervening reminder turns can otherwise
-// make the response appear orphaned to the upstream validator.
 func SplitGeminiFunctionResponseTurns(contents [][]byte) [][]byte {
 	if len(contents) == 0 {
 		return contents
@@ -243,7 +213,7 @@ func SplitGeminiFunctionResponseTurns(contents [][]byte) [][]byte {
 			otherTurn, otherErr = ojson.SetRawBytes(content, "parts", JoinRawArray(otherParts))
 		}
 		if responseErr != nil || otherErr != nil {
-			// Preserve the original turn if rebuilding either split turn fails.
+
 			split = append(split, content)
 			continue
 		}
@@ -255,11 +225,6 @@ func SplitGeminiFunctionResponseTurns(contents [][]byte) [][]byte {
 		}
 	}
 
-	// For any consecutive block of user turns immediately following a model turn
-	// containing function calls, ensure that turns containing functionResponse
-	// precede pure text/reminder turns. This guarantees that function responses
-	// immediately follow the preceding model turn even when mid-session system
-	// or developer reminders were inserted between the model and tool_result turns.
 	out := make([][]byte, 0, len(split))
 	n := len(split)
 	for i := 0; i < n; {
@@ -308,7 +273,6 @@ func SplitGeminiFunctionResponseTurns(contents [][]byte) [][]byte {
 	return out
 }
 
-// ContainsJSONRef reports whether value (recursively) contains a string-valued "$ref" property.
 func ContainsJSONRef(value ojson.Result) bool {
 	if !value.IsObject() && !value.IsArray() {
 		return false
@@ -328,13 +292,6 @@ func ContainsJSONRef(value ojson.Result) bool {
 	return found
 }
 
-// SetGeminiFunctionResponseResult sets the Gemini functionResponse result or response field.
-// If the result contains a JSON Schema or OpenAPI "$ref" property with a string value, it is
-// preserved as opaque JSON text with ojson.SetBytes. This prevents Gemini/Vertex AI from
-// interpreting "$ref" as a reference to a media part in function_response.parts and rejecting
-// the request with HTTP 400.
-// If path points to "functionResponse.response" or "response", a stringified result is placed
-// under the ".result" child object to satisfy Gemini's requirement that "response" is an object.
 func SetGeminiFunctionResponseResult(part []byte, path string, result ojson.Result) []byte {
 	if !result.Exists() {
 		part, _ = ojson.SetBytes(part, path, "")
@@ -352,8 +309,6 @@ func SetGeminiFunctionResponseResult(part []byte, path string, result ojson.Resu
 	return part
 }
 
-// SetGeminiFunctionResponseRaw is a convenience wrapper around SetGeminiFunctionResponseResult
-// for raw JSON strings.
 func SetGeminiFunctionResponseRaw(part []byte, path string, rawJSON string) []byte {
 	trimmed := strings.TrimSpace(rawJSON)
 	if trimmed == "" {
@@ -363,7 +318,6 @@ func SetGeminiFunctionResponseRaw(part []byte, path string, rawJSON string) []by
 	return SetGeminiFunctionResponseResult(part, path, ojson.Parse(trimmed))
 }
 
-// SetGeminiFunctionResponseResultDoc sets the Gemini functionResponse result or response field on doc.
 func SetGeminiFunctionResponseResultDoc(doc *ojson.Doc, path string, result ojson.Result) {
 	if doc == nil {
 		return
@@ -383,8 +337,6 @@ func SetGeminiFunctionResponseResultDoc(doc *ojson.Doc, path string, result ojso
 	_ = doc.SetRaw(path, result.Raw)
 }
 
-// SetGeminiFunctionResponseRawDoc is a convenience wrapper around SetGeminiFunctionResponseResultDoc
-// for raw JSON strings.
 func SetGeminiFunctionResponseRawDoc(doc *ojson.Doc, path string, rawJSON string) {
 	if doc == nil {
 		return

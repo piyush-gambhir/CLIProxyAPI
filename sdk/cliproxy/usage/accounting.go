@@ -2,9 +2,7 @@ package usage
 
 import "strings"
 
-
 const TokenAccountingSchemaVersion = 2
-
 
 type TokenAccountingQuality string
 
@@ -23,7 +21,6 @@ const (
 	tokenAccountingSemanticsSeparateReasoning
 )
 
-
 type TokenInputBreakdown struct {
 	TotalTokens      int64 `json:"total_tokens"`
 	UncachedTokens   int64 `json:"uncached_tokens"`
@@ -31,13 +28,11 @@ type TokenInputBreakdown struct {
 	CacheWriteTokens int64 `json:"cache_write_tokens"`
 }
 
-
 type TokenOutputBreakdown struct {
 	TotalTokens        int64 `json:"total_tokens"`
 	NonReasoningTokens int64 `json:"non_reasoning_tokens"`
 	ReasoningTokens    int64 `json:"reasoning_tokens"`
 }
-
 
 type TokenBreakdown struct {
 	SchemaVersion      int                    `json:"schema_version"`
@@ -47,7 +42,6 @@ type TokenBreakdown struct {
 	Output             TokenOutputBreakdown   `json:"output"`
 	UnclassifiedTokens int64                  `json:"unclassified_tokens"`
 }
-
 
 func (b TokenBreakdown) Valid() bool {
 	if b.SchemaVersion != TokenAccountingSchemaVersion || !validTokenAccountingQuality(b.Quality) {
@@ -87,8 +81,6 @@ func validTokenAccountingQuality(quality TokenAccountingQuality) bool {
 	}
 }
 
-
-
 func NewSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTotal, reasoning, total int64) TokenBreakdown {
 	cacheTotal, okCache := nonNegativeSum(cacheRead, cacheWrite)
 	expectedTotal, okExpected := nonNegativeSum(inputTotal, outputTotal)
@@ -117,8 +109,6 @@ func NewSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTotal, rea
 		},
 	}
 }
-
-
 
 func NewPartialSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTotal, reasoning, total int64) TokenBreakdown {
 	cacheTotal, okCache := nonNegativeSum(cacheRead, cacheWrite)
@@ -158,8 +148,6 @@ func NewPartialSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTot
 	}
 }
 
-
-
 func NewIndependentTokenBreakdown(uncachedInput, cacheRead, cacheWrite, nonReasoningOutput, reasoning, total int64) TokenBreakdown {
 	inputTotal, okInput := nonNegativeSum(uncachedInput, cacheRead, cacheWrite)
 	outputTotal, okOutput := nonNegativeSum(nonReasoningOutput, reasoning)
@@ -188,8 +176,6 @@ func NewIndependentTokenBreakdown(uncachedInput, cacheRead, cacheWrite, nonReaso
 		},
 	}
 }
-
-
 
 func NewSeparateReasoningTokenBreakdown(inputTotal, cacheRead, cacheWrite, nonReasoningOutput, reasoning, total int64) TokenBreakdown {
 	cacheTotal, okCache := nonNegativeSum(cacheRead, cacheWrite)
@@ -223,8 +209,6 @@ func NewSeparateReasoningTokenBreakdown(inputTotal, cacheRead, cacheWrite, nonRe
 	}
 }
 
-
-
 func NewUnclassifiedTokenBreakdown(total int64) TokenBreakdown {
 	if total <= 0 {
 		quality := TokenAccountingQualityComplete
@@ -241,14 +225,9 @@ func NewUnclassifiedTokenBreakdown(total int64) TokenBreakdown {
 	}
 }
 
-
-
 func EnsureTokenBreakdown(detail Detail) Detail {
 	return EnsureTokenBreakdownForProvider(detail, "", "")
 }
-
-
-
 
 func EnsureTokenBreakdownForProvider(detail Detail, provider, executorType string) Detail {
 	if !detail.TokenBreakdown.Valid() {

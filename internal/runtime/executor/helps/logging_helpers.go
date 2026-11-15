@@ -31,7 +31,6 @@ const (
 	maxTotalDeferredAPIResponseBodyBytes = logging.MaxTotalDeferredAPIResponseBodyBytes
 )
 
-
 type UpstreamRequestLog struct {
 	URL       string
 	Method    string
@@ -62,7 +61,6 @@ type upstreamAttempt struct {
 func requestLogCaptureEnabled(cfg *config.Config) bool {
 	return cfg != nil && cfg.RequestLog && !cfg.CommercialMode
 }
-
 
 func RecordAPIRequest(ctx context.Context, cfg *config.Config, info UpstreamRequestLog) {
 	if cfg == nil || cfg.CommercialMode {
@@ -289,7 +287,6 @@ func newAPIRequestLogBuilder(index int, info UpstreamRequestLog, timestamp time.
 	return builder
 }
 
-
 func RecordAPIResponseMetadata(ctx context.Context, cfg *config.Config, status int, headers http.Header) {
 	logging.SetResponseHeaders(ctx, headers)
 	if !requestLogCaptureEnabled(cfg) {
@@ -319,7 +316,6 @@ func RecordAPIResponseMetadata(ctx context.Context, cfg *config.Config, status i
 	updateAggregatedResponseIfMemoryBacked(ginCtx, attempts)
 }
 
-
 func RecordAPIResponseError(ctx context.Context, cfg *config.Config, err error) {
 	if err == nil {
 		return
@@ -347,7 +343,6 @@ func RecordAPIResponseError(ctx context.Context, cfg *config.Config, err error) 
 
 	updateAggregatedResponseIfMemoryBacked(ginCtx, attempts)
 }
-
 
 func AppendAPIResponseChunk(ctx context.Context, cfg *config.Config, chunk []byte) {
 	if !requestLogCaptureEnabled(cfg) {
@@ -393,7 +388,6 @@ func AppendAPIResponseChunk(ctx context.Context, cfg *config.Config, chunk []byt
 	updateAggregatedResponseIfMemoryBacked(ginCtx, attempts)
 }
 
-
 func RecordAPIWebsocketRequest(ctx context.Context, cfg *config.Config, info UpstreamRequestLog) {
 	if cfg == nil || cfg.CommercialMode {
 		return
@@ -429,7 +423,6 @@ func RecordAPIWebsocketRequest(ctx context.Context, cfg *config.Config, info Ups
 	appendAPIWebsocketTimeline(ginCtx, []byte(builder.String()))
 }
 
-
 func RecordAPIWebsocketHandshake(ctx context.Context, cfg *config.Config, status int, headers http.Header) {
 	logging.SetResponseHeaders(ctx, headers)
 	if !requestLogCaptureEnabled(cfg) {
@@ -453,7 +446,6 @@ func RecordAPIWebsocketHandshake(ctx context.Context, cfg *config.Config, status
 
 	appendAPIWebsocketTimeline(ginCtx, []byte(builder.String()))
 }
-
 
 func RecordAPIWebsocketUpgradeRejection(ctx context.Context, cfg *config.Config, info UpstreamRequestLog, status int, headers http.Header, body []byte) {
 	logging.SetResponseHeaders(ctx, headers)
@@ -480,7 +472,6 @@ func RecordAPIWebsocketUpgradeRejection(ctx context.Context, cfg *config.Config,
 	AppendAPIResponseChunk(ctx, cfg, body)
 }
 
-
 func WebsocketUpgradeRequestURL(rawURL string) string {
 	trimmedURL := strings.TrimSpace(rawURL)
 	if trimmedURL == "" {
@@ -498,7 +489,6 @@ func WebsocketUpgradeRequestURL(rawURL string) string {
 	}
 	return parsed.String()
 }
-
 
 func AppendAPIWebsocketResponse(ctx context.Context, cfg *config.Config, payload []byte) {
 	if !requestLogCaptureEnabled(cfg) {
@@ -524,13 +514,10 @@ func AppendAPIWebsocketResponse(ctx context.Context, cfg *config.Config, payload
 	appendAPIWebsocketTimeline(ginCtx, []byte(builder.String()))
 }
 
-
-
 func AppendCodexAPIWebsocketResponse(ctx context.Context, cfg *config.Config, payload []byte) {
 	logging.MergeResponseHeaders(ctx, ParseCodexQuotaEventHeaders(payload))
 	AppendAPIWebsocketResponse(ctx, cfg, payload)
 }
-
 
 func RecordAPIWebsocketError(ctx context.Context, cfg *config.Config, stage string, err error) {
 	if err == nil {
@@ -841,7 +828,6 @@ func SummarizeErrorBody(contentType string, body []byte) string {
 		return "[html body omitted]"
 	}
 
-
 	if message := extractJSONErrorMessage(body); message != "" {
 		return message
 	}
@@ -873,7 +859,6 @@ func extractHTMLTitle(body []byte) string {
 	return strings.Join(strings.Fields(title), " ")
 }
 
-
 func extractJSONErrorMessage(body []byte) string {
 	result := ojson.GetBytesNoCopy(body, "error.message")
 	if result.Exists() && result.String() != "" {
@@ -881,8 +866,6 @@ func extractJSONErrorMessage(body []byte) string {
 	}
 	return ""
 }
-
-
 
 func LogWithRequestID(ctx context.Context) *log.Entry {
 	if ctx == nil {
@@ -895,14 +878,12 @@ func LogWithRequestID(ctx context.Context) *log.Entry {
 	return log.WithField("request_id", requestID)
 }
 
-
 func MarkCreditsUsed(ctx context.Context) {
 	ginCtx := ginContextFrom(ctx)
 	if ginCtx != nil {
 		ginCtx.Set(creditsUsedKey, true)
 	}
 }
-
 
 func CreditsUsed(ctx context.Context) bool {
 	ginCtx := ginContextFrom(ctx)

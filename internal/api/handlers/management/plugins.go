@@ -72,7 +72,6 @@ type pluginMenuInfo struct {
 	Description string `json:"description"`
 }
 
-
 func (h *Handler) ListPlugins(c *gin.Context) {
 	if h == nil || h.cfg == nil {
 		c.JSON(http.StatusOK, pluginListResponse{
@@ -170,7 +169,6 @@ func (h *Handler) ListPlugins(c *gin.Context) {
 	})
 }
 
-
 func (h *Handler) GetPluginConfig(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -224,7 +222,6 @@ func (h *Handler) GetPluginConfig(c *gin.Context) {
 	c.JSON(http.StatusNotFound, gin.H{"error": "plugin_not_found", "message": "plugin not found"})
 }
 
-
 func (h *Handler) PatchPluginEnabled(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -260,7 +257,6 @@ func (h *Handler) PatchPluginEnabled(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-
 func (h *Handler) PutPluginConfig(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -287,7 +283,6 @@ func (h *Handler) PutPluginConfig(c *gin.Context) {
 	h.cfg.Plugins.Configs[id] = updated
 	h.persistLocked(c)
 }
-
 
 func (h *Handler) PatchPluginConfig(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
@@ -329,7 +324,6 @@ func (h *Handler) PatchPluginConfig(c *gin.Context) {
 	h.cfg.Plugins.Configs[id] = updated
 	h.persistLocked(c)
 }
-
 
 func (h *Handler) DeletePlugin(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)

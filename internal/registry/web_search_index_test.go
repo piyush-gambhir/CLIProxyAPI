@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-
-
-
-
 func referenceHasClientSupportingWebSearch(r *ModelRegistry, modelID, provider, excludeClientID string) bool {
 	for clientID, infos := range r.clientModelInfos {
 		if clientID == excludeClientID {
@@ -25,8 +21,6 @@ func referenceHasClientSupportingWebSearch(r *ModelRegistry, modelID, provider, 
 	}
 	return false
 }
-
-
 
 func assertWebSearchIndexMatchesScan(t *testing.T, r *ModelRegistry, context string) {
 	t.Helper()
@@ -53,7 +47,6 @@ func assertWebSearchIndexMatchesScan(t *testing.T, r *ModelRegistry, context str
 			}
 		}
 
-
 		for clientID := range r.clientModelInfos {
 			want := referenceHasClientSupportingWebSearch(r, modelID, "", clientID)
 			got := r.hasClientSupportingWebSearchLocked(modelID, "", clientID)
@@ -61,9 +54,6 @@ func assertWebSearchIndexMatchesScan(t *testing.T, r *ModelRegistry, context str
 				t.Fatalf("%s: model=%q exclude=%q: index=%v scan=%v", context, modelID, clientID, got, want)
 			}
 		}
-
-
-
 
 		registration := r.models[modelID]
 		if registration == nil || registration.Info == nil {
@@ -103,8 +93,6 @@ func TestWebSearchIndexMatchesScanAcrossMutations(t *testing.T) {
 	reg := newWebSearchIndexRegistry()
 	assertWebSearchIndexMatchesScan(t, reg, "initial")
 
-
-
 	reg.RegisterClient("b", "codex", []*ModelInfo{{ID: "shared"}})
 	assertWebSearchIndexMatchesScan(t, reg, "re-register drops web search")
 
@@ -135,9 +123,6 @@ func TestWebSearchIndexMatchesScanAcrossMutations(t *testing.T) {
 
 func TestWebSearchIndexDropsOrphanCountsOnPureAddition(t *testing.T) {
 
-
-
-
 	reg := newTestModelRegistry()
 	reg.mutex.Lock()
 	reg.clientModelInfos["ghost"] = map[string]*ModelInfo{
@@ -145,13 +130,9 @@ func TestWebSearchIndexDropsOrphanCountsOnPureAddition(t *testing.T) {
 	}
 	reg.clientProviders["ghost"] = "codex"
 
-
-
 	reg.incrementWebSearchCountLocked("orphaned", "codex")
 	reg.mutex.Unlock()
 	assertWebSearchIndexMatchesScan(t, reg, "orphan seeded")
-
-
 
 	reg.RegisterClient("ghost", "codex", []*ModelInfo{{ID: "other"}})
 	assertWebSearchIndexMatchesScan(t, reg, "orphan replaced by pure addition")
@@ -221,7 +202,6 @@ func TestWebSearchIndexPreservesRealSupporterOnOrphanAddition(t *testing.T) {
 	reg.RegisterClient("real", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: true}})
 	reg.RegisterClient("ghost", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: true}})
 
-
 	reg.mutex.Lock()
 	delete(reg.clientModels, "ghost")
 	reg.mutex.Unlock()
@@ -244,8 +224,6 @@ func TestWebSearchIndexRefreshesOrphanedModelsOnPureAddition(t *testing.T) {
 			reg.mutex.Unlock()
 			assertPublishedWebSearchSupport(t, reg, "m", "antigravity", true)
 			assertWebSearchIndexMatchesScan(t, reg, "orphan seeded before catalog replacement")
-
-
 
 			reg.RegisterClient("ghost", "antigravity", []*ModelInfo{{ID: "n"}})
 			assertPublishedWebSearchSupport(t, reg, "m", "antigravity", realSupportsWebSearch)
@@ -273,7 +251,6 @@ func TestWebSearchIndexCleansOrphanOnUnregister(t *testing.T) {
 			}
 			reg.mutex.RUnlock()
 			assertPublishedWebSearchSupport(t, reg, "m", "antigravity", realSupportsWebSearch)
-
 
 			reg.UnregisterClient("ghost")
 			reg.mutex.RLock()
@@ -307,15 +284,12 @@ func TestWebSearchIndexTracksSoleSupporterAfterUnregister(t *testing.T) {
 		t.Fatalf("sole supporter left, but the aggregate still reports web search")
 	}
 
-
 	if reg.models["solo"] != nil && reg.models["solo"].Info != nil && reg.models["solo"].Info.SupportsWebSearch {
 		t.Fatalf("published Info.SupportsWebSearch stayed true after the sole supporter left")
 	}
 }
 
 func TestWebSearchIndexToleratesNilIndexMaps(t *testing.T) {
-
-
 
 	reg := &ModelRegistry{mutex: &sync.RWMutex{}}
 	if reg.hasClientSupportingWebSearchLocked("m", "", "") {
@@ -332,9 +306,6 @@ func TestWebSearchIndexToleratesNilIndexMaps(t *testing.T) {
 }
 
 func TestWebSearchIndexProviderChangeRetractsOldProvider(t *testing.T) {
-
-
-
 
 	reg := newTestModelRegistry()
 	reg.RegisterClient("x", "codex", []*ModelInfo{
@@ -362,19 +333,11 @@ func TestWebSearchIndexProviderChangeRetractsOldProvider(t *testing.T) {
 	assertWebSearchIndexMatchesScan(t, reg, "provider change")
 }
 
-
-
-
-
-
 func BenchmarkRegisterClientWebSearchAggregate(b *testing.B) {
 	const modelsPerClient = 20
 
 	infos := make([]*ModelInfo, 0, modelsPerClient)
 	for i := 0; i < modelsPerClient; i++ {
-
-
-
 
 		infos = append(infos, &ModelInfo{
 			ID:                fmt.Sprintf("model-%d", i),

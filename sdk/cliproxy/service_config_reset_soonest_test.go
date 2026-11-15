@@ -114,8 +114,6 @@ func TestNewRoutingSelectorBuildsResetSoonest(t *testing.T) {
 		t.Fatalf("guard = %v, want %v", resetSoonest.FiveHourGuardPercent, quota.DefaultFiveHourGuardPercent)
 	}
 
-
-
 	cfg.Routing.SessionAffinity = true
 	wrapped := newRoutingSelector(normalizedRoutingRuntimeState(cfg))
 	affinity, ok := wrapped.(*coreauth.SessionAffinitySelector)
@@ -124,8 +122,6 @@ func TestNewRoutingSelectorBuildsResetSoonest(t *testing.T) {
 	}
 	defer affinity.Stop()
 }
-
-
 
 func TestRoutingRuntimeStateStaysComparable(t *testing.T) {
 	t.Parallel()

@@ -132,9 +132,6 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.PUT("/routing/strategy", s.mgmt.PutRoutingStrategy)
 		mgmt.PATCH("/routing/strategy", s.mgmt.PutRoutingStrategy)
 
-
-
-
 		mgmt.GET("/quota-scheduler/status", s.mgmt.GetQuotaSchedulerStatus)
 
 		mgmt.GET("/claude-api-key", s.mgmt.GetClaudeKeys)
@@ -239,7 +236,6 @@ func (s *Server) refreshPluginManagementRoutes() {
 	s.pluginHost.RegisterManagementRoutes(context.Background(), s.registeredManagementRouteKeys())
 }
 
-
 func (s *Server) RefreshPluginManagementRoutes() {
 	s.refreshPluginManagementRoutes()
 }
@@ -328,7 +324,6 @@ func (s *Server) serveManagementControlPanel(c *gin.Context) {
 
 	if _, err := os.Stat(filePath); err != nil {
 		if os.IsNotExist(err) {
-
 
 			if !managementasset.EnsureLatestManagementHTML(context.Background(), managementasset.StaticDir(s.configFilePath), cfg.ProxyURL, cfg.RemoteManagement.PanelGitHubRepository) {
 				c.AbortWithStatus(http.StatusNotFound)

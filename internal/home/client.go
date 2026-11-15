@@ -52,7 +52,6 @@ const (
 
 const pluginSyncUnsupportedErrorType = "plugin_sync_unsupported"
 
-
 type DispatchError struct {
 	Err       error
 	Ambiguous bool
@@ -72,14 +71,12 @@ func (e *DispatchError) Unwrap() error {
 	return e.Err
 }
 
-
 func NewAmbiguousDispatchError(err error) error {
 	if err == nil {
 		return nil
 	}
 	return &DispatchError{Err: err, Ambiguous: true}
 }
-
 
 func IsAmbiguousDispatchError(err error) bool {
 	var dispatchErr *DispatchError
@@ -101,9 +98,6 @@ var (
 	ErrCompareAndSwapUnsupported = kvstore.ErrCompareAndSwapUnsupported
 )
 
-
-
-
 func isHomeCommandUnsupported(err error) bool {
 	for err != nil {
 		message := strings.ToLower(strings.TrimSpace(err.Error()))
@@ -115,7 +109,6 @@ func isHomeCommandUnsupported(err error) bool {
 	return false
 }
 
-
 func IsMembershipTakeoverUnavailableError(err error) bool {
 	if err == nil {
 		return false
@@ -123,7 +116,6 @@ func IsMembershipTakeoverUnavailableError(err error) bool {
 	message := strings.TrimSpace(strings.ToLower(err.Error()))
 	return message == "membership_takeover_unavailable" || message == "err membership_takeover_unavailable"
 }
-
 
 func IsLegacyMembershipProtocolError(err error) bool {
 	if err == nil {
@@ -195,11 +187,6 @@ type Client struct {
 	releaseFenced     atomic.Bool
 	ambiguousDispatch atomic.Bool
 
-
-
-
-
-
 	casUnsupported       atomic.Bool
 	testOperationTimeout time.Duration
 	recoveryState        atomic.Uint32
@@ -219,7 +206,6 @@ func New(homeCfg config.HomeConfig) *Client {
 		instanceID: uuid.NewString(),
 	}
 }
-
 
 func (c *Client) NewLifetime() *Client {
 	if c == nil {
@@ -253,7 +239,6 @@ func (c *Client) NewLifetime() *Client {
 	return next
 }
 
-
 func (c *Client) MembershipInstanceID() string {
 	if c == nil {
 		return ""
@@ -263,7 +248,6 @@ func (c *Client) MembershipInstanceID() string {
 	return c.instanceID
 }
 
-
 func (c *Client) LegacyMembership() bool {
 	if c == nil {
 		return false
@@ -272,7 +256,6 @@ func (c *Client) LegacyMembership() bool {
 	defer c.mu.Unlock()
 	return c.legacyMembership
 }
-
 
 func (c *Client) EnableLegacyMembership() {
 	if c == nil {
@@ -303,13 +286,11 @@ func (c *Client) HeartbeatOK() bool {
 	return c.heartbeatOK.Load()
 }
 
-
 func (c *Client) FenceDispatch() {
 	if c != nil {
 		c.dispatchFenced.Store(true)
 	}
 }
-
 
 func (c *Client) Close() {
 	if c == nil {
@@ -333,7 +314,6 @@ func (c *Client) Close() {
 	}
 }
 
-
 func (c *Client) closeBootstrapPools() {
 	if c == nil {
 		return
@@ -345,7 +325,6 @@ func (c *Client) closeBootstrapPools() {
 	c.mu.Unlock()
 	closeDetachedClients(commandClient, subscriptionClient, connections)
 }
-
 
 func (c *Client) AbortAmbiguousDispatch() {
 	if c == nil {
@@ -380,11 +359,9 @@ func (c *Client) AbortAmbiguousDispatch() {
 	}
 }
 
-
 func (c *Client) AmbiguousDispatch() bool {
 	return c != nil && c.ambiguousDispatch.Load()
 }
-
 
 func (c *Client) SuppressTakeover() {
 	if c == nil {
@@ -458,7 +435,6 @@ func (c *Client) waitForClientsClosed() {
 		c.mu.Unlock()
 	}
 }
-
 
 func (c *Client) SetManagedLifetime(managed bool) {
 	if c == nil {
@@ -548,7 +524,6 @@ func (c *Client) redisOptionsLocked(addr string) (*redis.Options, error) {
 	options.Dialer = c.trackedRedisDialer(redis.NewDialer(options))
 	return options, nil
 }
-
 
 func (c *Client) redisOptionsSnapshotLocked(addr string) (*redis.Options, config.HomeTLSConfig) {
 	tlsSettings := c.homeCfg.TLS
@@ -845,7 +820,6 @@ func (c *Client) refreshClusterNodes(ctx context.Context) (bool, error) {
 	defer c.mu.Unlock()
 	c.clusterNodes = nodes
 
-
 	if c.balance.moving || c.balance.returning || c.heartbeatOK.Load() {
 		return false, nil
 	}
@@ -1090,16 +1064,6 @@ func (c *Client) KVSetNX(ctx context.Context, key string, value []byte, ttl time
 	return c.KVSet(ctx, key, value, opts)
 }
 
-
-
-
-
-
-
-
-
-
-
 func (c *Client) KVCompareAndSwap(ctx context.Context, key string, expected []byte, expectedExists bool, value []byte, ttl time.Duration) (bool, error) {
 	if c == nil {
 		return false, ErrNotConnected
@@ -1290,8 +1254,6 @@ func newAuthDispatchRequest(requestedModel string, sessionID string, parentSessi
 	var excludedAuthIDsCopy *[]string
 	if excludedAuthIDs != nil {
 
-
-
 		count = 1
 		values := append([]string{}, (*excludedAuthIDs)...)
 		excludedAuthIDsCopy = &values
@@ -1328,35 +1290,25 @@ func (c *Client) RPopAuth(ctx context.Context, requestedModel string, sessionID 
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, "", nil, nil, "")
 }
 
-
 func (c *Client) RPopAuthWithPolicy(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, credentialPolicy string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, credentialPolicy, nil, nil, "")
 }
-
-
 
 func (c *Client) RPopAuthWithConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, "", nil, &excludedAuthIDs, pinnedAuthID)
 }
 
-
-
 func (c *Client) RPopAuthWithPolicyAndConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, credentialPolicy string, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, credentialPolicy, nil, &excludedAuthIDs, pinnedAuthID)
 }
-
-
 
 func (c *Client) RPopAuthWithRetryRoundConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, retryRound int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, "", &retryRound, &excludedAuthIDs, pinnedAuthID)
 }
 
-
-
 func (c *Client) RPopAuthWithPolicyAndRetryRoundConstraints(ctx context.Context, requestedModel string, sessionID string, headers http.Header, count int, credentialPolicy string, retryRound int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	return c.rPopAuth(ctx, requestedModel, sessionID, "", headers, count, credentialPolicy, &retryRound, &excludedAuthIDs, pinnedAuthID)
 }
-
 
 func (c *Client) RPopAuthWithSessionHierarchy(ctx context.Context, requestedModel string, sessionID string, parentSessionID string, headers http.Header, count int, credentialPolicy string, retryRound *int, excludedAuthIDs []string, pinnedAuthID string) ([]byte, error) {
 	var excludedPtr *[]string
@@ -1479,7 +1431,6 @@ func (c *Client) LPushUsage(ctx context.Context, payload []byte) error {
 	return cmd.LPush(ctx, redisKeyUsage, payload).Err()
 }
 
-
 func (c *Client) LPushInFlightSnapshot(ctx context.Context, payload []byte) error {
 	cmd, errClient := c.commandClient()
 	if errClient != nil {
@@ -1487,7 +1438,6 @@ func (c *Client) LPushInFlightSnapshot(ctx context.Context, payload []byte) erro
 	}
 	return cmd.LPush(ctx, redisKeyInFlightSnapshot, payload).Err()
 }
-
 
 func (c *Client) PushConcurrencyRelease(ctx context.Context, frame ConcurrencyReleaseFrame) error {
 	if frame.CredentialID == "" || frame.Model == "" || frame.ReleaseSeq <= 0 {
@@ -1518,7 +1468,6 @@ func (c *Client) concurrencyReleaseClient() (*redis.Client, error) {
 		return nil, ErrDispatchFenced
 	}
 	state := recoveryState(c.recoveryState.Load())
-
 
 	ownsSource := state == recoveryStateTakeoverEligible && c.releaseReady
 	if state != recoveryStateStable && !ownsSource {
@@ -1861,7 +1810,6 @@ func (c *Client) SetLifecycleConfig(cfg config.CredentialConcurrencyConfig) erro
 	return nil
 }
 
-
 func (c *Client) LimiterConfig() config.CredentialConcurrencyConfig {
 	if c == nil {
 		return config.CredentialConcurrencyConfig{}.WithDefaults()
@@ -1963,8 +1911,6 @@ func (c *Client) handleSubscriptionPayload(ctx context.Context, channel string, 
 		return nil
 	}
 }
-
-
 
 func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func([]byte) error, onReady func()) error {
 	if c == nil || !c.Enabled() {
@@ -2072,7 +2018,6 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 			event, errReceive := receiveSubscriptionEvent(receiveCtx, pubsub, sampler, lastHeartbeat.Add(timeout))
 			if errReceive == nil {
 
-
 				if pong, ok := event.(*redis.Pong); ok && pong != nil && pong.Payload == "" {
 					lastHeartbeat = time.Now()
 				}
@@ -2160,7 +2105,6 @@ func (c *Client) RunConfigSubscriberLifetime(ctx context.Context, onConfig func(
 	}
 }
 
-
 func receiveSubscriptionEvent(ctx context.Context, pubsub *redis.PubSub, sampler *clusterRTTSampler, deadline time.Time) (any, error) {
 	for {
 		remaining := time.Until(deadline)
@@ -2227,7 +2171,6 @@ func (c *Client) endConfigSubscriberLifetimeWithSubscription(err error, subscrip
 	}
 	return err
 }
-
 
 func (c *Client) StartConfigSubscriber(ctx context.Context, onConfig func([]byte) error) {
 	if errRun := c.RunConfigSubscriberLifetime(ctx, onConfig, nil); errRun != nil && !errors.Is(errRun, context.Canceled) {

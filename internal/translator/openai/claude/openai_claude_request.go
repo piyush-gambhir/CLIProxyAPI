@@ -1,8 +1,3 @@
-
-
-
-
-
 package claude
 
 import (
@@ -16,22 +11,16 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
 func ConvertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertClaudeRequestToOpenAI(modelName, inputRawJSON, stream, false)
 
 }
-
-
 
 func ConvertClaudeRequestToOpenAIWithCompat(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertClaudeRequestToOpenAI(modelName, inputRawJSON, stream, true)
 }
 
 func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream bool, preserveThinkingBlocks bool) ([]byte, error) {
-
 
 	rawJSON, _ := sigcompat.RestoreCodexCommentaryMarkers(inputRawJSON)
 	var drops translatorcommon.UserTurnDrops
@@ -40,21 +29,17 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-
 	_ = outDoc.Set("model", modelName)
-
 
 	if maxTokens := root.Get("max_tokens"); maxTokens.Exists() {
 		_ = outDoc.Set("max_tokens", maxTokens.Int())
 	}
-
 
 	if temp := root.Get("temperature"); temp.Exists() {
 		_ = outDoc.Set("temperature", temp.Float())
 	} else if topP := root.Get("top_p"); topP.Exists() {
 		_ = outDoc.Set("top_p", topP.Float())
 	}
-
 
 	if stopSequences := root.Get("stop_sequences"); stopSequences.Exists() {
 		if stopSequences.IsArray() {
@@ -69,9 +54,7 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-
 	_ = outDoc.Set("stream", stream)
-
 
 	effort := ""
 	if v := root.Get("output_config.effort"); v.Exists() && v.Type == ojson.String {
@@ -88,7 +71,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					}
 				} else if effort != "" {
 
-
 					_ = outDoc.Set("reasoning_effort", effort)
 				} else {
 
@@ -97,7 +79,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					}
 				}
 			case "adaptive", "auto":
-
 
 				if effort != "" {
 					_ = outDoc.Set("reasoning_effort", effort)
@@ -116,13 +97,11 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 
 	reasoningActive := isClaudeRequestReasoningActive(outDoc.Get("reasoning_effort"), modelName, root.Get("model").String())
 
-
 	messageCapacity := root.Get("messages.#").Int()
 	if root.Get("system").Exists() {
 		messageCapacity++
 	}
 	messageItems := translatorcommon.NewRawArrayItems(messageCapacity)
-
 
 	systemContentItems := make([][]byte, 0, 2)
 	appendSystemContent := func(content ojson.Result) {
@@ -157,7 +136,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 		systemMessage, _ = ojson.SetRawBytes(systemMessage, "content", translatorcommon.JoinRawArray(systemContentItems))
 		messageItems = append(messageItems, systemMessage)
 	}
-
 
 	var midConversationToolDefs []ojson.Result
 	if messages := root.Get("messages"); messages.Exists() && messages.IsArray() {
@@ -195,7 +173,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 				return true
 			}
 
-
 			if contentResult.Exists() && contentResult.IsArray() {
 				if role == "user" && len(pendingToolUseIDs) > 0 {
 					contentResult = translatorcommon.AlignClaudeToolResults(contentResult, pendingToolUseIDs)
@@ -226,9 +203,7 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 							}
 						}
 
-
 					case "redacted_thinking":
-
 
 					case "text", "image", "document", "container_upload":
 						if contentItem, ok := convertClaudeContentPart(part); ok {
@@ -251,7 +226,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 							toolCallDoc := ojson.NewDocString(`{"id":"","type":"function","function":{"name":"","arguments":""}}`)
 							_ = toolCallDoc.Set("id", toolUseID)
 							_ = toolCallDoc.Set("function.name", toolName)
-
 
 							if input := part.Get("input"); input.Exists() {
 								_ = toolCallDoc.Set("function.arguments", input.Raw)
@@ -278,7 +252,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					return true
 				})
 
-
 				reasoningContent := ""
 				if len(reasoningParts) > 0 {
 					reasoningContent = strings.Join(reasoningParts, "\n\n")
@@ -292,18 +265,12 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					drops.EndTurn(len(contentItems) + len(toolResults))
 				}
 
-
 				if precedingToolCallsPending && !hasToolResults && len(pendingSystemReminders) > 0 {
 					messageItems = append(messageItems, pendingSystemReminders...)
 					pendingSystemReminders = nil
 				}
 
-
-
-
 				messageItems = append(messageItems, toolResults...)
-
-
 
 				if len(relayedToolImages) > 0 {
 					relayItems := make([][]byte, 0, len(relayedToolImages)+1)
@@ -327,12 +294,9 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					pendingSystemReminders = nil
 				}
 
-
-
 				if role == "assistant" {
 					if hasContent || hasReasoning || hasToolCalls {
 						msgDoc := ojson.NewDocString(`{"role":"assistant"}`)
-
 
 						if hasContent {
 							_ = msgDoc.SetRawBytes("content", translatorcommon.JoinRawArray(contentItems))
@@ -341,16 +305,12 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 							_ = msgDoc.Set("content", "")
 						}
 
-
 						if hasReasoning {
 							_ = msgDoc.Set("reasoning_content", reasoningContent)
 						} else if hasToolCalls && preserveThinkingBlocks && reasoningActive {
 
-
-
 							_ = msgDoc.Set("reasoning_content", " ")
 						}
-
 
 						if hasToolCalls {
 							_ = msgDoc.Set("tool_calls", toolCalls)
@@ -359,7 +319,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						messageItems = append(messageItems, msgDoc.Bytes())
 					}
 				} else {
-
 
 					if hasContent {
 						msgDoc := ojson.NewDocString(`{"role":""}`)
@@ -387,12 +346,10 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-
 	if len(messageItems) > 0 {
 		messageItems = translatorcommon.AlignOpenAIToolCallMessages(messageItems)
 		translatorcommon.SetRawArrayItemsDoc(outDoc, "messages", messageItems)
 	}
-
 
 	var toolItems [][]byte
 	var toolIndexByName map[string]int
@@ -424,7 +381,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 	if len(toolItems) > 0 {
 		_ = outDoc.SetRawBytes("tools", translatorcommon.JoinRawArray(toolItems))
 	}
-
 
 	if toolChoice := root.Get("tool_choice"); toolChoice.Exists() && toolChoice.Type != ojson.Null {
 		choiceType := toolChoice.Get("type").String()
@@ -458,7 +414,6 @@ func convertClaudeRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-
 	if user := root.Get("user"); user.Exists() {
 		_ = outDoc.Set("user", user.String())
 	}
@@ -471,7 +426,6 @@ func convertClaudeToolToOpenAI(tool ojson.Result) []byte {
 	_ = openAIToolDoc.Set("function.name", tool.Get("name").String())
 	_ = openAIToolDoc.Set("function.description", tool.Get("description").String())
 
-
 	if inputSchema := tool.Get("input_schema"); inputSchema.Exists() && inputSchema.Type != ojson.Null {
 		_ = openAIToolDoc.Set("function.parameters", normalizeObjectSchemaProperties(inputSchema.Value()))
 	} else {
@@ -483,9 +437,6 @@ func convertClaudeToolToOpenAI(tool ojson.Result) []byte {
 func normalizeObjectSchemaProperties(schema any) any {
 	switch value := schema.(type) {
 	case bool:
-
-
-
 
 		if value {
 			return map[string]any{}
@@ -500,7 +451,6 @@ func normalizeObjectSchemaProperties(schema any) any {
 		if patternVal, ok := value["pattern"].(string); ok && util.HasUnsupportedUnicodePropertyEscape(patternVal) {
 			delete(value, "pattern")
 		}
-
 
 		if patternProps, ok := value["patternProperties"].(map[string]any); ok {
 			for patternKey, subSchema := range patternProps {
@@ -527,7 +477,6 @@ func normalizeObjectSchemaProperties(schema any) any {
 			if val, exists := value[valKey]; exists {
 				switch sub := val.(type) {
 				case bool:
-
 
 					if valKey != "additionalProperties" && sub {
 						value[valKey] = map[string]any{}
@@ -651,8 +600,6 @@ func convertClaudeContentPart(part ojson.Result) (string, bool) {
 	}
 }
 
-
-
 func convertClaudeFilePartToOpenAI(part ojson.Result) (string, bool) {
 	source := part.Get("source")
 	mimeType := source.Get("media_type").String()
@@ -679,10 +626,7 @@ func convertClaudeFilePartToOpenAI(part ojson.Result) (string, bool) {
 	return fileContentDoc.String(), true
 }
 
-
-
 const toolResultImagePlaceholder = "[Tool returned image content; the images follow in the next user message.]"
-
 
 const toolResultImageRelayNotice = "Images returned by the preceding tool call(s):"
 

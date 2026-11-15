@@ -9,13 +9,9 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func boolPtr(v bool) *bool { return &v }
 
 func intPtr(v int) *int { return &v }
-
-
 
 func TestProxyPoolRequiresCredentialOptIn(t *testing.T) {
 	ResetProxyTransports()
@@ -49,7 +45,6 @@ func TestProxyPoolRequiresCredentialOptIn(t *testing.T) {
 	}
 }
 
-
 func TestProxyPoolExplicitDisable(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -67,7 +62,6 @@ func TestProxyPoolExplicitDisable(t *testing.T) {
 		t.Fatalf("opted-out credential polluted the cache: %d entries", proxyTransportCache.Len())
 	}
 }
-
 
 func TestProxyPoolPartialSettings(t *testing.T) {
 	ResetProxyTransports()
@@ -90,8 +84,6 @@ func TestProxyPoolPartialSettings(t *testing.T) {
 		t.Fatal("different settings shared one pool")
 	}
 }
-
-
 
 func TestProxyPoolCredentialOptInWithoutProxyURL(t *testing.T) {
 	ResetProxyTransports()
@@ -119,15 +111,12 @@ func TestProxyPoolCredentialOptInWithoutProxyURL(t *testing.T) {
 		t.Fatalf("client transport = %T, want the pooled transport", client.Transport)
 	}
 
-
 	injected := roundTripperFunc(func(*http.Request) (*http.Response, error) { return nil, nil })
 	ctxWithRT := context.WithValue(context.Background(), "cliproxy.roundtripper", injected)
 	injectedClient := NewProxyAwareHTTPClient(ctxWithRT, cfg, auth, 0)
 	if injectedClient.Transport == pooled {
 		t.Fatal("context RoundTripper must take priority when proxy-url is empty")
 	}
-
-
 
 	for _, raw := range []string{"0s", "-1s"} {
 		zeroIdle := poolAuth("zero-no-proxy", &cliproxyauth.ProxyConnectionPoolOverride{IdleConnTimeout: raw})

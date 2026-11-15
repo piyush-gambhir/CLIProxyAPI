@@ -102,7 +102,6 @@ func TestManager_ResponsesCompact_TransientFailure_AvailabilityNeutral(t *testin
 		t.Fatalf("executor.calls = %d, want 2 (fallback across candidate auths)", executor.calls)
 	}
 
-
 	for _, id := range []string{"auth1", "auth2"} {
 		a, ok := m.GetByID(id)
 		if !ok {
@@ -117,7 +116,6 @@ func TestManager_ResponsesCompact_TransientFailure_AvailabilityNeutral(t *testin
 			}
 		}
 	}
-
 
 	normalReq := cliproxyexecutor.Request{Model: model, Payload: []byte(`{"input":"hello"}`)}
 	normalOpts := cliproxyexecutor.Options{}
@@ -163,7 +161,6 @@ func TestManager_ResponsesCompact_RequestFault_StopsFallback(t *testing.T) {
 	if executor.calls != 1 {
 		t.Fatalf("executor.calls = %d, want 1 (fallback stopped on request fault)", executor.calls)
 	}
-
 
 	for _, id := range []string{"auth1", "auth2"} {
 		a, ok := m.GetByID(id)

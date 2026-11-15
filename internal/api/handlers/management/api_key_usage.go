@@ -53,8 +53,6 @@ func apiKeyUsageProviderKey(auth *coreauth.Auth) string {
 	return provider
 }
 
-
-
 func (h *Handler) GetAPIKeyUsage(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler not initialized"})

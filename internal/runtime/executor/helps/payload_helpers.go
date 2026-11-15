@@ -18,44 +18,31 @@ import (
 
 var payloadConfigEvaluations atomic.Int64
 
-
-
 func PayloadConfigEvaluationCount() int64 {
 	return payloadConfigEvaluations.Load()
 }
-
-
-
-
-
-
 
 func ApplyPayloadConfigWithRoot(cfg *config.Config, model, protocol, root string, payload, original []byte, requestedModel string, requestPath string) []byte {
 	return ApplyPayloadConfigWithRequest(cfg, model, protocol, "", root, payload, original, requestedModel, requestPath, nil)
 }
 
-
 func ApplyPayloadConfigWithRootDoc(cfg *config.Config, model, protocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string) {
 	ApplyPayloadConfigWithRequestDoc(cfg, model, protocol, "", root, doc, original, requestedModel, requestPath, nil)
 }
-
 
 func ApplyPayloadConfigWithRequest(cfg *config.Config, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header) []byte {
 	out, _ := ApplyPayloadConfigWithRequestTracked(cfg, model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers, "")
 	return out
 }
 
-
 func ApplyPayloadConfigWithRequestDoc(cfg *config.Config, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header) {
 	_ = ApplyPayloadConfigWithRequestTrackedDoc(cfg, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, "")
 }
-
 
 func ApplyPayloadConfigWithRequestForExecutor(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header) []byte {
 	out, _ := ApplyPayloadConfigWithTrackedPathsForExecutor(cfg, targetExecutor, model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers)
 	return out
 }
-
 
 func ApplyPayloadConfigWithRequestForExecutorDoc(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header) {
 	_ = ApplyPayloadConfigWithTrackedPathsForExecutorDoc(cfg, targetExecutor, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers)
@@ -66,21 +53,13 @@ func isCodexTargetExecutor(targetExecutor string) bool {
 	return te == "codex" || te == "codex-websockets" || te == "codex_websockets"
 }
 
-
-
 func ApplyPayloadConfigWithTrackedPaths(cfg *config.Config, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPaths ...string) ([]byte, map[string]bool) {
 	return ApplyPayloadConfigWithTrackedPathsForExecutor(cfg, "", model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers, trackedPaths...)
 }
 
-
-
 func ApplyPayloadConfigWithTrackedPathsDoc(cfg *config.Config, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPaths ...string) map[string]bool {
 	return ApplyPayloadConfigWithTrackedPathsForExecutorDoc(cfg, "", model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, trackedPaths...)
 }
-
-
-
-
 
 func ApplyPayloadConfigWithTrackedPathsForExecutor(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPaths ...string) ([]byte, map[string]bool) {
 	if len(payload) == 0 {
@@ -93,7 +72,6 @@ func ApplyPayloadConfigWithTrackedPathsForExecutor(cfg *config.Config, targetExe
 	}
 	return doc.Bytes(), touched
 }
-
 
 func ApplyPayloadConfigWithTrackedPathsForExecutorDoc(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel, requestPath string, headers http.Header, trackedPaths ...string) map[string]bool {
 	touched, _ := applyPayloadConfigWithTrackedPathsForExecutorDoc(cfg, targetExecutor, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, trackedPaths...)
@@ -130,7 +108,6 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 	}
 
 	var strippedToolChoicePath string
-
 
 	if shouldStripImageGeneration(cfg.DisableImageGeneration, requestPath) {
 		if removeToolTypeFromPayloadWithRootDoc(doc, root, "image_generation") {
@@ -266,7 +243,6 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 					createdByDefault[resolvedPath] = struct{}{}
 				}
 			}
-
 
 			for i := range rules.Default {
 				rule := &rules.Default[i]
@@ -515,14 +491,10 @@ func retractAutoInjectedImageGenerationToolAtIndexDoc(doc *ojson.Doc, toolsPath 
 	return doc.Delete(toolsPath+"."+strconv.Itoa(targetIdx)) == nil
 }
 
-
-
 func ApplyPayloadConfigWithRequestTracked(cfg *config.Config, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPath string) ([]byte, bool) {
 	out, touched := ApplyPayloadConfigWithTrackedPaths(cfg, model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers, trackedPath)
 	return out, touched[trackedPath]
 }
-
-
 
 func ApplyPayloadConfigWithRequestTrackedDoc(cfg *config.Config, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPath string) bool {
 	touched := ApplyPayloadConfigWithTrackedPathsDoc(cfg, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, trackedPath)
@@ -546,12 +518,6 @@ func isImagesEndpointRequestPath(path string) bool {
 	}
 	return false
 }
-
-
-
-
-
-
 
 func shouldStripImageGeneration(mode config.DisableImageGenerationMode, requestPath string) bool {
 	switch mode {
@@ -851,9 +817,6 @@ func payloadModelCandidates(model, requestedModel string) []string {
 	}
 	return candidates
 }
-
-
-
 
 func buildPayloadPath(root, path string) string {
 	r := strings.TrimSpace(root)
@@ -1370,12 +1333,6 @@ func PayloadRequestPath(opts cliproxyexecutor.Options) string {
 		return ""
 	}
 }
-
-
-
-
-
-
 
 func matchModelPattern(pattern, model string) bool {
 	pattern = strings.TrimSpace(pattern)

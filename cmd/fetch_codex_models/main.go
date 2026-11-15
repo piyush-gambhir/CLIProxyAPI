@@ -1,18 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package main
 
 import (
@@ -312,8 +297,6 @@ func ensureBaselineModel(raw []byte) ([]byte, int, error) {
 		return nil, 0, fmt.Errorf("failed to parse response JSON: %w", errUnmarshal)
 	}
 
-
-
 	if payload.Models == nil {
 		return nil, 0, fmt.Errorf("response JSON does not contain models array")
 	}
@@ -396,8 +379,6 @@ func countModels(raw []byte) (int, error) {
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return 0, fmt.Errorf("failed to parse response JSON: %w", err)
 	}
-
-
 
 	if payload.Models == nil {
 		return 0, fmt.Errorf("response JSON does not contain models array")

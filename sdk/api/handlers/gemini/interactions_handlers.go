@@ -90,7 +90,6 @@ func buildInteractionsExecutionRequest(target interactionsRequestTarget, modelNa
 	}
 }
 
-
 func (h *GeminiAPIHandler) Interactions(c *gin.Context) {
 	rawJSON, errRead := c.GetRawData()
 	if errRead != nil {

@@ -577,7 +577,6 @@ func TestCodexTerminalFailureErrClassifiesStatus(t *testing.T) {
 			wantStatus: http.StatusBadGateway,
 		},
 
-
 		{
 			name:       "overload stays a bad gateway without buffering",
 			event:      `{"type":"error","error":{"type":"service_unavailable_error","code":"server_is_overloaded","message":"Our servers are currently overloaded. Please try again later."}}`,

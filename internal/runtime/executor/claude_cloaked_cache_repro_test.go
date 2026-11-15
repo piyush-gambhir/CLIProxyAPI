@@ -17,10 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
 func TestClaudeBillingFingerprintMultiTurnUsesFirstUserText(t *testing.T) {
 	payload := []byte(`{
 		"model": "claude-opus-5",
@@ -42,29 +38,23 @@ func TestClaudeBillingFingerprintMultiTurnUsesFirstUserText(t *testing.T) {
 	}
 }
 
-
-
 func TestClaudeBillingFingerprintEdgeCases(t *testing.T) {
 
 	if got := claudeBillingFingerprintMessageText([]byte(`{"messages":[]}`)); got != "" {
 		t.Fatalf("empty messages: got %q, want empty", got)
 	}
 
-
 	if got := claudeBillingFingerprintMessageText([]byte(`{"messages":[{"role":"assistant","content":"hi"}]}`)); got != "" {
 		t.Fatalf("only assistant message: got %q, want empty", got)
 	}
-
 
 	if got := claudeBillingFingerprintMessageText([]byte(`{"messages":[{"role":"user","content":[{"type":"image"}]}]}`)); got != "" {
 		t.Fatalf("user message with no text: got %q, want empty", got)
 	}
 
-
 	if got := claudeBillingFingerprintMessageText([]byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"<system-reminder>date</system-reminder>"}]}]}`)); got != "" {
 		t.Fatalf("user message with only reminder: got %q, want empty", got)
 	}
-
 
 	multiPart := []byte(`{"messages":[{"role":"user","content":[
 		{"type":"text","text":"<system-reminder>date</system-reminder>"},
@@ -90,9 +80,6 @@ func TestComputeFingerprintUsesNativeUTF16Indices(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestClaudeCloakedSingleTurnPrefixStability(t *testing.T) {
 	var capturedBodies [][]byte
@@ -145,7 +132,6 @@ func TestClaudeCloakedSingleTurnPrefixStability(t *testing.T) {
 		t.Fatalf("request 1 failed: %v", err)
 	}
 
-
 	req2 := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(payload1)}
 	if _, err := exec.Execute(ctx, auth, req2, options); err != nil {
 		t.Fatalf("request 2 failed: %v", err)
@@ -162,9 +148,6 @@ func TestClaudeCloakedSingleTurnPrefixStability(t *testing.T) {
 		t.Fatalf("upstream request body changed between identical single-turn requests:\nBody 1: %s\nBody 2: %s", string(body1), string(body2))
 	}
 }
-
-
-
 
 func TestClaudeCloakedSingleTurnPrefixStabilityWithPinnedSession(t *testing.T) {
 	var capturedBodies [][]byte
@@ -234,11 +217,6 @@ func TestClaudeCloakedSingleTurnPrefixStabilityWithPinnedSession(t *testing.T) {
 		t.Fatalf("upstream request body changed between identical requests with pinned session:\nBody 1: %s\nBody 2: %s", string(body1), string(body2))
 	}
 }
-
-
-
-
-
 
 func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 	var capturedBodies [][]byte
@@ -317,7 +295,6 @@ func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 	body1 := capturedBodies[0]
 	body2 := capturedBodies[1]
 
-
 	sys1 := ojson.GetBytes(body1, "system.0.text").String()
 	sys2 := ojson.GetBytes(body2, "system.0.text").String()
 	ver1 := extractTag(sys1, "cc_version=")
@@ -326,13 +303,11 @@ func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 		t.Fatalf("cc_version buildHash changed across turns: turn1=%q turn2=%q (busts prompt cache prefix)", ver1, ver2)
 	}
 
-
 	agent1 := ojson.GetBytes(body1, "system.1").Raw
 	agent2 := ojson.GetBytes(body2, "system.1").Raw
 	if agent1 != agent2 {
 		t.Fatalf("system.1 identity block differs across turns:\nTurn 1: %s\nTurn 2: %s", agent1, agent2)
 	}
-
 
 	msg1User := ojson.GetBytes(body1, "messages.0").Raw
 	msg2User := ojson.GetBytes(body2, "messages.0").Raw
@@ -340,13 +315,11 @@ func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 		t.Fatalf("messages.0 differs across turns:\nTurn 1: %s\nTurn 2: %s", msg1User, msg2User)
 	}
 
-
 	msg1Sys := ojson.GetBytes(body1, "messages.1").Raw
 	msg2Sys := ojson.GetBytes(body2, "messages.1").Raw
 	if msg1Sys != msg2Sys {
 		t.Fatalf("messages.1 differs across turns:\nTurn 1: %s\nTurn 2: %s", msg1Sys, msg2Sys)
 	}
-
 
 	prompt1 := extractTag(sys1, "cc_prompt_id=")
 	prompt2 := extractTag(sys2, "cc_prompt_id=")
@@ -354,11 +327,9 @@ func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 		t.Fatalf("cc_prompt_id differs across turns: turn1=%q turn2=%q", prompt1, prompt2)
 	}
 
-
 	if strings.Contains(sys1, "cc_prev_req=") || strings.Contains(sys2, "cc_prev_req=") {
 		t.Fatalf("cc_prev_req unexpectedly present in cloaked turn: turn1=%s turn2=%s", sys1, sys2)
 	}
-
 
 	if _, err := exec.Execute(ctx, auth, cliproxyexecutor.Request{Model: "claude-opus-5", Payload: []byte(turn2Payload)}, options); err != nil {
 		t.Fatalf("turn 2 repeat failed: %v", err)
@@ -369,7 +340,6 @@ func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 	if !bytes.Equal(capturedBodies[1], capturedBodies[2]) {
 		t.Fatalf("repeated multi-turn request body differs:\nTurn 2:        %s\nTurn 2 repeat: %s", string(capturedBodies[1]), string(capturedBodies[2]))
 	}
-
 
 	turn3Payload := fmt.Sprintf(`{
 		"model": "claude-opus-5",
@@ -416,8 +386,6 @@ func TestClaudeCloakedMultiTurnPrefixStability(t *testing.T) {
 		t.Fatalf("repeated turn 3 body differs:\nTurn 3:        %s\nTurn 3 repeat: %s", string(body3), string(body3Repeat))
 	}
 }
-
-
 
 func TestClaudeCloakedStreamingPrefixStability(t *testing.T) {
 	var capturedBodies [][]byte
@@ -493,9 +461,6 @@ func TestClaudeCloakedStreamingPrefixStability(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeCloakedOpenAIFormatPrefixStability(t *testing.T) {
 	var capturedBodies [][]byte
 	call := 0
@@ -561,9 +526,6 @@ func TestClaudeCloakedOpenAIFormatPrefixStability(t *testing.T) {
 	}
 }
 
-
-
-
 func TestClaudeCloakedToolContinuationPreservesExplicitPromptID(t *testing.T) {
 	var capturedBodies [][]byte
 	call := 0
@@ -616,7 +578,6 @@ func TestClaudeCloakedToolContinuationPreservesExplicitPromptID(t *testing.T) {
 		t.Fatalf("turn 1 failed: %v", err)
 	}
 
-
 	turn1ToolPayload := []byte(`{
 		"model": "claude-opus-5",
 		"messages": [
@@ -641,10 +602,6 @@ func TestClaudeCloakedToolContinuationPreservesExplicitPromptID(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestClaudeCloakedColdStartToolContinuationUsesDeterministicPromptID(t *testing.T) {
 	var capturedBodies [][]byte
 	call := 0
@@ -658,7 +615,6 @@ func TestClaudeCloakedColdStartToolContinuationUsesDeterministicPromptID(t *test
 		header := make(http.Header)
 		header.Set("Content-Type", "application/json")
 		header.Set("request-id", fmt.Sprintf("req_upstream_%d", call))
-
 
 		if call == 1 {
 			return &http.Response{
@@ -694,7 +650,6 @@ func TestClaudeCloakedColdStartToolContinuationUsesDeterministicPromptID(t *test
 		SourceFormat: sdktranslator.FormatClaude,
 	}
 
-
 	toolPayload := []byte(`{
 		"model": "claude-opus-5",
 		"messages": [
@@ -707,7 +662,6 @@ func TestClaudeCloakedColdStartToolContinuationUsesDeterministicPromptID(t *test
 	req1 := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: toolPayload}
 
 	_, _ = exec.Execute(ctx, auth, req1, options)
-
 
 	req2 := cliproxyexecutor.Request{Model: "claude-opus-5", Payload: toolPayload}
 	if _, err := exec.Execute(ctx, auth, req2, options); err != nil {
@@ -916,8 +870,6 @@ func TestClaudeCloakedTopLevelCacheControl_Issue7366(t *testing.T) {
 		if got := ojson.GetBytes(ensured, "messages.0.content.0.cache_control.scope").String(); got != "global" {
 			t.Fatalf("messages.0.content.0.cache_control.scope = %q, want global: %s", got, ensured)
 		}
-
-
 
 		fiveMarkers := []byte(`{
 			"cache_control":{"type":"ephemeral"},

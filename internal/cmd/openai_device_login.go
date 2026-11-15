@@ -17,8 +17,6 @@ const (
 	codexLoginModeDevice      = "device"
 )
 
-
-
 func DoCodexDeviceLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {
 		options = &LoginOptions{}

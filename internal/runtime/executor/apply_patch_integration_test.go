@@ -519,7 +519,6 @@ func TestApplyPatchHTTPGatewayErrorMatrix(t *testing.T) {
 	}
 }
 
-
 func task6DrainUsage(t *testing.T) {
 	t.Helper()
 	id := "task6-drain-" + t.Name()

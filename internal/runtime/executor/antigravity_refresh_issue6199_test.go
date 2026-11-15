@@ -105,7 +105,6 @@ func TestIssue6199AntigravitySharedOAuthHasIndependentAcquisitionDeadline(t *tes
 			t.Fatalf("shared OAuth deadline = %s, want an independent acquisition budget before caller deadline %s", deadline, callerDeadline)
 		}
 
-
 		timer := time.NewTimer(time.Until(deadline))
 		defer timer.Stop()
 		<-timer.C

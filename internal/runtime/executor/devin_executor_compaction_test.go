@@ -20,8 +20,6 @@ import (
 
 const devinCompactionSummaryMarker = "DEVIN_COMPACTION_SUMMARY_42"
 
-
-
 func devinCompactionTextFrames(text string) []byte {
 	var textFrame []byte
 	textFrame = protowire.AppendTag(textFrame, 3, protowire.BytesType)
@@ -44,8 +42,6 @@ func devinCompactionTextFrames(text string) []byte {
 	return buf.Bytes()
 }
 
-
-
 func devinCompactionContext(frames []byte, seenBodies *[][]byte) context.Context {
 	mockRT := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		body, errRead := io.ReadAll(req.Body)
@@ -61,7 +57,6 @@ func devinCompactionContext(frames []byte, seenBodies *[][]byte) context.Context
 	})
 	return context.WithValue(context.Background(), "cliproxy.roundtripper", mockRT)
 }
-
 
 func devinCompactionWireField(data []byte, target protowire.Number) []byte {
 	for len(data) > 0 {
@@ -90,7 +85,6 @@ func devinCompactionWireField(data []byte, target protowire.Number) []byte {
 	return nil
 }
 
-
 func devinCompactionWireVarint(data []byte, target protowire.Number) uint64 {
 	for len(data) > 0 {
 		number, kind, n := protowire.ConsumeTag(data)
@@ -117,9 +111,6 @@ func devinCompactionWireVarint(data []byte, target protowire.Number) uint64 {
 	}
 	return 0
 }
-
-
-
 
 func devinCompactionAssertSummaryRequest(t *testing.T, body []byte, label string) {
 	t.Helper()
@@ -237,8 +228,6 @@ func TestDevinExecutor_ResponsesCompactionTriggerAndReplay_Issue7291(t *testing.
 	}
 	itemID := outputItems[0].Get("id").String()
 
-
-
 	if len(seenBodies) != 1 {
 		t.Fatalf("expected exactly one upstream request after streaming compaction, got %d", len(seenBodies))
 	}
@@ -260,14 +249,10 @@ func TestDevinExecutor_ResponsesCompactionTriggerAndReplay_Issue7291(t *testing.
 		t.Fatalf("expected single compaction item in non-stream response, got: %s", nonStreamResp.Payload)
 	}
 
-
-
 	if len(seenBodies) != 2 {
 		t.Fatalf("expected exactly two upstream requests after non-streaming compaction, got %d", len(seenBodies))
 	}
 	devinCompactionAssertSummaryRequest(t, seenBodies[1], "non-streaming")
-
-
 
 	replayPayload := []byte(fmt.Sprintf(`{
 		"model": "devin/swe-2",
@@ -312,9 +297,6 @@ func TestDevinExecutor_ResponsesCompactionTriggerAndReplay_Issue7291(t *testing.
 		t.Fatalf("expected CPA compaction capsule to be expanded, not forwarded raw")
 	}
 
-
-
-
 	secondTriggerPayload := []byte(fmt.Sprintf(`{
 		"model": "devin/swe-2",
 		"input": [
@@ -349,10 +331,6 @@ func TestDevinExecutor_ResponsesCompactionTriggerAndReplay_Issue7291(t *testing.
 	}
 	secondItemID := secondItems[0].Get("id").String()
 
-
-
-
-
 	secondSeen := seenBodies[len(seenBodies)-1]
 	if !bytes.Contains(secondSeen, []byte(devinCompactionSummaryMarker)) {
 		t.Fatalf("expected first capsule summary in second compaction request")
@@ -369,8 +347,6 @@ func TestDevinExecutor_ResponsesCompactionTriggerAndReplay_Issue7291(t *testing.
 	if bytes.Contains(secondSeen, []byte("cpa-ag-compact-v1:")) {
 		t.Fatalf("expected first CPA compaction capsule to be expanded in second compaction request, not forwarded raw")
 	}
-
-
 
 	secondReplayPayload := []byte(fmt.Sprintf(`{
 		"model": "devin/swe-2",
@@ -400,9 +376,6 @@ func TestDevinExecutor_ResponsesCompactionTriggerAndReplay_Issue7291(t *testing.
 	if bytes.Contains(secondReplaySeen, []byte("cpa-ag-compact-v1:")) {
 		t.Fatalf("expected second CPA compaction capsule to be expanded, not forwarded raw")
 	}
-
-
-
 
 	origOnlyResp, errOrigOnly := executor.Execute(ctx, auth, cliproxyexecutor.Request{
 		Model:   "devin/swe-2",

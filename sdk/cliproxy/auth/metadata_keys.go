@@ -1,7 +1,5 @@
 package auth
 
-
-
 func CanonicalCredentialMetadataKey(key string) string {
 	switch key {
 	case "api-key":
@@ -32,8 +30,6 @@ func CanonicalCredentialMetadataKey(key string) string {
 		return key
 	}
 }
-
-
 
 func NormalizeCredentialMetadata(metadata map[string]any) {
 	for key, value := range metadata {

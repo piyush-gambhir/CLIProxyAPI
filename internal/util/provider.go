@@ -1,6 +1,3 @@
-
-
-
 package util
 
 import (
@@ -14,7 +11,6 @@ import (
 
 const openAICompatibleProviderPrefix = "openai-compatible-"
 
-
 func OpenAICompatibleProviderKey(name string) string {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if name == "" || name == "openai-compatibility" || strings.HasPrefix(name, openAICompatibleProviderPrefix) {
@@ -25,23 +21,6 @@ func OpenAICompatibleProviderKey(name string) string {
 	}
 	return openAICompatibleProviderPrefix + name
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func GetProviderName(modelName string) []string {
 	if modelName == "" {
@@ -78,19 +57,10 @@ func GetProviderName(modelName string) []string {
 	return providers
 }
 
-
-
-
-
-
-
-
-
 func ResolveAutoModel(modelName string) string {
 	if modelName != "auto" {
 		return modelName
 	}
-
 
 	firstModel, err := registry.GetGlobalRegistry().GetFirstAvailableModel("")
 	if err != nil {
@@ -101,15 +71,6 @@ func ResolveAutoModel(modelName string) string {
 	log.Infof("Resolved 'auto' model to: %s", firstModel)
 	return firstModel
 }
-
-
-
-
-
-
-
-
-
 
 func IsOpenAICompatibilityAlias(modelName string, cfg *config.Config) bool {
 	if cfg == nil {
@@ -129,16 +90,6 @@ func IsOpenAICompatibilityAlias(modelName string, cfg *config.Config) bool {
 	return false
 }
 
-
-
-
-
-
-
-
-
-
-
 func GetOpenAICompatibilityConfig(alias string, cfg *config.Config) (*config.OpenAICompatibility, *config.OpenAICompatibilityModel) {
 	if cfg == nil {
 		return nil, nil
@@ -157,16 +108,6 @@ func GetOpenAICompatibilityConfig(alias string, cfg *config.Config) (*config.Ope
 	return nil, nil
 }
 
-
-
-
-
-
-
-
-
-
-
 func InArray(hystack []string, needle string) bool {
 	for _, item := range hystack {
 		if needle == item {
@@ -175,13 +116,6 @@ func InArray(hystack []string, needle string) bool {
 	}
 	return false
 }
-
-
-
-
-
-
-
 
 func HideAPIKey(apiKey string) string {
 	if len(apiKey) > 8 {
@@ -197,15 +131,6 @@ func HideAPIKey(apiKey string) string {
 	return "[REDACTED]"
 }
 
-
-
-
-
-
-
-
-
-
 func MaskAuthorizationHeader(value string) string {
 	parts := strings.SplitN(strings.TrimSpace(value), " ", 2)
 	if len(parts) < 2 {
@@ -213,19 +138,6 @@ func MaskAuthorizationHeader(value string) string {
 	}
 	return parts[0] + " " + HideAPIKey(parts[1])
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func MaskSensitiveHeaderValue(key, value string) string {
 	lowerKey := strings.ToLower(strings.TrimSpace(key))
@@ -247,7 +159,6 @@ func MaskSensitiveHeaderValue(key, value string) string {
 		return value
 	}
 }
-
 
 func MaskSensitiveQuery(raw string) string {
 	if raw == "" {
@@ -292,7 +203,6 @@ func shouldMaskQueryParam(key string) bool {
 		return false
 	}
 	key = strings.TrimSuffix(key, "[]")
-
 
 	if key == "key" || key == "value" || strings.Contains(key, "api-key") || strings.Contains(key, "apikey") || strings.Contains(key, "api_key") {
 		return true

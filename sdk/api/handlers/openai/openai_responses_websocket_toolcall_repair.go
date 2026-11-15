@@ -84,8 +84,6 @@ func (c *websocketToolOutputCache) record(sessionKey string, callID string, item
 		session.order = append(session.order, callID)
 	}
 
-
-
 	session.outputs[callID] = append(json.RawMessage(nil), item...)
 
 	for len(session.order) > c.maxPerSession {
@@ -280,7 +278,6 @@ func (t *responsesWebsocketToolCacheTurn) recordItem(payload []byte, item ojson.
 		return
 	}
 	if rawItem != nil {
-
 
 		rawItem = responsesWebsocketReplaySanitizedBytes(rawItem)
 	}
@@ -508,7 +505,6 @@ func repairResponsesToolCallItems(
 		return dedupeResponsesWebsocketInputItems(items), nil
 	}
 
-
 	outputPresent := make(map[string]struct{}, len(items))
 	callPresent := make(map[string]struct{}, len(items))
 	for _, item := range items {
@@ -540,7 +536,6 @@ func repairResponsesToolCallItems(
 	for _, item := range items {
 		if isResponsesToolCallOutputType(item.itemType) {
 			if item.callID == "" {
-
 
 				name := ojson.GetBytesNoCopy(item.raw, "name")
 				if item.itemType == "function_call_output" && name.Type == ojson.String && strings.TrimSpace(name.String()) != "" {
@@ -575,7 +570,6 @@ func repairResponsesToolCallItems(
 				}
 			}
 
-
 			continue
 		}
 		if !isResponsesToolCallType(item.itemType) {
@@ -607,7 +601,6 @@ func repairResponsesToolCallItems(
 			outputPresent[item.callID] = struct{}{}
 			continue
 		}
-
 
 	}
 

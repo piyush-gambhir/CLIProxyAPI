@@ -14,30 +14,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// SignatureEntry holds a cached thinking signature with timestamp
 type SignatureEntry struct {
 	Signature string
 	Timestamp time.Time
 }
 
 const (
-	// SignatureCacheTTL is how long signatures are valid
 	SignatureCacheTTL = 3 * time.Hour
 
-	// SignatureTextHashLen is the length of the hash key (16 hex chars = 64-bit key space)
 	SignatureTextHashLen = 16
 
-	// MinValidSignatureLen is the minimum length for a signature to be considered valid
 	MinValidSignatureLen = 50
 
-	// CacheCleanupInterval controls how often stale entries are purged
 	CacheCleanupInterval = 10 * time.Minute
 )
 
-// signatureCache stores signatures by model group -> textHash -> SignatureEntry
 var signatureCache sync.Map
 
-// cacheCleanupOnce ensures the background cleanup goroutine starts only once
 var cacheCleanupOnce sync.Once
 
 type signatureKVClient interface {
@@ -51,21 +44,18 @@ var currentSignatureKVClient = func() (signatureKVClient, bool, error) {
 	return homekv.CurrentKVClient()
 }
 
-// groupCache is the inner map type
 type groupCache struct {
 	mu      sync.RWMutex
 	entries map[string]SignatureEntry
 }
 
-// hashText creates a stable, Unicode-safe key from text content
 func hashText(text string) string {
 	h := sha256.Sum256([]byte(text))
 	return hex.EncodeToString(h[:])[:SignatureTextHashLen]
 }
 
-// getOrCreateGroupCache gets or creates a cache bucket for a model group
 func getOrCreateGroupCache(groupKey string) *groupCache {
-	// Start background cleanup on first access
+
 	cacheCleanupOnce.Do(startCacheCleanup)
 
 	if val, ok := signatureCache.Load(groupKey); ok {
@@ -76,8 +66,6 @@ func getOrCreateGroupCache(groupKey string) *groupCache {
 	return actual.(*groupCache)
 }
 
-// startCacheCleanup launches a background goroutine that periodically
-// removes caches where all entries have expired.
 func startCacheCleanup() {
 	go func() {
 		ticker := time.NewTicker(CacheCleanupInterval)
@@ -88,13 +76,12 @@ func startCacheCleanup() {
 	}()
 }
 
-// purgeExpiredCaches removes caches with no valid (non-expired) entries.
 func purgeExpiredCaches() {
 	now := time.Now()
 	signatureCache.Range(func(key, value any) bool {
 		sc := value.(*groupCache)
 		sc.mu.Lock()
-		// Remove expired entries
+
 		for k, entry := range sc.entries {
 			if now.Sub(entry.Timestamp) > SignatureCacheTTL {
 				delete(sc.entries, k)
@@ -102,7 +89,7 @@ func purgeExpiredCaches() {
 		}
 		isEmpty := len(sc.entries) == 0
 		sc.mu.Unlock()
-		// Remove cache bucket if empty
+
 		if isEmpty {
 			signatureCache.Delete(key)
 		}
@@ -116,13 +103,10 @@ func purgeExpiredCaches() {
 	purgeExpiredClaudeWebSearchResultCache(now)
 }
 
-// CacheSignature stores a thinking signature for a given model group and text.
-// Used for Claude models that require signed thinking blocks in multi-turn conversations.
 func CacheSignature(modelName, text, signature string) {
 	CacheSignatureBestEffort(context.Background(), modelName, text, signature)
 }
 
-// CacheSignatureBestEffort stores a thinking signature for completed response paths.
 func CacheSignatureBestEffort(ctx context.Context, modelName, text, signature string) bool {
 	if text == "" || signature == "" {
 		return false
@@ -157,8 +141,6 @@ func CacheSignatureBestEffort(ctx context.Context, modelName, text, signature st
 	return true
 }
 
-// GetCachedSignature retrieves a cached signature for a given model group and text.
-// Returns empty string if not found or expired.
 func GetCachedSignature(modelName, text string) string {
 	signature, errSignature := GetCachedSignatureRequired(context.Background(), modelName, text)
 	if errSignature != nil {
@@ -167,7 +149,6 @@ func GetCachedSignature(modelName, text string) string {
 	return signature
 }
 
-// GetCachedSignatureRequired retrieves a cached signature for request-time paths.
 func GetCachedSignatureRequired(ctx context.Context, modelName, text string) (string, error) {
 	groupKey := GetModelGroup(modelName)
 
@@ -230,7 +211,6 @@ func GetCachedSignatureRequired(ctx context.Context, modelName, text string) (st
 		return "", nil
 	}
 
-	// Refresh TTL on access (sliding expiration).
 	entry.Timestamp = now
 	sc.entries[textHash] = entry
 	sc.mu.Unlock()
@@ -238,7 +218,6 @@ func GetCachedSignatureRequired(ctx context.Context, modelName, text string) (st
 	return entry.Signature, nil
 }
 
-// ClearSignatureCache clears signature cache for a specific model group or all groups.
 func ClearSignatureCache(modelName string) {
 	if modelName == "" {
 		signatureCache.Range(func(key, _ any) bool {
@@ -251,7 +230,6 @@ func ClearSignatureCache(modelName string) {
 	signatureCache.Delete(groupKey)
 }
 
-// DeleteCachedSignatureRequired removes one exact cached signature.
 func DeleteCachedSignatureRequired(ctx context.Context, modelName, text string) error {
 	if text == "" {
 		return nil
@@ -280,7 +258,6 @@ func DeleteCachedSignatureRequired(ctx context.Context, modelName, text string) 
 	return nil
 }
 
-// HasValidSignature checks if a signature is valid (non-empty and long enough)
 func HasValidSignature(modelName, signature string) bool {
 	return (signature != "" && len(signature) >= MinValidSignatureLen) || (signature == "skip_thought_signature_validator" && GetModelGroup(modelName) == "gemini")
 }
@@ -308,7 +285,6 @@ func init() {
 	signatureBypassStrictMode.Store(false)
 }
 
-// SetSignatureCacheEnabled switches Antigravity signature handling between cache mode and bypass mode.
 func SetSignatureCacheEnabled(enabled bool) {
 	previous := signatureCacheEnabled.Swap(enabled)
 	if previous == enabled {
@@ -319,12 +295,10 @@ func SetSignatureCacheEnabled(enabled bool) {
 	}
 }
 
-// SignatureCacheEnabled returns whether signature cache validation is enabled.
 func SignatureCacheEnabled() bool {
 	return signatureCacheEnabled.Load()
 }
 
-// SetSignatureBypassStrictMode controls whether bypass mode uses strict protobuf-tree validation.
 func SetSignatureBypassStrictMode(strict bool) {
 	previous := signatureBypassStrictMode.Swap(strict)
 	if previous == strict {
@@ -337,7 +311,6 @@ func SetSignatureBypassStrictMode(strict bool) {
 	}
 }
 
-// SignatureBypassStrictMode returns whether bypass mode uses strict protobuf-tree validation.
 func SignatureBypassStrictMode() bool {
 	return signatureBypassStrictMode.Load()
 }

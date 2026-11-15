@@ -74,7 +74,6 @@ func TestManager_MarkResult_ResultPolicy_DemotesCredentialScopeBeforeMutationAnd
 			stateCheckedBeforeMutation.Store(true)
 		}
 
-
 		if res.Error != nil && res.Error.HTTPStatus == http.StatusTooManyRequests && res.CredentialScope {
 			res.CredentialScope = false
 		}
@@ -109,7 +108,6 @@ func TestManager_MarkResult_ResultPolicy_DemotesCredentialScopeBeforeMutationAnd
 		t.Fatal("auth not found after MarkResult")
 	}
 
-
 	haikuState := existingModelState(updated, canonicalModelKey("claude-3-5-haiku"))
 	if haikuState != nil && haikuState.Unavailable {
 		t.Fatalf("expected sibling model claude-3-5-haiku to remain available, but got unavailable: %+v", haikuState)
@@ -117,7 +115,6 @@ func TestManager_MarkResult_ResultPolicy_DemotesCredentialScopeBeforeMutationAnd
 	if haikuState != nil && haikuState.Quota.Reason == "credential_quota" {
 		t.Fatalf("expected sibling model claude-3-5-haiku not to have credential_quota, got: %+v", haikuState.Quota)
 	}
-
 
 	blockedHaiku, _, _ := isAuthBlockedForModel(updated, "claude-3-5-haiku", time.Now())
 	if blockedHaiku {
@@ -128,23 +125,19 @@ func TestManager_MarkResult_ResultPolicy_DemotesCredentialScopeBeforeMutationAnd
 		t.Fatalf("expected target model claude-3-7-sonnet to be blocked by per-model 429")
 	}
 
-
 	picked, errPick := m.Selector().Pick(context.Background(), auth.Provider, "claude-3-5-haiku", cliproxyexecutor.Options{}, []*Auth{updated})
 	if errPick != nil || picked == nil || picked.ID != auth.ID {
 		t.Fatalf("expected sibling model claude-3-5-haiku to remain selectable via Selector, got err=%v picked=%v", errPick, picked)
 	}
-
 
 	sonnetState := existingModelState(updated, canonicalModelKey("claude-3-7-sonnet"))
 	if sonnetState == nil || !sonnetState.Unavailable {
 		t.Fatalf("expected target model claude-3-7-sonnet to be unavailable due to per-model 429: %+v", sonnetState)
 	}
 
-
 	if updated.Quota.Reason == "credential_quota" {
 		t.Fatalf("expected auth.Quota.Reason not to be 'credential_quota' after demotion, got %q", updated.Quota.Reason)
 	}
-
 
 	savedRecords := store.getRecords()
 	if len(savedRecords) == 0 {
@@ -155,7 +148,6 @@ func TestManager_MarkResult_ResultPolicy_DemotesCredentialScopeBeforeMutationAnd
 			t.Fatalf("expected no credential-scoped cooldown record to be persisted after demotion, found: %+v", rec)
 		}
 	}
-
 
 	received := hook.lastResult.Load()
 	if received == nil {
@@ -172,7 +164,6 @@ func TestManager_MarkResult_ResultPolicy_NilPolicyNoop(t *testing.T) {
 	t.Cleanup(func() { quotaCooldownDisabled.Store(previous) })
 
 	m, auth := newCooldownMonotonicManager(t, "model-1", "model-2")
-
 
 	retryDuration := 5 * time.Minute
 	m.MarkResult(context.Background(), Result{
@@ -198,7 +189,6 @@ func TestManager_MarkResult_ResultPolicy_ClearWithNil(t *testing.T) {
 	if m.ResultPolicy() == nil {
 		t.Fatal("expected policy to be set")
 	}
-
 
 	m.SetResultPolicy(nil)
 	if m.ResultPolicy() != nil {
@@ -243,7 +233,6 @@ func TestManager_MarkResult_ResultPolicy_ConcurrentSafety(t *testing.T) {
 	})
 	m.SetResultPolicy(p1)
 
-
 	m.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: auth.Provider,
@@ -258,7 +247,6 @@ func TestManager_MarkResult_ResultPolicy_ConcurrentSafety(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(goroutines)
 
-
 	for i := 0; i < 20; i++ {
 		go func() {
 			defer wg.Done()
@@ -272,7 +260,6 @@ func TestManager_MarkResult_ResultPolicy_ConcurrentSafety(t *testing.T) {
 			}
 		}()
 	}
-
 
 	for i := 0; i < 10; i++ {
 		idx := i

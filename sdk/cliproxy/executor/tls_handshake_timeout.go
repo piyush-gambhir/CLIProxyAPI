@@ -6,20 +6,9 @@ import (
 	"fmt"
 )
 
-
-
-
-
-
-
-
-
-
 type ConfiguredTLSHandshakeTimeoutError struct {
 	cause error
 }
-
-
 
 func NewConfiguredTLSHandshakeTimeoutError(cause error) error {
 	if cause == nil {
@@ -35,24 +24,12 @@ func (e *ConfiguredTLSHandshakeTimeoutError) Error() string {
 	return fmt.Sprintf("tls handshake timeout: %v", e.cause)
 }
 
-
-
 func (e *ConfiguredTLSHandshakeTimeoutError) Unwrap() error {
 	if e == nil {
 		return nil
 	}
 	return e.cause
 }
-
-
-
-
-
-
-
-
-
-
 
 func IsConfiguredTLSHandshakeTimeoutError(err error) bool {
 	if err == nil {
@@ -68,12 +45,8 @@ func inspectConfiguredTLSHandshakeTimeout(err error) (foundConfiguredDeadline bo
 	}
 	if configured, ok := err.(*ConfiguredTLSHandshakeTimeoutError); ok && configured != nil {
 
-
 		return errors.Is(configured.cause, context.DeadlineExceeded), false
 	}
-
-
-
 
 	hasUnownedContextError = hasOwnContextIdentity(err)
 	for _, child := range unwrapChildErrors(err) {

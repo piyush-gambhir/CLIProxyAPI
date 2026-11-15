@@ -13,20 +13,15 @@ import (
 
 type siwcFileMutationKey struct{}
 
-
 func (h *Handler) UploadAuthFileV8(c *gin.Context) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), siwcFileMutationKey{}, true))
 	h.UploadAuthFile(c)
 }
 
-
 func (h *Handler) DeleteAuthFileV8(c *gin.Context) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), siwcFileMutationKey{}, true))
 	h.DeleteAuthFile(c)
 }
-
-
-
 
 func (h *Handler) beginSIWCFileMutation(ctx context.Context, path string) func() {
 	if ctx == nil || ctx.Value(siwcFileMutationKey{}) != true {

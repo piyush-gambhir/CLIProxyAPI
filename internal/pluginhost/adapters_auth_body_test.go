@@ -18,8 +18,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
-
 func authenticateWithBody(ctx context.Context, t *testing.T, method, path string, body []byte, encoding string, maxBody int64) (pluginapi.FrontendAuthRequest, int, *http.Request, *sdkaccess.AuthError) {
 	t.Helper()
 	var seen pluginapi.FrontendAuthRequest
@@ -57,8 +55,6 @@ func zstdCompress(t *testing.T, raw []byte) []byte {
 	return encoder.EncodeAll(raw, nil)
 }
 
-
-
 func TestAccessAdapterDecodesZstdBodyForPlugin(t *testing.T) {
 	plain := []byte(`{"model":"gpt-5","input":"hi"}`)
 	compressed := zstdCompress(t, plain)
@@ -79,8 +75,6 @@ func TestAccessAdapterDecodesZstdBodyForPlugin(t *testing.T) {
 	}
 }
 
-
-
 func TestAccessAdapterLeavesDecodedBodyNilWhereHandlerDoesNotDecode(t *testing.T) {
 	compressed := zstdCompress(t, []byte(`{"model":"gpt-5"}`))
 	plainJSON := []byte(`{"model":"gpt-5"}`)
@@ -100,8 +94,6 @@ func TestAccessAdapterLeavesDecodedBodyNilWhereHandlerDoesNotDecode(t *testing.T
 		}
 	}
 }
-
-
 
 func TestAccessAdapterRefusesOversizedDecodes(t *testing.T) {
 
@@ -134,8 +126,6 @@ func TestAccessAdapterRefusesOversizedDecodes(t *testing.T) {
 	}
 }
 
-
-
 func TestAccessAdapterSkipsDisabledImageRoutes(t *testing.T) {
 	compressed := zstdCompress(t, []byte(`{"model":"gpt-image-1","prompt":"x"}`))
 	host := New()
@@ -159,8 +149,6 @@ func TestAccessAdapterSkipsDisabledImageRoutes(t *testing.T) {
 	}
 }
 
-
-
 func TestAccessAdapterDecodesAtMostTwoCodings(t *testing.T) {
 	plain := []byte(`{"model":"gpt-5"}`)
 	twice := zstdCompress(t, zstdCompress(t, plain))
@@ -174,7 +162,6 @@ func TestAccessAdapterDecodesAtMostTwoCodings(t *testing.T) {
 		t.Fatalf("three codings: decoded %q calls %d err %v", seen.DecodedBody, calls, authErr)
 	}
 }
-
 
 func TestFrontendAuthRequestDecodedBodyOverRPC(t *testing.T) {
 	client := &capturePluginClient{}
@@ -344,7 +331,6 @@ func TestAccessAdapterFrontendAuthOmitBodySkipsReadingAndDecodingBody(t *testing
 			if counter.readBytes != len(compressed) {
 				t.Fatalf("bytes read after downstream ReadAll = %d, want %d", counter.readBytes, len(compressed))
 			}
-
 
 			failReq, errNewReq := http.NewRequest(http.MethodPost, "http://example.test/v1/responses", failingReadCloser{})
 			if errNewReq != nil {

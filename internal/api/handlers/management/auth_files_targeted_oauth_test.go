@@ -388,7 +388,6 @@ func TestTargetedOAuthReloginAntigravityRejectsMismatchedAccountAndUpdatesMatchi
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/v8/management/oauth/status", h.GetAuthStatus)
 
-
 	wMismatch := httptest.NewRecorder()
 	reqMismatch := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"antigravity","name":"antigravity-a@x.test.json"}`))
 	reqMismatch.Header.Set("Content-Type", "application/json")
@@ -419,7 +418,6 @@ func TestTargetedOAuthReloginAntigravityRejectsMismatchedAccountAndUpdatesMatchi
 	if string(afterMismatchBytes) != initialContent {
 		t.Fatalf("target file changed after mismatched login: %s", string(afterMismatchBytes))
 	}
-
 
 	agSvc.email = "a@x.test"
 	agSvc.accessToken = "ag-fresh-token-match"
@@ -499,7 +497,6 @@ func TestTargetedOAuthReloginKimiUpdatesTargetFileWithoutAddingNewFiles(t *testi
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/v8/management/oauth/status", h.GetAuthStatus)
 
-
 	wDomainMismatch := httptest.NewRecorder()
 	reqDomainMismatch := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"kimi","domain":"kimi.ai","name":"kimi-1700000000000.json"}`))
 	reqDomainMismatch.Header.Set("Content-Type", "application/json")
@@ -507,7 +504,6 @@ func TestTargetedOAuthReloginKimiUpdatesTargetFileWithoutAddingNewFiles(t *testi
 	if wDomainMismatch.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for kimi.ai domain against kimi.com target, got %d: %s", wDomainMismatch.Code, wDomainMismatch.Body.String())
 	}
-
 
 	for i, tok := range []string{"kimi-access-relogin-1", "kimi-access-relogin-2"} {
 		kimiSvc.accessToken = tok
@@ -644,7 +640,6 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 	router.POST("/v8/management/oauth/callback", h.PostOAuthCallbackV8)
 	router.GET("/v8/management/oauth/status", h.GetAuthStatus)
 
-
 	claudeSvc.accountUUID = "uuid-wrong"
 	wClaudeMismatch := httptest.NewRecorder()
 	reqClaudeMismatch := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"auth_index":"`+claudeAuth.Index+`"}`))
@@ -679,7 +674,6 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 		t.Fatalf("claude match status = %#v, want ok & adopted", st)
 	}
 
-
 	xaiSvc.subject = "sub-wrong"
 	wXAIMismatch := httptest.NewRecorder()
 	router.ServeHTTP(wXAIMismatch, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"xai","name":"xai-custom.json"}`)))
@@ -698,7 +692,6 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 		t.Fatalf("xai match status = %#v, want ok & adopted", st)
 	}
 
-
 	metaSvc.email = "wrong@x.test"
 	wMetaMismatch := httptest.NewRecorder()
 	router.ServeHTTP(wMetaMismatch, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"meta","name":"meta-custom.json"}`)))
@@ -716,7 +709,6 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 	if st := pollOAuthStatusUntilDone(t, router, metaMatchStart.State); st["status"] != "ok" || st["auth_id"] != "meta-custom.json" || st["adopted"] != true {
 		t.Fatalf("meta match status = %#v, want ok & adopted", st)
 	}
-
 
 	devinUserID = "usr-wrong"
 	wDevinMismatch := httptest.NewRecorder()
@@ -744,7 +736,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 
 	authDir := t.TempDir()
 	manager := coreauth.NewManager(nil, nil, nil)
-
 
 	kimiComAuth := &coreauth.Auth{
 		ID:             "kimi-com-target.json",
@@ -792,7 +783,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		}
 	}
 
-
 	crossDomainState := "kimi-cross-domain-commit"
 	RegisterOAuthSession(crossDomainState, "kimi")
 	SetOAuthSessionTarget(crossDomainState, oauthRecoveryTarget{
@@ -809,7 +799,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 	}, "save failed", false); ok {
 		t.Fatalf("expected commitAndCompleteBuiltinOAuthSession to reject cross-domain kimi-ai record for kimi target")
 	}
-
 
 	claudeOrgSvc := &targetedTestClaudeOAuthService{
 		authDir:     authDir,
@@ -864,7 +853,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("claude org match status = %#v, want ok & adopted", st)
 	}
 
-
 	xaiSvc := &targetedTestXAIOAuthService{
 		email:       "",
 		subject:     "sub-a",
@@ -914,7 +902,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("saved xai-both.json after sub-only login = %#v, want preserved email=a@x.test and sub=sub-a", savedXAIMap)
 	}
 
-
 	xaiSvc.email = "a@x.test"
 	xaiSvc.subject = ""
 	xaiSvc.accessToken = "xai-email-only-fresh"
@@ -935,7 +922,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("saved xai-both.json after email-only login = %#v, want preserved email=a@x.test and sub=sub-a", savedXAIMap2)
 	}
 
-
 	xaiSvc.email = "conflict@x.test"
 	xaiSvc.subject = "sub-a"
 	wXAIConflict := httptest.NewRecorder()
@@ -945,7 +931,6 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 	if st := pollOAuthStatusUntilDone(t, router, xaiConflictStart.State); st["status"] != "error" {
 		t.Fatalf("xai conflicting email status = %#v, want error", st)
 	}
-
 
 	agPath := filepath.Join(authDir, "ag-verify.json")
 	agMeta := map[string]any{

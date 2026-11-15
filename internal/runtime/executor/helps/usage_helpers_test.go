@@ -75,7 +75,6 @@ func TestParseOpenAIUsageFlatReasoningDialect(t *testing.T) {
 		t.Fatalf("token breakdown = %+v", detail.TokenBreakdown)
 	}
 
-
 	streamDetail, ok := ParseOpenAIStreamUsage([]byte(`data: {"id":"x","object":"chat.completion.chunk","usage":{"prompt_tokens":10,"completion_tokens":6,"total_tokens":16,"reasoning_tokens":4}}`))
 	if !ok {
 		t.Fatalf("ParseOpenAIStreamUsage reported no usage")
@@ -446,8 +445,6 @@ func TestParseClaudeUsageReportsSpeedAsResponseServiceTier(t *testing.T) {
 	}
 }
 
-
-
 func TestStreamUsageBufferObserveClaudeStream_KeepsSpeedAcrossDelta(t *testing.T) {
 	for _, tc := range []struct{ start, delta, want string }{
 		{`"speed":"fast"`, ``, "fast"},
@@ -721,11 +718,9 @@ func TestUsageReporterTrackHTTPClientRoundTripOnly_DoesNotTriggerOnBodyRead(t *t
 		t.Fatalf("response body close error = %v", errClose)
 	}
 
-
 	if reporter.IsTTFTSet() {
 		t.Fatalf("TrackHTTPClientRoundTripOnly must not set TTFT on plain body read")
 	}
-
 
 	ObserveResponsesTokenEvent(reporter, bodyBytes)
 	if reporter.IsTTFTSet() {
@@ -734,7 +729,6 @@ func TestUsageReporterTrackHTTPClientRoundTripOnly_DoesNotTriggerOnBodyRead(t *t
 	if reporter.ttftDuration() <= 0 {
 		t.Fatalf("Fallback TTFT should be recorded and > 0, got %v", reporter.ttftDuration())
 	}
-
 
 	ObserveResponsesTokenEvent(reporter, []byte(`{"type":"response.output_text.delta","delta":"hello"}`))
 	if !reporter.IsTTFTSet() {
@@ -782,11 +776,9 @@ func TestUsageReporterObserveTokenEvent_FastPathNonTokenAndToken(t *testing.T) {
 	reporter := NewUsageReporter(context.Background(), "codex", "gpt-5.6-luna", nil)
 	reporter.StartResponseTTFT()
 
-
 	if reporter.IsTTFTSet() {
 		t.Fatalf("expected IsTTFTSet() == false initially")
 	}
-
 
 	reporter.ObserveTokenEvent(false)
 	if reporter.IsTTFTSet() {
@@ -797,19 +789,16 @@ func TestUsageReporterObserveTokenEvent_FastPathNonTokenAndToken(t *testing.T) {
 	}
 	firstPacketDuration := reporter.firstPacketDuration
 
-
 	reporter.ObserveTokenEvent(false)
 	if reporter.firstPacketDuration != firstPacketDuration {
 		t.Fatalf("subsequent ObserveTokenEvent(false) must preserve original firstPacketDuration")
 	}
-
 
 	reporter.ObserveTokenEvent(true)
 	if !reporter.IsTTFTSet() {
 		t.Fatalf("ObserveTokenEvent(true) must set IsTTFTSet() == true")
 	}
 	tokenTTFT := reporter.ttft
-
 
 	reporter.ObserveTokenEvent(true)
 	if reporter.ttft != tokenTTFT {
@@ -1208,7 +1197,6 @@ func TestStreamUsageBufferObserveClaudeStream_FailurePreservesUsage(t *testing.T
 		t.Errorf("CacheCreationTokens = %d, want 7185", record.Detail.CacheCreationTokens)
 	}
 
-
 	if !buffer.PublishFailure(context.Background(), reporter, context.Canceled) {
 		t.Fatal("expected PublishFailure to return true")
 	}
@@ -1238,13 +1226,11 @@ func TestUsageReporterPropagatesSessionHierarchy(t *testing.T) {
 		t.Fatalf("record session hierarchy = (%q, %q), want (claude:sess-1:agent:sub-1, claude:sess-1)", record.SessionID, record.ParentSessionID)
 	}
 
-
 	reporter.SetSessionHierarchy("override:child", "override:parent")
 	record2 := reporter.buildRecord(usage.Detail{TotalTokens: 100}, false, usage.Failure{})
 	if record2.SessionID != "override:child" || record2.ParentSessionID != "override:parent" {
 		t.Fatalf("overridden record session hierarchy = (%q, %q), want (override:child, override:parent)", record2.SessionID, record2.ParentSessionID)
 	}
-
 
 	reporter.SetSessionHierarchy("loop:node", "loop:node")
 	record3 := reporter.buildRecord(usage.Detail{TotalTokens: 100}, false, usage.Failure{})
@@ -1252,13 +1238,11 @@ func TestUsageReporterPropagatesSessionHierarchy(t *testing.T) {
 		t.Fatalf("self loop record session hierarchy = (%q, %q), want (loop:node, empty)", record3.SessionID, record3.ParentSessionID)
 	}
 
-
 	reporter.SetSessionHierarchy("", "orphan:parent")
 	record4 := reporter.buildRecord(usage.Detail{TotalTokens: 100}, false, usage.Failure{})
 	if record4.SessionID != "" || record4.ParentSessionID != "" {
 		t.Fatalf("orphan parent record session hierarchy = (%q, %q), want empty both", record4.SessionID, record4.ParentSessionID)
 	}
-
 
 	ctxAlias := logging.WithClientRequestMetadata(context.Background(), logging.ClientRequestMetadata{
 		SessionID:       "pck:prompt-key-123",
@@ -1306,7 +1290,6 @@ func TestUsageReporterPropagatesBaseURL(t *testing.T) {
 		t.Fatalf("recordMeta.BaseURL = %q, want %q", recordMeta.BaseURL, "https://meta.endpoint.example.com/v1")
 	}
 
-
 	authBoth := &cliproxyauth.Auth{
 		ID:       "auth-both-test",
 		Provider: "openai",
@@ -1322,7 +1305,6 @@ func TestUsageReporterPropagatesBaseURL(t *testing.T) {
 	if recordBoth.BaseURL != "https://attr.example.com" {
 		t.Fatalf("recordBoth.BaseURL = %q, want %q", recordBoth.BaseURL, "https://attr.example.com")
 	}
-
 
 	authBlankAttr := &cliproxyauth.Auth{
 		ID:       "auth-blank-test",
@@ -1340,7 +1322,6 @@ func TestUsageReporterPropagatesBaseURL(t *testing.T) {
 		t.Fatalf("recordBlankAttr.BaseURL = %q, want %q", recordBlankAttr.BaseURL, "https://meta.example.com")
 	}
 
-
 	reporterNilAuth := NewUsageReporter(ctx, "openai", "gpt-5.4", nil)
 	recordNilAuth := reporterNilAuth.buildRecord(usage.Detail{TotalTokens: 10}, false, usage.Failure{})
 	if recordNilAuth.BaseURL != "" {
@@ -1351,10 +1332,8 @@ func TestUsageReporterPropagatesBaseURL(t *testing.T) {
 func TestUsageReporter_AllocatesUniqueUUIDPerAttemptWithSharedTraceID(t *testing.T) {
 	ctx := logging.WithRequestID(context.Background(), "00000042")
 
-
 	reporter1 := NewUsageReporter(ctx, "openai", "gpt-5.4", nil)
 	record1 := reporter1.buildRecord(usage.Detail{TotalTokens: 10}, false, usage.Failure{})
-
 
 	reporter2 := NewUsageReporter(ctx, "claude", "claude-3-7-sonnet", nil)
 	record2 := reporter2.buildRecord(usage.Detail{TotalTokens: 20}, false, usage.Failure{})
@@ -1376,7 +1355,6 @@ func TestUsageReporter_AllocatesUniqueUUIDPerAttemptWithSharedTraceID(t *testing
 	if record1.RequestID == record2.RequestID {
 		t.Fatalf("consecutive attempts must have distinct UUID RequestIDs: got %q and %q", record1.RequestID, record2.RequestID)
 	}
-
 
 	u1, err1 := uuid.Parse(record1.RequestID)
 	if err1 != nil || u1.Version() != 4 {
@@ -1548,12 +1526,10 @@ func TestFailFromErrorsCarriesRequestScopedCode(t *testing.T) {
 		t.Fatalf("cooldown action rule must set fail.Code=%q, got %+v", usage.FailureForceCooldownCode, failCooldown)
 	}
 
-
 	reqScopedForceCool := cliproxyauth.NewRequestScopedError("force_cool_marker", http.StatusBadRequest)
 	if failOverride := reporter.failFromErrors(context.Background(), reqScopedForceCool); failOverride.Code != usage.FailureForceCooldownCode {
 		t.Fatalf("cooldown rule must override intrinsic RequestScopedError: got %+v", failOverride)
 	}
-
 
 	rules[0].Match[0] = "mutated_after_creation"
 	failIsolated := reporter.failFromErrors(context.Background(), errNotFound)
@@ -1579,7 +1555,6 @@ func TestFailFromErrorsCarriesRequestScopedCode(t *testing.T) {
 	}
 	ctxWithCfg := cliproxyauth.WithRequestScopedErrorConfig(context.Background(), cfg)
 	oauthReporter := NewUsageReporter(ctxWithCfg, "codex", "gpt-5.4", oauthAuth)
-
 
 	oauthReporter.UpdateAccessTokenFingerprint(&cliproxyauth.Auth{
 		ID:         "oauth-rule-test",

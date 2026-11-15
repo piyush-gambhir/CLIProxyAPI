@@ -146,30 +146,25 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 		Metadata:     map[string]any{cliproxyexecutor.ExecutionSessionMetadataKey: "continuity-conv-" + testID},
 	}
 
-
 	req1 := cliproxyexecutor.Request{Model: "claude-sonnet-5", Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"turn 1 prompt"}],"max_tokens":100}`)}
 	if _, err := executor.Execute(ctx, auth, req1, options); err != nil {
 		t.Fatalf("turn 1 failed: %v", err)
 	}
-
 
 	req2 := cliproxyexecutor.Request{Model: "claude-sonnet-5", Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"turn 1 prompt"},{"role":"assistant","content":"ok"},{"role":"user","content":"turn 2 prompt"}],"max_tokens":100}`)}
 	if _, err := executor.Execute(ctx, auth, req2, options); err != nil {
 		t.Fatalf("turn 2 failed: %v", err)
 	}
 
-
 	req2Tool := cliproxyexecutor.Request{Model: "claude-sonnet-5", Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"turn 1 prompt"},{"role":"assistant","content":"ok"},{"role":"user","content":"turn 2 prompt"},{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"bash","input":{}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"tool output"}]}],"max_tokens":100}`)}
 	if _, err := executor.Execute(ctx, auth, req2Tool, options); err != nil {
 		t.Fatalf("turn 2.1 tool failed: %v", err)
 	}
 
-
 	reqProbe := cliproxyexecutor.Request{Model: "claude-sonnet-5", Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"probe"}],"max_tokens":1}`)}
 	if _, err := executor.Execute(ctx, auth, reqProbe, options); err != nil {
 		t.Fatalf("probe failed: %v", err)
 	}
-
 
 	subagentOptions := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatClaude,
@@ -181,7 +176,6 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 		t.Fatalf("subagent failed: %v", err)
 	}
 
-
 	req5 := cliproxyexecutor.Request{Model: "claude-sonnet-5", Payload: []byte(`{"model":"claude-sonnet-5","messages":[{"role":"user","content":"turn 5 prompt"}],"max_tokens":100}`)}
 	if _, err := executor.Execute(ctx, auth, req5, options); err != nil {
 		t.Fatalf("turn 5 failed: %v", err)
@@ -190,7 +184,6 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 	if len(capturedBillingHeaders) != 6 {
 		t.Fatalf("captured %d billing headers, want 6", len(capturedBillingHeaders))
 	}
-
 
 	h1 := capturedBillingHeaders[0]
 	if !strings.Contains(h1, "cc_version=2.1.321.") || !strings.Contains(h1, "cc_entrypoint=cli;") || !strings.Contains(h1, "cch=") {
@@ -204,7 +197,6 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 	}
 	prompt1 := extractTag(h1, "cc_prompt_id=")
 
-
 	h2 := capturedBillingHeaders[1]
 	if !strings.Contains(h2, "cc_prev_req=req_upstream_turn_1;") {
 		t.Fatalf("h2 must contain cc_prev_req=req_upstream_turn_1;, got: %s", h2)
@@ -217,7 +209,6 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 		t.Fatalf("h2 promptID (%s) must differ from h1 promptID (%s)", prompt2, prompt1)
 	}
 
-
 	h2Tool := capturedBillingHeaders[2]
 	if !strings.Contains(h2Tool, "cc_prev_req=req_upstream_turn_2;") {
 		t.Fatalf("h2Tool must contain cc_prev_req=req_upstream_turn_2;, got: %s", h2Tool)
@@ -227,12 +218,10 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 		t.Fatalf("h2Tool promptID (%s) must match turn 2 promptID (%s)", prompt2Tool, prompt2)
 	}
 
-
 	hProbe := capturedBillingHeaders[3]
 	if strings.Contains(hProbe, "cc_prev_req=") || strings.Contains(hProbe, "cc_prompt_id=") {
 		t.Fatalf("probe must not contain cc_prev_req or cc_prompt_id: %s", hProbe)
 	}
-
 
 	hSubagent := capturedBillingHeaders[4]
 	if !strings.Contains(hSubagent, "cc_is_subagent=true;") {
@@ -241,8 +230,6 @@ func TestClaudeExecutorContinuityAdvancesRequestIDAndPromptIDInBillingHeader(t *
 	if !strings.Contains(hSubagent, "cc_prompt_id=") {
 		t.Fatalf("hSubagent must contain cc_prompt_id: %s", hSubagent)
 	}
-
-
 
 	h5 := capturedBillingHeaders[5]
 	if !strings.Contains(h5, "cc_prev_req=req_upstream_turn_3;") {

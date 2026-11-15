@@ -9,53 +9,33 @@ import (
 	"time"
 )
 
-
-
 const ErrorCodeRequestScoped = "request_scoped"
 
 const requestScopedErrorCode = ErrorCodeRequestScoped
-
-
 
 const ErrorCodeConnectionLifecycle = "connection_lifecycle"
 
 const connectionLifecycleErrorCode = ErrorCodeConnectionLifecycle
 
-
-
 const ErrorCodeTransientTransport = "transient_transport"
 
 const transientTransportErrorCode = ErrorCodeTransientTransport
 
-
 const ErrorCodeForceCooldown = "force_cooldown"
-
-
-
-
 
 const ErrorCodeStreamTruncated = "stream_truncated"
 
 const streamTruncatedErrorCode = ErrorCodeStreamTruncated
 
-
-
-
-
-
 const ErrorCodeTransientRateLimit = "transient_rate_limit"
 
 const transientRateLimitErrorCode = ErrorCodeTransientRateLimit
-
-
 
 const ErrorCodeCredentialQuota = "credential_quota"
 
 const credentialQuotaErrorCode = ErrorCodeCredentialQuota
 
-
 type Error struct {
-
 	Code string `json:"code,omitempty"`
 
 	Message string `json:"message"`
@@ -64,7 +44,6 @@ type Error struct {
 
 	HTTPStatus int `json:"http_status,omitempty"`
 }
-
 
 func IsTerminalAuthError(err error) bool {
 	if err == nil {
@@ -88,7 +67,6 @@ func (e *terminalAuthError) IsTerminalAuth() bool {
 	return true
 }
 
-
 func NewTerminalAuthError(err *Error, cause error) error {
 	if err == nil {
 		return nil
@@ -100,7 +78,6 @@ func NewTerminalAuthError(err *Error, cause error) error {
 	return &terminalAuthError{errorWithCause: &errorWithCause{base: err, cause: cause}}
 }
 
-
 func (e *Error) Error() string {
 	if e == nil {
 		return ""
@@ -111,14 +88,12 @@ func (e *Error) Error() string {
 	return e.Code + ": " + e.Message
 }
 
-
 func (e *Error) ErrorCode() string {
 	if e == nil {
 		return ""
 	}
 	return e.Code
 }
-
 
 func (e *Error) StatusCode() int {
 	if e == nil {
@@ -127,12 +102,9 @@ func (e *Error) StatusCode() int {
 	return e.HTTPStatus
 }
 
-
-
 func (e *Error) IsRequestScoped() bool {
 	return e != nil && e.Code == ErrorCodeRequestScoped
 }
-
 
 func (e *Error) MarkRequestScoped() *Error {
 	if e != nil {
@@ -140,8 +112,6 @@ func (e *Error) MarkRequestScoped() *Error {
 	}
 	return e
 }
-
-
 
 func NewRequestScopedError(message string, httpStatus int) *Error {
 	return &Error{
@@ -232,7 +202,6 @@ func (e *errorWithCause) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(e.base)
 }
-
 
 type authUnavailableError struct {
 	cause      error
@@ -338,7 +307,6 @@ func (e *authUnavailableError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.base)
 }
 
-
 func (e *authUnavailableError) WithAuthError(cause *Error) error {
 	if e == nil {
 		return cause
@@ -350,7 +318,6 @@ func (e *authUnavailableError) WithAuthError(cause *Error) error {
 	}
 }
 
-
 func (e *authUnavailableError) Headers() http.Header {
 	if e == nil {
 		return nil
@@ -358,15 +325,8 @@ func (e *authUnavailableError) Headers() http.Header {
 	return safeRetryAfterHeader(e.retryAfter)
 }
 
-
-
-
-
-
 type trustedRetryAfterError struct {
 	cause error
-
-
 
 	deadline time.Time
 }
@@ -403,8 +363,6 @@ func withTrustedRetryAfter(err error, retryAfter *time.Duration) error {
 			return err
 		}
 
-
-
 		copyBootstrap := *bootstrap
 		copyBootstrap.cause = wrapped
 		*bootstrap = copyBootstrap
@@ -423,11 +381,6 @@ func withTrustedRetryAfter(err error, retryAfter *time.Duration) error {
 	}
 	return &trustedRetryAfterError{cause: err, deadline: time.Now().Add(*retryAfter)}
 }
-
-
-
-
-
 
 func annotateTrustedRetryAfterByHint(err error) error {
 	if err == nil {
@@ -479,15 +432,10 @@ func (e *trustedRetryAfterError) RetryAfter() *time.Duration {
 	return &remaining
 }
 
-
-
-
 func HasTrustedRetryDeadline(err error) bool {
 	if err == nil {
 		return false
 	}
-
-
 
 	var exhausted *homeRetryRoundExhaustedError
 	if errors.As(err, &exhausted) && exhausted != nil {
@@ -502,17 +450,12 @@ func HasTrustedRetryDeadline(err error) bool {
 		return true
 	}
 
-
-
 	if SafeResponseHeaders(err).Get("Retry-After") != "" {
 		return true
 	}
 	var trusted *trustedRetryAfterError
 	return errors.As(err, &trusted) && trusted != nil && !trusted.deadline.IsZero()
 }
-
-
-
 
 func trustedRetryAfterFromError(err error) *time.Duration {
 	if err == nil {
@@ -527,9 +470,6 @@ func trustedRetryAfterFromError(err error) *time.Duration {
 	return nil
 }
 
-
-
-
 func (e *trustedRetryAfterError) Headers() http.Header {
 	if e == nil || e.cause == nil {
 		return nil
@@ -541,14 +481,12 @@ func (e *trustedRetryAfterError) Headers() http.Header {
 	return nil
 }
 
-
 func (e *trustedRetryAfterError) SafeResponseHeaders() http.Header {
 	if e == nil || e.deadline.IsZero() {
 		return nil
 	}
 	return safeRetryAfterHeader(time.Until(e.deadline))
 }
-
 
 func WithCause(err *Error, cause error) error {
 	if err == nil {

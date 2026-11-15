@@ -1,6 +1,3 @@
-
-
-
 package httptransport
 
 import (
@@ -10,13 +7,7 @@ import (
 
 type decoratorKey struct{}
 
-
-
-
-
 type Decorator func(next http.RoundTripper) http.RoundTripper
-
-
 
 func WithDecorator(ctx context.Context, decorator Decorator) context.Context {
 	if ctx == nil {
@@ -25,14 +16,9 @@ func WithDecorator(ctx context.Context, decorator Decorator) context.Context {
 	return context.WithValue(ctx, decoratorKey{}, decorator)
 }
 
-
-
-
 func WithoutDecorator(ctx context.Context) context.Context {
 	return WithDecorator(ctx, nil)
 }
-
-
 
 func InheritDecorator(ctx, fallback context.Context) context.Context {
 	if ctx == nil {
@@ -49,9 +35,6 @@ func InheritDecorator(ctx, fallback context.Context) context.Context {
 	}
 	return ctx
 }
-
-
-
 
 func Decorate(ctx context.Context, client *http.Client) *http.Client {
 	if ctx == nil || client == nil {

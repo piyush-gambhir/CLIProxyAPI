@@ -2,8 +2,6 @@ package helps
 
 import "bytes"
 
-
-
 type OpenAIStreamUsageObserver struct {
 	usage         *StreamUsageBuffer
 	line          []byte
@@ -14,14 +12,12 @@ type OpenAIStreamUsageObserver struct {
 	eventOverflow bool
 }
 
-
 func NewOpenAIStreamUsageObserver(usage *StreamUsageBuffer, maxBytes int) *OpenAIStreamUsageObserver {
 	if maxBytes <= 0 {
 		maxBytes = defaultMaxStreamModelBufferBound
 	}
 	return &OpenAIStreamUsageObserver{usage: usage, maxBytes: maxBytes}
 }
-
 
 func (o *OpenAIStreamUsageObserver) Feed(chunk []byte) {
 	if o == nil || o.usage == nil {
@@ -58,7 +54,6 @@ func (o *OpenAIStreamUsageObserver) Feed(chunk []byte) {
 		}
 	}
 }
-
 
 func (o *OpenAIStreamUsageObserver) Finish() {
 	if o == nil || o.usage == nil {

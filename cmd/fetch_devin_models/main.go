@@ -1,18 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package main
 
 import (
@@ -430,7 +415,6 @@ var devinCompoundSuffixes = []struct {
 	{suffix: "-max-1m", effort: "max", readd: "-1m"},
 	{suffix: "-none-1m", effort: "none", readd: "-1m"},
 
-
 	{suffix: "-minimal-lightning", effort: "minimal", readd: "-lightning"},
 	{suffix: "-low-lightning", effort: "low", readd: "-lightning"},
 	{suffix: "-medium-lightning", effort: "medium", readd: "-lightning"},
@@ -579,8 +563,6 @@ func aggregateModels(raw []rawDevinModel) []devinModelJSON {
 				Levels: levelsList,
 			}
 		}
-
-
 
 		displayName := entry.displayName
 		if strings.HasSuffix(id, "-lightning") && !strings.HasSuffix(strings.ToLower(displayName), "lightning") {

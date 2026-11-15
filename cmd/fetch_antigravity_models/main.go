@@ -1,17 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package main
 
 import (
@@ -50,11 +36,9 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 }
 
-
 type modelOutput struct {
 	Models []modelEntry `json:"models"`
 }
-
 
 type modelEntry struct {
 	ID                  string `json:"id"`
@@ -128,7 +112,6 @@ func main() {
 
 	fmt.Printf("Scanning auth files in: %s\n", authsDir)
 
-
 	fileStore := sdkauth.NewFileTokenStore()
 	fileStore.SetBaseDir(authsDir)
 
@@ -142,7 +125,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: no auth files found in %s\n", authsDir)
 		os.Exit(1)
 	}
-
 
 	var agAuths []*coreauth.Auth
 	for _, a := range auths {
@@ -167,7 +149,6 @@ func main() {
 		os.Exit(1)
 	}
 
-
 	var models []modelEntry
 	for _, chosen := range agAuths {
 		fmt.Printf("Using auth: id=%q label=%q\n", chosen.ID, chosen.Label)
@@ -187,11 +168,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "warning: no models returned from any auth (API may be unavailable or tokens expired)")
 	}
 
-
 	out := modelOutput{
 		Models: models,
 	}
-
 
 	var raw []byte
 	if pretty {

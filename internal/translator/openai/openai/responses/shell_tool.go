@@ -32,12 +32,9 @@ func (idx *responsesToolIndex) shellName() string {
 	return ""
 }
 
-
-
 func (idx *responsesToolIndex) shellHistory(items []ojson.Result) []ojson.Result {
 	name := idx.shellName()
 	if name == "" {
-
 
 		reserved := make(map[string]bool)
 		for key := range idx.byChat {

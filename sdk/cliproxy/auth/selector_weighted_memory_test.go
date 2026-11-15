@@ -30,8 +30,6 @@ func BenchmarkWeightedPoolReserve1000(b *testing.B) {
 	}
 }
 
-
-
 func BenchmarkWeightedPoolRetainedMemory(b *testing.B) {
 	const members = 1000
 	auths := make([]*Auth, members)

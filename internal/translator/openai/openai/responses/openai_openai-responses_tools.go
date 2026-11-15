@@ -10,10 +10,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
 type responsesToolDeclaration struct {
 	tool      ojson.Result
 	chatName  string
@@ -23,17 +19,6 @@ type responsesToolDeclaration struct {
 	shell     bool
 	search    bool
 }
-
-
-
-
-
-
-
-
-
-
-
 
 func walkResponsesToolDeclarations(root ojson.Result, visit func(responsesToolDeclaration) bool) {
 	var declarations []responsesToolDeclaration
@@ -103,7 +88,6 @@ func walkResponsesToolDeclarations(root ojson.Result, visit func(responsesToolDe
 				scan(item.Get("tools"))
 			case util.ResponsesToolSearchOutputType:
 
-
 				if util.IsResponsesClientToolSearchItem(item) {
 					scan(item.Get("tools"))
 				}
@@ -111,8 +95,6 @@ func walkResponsesToolDeclarations(root ojson.Result, visit func(responsesToolDe
 			return true
 		})
 	}
-
-
 
 	reserved := make(map[string]bool)
 	for _, d := range declarations {
@@ -150,33 +132,6 @@ func walkResponsesToolDeclarations(root ojson.Result, visit func(responsesToolDe
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func disambiguateResponsesChatToolNames(declarations []responsesToolDeclaration) {
 	claimed := make(map[string]string, len(declarations))
 	claim := func(candidate, identity string) bool {
@@ -189,7 +144,6 @@ func disambiguateResponsesChatToolNames(declarations []responsesToolDeclaration)
 	}
 	longDeclarations := make([]int, 0)
 	identities := make([]string, len(declarations))
-
 
 	localOwners := make(map[string]string)
 	ambiguousLocalNames := make(map[string]struct{})
@@ -212,7 +166,6 @@ func disambiguateResponsesChatToolNames(declarations []responsesToolDeclaration)
 		}
 	}
 	for local, ownerLocal := range localOwners {
-
 
 		claim(local, ownerLocal)
 		if ownerLocal == "" {
@@ -242,22 +195,9 @@ func disambiguateResponsesChatToolNames(declarations []responsesToolDeclaration)
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 func mergeResponsesRequestChatTools(root ojson.Result) [][]byte {
 	return newResponsesToolIndex(root).chatTools()
 }
-
-
-
 
 func convertResponsesCustomToolToOpenAIChat(tool ojson.Result, overrideName string) ([]byte, bool) {
 	name := strings.TrimSpace(overrideName)
@@ -278,7 +218,6 @@ func convertResponsesCustomToolToOpenAIChat(tool ojson.Result, overrideName stri
 	}
 	return chatToolDoc.Bytes(), true
 }
-
 
 func (idx *responsesToolIndex) isApplyPatch(name string) bool {
 	d, ok := idx.byChat[name]
@@ -334,9 +273,6 @@ func responsesToolParameters(tool ojson.Result) ojson.Result {
 	return ojson.Result{}
 }
 
-
-
-
 func responsesToolOutputText(output ojson.Result) string {
 	if output.Type == ojson.String {
 		return output.String()
@@ -361,15 +297,6 @@ func responsesToolOutputText(output ojson.Result) string {
 	return ""
 }
 
-
-
-
-
-
-
-
-
-
 func responsesCustomToolNames(requestRawJSON []byte) map[string]struct{} {
 	return newResponsesToolIndex(util.ParseGJSONBytesNoCopy(requestRawJSON)).custom
 }
@@ -377,9 +304,6 @@ func responsesCustomToolNames(requestRawJSON []byte) map[string]struct{} {
 func responsesSingleCustomToolName(requestRawJSON []byte) (string, bool) {
 	return newResponsesToolIndex(util.ParseGJSONBytesNoCopy(requestRawJSON)).singleCustomName()
 }
-
-
-
 
 func unwrapCustomToolInput(arguments string) string {
 	if v := ojson.Get(arguments, "input"); v.Exists() {
@@ -391,17 +315,11 @@ func unwrapCustomToolInput(arguments string) string {
 	return arguments
 }
 
-
-
-
 const responsesChatToolNameLimit = 64
 
 func qualifyResponsesNamespaceToolName(namespaceName, childName string) string {
 	return capResponsesChatToolName(rawResponsesNamespaceQualifiedName(namespaceName, childName))
 }
-
-
-
 
 func rawResponsesNamespaceQualifiedName(namespaceName, childName string) string {
 	childName = strings.TrimSpace(childName)
@@ -417,16 +335,6 @@ func rawResponsesNamespaceQualifiedName(namespaceName, childName string) string 
 	return namespaceName + "__" + childName
 }
 
-
-
-
-
-
-
-
-
-
-
 func capResponsesChatToolName(name string) string {
 	if len(name) <= responsesChatToolNameLimit {
 		return name
@@ -438,46 +346,18 @@ func capResponsesChatToolName(name string) string {
 	return truncated
 }
 
-
-
-
-
-
-
-
-
 func resolveResponsesQualifiedToolIdentity(root ojson.Result, qualifiedName string) (name, namespace string, found bool) {
 	d, found := newResponsesToolIndex(root).byChat[qualifiedName]
 	return d.localName, d.namespace, found
 }
 
-
-
-
-
-
-
 func chatNameForResponsesNamespaceToolCall(requestRawJSON []byte, namespace, localName string) string {
 	return newResponsesToolIndex(util.ParseGJSONBytesNoCopy(requestRawJSON)).namespaceName(namespace, localName)
 }
 
-
-
-
-
-
-
-
-
-
 func canonicalResponsesToolName(requestRawJSON []byte, name string) string {
 	return newResponsesToolIndex(util.ParseGJSONBytesNoCopy(requestRawJSON)).canonicalName(name)
 }
-
-
-
-
-
 
 func avoidResponsesDeclaredChatAliases(root ojson.Result, candidate string) string {
 	return newResponsesToolIndex(root).avoidAlias(candidate)

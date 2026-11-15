@@ -7,7 +7,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ClaudeMessageAccumulator groups consecutive Claude messages by role.
 type ClaudeMessageAccumulator struct {
 	messages     [][]byte
 	role         string
@@ -15,14 +14,12 @@ type ClaudeMessageAccumulator struct {
 	toolUseParts [][]byte
 }
 
-// NewClaudeMessageAccumulator creates an accumulator sized for the expected messages.
 func NewClaudeMessageAccumulator(capacity int) *ClaudeMessageAccumulator {
 	return &ClaudeMessageAccumulator{
 		messages: NewRawArrayItems(int64(capacity)),
 	}
 }
 
-// Append adds one Claude-shaped message to the current role turn.
 func (a *ClaudeMessageAccumulator) Append(message []byte) {
 	if len(message) == 0 {
 		return
@@ -49,7 +46,6 @@ func (a *ClaudeMessageAccumulator) Append(message []byte) {
 	}
 }
 
-// Flush closes the current role turn while keeping accumulated messages.
 func (a *ClaudeMessageAccumulator) Flush() {
 	if a.role == "" {
 		return
@@ -72,15 +68,11 @@ func (a *ClaudeMessageAccumulator) Flush() {
 	a.toolUseParts = nil
 }
 
-// Messages flushes the final turn and returns all accumulated messages.
 func (a *ClaudeMessageAccumulator) Messages() [][]byte {
 	a.Flush()
 	return a.messages
 }
 
-// AlignClaudeToolResults orders tool_result blocks by the preceding tool_use IDs,
-// preserving non-result content blocks at their existing indexes. If a complete
-// one-to-one match is unavailable, the original content is returned.
 func AlignClaudeToolResults(content ojson.Result, toolUseIDs []string) ojson.Result {
 	if !content.IsArray() || len(toolUseIDs) == 0 {
 		return content

@@ -13,8 +13,6 @@ func ConvertOpenAIRequestToInteractions(modelName string, inputRawJSON []byte, s
 
 }
 
-
-
 func convertOpenAIRequestToInteractions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	outDoc := ojson.NewDocString(`{"model":"","input":[]}`)
@@ -113,10 +111,6 @@ func appendOpenAIMessageToInteractions(items *[][]byte, message ojson.Result, fo
 	}
 }
 
-
-
-
-
 func openAIChatContentStep(stepType string, content ojson.Result, drops *translatorcommon.UserTurnDrops) ([]byte, bool) {
 	contentItems := make([][]byte, 0, 4)
 	sendable := 0
@@ -170,8 +164,6 @@ func openAIChatPartType(part ojson.Result) string {
 	}
 	return partType
 }
-
-
 
 func isOpenAIChatAttachmentType(partType string) bool {
 	switch partType {

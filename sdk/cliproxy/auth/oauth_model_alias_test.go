@@ -347,12 +347,10 @@ func TestApplyOAuthModelAlias_Devin(t *testing.T) {
 		t.Errorf("applyOAuthModelAlias() model = %q, want %q", resolvedModel, "devin/claude-fable-5-1")
 	}
 
-
 	suffixed := mgr.applyOAuthModelAlias(auth, "fable-5-1(max)")
 	if suffixed != "devin/claude-fable-5-1(max)" {
 		t.Errorf("applyOAuthModelAlias() suffixed model = %q, want %q", suffixed, "devin/claude-fable-5-1(max)")
 	}
-
 
 	result := mgr.applyOAuthModelAliasWithResult(auth, "fable-5-1(max)")
 	if result.UpstreamModel != "devin/claude-fable-5-1(max)" {
@@ -383,7 +381,6 @@ func TestApplyOAuthModelAlias_Meta(t *testing.T) {
 	mgr := NewManager(nil, nil, nil)
 	mgr.SetConfig(&internalconfig.Config{})
 	mgr.SetOAuthModelAlias(aliases)
-
 
 	auth := &Auth{
 		ID:       "meta-auth",

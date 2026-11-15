@@ -36,7 +36,6 @@ func (h *issue6332NestedLifecycle) CompleteRequest(_ context.Context, c pluginap
 	h.completed <- c
 }
 
-
 func TestIssue6332PluginNestedDelivery(t *testing.T) {
 	for _, mode := range []string{"complete", "cancel_partial", "cancel_complete"} {
 		t.Run(mode, func(t *testing.T) {

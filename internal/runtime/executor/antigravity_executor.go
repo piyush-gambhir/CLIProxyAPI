@@ -1,6 +1,3 @@
-
-
-
 package executor
 
 import (
@@ -46,9 +43,7 @@ const (
 	antigravityCreditsHintRefreshTimeout   = 5 * time.Second
 	antigravityShortQuotaCooldownThreshold = 5 * time.Minute
 	antigravityInstantRetryThreshold       = 3 * time.Second
-
 )
-
 
 type AntigravityExecutor struct {
 	cfg           *config.Config
@@ -56,13 +51,6 @@ type AntigravityExecutor struct {
 	lastWordsKey  string
 	cachedMatcher *helps.SensitiveWordMatcher
 }
-
-
-
-
-
-
-
 
 func NewAntigravityExecutor(cfg *config.Config) *AntigravityExecutor {
 	return &AntigravityExecutor{cfg: cfg}
@@ -115,56 +103,21 @@ func (e *AntigravityExecutor) obfuscateSensitiveWordsDoc(doc *ojson.Doc) bool {
 	return helps.ObfuscateSensitiveWordsInSystemInstructionDoc(doc, matcher)
 }
 
-
-
-
-
 var (
 	antigravityBaseTransport = defaultAntigravityBaseTransport()
 	antigravityTransports    = helps.NewTransportCache[antigravityTransportKey](antigravityTransportCacheCapacity)
 )
 
 const (
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	antigravityTransportCacheCapacity = 8192
-
-
-
 
 	antigravityDefaultMaxIdleConnsPerHost = 2
 
-
-
 	antigravityMaxAllowedMaxIdleConnsPerHost = 100
-
-
-
 
 	antigravityDefaultIdleConnTimeout = 30 * time.Second
 
-
-
-
 	antigravityMaxAllowedIdleConnTimeout = 210 * time.Second
-
-
-
-
-
 
 	antigravityAnonymousTransportScope = "anonymous"
 )
@@ -177,7 +130,6 @@ type antigravityPoolSettings struct {
 
 func resolveAntigravityPoolSettings(cfg *config.Config) antigravityPoolSettings {
 
-
 	settings := antigravityPoolSettings{
 		shortMode:           true,
 		maxIdleConnsPerHost: -1,
@@ -187,11 +139,9 @@ func resolveAntigravityPoolSettings(cfg *config.Config) antigravityPoolSettings 
 		return settings
 	}
 
-
 	if cfg.Antigravity.ConnectionPool.Enabled == nil || !*cfg.Antigravity.ConnectionPool.Enabled {
 		return settings
 	}
-
 
 	settings.shortMode = false
 	settings.idleConnTimeout = antigravityDefaultIdleConnTimeout
@@ -235,17 +185,13 @@ func resolveAntigravityPoolSettings(cfg *config.Config) antigravityPoolSettings 
 	return settings
 }
 
-
-
 func ResetAntigravityTransports() {
 	antigravityTransports.Purge()
 }
 
-
 func AntigravityTransportsLen() int {
 	return antigravityTransports.Len()
 }
-
 
 func closeAntigravityAuthIdleTransports(auth *cliproxyauth.Auth) {
 	if auth == nil {
@@ -259,11 +205,6 @@ func closeAntigravityAuthIdleTransports(auth *cliproxyauth.Auth) {
 		return key.credential == scope
 	})
 }
-
-
-
-
-
 
 type antigravityTransportKey struct {
 	credential          string
@@ -296,17 +237,10 @@ func cloneTransportWithHTTP11(base *http.Transport, cfgs ...*config.Config) *htt
 		clone.TLSClientConfig = clone.TLSClientConfig.Clone()
 	}
 
-
 	clone.TLSClientConfig.NextProtos = nil
 	applyAntigravityPoolLimits(clone, cfgs...)
 	return clone
 }
-
-
-
-
-
-
 
 func applyAntigravityPoolLimits(transport *http.Transport, cfgs ...*config.Config) {
 	if transport == nil {
@@ -324,25 +258,17 @@ func applyAntigravityPoolLimits(transport *http.Transport, cfgs ...*config.Confi
 		return
 	}
 
-
 	if transport.MaxIdleConnsPerHost < 0 {
 		return
 	}
-
 
 	if transport.MaxIdleConnsPerHost < settings.maxIdleConnsPerHost {
 		transport.MaxIdleConnsPerHost = settings.maxIdleConnsPerHost
 	}
 
-
 	if transport.MaxIdleConns > 0 && transport.MaxIdleConns < transport.MaxIdleConnsPerHost {
 		transport.MaxIdleConns = transport.MaxIdleConnsPerHost
 	}
-
-
-
-
-
 
 	rawTimeout := ""
 	if cfg != nil {
@@ -356,9 +282,6 @@ func applyAntigravityPoolLimits(transport *http.Transport, cfgs ...*config.Confi
 		transport.IdleConnTimeout = antigravityMaxAllowedIdleConnTimeout
 	}
 }
-
-
-
 
 func antigravityHTTP11Transport(auth *cliproxyauth.Auth, base *http.Transport, cfgs ...*config.Config) *http.Transport {
 	if base == nil {
@@ -381,17 +304,11 @@ func antigravityHTTP11Transport(auth *cliproxyauth.Auth, base *http.Transport, c
 	})
 	if errGet != nil {
 
-
-
 		log.Debugf("antigravity executor: cache HTTP/1.1 transport failed: %v", errGet)
 		return cloneTransportWithHTTP11(base, cfgs...)
 	}
 	return transport
 }
-
-
-
-
 
 func antigravityProxiedHTTP11Transport(auth *cliproxyauth.Auth, proxyURL string, cfgs ...*config.Config) *http.Transport {
 	proxyURL = strings.TrimSpace(proxyURL)
@@ -422,16 +339,10 @@ func antigravityProxiedHTTP11Transport(auth *cliproxyauth.Auth, proxyURL string,
 	})
 	if errGet != nil {
 
-
 		return nil
 	}
 	return transport
 }
-
-
-
-
-
 
 func antigravityTransportScope(auth *cliproxyauth.Auth) string {
 	if auth == nil {
@@ -449,14 +360,6 @@ func antigravityTransportScope(auth *cliproxyauth.Auth) string {
 		}
 	}
 
-
-
-
-
-
-
-
-
 	if refresh := strings.TrimSpace(metaStringValue(auth.Metadata, "refresh_token")); refresh != "" {
 		return antigravityCredentialScope("refresh:", refresh)
 	}
@@ -466,29 +369,18 @@ func antigravityTransportScope(auth *cliproxyauth.Auth) string {
 	return antigravityAnonymousTransportScope
 }
 
-
-
-
 func antigravityCredentialScope(prefix, secret string) string {
 	digest := sha256.Sum256([]byte(secret))
 	return prefix + hex.EncodeToString(digest[:8])
 }
 
-
-
-
-
-
 func newAntigravityHTTPClient(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth, timeout time.Duration) (clientOut *http.Client) {
 	defer func() { clientOut = httptransport.Decorate(ctx, clientOut) }()
-
-
 
 	if proxyURL := antigravityProxyURL(ctx, cfg, auth); proxyURL != "" {
 		if transport := antigravityProxiedHTTP11Transport(auth, proxyURL, cfg); transport != nil {
 			return &http.Client{Transport: transport, Timeout: timeout}
 		}
-
 
 	}
 
@@ -499,17 +391,12 @@ func newAntigravityHTTPClient(ctx context.Context, cfg *config.Config, auth *cli
 		return client
 	}
 
-
-
 	transport, ok := client.Transport.(*http.Transport)
 	if !ok {
 
 		return client
 	}
 	if transport == nil {
-
-
-
 
 		transport = antigravityBaseTransport
 	}
@@ -548,9 +435,6 @@ func sanitizeAntigravityGeminiRequestSignaturesDoc(modelName string, doc *ojson.
 	normalizeAntigravityGeminiFunctionResponseRolesDoc(doc)
 }
 
-
-
-
 func ensureAntigravityGeminiLeadingUserContent(modelName string, payload []byte) []byte {
 	if strings.Contains(strings.ToLower(modelName), "claude") {
 		return payload
@@ -565,9 +449,6 @@ func ensureAntigravityGeminiLeadingUserContentDoc(modelName string, doc *ojson.D
 	return helps.EnsureGeminiLeadingUserContentDoc(doc, "request.contents")
 }
 
-
-
-
 func ensureAntigravityGeminiTrailingUserContent(modelName string, payload []byte) []byte {
 	if strings.Contains(strings.ToLower(modelName), "claude") {
 		return payload
@@ -581,10 +462,6 @@ func ensureAntigravityGeminiTrailingUserContentDoc(modelName string, doc *ojson.
 	}
 	return helps.EnsureGeminiTrailingUserContentDoc(doc, "request.contents")
 }
-
-
-
-
 
 func ensureAntigravityGeminiBoundaryUserContent(modelName string, payload []byte) []byte {
 	if strings.Contains(strings.ToLower(modelName), "claude") {
@@ -632,10 +509,6 @@ func normalizeAntigravityGeminiFunctionResponseRolesDoc(doc *ojson.Doc) bool {
 	}
 	return doc.SetRawBytes("request.contents", []byte(updatedContents.Raw)) == nil
 }
-
-
-
-
 
 func normalizeAntigravityGeminiFunctionResponseRoles(rawJSON []byte) []byte {
 	rawJSON = repairAntigravityGeminiFunctionResponseNames(rawJSON)
@@ -758,9 +631,6 @@ func normalizeAntigravityGeminiFunctionResponseRoles(rawJSON []byte) []byte {
 	return applyAntigravityIndexedEdits(rawJSON, edits, validOffsets)
 }
 
-
-
-
 func applyAntigravityIndexedEdits(rawJSON []byte, edits []antigravityContentEdit, validOffsets bool) []byte {
 	if len(edits) == 0 {
 		return rawJSON
@@ -791,8 +661,6 @@ func applyAntigravityIndexedEdits(rawJSON []byte, edits []antigravityContentEdit
 	return append(out, rawJSON[cursor:]...)
 }
 
-
-
 func applyAntigravityContentEditsWithSJSON(rawJSON []byte, edits []antigravityContentEdit) []byte {
 	doc := ojson.NewDoc(rawJSON)
 	changed := false
@@ -810,9 +678,6 @@ func applyAntigravityContentEditsWithSJSON(rawJSON []byte, edits []antigravityCo
 	}
 	return doc.Bytes()
 }
-
-
-
 
 func repairAntigravityGeminiFunctionResponseNames(rawJSON []byte) []byte {
 	contents := util.GetGJSONBytesNoCopy(rawJSON, "request.contents")
@@ -903,7 +768,6 @@ func validateAntigravityRequestSignatures(ctx context.Context, modelName string,
 		return rawJSON, nil
 	}
 	if !cache.SignatureBypassStrictMode() {
-
 
 		return rawJSON, nil
 	}
@@ -1014,9 +878,7 @@ func logAntigravitySignatureStrip(before, after int, stage, reason string) {
 	}).Debug("antigravity executor: dropped Claude thinking blocks with invalid signatures")
 }
 
-
 func (e *AntigravityExecutor) Identifier() string { return antigravityAuthType }
-
 
 func (e *AntigravityExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -1033,9 +895,6 @@ func (e *AntigravityExecutor) PrepareRequest(req *http.Request, auth *cliproxyau
 	return nil
 }
 
-
-
-
 func (e *AntigravityExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("antigravity executor: request is nil")
@@ -1045,27 +904,19 @@ func (e *AntigravityExecutor) HttpRequest(ctx context.Context, auth *cliproxyaut
 	}
 	httpReq := req.WithContext(ctx)
 
-
-
-
-
 	httpReq.Close = false
 
-
 	contentType := httpReq.Header.Get("Content-Type")
-
 
 	for k := range httpReq.Header {
 		delete(httpReq.Header, k)
 	}
-
 
 	if contentType != "" {
 		httpReq.Header.Set("Content-Type", contentType)
 	}
 
 	httpReq.Header.Set("User-Agent", resolveUserAgent(auth))
-
 
 	if err := e.PrepareRequest(httpReq, auth); err != nil {
 		return nil, err
@@ -1074,6 +925,5 @@ func (e *AntigravityExecutor) HttpRequest(ctx context.Context, auth *cliproxyaut
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	return helps.WithAntigravityHTTPClientTrace(httpClient, auth, "http_request").Do(httpReq)
 }
-
 
 func (e *AntigravityExecutor) SupportsApplyPatch() bool { return e != nil }

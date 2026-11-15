@@ -9,10 +9,6 @@ import (
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/claude"
 )
 
-
-
-
-
 func TestApplyThinking_ClaudeSonnet55DisabledUsesBetweenTools(t *testing.T) {
 	const msgs = `"messages":[{"role":"user","content":"hi"}]`
 	tests := []struct {
@@ -74,11 +70,6 @@ func TestApplyThinking_ClaudeSonnet55DisabledUsesBetweenTools(t *testing.T) {
 		})
 	}
 }
-
-
-
-
-
 
 func TestApplyThinking_ClaudeDisabledFallsBackOnAdaptiveOnlyModels(t *testing.T) {
 	tests := []struct {
@@ -173,10 +164,6 @@ func TestApplyThinking_ClaudeDisabledFallbackInputs(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestApplyThinking_ClaudeAdaptiveOnlyModelsConvertBudgetAndAuto(t *testing.T) {
 	adaptiveOnlyModels := []string{
 		"claude-opus-4-7",
@@ -255,8 +242,6 @@ func TestApplyThinking_ClaudeAdaptiveOnlyModelsConvertBudgetAndAuto(t *testing.T
 			}
 		})
 	}
-
-
 
 	t.Run("configured_unordered_or_auto_levels_select_lowest_canonical", func(t *testing.T) {
 		for _, levels := range [][]string{

@@ -14,33 +14,14 @@ type ClaudeMessagesSignatureSanitizeOptions struct {
 	DropToolSignatures            bool
 	DropEmptyThinkingPlaceholders bool
 
-
 	PreserveEmptyThinkingBlocks bool
 }
 
-
-
-
-
-
-
 const CodexCommentarySignatureMarker = "cpa:commentary:v1"
-
-
-
-
 
 func IsCodexCommentarySignatureMarker(rawSignature string) bool {
 	return strings.TrimSpace(rawSignature) == CodexCommentarySignatureMarker
 }
-
-
-
-
-
-
-
-
 
 func RestoreCodexCommentaryMarkers(payload []byte) ([]byte, int) {
 	messages := ojson.GetBytesNoCopy(payload, "messages")
@@ -54,8 +35,6 @@ func RestoreCodexCommentaryMarkers(payload []byte) ([]byte, int) {
 	}
 	return doc.Bytes(), restored
 }
-
-
 
 func RestoreCodexCommentaryMarkersDoc(doc *ojson.Doc) int {
 	if doc == nil {
@@ -116,9 +95,6 @@ type SignatureSanitizeReport struct {
 	Decisions          []SignatureCompatibilityDecision
 }
 
-
-
-
 func SanitizeClaudeMessagesSignaturesForModel(payload []byte, targetModel string) ([]byte, SignatureSanitizeReport) {
 	return SanitizeClaudeMessagesSignaturesForTarget(payload, ClaudeMessagesSignatureSanitizeOptions{
 		TargetProvider:    SignatureProviderFromModelName(targetModel),
@@ -126,11 +102,6 @@ func SanitizeClaudeMessagesSignaturesForModel(payload []byte, targetModel string
 		DropEmptyMessages: true,
 	})
 }
-
-
-
-
-
 
 func SanitizeClaudeMessagesForClaudeUpstream(payload []byte, targetModel string, preserveEmptyThinkingBlocks ...bool) ([]byte, SignatureSanitizeReport) {
 	preserveEmpty := len(preserveEmptyThinkingBlocks) > 0 && preserveEmptyThinkingBlocks[0]
@@ -143,11 +114,6 @@ func SanitizeClaudeMessagesForClaudeUpstream(payload []byte, targetModel string,
 		PreserveEmptyThinkingBlocks:   preserveEmpty,
 	})
 }
-
-
-
-
-
 
 func SanitizeClaudeMessagesSignaturesForTarget(payload []byte, opts ClaudeMessagesSignatureSanitizeOptions) ([]byte, SignatureSanitizeReport) {
 	targetProvider := normalizeSignatureTargetProvider(opts.TargetProvider)
@@ -210,8 +176,6 @@ func SanitizeClaudeMessagesSignaturesForTarget(payload []byte, opts ClaudeMessag
 
 			rawSignature := part.Get("signature").String()
 			if IsCodexCommentarySignatureMarker(rawSignature) {
-
-
 
 				if text := part.Get("thinking").String(); text != "" {
 					_ = doc.Set(partPath+".type", "text")

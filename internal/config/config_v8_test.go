@@ -394,7 +394,6 @@ another-legacy-key:
 		t.Fatalf("expected warnings for all unmapped sections, found: %+v", foundSections)
 	}
 
-
 	hook.Reset()
 	remigrated, _, errRemigrate := NormalizeConfigLayout(migrated, true)
 	if errRemigrate != nil {
@@ -404,7 +403,6 @@ another-legacy-key:
 		t.Fatalf("expected no warnings on repeated migration, got: %+v", hook.AllEntries())
 	}
 	_ = remigrated
-
 
 	var hookBuf bytes.Buffer
 	var hookMu sync.Mutex
@@ -428,7 +426,6 @@ another-legacy-key:
 	if !strings.Contains(hookOutput, "HOOK: some-obsolete-legacy-block") || !strings.Contains(hookOutput, "HOOK: another-legacy-key") {
 		t.Fatalf("expected custom hook to capture warnings, got: %s", hookOutput)
 	}
-
 
 	hook.Reset()
 	hookBuf.Reset()

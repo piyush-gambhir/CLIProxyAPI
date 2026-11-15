@@ -8,16 +8,9 @@ import (
 	"testing"
 )
 
-
-
 var inPlaceSJSONTokens = []string{"ReplaceInPlace", "Optimistic"}
 
-
-
-
-
 var inPlaceSJSONAllowlist = map[string]struct{}{}
-
 
 func forEachSourceFile(t *testing.T, root string, visit func(rel string, data []byte)) {
 	t.Helper()
@@ -54,16 +47,6 @@ func forEachSourceFile(t *testing.T, root string, visit func(rel string, data []
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 func TestNoInPlaceSJSONWrites(t *testing.T) {
 	root := repoRoot(t)
 	var offenders []string
@@ -84,19 +67,10 @@ func TestNoInPlaceSJSONWrites(t *testing.T) {
 	}
 }
 
-
-
-
-
 var inPlaceByteWritePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`\bcopy\([a-zA-Z_][A-Za-z0-9_.]*\[`),
 	regexp.MustCompile(`^\s*[a-zA-Z_][A-Za-z0-9_.]*\[[a-zA-Z0-9_]+\] = 0\r?$`),
 }
-
-
-
-
-
 
 type reviewedInPlaceByteWrite struct {
 	count  int
@@ -117,10 +91,6 @@ var reviewedInPlaceByteWrites = map[string]reviewedInPlaceByteWrite{
 	"internal/pluginstore/auth.go":                                  {1, "zeroes a locally built credential buffer after base64 encoding copied it out"},
 	"sdk/cliproxy/auth/selector_weighted.go":                        {2, "shifts []weightedPoolMember entries to insert or remove a pool member; no byte of any payload is rewritten"},
 }
-
-
-
-
 
 func TestInPlaceByteWritesAreReviewed(t *testing.T) {
 	root := repoRoot(t)

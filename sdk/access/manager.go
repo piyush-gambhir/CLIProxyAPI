@@ -6,17 +6,14 @@ import (
 	"sync"
 )
 
-
 type Manager struct {
 	mu        sync.RWMutex
 	providers []Provider
 }
 
-
 func NewManager() *Manager {
 	return &Manager{}
 }
-
 
 func (m *Manager) SetProviders(providers []Provider) {
 	if m == nil {
@@ -29,7 +26,6 @@ func (m *Manager) SetProviders(providers []Provider) {
 	m.mu.Unlock()
 }
 
-
 func (m *Manager) Providers() []Provider {
 	if m == nil {
 		return nil
@@ -40,7 +36,6 @@ func (m *Manager) Providers() []Provider {
 	copy(snapshot, m.providers)
 	return snapshot
 }
-
 
 func (m *Manager) Authenticate(ctx context.Context, r *http.Request) (*Result, *AuthError) {
 	if m == nil {

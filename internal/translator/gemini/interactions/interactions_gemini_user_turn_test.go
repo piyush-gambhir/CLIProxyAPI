@@ -10,8 +10,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// geminiTurnToInteractions translates two history turns followed by a final user
-// turn holding the given parts. extra is spliced into the request root.
 func geminiTurnToInteractions(extra, finalParts string) sdktranslator.RequestEnvelope {
 	input := `{"model":"m",` + extra + `"contents":[{"role":"user","parts":[{"text":"a"}]},{"role":"model","parts":[{"text":"b"}]},{"role":"user","parts":[` + finalParts + `]}]}`
 	return sdktranslator.TranslateRequestEnvelope(context.Background(), sdktranslator.FormatGemini, sdktranslator.FormatInteractions, sdktranslator.RequestEnvelope{

@@ -9,8 +9,6 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
 func EnsureSessionContext(ctx context.Context, opts cliproxyexecutor.Options, payload []byte) context.Context {
 	if ctx == nil {
 		ctx = context.Background()

@@ -6,22 +6,17 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 func IsClaudeTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
 
-
 	if bytes.HasPrefix(payload, []byte("event:")) {
 		if idx := bytes.IndexByte(payload, '\n'); idx != -1 {
 			payload = bytes.TrimSpace(payload[idx+1:])
 		}
 	}
-
 
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
@@ -53,7 +48,6 @@ func IsClaudeTokenEvent(payload []byte) bool {
 		}
 		return false
 
-
 	case "content_block_start":
 		cb := ojson.GetBytesNoCopy(payload, "content_block")
 		if len(cb.Get("text").String()) > 0 || len(cb.Get("thinking").String()) > 0 {
@@ -61,12 +55,10 @@ func IsClaudeTokenEvent(payload []byte) bool {
 		}
 		return false
 
-
 	case "message_delta":
 		return len(ojson.GetBytesNoCopy(payload, "delta.stop_reason").String()) > 0
 	case "message_stop", "error":
 		return true
-
 
 	case "message_start", "ping", "content_block_stop":
 		return false
@@ -86,9 +78,6 @@ func IsClaudeTokenEvent(payload []byte) bool {
 		return false
 	}
 }
-
-
-
 
 func ObserveClaudeTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {

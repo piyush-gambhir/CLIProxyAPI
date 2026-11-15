@@ -10,9 +10,6 @@ import (
 
 const openAIResponsesToolSearchIDPrefix = "tsc_"
 
-
-
-
 func normalizeOpenAIResponsesToolSearchItems(items []ojson.Result, forwardMap map[string]string) []ojson.Result {
 	normalized := make([]ojson.Result, 0, len(items))
 	for _, item := range items {

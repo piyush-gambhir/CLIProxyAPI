@@ -49,9 +49,6 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
-
-
 	var persistedUpdates []watcher.AuthUpdate
 	watcherWrapper := &WatcherWrapper{
 		dispatchPersistedAuth: func(update watcher.AuthUpdate) bool {
@@ -71,7 +68,6 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatal("runtimeAuthSyncHook() returned nil")
 	}
 
-
 	if err := hook(context.Background(), auth); err != nil {
 		t.Fatalf("hook failed for initial sync: %v", err)
 	}
@@ -81,12 +77,10 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatal("expected models registered for active auth, got none")
 	}
 
-
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
 		t.Fatalf("expected scheduler to select active auth, got resp=%q, err=%v", string(resp.Payload), errExec)
 	}
-
 
 	disabledAuth := auth.Clone()
 	disabledAuth.Disabled = true
@@ -102,17 +96,14 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-
 	modelsAfterDisable := reg.GetModelsForClient(authID)
 	if len(modelsAfterDisable) != 0 {
 		t.Fatalf("expected 0 models for disabled client, got %d", len(modelsAfterDisable))
 	}
 
-
 	if _, errExecDisabled := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{}); errExecDisabled == nil {
 		t.Fatal("expected scheduler execution to fail for disabled auth, but got nil error")
 	}
-
 
 	enabledAuth := disabledAuth.Clone()
 	enabledAuth.Disabled = false
@@ -124,12 +115,10 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatalf("manager update enable failed: %v", errUpdate)
 	}
 
-
 	if err := hook(context.Background(), enabledAuth); err != nil {
 		t.Fatalf("hook failed for re-enable: %v", err)
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
-
 
 	modelsAfterEnable := reg.GetModelsForClient(authID)
 	if len(modelsAfterEnable) == 0 {
@@ -147,12 +136,10 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatalf("expected gpt-6-astra in restored models: %+v", modelsAfterEnable)
 	}
 
-
 	respAfterEnable, errExecEnable := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExecEnable != nil || string(respAfterEnable.Payload) != authID {
 		t.Fatalf("expected scheduler to select restored auth, got resp=%q, err=%v", string(respAfterEnable.Payload), errExecEnable)
 	}
-
 
 	quotaAuth := enabledAuth.Clone()
 	quotaAuth.Quota = coreauth.QuotaState{
@@ -168,7 +155,6 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-
 	modelsWithQuota := reg.GetModelsForClient(authID)
 	if len(modelsWithQuota) == 0 {
 		t.Fatal("expected models to remain registered when auth is in quota cooldown")
@@ -177,7 +163,6 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 	if _, errQuotaExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{}); errQuotaExec == nil {
 		t.Fatal("expected scheduler to block execution when quota exceeded")
 	}
-
 
 	if len(persistedUpdates) == 0 {
 		t.Fatal("expected watcher to be notified of persisted auth updates")
@@ -289,7 +274,6 @@ func TestHandleAuthUpdates_FileDeleteOrdering(t *testing.T) {
 						t.Fatalf("remove auth file: %v", errRemove)
 					}
 
-
 					deletion := watcher.AuthUpdate{Action: watcher.AuthUpdateActionDelete, ID: authID}
 					deletion.SetFileRemoval(true)
 					if !w.DispatchRuntimeAuthUpdate(deletion) {
@@ -308,7 +292,6 @@ func TestHandleAuthUpdates_FileDeleteOrdering(t *testing.T) {
 				if deleteBeforeSave {
 					deletion = observeDelete()
 				}
-
 
 				save(!mode.delayHook)
 				if !mode.delayHook {
@@ -1154,14 +1137,12 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
 	syncHook := service.runtimeAuthSyncHook()
 	if err := syncHook(context.Background(), auth); err != nil {
 		t.Fatalf("initial sync failed: %v", err)
 	}
 
 	handler := server.Handler()
-
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
@@ -1177,7 +1158,6 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("expected initial models, got %s", rec.Body.String())
 	}
 
-
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"`+fileName+`","disabled":true}`))
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1186,7 +1166,6 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("PATCH status disable failed: %s", rec.Body.String())
 	}
-
 
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
@@ -1200,7 +1179,6 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("expected 0 models after disable, got: %s", rec.Body.String())
 	}
 
-
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"`+fileName+`","disabled":false}`))
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1209,7 +1187,6 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("PATCH status re-enable failed: %s", rec.Body.String())
 	}
-
 
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
@@ -1264,14 +1241,12 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 
 	hook := service.runtimeAuthSyncHook()
 
-
 	if err := hook(context.Background(), registeredAuth); err != nil {
 		t.Fatalf("initial hook sync failed: %v", err)
 	}
 	if len(reg.GetModelsForClient(authID)) == 0 {
 		t.Fatal("expected models after initial sync")
 	}
-
 
 	disabledAuth := registeredAuth.Clone()
 	disabledAuth.Disabled = true
@@ -1283,7 +1258,6 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatalf("update disable failed: %v", errDisable)
 	}
 
-
 	staleAsyncDisableUpdate := watcher.AuthUpdate{
 		Action: watcher.AuthUpdateActionModify,
 		ID:     authID,
@@ -1291,14 +1265,12 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 	}
 	staleAsyncDisableUpdate.SetRevision(2)
 
-
 	if err := hook(context.Background(), updatedDisabled); err != nil {
 		t.Fatalf("hook disable failed: %v", err)
 	}
 	if len(reg.GetModelsForClient(authID)) != 0 {
 		t.Fatal("expected 0 models after disable")
 	}
-
 
 	enabledAuth := updatedDisabled.Clone()
 	enabledAuth.Disabled = false
@@ -1310,21 +1282,17 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatalf("update enable failed: %v", errEnable)
 	}
 
-
 	if err := hook(context.Background(), updatedEnabled); err != nil {
 		t.Fatalf("hook enable failed: %v", err)
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-
 	if len(reg.GetModelsForClient(authID)) == 0 {
 		t.Fatal("expected models restored immediately upon synchronous enable")
 	}
 
-
 	service.handleAuthUpdate(context.Background(), staleAsyncDisableUpdate)
 	manager.RegisterExecutor(&syncTestExecutor{})
-
 
 	currentAuth, ok := manager.GetByID(authID)
 	if !ok || currentAuth == nil {
@@ -1337,7 +1305,6 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 	if len(modelsAfterStale) == 0 {
 		t.Fatal("stale async event unregistered models from global registry!")
 	}
-
 
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
@@ -1385,7 +1352,6 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 
 	hook := service.runtimeAuthSyncHook()
 
-
 	if err := hook(context.Background(), registeredAuth); err != nil {
 		t.Fatalf("initial hook sync failed: %v", err)
 	}
@@ -1393,9 +1359,6 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 	if len(reg.GetModelsForClient(authID)) == 0 {
 		t.Fatal("expected models after initial sync")
 	}
-
-
-
 
 	unversionedDisableTime := time.Now().Add(-50 * time.Millisecond)
 	unversionedDisableAuth := &coreauth.Auth{
@@ -1418,8 +1381,6 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 	}
 	delayedWatcherUpdate.SetRevision(2)
 
-
-
 	enabledAuth := registeredAuth.Clone()
 	enabledAuth.Disabled = false
 	enabledAuth.Status = coreauth.StatusActive
@@ -1430,7 +1391,6 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 		t.Fatalf("update enable failed: %v", errEnable)
 	}
 
-
 	if err := hook(context.Background(), updatedEnabled); err != nil {
 		t.Fatalf("hook enable failed: %v", err)
 	}
@@ -1440,10 +1400,8 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 		t.Fatal("expected models restored immediately upon synchronous enable")
 	}
 
-
 	service.handleAuthUpdate(context.Background(), delayedWatcherUpdate)
 	manager.RegisterExecutor(&syncTestExecutor{})
-
 
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
@@ -1482,7 +1440,6 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 
 	hook := service.runtimeAuthSyncHook()
 
-
 	if err := hook(context.Background(), registeredAuth); err != nil {
 		t.Fatalf("initial hook sync failed: %v", err)
 	}
@@ -1491,13 +1448,10 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 		t.Fatal("expected models after initial sync")
 	}
 
-
-
 	fileSnapshotAuth := registeredAuth.Clone()
 	fileSnapshotAuth.Disabled = true
 	fileSnapshotAuth.Status = coreauth.StatusDisabled
 	fileSnapshotAuth.UpdatedAt = time.Now()
-
 
 	fileSnapshotAuth.RegistrationEpoch = 0
 	fileSnapshotAuth.Generation = 0
@@ -1509,8 +1463,6 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 	}
 	fileUpdate.SetRevision(2)
 
-
-
 	manager.MarkResult(context.Background(), coreauth.Result{
 		AuthID:   authID,
 		Provider: "codex",
@@ -1518,12 +1470,8 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 		Success:  true,
 	})
 
-
-
-
 	service.handleAuthUpdate(context.Background(), fileUpdate)
 	manager.RegisterExecutor(&syncTestExecutor{})
-
 
 	currentAuth, ok := manager.GetByID(authID)
 	if !ok || currentAuth == nil {
@@ -1569,22 +1517,18 @@ func TestRuntimeAuthSyncHook_ContextCancellationDoesNotAbortSync(t *testing.T) {
 
 	hook := service.runtimeAuthSyncHook()
 
-
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
-
 
 	if err := hook(canceledCtx, registeredAuth); err != nil {
 		t.Fatalf("hook failed with canceled context: %v", err)
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-
 	models := reg.GetModelsForClient(authID)
 	if len(models) == 0 {
 		t.Fatal("expected models to be registered even when incoming context is canceled")
 	}
-
 
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
@@ -1596,7 +1540,6 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 	authDir := t.TempDir()
 	fileName := "codex-team.json"
 	filePath := filepath.Join(authDir, fileName)
-
 
 	teamIDToken := "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ICJ1c2VyQGV4YW1wbGUuY29tIiwgImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6IHsiY2hhdGdwdF9wbGFuX3R5cGUiOiAidGVhbSIsICJjaGF0Z3B0X2FjY291bnRfaWQiOiAiYWNjLTEyMyJ9fQ.sig"
 	initialContent := fmt.Sprintf(`{"type":"codex","email":"user@example.com","access_token":"token-old","id_token":%q}`, teamIDToken)
@@ -1660,12 +1603,10 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-
 	syncHook := service.runtimeAuthSyncHook()
 	if err := syncHook(context.Background(), auth); err != nil {
 		t.Fatalf("initial sync failed: %v", err)
 	}
-
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
@@ -1694,7 +1635,6 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		}
 	}
 
-
 	unauthErr := &coreauth.Error{
 		HTTPStatus: http.StatusUnauthorized,
 		Code:       "unauthorized",
@@ -1711,7 +1651,6 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		})
 	}
 
-
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1724,7 +1663,6 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 			t.Fatalf("expected %q to be absent after terminal auth failure", m)
 		}
 	}
-
 
 	newContent := fmt.Sprintf(`{"type":"codex","email":"user@example.com","access_token":"token-new","id_token":%q}`, teamIDToken)
 	var body bytes.Buffer
@@ -1749,7 +1687,6 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		t.Fatalf("upload failed: status=%d, body=%s", rec.Code, rec.Body.String())
 	}
 
-
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1762,7 +1699,6 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 			t.Fatalf("expected %q to be restored in /v1/models after credential replacement: %s", m, rec.Body.String())
 		}
 	}
-
 
 	service.coreManager.RegisterExecutor(&syncTestExecutor{})
 	resp, errExec := service.coreManager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
@@ -1843,7 +1779,6 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		t.Fatalf("initial sync failed: %v", err)
 	}
 
-
 	unauthErr := &coreauth.Error{
 		HTTPStatus: http.StatusUnauthorized,
 		Code:       "unauthorized",
@@ -1860,7 +1795,6 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 			Error:      unauthErr,
 		})
 	}
-
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
@@ -1885,7 +1819,6 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		}
 	}
 
-
 	patchBody := fmt.Sprintf(`{"name":%q,"access_token":"token-fresh","id_token":%q}`, fileName, teamIDToken)
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/fields", strings.NewReader(patchBody))
@@ -1895,7 +1828,6 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 	if rec.Code != http.StatusOK {
 		t.Fatalf("PATCH fields failed: status=%d, body=%s", rec.Code, rec.Body.String())
 	}
-
 
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
@@ -1909,7 +1841,6 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 			t.Fatalf("expected %q to be restored in /v1/models after PATCH: %s", m, rec.Body.String())
 		}
 	}
-
 
 	service.coreManager.RegisterExecutor(&syncTestExecutor{})
 	resp, errExec := service.coreManager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})

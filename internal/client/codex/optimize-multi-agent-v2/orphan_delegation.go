@@ -20,9 +20,6 @@ const (
 	codexCollabSpawnSubagent     = "collab_spawn"
 )
 
-
-
-
 func RewriteCodexOrphanDelegationInput(ctx context.Context, headers http.Header, payload []byte, enabled bool) []byte {
 	if !enabled || len(payload) == 0 || !isCodexCollabSpawnSubagent(ctx, headers) {
 		return payload
@@ -33,8 +30,6 @@ func RewriteCodexOrphanDelegationInput(ctx context.Context, headers http.Header,
 	}
 	return doc.Bytes()
 }
-
-
 
 func RewriteCodexOrphanDelegationInputDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, enabled bool) bool {
 	if !enabled || doc == nil || doc.Len() == 0 || !isCodexCollabSpawnSubagent(ctx, headers) {
@@ -74,7 +69,6 @@ func RewriteCodexOrphanDelegationInputDoc(doc *ojson.Doc, ctx context.Context, h
 		if !isTarget {
 			continue
 		}
-
 
 		itemPath := fmt.Sprintf("input.%d", itemIndex)
 		fullText := buildCodexOrphanUserMessageText(toolLabel, item.Get("output"))

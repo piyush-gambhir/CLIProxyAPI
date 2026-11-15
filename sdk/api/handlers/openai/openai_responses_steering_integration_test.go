@@ -24,8 +24,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func TestResponsesSteeringFullDuplexIntegration(t *testing.T) {
 	for _, scenario := range []string{"successor", "tool_pending", "disconnect_accepted", "disconnect_pending"} {
 		t.Run(scenario, func(t *testing.T) {
@@ -305,7 +303,6 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 				}
 			}
 
-
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"PRE_COMPACT_RAW_TEXT"}]},{"type":"compaction_trigger"}]}`, modelID))); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -316,7 +313,6 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 			}
 			<-httpReceived
 
-
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":"resp_ag_compact_wrong","input":[{"type":"message","role":"user","content":"next"}]}`, modelID))); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -324,7 +320,6 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 			if bogusErr.Get("error.code").String() != "previous_response_not_found" {
 				t.Fatalf("expected previous_response_not_found for wrong synthetic ID, got %s", bogusErr.Raw)
 			}
-
 
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Post-compaction question"}]}]}`, synthID))); errWrite != nil {
 				t.Fatal(errWrite)
@@ -343,7 +338,6 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 			if bytes.Contains(wsRoot, []byte("cpa-ag-compact-v1:")) || !bytes.Contains(wsRoot, []byte(marker)) {
 				t.Fatalf("expected expanded summary marker without raw capsule: %s", wsRoot)
 			}
-
 
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","previous_response_id":"resp_ws_1","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Incremental follow-up"}]}]}`)); errWrite != nil {
 				t.Fatal(errWrite)
@@ -458,7 +452,6 @@ func TestResponsesWebsocketExistingWSCompactionRejectsStaleParent_Issue7406(t *t
 		}
 	}
 
-
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[{"type":"message","role":"user","content":"turn 1"}]}`, modelID)))
 	turn1Done := readUntil("response.completed")
 	oldWSRespID := turn1Done.Get("response.id").String()
@@ -467,7 +460,6 @@ func TestResponsesWebsocketExistingWSCompactionRejectsStaleParent_Issue7406(t *t
 	}
 	<-wsReceived
 
-
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[{"type":"message","role":"user","content":"turn 1"},{"type":"compaction_trigger"}]}`, modelID)))
 	compactDone := readUntil("response.completed")
 	synthID := compactDone.Get("response.id").String()
@@ -475,13 +467,11 @@ func TestResponsesWebsocketExistingWSCompactionRejectsStaleParent_Issue7406(t *t
 		t.Fatalf("turn 2 response.id = %q, want resp_ag_compact_*", synthID)
 	}
 
-
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":%q,"input":[{"type":"message","role":"user","content":"wrong branch"}]}`, modelID, oldWSRespID)))
 	staleErr := readUntil("error")
 	if staleErr.Get("status").Int() != http.StatusConflict || staleErr.Get("error.code").String() != "previous_response_not_found" {
 		t.Fatalf("expected 409 previous_response_not_found for pre-compaction WS ID %q, got %s", oldWSRespID, staleErr.Raw)
 	}
-
 
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","role":"user","content":"clean post-compact turn"}]}`, synthID)))
 	turn3Done := readUntil("response.completed")

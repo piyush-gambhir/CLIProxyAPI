@@ -51,7 +51,6 @@ func TestConvertOpenAIResponseToGeminiNonStream_MultiChoicePartsOverlay(t *testi
 		t.Fatalf("expected functionCall.id to be preserved as 'call_1', got %q", parts1[0].Get("functionCall.id").String())
 	}
 
-
 	raw2 := []byte(`{"choices":[
 		{"index":0,"message":{"role":"assistant","reasoning_content":"initial thought"}},
 		{"index":1,"message":{"role":"assistant","content":"final text"}}
@@ -67,7 +66,6 @@ func TestConvertOpenAIResponseToGeminiNonStream_MultiChoicePartsOverlay(t *testi
 	if parts2[0].Get("text").String() != "final text" {
 		t.Fatalf("expected text to be 'final text', got %q", parts2[0].Get("text").String())
 	}
-
 
 	raw3 := []byte(`{"choices":[
 		{"index":0,"message":{"role":"assistant","content":"original text"}},
@@ -89,7 +87,6 @@ func TestConvertOpenAIResponseToGeminiNonStream_MultiChoicePartsOverlay(t *testi
 func TestConvertOpenAIResponseToGeminiStream_NullFinishReasonIgnored(t *testing.T) {
 	var param any
 
-
 	chunk1 := []byte(`{"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`)
 	out1 := ConvertOpenAIResponseToGemini(context.Background(), "gpt-test", nil, nil, chunk1, &param)
 	for i, chunk := range out1 {
@@ -97,7 +94,6 @@ func TestConvertOpenAIResponseToGeminiStream_NullFinishReasonIgnored(t *testing.
 			t.Fatalf("chunk1[%d] unexpectedly set finishReason = %q on non-final chunk; payload=%s", i, fr.String(), chunk)
 		}
 	}
-
 
 	chunk2 := []byte(`{"choices":[{"index":0,"delta":{"reasoning_content":"thinking..."},"finish_reason":null}]}`)
 	out2 := ConvertOpenAIResponseToGemini(context.Background(), "gpt-test", nil, nil, chunk2, &param)
@@ -116,7 +112,6 @@ func TestConvertOpenAIResponseToGeminiStream_NullFinishReasonIgnored(t *testing.
 		}
 	}
 
-
 	chunk3 := []byte(`{"choices":[{"index":0,"delta":{},"finish_reason":""}]}`)
 	out3 := ConvertOpenAIResponseToGemini(context.Background(), "gpt-test", nil, nil, chunk3, &param)
 	for i, chunk := range out3 {
@@ -124,7 +119,6 @@ func TestConvertOpenAIResponseToGeminiStream_NullFinishReasonIgnored(t *testing.
 			t.Fatalf("chunk3[%d] unexpectedly set finishReason = %q on contentless chunk with empty finish_reason; payload=%s", i, fr.String(), chunk)
 		}
 	}
-
 
 	chunk4 := []byte(`{"choices":[{"index":0,"delta":{"content":"hello world"},"finish_reason":null}]}`)
 	out4 := ConvertOpenAIResponseToGemini(context.Background(), "gpt-test", nil, nil, chunk4, &param)
@@ -139,7 +133,6 @@ func TestConvertOpenAIResponseToGeminiStream_NullFinishReasonIgnored(t *testing.
 			t.Fatalf("chunk4[%d] unexpectedly set finishReason = %q on non-final content chunk; payload=%s", i, fr.String(), chunk)
 		}
 	}
-
 
 	chunk5 := []byte(`{"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}`)
 	out5 := ConvertOpenAIResponseToGemini(context.Background(), "gpt-test", nil, nil, chunk5, &param)
@@ -218,7 +211,6 @@ func TestConvertOpenAIResponseToGeminiStream_PreservesToolCallThoughtSignature(t
 		t.Fatalf("expected unsigned second tool call not to have thoughtSignature; payload=%s", string(last))
 	}
 
-
 	var singleChunkParam any
 	singleOut := ConvertOpenAIResponseToGemini(context.Background(), "google/gemini-3-pro", nil, nil, []byte(`{"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"c_single","type":"function","function":{"name":"get_weather","arguments":"{\"city\":\"Rome\"}"},"extra_content":{"google":{"thought_signature":"SIG_SINGLE"}}}]},"finish_reason":"tool_calls"}]}`), &singleChunkParam)
 	if len(singleOut) == 0 {
@@ -227,7 +219,6 @@ func TestConvertOpenAIResponseToGeminiStream_PreservesToolCallThoughtSignature(t
 	if got := ojson.GetBytesNoCopy(singleOut[len(singleOut)-1], "candidates.0.content.parts.0.thoughtSignature").String(); got != "SIG_SINGLE" {
 		t.Fatalf("single-chunk thoughtSignature = %q, want SIG_SINGLE; payload=%s", got, string(singleOut[len(singleOut)-1]))
 	}
-
 
 	var mixedParam any
 	mixedChunk1 := ConvertOpenAIResponseToGemini(context.Background(), "google/gemini-3-pro", nil, nil, []byte(`{"choices":[{"index":0,"delta":{"reasoning_content":"checking weather","tool_calls":[{"index":0,"id":"c_mixed","type":"function","function":{"name":"get_weather","arguments":"{\"city\":\"Berlin\"}"}}]}}]}`), &mixedParam)

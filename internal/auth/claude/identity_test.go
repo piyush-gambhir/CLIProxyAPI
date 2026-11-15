@@ -26,15 +26,11 @@ func TestGenerateDeviceIDPool(t *testing.T) {
 	}
 }
 
-// TestReadDeviceIDPoolReturnsDefensiveCopy pins that neither side of the device
-// pool accessors hands out the live stored slice. A caller mutating a result must
-// never be able to rewrite credential identity outside the device pool lock.
 func TestReadDeviceIDPoolReturnsDefensiveCopy(t *testing.T) {
 	metadata := map[string]any{}
 	input := []string{"device-a", "device-b", "device-c"}
 	StoreDeviceIDPool(&metadata, input)
 
-	// Write side: mutating the caller's input must not affect stored state.
 	input[0] = "mutated-input"
 	stored, ok := ReadDeviceIDPool(&metadata).([]string)
 	if !ok {
@@ -44,14 +40,12 @@ func TestReadDeviceIDPoolReturnsDefensiveCopy(t *testing.T) {
 		t.Fatalf("stored[0] = %q, want %q; write side is not defensive", stored[0], "device-a")
 	}
 
-	// Read side: mutating the returned slice must not affect stored state.
 	stored[0] = "hijacked-device-id"
 	reread, _ := ReadDeviceIDPool(&metadata).([]string)
 	if reread[0] != "device-a" {
 		t.Fatalf("stored[0] = %q after mutating the read result, want %q", reread[0], "device-a")
 	}
 
-	// A []any pool (as produced by JSON unmarshalling) must be copied too.
 	jsonMetadata := map[string]any{ClaudeDeviceIDsMetadataKey: []any{"json-a", "json-b"}}
 	jsonStored, ok := ReadDeviceIDPool(&jsonMetadata).([]any)
 	if !ok {

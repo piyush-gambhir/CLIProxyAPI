@@ -6,8 +6,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
 func TestPerEntryConnectionPoolAccepted(t *testing.T) {
 	raw := []byte(`config-version: 8
 api-keys:
@@ -47,8 +45,6 @@ api-keys:
 	}
 }
 
-
-
 func TestPerEntryConnectionPoolRejectsUnknownKey(t *testing.T) {
 	raw := []byte(`config-version: 8
 api-keys:
@@ -64,9 +60,6 @@ api-keys:
 		t.Fatal("unknown nested key must be rejected")
 	}
 }
-
-
-
 
 func TestEmptyConnectionPoolBlockStaysOptIn(t *testing.T) {
 	raw := []byte(`config-version: 8
@@ -97,9 +90,6 @@ api-keys:
 		}
 	}
 }
-
-
-
 
 func TestPerKeyConnectionPoolOverridesGroup(t *testing.T) {
 	raw := []byte(`config-version: 8
@@ -155,7 +145,6 @@ api-keys:
 	if partial.MaxIdleConnsPerHost == nil || *partial.MaxIdleConnsPerHost != 2 {
 		t.Fatalf("partial override must inherit max-idle-conns-per-host, got %+v", partial)
 	}
-
 
 	empty := byKey["empty-block"]
 	if empty == nil || empty.Enabled == nil || !*empty.Enabled || empty.IdleConnTimeout != "300s" {

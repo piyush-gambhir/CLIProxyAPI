@@ -50,7 +50,6 @@ type rpcStreamEmitRequest struct {
 	Payload  []byte `json:"payload,omitempty"`
 	Error    string `json:"error,omitempty"`
 
-
 	ErrorDetail *pluginabi.Error `json:"error_detail,omitempty"`
 }
 
@@ -58,12 +57,8 @@ type rpcStreamCloseRequest struct {
 	StreamID string `json:"stream_id"`
 	Error    string `json:"error,omitempty"`
 
-
 	ErrorDetail *pluginabi.Error `json:"error_detail,omitempty"`
 }
-
-
-
 
 func rpcStreamError(message string, detail *pluginabi.Error) error {
 	if detail != nil {

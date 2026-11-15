@@ -17,11 +17,9 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-
 type Mode int
 
 const (
-
 	ModeInherit Mode = iota
 
 	ModeDirect
@@ -31,13 +29,11 @@ const (
 	ModeInvalid
 )
 
-
 type Setting struct {
 	Raw  string
 	Mode Mode
 	URL  *url.URL
 }
-
 
 func Parse(raw string) (Setting, error) {
 	trimmed := strings.TrimSpace(raw)
@@ -74,8 +70,6 @@ func Parse(raw string) (Setting, error) {
 	}
 }
 
-
-
 func ValidRequestProxy(raw string) bool {
 	setting, errParse := Parse(raw)
 	if errParse != nil || setting.Mode != ModeProxy || setting.URL == nil {
@@ -99,21 +93,15 @@ func cloneDefaultTransport() *http.Transport {
 	return &http.Transport{}
 }
 
-
 func NewDirectTransport() *http.Transport {
 	clone := cloneDefaultTransport()
 	clone.Proxy = nil
 	return clone
 }
 
-
-
-
-
 func socksForwardDialer() *net.Dialer {
 	return &net.Dialer{KeepAlive: 30 * time.Second}
 }
-
 
 func BuildHTTPTransport(raw string) (*http.Transport, Mode, error) {
 	setting, errParse := Parse(raw)
@@ -209,7 +197,6 @@ func buildHTTPSProxyDialTLSContext(
 		return tlsConn, nil
 	}
 }
-
 
 func BuildDialer(raw string) (proxy.Dialer, Mode, error) {
 	setting, errParse := Parse(raw)
@@ -355,7 +342,6 @@ func proxyAuthorization(user *url.Userinfo) string {
 	encoded := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
 	return "Basic " + encoded
 }
-
 
 func Redact(raw string) string {
 	trimmed := strings.TrimSpace(raw)

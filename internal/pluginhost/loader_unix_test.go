@@ -81,10 +81,6 @@ func TestUnixPluginReloadAfterShutdownUsesReplacedFile(t *testing.T) {
 
 	client.Shutdown()
 
-
-
-
-
 	if first.handle == nil || first.handle != firstHandle {
 		t.Fatalf("handle after Shutdown() = %v, want retained handle %v (library must stay mapped)", first.handle, firstHandle)
 	}
@@ -100,9 +96,6 @@ func TestUnixPluginReloadAfterShutdownUsesReplacedFile(t *testing.T) {
 	if first.instance == nil || !first.instance.closed.Load() {
 		t.Fatal("callback instance not closed by Shutdown(); stale runtime could still perform work")
 	}
-
-
-
 
 	buildReloadTestPlugin(t, 2, pluginPath)
 	file.Version = "2"
@@ -127,9 +120,6 @@ func TestUnixPluginReloadAfterShutdownUsesReplacedFile(t *testing.T) {
 	baselineCalls := testShutdownCallCount(t, secondClient)
 
 	secondClient.Shutdown()
-
-
-
 
 	thirdClient, errOpenThird := dynamicLibraryLoader{}.Open(file, host)
 	if errOpenThird != nil {
@@ -262,9 +252,6 @@ func TestUnixPluginOpenFailureKeepsImageUsableOnRetry(t *testing.T) {
 		t.Fatal("Open() with failing plugin init succeeded, want error")
 	}
 
-
-
-
 	if _, errOpen := loader.Open(file, host); errOpen == nil {
 		t.Fatal("Open() retry with failing plugin init succeeded, want error")
 	}
@@ -301,8 +288,6 @@ func TestUnixPluginLoaderIsolatesSigillOnDlopen(t *testing.T) {
 		t.Fatalf("Open() error = %v, want preflight SIGILL diagnostic", errOpen)
 	}
 
-
-
 	_, errRetry := loader.Open(file, host)
 	if errRetry == nil {
 		t.Fatal("Open() retry with SIGILL plugin succeeded, want error")
@@ -310,8 +295,6 @@ func TestUnixPluginLoaderIsolatesSigillOnDlopen(t *testing.T) {
 	if !strings.Contains(errRetry.Error(), "preflight probe terminated by SIGILL: illegal instruction") {
 		t.Fatalf("Open() retry error = %v, want cached preflight SIGILL diagnostic", errRetry)
 	}
-
-
 
 	host.ApplyConfig(context.Background(), &config.Config{
 		Plugins: config.PluginsConfig{
@@ -323,8 +306,6 @@ func TestUnixPluginLoaderIsolatesSigillOnDlopen(t *testing.T) {
 	if host.PluginLoaded("broken") {
 		t.Fatal("PluginLoaded(broken) = true, want false after preflight SIGILL failure")
 	}
-
-
 
 	buildReloadTestPlugin(t, 1, pluginPath)
 	file.Version = "1"
@@ -366,15 +347,12 @@ func TestUnixPluginLoaderDoesNotCacheTransientProbeStartFailure(t *testing.T) {
 		t.Fatal("Open() with transient probe executable failure succeeded, want error")
 	}
 
-
 	pluginProbeExecutable = func() (string, error) {
 		return filepath.Join(dir, "nonexistent-probe-binary"), nil
 	}
 	if _, errOpen := loader.Open(file, host); errOpen == nil {
 		t.Fatal("Open() with missing probe binary succeeded, want error")
 	}
-
-
 
 	pluginProbeExecutable = origProbeExec
 	client, errOpen := loader.Open(file, host)

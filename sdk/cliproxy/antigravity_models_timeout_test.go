@@ -58,8 +58,6 @@ func TestAntigravityCapabilityProbe_UsesFirstConfiguredEndpoint(t *testing.T) {
 	}
 }
 
-
-
 func TestAntigravityModelRegistration_AsyncNonBlocking(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		select {
@@ -107,9 +105,6 @@ func TestAntigravityModelRegistration_AsyncNonBlocking(t *testing.T) {
 	}
 }
 
-
-
-
 func TestAntigravityAsyncProbe_DiscardsStaleProbeWhenAuthReRegistered(t *testing.T) {
 	probeStarted := make(chan struct{})
 	releaseProbe := make(chan struct{})
@@ -145,39 +140,31 @@ func TestAntigravityAsyncProbe_DiscardsStaleProbeWhenAuthReRegistered(t *testing
 		GlobalModelRegistry().UnregisterClient(auth.ID)
 	})
 
-
 	_, err := manager.Register(context.Background(), auth)
 	if err != nil {
 		t.Fatalf("Register error: %v", err)
 	}
 	svc.registerModelsForAuth(context.Background(), auth)
 
-
 	<-probeStarted
-
 
 	newModels := []*ModelInfo{
 		{ID: "custom-updated-model"},
 	}
 	GlobalModelRegistry().RegisterClient(auth.ID, "antigravity", newModels)
 
-
 	managerAuth, _ := manager.GetByID(auth.ID)
 	managerAuth.Generation += 5
 	_, _ = manager.Update(context.Background(), managerAuth)
 
-
 	close(releaseProbe)
 	svc.WaitAntigravityProbes()
-
 
 	currentModels := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	if len(currentModels) != 1 || currentModels[0].ID != "custom-updated-model" {
 		t.Fatalf("expected custom-updated-model to be preserved, got %v", currentModels)
 	}
 }
-
-
 
 func TestAntigravityAsyncProbe_PreservesPluginModels(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -204,17 +191,14 @@ func TestAntigravityAsyncProbe_PreservesPluginModels(t *testing.T) {
 		GlobalModelRegistry().UnregisterClient(auth.ID)
 	})
 
-
 	models := registryGetAntigravityModels()
 	models = append(models, &ModelInfo{
 		ID: "plugin-custom-model",
 	})
 	GlobalModelRegistry().RegisterClient(auth.ID, "antigravity", models)
 
-
 	svc.asyncProbeAntigravityCapabilities(context.Background(), auth, "antigravity")
 	svc.WaitAntigravityProbes()
-
 
 	updated := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	foundPlugin := false
@@ -234,9 +218,6 @@ func TestAntigravityAsyncProbe_PreservesPluginModels(t *testing.T) {
 		t.Fatal("expected gemini-3.1-flash-lite to have SupportsWebSearch=true")
 	}
 }
-
-
-
 
 func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -273,7 +254,6 @@ func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *
 		GlobalModelRegistry().UnregisterClient(auth.ID)
 	})
 
-
 	models := []*ModelInfo{
 		{ID: "my-prefix/aliased-flash"},
 		{ID: "aliased-flash"},
@@ -282,7 +262,6 @@ func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *
 		{ID: "my-prefix/gemini-pro"},
 	}
 	GlobalModelRegistry().RegisterClient(auth.ID, "antigravity", models)
-
 
 	svc.asyncProbeAntigravityCapabilities(context.Background(), auth, "antigravity")
 	svc.WaitAntigravityProbes()
@@ -320,9 +299,6 @@ func TestAntigravityAsyncProbe_AppliesCapabilitiesToAliasedAndPrefixedModels(t *
 		t.Fatalf("expected my-prefix/google/pro-flash to have SupportsWebSearch=true, got %+v", prefixedSlashedAliased)
 	}
 }
-
-
-
 
 func TestAntigravityAsyncProbe_UnregisteredClientNotResurrected(t *testing.T) {
 	probeStarted := make(chan struct{})
@@ -365,25 +341,19 @@ func TestAntigravityAsyncProbe_UnregisteredClientNotResurrected(t *testing.T) {
 	}
 	svc.registerModelsForAuth(context.Background(), auth)
 
-
 	<-probeStarted
-
 
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	manager.Remove(context.Background(), auth.ID)
 
-
 	close(releaseProbe)
 	svc.WaitAntigravityProbes()
-
 
 	models := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	if len(models) != 0 {
 		t.Fatalf("expected client to remain unregistered, but found models: %v", models)
 	}
 }
-
-
 
 func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 	probeStarted := make(chan struct{})
@@ -426,9 +396,7 @@ func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 	}
 	svc.registerModelsForAuth(context.Background(), auth)
 
-
 	<-probeStarted
-
 
 	for i := 0; i < 5; i++ {
 		current, _ := manager.GetByID(auth.ID)
@@ -436,10 +404,8 @@ func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 		_, _ = manager.Update(context.Background(), current)
 	}
 
-
 	close(releaseProbe)
 	svc.WaitAntigravityProbes()
-
 
 	models := GlobalModelRegistry().GetModelsForClient(auth.ID)
 	foundCapable := false
@@ -453,8 +419,6 @@ func TestAntigravityAsyncProbe_NormalRequestsDoNotDiscardProbe(t *testing.T) {
 		t.Fatal("expected gemini-3.1-flash-lite to have SupportsWebSearch=true despite concurrent Generation bumps from requests")
 	}
 }
-
-
 
 func TestAntigravityAsyncProbe_ConcurrentConfigUpdateRace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -515,10 +479,6 @@ func registryGetAntigravityModels() []*ModelInfo {
 	}
 }
 
-
-
-
-
 func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) {
 	var refreshReceivedProxy atomic.Value
 	var refreshCalls atomic.Int32
@@ -534,7 +494,6 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 	configDir := t.TempDir()
 	configPath := filepath.Join(configDir, "config.yaml")
 	_ = os.WriteFile(configPath, []byte("port: 0\n"), 0o600)
-
 
 	authJSON := []byte(`{
 		"type": "antigravity",
@@ -563,7 +522,6 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-
 	if errLoad := svc.coreManager.Load(ctx); errLoad != nil {
 		t.Fatalf("Load error: %v", errLoad)
 	}
@@ -576,19 +534,15 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 		t.Fatalf("expected ProxyURL http://127.0.0.1:9876, got %q", loadedAuth.ProxyURL)
 	}
 
-
 	svc.registerAvailableExecutors(ctx, executorRegistrationOptions{
 		includeBaseline: true,
 		auths:           svc.coreManager.List(),
 	})
 
-
 	svc.coreManager.RegisterExecutor(mockExecutor)
-
 
 	svc.coreManager.StartAutoRefresh(ctx, 10*time.Millisecond)
 	defer svc.coreManager.StopAutoRefresh()
-
 
 	for start := time.Now(); refreshCalls.Load() == 0 && time.Since(start) < 2*time.Second; {
 		time.Sleep(10 * time.Millisecond)

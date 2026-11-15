@@ -14,9 +14,6 @@ import (
 
 type requestScopedErrorConfigContextKey struct{}
 
-
-
-
 func WithRequestScopedErrorConfig(ctx context.Context, cfg *internalconfig.Config) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -27,8 +24,6 @@ func WithRequestScopedErrorConfig(ctx context.Context, cfg *internalconfig.Confi
 	return context.WithValue(ctx, requestScopedErrorConfigContextKey{}, cfg)
 }
 
-
-
 func RequestScopedErrorConfigFromContext(ctx context.Context) *internalconfig.Config {
 	if ctx == nil {
 		return nil
@@ -36,7 +31,6 @@ func RequestScopedErrorConfigFromContext(ctx context.Context) *internalconfig.Co
 	cfg, _ := ctx.Value(requestScopedErrorConfigContextKey{}).(*internalconfig.Config)
 	return cfg
 }
-
 
 const (
 	RequestScopedActionStop                = "stop"
@@ -186,12 +180,9 @@ func cloneRequestScopedErrorRules(rules []internalconfig.RequestScopedErrorRule)
 	return out
 }
 
-
-
 func ResolveRequestScopedErrorRules(auth *Auth, cfg *internalconfig.Config) []internalconfig.RequestScopedErrorRule {
 	return cloneRequestScopedErrorRules(extractRequestScopedErrorRules(auth, cfg))
 }
-
 
 func MatchRequestScopedErrorRules(rules []internalconfig.RequestScopedErrorRule, err error) (string, bool) {
 	if err == nil || len(rules) == 0 || cliproxyexecutor.IsUpstreamWebsocketTurnError(err) {
@@ -244,7 +235,6 @@ func MatchRequestScopedErrorRules(rules []internalconfig.RequestScopedErrorRule,
 
 	return "", false
 }
-
 
 func extractRequestScopedErrorRules(auth *Auth, cfg *internalconfig.Config) []internalconfig.RequestScopedErrorRule {
 	if auth != nil && auth.Metadata != nil {
@@ -360,9 +350,6 @@ func extractErrorBody(err error) string {
 	}
 	return err.Error()
 }
-
-
-
 
 func MatchRequestScopedErrorAction(auth *Auth, err error, cfg *internalconfig.Config) (string, bool) {
 	return matchRequestScopedErrorAction(auth, err, cfg)

@@ -2,13 +2,6 @@ package cliproxy
 
 import "testing"
 
-
-
-
-
-
-
-
 func TestModelPrefixesDecideWhetherAPoolExists(t *testing.T) {
 	t.Parallel()
 
@@ -64,9 +57,6 @@ func TestModelPrefixesDecideWhetherAPoolExists(t *testing.T) {
 		})
 	}
 }
-
-
-
 
 func TestPrefixedRouteRemainsAvailableAsAManualOverride(t *testing.T) {
 	t.Parallel()

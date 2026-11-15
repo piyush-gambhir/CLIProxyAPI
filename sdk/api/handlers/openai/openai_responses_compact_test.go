@@ -258,12 +258,10 @@ func TestOpenAIResponsesCompactTransientFailureDoesNotCooldownAuthAndPreservesEr
 	router.POST("/v1/responses/compact", h.Compact)
 	router.POST("/v1/responses", h.Responses)
 
-
 	req := httptest.NewRequest(http.MethodPost, "/v1/responses/compact", strings.NewReader(`{"model":"test-model","input":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-
 
 	if resp.Code != http.StatusInternalServerError {
 		t.Fatalf("compact status = %d, want %d; body = %s", resp.Code, http.StatusInternalServerError, resp.Body.String())
@@ -271,7 +269,6 @@ func TestOpenAIResponsesCompactTransientFailureDoesNotCooldownAuthAndPreservesEr
 	if !strings.Contains(resp.Body.String(), "compact upstream temporary error") {
 		t.Fatalf("compact body = %s, want containing 'compact upstream temporary error'", resp.Body.String())
 	}
-
 
 	for _, authID := range []string{"auth1", "auth2"} {
 		a, ok := manager.GetByID(authID)
@@ -287,7 +284,6 @@ func TestOpenAIResponsesCompactTransientFailureDoesNotCooldownAuthAndPreservesEr
 			}
 		}
 	}
-
 
 	reqNormal := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(`{"model":"test-model","input":"hello"}`))
 	reqNormal.Header.Set("Content-Type", "application/json")
@@ -331,12 +327,10 @@ func TestOpenAIResponsesCompactRequestFaultStopsFallbackAndPreservesError(t *tes
 	router.POST("/v1/responses/compact", h.Compact)
 	router.POST("/v1/responses", h.Responses)
 
-
 	req := httptest.NewRequest(http.MethodPost, "/v1/responses/compact", strings.NewReader(`{"model":"test-model","input":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-
 
 	if resp.Code != http.StatusNotFound {
 		t.Fatalf("compact status = %d, want %d; body = %s", resp.Code, http.StatusNotFound, resp.Body.String())
@@ -345,11 +339,9 @@ func TestOpenAIResponsesCompactRequestFaultStopsFallbackAndPreservesError(t *tes
 		t.Fatalf("compact body = %s, want containing '404 page not found'", resp.Body.String())
 	}
 
-
 	if executor.calls != 1 {
 		t.Fatalf("executor calls = %d, want 1 (fallback should stop)", executor.calls)
 	}
-
 
 	for _, authID := range []string{"auth1", "auth2"} {
 		a, ok := manager.GetByID(authID)
@@ -362,7 +354,6 @@ func TestOpenAIResponsesCompactRequestFaultStopsFallbackAndPreservesError(t *tes
 			}
 		}
 	}
-
 
 	reqNormal := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(`{"model":"test-model","input":"hello"}`))
 	reqNormal.Header.Set("Content-Type", "application/json")

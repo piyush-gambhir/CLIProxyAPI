@@ -158,8 +158,6 @@ func (p *pprofServer) startServer(addr string, owner uint64) *http.Server {
 	return server
 }
 
-
-
 func (p *pprofServer) clearFailedServer(server *http.Server) {
 	if p == nil || server == nil {
 		return

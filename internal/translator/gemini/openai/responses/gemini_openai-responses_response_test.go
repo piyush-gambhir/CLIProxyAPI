@@ -262,7 +262,6 @@ func TestConvertGeminiResponseToOpenAIResponsesNonStreamOutputTokensIncludeThoug
 
 func TestConvertGeminiResponseToOpenAIResponses_UnwrapAndAggregateText(t *testing.T) {
 
-
 	in := []string{
 		`data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":""}]}}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2,"cachedContentTokenCount":0},"modelVersion":"test-model","responseId":"req_vrtx_1"},"traceId":"t1"}`,
 		`data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"让"}]}}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2,"cachedContentTokenCount":0},"modelVersion":"test-model","responseId":"req_vrtx_1"},"traceId":"t1"}`,
@@ -1822,7 +1821,6 @@ func TestConvertGeminiResponseToOpenAIResponses_PinsRequestPerStream(t *testing.
 	if got := completed.Get("response.instructions").String(); got != "pinned-instructions" {
 		t.Fatalf("completed instructions = %q, want pinned-instructions", got)
 	}
-
 
 	var nilMapParam any
 	firstReqNoTools := []byte(`{"model":"gemini-2.5-flash","instructions":"pinned-no-tools"}`)

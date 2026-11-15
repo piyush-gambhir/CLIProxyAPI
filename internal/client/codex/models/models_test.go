@@ -287,8 +287,6 @@ func TestCodexClientModelsResponse_SearchToolRequiresRoutesThatCloseTheLoop(t *t
 	})
 }
 
-
-
 func TestCodexClientModelsResponse_ClaudeSearchToolNeedsCapability(t *testing.T) {
 	resp := BuildResponseForClientWithToolCapabilities(searchToolAvailableModels(), func(id string) []string { return searchToolRouteProviders[id] }, nil, nil, nil, false, "")
 	assertSupportsSearchTool(t, resp, map[string]bool{
@@ -476,7 +474,6 @@ func TestApplyCodexClientModelMetadataPreservesMultiAgentVersionWhenDisabled(t *
 
 func TestCodexClientModelsResponseAppliesMaxContextLengthOverride(t *testing.T) {
 	const wantOverride = 1048576
-
 
 	_, defaultTemplate, errLoadTemplates := loadCodexClientModelTemplates()
 	if errLoadTemplates != nil || defaultTemplate == nil {
@@ -879,7 +876,6 @@ func TestCodexClientModelsResponse_ExplicitRouteOverridesHonored(t *testing.T) {
 		t.Errorf("default_reasoning_level = %q, want low", got)
 	}
 
-
 	astraNoUltra := entries["custom-astra-explicit-no-ultra"]
 	if astraNoUltra == nil {
 		t.Fatal("missing custom-astra-explicit-no-ultra")
@@ -894,7 +890,6 @@ func TestCodexClientModelsResponse_ExplicitRouteOverridesHonored(t *testing.T) {
 			t.Error("custom-astra-explicit-no-ultra must not contain 'ultra' because user explicitly excluded it")
 		}
 	}
-
 
 	directAstra := entries["gpt-6-astra"]
 	if directAstra == nil {
@@ -939,7 +934,6 @@ func TestCodexClientModelsResponse_UnrelatedCustomProviderRetainsFallback(t *tes
 	if got := stringModelValue(entry, "slug"); got != "my-unrelated-custom-model" {
 		t.Errorf("slug = %q, want my-unrelated-custom-model", got)
 	}
-
 
 	_, defaultTemplate, errLoadTemplates := loadCodexClientModelTemplates()
 	if errLoadTemplates != nil || defaultTemplate == nil {
@@ -1237,7 +1231,6 @@ func TestCodexClientModelsResponse_DisjointModalitiesIntersectionDoesNotRestoreT
 	clientC := "modalities-client-c"
 	aliasName := "disjoint-modalities-alias"
 
-
 	modelRegistry.RegisterClient(clientA, "openai-compatibility", []*registry.ModelInfo{
 		{
 			ID:                       aliasName,
@@ -1402,7 +1395,6 @@ func TestCodexClientModelsResponse_OAuthAliasesInheritCompleteReasoningLevelsWit
 		t.Fatal("expected gpt-6-astra in static/dynamic registry")
 	}
 
-
 	codexMain := *realAstra
 	codexMain.ID = "codex-main"
 	codexMain.MetadataModelID = "gpt-6-astra"
@@ -1427,7 +1419,6 @@ func TestCodexClientModelsResponse_OAuthAliasesInheritCompleteReasoningLevelsWit
 		{"id": "codex-main"},
 		{"id": "1/codex-main"},
 	}
-
 
 	respModern := BuildResponseForClient(availableModels, modelRegistry.GetModelProviders, false, "0.153.4")
 	modelsModern, ok := respModern["models"].([]map[string]any)
@@ -1470,7 +1461,6 @@ func TestCodexClientModelsResponse_OAuthAliasesInheritCompleteReasoningLevelsWit
 			t.Errorf("%s reasoning levels must retain rich descriptions from template", slug)
 		}
 	}
-
 
 	respLegacy := BuildResponseForClient(availableModels, modelRegistry.GetModelProviders, false, "0.137.0")
 	modelsLegacy, ok := respLegacy["models"].([]map[string]any)
@@ -1791,8 +1781,6 @@ func TestCodexClientModelsResponse_DoesNotLeakResponsesLiteOrCodeModeToNonCodexR
 		codexClientModelTemplatesErr = previousErr
 		codexClientModelTemplatesMu.Unlock()
 	})
-
-
 
 	snapshot := []byte(`{"models":[{
 		"slug":"gpt-6.1-sol",

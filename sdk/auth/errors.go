@@ -1,6 +1,5 @@
 package auth
 
-
 type EmailRequiredError struct {
 	Prompt string
 }

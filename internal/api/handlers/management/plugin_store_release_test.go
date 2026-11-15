@@ -150,7 +150,6 @@ func TestPluginReleaseCacheRetainsSuccessAndUsesCompletionTime(t *testing.T) {
 	check("2.0.0", 4)
 }
 
-
 type pluginReleaseWaitContext struct {
 	context.Context
 	waiting chan struct{}

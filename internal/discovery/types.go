@@ -1,5 +1,3 @@
-
-
 package discovery
 
 import (
@@ -8,7 +6,6 @@ import (
 )
 
 const (
-
 	DefaultServiceType = "_ai-gateway._tcp"
 
 	DefaultDomain = "local."
@@ -42,7 +39,6 @@ const (
 	ProductCPA = "cliproxyapi"
 )
 
-
 type ServiceSpec struct {
 	InstanceName  string
 	ServiceType   string
@@ -53,7 +49,6 @@ type ServiceSpec struct {
 	Interfaces    []net.Interface
 	AdvertisedIPs []string
 }
-
 
 type DiscoveredService struct {
 	InstanceName string   `json:"instance_name"`
@@ -83,12 +78,10 @@ type DiscoveredService struct {
 	RawTXT  map[string]string `json:"raw_txt,omitempty"`
 }
 
-
 type Advertiser interface {
 	Start(ctx context.Context, spec ServiceSpec) error
 	Stop() error
 }
-
 
 type Browser interface {
 	Browse(ctx context.Context, serviceType, domain string) ([]DiscoveredService, error)

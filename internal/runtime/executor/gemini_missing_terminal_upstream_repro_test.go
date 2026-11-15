@@ -18,11 +18,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
-
-
-
 func TestGeminiMissingTerminalUpstreamRepro(t *testing.T) {
 	const model = "gemini-3.1-pro-preview"
 	const partial = `data: {"candidates":[{"content":{"role":"model","parts":[{"text":"partial answer"}]}}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":3,"totalTokenCount":13}}` + "\n\n"

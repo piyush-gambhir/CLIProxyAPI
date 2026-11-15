@@ -102,9 +102,6 @@ func (e *MetaExecutor) prepareResponsesRequest(ctx context.Context, auth *clipro
 	}, nil
 }
 
-
-
-
 func syncMetaPromptCacheRetentionDoc(doc *ojson.Doc, source []byte) bool {
 	if doc == nil {
 		return false
@@ -403,10 +400,6 @@ func (e *MetaExecutor) recordMetaRequest(ctx context.Context, auth *cliproxyauth
 		AuthValue: authValue,
 	})
 }
-
-
-
-
 
 func applyMetaClientIdentity(req *http.Request) {
 	if req == nil {

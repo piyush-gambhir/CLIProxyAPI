@@ -119,7 +119,6 @@ func TestGeminiVertexOpenAPI_ConfigLocationFallback(t *testing.T) {
 		t.Fatalf("attribute location = %q, want us-east5", got)
 	}
 
-
 	var gotPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
@@ -159,7 +158,6 @@ func TestGeminiVertexOpenAPI_ConfigLocationFallback(t *testing.T) {
 	if gotPath != wantPath {
 		t.Fatalf("Execute(fullBase) path = %q, want %q", gotPath, wantPath)
 	}
-
 
 	var saPaths []string
 	saServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

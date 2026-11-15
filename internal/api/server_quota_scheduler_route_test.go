@@ -12,10 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-
-
-
-
 func TestQuotaSchedulerStatusRouteIsRegisteredAndGated(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	path := filepath.Join(t.TempDir(), "config.yaml")

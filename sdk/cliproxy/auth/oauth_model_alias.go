@@ -16,7 +16,6 @@ type modelAliasEntry interface {
 	GetForceMapping() bool
 }
 
-
 type oauthModelAliasEntry struct {
 	upstreamModel string
 	configAlias   string
@@ -24,10 +23,8 @@ type oauthModelAliasEntry struct {
 }
 
 type oauthModelAliasTable struct {
-
 	reverse map[string]map[string]oauthModelAliasEntry
 }
-
 
 type OAuthModelAliasResult struct {
 	UpstreamModel string
@@ -76,9 +73,6 @@ func compileOAuthModelAliasTable(aliases map[string][]internalconfig.OAuthModelA
 	}
 	return out
 }
-
-
-
 
 func (m *Manager) SetOAuthModelAlias(aliases map[string][]internalconfig.OAuthModelAlias) {
 	if m == nil {
@@ -139,8 +133,6 @@ func (m *Manager) configuredOAuthAliasRoutes(auth *Auth) []oauthResolvedAliasRou
 	}
 	return routes
 }
-
-
 
 func (m *Manager) applyOAuthModelAlias(auth *Auth, requestedModel string) string {
 	upstreamModel := m.resolveOAuthUpstreamModel(auth, requestedModel)
@@ -296,13 +288,6 @@ func resolveModelAliasResultFromConfigModels(requestedModel string, models []mod
 	return OAuthModelAliasResult{}
 }
 
-
-
-
-
-
-
-
 func (m *Manager) resolveOAuthUpstreamModel(auth *Auth, requestedModel string) string {
 	result := m.resolveOAuthModelAliasWithResult(auth, requestedModel)
 	return result.UpstreamModel
@@ -326,7 +311,6 @@ func authAttributes(auth *Auth) map[string]string {
 	return auth.Attributes
 }
 
-
 func SetOAuthModelAliasesAttribute(auth *Auth, aliases []internalconfig.OAuthModelAlias) {
 	if auth == nil {
 		return
@@ -344,7 +328,6 @@ func SetOAuthModelAliasesAttribute(auth *Auth, aliases []internalconfig.OAuthMod
 	}
 	auth.Attributes[oauthModelAliasesAttributeKey] = string(data)
 }
-
 
 func OAuthModelAliasesFromAttributes(attributes map[string]string) []internalconfig.OAuthModelAlias {
 	if len(attributes) == 0 {
@@ -503,9 +486,6 @@ func resolveUpstreamModelFromAliasTable(m *Manager, auth *Auth, requestedModel, 
 	return OAuthModelAliasResult{}
 }
 
-
-
-
 func modelAliasChannel(auth *Auth) string {
 	if auth == nil {
 		return ""
@@ -514,12 +494,6 @@ func modelAliasChannel(auth *Auth) string {
 	authKind := auth.AuthKind()
 	return OAuthModelAliasChannel(provider, authKind)
 }
-
-
-
-
-
-
 
 func OAuthModelAliasChannel(provider, authKind string) string {
 	provider = strings.ToLower(strings.TrimSpace(provider))

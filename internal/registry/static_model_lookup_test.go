@@ -65,14 +65,12 @@ func TestLookupStaticModelInfoDevinRefreshAndFallback(t *testing.T) {
 		}
 	}
 
-
 	devinCatalogStore.mu.Lock()
 	devinCatalogStore.models = nil
 	devinCatalogStore.mu.Unlock()
 	if got := LookupStaticModelInfo(legacy.ID); !reflect.DeepEqual(got, legacy) {
 		t.Fatalf("legacy fallback = %+v, want %+v", got, legacy)
 	}
-
 
 	generalWithoutDevin := general
 	generalWithoutDevin.Devin = nil

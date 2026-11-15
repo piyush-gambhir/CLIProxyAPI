@@ -353,7 +353,6 @@ func (e *CodexExecutor) refreshLocked(ctx context.Context, auth *cliproxyauth.Au
 	siwcRefreshed := false
 	var siwcErr error
 
-
 	if needOuter {
 		if homeEnabled {
 			if refreshed, handled, errHome := helps.RefreshAuthViaHome(ctx, cfg, auth); handled {
@@ -458,7 +457,6 @@ func (e *CodexExecutor) refreshLocked(ctx context.Context, auth *cliproxyauth.Au
 			existingSIWC = mergedSIWC
 		}
 	}
-
 
 	if hasPreservedUseSIWC {
 		auth.Metadata["use_siwc"] = preservedUseSIWC

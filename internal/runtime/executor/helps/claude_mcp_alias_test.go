@@ -223,8 +223,6 @@ func assertClaudeMCPAliasWords(t *testing.T, alias string) {
 
 func TestClaudeMCPAliasWordlistIntegrity(t *testing.T) {
 
-
-
 	if got := ClaudeMCPAliasWordCount(); got != 2048 {
 		t.Fatalf("wordlist size = %d, want the 2048-word BIP-39 English dictionary", got)
 	}
@@ -252,8 +250,6 @@ func TestClaudeMCPAliasWordlistIntegrity(t *testing.T) {
 }
 
 func TestAllocateClaudeMCPToolAliasMatchesSingleShotConstruction(t *testing.T) {
-
-
 
 	const secret = "shared-construction"
 	for _, original := range []string{"Bash", "read_file", strings.Repeat("long_tool_name_", 9)} {

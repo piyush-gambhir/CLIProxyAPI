@@ -173,7 +173,6 @@ func TestConvertCodexResponseToGemini_ReasoningThoughtSignature(t *testing.T) {
 			t.Fatalf("thoughtSignature is not the carrier-encoded Meta signature; payload=%s", out)
 		}
 
-
 		var sdkPart struct {
 			ThoughtSignature []byte `json:"thoughtSignature"`
 		}
@@ -269,8 +268,6 @@ func TestConvertCodexResponseToGeminiNonStream_MultiSummaryRoundTrip(t *testing.
 		t.Fatalf("round-trip summaries = %s, want [step A, step B]", reasoning.Get("summary").Raw)
 	}
 
-
-
 	var streamParam any
 	doneOnly := []byte(`data: {"type":"response.output_item.done","item":{"id":"rs_done_only","type":"reasoning","encrypted_content":"` + signature + `","summary":[{"type":"summary_text","text":"done-only thought"}]}}`)
 	doneChunks := ConvertCodexResponseToGemini(ctx, "muse-spark-1.3", nil, nil, doneOnly, &streamParam)
@@ -281,9 +278,6 @@ func TestConvertCodexResponseToGeminiNonStream_MultiSummaryRoundTrip(t *testing.
 	if len(textChunks) != 1 || decodeGeminiCodexThoughtSignature(ojson.GetBytesNoCopy(textChunks[0], "candidates.0.content.parts.0.thoughtSignature").String()) != signature {
 		t.Fatalf("text chunk after done-only reasoning = %q, want carrier signature", textChunks)
 	}
-
-
-
 
 	sig2 := signature + "." + strings.Repeat("Zy9", 21)[:62]
 	var consecutiveParam any
@@ -306,8 +300,6 @@ func TestConvertCodexResponseToGeminiNonStream_MultiSummaryRoundTrip(t *testing.
 	if ojson.GetBytesNoCopy(replayCodex, "input.1.summary.0.text").String() != "first summary" || ojson.GetBytesNoCopy(replayCodex, "input.2.summary.0.text").String() != "second summary" {
 		t.Fatalf("replayed consecutive reasoning items = %s, want separate summaries", replayCodex)
 	}
-
-
 
 	var wsParam any
 	var wsParts []string

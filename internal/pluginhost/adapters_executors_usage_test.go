@@ -389,12 +389,6 @@ func TestExecutorAdapterExecuteStreamPublishesUsage(t *testing.T) {
 	}
 }
 
-
-
-
-
-
-
 func TestExecutorAdapterExecuteStreamSameFormatStripsSSEFraming(t *testing.T) {
 	executorRecord := normalizeTestCapabilityRecord(capabilityRecord{id: "executor-plugin-stream-framing"})
 	host := newHostWithRecords(executorRecord)
@@ -880,7 +874,6 @@ func TestExecutorAdapterExecuteStreamErrorChunkImmediatePublishWithoutClose(t *t
 		t.Fatalf("ExecuteStream returned unexpected error: %v", err)
 	}
 
-
 	go func() {
 		streamChunks <- pluginapi.ExecutorStreamChunk{Err: expectedErr}
 	}()
@@ -889,7 +882,6 @@ func TestExecutorAdapterExecuteStreamErrorChunkImmediatePublishWithoutClose(t *t
 	if chunk.Err == nil || !errors.Is(chunk.Err, expectedErr) {
 		t.Fatalf("expected chunk error %v, got %v", expectedErr, chunk.Err)
 	}
-
 
 	rec := plugin.waitRecord(t, 200*time.Millisecond)
 	if !rec.Failed {
@@ -933,7 +925,6 @@ func TestUsageAdapterRecoversSessionHierarchyFromContext(t *testing.T) {
 		ParentSessionID: "parent-ctx-1",
 	})
 
-
 	adapter.HandleUsage(ctx, coreusage.Record{
 		Provider: "test-provider",
 		Model:    "test-model",
@@ -942,7 +933,6 @@ func TestUsageAdapterRecoversSessionHierarchyFromContext(t *testing.T) {
 	if rec.SessionID != "sess-ctx-1" || rec.ParentSessionID != "parent-ctx-1" {
 		t.Fatalf("recovered session = (%q, %q), want (sess-ctx-1, parent-ctx-1)", rec.SessionID, rec.ParentSessionID)
 	}
-
 
 	ctxLoop := logging.WithClientRequestMetadata(context.Background(), logging.ClientRequestMetadata{
 		SessionID:       "loop-sess",
@@ -971,7 +961,6 @@ func TestUsageAdapterPropagatesNativeKeyAndAccessProvider(t *testing.T) {
 		pluginID: "usage-native-key",
 	}
 
-
 	adapter.HandleUsage(context.Background(), coreusage.Record{
 		Provider:       "test-provider",
 		Model:          "test-model",
@@ -986,7 +975,6 @@ func TestUsageAdapterPropagatesNativeKeyAndAccessProvider(t *testing.T) {
 	if rec.AccessProvider != "config-inline" {
 		t.Fatalf("rec.AccessProvider = %q, want %q", rec.AccessProvider, "config-inline")
 	}
-
 
 	ctx := coreusage.WithAPIKey(context.Background(), "sk-ctx-native")
 	ctx = coreusage.WithAccessProvider(ctx, "config-inline")
@@ -1078,8 +1066,6 @@ func TestExecutorAdapterExecuteStreamLargeSSELineKeepsUsage(t *testing.T) {
 		`","usage":{"input_tokens":7000,"output_tokens":30,"total_tokens":7030}}}` + "\n\n"
 	prefix := "event: response.created\ndata: {\"type\":\"response.created\"}\n\n"
 	whole := prefix + terminal
-
-
 
 	streamChunks := make(chan pluginapi.ExecutorStreamChunk, 4)
 	streamChunks <- pluginapi.ExecutorStreamChunk{Payload: []byte(whole[:66000])}
@@ -1241,7 +1227,6 @@ func TestSchedulerPickAndUsageRecordShareSelectionIDEndToEnd(t *testing.T) {
 		},
 	})
 
-
 	traceCtx := logging.WithRequestID(context.Background(), "trace-429")
 	_, errExec := manager.Execute(traceCtx, []string{provider}, coreexecutor.Request{Model: model}, coreexecutor.Options{
 		Metadata: map[string]any{"mode": "retry-429-once"},
@@ -1267,14 +1252,12 @@ func TestSchedulerPickAndUsageRecordShareSelectionIDEndToEnd(t *testing.T) {
 		t.Fatalf("UsageRecord RequestIDs should remain distinct: %q", rec1.RequestID)
 	}
 
-
 	sharedOpts := coreexecutor.Options{Stream: true, Metadata: map[string]any{"shared": "true"}}
 	streamRes, errStream := manager.ExecuteStream(context.Background(), []string{provider}, coreexecutor.Request{Model: model}, sharedOpts)
 	if errStream != nil {
 		t.Fatalf("ExecuteStream() error = %v", errStream)
 	}
 	streamPickID := <-pickSelectionIDs
-
 
 	if _, errConcurrent := manager.Execute(context.Background(), []string{provider}, coreexecutor.Request{Model: model}, coreexecutor.Options{Metadata: sharedOpts.Metadata}); errConcurrent != nil {
 		t.Fatalf("concurrent Execute() error = %v", errConcurrent)

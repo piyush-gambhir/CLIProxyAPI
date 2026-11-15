@@ -18,7 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 type compressionFrameRecorder struct {
 	net.Conn
 	firstByte chan byte

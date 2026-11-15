@@ -9,21 +9,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
-
-
-
-
 func DoKimiLogin(cfg *config.Config, options *LoginOptions) {
 	doKimiLoginWithProvider(cfg, options, "kimi", "Kimi")
 }
-
-
-
-
-
 
 func DoKimiAILogin(cfg *config.Config, options *LoginOptions) {
 	doKimiLoginWithProvider(cfg, options, "kimi-ai", "Kimi.ai")

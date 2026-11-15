@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-
-
 func devinPatchFramesWithParseError(args, parseErr, trailer string) []byte {
 	var tool []byte
 	tool = protowire.AppendTag(tool, 1, protowire.BytesType)
@@ -117,7 +115,6 @@ func TestDevinApplyPatchRejectionCarriesLogDiagnostic(t *testing.T) {
 				} else {
 					_, errPatch = exec.Execute(t.Context(), auth, req, opts)
 				}
-
 
 				assertTask6PatchError(t, errPatch)
 				var diagnosticErr interface{ LogDiagnostic() string }

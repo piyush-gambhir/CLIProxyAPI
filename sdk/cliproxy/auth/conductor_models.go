@@ -185,9 +185,6 @@ func (m *Manager) executionModelCandidates(auth *Auth, routeModel string) []stri
 	return []string{resolved}
 }
 
-
-
-
 func (m *Manager) ResolveExecutionModel(auth *Auth, routeModel string) string {
 	routeModel = strings.TrimSpace(routeModel)
 	if m == nil {
@@ -279,9 +276,6 @@ func (m *Manager) clientModelProjectionForAuth(auth *Auth, routeModel string, no
 
 	var authFallbackUntil time.Time
 	if len(auth.ModelStates) == 0 {
-
-
-
 
 		if blocked, _, retryAfter := availabilityBlock(auth.Unavailable, auth.Quota.Exceeded, auth.NextRetryAfter, auth.Quota.NextRecoverAt, now); blocked {
 			isSuspended = true
@@ -649,7 +643,6 @@ func (m *Manager) rebuildAPIKeyModelAliasFromRuntimeConfig() {
 	m.rebuildAPIKeyModelAliasLocked(cfg)
 }
 
-
 func (m *Manager) RefreshAPIKeyModelAlias() {
 	m.rebuildAPIKeyModelAliasFromRuntimeConfig()
 }
@@ -800,11 +793,9 @@ func (m *Manager) applyAPIKeyModelAliasWithRouting(routing *apiKeyModelRoutingSn
 		return requestedModel
 	}
 
-
 	if resolved := lookupAPIKeyUpstreamModel(routing, auth.ID, requestedModel); resolved != "" {
 		return resolved
 	}
-
 
 	cfg := routing.config
 	if cfg == nil {
@@ -832,13 +823,11 @@ func (m *Manager) applyAPIKeyModelAliasWithRouting(routing *apiKeyModelRoutingSn
 		upstreamModel = resolveUpstreamModelForOpenAICompatAPIKey(cfg, auth, requestedModel)
 	}
 
-
 	if upstreamModel != "" {
 		return upstreamModel
 	}
 	return requestedModel
 }
-
 
 type APIKeyConfigEntry interface {
 	GetAPIKey() string

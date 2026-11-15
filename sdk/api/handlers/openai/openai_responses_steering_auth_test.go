@@ -618,7 +618,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 		}
 	}
 
-
 	turn1 := `{"type":"response.create","model":"` + modelName + `","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn1)); err != nil {
 		t.Fatal(err)
@@ -629,7 +628,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 		}
 	}
 	assertRewrittenUpstreamFrame("initial response.create")
-
 
 	turn2 := `{"type":"response.create","model":"` + modelName + `","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn2)); err != nil {
@@ -642,7 +640,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 	}
 	assertRewrittenUpstreamFrame("subsequent response.create")
 
-
 	turn3 := `{"type":"response.append","input":[{"role":"developer","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn3)); err != nil {
 		t.Fatal(err)
@@ -653,7 +650,6 @@ func TestResponsesSteeringSubsequentWebsocketMessagesRunRequestInterceptors(t *t
 		}
 	}
 	assertRewrittenUpstreamFrame("subsequent response.append")
-
 
 	turn4 := `{"type":"response.steer","input":[{"role":"user","content":[{"type":"input_text","text":"<environment_context>\n  <current_date>2026-04-19</current_date>\n  <timezone>UTC</timezone>\n</environment_context>"}]}]}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(turn4)); err != nil {

@@ -18,7 +18,6 @@ func init() {
 		},
 	)
 
-
 	sdktranslator.RegisterRequestEnvelope(
 		sdktranslator.FormatOpenAIResponse,
 		sdktranslator.FormatClaude,

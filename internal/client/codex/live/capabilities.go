@@ -16,17 +16,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// HandleTranslation reports that the Codex OAuth upstream has no translation session capability.
 func (h *Handler) HandleTranslation(c *gin.Context) {
 	writeCapabilityNotSupported(c, "Realtime translation sessions")
 }
 
-// HandleTranscriptionSession reports that the Codex OAuth upstream has no transcription-only capability.
 func (h *Handler) HandleTranscriptionSession(c *gin.Context) {
 	writeCapabilityNotSupported(c, "Realtime transcription-only sessions")
 }
 
-// HandleSIPControl reports that the Codex OAuth upstream has no SIP dialog capability.
 func (h *Handler) HandleSIPControl(c *gin.Context) {
 	action := "control"
 	if c != nil && c.Request != nil && c.Request.URL != nil {
@@ -38,7 +35,6 @@ func (h *Handler) HandleSIPControl(c *gin.Context) {
 	writeCapabilityNotSupported(c, "Realtime SIP "+action)
 }
 
-// HandleHangup forwards hangup for a locally created WebRTC call using its pinned OAuth credential.
 func (h *Handler) HandleHangup(c *gin.Context) {
 	if h == nil || h.authManager == nil || h.sessions == nil {
 		writeRealtimeError(c, http.StatusServiceUnavailable, "Codex live session service unavailable", "server_error", "realtime_session_unavailable")

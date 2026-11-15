@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TokenStorage stores xAI OAuth credentials on disk.
 type TokenStorage struct {
 	Type          string `json:"type"`
 	AccessToken   string `json:"access_token"`
@@ -30,12 +29,10 @@ type TokenStorage struct {
 	Metadata map[string]any `json:"-"`
 }
 
-// SetMetadata allows the token store to merge status fields before saving.
 func (ts *TokenStorage) SetMetadata(meta map[string]any) {
 	ts.Metadata = meta
 }
 
-// SaveTokenToFile writes xAI credentials to a JSON auth file.
 func (ts *TokenStorage) SaveTokenToFile(authFilePath string) error {
 	misc.LogSavingCredentials(authFilePath)
 	ts.Type = "xai"

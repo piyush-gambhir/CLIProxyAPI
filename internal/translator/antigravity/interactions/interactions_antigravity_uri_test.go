@@ -20,8 +20,6 @@ func interactionsToAntigravityEnvelope(input string) sdktranslator.RequestEnvelo
 	})
 }
 
-
-
 func interactionsFinalTurnToAntigravity(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToAntigravityEnvelope(`{"model":"m","input":[` + interactionsAntigravityHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }
@@ -39,8 +37,6 @@ func requireInteractionsToAntigravityRefusal(t *testing.T, envelope sdktranslato
 		t.Fatalf("body is not JSON: %q", envelope.Body)
 	}
 }
-
-
 
 func TestInteractionsToAntigravityKeepsTheMediaGeminiToInteractionsWrites(t *testing.T) {
 	envelope := interactionsFinalTurnToAntigravity(`{"type":"image","uri":"gs://b/a.png","mime_type":"image/png"}`)

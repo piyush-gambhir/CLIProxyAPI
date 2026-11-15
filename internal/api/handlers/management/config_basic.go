@@ -44,7 +44,6 @@ func setLatestReleaseRequestHeaders(req *http.Request) {
 	}
 }
 
-
 func (h *Handler) GetLatestVersion(c *gin.Context) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	proxyURL := ""
@@ -180,8 +179,6 @@ func (h *Handler) PutConfigYAML(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true, "changed": []string{"config"}})
 }
 
-
-
 func (h *Handler) GetConfigYAML(c *gin.Context) {
 	data, err := os.ReadFile(h.configFilePath)
 	if err != nil {
@@ -199,10 +196,8 @@ func (h *Handler) GetConfigYAML(c *gin.Context) {
 	_, _ = c.Writer.Write(data)
 }
 
-
 func (h *Handler) GetDebug(c *gin.Context) { c.JSON(200, gin.H{"debug": h.cfg.Debug}) }
 func (h *Handler) PutDebug(c *gin.Context) { h.updateBoolField(c, func(v bool) { h.cfg.Debug = v }) }
-
 
 func (h *Handler) GetUsageStatisticsEnabled(c *gin.Context) {
 	c.JSON(200, gin.H{"usage-statistics-enabled": h.cfg.UsageStatisticsEnabled})
@@ -211,14 +206,12 @@ func (h *Handler) PutUsageStatisticsEnabled(c *gin.Context) {
 	h.updateBoolField(c, func(v bool) { h.cfg.UsageStatisticsEnabled = v })
 }
 
-
 func (h *Handler) GetLoggingToFile(c *gin.Context) {
 	c.JSON(200, gin.H{"logging-to-file": h.cfg.LoggingToFile})
 }
 func (h *Handler) PutLoggingToFile(c *gin.Context) {
 	h.updateBoolField(c, func(v bool) { h.cfg.LoggingToFile = v })
 }
-
 
 func (h *Handler) GetLogsMaxTotalSizeMB(c *gin.Context) {
 	c.JSON(200, gin.H{"logs-max-total-size-mb": h.cfg.LogsMaxTotalSizeMB})
@@ -241,7 +234,6 @@ func (h *Handler) PutLogsMaxTotalSizeMB(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-
 func (h *Handler) GetErrorLogsMaxFiles(c *gin.Context) {
 	c.JSON(200, gin.H{"error-logs-max-files": h.cfg.ErrorLogsMaxFiles})
 }
@@ -263,12 +255,10 @@ func (h *Handler) PutErrorLogsMaxFiles(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-
 func (h *Handler) GetRequestLog(c *gin.Context) { c.JSON(200, gin.H{"request-log": h.cfg.RequestLog}) }
 func (h *Handler) PutRequestLog(c *gin.Context) {
 	h.updateBoolField(c, func(v bool) { h.cfg.RequestLog = v })
 }
-
 
 func (h *Handler) GetWebsocketAuth(c *gin.Context) {
 	c.JSON(200, gin.H{"ws-auth": h.cfg.WebsocketAuth})
@@ -277,14 +267,12 @@ func (h *Handler) PutWebsocketAuth(c *gin.Context) {
 	h.updateBoolField(c, func(v bool) { h.cfg.WebsocketAuth = v })
 }
 
-
 func (h *Handler) GetRequestRetry(c *gin.Context) {
 	c.JSON(200, gin.H{"request-retry": h.cfg.RequestRetry})
 }
 func (h *Handler) PutRequestRetry(c *gin.Context) {
 	h.updateIntField(c, func(v int) { h.cfg.RequestRetry = v })
 }
-
 
 func (h *Handler) GetMaxRetryCredentials(c *gin.Context) {
 	c.JSON(200, gin.H{"max-retry-credentials": h.cfg.MaxRetryCredentials})
@@ -293,14 +281,12 @@ func (h *Handler) PutMaxRetryCredentials(c *gin.Context) {
 	h.updateIntField(c, func(v int) { h.cfg.MaxRetryCredentials = v })
 }
 
-
 func (h *Handler) GetMaxRetryInterval(c *gin.Context) {
 	c.JSON(200, gin.H{"max-retry-interval": h.cfg.MaxRetryInterval})
 }
 func (h *Handler) PutMaxRetryInterval(c *gin.Context) {
 	h.updateIntField(c, func(v int) { h.cfg.MaxRetryInterval = v })
 }
-
 
 func (h *Handler) GetForceModelPrefix(c *gin.Context) {
 	c.JSON(200, gin.H{"force-model-prefix": h.cfg.ForceModelPrefix})
@@ -325,7 +311,6 @@ func normalizeRoutingStrategy(strategy string) (string, bool) {
 		return "", false
 	}
 }
-
 
 func (h *Handler) GetRoutingStrategy(c *gin.Context) {
 	strategy, ok := normalizeRoutingStrategy(h.cfg.Routing.Strategy)
@@ -353,7 +338,6 @@ func (h *Handler) PutRoutingStrategy(c *gin.Context) {
 	h.cfg.Routing.Strategy = normalized
 	h.persistLocked(c)
 }
-
 
 func (h *Handler) GetProxyURL(c *gin.Context) { c.JSON(200, gin.H{"proxy-url": h.cfg.ProxyURL}) }
 func (h *Handler) PutProxyURL(c *gin.Context) {

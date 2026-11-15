@@ -60,11 +60,6 @@ func TestUtlsFallbackProxyConnectionPool(t *testing.T) {
 	}
 }
 
-
-
-
-
-
 func TestUtlsAnthropicTransportPoolsPerCredential(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -94,13 +89,10 @@ func TestUtlsAnthropicTransportPoolsPerCredential(t *testing.T) {
 		t.Fatal("two credentials share one Anthropic transport")
 	}
 
-
 	zero := 0
 	if transport := anthropicTransport("key-a", &cliproxyauth.ProxyConnectionPoolOverride{MaxIdleConnsPerHost: &zero}); !transport.DisableKeepAlives {
 		t.Fatal("max-idle-conns-per-host: 0 must disable keep-alives on the Anthropic transport")
 	}
-
-
 
 	plain := func(id string) *http.Transport {
 		t.Helper()
@@ -118,11 +110,6 @@ func TestUtlsAnthropicTransportPoolsPerCredential(t *testing.T) {
 		t.Fatalf("unpooled Claude Code transport MaxIdleConnsPerHost = %d, want < 0 to disable idle connection reuse", plain("key-a").MaxIdleConnsPerHost)
 	}
 }
-
-
-
-
-
 
 func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *testing.T) {
 	ResetProxyTransports()
@@ -205,8 +192,6 @@ func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *t
 		return append([]bool(nil), reused...)
 	}
 
-
-
 	defaultTransport := newClaudeCodeRoundTripperForDialerAndRoots(dialer, roots)
 	reusedDefault := doTwoRequests(t, defaultTransport)
 	if got := newConns.Load(); got != 2 {
@@ -224,8 +209,6 @@ func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *t
 		}
 	}
 
-
-
 	newConns.Store(0)
 	cfg := testConfig()
 	pooled, ok := pooledTransport(proxyPoolKindClaudeCode, "direct", cfg, poolOptInAuth("claude-key-pooled"), func() (*http.Transport, error) {
@@ -242,10 +225,6 @@ func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *t
 		t.Fatalf("pooled transport GotConn reused = %v, want [false true]", reusedPooled)
 	}
 }
-
-
-
-
 
 func TestUtlsLazyPoolsDoNotEvictUsedPool(t *testing.T) {
 	ResetProxyTransports()

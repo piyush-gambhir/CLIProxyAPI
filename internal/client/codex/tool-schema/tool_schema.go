@@ -18,12 +18,8 @@ import (
 )
 
 const (
-
-
 	codexComplexUnionBranchThreshold = 8
 )
-
-
 
 var codexNumericBoundKeywords = [...]string{
 	"minimum",
@@ -31,7 +27,6 @@ var codexNumericBoundKeywords = [...]string{
 	"exclusiveMinimum",
 	"exclusiveMaximum",
 }
-
 
 func IsCodexUserAgent(headers http.Header) bool {
 	if headers == nil {
@@ -56,7 +51,6 @@ func headerValueCaseInsensitive(headers http.Header, name string) string {
 	}
 	return ""
 }
-
 
 var codexClientToolIntegerFields = map[string]map[string]struct{}{
 	"exec_command": {
@@ -231,9 +225,6 @@ func normalizeCodexToolFieldTypesDoc(doc *ojson.Doc, paramsPath string, params o
 	return changed
 }
 
-
-
-
 func NormalizeCodexToolIntegerTypes(body []byte, headers http.Header) []byte {
 	if len(body) == 0 || !IsCodexUserAgent(headers) {
 		return body
@@ -245,8 +236,6 @@ func NormalizeCodexToolIntegerTypes(body []byte, headers http.Header) []byte {
 	return doc.Bytes()
 }
 
-
-
 func NormalizeCodexToolIntegerTypesDoc(doc *ojson.Doc, headers http.Header) bool {
 	if doc == nil || doc.Len() == 0 || !IsCodexUserAgent(headers) {
 		return false
@@ -254,14 +243,12 @@ func NormalizeCodexToolIntegerTypesDoc(doc *ojson.Doc, headers http.Header) bool
 
 	changed := false
 
-
 	toolsResult := doc.Get("tools")
 	if toolsResult.IsArray() {
 		if normalizeToolIntegerTypesInArrayDoc(doc, toolsResult, "tools", "") {
 			changed = true
 		}
 	}
-
 
 	inputResult := doc.Get("input")
 	if inputResult.IsArray() {
@@ -318,14 +305,12 @@ func normalizeToolIntegerTypesInElementDoc(doc *ojson.Doc, tool ojson.Result, to
 		return false
 	}
 
-
 	for _, declKey := range []string{"function_declarations", "functionDeclarations"} {
 		decls := tool.Get(declKey)
 		if decls.IsArray() {
 			return normalizeToolIntegerTypesInArrayDoc(doc, decls, toolPath+"."+declKey, namespace)
 		}
 	}
-
 
 	toolName := tool.Get("name").String()
 	paramPath := "parameters"
@@ -360,12 +345,6 @@ func normalizeToolIntegerTypesInElementDoc(doc *ojson.Doc, tool ojson.Result, to
 	return normalizeCodexToolFieldTypesDoc(doc, toolPath+"."+paramPath, params, targetFields)
 }
 
-
-
-
-
-
-
 func NormalizeCodexToolSchemas(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -376,8 +355,6 @@ func NormalizeCodexToolSchemas(body []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
-
 
 func NormalizeCodexToolSchemasDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -410,7 +387,6 @@ func normalizeCodexToolListDoc(doc *ojson.Doc, tools ojson.Result, toolsPath str
 	})
 	return changed
 }
-
 
 func NormalizeSingleCodexTool(tool ojson.Result) ([]byte, bool) {
 	if !tool.IsObject() {
@@ -607,7 +583,6 @@ func stripIncompatiblePatterns(v any) bool {
 			}
 		}
 
-
 		if patternProps, ok := schema["patternProperties"].(map[string]any); ok {
 			for patternKey, subSchema := range patternProps {
 				if util.HasUnsupportedUnicodePropertyEscape(patternKey) {
@@ -706,7 +681,6 @@ func normalizeCodexPropertySchemaDoc(doc *ojson.Doc, propPath string, prop ojson
 		constRawValues = append(constRawValues, rawJSON)
 	}
 
-
 	if !pureConsts || len(constRawValues) == 0 {
 		return false
 	}
@@ -727,7 +701,6 @@ func normalizeCodexPropertySchemaDoc(doc *ojson.Doc, propPath string, prop ojson
 		}
 		return false
 	}
-
 
 	rawEnumJSON := "[" + strings.Join(constRawValues, ",") + "]"
 	if errEnum := doc.SetRaw(propPath+".enum", rawEnumJSON); errEnum != nil {
@@ -804,9 +777,6 @@ func equalCanonicalSets(a []string, b []string) bool {
 	}
 	return len(setA) == len(a)
 }
-
-
-
 
 func escapeCodexSjsonKey(key string) string {
 	key = strings.ReplaceAll(key, `\`, `\\`)

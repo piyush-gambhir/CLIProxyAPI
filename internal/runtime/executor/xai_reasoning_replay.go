@@ -69,7 +69,6 @@ func xaiReasoningReplayScopeFromRequestDoc(ctx context.Context, from sdktranslat
 		return xaiReasoningReplayScope{}
 	}
 
-
 	if cliproxyexecutor.DownstreamWebsocket(ctx) && strings.TrimSpace(ojson.GetBytesNoCopy(req.Payload, "previous_response_id").String()) != "" {
 		return xaiReasoningReplayScope{}
 	}
@@ -80,11 +79,6 @@ func xaiReasoningReplayScopeFromRequestDoc(ctx context.Context, from sdktranslat
 		sessionKey: sessionKey,
 	}
 }
-
-
-
-
-
 
 func xaiReasoningReplayIsolateSessionKey(ctx context.Context, sessionKey string) string {
 	sessionKey = strings.TrimSpace(sessionKey)
@@ -314,7 +308,6 @@ func cacheXAIReasoningReplayFromCompleted(ctx context.Context, scope xaiReasonin
 	case internalcache.XAIReasoningReplayStored:
 		return
 	case internalcache.XAIReasoningReplayNoReplayableState:
-
 
 		if errDelete := internalcache.DeleteXAIReasoningReplayItemRequired(ctx, scope.modelName, scope.sessionKey); errDelete != nil {
 			log.Warnf("xai reasoning replay cache delete failed after non-replayable completed output: %v", errDelete)

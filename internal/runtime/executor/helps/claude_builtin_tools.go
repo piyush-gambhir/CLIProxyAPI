@@ -21,9 +21,6 @@ func newClaudeBuiltinToolRegistry() map[string]bool {
 	return registry
 }
 
-
-
-
 func IsClaudeServerToolType(toolType string) bool {
 	toolType = strings.ToLower(strings.TrimSpace(toolType))
 	for _, prefix := range []string{

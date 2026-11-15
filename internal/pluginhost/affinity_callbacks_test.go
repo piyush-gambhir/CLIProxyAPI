@@ -109,7 +109,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			t.Fatalf("callFromPlugin error = %v", errCall)
 		}
 
-
 		rawStr := string(rawResp)
 		for _, sensitive := range []string{"secret-api-key-a", "owner-a@example.com", "claude-owner-a@example.com.json", "/etc/secrets"} {
 			if strings.Contains(rawStr, sensitive) {
@@ -194,7 +193,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			t.Fatalf("initial pick = %s, want %s", picked.ID, authA.ID)
 		}
 
-
 		picked2, _ := selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*coreauth.Auth{authB})
 		if picked2.ID != authB.ID {
 			t.Fatalf("second pick = %s, want %s", picked2.ID, authB.ID)
@@ -220,7 +218,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			Metadata: make(map[string]any),
 		}
 		selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*coreauth.Auth{authA})
-
 
 		reqPayload, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 			Provider:  "anthropic",
@@ -248,7 +245,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 		}
 		selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", optsCodex, []*coreauth.Auth{authB})
 
-
 		reqPayload, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 			Provider:  "anthropic",
 			Model:     "claude-3-7-sonnet",
@@ -259,7 +255,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 		if resp.Status != pluginapi.HostAffinityStatusAmbiguous {
 			t.Fatalf("ambiguous session status = %q, want %q", resp.Status, pluginapi.HostAffinityStatusAmbiguous)
 		}
-
 
 		reqClaude, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 			Provider:  "anthropic",
@@ -331,7 +326,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 					t.Fatalf("pick failed: auth=%v err=%v", picked, errPick)
 				}
 
-
 				reqBare, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 					Provider:  "anthropic",
 					Model:     "claude-3-7-sonnet",
@@ -346,7 +340,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 					t.Fatalf("bare lookup %q: got status=%q index=%q, want bound index=%q", tc.bareID, respBare.Status, respBare.AuthIndex, tc.auth.Index)
 				}
 
-
 				reqQual, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 					Provider:  "anthropic",
 					Model:     "claude-3-7-sonnet",
@@ -359,7 +352,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 				}
 			})
 		}
-
 
 		optsClash1 := cliproxyexecutor.Options{
 			Headers:  map[string][]string{"X-Task-ID": {"shared-clash"}},
@@ -391,7 +383,6 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			Metadata: make(map[string]any),
 		}
 		selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*coreauth.Auth{authA})
-
 
 		authA.Disabled = true
 		manager.Update(context.Background(), authA)

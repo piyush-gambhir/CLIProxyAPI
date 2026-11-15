@@ -20,8 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 func ResolveSIWCBindPath(cfg *config.Config, target string) (string, error) {
 	raw := strings.TrimSpace(target)
 	if raw == "" {
@@ -132,8 +130,6 @@ func saveSIWCToCodexCredentialFile(authFilePath string, siwcData *codex.CodexSIW
 		return codex.WriteJSONFileAtomic(authFilePath, diskMap)
 	})
 }
-
-
 
 func DoSIWCBind(cfg *config.Config, target string, options *LoginOptions) {
 	if cfg == nil {

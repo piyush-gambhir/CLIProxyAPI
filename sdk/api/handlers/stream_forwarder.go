@@ -9,11 +9,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-
-
-
-
-
 func (h *BaseAPIHandler) ExecuteStreamWithPreFTKeepAlive(
 	c *gin.Context,
 	cliCtx context.Context,
@@ -62,7 +57,6 @@ func (h *BaseAPIHandler) ExecuteStreamWithPreFTKeepAlive(
 	}
 }
 
-
 func PendingStreamError(errs <-chan *interfaces.ErrorMessage) (*interfaces.ErrorMessage, bool) {
 	if errs == nil {
 		return nil, false
@@ -78,40 +72,23 @@ func PendingStreamError(errs <-chan *interfaces.ErrorMessage) (*interfaces.Error
 }
 
 type StreamForwardOptions struct {
-
-
 	KeepAliveInterval *time.Duration
-
 
 	WriteChunk func(chunk []byte)
 
-
-
 	ChunkError func() *interfaces.ErrorMessage
-
 
 	ChunkDone func() bool
 
-
 	Flush func() error
-
-
 
 	NormalizeTerminalError func(errMsg *interfaces.ErrorMessage) *interfaces.ErrorMessage
 
-
-
 	WriteTerminalError func(errMsg *interfaces.ErrorMessage)
-
-
 
 	CloseError func() *interfaces.ErrorMessage
 
-
-
 	WriteDone func()
-
-
 
 	WriteKeepAlive func()
 }

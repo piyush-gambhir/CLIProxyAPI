@@ -11,7 +11,6 @@ var exampleAPIKeys = map[string]struct{}{
 	"your-api-key-3": {},
 }
 
-
 func ExampleAPIKeys(keys []string) []string {
 	if len(keys) == 0 {
 		return nil
@@ -36,11 +35,9 @@ func ExampleAPIKeys(keys []string) []string {
 	return matches
 }
 
-
 func HasExampleAPIKeys(keys []string) bool {
 	return len(ExampleAPIKeys(keys)) > 0
 }
-
 
 func ExampleAPIKeyWarningPageHTML(keys []string, managementPath string) string {
 	var b strings.Builder

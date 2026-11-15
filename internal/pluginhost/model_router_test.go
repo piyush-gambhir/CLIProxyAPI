@@ -359,8 +359,6 @@ func TestHostRouteModelSkipsOriginatingPlugin(t *testing.T) {
 	}
 }
 
-
-
 func newHostWithAuthProviders(t *testing.T, providers []string, records ...capabilityRecord) *Host {
 	t.Helper()
 	host := newRouteModelHostWithRecords(records...)
@@ -520,7 +518,6 @@ func TestHostRouteModelSkipsExecutorWithoutProviderIdentifier(t *testing.T) {
 			id:       "no-provider",
 			priority: 10,
 			plugin: pluginapi.Plugin{Capabilities: pluginapi.Capabilities{
-
 
 				Executor: &fakeExecutor{identifierFunc: func() string { return "" }},
 				ModelRouter: modelRouterFunc(func(ctx context.Context, req pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, error) {

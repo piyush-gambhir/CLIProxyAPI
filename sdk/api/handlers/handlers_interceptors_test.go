@@ -101,16 +101,12 @@ func (h *handlerInterceptorTestHost) ObserveWebSocketResponseEvent(ctx context.C
 	}
 }
 
-
-
 func (h *handlerInterceptorTestHost) StreamChunkPayloadIncludesRequestBody() bool {
 	if h == nil {
 		return false
 	}
 	return h.includeStreamChunkRequestBodies
 }
-
-
 
 func (h *handlerInterceptorTestHost) StreamChunkPayloadIncludesHistory() bool {
 	if h == nil {
@@ -229,9 +225,6 @@ func contextWithHeaders(headers http.Header) context.Context {
 	}
 	return context.WithValue(context.Background(), "gin", c)
 }
-
-
-
 
 func contextWithQuery(query url.Values) context.Context {
 	gin.SetMode(gin.TestMode)
@@ -1705,7 +1698,6 @@ func TestRequestAfterAuthCapture_ReadOnlyInterceptorDoesNotReallocatePayload_Iss
 	opts := coreexecutor.Options{
 		OriginalRequest: payload,
 	}
-
 
 	capture.record(coreexecutor.RequestAfterAuthInterceptRequest{
 		Body: payload,

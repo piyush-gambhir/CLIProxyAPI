@@ -47,7 +47,6 @@ func TestParseConfigBytes_ServerKVStoreV8AndLegacy(t *testing.T) {
 func TestParseConfigBytes_ServerKVStoreDefaultsAndEffectivePath(t *testing.T) {
 	wantDefaultAuthPath := filepath.Join(DefaultAuthDir, DefaultKVStorePath)
 
-
 	omittedCfg, errOmitted := ParseConfigBytes([]byte("config-version: 8\nserver:\n  port: 8317\n"))
 	if errOmitted != nil {
 		t.Fatalf("ParseConfigBytes(omitted) error = %v", errOmitted)
@@ -62,7 +61,6 @@ func TestParseConfigBytes_ServerKVStoreDefaultsAndEffectivePath(t *testing.T) {
 		t.Fatalf("omittedCfg.EffectiveKVStorePath() = %q, want %q", got, wantDefaultAuthPath)
 	}
 
-
 	customAuthCfg, errCustomAuth := ParseConfigBytes([]byte("config-version: 8\noauth:\n  auth-dir: /tmp/custom-auth\n"))
 	if errCustomAuth != nil {
 		t.Fatalf("ParseConfigBytes(custom auth-dir) error = %v", errCustomAuth)
@@ -71,7 +69,6 @@ func TestParseConfigBytes_ServerKVStoreDefaultsAndEffectivePath(t *testing.T) {
 	if got := customAuthCfg.EffectiveKVStorePath(); got != wantCustomAuthPath {
 		t.Fatalf("customAuthCfg.EffectiveKVStorePath() = %q, want %q", got, wantCustomAuthPath)
 	}
-
 
 	explicitPathCfg, errExplicitPath := ParseConfigBytes([]byte("config-version: 8\noauth:\n  auth-dir: /tmp/custom-auth\nserver:\n  kv-store:\n    path: /var/data/custom.db\n"))
 	if errExplicitPath != nil {
@@ -83,7 +80,6 @@ func TestParseConfigBytes_ServerKVStoreDefaultsAndEffectivePath(t *testing.T) {
 	if got := explicitPathCfg.EffectiveKVStorePath(); got != "/var/data/custom.db" {
 		t.Fatalf("explicitPathCfg.EffectiveKVStorePath() = %q, want /var/data/custom.db", got)
 	}
-
 
 	blankYAML := "config-version: 8\noauth:\n  auth-dir: /tmp/blank-auth\nserver:\n  kv-store:\n    disabled: false\n    path: \"   \"\n"
 	blankCfg, errBlank := ParseConfigBytes([]byte(blankYAML))
@@ -110,12 +106,10 @@ func TestParseConfigBytes_ServerKVStoreDefaultsAndEffectivePath(t *testing.T) {
 		t.Fatalf("loadedCfg.EffectiveKVStorePath() = %q, want %q", got, wantBlankAuthPath)
 	}
 
-
 	var nilCfg *Config
 	if got := nilCfg.EffectiveKVStorePath(); got != wantDefaultAuthPath {
 		t.Fatalf("nilCfg.EffectiveKVStorePath() = %q, want %q", got, wantDefaultAuthPath)
 	}
-
 
 	if got := (KVStoreConfig{Path: "   "}).EffectivePath(); got != DefaultKVStorePath {
 		t.Fatalf("EffectivePath(blank) = %q, want %q", got, DefaultKVStorePath)

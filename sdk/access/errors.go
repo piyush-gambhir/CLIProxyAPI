@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-
 type AuthErrorCode string
 
 const (
@@ -17,7 +16,6 @@ const (
 	AuthErrorCodeRequestTooLarge   AuthErrorCode = "request_too_large"
 	AuthErrorCodeInternal          AuthErrorCode = "internal_error"
 )
-
 
 type AuthError struct {
 	Code       AuthErrorCode
@@ -46,7 +44,6 @@ func (e *AuthError) Unwrap() error {
 	}
 	return e.Cause
 }
-
 
 func (e *AuthError) HTTPStatusCode() int {
 	if e == nil || e.StatusCode <= 0 {
@@ -92,7 +89,6 @@ func NewDeniedError(message string, statusCode int) *AuthError {
 	}
 	return newAuthError(AuthErrorCodeDenied, normalizedMessage, statusCode, nil)
 }
-
 
 func NewRequestEntityTooLargeError(cause error) *AuthError {
 	return newAuthError(AuthErrorCodeRequestTooLarge, "http: request body too large", http.StatusRequestEntityTooLarge, cause)

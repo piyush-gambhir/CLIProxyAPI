@@ -12,32 +12,25 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-
-
 func ComputeOpenAICompatModelsHash(models []config.OpenAICompatibilityModel) string {
 	return modelconfig.ComputeOpenAICompatModelsHash(models)
 }
-
 
 func ComputeVertexCompatModelsHash(models []config.VertexCompatModel) string {
 	return modelconfig.ComputeVertexCompatModelsHash(models)
 }
 
-
 func ComputeClaudeModelsHash(models []config.ClaudeModel) string {
 	return modelconfig.ComputeClaudeModelsHash(models)
 }
-
 
 func ComputeCodexModelsHash(models []config.CodexModel) string {
 	return modelconfig.ComputeCodexModelsHash(models)
 }
 
-
 func ComputeGeminiModelsHash(models []config.GeminiModel) string {
 	return modelconfig.ComputeGeminiModelsHash(models)
 }
-
 
 func ComputeExcludedModelsHash(excluded []string) string {
 	if len(excluded) == 0 {

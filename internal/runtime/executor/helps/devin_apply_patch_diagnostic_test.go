@@ -104,15 +104,12 @@ func TestDevinApplyPatchDiagnosticsBounded(t *testing.T) {
 		t.Fatalf("diagnostic described more than one call: %s", got)
 	}
 
-
 	latest := NewDevinApplyPatchDiagnostics([]byte(devinDiagnosticPatchRequest))
 	latest.Observe(0, DevinToolCallDelta{Name: "apply_patch", Arguments: `{"input":"a"}`})
 	latest.Observe(1, DevinToolCallDelta{Name: "apply_patch", Arguments: `{"input":`})
 	if got := latest.Render(nil, ""); !strings.Contains(got, "call[1]={invalid_json_str=false bytes=9 shape=json_object}") {
 		t.Fatalf("latest call not described: %s", got)
 	}
-
-
 
 	if noPatch := NewDevinApplyPatchDiagnostics([]byte(`{"tools":[{"type":"function","name":"apply_patch"}]}`)); noPatch != nil {
 		t.Fatalf("expected nil diagnostics when custom apply_patch is not requested")

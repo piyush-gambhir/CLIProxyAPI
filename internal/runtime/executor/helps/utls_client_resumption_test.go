@@ -17,14 +17,9 @@ import (
 	tls "github.com/refraction-networking/utls"
 )
 
-
-
 func newResumptionTestCertificate(t *testing.T) gotls.Certificate {
 	return newResumptionTestCertificateAt(t, time.Now())
 }
-
-
-
 
 func newResumptionTestCertificateAt(t *testing.T, now time.Time) gotls.Certificate {
 	t.Helper()
@@ -52,10 +47,6 @@ func newResumptionTestCertificateAt(t *testing.T, now time.Time) gotls.Certifica
 	}
 	return gotls.Certificate{Certificate: [][]byte{der}, PrivateKey: key, Leaf: leaf}
 }
-
-
-
-
 
 func TestClaudeCodeTLSSessionResumptionCompletesHandshake(t *testing.T) {
 	certificate := newResumptionTestCertificate(t)
@@ -88,7 +79,6 @@ func TestClaudeCodeTLSSessionResumptionCompletesHandshake(t *testing.T) {
 					_ = conn.Close()
 					return
 				}
-
 
 				_, _ = server.Write([]byte("ok\n"))
 				_, _ = server.Read(make([]byte, 8))
@@ -134,8 +124,6 @@ func TestClaudeCodeTLSSessionResumptionCompletesHandshake(t *testing.T) {
 	if !secondResumed {
 		t.Fatal("second handshake did not resume, so the session cache is not effective")
 	}
-
-
 
 	if firstLength != secondLength {
 		t.Fatalf("resumed ClientHello length = %d, want %d to match the fresh handshake", secondLength, firstLength)

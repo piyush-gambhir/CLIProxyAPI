@@ -1,8 +1,3 @@
-
-
-
-
-
 package gemini
 
 import (
@@ -22,11 +17,6 @@ var (
 	dataTag = []byte("data:")
 )
 
-
-
-
-
-
 type ConvertAnthropicResponseToGeminiParams struct {
 	Model             string
 	CreatedAt         int64
@@ -34,26 +24,10 @@ type ConvertAnthropicResponseToGeminiParams struct {
 	LastStorageOutput []byte
 	IsStreaming       bool
 
-
-
 	ToolUseNames map[int]string
 	ToolUseArgs  map[int]*strings.Builder
 	ToolUseIDs   map[int]string
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func ConvertClaudeResponseToGemini(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
@@ -72,20 +46,16 @@ func ConvertClaudeResponseToGemini(_ context.Context, modelName string, original
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	eventType := root.Get("type").String()
 
-
 	templateDoc := ojson.NewDoc([]byte(`{"candidates":[{"content":{"role":"model","parts":[]}}],"usageMetadata":{"trafficType":"PROVISIONED_THROUGHPUT"},"modelVersion":"","createTime":"","responseId":""}`))
-
 
 	if (*param).(*ConvertAnthropicResponseToGeminiParams).Model != "" {
 
 		_ = templateDoc.Set("modelVersion", (*param).(*ConvertAnthropicResponseToGeminiParams).Model)
 	}
 
-
 	if (*param).(*ConvertAnthropicResponseToGeminiParams).ResponseID != "" {
 		_ = templateDoc.Set("responseId", (*param).(*ConvertAnthropicResponseToGeminiParams).ResponseID)
 	}
-
 
 	if (*param).(*ConvertAnthropicResponseToGeminiParams).CreatedAt == 0 {
 		(*param).(*ConvertAnthropicResponseToGeminiParams).CreatedAt = time.Now().Unix()
@@ -181,7 +151,6 @@ func ConvertClaudeResponseToGemini(_ context.Context, modelName string, original
 
 		idx := int(root.Get("index").Int())
 
-
 		name := ""
 		if (*param).(*ConvertAnthropicResponseToGeminiParams).ToolUseNames != nil {
 			name = (*param).(*ConvertAnthropicResponseToGeminiParams).ToolUseNames[idx]
@@ -249,11 +218,9 @@ func ConvertClaudeResponseToGemini(_ context.Context, modelName string, original
 			inputTokens := usage.Get("input_tokens").Int()
 			outputTokens := usage.Get("output_tokens").Int()
 
-
 			_ = templateDoc.Set("usageMetadata.promptTokenCount", inputTokens)
 			_ = templateDoc.Set("usageMetadata.candidatesTokenCount", outputTokens)
 			_ = templateDoc.Set("usageMetadata.totalTokenCount", inputTokens+outputTokens)
-
 
 			if cacheCreationTokens := usage.Get("cache_creation_input_tokens"); cacheCreationTokens.Exists() {
 				_ = templateDoc.Set("usageMetadata.cachedContentTokenCount", cacheCreationTokens.Int())
@@ -265,11 +232,9 @@ func ConvertClaudeResponseToGemini(_ context.Context, modelName string, original
 				_ = templateDoc.Set("usageMetadata.cachedContentTokenCount", totalCacheTokens)
 			}
 
-
 			if thinkingTokens := usage.Get("thinking_tokens"); thinkingTokens.Exists() {
 				_ = templateDoc.Set("usageMetadata.thoughtsTokenCount", thinkingTokens.Int())
 			}
-
 
 			_ = templateDoc.Set("usageMetadata.trafficType", "PROVISIONED_THROUGHPUT")
 		}
@@ -286,7 +251,6 @@ func ConvertClaudeResponseToGemini(_ context.Context, modelName string, original
 			errorMsg = "Unknown error occurred"
 		}
 
-
 		errorResponse := []byte(`{"error":{"code":400,"message":"","status":"INVALID_ARGUMENT"}}`)
 		errorResponse, _ = ojson.SetBytes(errorResponse, "error.message", errorMsg)
 		return [][]byte{errorResponse}
@@ -297,23 +261,9 @@ func ConvertClaudeResponseToGemini(_ context.Context, modelName string, original
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 
 	templateDoc := ojson.NewDoc([]byte(`{"candidates":[{"content":{"role":"model","parts":[]},"finishReason":"STOP"}],"usageMetadata":{"trafficType":"PROVISIONED_THROUGHPUT"},"modelVersion":"","createTime":"","responseId":""}`))
-
 
 	_ = templateDoc.Set("modelVersion", modelName)
 
@@ -336,9 +286,6 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 		}
 	}
 
-
-
-
 	newParam := &ConvertAnthropicResponseToGeminiParams{
 		Model:             modelName,
 		CreatedAt:         0,
@@ -349,7 +296,6 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 		ToolUseArgs:       nil,
 		ToolUseIDs:        nil,
 	}
-
 
 	var allParts [][]byte
 	var finalUsageJSON []byte
@@ -371,7 +317,6 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 				responseID = message.Get("id").String()
 				newParam.ResponseID = responseID
 				newParam.Model = message.Get("model").String()
-
 
 				createdAt = time.Now().Unix()
 				newParam.CreatedAt = createdAt
@@ -448,7 +393,6 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 
 			idx := int(root.Get("index").Int())
 
-
 			name := ""
 			if newParam.ToolUseNames != nil {
 				name = newParam.ToolUseNames[idx]
@@ -492,15 +436,12 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 			if usage := root.Get("usage"); usage.Exists() {
 				usageDoc := ojson.NewDoc([]byte(`{}`))
 
-
 				inputTokens := usage.Get("input_tokens").Int()
 				outputTokens := usage.Get("output_tokens").Int()
-
 
 				_ = usageDoc.Set("promptTokenCount", inputTokens)
 				_ = usageDoc.Set("candidatesTokenCount", outputTokens)
 				_ = usageDoc.Set("totalTokenCount", inputTokens+outputTokens)
-
 
 				if cacheCreationTokens := usage.Get("cache_creation_input_tokens"); cacheCreationTokens.Exists() {
 					_ = usageDoc.Set("cachedContentTokenCount", cacheCreationTokens.Int())
@@ -512,11 +453,9 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 					_ = usageDoc.Set("cachedContentTokenCount", totalCacheTokens)
 				}
 
-
 				if thinkingTokens := usage.Get("thinking_tokens"); thinkingTokens.Exists() {
 					_ = usageDoc.Set("thoughtsTokenCount", thinkingTokens.Int())
 				}
-
 
 				_ = usageDoc.Set("trafficType", "PROVISIONED_THROUGHPUT")
 
@@ -525,7 +464,6 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 		}
 	}
 
-
 	if responseID != "" {
 		_ = templateDoc.Set("responseId", responseID)
 	}
@@ -533,14 +471,11 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 		_ = templateDoc.Set("createTime", time.Unix(createdAt, 0).Format(time.RFC3339Nano))
 	}
 
-
 	consolidatedParts := consolidateParts(allParts)
-
 
 	if len(consolidatedParts) > 0 {
 		_ = templateDoc.SetRawBytes("candidates.0.content.parts", translatorcommon.JoinRawArray(consolidatedParts))
 	}
-
 
 	if len(finalUsageJSON) > 0 {
 		_ = templateDoc.SetRawBytes("usageMetadata", finalUsageJSON)
@@ -552,8 +487,6 @@ func ConvertClaudeResponseToGeminiNonStream(_ context.Context, modelName string,
 func GeminiTokenCount(ctx context.Context, count int64) []byte {
 	return translatorcommon.GeminiTokenCountJSON(count)
 }
-
-
 
 func geminiCompatibleThoughtSignaturePart(rawSignature string) []byte {
 	signature := sigcompat.GeminiReplaySignatureOrBypass(rawSignature, sigcompat.SignatureBlockKindGeminiModelPart)
@@ -571,10 +504,6 @@ func geminiCompatibleThoughtSignaturePart(rawSignature string) []byte {
 	_ = partDoc.Set("thoughtSignature", signature)
 	return partDoc.Bytes()
 }
-
-
-
-
 
 func consolidateParts(parts [][]byte) [][]byte {
 	if len(parts) == 0 {
@@ -649,7 +578,6 @@ func consolidateParts(parts [][]byte) [][]byte {
 			consolidated = append(consolidated, partJSON)
 		}
 	}
-
 
 	flushThought()
 	flushText()

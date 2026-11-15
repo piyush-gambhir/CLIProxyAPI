@@ -32,17 +32,13 @@ type antigravityCompactionCapsuleData struct {
 	CreatedAt int64  `json:"created_at"`
 }
 
-
 func RecognizedAntigravityCompactionCapsule(encryptedContent string) bool {
 	return strings.HasPrefix(strings.TrimSpace(encryptedContent), antigravityCompactionCapsulePrefix)
 }
 
-
 func RecognizedResponsesCompactionResponseID(responseID string) bool {
 	return strings.HasPrefix(strings.TrimSpace(responseID), antigravityCompactionResponseIDPrefix)
 }
-
-
 
 func HasResponsesCompactionConversationInput(payload []byte) bool {
 	input := ojson.GetBytesNoCopy(payload, "input")
@@ -73,7 +69,6 @@ func isRecognizedCPACompactionItem(item ojson.Result) bool {
 	return strings.HasPrefix(strings.TrimSpace(item.Get("id").String()), antigravityCompactionItemIDPrefix)
 }
 
-
 func HasRecognizedResponsesCompactionItem(payload []byte) bool {
 	input := ojson.GetBytesNoCopy(payload, "input")
 	if !input.IsArray() {
@@ -86,7 +81,6 @@ func HasRecognizedResponsesCompactionItem(payload []byte) bool {
 	}
 	return false
 }
-
 
 func HasResponsesCompactionTrigger(payload []byte) bool {
 	input := ojson.GetBytesNoCopy(payload, "input")
@@ -101,7 +95,6 @@ func HasResponsesCompactionTrigger(payload []byte) bool {
 	return false
 }
 
-
 func HasResponsesCompactionItem(payload []byte) bool {
 	input := ojson.GetBytesNoCopy(payload, "input")
 	if !input.IsArray() {
@@ -115,11 +108,9 @@ func HasResponsesCompactionItem(payload []byte) bool {
 	return false
 }
 
-
 func HasResponsesCompactionTriggerRequest(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) bool {
 	return HasResponsesCompactionTrigger(req.Payload) || HasResponsesCompactionTrigger(opts.OriginalRequest)
 }
-
 
 func ResponsesCompactionSourcePayload(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) []byte {
 	payload := req.Payload
@@ -132,7 +123,6 @@ func ResponsesCompactionSourcePayload(req cliproxyexecutor.Request, opts cliprox
 	return payload
 }
 
-
 func DropForeignResponsesCompactionItems(payload []byte, provider string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -143,7 +133,6 @@ func DropForeignResponsesCompactionItems(payload []byte, provider string) []byte
 	}
 	return doc.Bytes()
 }
-
 
 func DropForeignResponsesCompactionItemsDoc(doc *ojson.Doc, provider string) bool {
 	if doc == nil || doc.Len() == 0 {
@@ -168,7 +157,6 @@ func DropForeignResponsesCompactionItemsDoc(doc *ojson.Doc, provider string) boo
 	log.Warnf("%s compaction: dropped %d non-CPA compaction item(s)", provider, dropped)
 	return doc.SetRaw("input", "["+strings.Join(items, ",")+"]") == nil
 }
-
 
 func ExpandResponsesCompactionCapsules(req *cliproxyexecutor.Request, opts *cliproxyexecutor.Options, provider string) error {
 	sameOriginal := req != nil && opts != nil && len(opts.OriginalRequest) > 0 && bytes.Equal(req.Payload, opts.OriginalRequest)
@@ -201,7 +189,6 @@ func ExpandResponsesCompactionCapsules(req *cliproxyexecutor.Request, opts *clip
 	return nil
 }
 
-
 func ExpandRecognizedResponsesCompactionCapsules(req *cliproxyexecutor.Request, opts *cliproxyexecutor.Options) error {
 	sameOriginal := req != nil && opts != nil && len(opts.OriginalRequest) > 0 && bytes.Equal(req.Payload, opts.OriginalRequest)
 	if req != nil && HasRecognizedResponsesCompactionItem(req.Payload) {
@@ -227,7 +214,6 @@ func ExpandRecognizedResponsesCompactionCapsules(req *cliproxyexecutor.Request, 
 	return nil
 }
 
-
 func PrepareAntigravityCompactionSummaryPayload(payload []byte, modelName string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -236,7 +222,6 @@ func PrepareAntigravityCompactionSummaryPayload(payload []byte, modelName string
 	PrepareAntigravityCompactionSummaryPayloadDoc(doc, modelName)
 	return doc.Bytes()
 }
-
 
 func PrepareAntigravityCompactionSummaryPayloadDoc(doc *ojson.Doc, modelName string) {
 	if doc == nil || doc.Len() == 0 {
@@ -267,7 +252,6 @@ func PrepareAntigravityCompactionSummaryPayloadDoc(doc *ojson.Doc, modelName str
 		_ = doc.SetRaw("input", newInput)
 	}
 
-
 	for _, field := range []string{
 		"type",
 		"event_id",
@@ -287,12 +271,10 @@ func PrepareAntigravityCompactionSummaryPayloadDoc(doc *ojson.Doc, modelName str
 	_ = doc.Set("stream", false)
 }
 
-
 func deriveAntigravityCompactionKey() []byte {
 	h := sha256.Sum256([]byte(fixedCompactionKeySecret))
 	return h[:]
 }
-
 
 func SealAntigravityCompaction(summary, modelName string) (string, error) {
 	data := antigravityCompactionCapsuleData{
@@ -324,7 +306,6 @@ func SealAntigravityCompaction(summary, modelName string) (string, error) {
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 	return antigravityCompactionCapsulePrefix + base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
-
 
 func UnsealAntigravityCompaction(encryptedContent string) (string, error) {
 	encryptedContent = strings.TrimSpace(encryptedContent)
@@ -367,7 +348,6 @@ func UnsealAntigravityCompaction(encryptedContent string) (string, error) {
 	return data.Summary, nil
 }
 
-
 func ExpandAntigravityCompactionCapsules(payload []byte) ([]byte, error) {
 	if len(payload) == 0 {
 		return payload, nil
@@ -382,7 +362,6 @@ func ExpandAntigravityCompactionCapsules(payload []byte) ([]byte, error) {
 	}
 	return doc.Bytes(), nil
 }
-
 
 func ExpandAntigravityCompactionCapsulesDoc(doc *ojson.Doc) (bool, error) {
 	if doc == nil || doc.Len() == 0 {
@@ -423,7 +402,6 @@ func ExpandAntigravityCompactionCapsulesDoc(doc *ojson.Doc) (bool, error) {
 	return true, nil
 }
 
-
 func ExpandRecognizedAntigravityCompactionCapsules(payload []byte) ([]byte, error) {
 	if len(payload) == 0 {
 		return payload, nil
@@ -438,7 +416,6 @@ func ExpandRecognizedAntigravityCompactionCapsules(payload []byte) ([]byte, erro
 	}
 	return doc.Bytes(), nil
 }
-
 
 func ExpandRecognizedAntigravityCompactionCapsulesDoc(doc *ojson.Doc) (bool, error) {
 	if doc == nil || doc.Len() == 0 {
@@ -479,7 +456,6 @@ func ExpandRecognizedAntigravityCompactionCapsulesDoc(doc *ojson.Doc) (bool, err
 	return true, nil
 }
 
-
 func ExtractAntigravitySummaryText(respPayload []byte) (string, error) {
 
 	output := ojson.GetBytesNoCopy(respPayload, "output")
@@ -507,7 +483,6 @@ func ExtractAntigravitySummaryText(respPayload []byte) (string, error) {
 		}
 	}
 
-
 	candidates := ojson.GetBytesNoCopy(respPayload, "response.candidates")
 	if !candidates.Exists() {
 		candidates = ojson.GetBytesNoCopy(respPayload, "candidates")
@@ -530,7 +505,6 @@ func ExtractAntigravitySummaryText(respPayload []byte) (string, error) {
 		}
 	}
 
-
 	content := ojson.GetBytesNoCopy(respPayload, "content")
 	if content.IsArray() {
 		var textParts []string
@@ -546,14 +520,12 @@ func ExtractAntigravitySummaryText(respPayload []byte) (string, error) {
 		}
 	}
 
-
 	if text := ojson.GetBytesNoCopy(respPayload, "choices.0.message.content").String(); text != "" {
 		return strings.Clone(text), nil
 	}
 
 	return "", fmt.Errorf("no summary text found in upstream response")
 }
-
 
 func BuildAntigravityCompactionStreamChunks(modelName, capsule string, inputTokens, outputTokens, totalTokens int) [][]byte {
 	now := time.Now().Unix()
@@ -623,7 +595,6 @@ func BuildAntigravityCompactionStreamChunks(modelName, capsule string, inputToke
 	return frames
 }
 
-
 func BuildAntigravityCompactionResponse(modelName, capsule string, inputTokens, outputTokens, totalTokens int) []byte {
 	now := time.Now().Unix()
 	responseID := fmt.Sprintf("resp_ag_compact_%d", time.Now().UnixNano())
@@ -648,7 +619,6 @@ func BuildAntigravityCompactionResponse(modelName, capsule string, inputTokens, 
 	return respDoc.Bytes()
 }
 
-
 func ExtractResponsesCompactionUsage(payload []byte) (inputTokens, outputTokens, totalTokens, cachedTokens, reasoningTokens int) {
 	if detail, ok := ParseCodexUsage(payload); ok && (detail.TotalTokens > 0 || detail.InputTokens > 0 || detail.OutputTokens > 0) {
 		return int(detail.InputTokens), int(detail.OutputTokens), int(detail.TotalTokens), int(detail.CachedTokens), int(detail.ReasoningTokens)
@@ -656,7 +626,6 @@ func ExtractResponsesCompactionUsage(payload []byte) (inputTokens, outputTokens,
 	parsed := ParseOpenAIUsage(payload)
 	return int(parsed.InputTokens), int(parsed.OutputTokens), int(parsed.TotalTokens), int(parsed.CachedTokens), int(parsed.ReasoningTokens)
 }
-
 
 func PatchResponsesCompactionStreamUsage(chunk []byte, inputTokens, outputTokens, totalTokens, cachedTokens, reasoningTokens int) []byte {
 	const dataPrefix = "data: "
@@ -688,7 +657,6 @@ func PatchResponsesCompactionStreamUsage(chunk []byte, inputTokens, outputTokens
 	return buf.Bytes()
 }
 
-
 func ValidateResponsesCompactionSummaryStatus(summaryPayload []byte) error {
 	status := strings.ToLower(strings.TrimSpace(ojson.GetBytesNoCopy(summaryPayload, "status").String()))
 	if status == "" {
@@ -719,7 +687,6 @@ func ValidateResponsesCompactionSummaryStatus(summaryPayload []byte) error {
 	return nil
 }
 
-
 func BuildResponsesCompactionResponseFromSummary(modelName string, summaryPayload []byte) ([]byte, error) {
 	if errStatus := ValidateResponsesCompactionSummaryStatus(summaryPayload); errStatus != nil {
 		return nil, errStatus
@@ -739,7 +706,6 @@ func BuildResponsesCompactionResponseFromSummary(modelName string, summaryPayloa
 	_ = respDoc.Set("usage.output_tokens_details.reasoning_tokens", reasoningTokens)
 	return respDoc.Bytes(), nil
 }
-
 
 func BuildResponsesCompactionStreamChunksFromResponse(modelName string, compactionPayload []byte) ([][]byte, error) {
 	item := ojson.GetBytesNoCopy(compactionPayload, "output.0")

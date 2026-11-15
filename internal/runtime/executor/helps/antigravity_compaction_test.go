@@ -31,13 +31,11 @@ func TestAntigravityCompactionSealAndUnseal(t *testing.T) {
 		t.Fatalf("summary mismatch: got %q, want %q", gotSummary, summary)
 	}
 
-
 	tampered := capsule[:len(capsule)-4] + "AAAA"
 	_, errTampered := UnsealAntigravityCompaction(tampered)
 	if errTampered == nil {
 		t.Fatal("expected error when decrypting tampered capsule, got nil")
 	}
-
 
 	_, errPrefix := UnsealAntigravityCompaction("invalid-prefix:abc")
 	if errPrefix == nil {
@@ -51,7 +49,6 @@ func TestAntigravityCompactionPersistentSecretAcrossAccountSwitch(t *testing.T) 
 	if errSeal != nil {
 		t.Fatalf("seal before failover: %v", errSeal)
 	}
-
 
 	summaryAfterSwitch, errUnseal := UnsealAntigravityCompaction(capsule)
 	if errUnseal != nil {
@@ -196,7 +193,6 @@ func TestExpandAntigravityCompactionCapsules(t *testing.T) {
 		t.Fatalf("expected original summary preserved without corruption, got: %q", expandedText)
 	}
 
-
 	badPayload := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -235,7 +231,6 @@ func TestExtractAntigravitySummaryText_ReasoningBeforeMessage(t *testing.T) {
 	if text != "This is the actual summary text." {
 		t.Fatalf("expected actual summary text, got %q", text)
 	}
-
 
 	emptyResp := []byte(`{"output": [{"type": "reasoning"}]}`)
 	_, errEmpty := ExtractAntigravitySummaryText(emptyResp)

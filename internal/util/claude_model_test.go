@@ -15,17 +15,14 @@ func TestIsClaudeThinkingModel(t *testing.T) {
 		{"Claude-Sonnet-Thinking uppercase", "Claude-Sonnet-4-5-Thinking", true},
 		{"claude thinking mixed case", "Claude-THINKING-Model", true},
 
-
 		{"claude-sonnet-4-5 (no thinking)", "claude-sonnet-4-5", false},
 		{"claude-opus-4-5 (no thinking)", "claude-opus-4-5", false},
 		{"claude-3-5-sonnet", "claude-3-5-sonnet-20240620", false},
-
 
 		{"gemini-3-pro-preview", "gemini-3-pro-preview", false},
 		{"gemini-thinking model", "gemini-3-pro-thinking", false},
 		{"gpt-4o", "gpt-4o", false},
 		{"empty string", "", false},
-
 
 		{"thinking without claude", "thinking-model", false},
 		{"claude without thinking", "claude-model", false},

@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-
-
-
-
 var claudePerMinuteBodyRequests = []byte(
 	`{"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed the requests per minute rate limit. Please try again later."}}`,
 )
@@ -57,7 +53,6 @@ func TestParseClaudeRateLimitResetForError_Issue6720(t *testing.T) {
 			h["anthropic-ratelimit-unified-status"] = []string{"", "rejected"}
 		}, wantMin: 4*time.Hour + time.Second, wantMax: 4*time.Hour + 30*time.Second},
 
-
 		{name: "allowed shared window already excludes unified reset", body: claudePerMinuteBodyRequests, mutate: func(h http.Header) {
 			h.Set("Anthropic-Ratelimit-Unified-5h-Status", "allowed")
 		}, wantMin: 31 * time.Second, wantMax: 60 * time.Second},
@@ -75,7 +70,6 @@ func TestParseClaudeRateLimitResetForError_Issue6720(t *testing.T) {
 			h["retry-after"] = []string{"30"}
 			h["anthropic-ratelimit-unified-reset"] = []string{unifiedReset}
 		}, wantMin: 31 * time.Second, wantMax: 60 * time.Second},
-
 
 		{name: "differently cased unified resets all excluded", body: claudePerMinuteBodyRequests, mutate: func(h http.Header) {
 			h["anthropic-ratelimit-unified-reset"] = []string{strconv.FormatInt(now.Add(2*time.Hour).Unix(), 10)}

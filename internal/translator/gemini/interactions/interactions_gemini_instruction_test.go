@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// geminiInstructionSteps are developer and system steps in the shapes an
-// Interactions client can send. Each one carries the text "note".
 var geminiInstructionSteps = map[string]string{
 	"developer user_input":     `{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}`,
 	"system user_input":        `{"type":"user_input","role":"system","content":[{"type":"text","text":"note"}]}`,
@@ -17,7 +15,6 @@ var geminiInstructionSteps = map[string]string{
 	"developer wrapper":        `{"role":"developer","steps":[{"type":"user_input","content":[{"type":"text","text":"note"}]}]}`,
 }
 
-// geminiEmptiedStep is a user step whose only part Gemini cannot carry.
 const geminiEmptiedStep = `{"type":"user_input","content":[{"type":"document","uri":"gs://b/a.pdf"}]}`
 
 func TestInteractionsToGeminiDeveloperOrSystemStepDoesNotHideAnEmptiedUserTurn(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-
 func (s *weightedPoolState) currentForTest() map[string]int64 {
 	current := make(map[string]int64, len(s.members))
 	for _, member := range s.members {
@@ -32,8 +31,6 @@ func (s *weightedPoolState) hasCurrentForTest() bool {
 	}
 	return false
 }
-
-
 
 func TestWeightedPoolDigestCollisionIsolation(t *testing.T) {
 	for _, unrelated := range []*weightedPoolState{

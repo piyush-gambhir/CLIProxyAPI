@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-
 type disabledRefreshOutcomeExecutor struct {
 	mockOAuthErrorExecutor
 	extendExpiry bool

@@ -17,8 +17,6 @@ type claudeMetadataUserID struct {
 	SessionID   string `json:"session_id"`
 }
 
-
-
 func generateFakeUserID() string {
 	return generateFakeUserIDWithSessionID(uuid.New().String())
 }
@@ -36,7 +34,6 @@ func generateFakeUserIDWithSessionID(sessionID string) string {
 	})
 	return string(value)
 }
-
 
 func isValidUserID(userID string) bool {
 	var value claudeMetadataUserID

@@ -36,7 +36,6 @@ func TestManagerLogin_PreservesExistingAuthFileMetadata(t *testing.T) {
 	fileName := "demo.json"
 	filePath := filepath.Join(authDir, fileName)
 
-
 	existing := map[string]any{
 		"type":         "demo",
 		"email":        "user@example.com",
@@ -277,8 +276,6 @@ func TestManagerLogin_SubjectOnlyReloginKeepsEmailCredential(t *testing.T) {
 		t.Fatalf("write canonical credential: %v", errWrite)
 	}
 
-
-
 	subjectFileName := xaiauth.CredentialFileName("", "sub-first")
 	newRecord := &coreauth.Auth{
 		ID:       subjectFileName,
@@ -325,9 +322,6 @@ func TestManagerLogin_SubjectOnlyReloginKeepsEmailCredential(t *testing.T) {
 	if len(entries) != 1 {
 		t.Fatalf("auth dir holds %d files, want the single canonical credential", len(entries))
 	}
-
-
-
 
 	returnRecord := &coreauth.Auth{
 		ID:       emailFileName,

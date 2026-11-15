@@ -17,8 +17,6 @@ import (
 
 const trafficAuthID = "traffic.json"
 
-
-
 type afterSaveStore struct {
 	*sdkauth.FileTokenStore
 	afterSave func()
@@ -38,7 +36,6 @@ func (s *afterSaveStore) Save(ctx context.Context, auth *coreauth.Auth) (string,
 	return path, errSave
 }
 
-
 func newTrafficManager(t *testing.T) (*coreauth.Manager, *afterSaveStore, string) {
 	t.Helper()
 	dir := t.TempDir()
@@ -54,8 +51,6 @@ func newTrafficManager(t *testing.T) (*coreauth.Manager, *afterSaveStore, string
 	}
 	return manager, store, path
 }
-
-
 
 func readTrafficSnapshot(t *testing.T, path, excluded string) *coreauth.Auth {
 	t.Helper()
@@ -76,8 +71,6 @@ func readTrafficSnapshot(t *testing.T, path, excluded string) *coreauth.Auth {
 	return auths[0]
 }
 
-
-
 func requireDiscarded(t *testing.T, manager *coreauth.Manager, snapshot *coreauth.Auth) *coreauth.Auth {
 	t.Helper()
 	before, _ := manager.GetByID(snapshot.ID)
@@ -88,7 +81,6 @@ func requireDiscarded(t *testing.T, manager *coreauth.Manager, snapshot *coreaut
 	}
 	return current
 }
-
 
 func requireApplied(t *testing.T, manager *coreauth.Manager, snapshot *coreauth.Auth) {
 	t.Helper()
@@ -124,7 +116,6 @@ func diskField(t *testing.T, path, key string) any {
 	return content[key]
 }
 
-
 func assertResultRuntimeState(t *testing.T, got, want *coreauth.Auth) {
 	t.Helper()
 	if want.Status != coreauth.StatusError || want.LastError == nil || !want.Unavailable || !want.Quota.Exceeded || len(want.ModelStates) != 1 {
@@ -153,8 +144,6 @@ func assertResultRuntimeState(t *testing.T, got, want *coreauth.Auth) {
 	}
 }
 
-
-
 func TestFileSnapshotAppliedAfterNoOpResultSave(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -179,9 +168,6 @@ func TestFileSnapshotAppliedAfterNoOpResultSave(t *testing.T) {
 	}
 }
 
-
-
-
 func TestFileSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -197,8 +183,6 @@ func TestFileSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	}
 	assertResultRuntimeState(t, got, want)
 }
-
-
 
 func TestFileSnapshotAppliesExternalEditAfterResultSave(t *testing.T) {
 	ctx := context.Background()
@@ -218,9 +202,6 @@ func TestFileSnapshotAppliesExternalEditAfterResultSave(t *testing.T) {
 		t.Fatalf("disk prefix after the next request = %v, want pfx-ext", prefix)
 	}
 }
-
-
-
 
 func TestFileSnapshotFencedByContentWriteAmidResults(t *testing.T) {
 	ctx := context.Background()
@@ -257,8 +238,6 @@ func TestFileSnapshotFencedByContentWriteAmidResults(t *testing.T) {
 	}
 }
 
-
-
 func TestFileSnapshotFencedByDisableToggle(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -277,8 +256,6 @@ func TestFileSnapshotFencedByDisableToggle(t *testing.T) {
 		t.Fatal("snapshot read before the disable enabled the auth again")
 	}
 }
-
-
 
 func TestFileSnapshotAppliedAfterFailedSave(t *testing.T) {
 	ctx := context.Background()
@@ -300,9 +277,6 @@ func TestFileSnapshotAppliedAfterFailedSave(t *testing.T) {
 		t.Fatalf("runtime prefix = %q excluded_models = %q, want the file's pfx-1 and new-model", got.Prefix, got.Attributes["excluded_models"])
 	}
 }
-
-
-
 
 func TestFileSnapshotFencedByWriteOutsideManager(t *testing.T) {
 	ctx := context.Background()

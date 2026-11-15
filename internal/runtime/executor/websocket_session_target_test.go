@@ -233,9 +233,6 @@ func TestWebsocketRetryBindFailureClearsActiveSessionState(t *testing.T) {
 			var connections atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-
-
-
 				connection := connections.Add(1)
 				conn, errUpgrade := upgrader.Upgrade(w, r, nil)
 				if errUpgrade != nil {

@@ -69,7 +69,6 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 	fileName := "codex-user@example.com.json"
 	filePath := filepath.Join(authDir, fileName)
 
-
 	initialContent := map[string]any{
 		"type":          "codex",
 		"email":         "user@example.com",
@@ -97,7 +96,6 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 		AuthDir: authDir,
 	}
 	h := NewHandler(cfg, "", nil)
-
 
 	tokenStorage := &codex.CodexTokenStorage{
 		Type:         "codex",
@@ -136,14 +134,12 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 		t.Fatalf("Unmarshal error: %v", errUnmarshal)
 	}
 
-
 	if saved["access_token"] != "new-access-token" {
 		t.Errorf("access_token = %v, want new-access-token", saved["access_token"])
 	}
 	if saved["refresh_token"] != "new-refresh-token" {
 		t.Errorf("refresh_token = %v, want new-refresh-token", saved["refresh_token"])
 	}
-
 
 	if saved["prefix"] != "custom-prefix" {
 		t.Errorf("prefix = %v, want custom-prefix", saved["prefix"])
@@ -415,8 +411,6 @@ func TestSaveTokenRecord_SubjectOnlyReloginKeepsEmailCredential(t *testing.T) {
 		t.Fatalf("write canonical credential: %v", errWrite)
 	}
 
-
-
 	tokenStorage := &xai.TokenStorage{
 		AccessToken:  "new-token",
 		RefreshToken: "new-refresh",
@@ -502,7 +496,6 @@ func TestPatchAuthFileFields_DeletesPluginFields(t *testing.T) {
 
 	cfg := &config.Config{AuthDir: authDir}
 	h := NewHandlerWithoutConfigFilePath(cfg, manager)
-
 
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)

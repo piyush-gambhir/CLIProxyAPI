@@ -57,9 +57,6 @@ func codexAPIKeyTestAuth(baseURL string) *cliproxyauth.Auth {
 	}
 }
 
-
-
-
 func TestCodexExecutorRoutingHintCarriesRequestedTier(t *testing.T) {
 	const fastClaude = `{"model":"gpt-5.5","max_tokens":64,"speed":"fast","messages":[{"role":"user","content":"hi"}]}`
 	const plainClaude = `{"model":"gpt-5.5","max_tokens":64,"messages":[{"role":"user","content":"hi"}]}`

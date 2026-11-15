@@ -1,4 +1,3 @@
-// Package live forwards Codex realtime WebRTC session bootstrap requests.
 package live
 
 import (
@@ -45,7 +44,6 @@ var liveProtocolHeaders = []string{
 	"X-Oai-Attestation",
 }
 
-// Handler forwards Codex live session requests through the shared auth scheduler.
 type Handler struct {
 	authManager          *auth.Manager
 	cfg                  *config.Config
@@ -60,7 +58,6 @@ type Handler struct {
 	mediaLimiter         *mediaSessionLimiter
 }
 
-// NewHandler creates a Codex live session handler.
 func NewHandler(authManager *auth.Manager, cfg *config.Config) *Handler {
 	handler := &Handler{
 		authManager:        authManager,
@@ -75,7 +72,6 @@ func NewHandler(authManager *auth.Manager, cfg *config.Config) *Handler {
 	return handler
 }
 
-// UpdateConfig atomically applies Codex Live media relay settings to new sessions.
 func (h *Handler) UpdateConfig(cfg *config.Config) error {
 	if h == nil {
 		return nil
@@ -166,7 +162,6 @@ func (h *Handler) currentMediaRelay() (mediaRelayFactory, error) {
 	return relay, relayErr
 }
 
-// Close releases all active Codex live sessions.
 func (h *Handler) Close() {
 	if h == nil {
 		return
@@ -179,7 +174,6 @@ func (h *Handler) Close() {
 	}
 }
 
-// Handle forwards a WebRTC SDP bootstrap request to the Codex realtime calls endpoint.
 func (h *Handler) Handle(c *gin.Context) {
 	if h == nil || h.authManager == nil {
 		writeLiveError(c, http.StatusServiceUnavailable, "Codex auth manager unavailable")
@@ -439,7 +433,7 @@ func (h *Handler) Handle(c *gin.Context) {
 					}
 				}
 				if errBind := selection.Bind(func() error {
-					// End outside the resource closer to avoid waiting on the closer itself.
+
 					go selection.End("session_drained")
 					return nil
 				}); errBind != nil {

@@ -68,15 +68,7 @@ func translateCodexRequestPairWithUpdateIntentContext(ctx context.Context, from,
 	return originalTranslated, body, changed, err
 }
 
-
-
 const codexMinOutputTokens = 16
-
-
-
-
-
-
 
 func normalizeCodexOutputBudgetDoc(doc *ojson.Doc) {
 	if doc == nil {
@@ -92,7 +84,6 @@ func normalizeCodexOutputBudgetDoc(doc *ojson.Doc) {
 	}
 	_ = doc.Set("max_output_tokens", codexMinOutputTokens)
 }
-
 
 func (e *CodexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
@@ -122,7 +113,6 @@ func (e *CodexExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Aut
 	alignCodexContentEncoding(req)
 	return nil
 }
-
 
 func (e *CodexExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
@@ -230,7 +220,6 @@ func (e *CodexExecutor) cacheHelperDoc(ctx context.Context, from sdktranslator.F
 	return httpReq, rawJSON, nil
 }
 
-
 func alignCodexContentEncoding(req *http.Request) {
 	if req == nil || req.GetBody == nil {
 		return
@@ -314,7 +303,6 @@ func decodeCodexUpstreamResponse(resp *http.Response) error {
 	return nil
 }
 
-
 func doCodexRequest(client *http.Client, req *http.Request, upstreamBody []byte, prepareHeaders func(*http.Request), responseReady func(*http.Response)) (*http.Response, error) {
 	alignCodexContentEncoding(req)
 	compressed := req.Header.Get("Content-Encoding") == "zstd"
@@ -365,7 +353,6 @@ func applyCodexHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, s
 	applyCodexHeadersWithSIWC(r, auth, codexUseSIWCForRequest(r.Context(), auth, ginHeaders), token, stream, cfg, ginHeaders)
 }
 
-
 func applyModelHeaderOverrides(headers http.Header, modelName string) {
 	if headers == nil {
 		return
@@ -381,8 +368,6 @@ func applyModelHeaderOverrides(headers http.Header, modelName string) {
 		headers.Set("Session_id", uuid.NewString())
 	}
 }
-
-
 
 func applyCodexDirectImageHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, stream bool, cfg *config.Config, clientHeaders ...http.Header) {
 	var ginHeaders http.Header
@@ -489,10 +474,6 @@ func stripCodexSIWCUnsupportedFieldsDoc(doc *ojson.Doc, hasExplicitInstructions 
 		return false
 	}
 
-
-
-
-
 	thinking.CollapseConfigurationUpdatesDoc(doc, len(opts) > 0 && opts[0].KeepTopLevelEffort)
 	_ = doc.Delete("prompt_cache_retention")
 	_ = doc.Delete("prompt_cache_options")
@@ -584,22 +565,6 @@ func applyCodexHeadersWithSIWC(r *http.Request, auth *cliproxyauth.Auth, useSIWC
 
 const codexRoutingHintHeader = "X-Codex-Routing-Hint"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func applyCodexRoutingHint(ctx context.Context, headers http.Header, auth *cliproxyauth.Auth, baseModel string, upstreamBody []byte, clientHeaders http.Header) {
 	if codexAuthUsesAPIKey(auth) || codexUseSIWCForRequest(ctx, auth, clientHeaders) {
 		return
@@ -621,9 +586,6 @@ func applyCodexRoutingHint(ctx context.Context, headers http.Header, auth *clipr
 	}
 	headers.Set(codexRoutingHintHeader, hint)
 }
-
-
-
 
 func codexOperatorHeaderValue(ctx context.Context, auth *cliproxyauth.Auth, clientHeaders http.Header, name string) string {
 	if auth == nil || len(auth.Attributes) == 0 {
@@ -705,11 +667,6 @@ func isCodexWebSearchToolType(toolType string) bool {
 		return false
 	}
 }
-
-
-
-
-
 
 func ensureWebSearchToolForHistory(body []byte, headers http.Header) []byte {
 	if !bytes.Contains(body, []byte("web_search_call")) {
@@ -876,9 +833,6 @@ func resolveCodexGPTImage2BaseModel(cfg *config.Config) string {
 	}
 	return model
 }
-
-
-
 
 func normalizeCodexImageGenerationToolsDoc(doc *ojson.Doc) bool {
 	if doc == nil {

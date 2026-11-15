@@ -31,9 +31,6 @@ var newDevinOAuthService = func(cfg *config.Config) devinOAuthService {
 	return devin.NewDevinAuthService(client)
 }
 
-
-
-
 func (h *Handler) devinCallbackURL() (string, error) {
 	cfg := h.configSnapshot()
 	if h == nil || cfg == nil || cfg.Port <= 0 {
@@ -41,7 +38,6 @@ func (h *Handler) devinCallbackURL() (string, error) {
 	}
 	return fmt.Sprintf("http://127.0.0.1:%d/callback", cfg.Port), nil
 }
-
 
 func (h *Handler) RequestDevinToken(c *gin.Context) {
 	redirectURI, errRedirect := h.devinCallbackURL()

@@ -29,8 +29,6 @@ func buildExecutionPlansForExecute(cfg pluginConfig, req pluginapi.ModelRouteReq
 	return executionPlansForExecuteRoute(cfg, req, route)
 }
 
-
-
 func executionPlansForExecuteRoute(cfg pluginConfig, req pluginapi.ModelRouteRequest, route string) []executionPlan {
 	backend := routeBackend(strings.TrimSpace(route))
 	if !backendRunnableLenient(backend, cfg, req) {
@@ -151,7 +149,6 @@ func runWebSearchWithExecutionFallback(ctx context.Context, exec pluginapi.Execu
 	}
 	return runOrderedExecutionPlans(ctx, exec, hostCallbackID, cfg, buildExecutionPlansForExecute(cfg, req), false)
 }
-
 
 func runWebSearchStreamWithExecutionFallback(ctx context.Context, exec pluginapi.ExecutorRequest, hostCallbackID string) ([]byte, http.Header, error) {
 	cfg := loadedConfig()

@@ -16,8 +16,6 @@ import (
 	translator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestCodexDuplexAutomaticSuccessorMetadata(t *testing.T) {
 	for _, scenario := range []string{"completed", "incomplete", "early_tool_result", "failed_steering", "multiple_steers", "create_before_steer"} {
 		t.Run(scenario, func(t *testing.T) {

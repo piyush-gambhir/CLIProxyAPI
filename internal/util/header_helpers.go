@@ -10,15 +10,12 @@ import (
 
 type sessionIDContextKey struct{}
 
-
-
 func WithSessionID(ctx context.Context, sessionID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, sessionIDContextKey{}, strings.TrimSpace(sessionID))
 }
-
 
 func SessionIDFromContext(ctx context.Context) string {
 	if ctx == nil {
@@ -30,8 +27,6 @@ func SessionIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-
-
 func HasExplicitSessionID(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -40,10 +35,7 @@ func HasExplicitSessionID(ctx context.Context) bool {
 	return ok
 }
 
-
 var SessionIDResolver func(ctx context.Context, clientHeaders http.Header) string
-
-
 
 func ResolveClientHeaders(r *http.Request, clientHeaders ...http.Header) http.Header {
 	if len(clientHeaders) > 0 && clientHeaders[0] != nil {
@@ -60,14 +52,6 @@ func ResolveClientHeaders(r *http.Request, clientHeaders ...http.Header) http.He
 	}
 	return nil
 }
-
-
-
-
-
-
-
-
 
 func ApplyCustomHeadersFromAttrs(r *http.Request, attrs map[string]string, clientHeaders ...http.Header) {
 	if r == nil {
@@ -211,10 +195,6 @@ func applyCustomHeaders(r *http.Request, headers map[string]string) {
 		if k == "" || v == "" {
 			continue
 		}
-
-
-
-
 
 		if http.CanonicalHeaderKey(k) == "Host" {
 			r.Host = v

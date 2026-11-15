@@ -18,8 +18,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
-
 func TestModelRegistrationDroppedForGlobalExclusionsIsReplacedWithoutWatcher(t *testing.T) {
 	models := registry.GetClaudeModels()
 	if len(models) < 2 {
@@ -62,7 +60,6 @@ func TestModelRegistrationDroppedForGlobalExclusionsIsReplacedWithoutWatcher(t *
 	}()
 	t.Cleanup(func() { releaseOld(); <-oldDone })
 	<-oldStarted
-
 
 	commit := service.commitConfigUpdate(newCfg)
 	if commit.cfg == nil {
@@ -261,7 +258,6 @@ func TestModelRegistrationRejectsObsoleteGlobalExclusions(t *testing.T) {
 				}()
 				t.Cleanup(func() { releaseOld(); <-oldDone })
 				<-oldStarted
-
 
 				if commit := service.commitConfigUpdate(newCfg); commit.cfg == nil {
 					t.Fatal("config update was rejected")

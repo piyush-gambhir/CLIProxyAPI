@@ -8,7 +8,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
 type SummaryMode int
 
 const (
@@ -17,19 +16,10 @@ const (
 	SummaryEnabled
 )
 
-
-
 type SummaryConfig struct {
 	Mode   SummaryMode
 	Detail string
 }
-
-
-
-
-
-
-
 
 func ExtractSummaryConfig(body []byte, format string) SummaryConfig {
 	normalized := strings.ToLower(strings.TrimSpace(format))
@@ -41,7 +31,6 @@ func ExtractSummaryConfig(body []byte, format string) SummaryConfig {
 		return ojson.GetBytesNoCopy(body, path)
 	}, normalized)
 }
-
 
 func ExtractSummaryConfigDoc(doc *ojson.Doc, format string) SummaryConfig {
 	return extractSummaryConfigDoc(doc, true, format)
@@ -114,8 +103,6 @@ func extractSummaryConfigFromGetter(get func(string) ojson.Result, normalized st
 			}
 		}
 
-
-
 		if config, ok := interactionsSummaryConfigFromGetter(get, "reasoning.summary"); ok {
 			return config
 		}
@@ -132,10 +119,6 @@ func extractSummaryConfigFromGetter(get func(string) ojson.Result, normalized st
 	return SummaryConfig{}
 }
 
-
-
-
-
 func ExtractExplicitSummaryConfig(body []byte, format string) SummaryConfig {
 	normalized := strings.ToLower(strings.TrimSpace(format))
 	if normalized != "openai" {
@@ -150,7 +133,6 @@ func ExtractExplicitSummaryConfig(body []byte, format string) SummaryConfig {
 	return config
 }
 
-
 func ExtractExplicitSummaryConfigDoc(doc *ojson.Doc, format string) SummaryConfig {
 	normalized := strings.ToLower(strings.TrimSpace(format))
 	if normalized != "openai" {
@@ -163,9 +145,6 @@ func ExtractExplicitSummaryConfigDoc(doc *ojson.Doc, format string) SummaryConfi
 	return config
 }
 
-
-
-
 func ExtractTranslatedSummaryConfig(body []byte, sourceFormat, targetFormat string) SummaryConfig {
 	source := strings.ToLower(strings.TrimSpace(sourceFormat))
 	target := strings.ToLower(strings.TrimSpace(targetFormat))
@@ -175,9 +154,6 @@ func ExtractTranslatedSummaryConfig(body []byte, sourceFormat, targetFormat stri
 	return ExtractSummaryConfig(body, source)
 }
 
-
-
-
 func ApplyTranslatedSummaryToClaude(out, source []byte, sourceFormat, model string) []byte {
 	config := ExtractTranslatedSummaryConfig(source, sourceFormat, "claude")
 	if config.Mode == SummaryUnspecified {
@@ -186,24 +162,17 @@ func ApplyTranslatedSummaryToClaude(out, source []byte, sourceFormat, model stri
 	return ApplySummaryConfigForModel(out, "claude", model, config)
 }
 
-
 func ApplySummaryConfig(body []byte, format string, config SummaryConfig) []byte {
 	return ApplySummaryConfigForModel(body, format, "", config)
 }
-
-
-
 
 func ApplySummaryConfigForModel(body []byte, format, model string, config SummaryConfig) []byte {
 	return applySummaryConfigForModel(body, format, model, nil, config)
 }
 
-
 func ApplySummaryConfigForModelDoc(doc *ojson.Doc, format, model string, config SummaryConfig) {
 	_ = applySummaryConfigForProviderDoc(doc, true, format, model, "", nil, config)
 }
-
-
 
 func CanRepresentSummaryConfigForModelDoc(doc *ojson.Doc, format, model string, config SummaryConfig) bool {
 	normalized := strings.ToLower(strings.TrimSpace(format))
@@ -281,13 +250,9 @@ func extractExplicitSummaryNonBoolOpenAIFromGetter(get func(string) ojson.Result
 	return false
 }
 
-
-
 func applySummaryConfigForModel(body []byte, format, model string, modelInfo *registry.ModelInfo, config SummaryConfig) []byte {
 	return applySummaryConfigForProvider(body, format, model, "", modelInfo, config)
 }
-
-
 
 func applySummaryConfigForProvider(body []byte, format, model, provider string, modelInfo *registry.ModelInfo, config SummaryConfig) []byte {
 	normalized := strings.ToLower(strings.TrimSpace(format))
@@ -359,7 +324,6 @@ func applySummaryConfigForProviderDoc(doc *ojson.Doc, docValid bool, format, mod
 		}
 	case "interactions":
 
-
 		value := "none"
 		if enabled {
 			value = "auto"
@@ -381,7 +345,6 @@ func applySummaryConfigForProviderDoc(doc *ojson.Doc, docValid bool, format, mod
 			break
 		}
 
-
 		if doc.Get("reasoning.summary").Exists() && util.DeleteJSONDocIfExists(doc, "reasoning.summary") == nil {
 			modified = true
 		}
@@ -396,8 +359,6 @@ func applySummaryConfigForProviderDoc(doc *ojson.Doc, docValid bool, format, mod
 	}
 	return modified
 }
-
-
 
 func summaryFormatSupported(format string) bool {
 	switch format {

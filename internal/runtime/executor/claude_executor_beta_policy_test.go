@@ -27,9 +27,6 @@ func claudeOAuthAuthForBetaPolicy() *cliproxyauth.Auth {
 	}
 }
 
-
-
-
 func TestApplyClaudeHeaders_ConfirmedClientKeepsOAuthCredentialBetas(t *testing.T) {
 	incoming := http.Header{}
 	incoming.Set("Anthropic-Beta", claudeCodeBeta+",interleaved-thinking-2025-05-14,"+claudeEffortBeta)
@@ -77,7 +74,6 @@ func TestApplyClaudeHeaders_ConfirmedAPIKeyClientKeepsPurePassthrough(t *testing
 	}
 }
 
-
 func TestApplyClaudeHeaders_UnknownBodyBetaPreservedOnAnthropic(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": "key-body-beta"}}
 	req := newClaudeHeaderTestRequest(t, nil)
@@ -102,8 +98,6 @@ func TestApplyClaudeHeaders_KnownBodyBetaStillPlacedOnAnthropic(t *testing.T) {
 	}
 }
 
-
-
 func TestApplyClaudeHeaders_CustomHeadersCannotOverrideAnthropicIdentity(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{
 		"api_key":                "key-custom-headers",
@@ -125,10 +119,6 @@ func TestApplyClaudeHeaders_CustomHeadersCannotOverrideAnthropicIdentity(t *test
 		}
 	}
 }
-
-
-
-
 
 func TestClaudeExecutor_ContextManagementNeverLeaksToOtherUpstreams(t *testing.T) {
 	var upstreamBody []byte
@@ -179,8 +169,6 @@ func TestIsAnthropicUpstreamBase(t *testing.T) {
 	}
 }
 
-
-
 func TestApplyClaudeHeaders_FastModeBetaMatchesAcrossStreamModes(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": "key-fast-parity"}}
 	body := []byte(`{"model":"claude-opus-5","speed":"fast"}`)
@@ -201,8 +189,6 @@ func TestApplyClaudeHeaders_FastModeBetaMatchesAcrossStreamModes(t *testing.T) {
 		t.Fatalf("stream and non-stream disagree:\n non-stream %q\n stream     %q", seen[0], seen[1])
 	}
 }
-
-
 
 func TestApplyClaudeHeaders_FastModePrecedesOAuthTrailer(t *testing.T) {
 	req := newClaudeHeaderTestRequest(t, nil)
@@ -239,13 +225,7 @@ func TestApplyClaudeHeaders_DiagnosticsBetaFollowsBodyInNativeOrder(t *testing.T
 	}
 }
 
-
-
-
-
-
 func TestClassifyClaudeUpstreamError_FastModeCreditsIsRequestScoped(t *testing.T) {
-
 
 	bodies := [][]byte{
 		[]byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Usage credits are required for fast mode."}}`),
@@ -263,13 +243,11 @@ func TestClassifyClaudeUpstreamError_FastModeCreditsIsRequestScoped(t *testing.T
 			t.Fatalf("status was not preserved for the caller: %v", err)
 		}
 
-
 		if err.Error() != string(body) {
 			t.Fatalf("body was rewritten:\n got  %s\n want %s", err.Error(), body)
 		}
 	}
 }
-
 
 func TestClassifyClaudeUpstreamError_RealRateLimitStaysCredentialScoped(t *testing.T) {
 	cases := [][]byte{
@@ -286,7 +264,6 @@ func TestClassifyClaudeUpstreamError_RealRateLimitStaysCredentialScoped(t *testi
 
 func TestClassifyClaudeUpstreamError_OtherStatusesUnaffected(t *testing.T) {
 	body := []byte(`{"error":{"message":"Usage credits are required for fast mode."}}`)
-
 
 	err := classifyClaudeUpstreamError(http.StatusInternalServerError, nil, body)
 	if scoped, ok := err.(cliproxyexecutor.RequestScopedError); ok && scoped.IsRequestScoped() {
@@ -523,9 +500,6 @@ func TestApplyClaudeHeaders_StructuredHelperBetaOrderPreservedWithAdvisor(t *tes
 		t.Fatalf("helper Anthropic-Beta =\n got:  %q\n want: %q", got, helperBeta)
 	}
 }
-
-
-
 
 func TestApplyClaudeHeaders_BlockBindingBodyAlwaysGetsBindingBeta(t *testing.T) {
 	body := []byte(`{"model":"claude-haiku-5-5","thinking":{"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"drop_block"}},"messages":[{"role":"user","content":"hi"}]}`)

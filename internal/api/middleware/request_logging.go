@@ -1,6 +1,3 @@
-
-
-
 package middleware
 
 import (
@@ -28,10 +25,6 @@ const (
 	authenticatedRequestBodyCapturerContextKey string = "CPA_AUTHENTICATED_REQUEST_BODY_CAPTURER"
 )
 
-
-
-
-
 func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if logger == nil {
@@ -54,13 +47,11 @@ func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 		hasMatchedRoute := c.FullPath() != ""
 		captureBody := hasMatchedRoute && shouldCaptureRequestBody(loggerEnabled, c.Request)
 
-
 		requestInfo, err := captureRequestInfo(c, false)
 		if err != nil {
 			c.Next()
 			return
 		}
-
 
 		wrapper := NewResponseWriterWrapper(c.Writer, logger, requestInfo)
 		wrapper.ginContext = c
@@ -92,8 +83,6 @@ func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 			})
 		}
 
-
-
 		defer func() {
 			recovered := recover()
 			if recovered != nil && !isAbortHandlerPanic(recovered) {
@@ -107,13 +96,11 @@ func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 			}
 			if errFinalize := wrapper.Finalize(c); errFinalize != nil {
 
-
 			}
 			if recovered != nil {
 				panic(recovered)
 			}
 		}()
-
 
 		c.Next()
 	}
@@ -127,8 +114,6 @@ func isAbortHandlerPanic(recovered any) bool {
 type fileBodySourceFactory interface {
 	NewFileBodySource(prefix string) (*logging.FileBodySource, error)
 }
-
-
 
 func CaptureAuthenticatedRequestBody(c *gin.Context) {
 	if c == nil {
@@ -408,9 +393,6 @@ func shouldCaptureRequestBody(loggerEnabled bool, req *http.Request) bool {
 	return req != nil && req.Body != nil
 }
 
-
-
-
 func captureRequestInfo(c *gin.Context, captureBody bool) (*RequestInfo, error) {
 
 	maskedQuery := util.MaskSensitiveQuery(c.Request.URL.RawQuery)
@@ -419,9 +401,7 @@ func captureRequestInfo(c *gin.Context, captureBody bool) (*RequestInfo, error) 
 		url += "?" + maskedQuery
 	}
 
-
 	method := c.Request.Method
-
 
 	var headers map[string][]string
 	if c.Request.Header != nil {
@@ -454,7 +434,6 @@ func captureRequestInfoBody(c *gin.Context, info *RequestInfo) error {
 		return err
 	}
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
 
 	maxBytes := c.GetInt64("maxRequestBodyBytes")
 	if maxBytes <= 0 || maxBytes > maxDeferredErrorRequestBodyBytes {
@@ -520,9 +499,6 @@ func decodeCapturedZstdRequestBodyWithLimit(raw []byte, limit int64) ([]byte, bo
 	}
 	return decoded, false, nil
 }
-
-
-
 
 func shouldLogRequest(path string) bool {
 	if strings.HasPrefix(path, "/v0/management") || strings.HasPrefix(path, "/v8/management") || strings.HasPrefix(path, "/management") {

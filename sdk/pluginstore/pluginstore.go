@@ -1,5 +1,3 @@
-
-
 package pluginstore
 
 import (
@@ -91,10 +89,6 @@ func NewClientWithResolvedAuthExpiry(httpClient HTTPDoer, registryURL string, au
 		ResolvedAuthExpiresAt: expiresAt,
 	}}
 }
-
-
-
-
 
 func (c Client) WithNetworkScope(networkScope string) Client {
 	c.inner.NetworkScope = strings.TrimSpace(networkScope)

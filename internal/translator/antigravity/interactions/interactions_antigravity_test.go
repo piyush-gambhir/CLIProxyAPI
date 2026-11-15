@@ -696,7 +696,6 @@ func TestConvertInteractionsRequestToAntigravity_ResponseToRequestRoundTrip(t *t
 	respOut := ConvertAntigravityResponseToInteractionsNonStream(context.Background(), "gemini-3.8-flash-high", nil, nil, upstreamResponse, nil)
 	steps := ojson.GetBytesNoCopy(respOut, "steps").Raw
 
-
 	turn2Input := `{"model":"gemini-3.8-flash-high","input":[{"type":"user_input","content":[{"type":"text","text":"hello"}]}`
 	for _, s := range ojson.Get(steps, "@this").Array() {
 		turn2Input += "," + s.Raw

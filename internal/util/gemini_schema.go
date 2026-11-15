@@ -1,4 +1,3 @@
-
 package util
 
 import (
@@ -17,15 +16,6 @@ var gjsonPathKeyReplacer = strings.NewReplacer(".", "\\.", "*", "\\*", "?", "\\?
 
 const placeholderReasonDescription = "Brief explanation of why you are calling this tool"
 
-
-
-
-
-
-
-
-
-
 type jsonSchemaCleanOptions struct {
 	addPlaceholder       bool
 	addMissingArrayItems bool
@@ -33,8 +23,6 @@ type jsonSchemaCleanOptions struct {
 	removeToolTitle      bool
 	removeGeminiMetadata bool
 	flattenUnions        bool
-
-
 
 	flattenMultiBranchUnions          bool
 	forceEnumStringType               bool
@@ -45,26 +33,13 @@ type jsonSchemaCleanOptions struct {
 	preserveStandardConstraints       bool
 }
 
-
-
-
 func CleanJSONSchemaForAntigravity(jsonStr string) string {
 	return CleanJSONSchemaForAntigravityTool(jsonStr, true)
 }
 
-
-
-
-
 func CleanJSONSchemaForAntigravityTool(jsonStr string, requirePlaceholder bool) string {
 	return cleanJSONSchemaForAntigravityTool(jsonStr, requirePlaceholder, false)
 }
-
-
-
-
-
-
 
 func CleanJSONSchemaForAntigravityClaudeTool(jsonStr string, requirePlaceholder bool) string {
 	return cleanJSONSchemaForAntigravityTool(jsonStr, requirePlaceholder, true)
@@ -82,18 +57,6 @@ func cleanJSONSchemaForAntigravityTool(jsonStr string, requirePlaceholder, flatt
 	})
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 func CleanJSONSchemaForAntigravityResponse(jsonStr string) string {
 	return cleanJSONSchema(jsonStr, jsonSchemaCleanOptions{
 		antigravitySemantics:              true,
@@ -103,8 +66,6 @@ func CleanJSONSchemaForAntigravityResponse(jsonStr string) string {
 	})
 }
 
-
-
 func CleanJSONSchemaForGemini(jsonStr string) string {
 	return cleanJSONSchema(jsonStr, jsonSchemaCleanOptions{
 		addMissingArrayItems: true,
@@ -113,10 +74,6 @@ func CleanJSONSchemaForGemini(jsonStr string) string {
 		forceEnumStringType:  true,
 	})
 }
-
-
-
-
 
 func CleanJSONSchemaForGeminiJSONSchema(jsonStr string) string {
 	return cleanJSONSchema(jsonStr, jsonSchemaCleanOptions{
@@ -129,16 +86,10 @@ func CleanJSONSchemaForGeminiJSONSchema(jsonStr string) string {
 	})
 }
 
-
 func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
-
-
-
 
 	jsonStr = normalizeMalformedSchemaObjects(jsonStr)
 	jsonStr = NormalizeJSONSchemaNumericConstraints(jsonStr)
-
-
 
 	jsonStr = inlineLocalRefsForClean(jsonStr)
 	jsonStr = convertRefsToHints(jsonStr, options.antigravitySemantics)
@@ -154,8 +105,6 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 		jsonStr = moveNotToDescription(jsonStr)
 	}
 
-
-
 	preserveConjunctions := options.preserveStandardConstraints && hasSchemaConjunction(jsonStr)
 	jsonStr = mergeConditionals(jsonStr)
 	if !options.preserveStandardConstraints {
@@ -169,14 +118,12 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 		jsonStr = flattenTypeArrays(jsonStr, options.antigravitySemantics)
 	}
 
-
 	jsonStr = removeUnsupportedKeywords(jsonStr, options)
 	if options.removeGeminiMetadata {
 
 		jsonStr = removeKeywords(jsonStr, []string{"nullable", "title"})
 		jsonStr = removePlaceholderFields(jsonStr)
 	} else if options.removeToolTitle {
-
 
 		jsonStr = removeKeywords(jsonStr, []string{"title"})
 	}
@@ -192,8 +139,6 @@ func cleanJSONSchema(jsonStr string, options jsonSchemaCleanOptions) string {
 
 	return jsonStr
 }
-
-
 
 func sanitizeObjectProperties(jsonStr string) string {
 	paths := findPaths(jsonStr, "properties")
@@ -222,9 +167,6 @@ func sanitizeObjectProperties(jsonStr string) string {
 	}
 	return jsonStr
 }
-
-
-
 
 func sanitizeArrayItems(jsonStr string, addMissing bool) string {
 	paths := findPaths(jsonStr, "items")
@@ -277,7 +219,6 @@ func sanitizeArrayItems(jsonStr string, addMissing bool) string {
 	return jsonStr
 }
 
-
 func removeKeywords(jsonStr string, keywords []string) string {
 	deletePaths := make([]string, 0)
 	pathsByField := findPathsByFields(jsonStr, keywords)
@@ -299,7 +240,6 @@ func removeKeywords(jsonStr string, keywords []string) string {
 	}
 	return doc.String()
 }
-
 
 func removePlaceholderFields(jsonStr string) string {
 
@@ -340,7 +280,6 @@ func removePlaceholderFields(jsonStr string) string {
 			jsonStr = doc.String()
 		}
 	}
-
 
 	reasonPaths := findPaths(jsonStr, "reason")
 	sortByDepth(reasonPaths)
@@ -391,11 +330,6 @@ func removePlaceholderFields(jsonStr string) string {
 	return jsonStr
 }
 
-
-
-
-
-
 func normalizeMalformedSchemaObjects(jsonStr string) string {
 	if jsonStr == "" {
 		return jsonStr
@@ -416,7 +350,6 @@ func normalizeMalformedSchemaObjects(jsonStr string) string {
 	if !ok || isAPIRequestDocument(rootMap) {
 		return jsonStr
 	}
-
 
 	if len(rootMap) == 1 {
 		if innerSchema, ok := rootMap["schema"].(map[string]any); ok {
@@ -544,7 +477,6 @@ func repairSchemaNode(node map[string]any) (map[string]any, bool) {
 		clone[k] = v
 	}
 
-
 	if !isNonObjectDeclaredType(clone["type"]) {
 		var bareProps map[string]any
 		for k, v := range clone {
@@ -589,8 +521,6 @@ func repairSchemaNode(node map[string]any) (map[string]any, bool) {
 		}
 	}
 
-
-
 	if propsVal, ok := clone["properties"].(map[string]any); ok {
 		repairedProps, promotedReqs, propsMod := repairPropertyMap(propsVal)
 		if propsMod {
@@ -604,7 +534,6 @@ func repairSchemaNode(node map[string]any) (map[string]any, bool) {
 			modified = true
 		}
 	}
-
 
 	if itemsVal, ok := clone["items"].(map[string]any); ok {
 		repairedItems, itemsMod := repairSchemaNode(itemsVal)
@@ -791,32 +720,17 @@ func mergeStringSlices(existing, promoted []string) []string {
 	return res
 }
 
-
-
-
 func InlineLocalRefs(jsonStr string) string {
 	return inlineLocalRefs(jsonStr)
 }
 
-
-
-
 const maxInlinedSchemaBytes = 256 * 1024
 
-
-
 const maxFallbackDescriptionBytes = 512
-
-
-
 
 func inlineLocalRefs(jsonStr string) string {
 	return inlineLocalRefsRooted(jsonStr, nil, false)
 }
-
-
-
-
 
 func inlineLocalRefsForClean(jsonStr string) string {
 	if !strings.Contains(jsonStr, `"$ref"`) {
@@ -874,9 +788,6 @@ func inlineLocalRefsRooted(jsonStr string, parsedRoot any, forClean bool) string
 	return string(out)
 }
 
-
-
-
 type refResolveState struct {
 	budget int
 }
@@ -884,8 +795,6 @@ type refResolveState struct {
 func newRefResolveState() *refResolveState {
 	return &refResolveState{budget: maxInlinedSchemaBytes}
 }
-
-
 
 func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
@@ -895,13 +804,6 @@ func sortedKeys[V any](m map[string]V) []string {
 	sort.Strings(keys)
 	return keys
 }
-
-
-
-
-
-
-
 
 func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 	rootMap, ok := root.(map[string]any)
@@ -923,8 +825,6 @@ func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 			out[key] = resolveSchemaEntry(rootMap, key, item, make(map[string]bool), state, forClean)
 		}
 	}
-
-
 
 	if ref, hasRef := rootMap["$ref"].(string); hasRef && strings.HasPrefix(ref, "#/") {
 		if target, okTarget := resolveJSONPointer(rootMap, ref); okTarget {
@@ -959,12 +859,6 @@ func resolveSchemaRoot(root any, state *refResolveState, forClean bool) any {
 	}
 	return out
 }
-
-
-
-
-
-
 
 func targetExpansionSize(value any, forClean bool) int {
 	if !forClean {
@@ -1023,10 +917,6 @@ func cleanExpansionSize(value any, inNameMap bool) int {
 	}
 }
 
-
-
-
-
 func jsonValueSize(value any) int {
 	switch node := value.(type) {
 	case nil:
@@ -1054,8 +944,6 @@ func jsonValueSize(value any) int {
 	}
 }
 
-
-
 func jsonStringEncodedSize(s string) int {
 	size := 2
 	for i := 0; i < len(s); i++ {
@@ -1082,8 +970,6 @@ func jsonStringEncodedSize(s string) int {
 	}
 	return size
 }
-
-
 
 var literalValueKeywords = map[string]struct{}{
 	"default":  {},
@@ -1114,9 +1000,6 @@ func resolveLocalRefs(root, value any, active map[string]bool, state *refResolve
 					if active[ref] {
 						return resolveRefFallback(root, node, target, ref, active, state, forClean)
 					}
-
-
-
 
 					if size := targetExpansionSize(target, forClean); size > state.budget {
 						return resolveRefFallback(root, node, target, ref, active, state, forClean)
@@ -1156,14 +1039,10 @@ func resolveLocalRefs(root, value any, active map[string]bool, state *refResolve
 	}
 }
 
-
-
-
 func mergeInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	if len(siblings) > 0 && (target["unevaluatedProperties"] != nil || target["unevaluatedItems"] != nil) {
 		return conjoinInlinedRefSchemas(target, siblings)
 	}
-
 
 	for _, pair := range [][2]string{
 		{"additionalProperties", "properties"},
@@ -1196,9 +1075,6 @@ func mergeInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	return out
 }
 
-
-
-
 func conjoinInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	out := make(map[string]any, len(siblings)+1)
 	for key, value := range siblings {
@@ -1212,16 +1088,8 @@ func conjoinInlinedRefSchemas(target, siblings map[string]any) map[string]any {
 	return out
 }
 
-
-
-
-
-
 func resolveRefFallback(root any, node map[string]any, target any, ref string, active map[string]bool, state *refResolveState, forClean bool) map[string]any {
 	out := cyclicRefFallback(node, target, ref)
-
-
-
 
 	if targetMap, okMap := target.(map[string]any); okMap {
 		if description, okDescription := targetMap["description"].(string); okDescription && description != "" && len(description) <= maxFallbackDescriptionBytes {
@@ -1247,12 +1115,6 @@ func resolveRefFallback(root any, node map[string]any, target any, ref string, a
 	}
 	return out
 }
-
-
-
-
-
-
 
 func resolveSchemaEntry(root any, key string, item any, active map[string]bool, state *refResolveState, forClean bool) any {
 	if isLiteralValueKeyword(key) {
@@ -1349,8 +1211,6 @@ func refName(ref string) string {
 	return ref
 }
 
-
-
 func convertRefsToHints(jsonStr string, preserveSiblings bool) string {
 	paths := findPaths(jsonStr, "$ref")
 	if len(paths) == 0 {
@@ -1412,9 +1272,6 @@ func convertConstToEnum(jsonStr string) string {
 	}
 	return jsonStr
 }
-
-
-
 
 func convertEnumValuesToStrings(jsonStr string, forceStringType bool) string {
 	paths := findPaths(jsonStr, "enum")
@@ -1480,9 +1337,6 @@ func addEnumHints(jsonStr string) string {
 	return jsonStr
 }
 
-
-
-
 func dropIgnoredEnumsToHints(jsonStr string, options jsonSchemaCleanOptions) string {
 	paths := findPaths(jsonStr, "enum")
 	if len(paths) == 0 {
@@ -1539,11 +1393,6 @@ type numericConstraintEdit struct {
 	end         int
 	replacement string
 }
-
-
-
-
-
 
 func NormalizeJSONSchemaNumericConstraints(jsonStr string) string {
 	if !hasNumericSchemaConstraintKeyword(jsonStr) && !strings.Contains(jsonStr, `\u`) && !strings.Contains(jsonStr, `\U`) {
@@ -1829,9 +1678,6 @@ func mergeAllOf(jsonStr string) string {
 	return jsonStr
 }
 
-
-
-
 func mergeMissingSchemaAtPathDoc(doc *ojson.Doc, destination string, incoming ojson.Result) {
 	existing := doc.Get(destination)
 	if !existing.Exists() {
@@ -1966,13 +1812,6 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 			parent = ojson.Parse(jsonStr)
 		}
 
-
-
-
-
-
-
-
 		if key == "oneOf" && !flattenMultiBranch && !preserveOneOf && parent.Get("anyOf").IsArray() {
 			appendHintDoc(doc, parentPath, "oneOf: "+arr.Raw)
 			_ = doc.Delete(p)
@@ -1984,14 +1823,7 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 		parentProps := parent.Get("properties")
 		nonNullItems, hasNull, hasFilteredBranch := partitionUnionBranches(items, parentProps)
 
-
-
 		nullable := hasNull || parent.Get("nullable").Bool()
-
-
-
-
-
 
 		if len(nonNullItems) >= 2 && !flattenMultiBranch {
 			targetKey := key
@@ -2020,9 +1852,6 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 			}
 			continue
 		}
-
-
-
 
 		if parentProps.IsObject() {
 			for _, item := range nonNullItems {
@@ -2070,8 +1899,6 @@ func flattenAnyOfOneOf(jsonStr string, preserveOneOf, flattenMultiBranch bool) s
 
 		parentDesc := doc.Get(descriptionPath(parentPath)).String()
 		_, allTypes := selectBest(candidateItems)
-
-
 
 		selected := nonNullItems[0].Raw
 		if bestIdx, _ := selectBest(nonNullItems); bestIdx >= 0 && bestIdx < len(nonNullItems) {
@@ -2281,13 +2108,9 @@ func removeUnsupportedKeywords(jsonStr string, options jsonSchemaCleanOptions) s
 	return jsonStr
 }
 
-
-
 func removeExtensionFields(jsonStr string) string {
 	var paths []string
 	walkForExtensions(ojson.Parse(jsonStr), "", &paths)
-
-
 
 	if len(paths) == 0 {
 		return jsonStr
@@ -2314,12 +2137,10 @@ func walkForExtensions(value ojson.Result, path string, paths *[]string) {
 			safeKey := escapeGJSONPathKey(keyStr)
 			childPath := joinPath(path, safeKey)
 
-
 			if strings.HasPrefix(keyStr, "x-") && !isPropertyDefinition(path) {
 				*paths = append(*paths, childPath)
 				return true
 			}
-
 
 			if isLiteralValueKeyword(keyStr) && !isPropertyDefinition(path) {
 				return true
@@ -2385,15 +2206,12 @@ func cleanupRequiredFields(jsonStr string) string {
 	return jsonStr
 }
 
-
-
 func addEmptySchemaPlaceholder(jsonStr string) string {
 
 	paths := findPaths(jsonStr, "type")
 	if len(paths) == 0 {
 		return jsonStr
 	}
-
 
 	sortByDepth(paths)
 
@@ -2405,9 +2223,7 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 			continue
 		}
 
-
 		parentPath := trimSuffix(p, ".type")
-
 
 		propsPath := joinPath(parentPath, "properties")
 		propsVal := doc.Get(propsPath)
@@ -2437,9 +2253,7 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 			continue
 		}
 
-
 		if propsVal.IsObject() && !hasRequiredProperties {
-
 
 			if parentPath == "" {
 				continue
@@ -2457,8 +2271,6 @@ func addEmptySchemaPlaceholder(jsonStr string) string {
 	}
 	return jsonStr
 }
-
-
 
 func findPaths(jsonStr, field string) []string {
 	var paths []string
@@ -2493,8 +2305,6 @@ func walkForFields(value ojson.Result, path string, fields map[string]struct{}, 
 			if _, ok := fields[keyStr]; ok {
 				paths[keyStr] = append(paths[keyStr], childPath)
 			}
-
-
 
 			if isLiteralValueKeyword(keyStr) && !isPropertyDefinition(path) {
 				return true
@@ -2536,10 +2346,6 @@ func setRawAtDoc(doc *ojson.Doc, path, value string) {
 	_ = doc.SetRaw(path, value)
 }
 
-
-
-
-
 var schemaNameMapKeywords = map[string]struct{}{
 	"properties":        {},
 	"patternProperties": {},
@@ -2548,20 +2354,6 @@ var schemaNameMapKeywords = map[string]struct{}{
 	"$defs":             {},
 	"definitions":       {},
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func isPropertyDefinition(path string) bool {
 	segments := splitGJSONPath(path)
@@ -2582,14 +2374,10 @@ func descriptionPath(parentPath string) string {
 	return parentPath + ".description"
 }
 
-
-
-
 func mergeHint(existing, hint string) string {
 	if existing == "" {
 		return hint
 	}
-
 
 	if existing == hint ||
 		strings.HasPrefix(existing, hint+" (") ||

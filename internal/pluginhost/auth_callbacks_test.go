@@ -1003,7 +1003,6 @@ func TestHostAuthModelsCallbackReturnsAllCredentialsIncludingConfigBacked(t *tes
 	host.runtimeConfig = &config.Config{AuthDir: authDir}
 	host.SetAuthManager(manager)
 
-
 	rawAll, errCallAll := host.callFromPlugin(context.Background(), pluginabi.MethodHostAuthModels, nil)
 	if errCallAll != nil {
 		t.Fatalf("callFromPlugin(host.auth.models, nil) error = %v", errCallAll)
@@ -1045,7 +1044,6 @@ func TestHostAuthModelsCallbackReturnsAllCredentialsIncludingConfigBacked(t *tes
 		t.Fatalf("runtime credential = %#v, want index=%q provider=aistudio non-nil empty models", gotRuntime, runtimeAuth.Index)
 	}
 
-
 	reqFiltered, errMarshal := json.Marshal(pluginapi.HostAuthModelsRequest{AuthIndex: configAuth.Index})
 	if errMarshal != nil {
 		t.Fatalf("marshal filter request: %v", errMarshal)
@@ -1061,7 +1059,6 @@ func TestHostAuthModelsCallbackReturnsAllCredentialsIncludingConfigBacked(t *tes
 	if len(respFiltered.Credentials) != 1 || respFiltered.Credentials[0].ID != configAuth.ID || respFiltered.Credentials[0].AuthIndex != configAuth.Index {
 		t.Fatalf("filtered credentials = %#v, want single entry for %q", respFiltered.Credentials, configAuth.ID)
 	}
-
 
 	loader := newTestSymbolLoader()
 	loader.lookups["catalog-filter"] = newTestSymbolLookup(&testPlugin{

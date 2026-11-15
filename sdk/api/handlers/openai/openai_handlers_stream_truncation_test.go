@@ -88,9 +88,6 @@ func runMockStreamTestWithError(t *testing.T, chunks []string, trailingErr error
 	return recorder.Body.String()
 }
 
-
-
-
 func TestChatCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant"}}]}`,
@@ -107,8 +104,6 @@ func TestChatCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T)
 		t.Errorf("truncated stream did not format structured error payload: %q", out)
 	}
 }
-
-
 
 func TestChatCompletionsStreamTerminalErrorChunkIsTheOnlyError(t *testing.T) {
 	for _, tc := range []struct {
@@ -146,7 +141,6 @@ func TestChatCompletionsStreamTerminalErrorChunkIsTheOnlyError(t *testing.T) {
 	}
 }
 
-
 func TestChatCompletionsStreamExplicitNullOrEmptyFinishReasonIsReportedAsError(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant","content":"part1"},"finish_reason":null}]}`,
@@ -161,8 +155,6 @@ func TestChatCompletionsStreamExplicitNullOrEmptyFinishReasonIsReportedAsError(t
 	}
 }
 
-
-
 func TestChatCompletionsStreamSingleChunkWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant","content":"hello"}}]}`,
@@ -175,7 +167,6 @@ func TestChatCompletionsStreamSingleChunkWithoutFinishReasonIsReportedAsError(t 
 		t.Errorf("single-chunk truncated stream did not surface an error naming the missing terminator: %q", out)
 	}
 }
-
 
 func TestChatCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	chunks := []string{
@@ -192,7 +183,6 @@ func TestChatCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	}
 }
 
-
 func TestChatCompletionsStreamSingleChunkWithFinishReasonStillCompletes(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"content":"instant"},"finish_reason":"stop"}]}`,
@@ -205,7 +195,6 @@ func TestChatCompletionsStreamSingleChunkWithFinishReasonStillCompletes(t *testi
 		t.Errorf("single-chunk complete stream was wrongly flagged as truncated: %q", out)
 	}
 }
-
 
 func TestCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -244,7 +233,6 @@ func TestCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	}
 }
 
-
 func TestCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -282,7 +270,6 @@ func TestCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	}
 }
 
-
 func TestChatCompletionsStreamUsageAfterFinishReasonStillCompletes(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"content":"hi"}}]}`,
@@ -297,7 +284,6 @@ func TestChatCompletionsStreamUsageAfterFinishReasonStillCompletes(t *testing.T)
 		t.Errorf("stream with usage after finish_reason was wrongly flagged as truncated: %q", out)
 	}
 }
-
 
 func TestCompletionsStreamSingleChunkWithFinishReasonStillCompletes(t *testing.T) {
 	gin.SetMode(gin.TestMode)

@@ -337,7 +337,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 		t.Fatal("expected ModelRefreshCallback to be invoked")
 	}
 
-
 	SetLocalModelCatalogs(true)
 	UpdateModelCatalogSources(CatalogSources{}, true)
 	generalBefore := generalHits.Load()
@@ -353,7 +352,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 	if generalHits.Load() != generalBefore || codexHits.Load() != codexBefore || devinHits.Load() != devinBefore {
 		t.Fatal("RefreshModelCatalogs performed remote fetch for disabled or embedded catalogs")
 	}
-
 
 	started, release := make(chan struct{}), make(chan struct{})
 	published := make(chan string, 2)
@@ -397,7 +395,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 	default:
 	}
 
-
 	var fetchOrder atomic.Int32
 	slowStarted, releaseSlow, slowDone := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	currentPublished := ""
@@ -433,7 +430,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 	if currentPublished != "fresh-v2" {
 		t.Fatalf("slow periodic refresh overwrote fresh on-demand catalog: got %q", currentPublished)
 	}
-
 
 	for _, ch := range []chan struct{}{generalPublished, codexPublished, devinPublished} {
 		for len(ch) > 0 {
@@ -501,7 +497,6 @@ func TestRefreshModelCatalogsOnDemand(t *testing.T) {
 	if errAll := <-refreshDone; errAll != nil {
 		t.Fatalf("RefreshModelCatalogs failed: %v", errAll)
 	}
-
 
 	brokenPrimary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

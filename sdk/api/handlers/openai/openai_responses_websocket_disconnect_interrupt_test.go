@@ -19,10 +19,6 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 type websocketLossInterruptExecutor struct {
 	lost chan struct{}
 }
@@ -67,11 +63,6 @@ func (e *websocketLossInterruptExecutor) InterruptExecutionSession(context.Conte
 		return errors.New("interrupt reached a live websocket")
 	}
 }
-
-
-
-
-
 
 func TestResponsesInterruptRacingWebsocketLossIsNotAnsweredLocally(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -119,16 +110,8 @@ func TestResponsesInterruptRacingWebsocketLossIsNotAnsweredLocally(t *testing.T)
 		t.Fatalf("expected response.created, got %s", created)
 	}
 
-
-
 	close(executor.lost)
 	send(`{"type":"response.interrupt","response_id":"r-ws"}`)
-
-
-
-
-
-
 
 	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {

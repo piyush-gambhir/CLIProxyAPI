@@ -131,7 +131,6 @@ func applySessionProxyToAuthRecord(record *coreauth.Auth, proxyURL string) {
 	}
 }
 
-
 func (h *Handler) StartOAuthV8(c *gin.Context) {
 	if c.Request != nil && c.Request.URL != nil {
 		if query := c.Request.URL.Query(); query.Has("proxy_url") || query.Has("proxy-url") {
@@ -527,7 +526,6 @@ func (h *Handler) oauthTargetProviderMatches(targetProvider, requestedProvider s
 	return host != nil && host.SameAuthProvider(targetProvider, requestedProvider)
 }
 
-
 func (h *Handler) ImportOAuthV8(c *gin.Context) {
 	switch strings.ToLower(strings.TrimSpace(c.Query("provider"))) {
 	case "":
@@ -538,8 +536,6 @@ func (h *Handler) ImportOAuthV8(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "provider_not_found"})
 	}
 }
-
-
 
 func (h *Handler) VerifyAuthFileV8(c *gin.Context) {
 	if h == nil || h.authManager == nil {

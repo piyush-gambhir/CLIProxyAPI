@@ -1,5 +1,3 @@
-
-
 package watcher
 
 import (
@@ -43,7 +41,6 @@ func (w *Watcher) scheduleConfigReload() {
 	})
 }
 
-
 func (w *Watcher) ReloadConfigIfChanged() {
 	if w == nil {
 		return
@@ -52,7 +49,6 @@ func (w *Watcher) ReloadConfigIfChanged() {
 }
 
 func (w *Watcher) reloadConfigIfChanged() {
-
 
 	w.configApplyMu.Lock()
 	defer w.configApplyMu.Unlock()
@@ -79,8 +75,6 @@ func (w *Watcher) reloadConfigIfChanged() {
 	}
 	log.Infof("config file changed, reloading: %s", w.configPath)
 	if w.reloadConfig() {
-
-
 
 		w.clientsMutex.Lock()
 		appliedHash := newHash

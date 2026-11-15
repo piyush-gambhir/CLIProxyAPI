@@ -108,7 +108,6 @@ func TestCodexStructuredModelNotFound_SessionAffinityReleased(t *testing.T) {
 		},
 	}
 
-
 	picked, errPick := selector.Pick(context.Background(), "codex", "gpt-5.5", opts, candidates)
 	if errPick != nil || picked == nil {
 		t.Fatalf("initial Pick failed: %v", errPick)
@@ -125,7 +124,6 @@ func TestCodexStructuredModelNotFound_SessionAffinityReleased(t *testing.T) {
 		Options:  opts,
 	})
 
-
 	rawErr := &statusBearingError{
 		status: http.StatusBadRequest,
 		msg:    `{"error":{"type":"invalid_request_error","code":"model_not_found","message":"The model gpt-5.5 does not exist or you do not have access to it."}}`,
@@ -140,7 +138,6 @@ func TestCodexStructuredModelNotFound_SessionAffinityReleased(t *testing.T) {
 		Error:    resultErr,
 		Options:  opts,
 	})
-
 
 	reverseCandidates := []*Auth{auth2, auth1}
 	nextPicked, errNextPick := selector.Pick(context.Background(), "codex", "gpt-5.5", opts, reverseCandidates)

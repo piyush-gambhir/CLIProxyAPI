@@ -242,8 +242,6 @@ func TestProxyConnectionPoolCustomDefaultTransportDeclinesPooling(t *testing.T) 
 	cfg := testConfig()
 	auth := poolOptInAuth("custom-default")
 
-
-
 	client := NewProxyAwareHTTPClient(context.Background(), cfg, auth, 0)
 	if client.Transport != nil {
 		t.Fatalf("client.Transport = %T, want nil so client uses http.DefaultTransport", client.Transport)

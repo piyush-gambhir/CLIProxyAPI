@@ -11,7 +11,6 @@ const (
 	claudeWebSearchToolTypeB = "web_search_20260209"
 )
 
-
 func isClaudeSourceFormat(source string) bool {
 	switch strings.ToLower(strings.TrimSpace(source)) {
 	case "claude", "anthropic":

@@ -75,13 +75,11 @@ func TestExtractCodexResponseModel(t *testing.T) {
 		},
 		{
 
-
 			name:    "responses compact object",
 			payload: `{"id":"resp_1","object":"response.compaction","usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}`,
 			want:    "",
 		},
 		{
-
 
 			name:    "images api response",
 			payload: `{"created":1745539200,"data":[{"b64_json":"aGk="}]}`,
@@ -190,7 +188,6 @@ func TestIsModelSubstituted(t *testing.T) {
 	}
 }
 
-
 func setupResponseModelLoggerHook(t *testing.T) *logtest.Hook {
 	t.Helper()
 	logger := log.StandardLogger()
@@ -205,7 +202,6 @@ func setupResponseModelLoggerHook(t *testing.T) *logtest.Hook {
 	})
 	return hook
 }
-
 
 type codexUsageTestExecutor struct{}
 
@@ -239,7 +235,6 @@ func newSubstitutionTestAuth() *cliproxyauth.Auth {
 		FileName: "/auths/codex-user@example.com.json",
 	}
 }
-
 
 func TestUsageReporterRecordsSubstitutedCodexResponseModelAndWarnsOnce(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
@@ -286,7 +281,6 @@ func TestUsageReporterRecordsSubstitutedCodexResponseModelAndWarnsOnce(t *testin
 	}
 }
 
-
 func TestUsageReporterDoesNotWarnWhenCodexResponseModelMatches(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -302,7 +296,6 @@ func TestUsageReporterDoesNotWarnWhenCodexResponseModelMatches(t *testing.T) {
 		t.Fatalf("expected no substitution warning, got %#v", warnings)
 	}
 }
-
 
 func TestUsageReporterIgnoresPayloadsWithoutResponseModel(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
@@ -325,7 +318,6 @@ func TestUsageReporterIgnoresPayloadsWithoutResponseModel(t *testing.T) {
 		t.Fatalf("warning = %q, want an auth_index=nil suffix", warnings[0])
 	}
 }
-
 
 func TestUsageReporterWarnsOnceUnderConcurrentObservationsAndPublishes(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
@@ -361,7 +353,6 @@ func TestUsageReporterWarnsOnceUnderConcurrentObservationsAndPublishes(t *testin
 	}
 }
 
-
 func TestUsageReporterEmitsWarningOnRepeatedSubstitutionsWithoutThrottle(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -379,13 +370,11 @@ func TestUsageReporterEmitsWarningOnRepeatedSubstitutionsWithoutThrottle(t *test
 		t.Fatalf("substitution warnings = %d, want 2 without throttle: %#v", len(warnings), warnings)
 	}
 
-
 	publishSubstitutedAttempt("codex-auth-2", "auth-index-8")
 	if warnings := substitutionWarnings(hook); len(warnings) != 3 {
 		t.Fatalf("substitution warnings = %d, want 3: %#v", len(warnings), warnings)
 	}
 }
-
 
 func TestUsageReporterEmitsWarningAcrossServedModelCaseWithoutThrottle(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
@@ -421,7 +410,6 @@ func TestUsageReporterAdditionalModelRecordOmitsResponseModel(t *testing.T) {
 	if additionalRecord.Model != "gpt-image-1.5" {
 		t.Fatalf("additional record model = %q, want %q", additionalRecord.Model, "gpt-image-1.5")
 	}
-
 
 	if additionalRecord.ResponseModel != "" {
 		t.Fatalf("additional record response model = %q, want empty", additionalRecord.ResponseModel)

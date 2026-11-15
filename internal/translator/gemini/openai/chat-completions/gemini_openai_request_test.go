@@ -246,7 +246,6 @@ func TestConvertOpenAIRequestToGemini_MidSessionDeveloperMessageDoesNotMutateSys
 	result, _ := ConvertOpenAIRequestToGemini("gemini-3-flash", []byte(inputJSON), false)
 	output := util.ParseGJSONBytesNoCopy(result)
 
-	// systemInstruction must contain only original system prompt
 	sysParts := output.Get("systemInstruction.parts").Array()
 	if len(sysParts) != 1 {
 		t.Fatalf("systemInstruction parts = %d, want 1. Output: %s", len(sysParts), result)
@@ -255,7 +254,6 @@ func TestConvertOpenAIRequestToGemini_MidSessionDeveloperMessageDoesNotMutateSys
 		t.Fatalf("systemInstruction text = %q, want %q", got, "You are a helpful assistant")
 	}
 
-	// contents must contain user, model, user (demoted dev message), user
 	contents := output.Get("contents").Array()
 	if len(contents) != 4 {
 		t.Fatalf("contents length = %d, want 4. Output: %s", len(contents), result)
@@ -329,7 +327,6 @@ func TestConvertOpenAIRequestToGemini_MidSessionTransientSystemInstructionPreser
 	contentsWith := ojson.GetBytesNoCopy(outWith, "contents").Array()
 	contentsWithout := ojson.GetBytesNoCopy(outWithout, "contents").Array()
 
-	// Ensure demoted system instruction is standalone and not merged into adjacent user turn
 	if len(contentsWith) != 4 {
 		t.Fatalf("expected 4 standalone content items in request with transient instruction, got %d", len(contentsWith))
 	}
@@ -341,14 +338,13 @@ func TestConvertOpenAIRequestToGemini_MidSessionTransientSystemInstructionPreser
 		t.Fatalf("turn 3 mismatch: %s", contentsWith[3].Raw)
 	}
 
-	// Prior turn history entries (Turn 1 user, Turn 1 assistant) are byte-identical
 	if contentsWith[0].Raw != contentsWithout[0].Raw {
 		t.Fatalf("turn 0 diverged: %s vs %s", contentsWith[0].Raw, contentsWithout[0].Raw)
 	}
 	if contentsWith[1].Raw != contentsWithout[1].Raw {
 		t.Fatalf("turn 1 diverged: %s vs %s", contentsWith[1].Raw, contentsWithout[1].Raw)
 	}
-	// Turn 2 user text is also identical between turns because it was not merged
+
 	if contentsWith[3].Get("parts.0.text").String() != contentsWithout[2].Get("parts.0.text").String() {
 		t.Fatalf("turn 2 user text diverged due to merging: %s vs %s", contentsWith[3].Raw, contentsWithout[2].Raw)
 	}
@@ -603,8 +599,6 @@ func TestConvertOpenAIRequestToGemini_MultiTurnRepeatedToolCallID_Issue5933(t *t
 
 	out, _ := ConvertOpenAIRequestToGemini("gemini-3-flash", []byte(inputJSON), false)
 
-	// In Turn 1 (contents[1] = model functionCall, contents[2] = user functionResponse):
-	// functionCall.name must be "glob", and functionResponse.name must be "glob".
 	call1Name := ojson.GetBytesNoCopy(out, "contents.1.parts.0.functionCall.name").String()
 	resp1Name := ojson.GetBytesNoCopy(out, "contents.2.parts.0.functionResponse.name").String()
 	resp1Result := ojson.GetBytesNoCopy(out, "contents.2.parts.0.functionResponse.response.result").String()
@@ -619,8 +613,6 @@ func TestConvertOpenAIRequestToGemini_MultiTurnRepeatedToolCallID_Issue5933(t *t
 		t.Fatalf("turn 1 functionResponse result = %q, want %q", resp1Result, `"[\"main.go\"]"`)
 	}
 
-	// In Turn 2 (contents[4] = model functionCall, contents[5] = user functionResponse):
-	// functionCall.name must be "read", and functionResponse.name must be "read".
 	call2Name := ojson.GetBytesNoCopy(out, "contents.4.parts.0.functionCall.name").String()
 	resp2Name := ojson.GetBytesNoCopy(out, "contents.5.parts.0.functionResponse.name").String()
 	resp2Result := ojson.GetBytesNoCopy(out, "contents.5.parts.0.functionResponse.response.result").String()
@@ -635,7 +627,6 @@ func TestConvertOpenAIRequestToGemini_MultiTurnRepeatedToolCallID_Issue5933(t *t
 		t.Fatalf("turn 2 functionResponse result = %q, want %q", resp2Result, `"package main"`)
 	}
 
-	// Verify pairing validator passes without error
 	if errPairing := signature.ValidateGeminiFunctionCallPairing(out); errPairing != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on Gemini output: %v; output=%s", errPairing, out)
 	}
@@ -1009,7 +1000,7 @@ func TestConvertOpenAIRequestToGemini_ToolChoice(t *testing.T) {
 func TestConvertOpenAIRequestToGemini_ToolStrictMapsToValidatedMode(t *testing.T) {
 	tests := []struct {
 		name         string
-		toolChoice   string // empty means absent
+		toolChoice   string
 		expectedMode string
 		allowedNames []string
 	}{

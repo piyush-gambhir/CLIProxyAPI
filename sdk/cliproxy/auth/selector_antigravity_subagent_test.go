@@ -28,7 +28,6 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-100"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -41,8 +40,6 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 	if parentAuth.ID != "auth-ag-1" {
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
-
-
 
 	subagent1Opts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -63,7 +60,6 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		t.Fatalf("subagent 1 auth = %q, want auth-ag-2", subagent1Auth.ID)
 	}
 
-
 	subagent1Turn2Opts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-100"},
@@ -80,7 +76,6 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		t.Fatalf("subagent 1 turn 2 did not stay sticky: got %q, want auth-ag-2", subagent1Turn2Auth.ID)
 	}
 
-
 	subagent2Opts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-100"},
@@ -96,7 +91,6 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 	if subagent2Auth.ID != "auth-ag-1" {
 		t.Fatalf("subagent 2 auth = %q, want auth-ag-1", subagent2Auth.ID)
 	}
-
 
 	parentTurn2Opts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-100"}},
@@ -127,7 +121,6 @@ func TestSessionAffinityMixedProviderAntigravitySubagentIsolation(t *testing.T) 
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-200"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -143,7 +136,6 @@ func TestSessionAffinityMixedProviderAntigravitySubagentIsolation(t *testing.T) 
 	if parentAuth.ID != "auth-ag-1" {
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
-
 
 	subOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -182,7 +174,6 @@ func TestSessionAffinityClaudeAndCodexStillInheritParentBinding(t *testing.T) {
 		{ID: "auth-claude-2", Provider: "claude"},
 	}
 
-
 	claudeParentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-300"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"claude parent"}]}`),
@@ -195,7 +186,6 @@ func TestSessionAffinityClaudeAndCodexStillInheritParentBinding(t *testing.T) {
 	if claudeParentAuth.ID != "auth-claude-1" {
 		t.Fatalf("claude parent auth = %q, want auth-claude-1", claudeParentAuth.ID)
 	}
-
 
 	claudeSubOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -212,7 +202,6 @@ func TestSessionAffinityClaudeAndCodexStillInheritParentBinding(t *testing.T) {
 	if claudeSubAuth.ID != "auth-claude-1" {
 		t.Fatalf("claude subagent auth = %q, want inherited parent auth-claude-1", claudeSubAuth.ID)
 	}
-
 
 	codexAuths := []*Auth{
 		{ID: "auth-codex-1", Provider: "codex"},
@@ -257,7 +246,6 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 	})
 	defer selector.Stop()
 
-
 	claudeCandidate := []*Auth{
 		{ID: "auth-claude-primary", Provider: "claude"},
 	}
@@ -276,8 +264,6 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 	if parentAuth.ID != "auth-claude-primary" {
 		t.Fatalf("parent auth = %q, want auth-claude-primary", parentAuth.ID)
 	}
-
-
 
 	mixedAuths := []*Auth{
 		{ID: "auth-ag-other", Provider: "antigravity"},
@@ -302,7 +288,6 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("subagent in mixed pool with Claude parent did not inherit Claude auth: got %q, want auth-claude-primary", subClaudeAuth.ID)
 	}
 
-
 	agCandidate := []*Auth{
 		{ID: "auth-ag-primary", Provider: "antigravity"},
 	}
@@ -321,8 +306,6 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 	if parentAgAuth.ID != "auth-ag-primary" {
 		t.Fatalf("parent Ag auth = %q, want auth-ag-primary", parentAgAuth.ID)
 	}
-
-
 
 	mixedCandidates := []*Auth{
 		{ID: "auth-ag-primary", Provider: "antigravity"},
@@ -347,11 +330,9 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("subagent with Antigravity parent did not inherit parent auth: got %q, want %q", subAgAuth.ID, parentAgAuth.ID)
 	}
 
-
 	if bound, ok := selector.cache.Get("mixed::claude:mixed-sess-ag::claude-3-7-sonnet"); !ok || bound != "auth-ag-primary" {
 		t.Fatalf("parent cache binding was lost: got (%q, %v), want (auth-ag-primary, true)", bound, ok)
 	}
-
 
 	subAgTurn2Auth, errSubAg2 := selector.Pick(context.Background(), "mixed", "claude-3-7-sonnet", subAgOpts, mixedCandidates)
 	if errSubAg2 != nil {
@@ -360,7 +341,6 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 	if subAgTurn2Auth.ID != "auth-ag-primary" {
 		t.Fatalf("subagent turn 2 auth = %q, want auth-ag-primary", subAgTurn2Auth.ID)
 	}
-
 
 	parentAgTurn2Auth, errParentAg2 := selector.Pick(context.Background(), "mixed", "claude-3-7-sonnet", parentAgOpts, mixedCandidates)
 	if errParentAg2 != nil {
@@ -385,7 +365,6 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-500"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -402,11 +381,9 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
 
-
 	if bound, ok := selector.cache.Get("mixed::claude:claude-root-500::claude-3-7-sonnet"); !ok || bound != "auth-ag-1" {
 		t.Fatalf("parent cache binding = (%q, %v), want (auth-ag-1, true)", bound, ok)
 	}
-
 
 	subOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -429,11 +406,9 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 		Options:  subOpts,
 	})
 
-
 	if bound, ok := selector.cache.Get("mixed::claude:claude-root-500::claude-3-7-sonnet"); !ok || bound != "auth-ag-1" {
 		t.Fatalf("parent cache binding was destroyed by subagent OnResult failure: got (%q, %v)", bound, ok)
 	}
-
 
 	selector.OnResult(Result{
 		AuthID:   "auth-ag-2",
@@ -514,7 +489,6 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-
 	parentOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -533,7 +507,6 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 	if got := parentOpts.Metadata[cliproxyexecutor.CanonicalSessionIDMetadataKey]; got != "session:root-task" {
 		t.Fatalf("parent canonical session ID = %v, want session:root-task", got)
 	}
-
 
 	subagent1Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
@@ -560,7 +533,6 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		t.Fatalf("subagent 1 canonical session ID = %v, want session:root-task:agent:worker-1", got)
 	}
 
-
 	subagent1Turn2Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -580,7 +552,6 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		t.Fatalf("subagent 1 turn 2 did not stay sticky: got %q, want auth-ag-2", subagent1Turn2Auth.ID)
 	}
 
-
 	subagent2Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -599,7 +570,6 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 	if subagent2Auth.ID != "auth-ag-1" {
 		t.Fatalf("subagent 2 auth = %q, want auth-ag-1", subagent2Auth.ID)
 	}
-
 
 	parentTurn2Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{

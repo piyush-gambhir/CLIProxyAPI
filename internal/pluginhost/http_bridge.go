@@ -225,7 +225,6 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 		return client, nil, nil
 	}
 
-
 	proxyStr := strings.TrimSpace(c.requestProxyURL)
 	if proxyStr == "" && c.auth != nil {
 		proxyStr = strings.TrimSpace(c.auth.ProxyURL)
@@ -273,7 +272,6 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 			}
 		}
 	}
-
 
 	if baseTransport == nil {
 		if ctxTransport != nil {
@@ -380,8 +378,6 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 		}
 		origProxyFunc := baseTransport.Proxy
 
-
-
 		baseTransport.DialContext = func(dialCtx context.Context, network, addr string) (net.Conn, error) {
 			conn, errDialContext := origDialContext(dialCtx, network, addr)
 			if errDialContext != nil {
@@ -389,9 +385,6 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 			}
 			return httpwire.NewOrderedRequestConn(conn, headerOrderFunc), nil
 		}
-
-
-
 
 		baseTransport.Proxy = func(r *http.Request) (*url.URL, error) {
 			if r != nil && r.URL != nil && r.URL.Scheme == "http" {
@@ -534,12 +527,9 @@ func installPluginRedirectPolicy(client *http.Client) {
 
 func checkPluginRedirect(req *http.Request, via []*http.Request, previous func(*http.Request, []*http.Request) error) error {
 
-
-
 	if crossOriginRedirect(req, via) {
 		for name := range req.Header {
 			if isPluginCredentialHeader(name) {
-
 
 				delete(req.Header, name)
 			}

@@ -10,8 +10,6 @@ type claudeCodeUserAgent struct {
 	requestFields    []string
 }
 
-
-
 func parseClaudeCodeUserAgent(userAgent string) (claudeCodeUserAgent, bool) {
 	for _, char := range userAgent {
 		if (char < ' ' && char != '\t') || char == '\x7f' {

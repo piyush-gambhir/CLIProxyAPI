@@ -27,10 +27,6 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
 func TestResponsesInterruptInFlight(t *testing.T) {
 	for _, steering := range []bool{false, true} {
 		t.Run(fmt.Sprintf("steering_%t", steering), func(t *testing.T) {
@@ -191,8 +187,6 @@ func (homeInterruptDispatcher) RPopAuth(context.Context, string, string, http.He
 }
 
 func (homeInterruptDispatcher) AbortAmbiguousDispatch() {}
-
-
 
 type homeInterruptExecutor struct {
 	mu          sync.Mutex
@@ -364,8 +358,6 @@ func TestCompleteResponsesWebsocketLocalInterruptCancelsBeforeWritingIncomplete(
 	}
 }
 
-
-
 func TestResponsesInterruptStopsHTTPUpstream(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	executor := &blockingHTTPInterruptExecutor{canceledCh: make(chan struct{})}
@@ -449,8 +441,6 @@ func TestResponsesInterruptStopsHTTPUpstream(t *testing.T) {
 		t.Fatalf("expected follow-up response.completed, got %s", followDone)
 	}
 }
-
-
 
 func TestResponsesInterruptUsesHomeSessionAuth(t *testing.T) {
 	gin.SetMode(gin.TestMode)

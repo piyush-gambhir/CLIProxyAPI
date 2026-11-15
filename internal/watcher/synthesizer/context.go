@@ -9,20 +9,15 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
 type PluginAuthParser interface {
 	ParseAuth(context.Context, pluginapi.AuthParseRequest) (*coreauth.Auth, bool, error)
 }
-
-
 
 type PluginMultiAuthParser interface {
 	ParseAuths(context.Context, pluginapi.AuthParseRequest) ([]*coreauth.Auth, bool, error)
 }
 
-
 type SynthesisContext struct {
-
 	Config *config.Config
 
 	AuthDir string
@@ -35,12 +30,8 @@ type SynthesisContext struct {
 
 	StrictFileParsing bool
 
-
-
 	IncompleteFiles map[string]struct{}
 }
-
-
 
 func (c *SynthesisContext) RecordIncompleteFile(path string) {
 	if c == nil || path == "" {

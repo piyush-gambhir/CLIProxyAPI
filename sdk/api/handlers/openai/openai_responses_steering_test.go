@@ -19,9 +19,6 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
 func TestResponsesSteerRejectedWhenDisabled(t *testing.T) {
 	raw := []byte(`{"type":"response.steer","previous_response_id":"resp-1","input":"Keep the scope small."}`)
 	lastRequest := []byte(`{"model":"gpt-6-astra","stream":true,"input":[]}`)
@@ -35,9 +32,6 @@ func TestResponsesSteerRejectedWhenDisabled(t *testing.T) {
 	}
 }
 
-
-
-
 func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 	upstreamReceivedSteer := make(chan struct{})
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +43,6 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 		defer func() { _ = c.Close() }()
 		_ = c.SetReadDeadline(time.Now().Add(5 * time.Second))
 
-
 		_, p, err := c.ReadMessage()
 		if err != nil {
 			t.Errorf("read create: %v", err)
@@ -60,9 +53,7 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 			return
 		}
 
-
 		_ = c.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r1"}}`))
-
 
 		_, steerPayload, err := c.ReadMessage()
 		if err != nil {
@@ -117,7 +108,6 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-
 	_, p, err := c.ReadMessage()
 	if err != nil {
 		t.Fatalf("read response.created: %v", err)
@@ -125,7 +115,6 @@ func TestResponsesSteerInFlightWebSocket(t *testing.T) {
 	if ojson.GetBytesNoCopy(p, "type").String() != "response.created" {
 		t.Fatalf("expected response.created, got %s", p)
 	}
-
 
 	steer := `{"type":"response.steer","previous_response_id":"r1","input":"Focus on networking"}`
 	if err := c.WriteMessage(websocket.TextMessage, []byte(steer)); err != nil {

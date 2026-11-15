@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
 func (h *Host) RegisterPluginForTest(id string, plugin pluginapi.Plugin) {
 	if h == nil {
 		return
@@ -45,7 +44,6 @@ type RegisteredQuotaProviderInfo struct {
 	SupportsReset      bool     `json:"supports_reset"`
 }
 
-
 func (h *Host) QuotaProviderIdentifiers() []string {
 	if h == nil {
 		return nil
@@ -67,7 +65,6 @@ func (h *Host) QuotaProviderIdentifiers() []string {
 	}
 	return out
 }
-
 
 func (h *Host) QuotaProviders(ctx context.Context) []RegisteredQuotaProviderInfo {
 	if h == nil {
@@ -106,23 +103,17 @@ func (h *Host) QuotaProviders(ctx context.Context) []RegisteredQuotaProviderInfo
 	return out
 }
 
-
 func (h *Host) HasQuotaProvider(provider string) bool {
 	return h.HasQuotaProviderContext(context.Background(), provider)
 }
-
 
 func (h *Host) HasQuotaProviderContext(ctx context.Context, provider string) bool {
 	return h.quotaProviderRecord(ctx, provider) != nil
 }
 
-
 func (h *Host) HasQuotaProviderForPlugin(pluginID string) bool {
 	return h.quotaProviderRecordByPlugin(pluginID) != nil
 }
-
-
-
 
 func (h *Host) QuotaProviderPluginIDs(ctx context.Context) map[string]string {
 	if h == nil {
@@ -296,7 +287,6 @@ func (h *Host) quotaProviderRecordByPlugin(pluginID string) *capabilityRecord {
 	return nil
 }
 
-
 func (h *Host) DescribeQuota(ctx context.Context, pluginID string) (pluginapi.QuotaDescribeResponse, bool, error) {
 	record := h.quotaProviderRecordByPlugin(pluginID)
 	if record == nil {
@@ -307,7 +297,6 @@ func (h *Host) DescribeQuota(ctx context.Context, pluginID string) (pluginapi.Qu
 	}
 	return h.callQuotaDescribe(ctx, *record, record.plugin.Capabilities.QuotaProvider)
 }
-
 
 func (h *Host) FetchQuota(ctx context.Context, req pluginapi.QuotaFetchRequest) (pluginapi.QuotaFetchResponse, bool, error) {
 	record := h.quotaProviderRecord(ctx, req.Provider)
@@ -320,7 +309,6 @@ func (h *Host) FetchQuota(ctx context.Context, req pluginapi.QuotaFetchRequest) 
 	return h.callQuotaFetch(ctx, *record, record.plugin.Capabilities.QuotaProvider, req)
 }
 
-
 func (h *Host) FetchQuotaByPlugin(ctx context.Context, pluginID string, req pluginapi.QuotaFetchRequest) (pluginapi.QuotaFetchResponse, bool, error) {
 	record := h.quotaProviderRecordByPlugin(pluginID)
 	if record == nil {
@@ -328,7 +316,6 @@ func (h *Host) FetchQuotaByPlugin(ctx context.Context, pluginID string, req plug
 	}
 	return h.callQuotaFetch(ctx, *record, record.plugin.Capabilities.QuotaProvider, req)
 }
-
 
 func (h *Host) ResetQuota(ctx context.Context, req pluginapi.QuotaResetRequest) (pluginapi.QuotaResetResponse, bool, error) {
 	record := h.quotaProviderRecord(ctx, req.Provider)
@@ -340,7 +327,6 @@ func (h *Host) ResetQuota(ctx context.Context, req pluginapi.QuotaResetRequest) 
 	}
 	return h.callQuotaReset(ctx, *record, record.plugin.Capabilities.QuotaProvider, req)
 }
-
 
 func (h *Host) ResetQuotaByPlugin(ctx context.Context, pluginID string, req pluginapi.QuotaResetRequest) (pluginapi.QuotaResetResponse, bool, error) {
 	record := h.quotaProviderRecordByPlugin(pluginID)

@@ -12,19 +12,13 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
 type StableIDGenerator struct {
 	counters map[string]int
 }
 
-
 func NewStableIDGenerator() *StableIDGenerator {
 	return &StableIDGenerator{counters: make(map[string]int)}
 }
-
-
 
 func (g *StableIDGenerator) Next(kind string, parts ...string) (string, string) {
 	if g == nil {
@@ -50,12 +44,6 @@ func (g *StableIDGenerator) Next(kind string, parts ...string) (string, string) 
 	}
 	return fmt.Sprintf("%s:%s", kind, short), short
 }
-
-
-
-
-
-
 
 func ApplyAuthExcludedModelsMeta(auth *coreauth.Auth, perKey []string, authKind string) {
 	if auth == nil {
@@ -88,15 +76,12 @@ func ApplyAuthExcludedModelsMeta(auth *coreauth.Auth, perKey []string, authKind 
 	}
 }
 
-
-
 func addRequestRetryToMetadata(requestRetry *int, metadata map[string]any) {
 	if requestRetry == nil || *requestRetry < 0 || metadata == nil {
 		return
 	}
 	metadata["request_retry"] = *requestRetry
 }
-
 
 func addRequestScopedErrorsToMetadata(rules []config.RequestScopedErrorRule, metadata map[string]any) {
 	if len(rules) == 0 || metadata == nil {
@@ -118,9 +103,6 @@ func fingerprintProfileFromMetadata(metadata map[string]any) string {
 	return ""
 }
 
-
-
-
 func applyFingerprintProfileAttribute(auth *coreauth.Auth, metadata map[string]any) {
 	if auth == nil {
 		return
@@ -134,8 +116,6 @@ func applyFingerprintProfileAttribute(auth *coreauth.Auth, metadata map[string]a
 	}
 	auth.Attributes["fingerprint_profile"] = profile
 }
-
-
 
 func addConfigHeadersToAttrs(headers map[string]string, attrs map[string]string) {
 	if len(headers) == 0 || attrs == nil {

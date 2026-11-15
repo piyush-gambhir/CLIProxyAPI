@@ -77,7 +77,6 @@ func TestGenerateFromContextHonorsExplicitFalse(t *testing.T) {
 
 func TestRecordOmittedGenerateIsEnabled(t *testing.T) {
 
-
 	record := Record{
 		Provider: "openai",
 		Model:    "gpt-5.4",

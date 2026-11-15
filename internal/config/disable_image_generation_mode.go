@@ -9,14 +9,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
-
-
-
-
-
-
 type DisableImageGenerationMode int
 
 const (
@@ -90,7 +82,6 @@ func parseDisableImageGenerationNode(value *yaml.Node) (DisableImageGenerationMo
 		return DisableImageGenerationOff, nil
 	}
 
-
 	var b bool
 	if err := value.Decode(&b); err == nil && value.Kind == yaml.ScalarNode && value.ShortTag() == "!!bool" {
 		if b {
@@ -98,7 +89,6 @@ func parseDisableImageGenerationNode(value *yaml.Node) (DisableImageGenerationMo
 		}
 		return DisableImageGenerationOff, nil
 	}
-
 
 	var s string
 	if err := value.Decode(&s); err != nil {
@@ -113,7 +103,6 @@ func parseDisableImageGenerationJSON(data []byte) (DisableImageGenerationMode, e
 		return DisableImageGenerationOff, nil
 	}
 
-
 	var b bool
 	if err := json.Unmarshal(trimmed, &b); err == nil {
 		if b {
@@ -121,7 +110,6 @@ func parseDisableImageGenerationJSON(data []byte) (DisableImageGenerationMode, e
 		}
 		return DisableImageGenerationOff, nil
 	}
-
 
 	var s string
 	if err := json.Unmarshal(trimmed, &s); err != nil {

@@ -12,21 +12,12 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-
-
-
-
-
-
-
 type pluginRefreshCompatExecutor struct {
 	inner    coreauth.ProviderExecutor
 	host     *Host
 	cfg      *config.Config
 	provider string
 }
-
-
 
 func NewPluginRefreshCompatExecutor(inner coreauth.ProviderExecutor, host *Host, cfg *config.Config) coreauth.ProviderExecutor {
 	if inner == nil {
@@ -41,13 +32,10 @@ func NewPluginRefreshCompatExecutor(inner coreauth.ProviderExecutor, host *Host,
 	}
 }
 
-
 func IsPluginRefreshCompatExecutor(executor coreauth.ProviderExecutor) bool {
 	_, ok := executor.(*pluginRefreshCompatExecutor)
 	return ok
 }
-
-
 
 func UnwrapPluginRefreshCompatExecutor(executor coreauth.ProviderExecutor) (coreauth.ProviderExecutor, bool) {
 	wrapper, ok := executor.(*pluginRefreshCompatExecutor)
@@ -109,7 +97,6 @@ func (e *pluginRefreshCompatExecutor) HttpRequest(ctx context.Context, auth *cor
 	return e.inner.HttpRequest(ctx, auth, req)
 }
 
-
 func (e *pluginRefreshCompatExecutor) PrepareRequest(req *http.Request, auth *coreauth.Auth) error {
 	if e == nil || e.inner == nil {
 		return fmt.Errorf("plugin refresh compat executor is unavailable")
@@ -163,7 +150,6 @@ func authHasRefreshToken(auth *coreauth.Auth) bool {
 	}
 	return false
 }
-
 
 func (e *pluginRefreshCompatExecutor) SupportsApplyPatch() bool {
 	if e == nil || e.inner == nil {

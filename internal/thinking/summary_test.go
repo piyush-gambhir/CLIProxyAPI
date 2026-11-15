@@ -43,7 +43,6 @@ func TestExtractSummaryConfig(t *testing.T) {
 		{name: "claude updates without type is invalid", format: "claude", body: `{"thinking":{"display":"updates"}}`, wantMode: SummaryUnspecified},
 		{name: "claude display with auto type is invalid", format: "claude", body: `{"thinking":{"type":"auto","display":"summarized"}}`, wantMode: SummaryUnspecified},
 
-
 		{name: "claude enabled display without budget is valid", format: "claude", body: `{"thinking":{"type":"enabled","display":"summarized"}}`, wantMode: SummaryEnabled, wantDetail: "auto"},
 		{name: "claude enabled updates without budget is valid", format: "claude", body: `{"thinking":{"type":"enabled","display":"updates"}}`, wantMode: SummaryEnabled, wantDetail: "auto"},
 		{name: "claude enabled display with zero budget is invalid", format: "claude", body: `{"thinking":{"type":"enabled","budget_tokens":0,"display":"summarized"}}`, wantMode: SummaryUnspecified},
@@ -103,7 +102,6 @@ func TestApplySummaryConfig(t *testing.T) {
 		{name: "chat enabled invents no effort", format: "openai", config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning_effort", want: ""},
 		{name: "chat enabled preserves active effort", format: "openai", body: `{"reasoning_effort":"high"}`, config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning_effort", want: "high"},
 		{name: "chat enabled preserves disabled effort", format: "openai", body: `{"reasoning_effort":"none"}`, config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning_effort", want: "none"},
-
 
 		{name: "chat disabled preserves requested effort", format: "openai", body: `{"reasoning_effort":"high"}`, config: SummaryConfig{Mode: SummaryDisabled}, path: "reasoning_effort", want: "high"},
 		{name: "chat disabled sets openrouter exclude when present", format: "openai", body: `{"reasoning":{"effort":"high","exclude":false}}`, config: SummaryConfig{Mode: SummaryDisabled}, path: "reasoning.exclude", want: "true"},
@@ -198,8 +196,6 @@ func TestApplySummaryConfigNormalizesTargetAliases(t *testing.T) {
 	}
 }
 
-
-
 func TestApplySummaryConfig_ClaudeDisplayRequiresActiveThinking(t *testing.T) {
 	bodies := []string{
 		`{}`,
@@ -245,9 +241,6 @@ func TestApplySummaryConfigForModel_ClaudeEnabledSummaryUsesValidThinkingMode(t 
 		})
 	}
 }
-
-
-
 
 func TestApplySummaryConfigForModel_ClaudeDisabledSummaryDoesNotEnableThinking(t *testing.T) {
 	for _, model := range []string{"claude-opus-5", "claude-haiku-4-5-20251001"} {

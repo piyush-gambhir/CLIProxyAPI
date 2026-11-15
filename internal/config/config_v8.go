@@ -11,8 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
 type legacyConfig Config
 
 type configPath struct{ old, current string }
@@ -21,15 +19,11 @@ var v8FieldIndexes = make(map[string][]int)
 var v8StructPaths []configPath
 var v8Paths = buildV8Paths()
 
-
-
-
 var v8ClientPaths = []configPath{
 	{"oauth.providers.codex.optimize-multi-agent-v2", "client.codex.optimize-multi-agent-v2"},
 	{"providers.codex.optimize-multi-agent-v2", "client.codex.optimize-multi-agent-v2"},
 	{"codex.optimize-multi-agent-v2", "client.codex.optimize-multi-agent-v2"},
 }
-
 
 var v8SharedPaths = []configPath{
 	{"oauth.providers.codex.disable-codex-cloaking", "upstream.codex.disable-codex-cloaking"},
@@ -176,8 +170,6 @@ func setYAMLPath(root *yaml.Node, path string, value *yaml.Node) {
 	*dst = *deepCopyNode(value)
 }
 
-
-
 func setYAMLPathWithComments(root *yaml.Node, path string, value *yaml.Node) {
 	setYAMLPath(root, path, value)
 	parts := strings.Split(path, ".")
@@ -190,7 +182,6 @@ func setYAMLPathWithComments(root *yaml.Node, path string, value *yaml.Node) {
 	yamlPath(root, path).HeadComment = ""
 	yamlPath(root, path).FootComment = ""
 }
-
 
 func copyYAMLPathValue(root *yaml.Node, path string) *yaml.Node {
 	copy := deepCopyNode(yamlPath(root, path))
@@ -208,7 +199,6 @@ func copyYAMLPathValue(root *yaml.Node, path string) *yaml.Node {
 		copy.HeadComment = strings.TrimSpace(key.HeadComment + "\n" + key.LineComment + "\n" + copy.HeadComment)
 		copy.FootComment = strings.TrimSpace(copy.FootComment + "\n" + key.FootComment)
 	}
-
 
 	for i := len(parents) - 1; i > 0 && len(parents[i].Content) == 2; i-- {
 		idx := findMapKeyIndex(parents[i-1], parts[i-1])
@@ -246,10 +236,6 @@ func legacyPath(root *yaml.Node, path string) *yaml.Node {
 	return node
 }
 
-
-
-
-
 func (cfg *Config) EffectiveResponseCompression() ResponseCompressionConfig {
 	if cfg == nil {
 		return ResponseCompressionConfig{}
@@ -260,16 +246,12 @@ func (cfg *Config) EffectiveResponseCompression() ResponseCompressionConfig {
 	return cfg.ServerResponseCompression
 }
 
-
-
 func (cfg *Config) SyncServerResponseCompression() {
 	if cfg == nil {
 		return
 	}
 	cfg.ServerResponseCompression = cfg.ResponseCompression
 }
-
-
 
 func (cfg *Config) UnmarshalYAML(node *yaml.Node) error {
 	root, err := flattenV8(node)
@@ -302,7 +284,6 @@ func flattenV8(node *yaml.Node) (*yaml.Node, error) {
 	if node.Kind != yaml.MappingNode {
 		return nil, fmt.Errorf("config must be a mapping")
 	}
-
 
 	var shape map[string]any
 	if err := node.Decode(&shape); err != nil {
@@ -386,7 +367,6 @@ var sharedKeyFields = map[string]bool{
 	"models": true, "excluded-models": true, "disable-cooling": true,
 	"request-retry": true, "request-scoped-errors": true,
 
-
 	"connection-pool": true,
 }
 
@@ -450,9 +430,6 @@ func expandV8Groups(groups *yaml.Node, provider string) (*yaml.Node, error) {
 				}
 				if field == "connection-pool" {
 
-
-
-
 					setYAMLPath(item, field, mergeConnectionPoolNode(yamlPath(group, field), key.Content[i+1]))
 					continue
 				}
@@ -463,8 +440,6 @@ func expandV8Groups(groups *yaml.Node, provider string) (*yaml.Node, error) {
 	}
 	return out, nil
 }
-
-
 
 func mergeConnectionPoolNode(base, override *yaml.Node) *yaml.Node {
 	merged := deepCopyNode(base)
@@ -479,8 +454,6 @@ func mergeConnectionPoolNode(base, override *yaml.Node) *yaml.Node {
 	}
 	return merged
 }
-
-
 
 func groupLegacyKeys(keys *yaml.Node, provider string) *yaml.Node {
 	out := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
@@ -511,8 +484,6 @@ func groupLegacyKeys(keys *yaml.Node, provider string) *yaml.Node {
 	return out
 }
 
-
-
 func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -534,7 +505,6 @@ func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-
 
 	paths := append(append([]configPath(nil), v8Aliases...), v8Paths...)
 	for _, path := range append(append([]configPath(nil), v8StructPaths...), v8SharedStructPaths...) {
@@ -582,7 +552,6 @@ func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	}
 	if migrate {
 
-
 		if err := commentUnknownV8Sections(root); err != nil {
 			return nil, false, err
 		}
@@ -595,8 +564,6 @@ func NormalizeConfigLayout(data []byte, migrate bool) ([]byte, bool, error) {
 	out, err := yaml.Marshal(&doc)
 	return out, true, err
 }
-
-
 
 func IsV8ConfigLayout(root *yaml.Node) bool {
 	if root == nil || root.Kind != yaml.MappingNode {
@@ -646,7 +613,6 @@ var (
 	v8WarnMu   sync.RWMutex
 	v8WarnFunc func(section, msg string)
 )
-
 
 func SetV8MigrationWarnFunc(fn func(section, msg string)) {
 	v8WarnMu.Lock()
@@ -769,9 +735,6 @@ func commentUnknownV8Fields(node *yaml.Node, archive *yaml.Node, allowed map[str
 	return nil
 }
 
-
-
-
 func normalizeV8PrivateIPAlias(root *yaml.Node, migrate bool) (bool, error) {
 	const old = "codex.live-media-relay.allow-private-remote-ips"
 	const canonical = "codex.live-media-relay.disable-private-remote-ips"
@@ -797,8 +760,6 @@ func normalizeV8PrivateIPAlias(root *yaml.Node, migrate bool) (bool, error) {
 	deleteYAMLPath(root, old)
 	return true, nil
 }
-
-
 
 func restoreV8Layout(root, layout *yaml.Node, original []byte, generated *yaml.Node) error {
 	for _, path := range v8Paths {
@@ -872,10 +833,6 @@ func preserveV8Comments(dst, src *yaml.Node) {
 	}
 }
 
-
-
-
-
 func expandConfigAliases(node *yaml.Node) *yaml.Node {
 	if node.Kind == yaml.AliasNode {
 		return expandConfigAliases(node.Alias)
@@ -910,8 +867,6 @@ func expandConfigAliases(node *yaml.Node) *yaml.Node {
 	}
 	return &copy
 }
-
-
 
 func ValidateV8Config(data []byte) error {
 	var doc yaml.Node
@@ -953,7 +908,6 @@ func ValidateV8Config(data []byte) error {
 		}
 	}
 	deleteYAMLPath(flat, "config-version")
-
 
 	for _, path := range v8Paths {
 		parts := strings.Split(path.current, ".")

@@ -22,12 +22,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 )
 
-
-
-
 type PostAuthHook func(context.Context, *Auth) error
-
-
 
 type RequestInfo struct {
 	Query   url.Values
@@ -36,11 +31,9 @@ type RequestInfo struct {
 
 type requestInfoKey struct{}
 
-
 func WithRequestInfo(ctx context.Context, info *RequestInfo) context.Context {
 	return context.WithValue(ctx, requestInfoKey{}, info)
 }
-
 
 func GetRequestInfo(ctx context.Context) *RequestInfo {
 	if val, ok := ctx.Value(requestInfoKey{}).(*RequestInfo); ok {
@@ -49,9 +42,7 @@ func GetRequestInfo(ctx context.Context) *RequestInfo {
 	return nil
 }
 
-
 type Auth struct {
-
 	ID string `json:"id"`
 
 	RegistrationEpoch uint64 `json:"registration_epoch,omitempty"`
@@ -84,8 +75,6 @@ type Auth struct {
 
 	ProxyURL string `json:"proxy_url,omitempty"`
 
-
-
 	ProxyConnectionPool *ProxyConnectionPoolOverride `json:"proxy_connection_pool,omitempty"`
 
 	Attributes map[string]string `json:"attributes,omitempty"`
@@ -110,9 +99,7 @@ type Auth struct {
 
 	ModelStates map[string]*ModelState `json:"model_states,omitempty"`
 
-
 	Runtime any `json:"-"`
-
 
 	RejectedAccessToken string `json:"-"`
 
@@ -132,7 +119,6 @@ type Auth struct {
 
 	AdoptedAt time.Time `json:"-"`
 
-
 	AdoptedGrantHash string `json:"-"`
 
 	InferenceVerified bool `json:"-"`
@@ -146,11 +132,6 @@ type Auth struct {
 	Success int64 `json:"-"`
 	Failed  int64 `json:"-"`
 
-
-
-
-
-
 	cooldownRecordedSeq uint64    `json:"-"`
 	forceCooldownUntil  time.Time `json:"-"`
 	credQuotaForceUntil time.Time `json:"-"`
@@ -158,9 +139,6 @@ type Auth struct {
 
 	recentRequests recentRequestRing `json:"-"`
 	indexAssigned  bool              `json:"-"`
-
-
-
 
 	fileSnapshotPath   string `json:"-"`
 	fileSnapshotDigest string `json:"-"`
@@ -189,8 +167,6 @@ func canonicalAuthFileDigest(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-
-
 func (a *Auth) BindFileSnapshot(path string, data []byte) {
 	if a == nil || len(data) == 0 {
 		return
@@ -205,8 +181,6 @@ func (a *Auth) BindFileSnapshot(path string, data []byte) {
 
 const invalidatedFileSnapshotDigest = "invalidated"
 
-
-
 func (a *Auth) ClearFileSnapshot() {
 	if a == nil {
 		return
@@ -215,8 +189,6 @@ func (a *Auth) ClearFileSnapshot() {
 	a.fileSnapshotDigest = ""
 }
 
-
-
 func (a *Auth) InvalidateFileSnapshot() {
 	if !a.HasFileSnapshot() {
 		return
@@ -224,12 +196,9 @@ func (a *Auth) InvalidateFileSnapshot() {
 	a.fileSnapshotDigest = invalidatedFileSnapshotDigest
 }
 
-
-
 func (a *Auth) HasFileSnapshot() bool {
 	return a != nil && a.Generation == 0 && a.RegistrationEpoch == 0 && a.fileSnapshotDigest != ""
 }
-
 
 func (a *Auth) FileSnapshotPath() string {
 	if a == nil {
@@ -245,8 +214,6 @@ func (a *Auth) FileSnapshotPath() string {
 	return path
 }
 
-
-
 func (a *Auth) SameFileSnapshot(other *Auth) bool {
 	if !a.HasFileSnapshot() || !other.HasFileSnapshot() {
 		return false
@@ -256,9 +223,6 @@ func (a *Auth) SameFileSnapshot(other *Auth) bool {
 	}
 	return a.fileSnapshotDigest == other.fileSnapshotDigest && a.fileSnapshotPath == other.fileSnapshotPath
 }
-
-
-
 
 func (a *Auth) FileSnapshotMatchesDisk() bool {
 	if !a.HasFileSnapshot() {
@@ -281,7 +245,6 @@ const (
 	AttributeVirtualSource   = "virtual_source"
 	pluginVirtualAttrEnabled = "true"
 )
-
 
 func MarkPluginVirtualAuth(auth *Auth, sourcePath string, ordinal int) {
 	if auth == nil {
@@ -309,7 +272,6 @@ func MarkPluginVirtualAuth(auth *Auth, sourcePath string, ordinal int) {
 		strconv.Itoa(ordinal),
 	}, "|")
 }
-
 
 func IsPluginVirtualAuth(auth *Auth) bool {
 	if auth == nil || len(auth.Attributes) == 0 {
@@ -339,9 +301,7 @@ type RecentRequestBucket struct {
 	Failed  int64  `json:"failed"`
 }
 
-
 type QuotaState struct {
-
 	Exceeded bool `json:"exceeded"`
 
 	Reason string `json:"reason,omitempty"`
@@ -352,18 +312,11 @@ type QuotaState struct {
 
 	ObservedAt time.Time `json:"observed_at,omitempty"`
 
-
-
-
-
-
 	Signals map[string]string `json:"signals,omitempty"`
-
 
 	cooldownSignals   map[string]string
 	cooldownEvaluated bool
 }
-
 
 func (q QuotaState) Clone() QuotaState {
 	copyQuota := q
@@ -382,9 +335,7 @@ func (q QuotaState) Clone() QuotaState {
 	return copyQuota
 }
 
-
 type ModelState struct {
-
 	Status Status `json:"status"`
 
 	StatusMessage string `json:"status_message,omitempty"`
@@ -399,27 +350,11 @@ type ModelState struct {
 
 	UpdatedAt time.Time `json:"updated_at"`
 
-
-
-
-
 	cooldownRecordedSeq uint64    `json:"-"`
 	forceCooldownUntil  time.Time `json:"-"`
 	forceCooldownSeeded bool      `json:"-"`
 
-
-
-
-
-
-
-
 	credentialQuotaShadow *ModelState `toml:"credential_quota_shadow,omitempty"`
-
-
-
-
-
 
 	credentialQuotaPropagated bool `toml:"credential_quota_propagated,omitempty"`
 }
@@ -488,7 +423,6 @@ func (a *Auth) RecentRequestsSnapshot(now time.Time) []RecentRequestBucket {
 	return out
 }
 
-
 func (a *Auth) Clone() *Auth {
 	if a == nil {
 		return nil
@@ -525,14 +459,11 @@ func (a *Auth) Clone() *Auth {
 	return &copyAuth
 }
 
-
-
 type ProxyConnectionPoolOverride struct {
 	Enabled             *bool  `json:"enabled,omitempty"`
 	IdleConnTimeout     string `json:"idle-conn-timeout,omitempty"`
 	MaxIdleConnsPerHost *int   `json:"max-idle-conns-per-host,omitempty"`
 }
-
 
 func (o *ProxyConnectionPoolOverride) seedKey() string {
 	if o == nil {
@@ -601,7 +532,6 @@ func stableAuthIndex(seed string) string {
 	return hex.EncodeToString(sum[:8])
 }
 
-
 func OAuthGrantFingerprint(accessToken, refreshToken, email, accountID string) string {
 	accessToken = strings.TrimSpace(accessToken)
 	refreshToken = strings.TrimSpace(refreshToken)
@@ -613,7 +543,6 @@ func OAuthGrantFingerprint(accessToken, refreshToken, email, accountID string) s
 	sum := sha256.Sum256([]byte(accessToken + "\x00" + refreshToken + "\x00" + email + "\x00" + accountID))
 	return hex.EncodeToString(sum[:])
 }
-
 
 func AuthGrantFingerprint(a *Auth) string {
 	if a == nil {
@@ -736,7 +665,6 @@ func (a *Auth) indexSeed() string {
 	return ""
 }
 
-
 func (a *Auth) EnsureIndex() string {
 	if a == nil {
 		return ""
@@ -758,7 +686,6 @@ func (a *Auth) EnsureIndex() string {
 	return idx
 }
 
-
 func (m *ModelState) Clone() *ModelState {
 	if m == nil {
 		return nil
@@ -778,7 +705,6 @@ func (m *ModelState) Clone() *ModelState {
 	}
 	return &copyState
 }
-
 
 func (m *ModelState) cloneShallow() *ModelState {
 	if m == nil {
@@ -812,9 +738,6 @@ func (a *Auth) ProxyInfo() string {
 	return "via proxy"
 }
 
-
-
-
 func (a *Auth) DisableCoolingOverride() (bool, bool) {
 	if a == nil || a.Metadata == nil {
 		return false, false
@@ -832,9 +755,6 @@ func (a *Auth) DisableCoolingOverride() (bool, bool) {
 	return false, false
 }
 
-
-
-
 func (a *Auth) ToolPrefixDisabled() bool {
 	if a == nil || a.Metadata == nil {
 		return false
@@ -848,9 +768,6 @@ func (a *Auth) ToolPrefixDisabled() bool {
 	}
 	return false
 }
-
-
-
 
 func (a *Auth) RequestRetryOverride() (int, bool) {
 	if a == nil || a.Metadata == nil {
@@ -966,7 +883,6 @@ func (a *Auth) AccountInfo() (string, string) {
 	}
 }
 
-
 func IsCodexUseSIWC(a *Auth) bool {
 	if a == nil {
 		return false
@@ -986,7 +902,6 @@ func IsCodexUseSIWC(a *Auth) bool {
 	}
 	return enabled
 }
-
 
 func IsCodexClientUserAgent(userAgent string) bool {
 	ua := strings.ToLower(strings.TrimSpace(userAgent))
@@ -1023,15 +938,12 @@ func headerValueFromHTTPHeader(headers http.Header, name string) string {
 
 type codexClientRequestContextKey struct{}
 
-
-
 func WithCodexClientRequest(ctx context.Context, isCodexClient bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, codexClientRequestContextKey{}, isCodexClient)
 }
-
 
 func IsCodexClientRequest(ctx context.Context, clientHeaders ...http.Header) bool {
 	for _, headers := range clientHeaders {
@@ -1052,8 +964,6 @@ func IsCodexClientRequest(ctx context.Context, clientHeaders ...http.Header) boo
 	return false
 }
 
-
-
 func IsCodexUseSIWCForRequest(ctx context.Context, a *Auth, clientHeaders ...http.Header) bool {
 	if !IsCodexUseSIWC(a) {
 		return false
@@ -1063,7 +973,6 @@ func IsCodexUseSIWCForRequest(ctx context.Context, a *Auth, clientHeaders ...htt
 	}
 	return true
 }
-
 
 func (a *Auth) OuterExpirationTime() (time.Time, bool) {
 	if a == nil {
@@ -1084,8 +993,6 @@ func (a *Auth) OuterExpirationTime() (time.Time, bool) {
 	return time.Time{}, false
 }
 
-
-
 func (a *Auth) ExpirationTime() (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1100,15 +1007,9 @@ func (a *Auth) ExpirationTime() (time.Time, bool) {
 	return a.OuterExpirationTime()
 }
 
-
-
-
 const CodexOuterRefreshLead = 96 * time.Hour
 
-
-
 const CodexSIWCRefreshLead = 5 * time.Minute
-
 
 func (a *Auth) SIWCEarliestRefreshTime() (time.Time, bool) {
 	if a == nil || a.Metadata == nil {
@@ -1118,7 +1019,6 @@ func (a *Auth) SIWCEarliestRefreshTime() (time.Time, bool) {
 	return lookupMetadataTime(siwc, "earliest_refresh_at")
 }
 
-
 type SIWCStatus string
 
 const (
@@ -1126,9 +1026,6 @@ const (
 	SIWCStatusValid   SIWCStatus = "valid"
 	SIWCStatusInvalid SIWCStatus = "invalid"
 )
-
-
-
 
 func (a *Auth) SIWCRealExpirationTime() (time.Time, bool) {
 	if a == nil || a.Metadata == nil {
@@ -1166,8 +1063,6 @@ func (a *Auth) isSIWCAccessTokenRejected(siwcToken string) bool {
 		(a.RejectedAccessToken != "" && a.RejectedAccessToken == siwcToken)
 }
 
-
-
 func (a *Auth) CodexSIWCStatus(now time.Time) SIWCStatus {
 	if a == nil || !IsCodexUseSIWC(a) {
 		return SIWCStatusOff
@@ -1189,7 +1084,6 @@ func (a *Auth) CodexSIWCStatus(now time.Time) SIWCStatus {
 	return SIWCStatusValid
 }
 
-
 func (a *Auth) SIWCExpirationTime() (time.Time, bool) {
 	if a == nil || a.Metadata == nil {
 		return time.Time{}, false
@@ -1208,7 +1102,6 @@ func (a *Auth) SIWCExpirationTime() (time.Time, bool) {
 	}
 	return time.Time{}, false
 }
-
 
 func CodexOuterNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh bool, needsRefresh bool) {
 	if a == nil {
@@ -1304,7 +1197,6 @@ func CodexOuterNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh
 	return now, true, true
 }
 
-
 func CodexSIWCNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh bool, needsRefresh bool) {
 	if a == nil || a.Metadata == nil {
 		return time.Time{}, false, false
@@ -1357,8 +1249,6 @@ func CodexSIWCNeedsRefresh(a *Auth, now time.Time) (dueAt time.Time, hasRefresh 
 	return due, true, false
 }
 
-
-
 func (a *Auth) OuterAccessTokenExpirationTime() (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1376,8 +1266,6 @@ func (a *Auth) OuterAccessTokenExpirationTime() (time.Time, bool) {
 	return a.OuterExpirationTime()
 }
 
-
-
 func (a *Auth) AccessTokenExpirationTimeForRequest(ctx context.Context, clientHeaders ...http.Header) (time.Time, bool) {
 	if a == nil {
 		return time.Time{}, false
@@ -1387,8 +1275,6 @@ func (a *Auth) AccessTokenExpirationTimeForRequest(ctx context.Context, clientHe
 	}
 	return a.AccessTokenExpirationTime()
 }
-
-
 
 func (a *Auth) AccessTokenExpirationTime() (time.Time, bool) {
 	if a == nil {
@@ -1411,7 +1297,6 @@ func (a *Auth) AccessTokenExpirationTime() (time.Time, bool) {
 	}
 	return a.ExpirationTime()
 }
-
 
 func (a *Auth) HasValidAccessToken(now time.Time) bool {
 	if a == nil {
@@ -1442,7 +1327,6 @@ const (
 	RecoveryStageLoaded            = "loaded"
 )
 
-
 func (a *Auth) RenewalStateAt(now time.Time) string {
 	if a == nil {
 		return ""
@@ -1464,7 +1348,6 @@ func (a *Auth) RenewalStateAt(now time.Time) string {
 	}
 	return RenewalStateAwaitingFirstRenewal
 }
-
 
 func (a *Auth) RecoveryStageAt(now time.Time) string {
 	if a == nil {
@@ -1567,7 +1450,6 @@ func expirationFromMap(meta map[string]any) (time.Time, bool) {
 	}
 	return time.Time{}, false
 }
-
 
 func parseJWTExp(token string) (time.Time, bool) {
 	token = strings.TrimSpace(token)

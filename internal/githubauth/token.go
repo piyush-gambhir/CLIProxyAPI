@@ -1,4 +1,3 @@
-
 package githubauth
 
 import (
@@ -10,12 +9,10 @@ import (
 
 var configuredToken atomic.Pointer[string]
 
-
 func SetToken(token string) {
 	token = strings.TrimSpace(token)
 	configuredToken.Store(&token)
 }
-
 
 func ResolveToken() string {
 	if token := configuredToken.Load(); token != nil && *token != "" {
@@ -32,7 +29,6 @@ func ResolveToken() string {
 	}
 	return strings.TrimSpace(os.Getenv("GITSTORE_GIT_TOKEN"))
 }
-
 
 func TokenForURL(rawURL string) string {
 	u, err := url.Parse(rawURL)

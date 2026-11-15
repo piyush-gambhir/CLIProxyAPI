@@ -25,8 +25,6 @@ const (
 	defaultXAISpeechSampleRate = 24000
 )
 
-
-
 var openAISpeechVoices = map[string]string{
 	"alloy":   "ara",
 	"ash":     "orion",

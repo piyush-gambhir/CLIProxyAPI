@@ -16,8 +16,6 @@ const (
 	geminiVideoPart = `{"inline_data":{"mime_type":"video/mp4","data":"AAAAIGZ0eXA="}}`
 )
 
-
-
 func geminiTurnToClaude(finalParts string) sdktranslator.RequestEnvelope {
 	input := `{"contents":[{"role":"user","parts":[{"text":"a"}]},{"role":"model","parts":[{"text":"b"}]},{"role":"user","parts":[` + finalParts + `]}]}`
 	return sdktranslator.TranslateRequestEnvelope(context.Background(), sdktranslator.FormatGemini, sdktranslator.FormatClaude, sdktranslator.RequestEnvelope{

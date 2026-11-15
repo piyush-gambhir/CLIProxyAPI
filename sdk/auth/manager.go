@@ -15,13 +15,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/proxyutil"
 )
 
-
 type Manager struct {
 	authenticators map[string]Authenticator
 	store          coreauth.Store
 }
-
-
 
 func NewManager(store coreauth.Store, authenticators ...Authenticator) *Manager {
 	mgr := &Manager{
@@ -34,7 +31,6 @@ func NewManager(store coreauth.Store, authenticators ...Authenticator) *Manager 
 	return mgr
 }
 
-
 func (m *Manager) Register(a Authenticator) {
 	if a == nil {
 		return
@@ -45,11 +41,9 @@ func (m *Manager) Register(a Authenticator) {
 	m.authenticators[a.Provider()] = a
 }
 
-
 func (m *Manager) SetStore(store coreauth.Store) {
 	m.store = store
 }
-
 
 func (m *Manager) Login(ctx context.Context, provider string, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, string, error) {
 	auth, ok := m.authenticators[provider]
@@ -118,17 +112,9 @@ func (m *Manager) Login(ctx context.Context, provider string, cfg *config.Config
 		metadataStringValue(legacyXAICredential.Metadata, "email") != ""
 	if adoptXAICredential {
 
-
-
-
-
-
-
 		if _, isFileNameStore := m.store.(interface{ SetBaseDir(string) }); !isFileNameStore {
 			adoptXAICredential = false
 		} else if disabled, hasDisabled := record.Metadata["disabled"].(bool); hasDisabled && disabled {
-
-
 
 			adoptXAICredential = false
 		}
@@ -203,12 +189,6 @@ func metadataStringValue(metadata map[string]any, key string) string {
 	value, _ := metadata[key].(string)
 	return strings.TrimSpace(value)
 }
-
-
-
-
-
-
 
 func adoptLegacyXAIFileName(record, legacy *coreauth.Auth) {
 	legacyFileName := strings.TrimSpace(legacy.FileName)

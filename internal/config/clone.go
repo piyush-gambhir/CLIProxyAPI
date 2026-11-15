@@ -8,7 +8,6 @@ import (
 
 var yamlNodeType = reflect.TypeOf(yaml.Node{})
 
-
 func (cfg *Config) CloneForRuntime() *Config {
 	if cfg == nil {
 		return nil

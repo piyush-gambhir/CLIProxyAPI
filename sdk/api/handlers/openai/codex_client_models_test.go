@@ -47,9 +47,6 @@ func TestCodexClientModelsResponseMultiAgentV2FollowsConfig(t *testing.T) {
 				t.Fatalf("missing synthesized model %q", modelID)
 			}
 
-
-
-
 			value, exists := entry["multi_agent_version"]
 			if tt.enabled {
 				if !exists || value != "v2" {
@@ -81,7 +78,6 @@ func TestCodexClientModelsResponseClientVersionFiltering(t *testing.T) {
 	base := handlers.NewBaseAPIHandlers(&config.SDKConfig{}, nil)
 	handler := NewOpenAIAPIHandler(base)
 
-
 	respOld := handler.codexClientModelsResponse("0.137.0")
 	modelsOld, ok := respOld["models"].([]map[string]any)
 	if !ok {
@@ -109,7 +105,6 @@ func TestCodexClientModelsResponseClientVersionFiltering(t *testing.T) {
 	if !foundOldSol {
 		t.Fatal("0.137.0 expected gpt-5.6-sol in catalog")
 	}
-
 
 	respNew := handler.codexClientModelsResponse("0.149.1")
 	modelsNew, ok := respNew["models"].([]map[string]any)
@@ -303,7 +298,6 @@ func TestCodexClientModelsResponse_DevinDisplayName(t *testing.T) {
 		t.Errorf("standard-model display_name = %q, want Standard Model", got)
 	}
 }
-
 
 type catalogUnknownExecutor struct{ auth.ProviderExecutor }
 

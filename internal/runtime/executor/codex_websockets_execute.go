@@ -253,9 +253,6 @@ func (e *CodexWebsocketsExecutor) Execute(ctx context.Context, auth *cliproxyaut
 				return resp, errSend
 			}
 
-
-
-
 			connRetry, closerRetry, respHSRetry, errDialRetry := e.ensureUpstreamConnWithSIWC(ctx, auth, sess, authID, wsURL, wsHeaders, useSIWC)
 			if errDialRetry == nil && connRetry != nil {
 				previousConn, previousReadCh := conn, readCh

@@ -10,9 +10,6 @@ const (
 	streamEventLineOverhead          = 32
 )
 
-
-
-
 type StreamResponseModelObserver struct {
 	reporter      *UsageReporter
 	buf           []byte
@@ -22,8 +19,6 @@ type StreamResponseModelObserver struct {
 	overflow      bool
 	eventOverflow bool
 }
-
-
 
 func NewStreamResponseModelObserver(reporter *UsageReporter) *StreamResponseModelObserver {
 	return &StreamResponseModelObserver{
@@ -38,7 +33,6 @@ func (o *StreamResponseModelObserver) bound() int {
 	}
 	return o.maxBound
 }
-
 
 func (o *StreamResponseModelObserver) Feed(chunk []byte) {
 	if o == nil || o.reporter == nil || len(chunk) == 0 {
@@ -108,7 +102,6 @@ func (o *StreamResponseModelObserver) Feed(chunk []byte) {
 	}
 }
 
-
 func (o *StreamResponseModelObserver) Finish() {
 	if o == nil || o.reporter == nil {
 		return
@@ -131,7 +124,6 @@ func (o *StreamResponseModelObserver) handleLine(line []byte) {
 	if o.eventOverflow {
 		return
 	}
-
 
 	o.reporter.ObserveResponseModel(line)
 

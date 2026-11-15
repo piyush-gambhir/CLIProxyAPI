@@ -445,7 +445,6 @@ func interactionsStepDeltaToResponses(root ojson.Result, st *interactionsToRespo
 		return interactionsPatchFailure(st, errResolveStepIndex)
 	}
 
-
 	if call := st.FunctionCalls[index]; call != nil && call.SourceStopped && root.Get("delta.type").String() == "arguments_delta" && root.Get("delta.arguments").String() != "" {
 		errSourceStop := fmt.Errorf("apply_patch delta after source stop")
 		if call.PatchCall != nil || st.ToolIdentityMap[call.RawName].ApplyPatch || st.ToolIdentityMap[root.Get("step.name").String()].ApplyPatch {
@@ -460,7 +459,6 @@ func interactionsStepDeltaToResponses(root ojson.Result, st *interactionsToRespo
 		if st.Terminal {
 			return updates
 		}
-
 
 		rawDoc := ojson.NewDocString(root.Raw)
 		_ = rawDoc.Delete("step")
@@ -565,7 +563,6 @@ func interactionsStepStopToResponses(root ojson.Result, st *interactionsToRespon
 	if errResolveStepIndex != nil {
 		return interactionsPatchFailure(st, errResolveStepIndex)
 	}
-
 
 	if call := st.FunctionCalls[index]; call != nil {
 		call.SourceStopped = true
@@ -1540,7 +1537,6 @@ func (st *responsesToInteractionsStreamState) hasSentFunctionArgs(keys []string)
 	return false
 }
 
-
 func interactionsToolIdentityMap(rawJSON []byte, forAntigravity bool) map[string]util.ResponsesToolIdentity {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	if request := root.Get("request"); request.Exists() {
@@ -1572,7 +1568,6 @@ func interactionsPatchDelta(st *interactionsToResponsesStreamState, call *intera
 	}
 	return [][]byte{emitResponsesEvent("response.custom_tool_call_input.delta", translatorcommon.ApplyPatchInputDelta(call.PatchCall, delta, nextResponsesSeq(st)))}
 }
-
 
 func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int, st *interactionsToResponsesStreamState) (int, error) {
 	stepIndex := step.Get("index")
@@ -1665,7 +1660,6 @@ func interactionsResolveStepIndex(explicitIndex, step ojson.Result, fallback int
 		}
 	}
 
-
 	if st.ItemIdentityIndexes == nil {
 		st.ItemIdentityIndexes = make(map[string]int)
 	}
@@ -1701,7 +1695,6 @@ func interactionsHasPatchBridge(st *interactionsToResponsesStreamState) bool {
 	}
 	return false
 }
-
 
 func interactionsUpdateFunctionCall(index int, step ojson.Result, st *interactionsToResponsesStreamState, initial bool) [][]byte {
 	call := st.FunctionCalls[index]
@@ -1786,7 +1779,6 @@ func interactionsUpdateFunctionCall(index int, step ojson.Result, st *interactio
 			return interactionsPatchFailure(st, call.PendingError)
 		}
 
-
 		if !(call.ItemIDSeen && call.CallIDSeen) && !call.IdentityFinalized {
 			return nil
 		}
@@ -1865,8 +1857,6 @@ func interactionsFinishPatchCalls(st *interactionsToResponsesStreamState) [][]by
 		call := st.FunctionCalls[index]
 		if call.PatchCall == nil {
 
-
-
 			if !call.ItemIDSeen {
 				call.ID = firstNonEmpty(call.CallID, interactionsFallbackItemID(st, index))
 			}
@@ -1887,7 +1877,6 @@ func interactionsFinishPatchCalls(st *interactionsToResponsesStreamState) [][]by
 	}
 	return events
 }
-
 
 func (st *interactionsToResponsesStreamState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.Terminal {

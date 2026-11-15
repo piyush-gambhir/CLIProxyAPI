@@ -192,7 +192,6 @@ func TestIssue7431_SchedulerRebuildPreservesUnchangedShardCursors(t *testing.T) 
 		}
 	}
 
-
 	manager.scheduler.rebuild(manager.snapshotAuths())
 
 	pickedAfter, _, errPick := manager.pickNext(ctx, "openai", model, cliproxyexecutor.Options{}, nil)
@@ -297,7 +296,6 @@ func TestIssue7431_DisableCoolingPreservesActiveForceCooldownOnReloadAndUpdate(t
 		t.Fatalf("expected %s to enter force cooldown before reload", auth0.ID)
 	}
 
-
 	manager.SetConfig(buildConfig("sk-ant-unrelated"))
 	got0AfterReload, _ := manager.GetByID(auth0.ID)
 	if IsAuthAvailableForModel(got0AfterReload, model, now) {
@@ -308,7 +306,6 @@ func TestIssue7431_DisableCoolingPreservesActiveForceCooldownOnReloadAndUpdate(t
 		t.Fatalf("scheduler selected %v (err=%v) after config reload, want %s while %s is force-cooled", pickedAfterReload, errPick, auth1.ID, auth0.ID)
 	}
 
-
 	updatedAuth0 := got0AfterReload.Clone()
 	updatedAuth0.Attributes["label_note"] = "reloaded"
 	if _, errUpd := manager.Update(ctx, updatedAuth0); errUpd != nil {
@@ -318,7 +315,6 @@ func TestIssue7431_DisableCoolingPreservesActiveForceCooldownOnReloadAndUpdate(t
 	if IsAuthAvailableForModel(got0AfterUpdate, model, now) {
 		t.Fatalf("Update() erased active ErrorCodeForceCooldown on %s when disable-cooling: true", auth0.ID)
 	}
-
 
 	manager.PersistCooldownStates(ctx)
 	if len(store.savedRecords()) == 0 {
@@ -371,15 +367,12 @@ func TestIssue7431_LargeWeightedPoolEdgeCases(t *testing.T) {
 		}
 		res.finish(true)
 
-
 		subset := []*Auth{full[1], full[2]}
 		pickedSub, resSub := sel.reserve(route, subset, "")
 		if pickedSub == nil {
 			t.Fatal("subset pick returned nil")
 		}
 		resSub.finish(true)
-
-
 
 		pickedNext, resNext := sel.reserve(route, full, "")
 		if pickedNext == nil {
@@ -437,7 +430,6 @@ func TestIssue7431_LargeWeightedPoolEdgeCases(t *testing.T) {
 		if errPick != nil || picked == nil || picked.ID != "prio-hi-0000" {
 			t.Fatalf("pick = %v (err=%v), want prio-hi-0000", picked, errPick)
 		}
-
 
 		if !manager.RemoveIf(ctx, "prio-hi-0000", nil) {
 			t.Fatalf("RemoveIf(prio-hi-0000) returned false")
@@ -549,7 +541,6 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			t.Fatal("expected expired ErrorCodeForceCooldown on model-expired-force to be cleared")
 		}
 
-
 		if _, _, errReset := manager.ResetQuota(ctx, auth.ID); errReset != nil {
 			t.Fatalf("ResetQuota: %v", errReset)
 		}
@@ -557,8 +548,6 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 		if !IsAuthAvailableForModel(gotAfterReset, "model-force", now) {
 			t.Fatal("expected explicit ResetQuota to clear ErrorCodeForceCooldown")
 		}
-
-
 
 		retry := 2 * time.Minute
 		manager.MarkResult(ctx, Result{
@@ -596,7 +585,6 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			}},
 		}
 
-
 		mgrA := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgrA.SetConfig(cfgCoolingOff)
 		authA := &Auth{
@@ -631,8 +619,6 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 		if IsAuthAvailableForModel(gotA, "model-1", checkTime) || IsAuthAvailableForModel(gotA, "model-2", checkTime) {
 			t.Fatalf("ordinary model error overwrote auth.LastError and caused SetConfig to erase active force credential_quota: quota=%+v", gotA.Quota)
 		}
-
-
 
 		mgrB := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgrB.SetConfig(cfgCoolingOn)
@@ -672,7 +658,6 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 		if IsAuthAvailableForModel(gotB, "model-2", checkTimeB) {
 			t.Fatal("expected model-2's independent force cooldown to survive after ordinary credential_quota was cleared")
 		}
-
 
 		storeA := &recordingCooldownStateStore{}
 		mgrA.SetCooldownStateStore(storeA)
@@ -728,7 +713,6 @@ func TestIssue7431_DynamicPoolBoundsAndReservationLifecycle(t *testing.T) {
 		}
 		inFlightRes.finish(false)
 
-
 		sel2 := &WeightedRoundRobinSelector{maxKeys: 2}
 		_, evictResA := sel2.reserve("openai-compatible-cap:a", pool, "")
 		_, evictResB := sel2.reserve("openai-compatible-cap:b", pool, "")
@@ -767,12 +751,9 @@ func TestIssue7431_DynamicPoolBoundsAndReservationLifecycle(t *testing.T) {
 			t.Fatalf("first pick = %v, want epoch-auth-0000", picked1)
 		}
 
-
-
 		sel.ForgetAuth("epoch-auth-0000")
 		_, freshRes := sel.reserve(route, pool, "")
 		freshRes.finish(true)
-
 
 		staleRes.finish(false)
 
@@ -918,7 +899,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("SetConfig after ordinary 500 on same model cleared active force cooldown: state=%+v", gotModelAfterReload.ModelStates["model-same"])
 		}
 
-
 		mgr.MarkResult(ctx, Result{
 			AuthID:     authGlobal.ID,
 			Provider:   providerKey,
@@ -969,7 +949,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		mgr1.SetCooldownStateStore(fileStore)
 		mgr1.SetConfig(cfgOn)
 
-
 		a1 := &Auth{ID: "disk-auth-1", Provider: providerKey, Status: StatusActive, Attributes: map[string]string{"provider_key": providerKey}}
 
 		a2 := &Auth{ID: "disk-auth-2", Provider: providerKey, Status: StatusActive, Attributes: map[string]string{"provider_key": providerKey}}
@@ -1000,7 +979,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusTooManyRequests, Message: "force model-b 10m"},
 		})
 		mgr1.PersistCooldownStates(ctx)
-
 
 		mgr2 := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgr2.SetCooldownStateStore(NewFileCooldownStateStore(cdsDir))
@@ -1114,13 +1092,10 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			}
 		}
 
-
 		picked1, _, errPick1 := mgr.pickNext(ctx, providerKey, model, cliproxyexecutor.Options{}, nil)
 		if errPick1 != nil || picked1 == nil || picked1.ID != "fr-auth-0000" {
 			t.Fatalf("first pick = %v (err=%v), want fr-auth-0000", picked1, errPick1)
 		}
-
-
 
 		if !mgr.RemoveIf(ctx, "fr-auth-0000", nil) {
 			t.Fatal("RemoveIf(fr-auth-0000) returned false")
@@ -1136,7 +1111,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if _, _, errPick2 := mgr.pickNext(ctx, providerKey, model, cliproxyexecutor.Options{}, nil); errPick2 != nil {
 			t.Fatalf("second pick failed: %v", errPick2)
 		}
-
 
 		staleTombstoneEpoch := reRegistered.RegistrationEpoch - 1
 		mgr.forgetWeightedAuthUpTo("fr-auth-0000", staleTombstoneEpoch, ^uint64(0))
@@ -1228,7 +1202,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		const model = "gpt-5-ws-mixed"
 		wsCtx := cliproxyexecutor.WithDownstreamWebsocket(ctx)
 
-
 		sel := &WeightedRoundRobinSelector{}
 		all := make([]*Auth, 0, 1031)
 		wsOnly := make([]*Auth, 0, 1030)
@@ -1266,7 +1239,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if errPick != nil || pickedWithoutHTTP == nil || pickedWithoutHTTP.ID != "codex-ws-0003" {
 			t.Fatalf("selector pick after HTTP peer excluded = %v (err=%v), want codex-ws-0003", pickedWithoutHTTP, errPick)
 		}
-
 
 		schedSel := &WeightedRoundRobinSelector{}
 		mgr := NewManager(nil, schedSel, nil)
@@ -1326,7 +1298,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			return out
 		}
 
-
 		pickedStale, staleRegRes := sel.reserve(route, currentPool(), "")
 		if pickedStale == nil || pickedStale.ID != "small-0" {
 			t.Fatalf("initial pick = %v, want small-0", pickedStale)
@@ -1337,7 +1308,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}); errReg != nil {
 			t.Fatalf("in-place Register replacement: %v", errReg)
 		}
-
 
 		pickedFresh, freshRegRes := sel.reserve(route, currentPool(), "")
 		if pickedFresh == nil || pickedFresh.ID != "small-0" {
@@ -1358,7 +1328,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			}
 		}
 		sel.mu.Unlock()
-
 
 		_, staleLoadRes := sel.reserve(route, currentPool(), "")
 		store.auths = []*Auth{loadItems[0].Clone(), loadItems[1].Clone(), loadItems[2].Clone()}
@@ -1476,8 +1445,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		const model = "gpt-5-http-bound"
 		wsCtx := cliproxyexecutor.WithDownstreamWebsocket(ctx)
 
-
-
 		baseSel := &WeightedRoundRobinSelector{}
 		affSel := NewSessionAffinitySelector(baseSel)
 		t.Cleanup(affSel.Stop)
@@ -1533,7 +1500,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if largeBucketCount != 2 || httpBoundDebt != -2*1029 {
 			t.Fatalf("expected HTTP-bound WS traffic to accumulate both picks in 'http' bucket (debt=%d, want %d; buckets=%d, want 2)", httpBoundDebt, -2*1029, largeBucketCount)
 		}
-
 
 		schedSel := &WeightedRoundRobinSelector{}
 		mgr := NewManager(nil, schedSel, nil)
@@ -1613,7 +1579,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			restoreDone <- mgr.RestoreCooldownStates(ctx)
 		}()
 		<-loadEntered
-
 
 		tenMin := 10 * time.Minute
 		mgr.MarkResult(ctx, Result{
@@ -1768,7 +1733,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		twoMin := 2 * time.Minute
 		tenMin := 10 * time.Minute
 
-
 		mgr.MarkResult(ctx, Result{
 			AuthID: "dual-short-cred-long-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &twoMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusTooManyRequests, Message: "2m cred force"},
@@ -1777,7 +1741,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			AuthID: "dual-short-cred-long-auth", Provider: providerKey, RetryAfter: &tenMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusServiceUnavailable, Message: "10m auth force"},
 		})
-
 
 		mgr.MarkResult(ctx, Result{
 			AuthID: "dual-long-cred-short-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &tenMin,
@@ -1895,7 +1858,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("Update: %v", errUpd)
 		}
 
-
 		mgr.SetConfig(cfg)
 		got, _ := mgr.GetByID("save-race-auth")
 		if IsAuthAvailableForModel(got, "", baseNow.Add(5*time.Minute)) {
@@ -1933,7 +1895,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		})
 		gotBeforeModelErr, _ := mgr.GetByID("agg-force-auth")
 		wantDeadline := gotBeforeModelErr.NextRetryAfter
-
 
 		mgr.MarkResult(ctx, Result{
 			AuthID: "agg-force-auth", Provider: providerKey, Model: "m1",
@@ -1988,14 +1949,12 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			}
 		}
 
-
 		_, seedRes := sel.reserve(route, hugePool, "")
 		seedRes.finish(true)
 		_, inFlightRes := sel.reserve(route, hugePool[:1030], "")
 		if inFlightRes == nil {
 			t.Fatal("expected in-flight reservation on retained 1030 subset")
 		}
-
 
 		for i := 1030; i < len(hugePool); i++ {
 			sel.ForgetAuth(hugePool[i].ID)
@@ -2056,7 +2015,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if errRestore := mgr2.RestoreCooldownStates(ctx); errRestore != nil {
 			t.Fatalf("RestoreCooldownStates: %v", errRestore)
 		}
-
 
 		got, _ := mgr2.GetByID("ord-cred-force-auth")
 		if IsAuthAvailableForModel(got, "m1", baseNow.Add(3*time.Minute)) || IsAuthAvailableForModel(got, "", baseNow.Add(3*time.Minute)) {
@@ -2147,7 +2105,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		twentyMin := 20 * time.Minute
 		twoMin := 2 * time.Minute
 
-
 		mgr.MarkResult(ctx, Result{
 			AuthID: "reverse-dual-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &twentyMin,
 			Error: &Error{Code: "rate_limited", HTTPStatus: http.StatusTooManyRequests, Message: "ordinary 20m cred 429"},
@@ -2159,7 +2116,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		})
 		mgr.PersistCooldownStates(ctx)
 
-
 		mgr.SetConfig(cfgCoolOff)
 		gotReload, _ := mgr.GetByID("reverse-dual-auth")
 		if IsAuthAvailableForModel(gotReload, "m1", baseNow.Add(time.Minute)) || IsAuthAvailableForModel(gotReload, "", baseNow.Add(time.Minute)) {
@@ -2168,7 +2124,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if !IsAuthAvailableForModel(gotReload, "m1", baseNow.Add(3*time.Minute)) || !IsAuthAvailableForModel(gotReload, "", baseNow.Add(3*time.Minute)) {
 			t.Fatalf("20m ordinary credential cooldown survived disable-cooling reload past 2m force window (+3m): NextRetryAfter=%v Quota=%+v", gotReload.NextRetryAfter, gotReload.Quota)
 		}
-
 
 		mgr2 := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgr2.SetCooldownStateStore(NewFileCooldownStateStore(cdsPath))
@@ -2265,7 +2220,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}()
 		<-loadEntered
 
-
 		threeMin := 3 * time.Minute
 		mgr.MarkResult(ctx, Result{
 			AuthID: "delayed-shadow-auth", Provider: providerKey, Model: "m1", RetryAfter: &threeMin,
@@ -2360,7 +2314,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}()
 		<-loadEntered
 
-
 		tenMin := 10 * time.Minute
 		mgr.MarkResult(ctx, Result{
 			AuthID: "stale-combo-auth", Provider: providerKey, Model: "m-live", CredentialScope: true, RetryAfter: &tenMin,
@@ -2414,9 +2367,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		baseNow := time.Now()
 		tenMinUntil := baseNow.Add(10 * time.Minute)
 		forceErr := &Error{Code: ErrorCodeForceCooldown, HTTPStatus: 503, Message: "model-a force 503"}
-
-
-
 
 		legacyStore := &recordingCooldownStateStore{
 			load: []CooldownStateRecord{
@@ -2480,7 +2430,6 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			!IsAuthAvailableForModel(gotDualAfterSuccess, "", baseNow.Add(2*time.Minute)) {
 			t.Fatalf("model-a success failed to clear legacy-dual-auth: %+v", gotDualAfterSuccess)
 		}
-
 
 		gotGlobal, _ := mgr.GetByID("legacy-global-auth")
 		if IsAuthAvailableForModel(gotGlobal, "model-b", baseNow.Add(2*time.Minute)) ||

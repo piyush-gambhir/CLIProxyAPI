@@ -177,7 +177,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 
 	ctx := context.Background()
 
-
 	written, errSet := store.KVSet(ctx, "cpa:test:k1", []byte("val1"), KVSetOptions{})
 	if errSet != nil || !written {
 		t.Fatalf("KVSet(k1) = %v, %v; want true, nil", written, errSet)
@@ -219,7 +218,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 		t.Fatalf("inspect binary envelope error = %v", errInspectEnvelope)
 	}
 
-
 	nxOK, errSetNX1 := store.KVSetNX(ctx, "cpa:test:setnx", []byte("first"), 10*time.Second)
 	if errSetNX1 != nil || !nxOK {
 		t.Fatalf("KVSetNX(first) = %v, %v; want true, nil", nxOK, errSetNX1)
@@ -251,12 +249,10 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 		t.Fatalf("KVGet(k1) after caller slice mutation = %q, %v, %v; want val1, true, nil", gotAgain, foundAgain, errGetAgain)
 	}
 
-
 	missVal, missFound, errMiss := store.KVGet(ctx, "cpa:test:missing")
 	if errMiss != nil || missFound || missVal != nil {
 		t.Fatalf("KVGet(missing) = %v, %v, %v; want nil, false, nil", missVal, missFound, errMiss)
 	}
-
 
 	if errMSet := store.KVMSet(ctx, map[string][]byte{
 		"cpa:test:m1": []byte("mv1"),
@@ -275,7 +271,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 		t.Fatalf("KVMGet() = %q / %v; unexpected values", mvals, mfound)
 	}
 
-
 	deleted, errDel := store.KVDel(ctx, "cpa:test:m1", "cpa:test:m1", "cpa:test:missing")
 	if errDel != nil || deleted != 1 {
 		t.Fatalf("KVDel() = %d, %v; want 1, nil", deleted, errDel)
@@ -284,7 +279,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 	if errAfterDel != nil || foundAfterDel {
 		t.Fatalf("KVGet(m1) after KVDel = %v, %v; want false, nil", foundAfterDel, errAfterDel)
 	}
-
 
 	valIncr, errIncr := store.KVIncrBy(ctx, "cpa:test:counter", 5)
 	if errIncr != nil || valIncr != 5 {
@@ -309,7 +303,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 	if _, errUnderflow := store.KVIncrBy(ctx, "cpa:test:min", -1); errUnderflow == nil || math.MinInt64 == 0 {
 		t.Fatal("KVIncrBy(negative overflow) error = nil, want overflow error")
 	}
-
 
 	errCorruptWrite := store.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(boltKVBucket)
@@ -337,7 +330,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 	if _, errIncrShort := store.KVIncrBy(ctx, "cpa:test:short", 1); errIncrShort == nil {
 		t.Fatal("KVIncrBy(short envelope) error = nil, want error")
 	}
-
 
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -371,7 +363,6 @@ func TestBoltStore_EnvelopeAndBasicOperations(t *testing.T) {
 	if errKVMSet := store.KVMSet(canceledCtx, map[string][]byte{"cpa:test:k1": []byte("v")}); !errors.Is(errKVMSet, context.Canceled) {
 		t.Fatalf("KVMSet(canceledCtx) error = %v, want context.Canceled", errKVMSet)
 	}
-
 
 	if errClose1 := store.Close(); errClose1 != nil {
 		t.Fatalf("first store.Close() error = %v", errClose1)
@@ -418,7 +409,6 @@ func TestBoltStore_TTLLazyExpiryAndWriteTimeOverwrite(t *testing.T) {
 		return exists
 	}
 
-
 	if _, errKVSet := store.KVSet(ctx, "ex-key", []byte("ex-val"), KVSetOptions{EX: 10 * time.Second}); errKVSet != nil {
 		t.Fatalf("KVSet(ex-key) error = %v", errKVSet)
 	}
@@ -456,7 +446,6 @@ func TestBoltStore_TTLLazyExpiryAndWriteTimeOverwrite(t *testing.T) {
 		t.Fatalf("KVTTL(ex-key) after expiry = %v, %v, %v; want 0, false, nil", ttl, found, errKVTTL)
 	}
 
-
 	if !rawExists("ex-key") {
 		t.Fatal("expected expired ex-key to still physically exist before write")
 	}
@@ -468,7 +457,6 @@ func TestBoltStore_TTLLazyExpiryAndWriteTimeOverwrite(t *testing.T) {
 		t.Fatalf("KVGet(ex-key) after NX = %q, %v, %v; want nx-new, true, nil", got, found, errKVGet)
 	}
 
-
 	if !rawExists("px-key") {
 		t.Fatal("expected expired px-key to still physically exist before XX write")
 	}
@@ -479,7 +467,6 @@ func TestBoltStore_TTLLazyExpiryAndWriteTimeOverwrite(t *testing.T) {
 	if rawExists("px-key") {
 		t.Fatal("expected KVSet(expired, XX: true) to delete physical expired record")
 	}
-
 
 	advanceClock(6 * time.Second)
 	if !rawExists("ex-key") {
@@ -493,7 +480,6 @@ func TestBoltStore_TTLLazyExpiryAndWriteTimeOverwrite(t *testing.T) {
 		t.Fatalf("KVGet(ex-key) after CAS = %q, %v, %v; want cas-val, true, nil", got, found, errKVGet)
 	}
 
-
 	if _, errKVSet := store.KVSet(ctx, "incr-ttl", []byte("100"), KVSetOptions{EX: 3 * time.Second}); errKVSet != nil {
 		t.Fatalf("KVSet(incr-ttl) error = %v", errKVSet)
 	}
@@ -506,10 +492,6 @@ func TestBoltStore_TTLLazyExpiryAndWriteTimeOverwrite(t *testing.T) {
 	if errTTLIncr != nil || !foundIncr || ttlIncr != 0 {
 		t.Fatalf("KVTTL(incr-ttl) after expired KVIncrBy = %v, %v, %v; want 0 (no expiry), true, nil", ttlIncr, foundIncr, errTTLIncr)
 	}
-
-
-
-
 
 	if _, errKVSet := store.KVSet(ctx, "exp-target", []byte("v"), KVSetOptions{EX: 5 * time.Second}); errKVSet != nil {
 		t.Fatalf("KVSet(exp-target) error = %v", errKVSet)
@@ -576,7 +558,6 @@ func TestBoltStore_BackgroundSweeperPreservesConcurrentlyRefreshedKeys(t *testin
 
 	ctx := context.Background()
 
-
 	for _, k := range []string{"k1", "k2", "k3", "k4"} {
 		if _, errKVSet := store.KVSet(ctx, k, []byte("val-"+k), KVSetOptions{EX: 5 * time.Second}); errKVSet != nil {
 			t.Fatalf("KVSet(%s) error = %v", k, errKVSet)
@@ -589,9 +570,7 @@ func TestBoltStore_BackgroundSweeperPreservesConcurrentlyRefreshedKeys(t *testin
 		t.Fatalf("KVSet(k6-persist) error = %v", errKVSet)
 	}
 
-
 	advanceClock(10 * time.Second)
-
 
 	var refreshedOnce sync.Once
 	var batchesScanned int
@@ -613,7 +592,6 @@ func TestBoltStore_BackgroundSweeperPreservesConcurrentlyRefreshedKeys(t *testin
 		t.Fatalf("batchesScanned = %d, want >= 2 (multi-batch sweep with batchSize=2)", batchesScanned)
 	}
 
-
 	errCheck := store.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(boltKVBucket)
 		for _, deletedKey := range []string{"k1", "k3", "k4"} {
@@ -631,7 +609,6 @@ func TestBoltStore_BackgroundSweeperPreservesConcurrentlyRefreshedKeys(t *testin
 	if errCheck != nil {
 		t.Fatalf("db.View check error = %v", errCheck)
 	}
-
 
 	gotK2, foundK2, errK2 := store.KVGet(ctx, "k2")
 	if errK2 != nil || !foundK2 || string(gotK2) != "val-k2-refreshed" {
@@ -670,14 +647,9 @@ func TestBoltStore_InTransactionTimeSamplingAndTTLOverflowGuard(t *testing.T) {
 
 	ctx := context.Background()
 
-
 	if _, errKVSet := store.KVSet(ctx, "contended-key", []byte("old-val"), KVSetOptions{EX: 5 * time.Second}); errKVSet != nil {
 		t.Fatalf("KVSet(contended-key) error = %v", errKVSet)
 	}
-
-
-
-
 
 	txLocked := make(chan struct{})
 	releaseTx := make(chan struct{})
@@ -695,8 +667,6 @@ func TestBoltStore_InTransactionTimeSamplingAndTTLOverflowGuard(t *testing.T) {
 	<-txLocked
 	origRunUpdate := store.runUpdate
 	store.runUpdate = func(txFn func(*bbolt.Tx) error) error {
-
-
 
 		advanceClock(6 * time.Second)
 		close(releaseTx)
@@ -721,7 +691,6 @@ func TestBoltStore_InTransactionTimeSamplingAndTTLOverflowGuard(t *testing.T) {
 		t.Fatalf("KVTTL(contended-key) = %v, %v, %v; want 10s, true, nil", ttlAfter, foundAfter, errTTLAfter)
 	}
 
-
 	clockMu.Lock()
 	savedNow := now
 	now = time.Unix(0, 0).UTC()
@@ -735,7 +704,6 @@ func TestBoltStore_InTransactionTimeSamplingAndTTLOverflowGuard(t *testing.T) {
 	clockMu.Lock()
 	now = savedNow
 	clockMu.Unlock()
-
 
 	if _, errOverflowEX := store.KVSet(ctx, "overflow-ex", []byte("v"), KVSetOptions{EX: time.Duration(math.MaxInt64)}); errOverflowEX == nil {
 		t.Fatal("KVSet(EX=MaxInt64) error = nil, want overflow error")

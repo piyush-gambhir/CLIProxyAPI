@@ -1,116 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package signature
 
 import (
@@ -125,27 +12,14 @@ import (
 
 const MaxClaudeThinkingSignatureLen = 32 * 1024 * 1024
 
-
-
-
-
-
 type ClaudeSignatureValidationOptions struct {
-
-
 	PrefixOnly bool
 
-
-
-
 	Base64Only bool
-
 
 	AllowEmptySignatureWithEmptyText bool
 	Strict                           bool
 }
-
-
 
 type ClaudeSignatureTree struct {
 	EncodingLayers      int
@@ -166,8 +40,6 @@ func claudeSignatureValidationOptions(opts []ClaudeSignatureValidationOptions) C
 	return opts[0]
 }
 
-
-
 func IsValidClaudeThinkingSignature(rawSignature string, opts ...ClaudeSignatureValidationOptions) bool {
 	opt := claudeSignatureValidationOptions(opts)
 	if opt.PrefixOnly {
@@ -179,8 +51,6 @@ func IsValidClaudeThinkingSignature(rawSignature string, opts ...ClaudeSignature
 	_, err := NormalizeClaudeThinkingSignature(rawSignature, opts...)
 	return err == nil
 }
-
-
 
 func HasDecodableClaudeThinkingSignature(rawSignature string) bool {
 	sig := stripClaudeSignaturePrefix(rawSignature)
@@ -207,8 +77,6 @@ func HasDecodableClaudeThinkingSignature(rawSignature string) bool {
 	}
 }
 
-
-
 func HasClaudeThinkingSignaturePrefix(rawSignature string) bool {
 	sig := stripClaudeSignaturePrefix(rawSignature)
 	if sig == "" {
@@ -231,8 +99,6 @@ func stripClaudeSignaturePrefix(rawSignature string) string {
 	}
 	return sig
 }
-
-
 
 func ValidateClaudeThinkingSignatures(inputRawJSON []byte, opts ...ClaudeSignatureValidationOptions) error {
 	messages := ojson.GetBytesNoCopy(inputRawJSON, "messages")
@@ -268,9 +134,6 @@ func ValidateClaudeThinkingSignatures(inputRawJSON []byte, opts ...ClaudeSignatu
 	return nil
 }
 
-
-
-
 func NormalizeClaudeThinkingSignature(rawSignature string, opts ...ClaudeSignatureValidationOptions) (string, error) {
 	opt := claudeSignatureValidationOptions(opts)
 	sig := stripClaudeSignaturePrefix(rawSignature)
@@ -302,9 +165,6 @@ func NormalizeClaudeThinkingSignature(rawSignature string, opts ...ClaudeSignatu
 		return "", fmt.Errorf("invalid signature: expected 'E', 'R' or 'Q' prefix, got %q", string(sig[0]))
 	}
 }
-
-
-
 
 func NormalizeClaudeProviderNativeThinkingSignature(rawSignature string, opts ...ClaudeSignatureValidationOptions) (string, error) {
 	opt := claudeSignatureValidationOptions(opts)
@@ -373,8 +233,6 @@ func validateClaudeSingleLayerSignatureContent(sig string, encodingLayers int, o
 	return err
 }
 
-
-
 func InspectClaudeDoubleLayerSignature(sig string) (*ClaudeSignatureTree, error) {
 	decoded, err := base64.StdEncoding.DecodeString(sig)
 	if err != nil {
@@ -388,8 +246,6 @@ func InspectClaudeDoubleLayerSignature(sig string) (*ClaudeSignatureTree, error)
 	}
 	return inspectClaudeSingleLayerSignatureWithLayers(string(decoded), 2)
 }
-
-
 
 func InspectClaudeSingleLayerSignature(sig string) (*ClaudeSignatureTree, error) {
 	return inspectClaudeSingleLayerSignatureWithLayers(sig, 1)
@@ -405,8 +261,6 @@ func inspectClaudeSingleLayerSignatureWithLayers(sig string, encodingLayers int)
 	}
 	return InspectClaudeSignaturePayload(decoded, encodingLayers)
 }
-
-
 
 func InspectClaudeSignaturePayload(payload []byte, encodingLayers int) (*ClaudeSignatureTree, error) {
 	if len(payload) == 0 {
@@ -594,15 +448,9 @@ func decodeClaudeBytesField(raw []byte, label string) ([]byte, error) {
 	return value, nil
 }
 
-
-
 const claudeCAISSignatureMarker = 0x08
 
-
-
 const claudeCAISModelTextPrefix = "claude-"
-
-
 
 type ClaudeCAISSignatureInfo struct {
 	FirstByte       byte
@@ -617,15 +465,10 @@ type ClaudeCAISSignatureInfo struct {
 	SignatureInContainer bool
 }
 
-
-
 func IsValidClaudeCAISSignature(rawSignature string) bool {
 	_, err := InspectClaudeCAISSignature(rawSignature)
 	return err == nil
 }
-
-
-
 
 func InspectClaudeCAISSignature(rawSignature string) (*ClaudeCAISSignatureInfo, error) {
 	sig := stripClaudeSignaturePrefix(rawSignature)
@@ -635,9 +478,6 @@ func InspectClaudeCAISSignature(rawSignature string) (*ClaudeCAISSignatureInfo, 
 	if len(sig) > MaxClaudeThinkingSignatureLen {
 		return nil, fmt.Errorf("signature exceeds maximum length (%d bytes)", MaxClaudeThinkingSignatureLen)
 	}
-
-
-
 
 	if sig[0] != 'C' {
 		return nil, fmt.Errorf("invalid Claude CAIS signature: expected 'C' prefix, got %q", string(sig[0]))
@@ -649,8 +489,6 @@ func InspectClaudeCAISSignature(rawSignature string) (*ClaudeCAISSignatureInfo, 
 	}
 	return inspectClaudeCAISPayload(decoded, false)
 }
-
-
 
 func inspectClaudeCAISPayload(decoded []byte, rejectDuplicateMessages bool) (*ClaudeCAISSignatureInfo, error) {
 	if len(decoded) == 0 {

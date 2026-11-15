@@ -93,7 +93,6 @@ func TestConvertGeminiResponseToClaude_VertexStreamingPartialArgs(t *testing.T) 
 			t.Fatalf("block 1 partial_json = %q, want %q", got1, `{"city":"Lyon"}`)
 		}
 
-		// Interrupted stream should not emit message_stop or content_block_stop on [DONE].
 		var pTrunc any
 		truncOut := ConvertGeminiResponseToClaude(ctx, "gemini-2.5-pro", requestJSON, requestJSON, multiChunks[0], &pTrunc)
 		truncOut = append(truncOut, ConvertGeminiResponseToClaude(ctx, "gemini-2.5-pro", requestJSON, requestJSON, []byte("[DONE]"), &pTrunc)...)
@@ -451,7 +450,7 @@ func TestConvertGeminiResponseToClaude_UsageWithCachedContentTokenCount(t *testi
 	}
 
 	foundMessageDelta := false
-	// Find the message_delta event data
+
 	for _, line := range strings.Split(outputText, "\n") {
 		if strings.HasPrefix(line, "data: ") && strings.Contains(line, `"type":"message_delta"`) {
 			foundMessageDelta = true
@@ -1018,7 +1017,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_SignedVisibleText(t *test
 		t.Fatalf("signed visible text must not emit thinking_delta, got: %s", outputText)
 	}
 
-	// Verify block 0 is carrier thinking
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}`) {
 		t.Fatalf("expected block 0 to be carrier thinking, got: %s", outputText)
 	}
@@ -1029,7 +1027,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_SignedVisibleText(t *test
 		t.Fatalf("expected block 0 stop, got: %s", outputText)
 	}
 
-	// Verify block 1 is visible text
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}}`) {
 		t.Fatalf("expected block 1 to be text block, got: %s", outputText)
 	}
@@ -1078,7 +1075,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_SplitTrailingSignature(t 
 		t.Fatalf("unexpected thinking_delta in stream: %s", outputText)
 	}
 
-	// Block 0: text block with "ok"
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`) {
 		t.Fatalf("expected block 0 text start, got: %s", outputText)
 	}
@@ -1089,7 +1085,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_SplitTrailingSignature(t 
 		t.Fatalf("expected block 0 text stop, got: %s", outputText)
 	}
 
-	// Block 1: trailing carrier thinking block
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":1,"content_block":{"type":"thinking","thinking":""}}`) {
 		t.Fatalf("expected block 1 trailing carrier thinking, got: %s", outputText)
 	}
@@ -1126,7 +1121,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_SignedFunctionCall(t *tes
 	output = append(output, bytes.Join(ConvertGeminiResponseToClaude(ctx, "gemini-3.5-flash-lite", requestJSON, requestJSON, []byte("[DONE]"), &param), nil)...)
 	outputText := string(output)
 
-	// Block 0: carrier thinking
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}`) {
 		t.Fatalf("expected block 0 carrier thinking, got: %s", outputText)
 	}
@@ -1137,7 +1131,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_SignedFunctionCall(t *tes
 		t.Fatalf("expected block 0 stop, got: %s", outputText)
 	}
 
-	// Block 1: tool_use
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use"`) {
 		t.Fatalf("expected block 1 tool_use, got: %s", outputText)
 	}
@@ -1220,7 +1213,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_ThinkingFollowedBySignedV
 	output = append(output, bytes.Join(ConvertGeminiResponseToClaude(ctx, "gemini-3.5-flash-lite", requestJSON, requestJSON, []byte("[DONE]"), &param), nil)...)
 	outputText := string(output)
 
-	// Block 0: thinking with "sig-stream-think"
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}`) {
 		t.Fatalf("expected block 0 thinking start, got: %s", outputText)
 	}
@@ -1228,7 +1220,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_ThinkingFollowedBySignedV
 		t.Fatalf("expected block 0 thinking signature, got: %s", outputText)
 	}
 
-	// Block 1: detached carrier thinking for visible text signature "sig-stream-visible"
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":1,"content_block":{"type":"thinking","thinking":""}}`) {
 		t.Fatalf("expected block 1 detached carrier thinking start, got: %s", outputText)
 	}
@@ -1236,7 +1227,6 @@ func TestConvertGeminiResponseToClaudeStream_Issue6409_ThinkingFollowedBySignedV
 		t.Fatalf("expected block 1 signature_delta 'sig-stream-visible', got: %s", outputText)
 	}
 
-	// Block 2: text block with "visible text"
 	if !strings.Contains(outputText, `{"type":"content_block_start","index":2,"content_block":{"type":"text","text":""}}`) {
 		t.Fatalf("expected block 2 text start, got: %s", outputText)
 	}

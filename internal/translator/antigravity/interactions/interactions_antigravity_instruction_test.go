@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-
-
 var antigravityInstructionSteps = map[string]string{
 	"developer user_input":     `{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}`,
 	"system user_input":        `{"type":"user_input","role":"system","content":[{"type":"text","text":"note"}]}`,
@@ -16,7 +14,6 @@ var antigravityInstructionSteps = map[string]string{
 	"developer native parts":   `{"role":"developer","parts":[{"text":"note"}]}`,
 	"developer wrapper":        `{"role":"developer","steps":[{"type":"user_input","content":[{"type":"text","text":"note"}]}]}`,
 }
-
 
 const antigravityEmptiedStep = `{"type":"user_input","content":[{"type":"document","uri":"gs://b/a.pdf"}]}`
 

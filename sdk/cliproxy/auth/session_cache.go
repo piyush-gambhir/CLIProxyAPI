@@ -12,13 +12,11 @@ const (
 	defaultMaxSessionEntries = 65536
 )
 
-
 type sessionBinding struct {
 	sessionID string
 	provider  string
 	sequence  uint64
 }
-
 
 type sessionEntry struct {
 	authID    string
@@ -26,7 +24,6 @@ type sessionEntry struct {
 	aliases   []string
 	binding   sessionBinding
 }
-
 
 type SessionCache struct {
 	mu               sync.RWMutex
@@ -42,12 +39,9 @@ type SessionCache struct {
 	bindingSequence  uint64
 }
 
-
-
 func NewSessionCache(ttl time.Duration) *SessionCache {
 	return NewSessionCacheWithCapacity(ttl, defaultMaxSessionEntries)
 }
-
 
 func NewSessionCacheWithCapacity(ttl time.Duration, maxEntries int) *SessionCache {
 	if ttl <= 0 {
@@ -87,8 +81,6 @@ func (c *SessionCache) ensureInitializedLocked() {
 	}
 }
 
-
-
 func (c *SessionCache) Get(sessionID string) (string, bool) {
 	if c == nil || sessionID == "" {
 		return "", false
@@ -119,8 +111,6 @@ func (c *SessionCache) Get(sessionID string) (string, bool) {
 	return "", false
 }
 
-
-
 func (c *SessionCache) GetAndRefresh(sessionID string) (string, bool) {
 	if c == nil || sessionID == "" {
 		return "", false
@@ -143,8 +133,6 @@ func (c *SessionCache) GetAndRefresh(sessionID string) (string, bool) {
 	return entry.authID, true
 }
 
-
-
 func (c *SessionCache) Set(sessionID, authID string) {
 	if c == nil {
 		return
@@ -152,12 +140,9 @@ func (c *SessionCache) Set(sessionID, authID string) {
 	c.SetAliases(authID, sessionID)
 }
 
-
 func (c *SessionCache) SetAliases(authID string, sessionIDs ...string) {
 	c.setAliases(authID, sessionBinding{}, sessionIDs...)
 }
-
-
 
 func (c *SessionCache) setSessionAliases(authID, provider, sessionID string, keys ...string) {
 	c.setAliases(authID, sessionBinding{sessionID: sessionID, provider: provider}, keys...)
@@ -354,8 +339,6 @@ func mergeSessionAliases(existing []string, candidates ...string) []string {
 	return aliases
 }
 
-
-
 func (c *SessionCache) latestSessionAuth(sessionID string, providers map[string]struct{}) string {
 	if c == nil || sessionID == "" || len(providers) == 0 {
 		return ""
@@ -376,7 +359,6 @@ func (c *SessionCache) latestSessionAuth(sessionID string, providers map[string]
 	return latest.authID
 }
 
-
 func (c *SessionCache) Touch(sessionID, expectedAuthID string) bool {
 	if c == nil || sessionID == "" || expectedAuthID == "" {
 		return false
@@ -393,7 +375,6 @@ func (c *SessionCache) Touch(sessionID, expectedAuthID string) bool {
 	c.replaceAliasGroupsLocked(expectedAuthID, now.Add(c.ttl), aliases, entry.binding, entry)
 	return true
 }
-
 
 func (c *SessionCache) CompareAndDelete(sessionID, expectedAuthID string) bool {
 	if c == nil || sessionID == "" || expectedAuthID == "" {
@@ -420,8 +401,6 @@ func (c *SessionCache) CompareAndDelete(sessionID, expectedAuthID string) bool {
 	return true
 }
 
-
-
 func (c *SessionCache) Invalidate(sessionID string) {
 	if c == nil || sessionID == "" {
 		return
@@ -446,8 +425,6 @@ func (c *SessionCache) Invalidate(sessionID string) {
 	}
 }
 
-
-
 func (c *SessionCache) InvalidateAuth(authID string) {
 	if c == nil || authID == "" {
 		return
@@ -461,7 +438,6 @@ func (c *SessionCache) InvalidateAuth(authID string) {
 		}
 	}
 }
-
 
 func (c *SessionCache) Stop() {
 	if c == nil {
@@ -490,7 +466,6 @@ func (c *SessionCache) cleanupLoop() {
 		}
 	}
 }
-
 
 func (c *SessionCache) Len() int {
 	if c == nil {

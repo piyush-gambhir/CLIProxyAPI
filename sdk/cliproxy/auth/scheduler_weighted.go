@@ -1,9 +1,5 @@
 package auth
 
-
-
-
-
 func (s *authScheduler) pickWeightedPoolLocked(route string, priority int, transportClass string, entries []*scheduledAuth, predicate func(*scheduledAuth) bool, pinnedAuthID string, nonWebsocketOnly bool) (*Auth, error) {
 	if s.weightedSelector == nil {
 		return nil, &Error{Code: "auth_unavailable", Message: "weighted selector is not configured"}

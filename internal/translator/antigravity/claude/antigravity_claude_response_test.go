@@ -14,10 +14,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
 func TestConvertAntigravityResponseToClaudeNonStream_WebSearchGrounding(t *testing.T) {
 	requestJSON := []byte(`{
 		"model": "gemini-3.1-flash-lite",
@@ -431,13 +427,11 @@ func testAntigravityGroundingResponse() []byte {
 func TestConvertAntigravityResponseToClaude_ParamsInitialized(t *testing.T) {
 	cache.ClearSignatureCache("")
 
-
 	requestJSON := []byte(`{
 		"messages": [
 			{"role": "user", "content": [{"type": "text", "text": "Hello world"}]}
 		]
 	}`)
-
 
 	responseJSON := []byte(`{
 		"response": {
@@ -469,7 +463,6 @@ func TestConvertAntigravityResponseToClaude_ThinkingTextAccumulated(t *testing.T
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Test"}]}]
 	}`)
 
-
 	chunk1 := []byte(`{
 		"response": {
 			"candidates": [{
@@ -479,7 +472,6 @@ func TestConvertAntigravityResponseToClaude_ThinkingTextAccumulated(t *testing.T
 			}]
 		}
 	}`)
-
 
 	chunk2 := []byte(`{
 		"response": {
@@ -494,14 +486,12 @@ func TestConvertAntigravityResponseToClaude_ThinkingTextAccumulated(t *testing.T
 	var param any
 	ctx := context.Background()
 
-
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, chunk1, &param)
 	params := param.(*Params)
 
 	if params.CurrentThinkingText.Len() == 0 {
 		t.Error("Thinking text should be accumulated after first chunk")
 	}
-
 
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, chunk2, &param)
 
@@ -519,7 +509,6 @@ func TestConvertAntigravityResponseToClaude_SignatureCached(t *testing.T) {
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Cache test"}]}]
 	}`)
 
-
 	thinkingChunk := []byte(`{
 		"response": {
 			"candidates": [{
@@ -529,7 +518,6 @@ func TestConvertAntigravityResponseToClaude_SignatureCached(t *testing.T) {
 			}]
 		}
 	}`)
-
 
 	validSignature := "abc123validSignature1234567890123456789012345678901234567890"
 	signatureChunk := []byte(`{
@@ -545,7 +533,6 @@ func TestConvertAntigravityResponseToClaude_SignatureCached(t *testing.T) {
 	var param any
 	ctx := context.Background()
 
-
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, thinkingChunk, &param)
 	params := param.(*Params)
 	thinkingText := params.CurrentThinkingText.String()
@@ -554,15 +541,12 @@ func TestConvertAntigravityResponseToClaude_SignatureCached(t *testing.T) {
 		t.Fatal("Thinking text should be accumulated")
 	}
 
-
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, signatureChunk, &param)
-
 
 	cachedSig := cache.GetCachedSignature("claude-sonnet-4-5-thinking", thinkingText)
 	if cachedSig != validSignature {
 		t.Errorf("Expected cached signature '%s', got '%s'", validSignature, cachedSig)
 	}
-
 
 	if params.CurrentThinkingText.Len() != 0 {
 		t.Error("Thinking text should be reset after signature is cached")
@@ -579,7 +563,6 @@ func TestConvertAntigravityResponseToClaude_MultipleThinkingBlocks(t *testing.T)
 
 	validSig1 := "signature1_12345678901234567890123456789012345678901234567"
 	validSig2 := "signature2_12345678901234567890123456789012345678901234567"
-
 
 	block1Thinking := []byte(`{
 		"response": {
@@ -600,7 +583,6 @@ func TestConvertAntigravityResponseToClaude_MultipleThinkingBlocks(t *testing.T)
 		}
 	}`)
 
-
 	textBlock := []byte(`{
 		"response": {
 			"candidates": [{
@@ -610,7 +592,6 @@ func TestConvertAntigravityResponseToClaude_MultipleThinkingBlocks(t *testing.T)
 			}]
 		}
 	}`)
-
 
 	block2Thinking := []byte(`{
 		"response": {
@@ -634,27 +615,22 @@ func TestConvertAntigravityResponseToClaude_MultipleThinkingBlocks(t *testing.T)
 	var param any
 	ctx := context.Background()
 
-
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, block1Thinking, &param)
 	params := param.(*Params)
 	firstThinkingText := params.CurrentThinkingText.String()
 
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, block1Sig, &param)
 
-
 	if cache.GetCachedSignature("claude-sonnet-4-5-thinking", firstThinkingText) != validSig1 {
 		t.Error("First thinking block signature should be cached")
 	}
 
-
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, textBlock, &param)
-
 
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, block2Thinking, &param)
 	secondThinkingText := params.CurrentThinkingText.String()
 
 	ConvertAntigravityResponseToClaude(ctx, "claude-sonnet-4-5-thinking", requestJSON, requestJSON, block2Sig, &param)
-
 
 	if cache.GetCachedSignature("claude-sonnet-4-5-thinking", secondThinkingText) != validSig2 {
 		t.Error("Second thinking block signature should be cached")
@@ -671,7 +647,6 @@ func TestConvertAntigravityResponseToClaude_TextAndSignatureInSameChunk(t *testi
 
 	validSignature := "RtestSig1234567890123456789012345678901234567890123456789"
 
-
 	chunk1 := []byte(`{
 		"response": {
 			"candidates": [{
@@ -681,7 +656,6 @@ func TestConvertAntigravityResponseToClaude_TextAndSignatureInSameChunk(t *testi
 			}]
 		}
 	}`)
-
 
 	chunk2 := []byte(`{
 		"response": {
@@ -701,16 +675,13 @@ func TestConvertAntigravityResponseToClaude_TextAndSignatureInSameChunk(t *testi
 
 	allOutput := string(bytes.Join(result1, nil)) + string(bytes.Join(result2, nil))
 
-
 	if !strings.Contains(allOutput, "Second part.") {
 		t.Error("Text co-located with signature must be emitted as thinking_delta before the signature")
 	}
 
-
 	if !strings.Contains(allOutput, "signature_delta") {
 		t.Error("Signature delta must still be emitted")
 	}
-
 
 	fullText := "First part. Second part."
 	cachedSig := cache.GetCachedSignature("claude-sonnet-4-5-thinking", fullText)
@@ -729,7 +700,6 @@ func TestConvertAntigravityResponseToClaude_SignatureOnlyChunk(t *testing.T) {
 
 	validSignature := "RtestSig1234567890123456789012345678901234567890123456789"
 
-
 	chunk1 := []byte(`{
 		"response": {
 			"candidates": [{
@@ -739,7 +709,6 @@ func TestConvertAntigravityResponseToClaude_SignatureOnlyChunk(t *testing.T) {
 			}]
 		}
 	}`)
-
 
 	chunk2 := []byte(`{
 		"response": {
@@ -1483,7 +1452,6 @@ func TestConvertAntigravityResponseToClaude_EmitsNativeSignaturesWithoutProvider
 		t.Fatalf("streaming tool signature missing or mismatched: %s", streamText)
 	}
 
-
 	replayRequest := []byte(`{"model":"claude-sonnet-4-6","messages":[{"role":"assistant","content":[]},{"role":"user","content":[{"type":"text","text":"continue"}]}]}`)
 	replayRequest, _ = ojson.SetRawBytes(replayRequest, "messages.0.content", []byte(ojson.GetBytesNoCopy(nonStream, "content").Raw))
 	replayRequest = StripEmptySignatureThinkingBlocks(replayRequest)
@@ -1506,7 +1474,6 @@ func TestConvertAntigravityResponseToClaudeStream_EmptyTextPartKeepsThinkingBloc
 	if !strings.Contains(string(output1), `"type":"content_block_start","index":0,"content_block":{"type":"thinking"`) {
 		t.Fatalf("expected thinking block start at index 0: %s", string(output1))
 	}
-
 
 	output2 := bytes.Join(ConvertAntigravityResponseToClaude(ctx, "gemini-3-flash-agent", requestJSON, requestJSON, emptyTextChunk, &param), nil)
 	if strings.Contains(string(output2), "content_block_stop") {

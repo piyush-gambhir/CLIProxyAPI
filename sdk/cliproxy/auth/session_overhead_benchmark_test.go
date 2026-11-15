@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
 func BenchmarkSessionExplicitHeaderFastPath(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -35,7 +34,6 @@ func BenchmarkSessionExplicitHeaderFastPath(b *testing.B) {
 		Metadata:        map[string]any{},
 	}
 
-
 	ctx := context.Background()
 	_, _ = selector.Pick(ctx, "openai", "gpt-5", opts, auths)
 
@@ -51,7 +49,6 @@ func BenchmarkSessionExplicitHeaderFastPath(b *testing.B) {
 	}
 }
 
-
 func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -66,7 +63,6 @@ func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 		{ID: "auth-codex-2", Provider: "openai", Status: StatusActive},
 	}
 
-
 	parentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"Session-Id": []string{"parent-session-100"},
@@ -75,7 +71,6 @@ func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 	}
 	ctx := context.Background()
 	_, _ = selector.Pick(ctx, "openai", "codex-5", parentOpts, auths)
-
 
 	childOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -102,7 +97,6 @@ func BenchmarkSessionCodexMultiAgentV2Path(b *testing.B) {
 	}
 }
 
-
 func BenchmarkSessionCodexForkPath(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -116,7 +110,6 @@ func BenchmarkSessionCodexForkPath(b *testing.B) {
 		{ID: "auth-codex-1", Provider: "openai", Status: StatusActive},
 		{ID: "auth-codex-2", Provider: "openai", Status: StatusActive},
 	}
-
 
 	parentOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -149,7 +142,6 @@ func BenchmarkSessionCodexForkPath(b *testing.B) {
 	}
 }
 
-
 func BenchmarkSessionBodyOnlyForkPath(b *testing.B) {
 	log.SetLevel(log.WarnLevel)
 	defer log.SetLevel(log.InfoLevel)
@@ -162,7 +154,6 @@ func BenchmarkSessionBodyOnlyForkPath(b *testing.B) {
 	auths := []*Auth{
 		{ID: "auth-1", Provider: "openai", Status: StatusActive},
 	}
-
 
 	parentOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{"thread_id":"body-parent-100","messages":[{"role":"user","content":"hello"}]}`),
@@ -187,11 +178,9 @@ func BenchmarkSessionBodyOnlyForkPath(b *testing.B) {
 	}
 }
 
-
 func BenchmarkSessionCacheConcurrentHighQPS(b *testing.B) {
 	cache := NewSessionCache(time.Hour)
 	defer cache.Stop()
-
 
 	for i := 0; i < 1000; i++ {
 		cache.Set(fmt.Sprintf("session-%04d", i), fmt.Sprintf("auth-%d", i%10))
@@ -215,10 +204,8 @@ func BenchmarkSessionCacheConcurrentHighQPS(b *testing.B) {
 	})
 }
 
-
 func BenchmarkMerklePrefixMatcherConcurrentHighQPS(b *testing.B) {
 	matcher := cliproxysession.NewMerklePrefixMatcher(time.Hour)
-
 
 	texts := make([]string, 16)
 	for i := 0; i < 16; i++ {
@@ -244,7 +231,6 @@ func BenchmarkMerklePrefixMatcherConcurrentHighQPS(b *testing.B) {
 	})
 }
 
-
 func BenchmarkSessionCacheScale100kEviction(b *testing.B) {
 	cache := NewSessionCacheWithCapacity(time.Hour, 10000)
 	defer cache.Stop()
@@ -256,7 +242,6 @@ func BenchmarkSessionCacheScale100kEviction(b *testing.B) {
 		cache.Set(key, "auth-target")
 	}
 }
-
 
 func BenchmarkMerkleMatcherScaleLRUEviction(b *testing.B) {
 	matcher := cliproxysession.NewMerklePrefixMatcherWithConfig(cliproxysession.MerklePrefixMatcherConfig{

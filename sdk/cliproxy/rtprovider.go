@@ -10,8 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 type defaultRoundTripperProvider struct {
 	mu    sync.RWMutex
 	cache map[string]http.RoundTripper
@@ -20,7 +18,6 @@ type defaultRoundTripperProvider struct {
 func newDefaultRoundTripperProvider() *defaultRoundTripperProvider {
 	return &defaultRoundTripperProvider{cache: make(map[string]http.RoundTripper)}
 }
-
 
 func (p *defaultRoundTripperProvider) RoundTripperFor(auth *coreauth.Auth) http.RoundTripper {
 	if auth == nil {

@@ -24,7 +24,6 @@ func TestResolveSIWCBindPath(t *testing.T) {
 	}
 	cfg := &config.Config{AuthDir: authDir}
 
-
 	resolvedBare, errBare := ResolveSIWCBindPath(cfg, fileName)
 	if errBare != nil {
 		t.Fatalf("ResolveSIWCBindPath(bare) error: %v", errBare)
@@ -33,7 +32,6 @@ func TestResolveSIWCBindPath(t *testing.T) {
 		t.Fatalf("resolvedBare = %q, want %q", resolvedBare, filepath.Clean(realPath))
 	}
 
-
 	resolvedAbs, errAbs := ResolveSIWCBindPath(cfg, fullPath)
 	if errAbs != nil {
 		t.Fatalf("ResolveSIWCBindPath(abs) error: %v", errAbs)
@@ -41,7 +39,6 @@ func TestResolveSIWCBindPath(t *testing.T) {
 	if resolvedAbs != filepath.Clean(realPath) {
 		t.Fatalf("resolvedAbs = %q, want %q", resolvedAbs, filepath.Clean(realPath))
 	}
-
 
 	if _, errMissing := ResolveSIWCBindPath(cfg, "non-existent.json"); errMissing == nil {
 		t.Fatal("expected error for missing file")
@@ -100,7 +97,6 @@ func TestBindSIWCCredentialToFile(t *testing.T) {
 	if siwcMap["access_token"] != "siwc-tok-1" || siwcMap["client_id"] != "oaiapp_bound_1" || siwcMap["device_id"] != deviceID1 {
 		t.Fatalf("siwcMap unexpected: %#v", siwcMap)
 	}
-
 
 	deviceID2, errDev2 := ensureSIWCDeviceIDFromFile(fullPath)
 	if errDev2 != nil {

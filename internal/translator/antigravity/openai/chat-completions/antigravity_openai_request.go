@@ -1,5 +1,3 @@
-
-
 package chat_completions
 
 import (
@@ -17,22 +15,10 @@ import (
 
 const antigravityFunctionThoughtSignature = "skip_thought_signature_validator"
 
-
-
-
-
-
-
-
-
-
-
 func ConvertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	return convertOpenAIRequestToAntigravity(modelName, inputRawJSON, stream)
 
 }
-
-
 
 func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ bool) ([]byte, error) {
 	rawJSON := inputRawJSON
@@ -41,17 +27,13 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 
 	outDoc := ojson.NewDoc([]byte(`{"project":"","request":{"contents":[]},"model":"gemini-2.5-pro"}`))
 
-
 	_ = outDoc.Set("model", modelName)
-
 
 	if genConfig := ojson.GetBytesNoCopy(rawJSON, "generationConfig"); genConfig.Exists() {
 		_ = outDoc.SetRaw("request.generationConfig", genConfig.Raw)
 	} else if genConfig := ojson.GetBytesNoCopy(rawJSON, "generation_config"); genConfig.Exists() {
 		_ = outDoc.SetRaw("request.generationConfig", genConfig.Raw)
 	}
-
-
 
 	re := ojson.GetBytesNoCopy(rawJSON, "reasoning_effort")
 	if re.Exists() {
@@ -66,7 +48,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 	}
 	normalizeAntigravityOpenAIThinkingConfigDoc(outDoc)
-
 
 	if tr := ojson.GetBytesNoCopy(rawJSON, "temperature"); tr.Exists() && tr.Type == ojson.Number {
 		_ = outDoc.Set("request.generationConfig.temperature", tr.Num)
@@ -83,7 +64,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		_ = outDoc.Set("request.generationConfig.maxOutputTokens", mct.Num)
 	}
 
-
 	if responseFormat := ojson.GetBytesNoCopy(rawJSON, "response_format"); responseFormat.Exists() {
 		switch responseFormatType := strings.ToLower(strings.TrimSpace(responseFormat.Get("type").String())); responseFormatType {
 		case "json_object", "json_schema":
@@ -99,14 +79,11 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 	}
 
-
 	if n := ojson.GetBytesNoCopy(rawJSON, "n"); n.Exists() && n.Type == ojson.Number {
 		if val := n.Int(); val > 1 {
 			_ = outDoc.Set("request.generationConfig.candidateCount", val)
 		}
 	}
-
-
 
 	if mods := ojson.GetBytesNoCopy(rawJSON, "modalities"); mods.Exists() && mods.IsArray() {
 		var responseMods []string
@@ -123,8 +100,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 	}
 
-
-
 	if imgCfg := ojson.GetBytesNoCopy(rawJSON, "image_config"); imgCfg.Exists() && imgCfg.IsObject() {
 		if ar := imgCfg.Get("aspect_ratio"); ar.Exists() && ar.Type == ojson.String {
 			_ = outDoc.Set("request.generationConfig.imageConfig.aspectRatio", ar.Str)
@@ -133,7 +108,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 			_ = outDoc.Set("request.generationConfig.imageConfig.imageSize", size.Str)
 		}
 	}
-
 
 	messages := ojson.GetBytesNoCopy(rawJSON, "messages")
 	if messages.IsArray() {
@@ -291,7 +265,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 						contentItems = append(contentItems, antigravityOpenAIContent("model", partItems))
 					}
 
-
 					turnToolResponses := map[string]string{}
 					for j := i + 1; j < len(arr); j++ {
 						nextRole := arr[j].Get("role").String()
@@ -316,7 +289,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 							response = "{}"
 						}
 
-
 						_ = partDoc.Set("functionResponse.response.result", response)
 						responseParts = append(responseParts, partDoc.Bytes())
 					}
@@ -333,7 +305,6 @@ func convertOpenAIRequestToAntigravity(modelName string, inputRawJSON []byte, _ 
 		}
 		translatorcommon.SetRawArrayItemsDoc(outDoc, "request.contents", contentItems)
 	}
-
 
 	tools := ojson.GetBytesNoCopy(rawJSON, "tools")
 	toolResults := tools.Array()
@@ -635,9 +606,6 @@ func setAntigravityOpenAIRawIfDifferentDoc(outDoc *ojson.Doc, path string, value
 	}
 	return outDoc.SetRaw(path, value.Raw) == nil
 }
-
-
-
 
 func antigravityDemotedSystemText(text string, isDemoted bool) string {
 	if !isDemoted || strings.TrimSpace(text) == "" {

@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 func (cfg *Config) SanitizePayloadRules() {
 	if cfg == nil {
 		return
@@ -63,11 +62,9 @@ func payloadRawString(value any) ([]byte, bool) {
 	}
 }
 
-
 func looksLikeBcrypt(s string) bool {
 	return len(s) > 4 && (s[:4] == "$2a$" || s[:4] == "$2b$" || s[:4] == "$2y$")
 }
-
 
 func hashSecret(secret string) (string, error) {
 

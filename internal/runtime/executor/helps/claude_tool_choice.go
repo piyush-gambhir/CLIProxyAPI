@@ -8,11 +8,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
 func NormalizeClaudeToolChoice(provider, model string, payload []byte) []byte {
 	if len(payload) == 0 || provider != "claude" {
 		return payload
@@ -23,7 +18,6 @@ func NormalizeClaudeToolChoice(provider, model string, payload []byte) []byte {
 	}
 	return doc.Bytes()
 }
-
 
 func NormalizeClaudeToolChoiceDoc(provider, model string, doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 || provider != "claude" {

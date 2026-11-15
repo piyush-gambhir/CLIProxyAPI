@@ -1,4 +1,3 @@
-
 package misc
 
 import (
@@ -16,10 +15,6 @@ import (
 )
 
 const (
-
-
-
-
 	antigravityFallbackVersion = "2.29.0"
 	antigravityHubPlatform     = "os_type=darwin; arch=arm64"
 	antigravityVersionCacheTTL = 6 * time.Hour
@@ -31,10 +26,6 @@ const (
 var (
 	antigravityHubLatestManifestURL = "https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/manifest/latest-arm64-mac.yml"
 )
-
-
-
-
 
 var antigravityHubChangelists = map[string]string{
 	"2.23.0": "998057262",
@@ -52,8 +43,6 @@ var (
 	antigravityVersionExpiry time.Time
 	antigravityUpdaterOnce   sync.Once
 )
-
-
 
 func StartAntigravityVersionUpdater(ctx context.Context) {
 	antigravityUpdaterOnce.Do(func() {
@@ -108,8 +97,6 @@ func refreshAntigravityVersion(ctx context.Context) {
 	log.WithError(errFetch).Debug("failed to refresh antigravity version, keeping cached value")
 }
 
-
-
 func AntigravityLatestVersion() string {
 	antigravityVersionMu.RLock()
 	if cachedAntigravityVersion != "" && time.Now().Before(antigravityVersionExpiry) {
@@ -121,7 +108,6 @@ func AntigravityLatestVersion() string {
 
 	return antigravityFallbackVersion
 }
-
 
 func AntigravityUserAgent() string {
 	version := AntigravityLatestVersion()
@@ -153,19 +139,13 @@ func antigravityBaseUserAgent(userAgent string) string {
 	return userAgent
 }
 
-
-
 func AntigravityRequestUserAgent(userAgent string) string {
 	return antigravityBaseUserAgent(userAgent)
 }
 
-
-
 func AntigravityLoadCodeAssistUserAgent(userAgent string) string {
 	return AntigravityRequestUserAgent(userAgent)
 }
-
-
 
 func AntigravityOnboardUserUserAgent(userAgent string) string {
 	userAgent = strings.TrimSpace(userAgent)
@@ -181,8 +161,6 @@ func AntigravityOnboardUserUserAgent(userAgent string) string {
 	}
 	return antigravityBaseUserAgent(userAgent) + " " + AntigravityNodeAPIClientUA
 }
-
-
 
 func AntigravityVersionFromUserAgent(userAgent string) string {
 	base := antigravityBaseUserAgent(userAgent)

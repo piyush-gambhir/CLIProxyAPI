@@ -19,14 +19,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
-
-
-
-
 func TestCodexIncompleteStreamIsNotTypedAsInvalidRequest(t *testing.T) {
 	const model = "gpt-5.4"
 	events := []string{
@@ -88,8 +80,6 @@ func TestCodexIncompleteStreamIsNotTypedAsInvalidRequest(t *testing.T) {
 		t.Fatalf("error.type = %v, want %q so the failure is classified as retryable", got, "server_error")
 	}
 }
-
-
 
 func terminalStreamErrorDetail(t *testing.T, body string) map[string]any {
 	t.Helper()

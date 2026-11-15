@@ -103,7 +103,6 @@ func TestManager_Update_PreservesModelStates(t *testing.T) {
 func TestManager_Update_DisabledExistingDoesNotInheritModelStates(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 
-
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-disabled",
 		Provider: "claude",
@@ -117,7 +116,6 @@ func TestManager_Update_DisabledExistingDoesNotInheritModelStates(t *testing.T) 
 	}); err != nil {
 		t.Fatalf("register auth: %v", err)
 	}
-
 
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-disabled",
@@ -140,7 +138,6 @@ func TestManager_Update_DisabledExistingDoesNotInheritModelStates(t *testing.T) 
 func TestManager_Update_ActiveToDisabledDoesNotInheritModelStates(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 
-
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-a2d",
 		Provider: "claude",
@@ -153,8 +150,6 @@ func TestManager_Update_ActiveToDisabledDoesNotInheritModelStates(t *testing.T) 
 	}); err != nil {
 		t.Fatalf("register auth: %v", err)
 	}
-
-
 
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-a2d",
@@ -177,7 +172,6 @@ func TestManager_Update_ActiveToDisabledDoesNotInheritModelStates(t *testing.T) 
 func TestManager_Update_DisabledToActiveDoesNotInheritStaleModelStates(t *testing.T) {
 	m := NewManager(nil, nil, nil)
 
-
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-d2a",
 		Provider: "claude",
@@ -191,7 +185,6 @@ func TestManager_Update_DisabledToActiveDoesNotInheritStaleModelStates(t *testin
 	}); err != nil {
 		t.Fatalf("register auth: %v", err)
 	}
-
 
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-d2a",
@@ -216,7 +209,6 @@ func TestManager_Update_ActiveInheritsModelStates(t *testing.T) {
 	model := "active-model"
 	backoffLevel := 3
 
-
 	if _, err := m.Register(context.Background(), &Auth{
 		ID:       "auth-active",
 		Provider: "claude",
@@ -229,7 +221,6 @@ func TestManager_Update_ActiveInheritsModelStates(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("register auth: %v", err)
 	}
-
 
 	if _, err := m.Update(context.Background(), &Auth{
 		ID:       "auth-active",
@@ -318,8 +309,6 @@ func TestManager_Update_FileSnapshotReadDoesNotHoldGlobalLock(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for slow snapshot read to start")
 	}
-
-
 
 	otherDone := make(chan error, 1)
 	go func() {

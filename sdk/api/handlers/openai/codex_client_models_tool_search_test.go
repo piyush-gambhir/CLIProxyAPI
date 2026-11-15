@@ -12,7 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
 type countingToolSearchExecutor struct {
 	*executor.ClaudeExecutor
 	calls int

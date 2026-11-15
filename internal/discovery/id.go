@@ -11,7 +11,6 @@ import (
 )
 
 const (
-
 	DefaultInstancePrefix = "CPA-"
 	instanceIDFilename    = "instance_id"
 )
@@ -34,9 +33,6 @@ func isValidHex4(s string) bool {
 	return true
 }
 
-
-
-
 func GetOrGenerateInstanceID(stateDir string) string {
 	cleanDir := ""
 	if stateDir != "" {
@@ -45,7 +41,6 @@ func GetOrGenerateInstanceID(stateDir string) string {
 
 	idMu.Lock()
 	defer idMu.Unlock()
-
 
 	if id, ok := cachedIDs[cleanDir]; ok && isValidHex4(id) {
 		return id
@@ -62,14 +57,12 @@ func GetOrGenerateInstanceID(stateDir string) string {
 		}
 	}
 
-
 	buf := make([]byte, 2)
 	if _, err := rand.Read(buf); err != nil {
 
 		return fmt.Sprintf("%04X", os.Getpid()&0xFFFF)
 	}
 	id := strings.ToUpper(hex.EncodeToString(buf))
-
 
 	if cleanDir != "" {
 		if errDir := os.MkdirAll(cleanDir, 0700); errDir == nil {
@@ -91,15 +84,11 @@ func GetOrGenerateInstanceID(stateDir string) string {
 	return id
 }
 
-
 func ResetCachedInstanceID() {
 	idMu.Lock()
 	defer idMu.Unlock()
 	cachedIDs = make(map[string]string)
 }
-
-
-
 
 func FormatInstanceName(customName, instanceID string) string {
 	if !isValidHex4(instanceID) {

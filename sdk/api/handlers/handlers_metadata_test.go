@@ -219,7 +219,6 @@ func TestExtractSessionIDsFromRequestCanonicalHierarchy(t *testing.T) {
 		t.Fatalf("claude main session = (%q, %q), want (claude:sess-claude-main, empty)", sid, pid)
 	}
 
-
 	reqSub := httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
 	reqSub.Header.Set("X-Claude-Code-Session-Id", "sess-claude-main")
 	reqSub.Header.Set("X-Claude-Code-Agent-Id", "agent-worker-1")
@@ -229,7 +228,6 @@ func TestExtractSessionIDsFromRequestCanonicalHierarchy(t *testing.T) {
 		t.Fatalf("claude subagent = (%q, %q), want (claude:sess-claude-main:agent:agent-worker-1, claude:sess-claude-main:agent:agent-orchestrator)", sid, pid)
 	}
 
-
 	reqGeneric := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	reqGeneric.Header.Set("X-Session-ID", "sess-worker-99")
 	reqGeneric.Header.Set("X-Parent-Session-ID", "sess-root-1")
@@ -237,7 +235,6 @@ func TestExtractSessionIDsFromRequestCanonicalHierarchy(t *testing.T) {
 	if sid != "header:sess-worker-99" || pid != "header:sess-root-1" {
 		t.Fatalf("generic header session = (%q, %q), want (header:sess-worker-99, header:sess-root-1)", sid, pid)
 	}
-
 
 	reqCodex := httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
 	reqCodex.Header.Set("Session-Id", "codex-sess-uuid")
@@ -250,14 +247,12 @@ func TestExtractSessionIDsFromRequestCanonicalHierarchy(t *testing.T) {
 func TestEnrichContextWithSessionHierarchyFromBody(t *testing.T) {
 	ctx := context.Background()
 
-
 	bodyJSON := []byte(`{"session_id":"body-task-1","parent_session_id":"body-parent-task"}`)
 	ctx = enrichContextWithSessionHierarchy(ctx, nil, bodyJSON, nil)
 	meta := logging.GetClientRequestMetadata(ctx)
 	if meta.SessionID != "session:body-task-1" || meta.ParentSessionID != "session:body-parent-task" {
 		t.Fatalf("body session = (%q, %q), want (session:body-task-1, session:body-parent-task)", meta.SessionID, meta.ParentSessionID)
 	}
-
 
 	headers := http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-001"}}
 	subagentBody := []byte(`{"metadata":{"agent_id":"search-specialist"}}`)
@@ -266,7 +261,6 @@ func TestEnrichContextWithSessionHierarchyFromBody(t *testing.T) {
 	if meta2.SessionID != "claude:claude-root-001:agent:search-specialist" || meta2.ParentSessionID != "claude:claude-root-001" {
 		t.Fatalf("claude body subagent = (%q, %q), want (claude:claude-root-001:agent:search-specialist, claude:claude-root-001)", meta2.SessionID, meta2.ParentSessionID)
 	}
-
 
 	ctxWithOldParent := logging.WithClientRequestMetadata(context.Background(), logging.ClientRequestMetadata{
 		SessionID:       "header:old-child",
@@ -279,14 +273,12 @@ func TestEnrichContextWithSessionHierarchyFromBody(t *testing.T) {
 		t.Fatalf("top level body session = (%q, %q), want (session:top-level-session, empty parent)", meta3.SessionID, meta3.ParentSessionID)
 	}
 
-
 	selfLoopBody := []byte(`{"session_id":"same-id","parent_session_id":"same-id"}`)
 	ctx4 := enrichContextWithSessionHierarchy(context.Background(), nil, selfLoopBody, nil)
 	meta4 := logging.GetClientRequestMetadata(ctx4)
 	if meta4.SessionID != "session:same-id" || meta4.ParentSessionID != "" {
 		t.Fatalf("self loop session = (%q, %q), want (session:same-id, empty parent)", meta4.SessionID, meta4.ParentSessionID)
 	}
-
 
 	longID := strings.Repeat("a", 250)
 	longBody := []byte(`{"session_id":"` + longID + `"}`)
@@ -299,7 +291,6 @@ func TestEnrichContextWithSessionHierarchyFromBody(t *testing.T) {
 		t.Fatalf("SessionID = %q, want session: prefix", meta5.SessionID)
 	}
 
-
 	ctxWithHeaderSession := logging.WithClientRequestMetadata(context.Background(), logging.ClientRequestMetadata{
 		SessionID:       "header:cleared-session",
 		ParentSessionID: "header:cleared-parent",
@@ -310,14 +301,12 @@ func TestEnrichContextWithSessionHierarchyFromBody(t *testing.T) {
 		t.Fatalf("cleared context = (%q, %q), want (empty, empty)", metaCleared.SessionID, metaCleared.ParentSessionID)
 	}
 
-
 	rooBody := []byte(`{"taskId":"task-child-99","parentTaskId":"task-parent-99"}`)
 	ctx7 := EnrichContextWithSessionHierarchy(context.Background(), nil, rooBody, nil)
 	meta7 := logging.GetClientRequestMetadata(ctx7)
 	if meta7.SessionID != "task:task-child-99" || meta7.ParentSessionID != "task:task-parent-99" {
 		t.Fatalf("Roo Code task session = (%q, %q), want (task:task-child-99, task:task-parent-99)", meta7.SessionID, meta7.ParentSessionID)
 	}
-
 
 	opencodeBody := []byte(`{"session_id":"opencode-sess-1","parent_id":"opencode-root-1"}`)
 	ctx8 := EnrichContextWithSessionHierarchy(context.Background(), nil, opencodeBody, nil)

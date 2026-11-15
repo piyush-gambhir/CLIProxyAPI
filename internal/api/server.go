@@ -1,7 +1,3 @@
-
-
-
-
 package api
 
 import (
@@ -36,64 +32,45 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
 type Server struct {
-
 	engine *gin.Engine
 
-
 	server *http.Server
-
 
 	listenerMu      sync.Mutex
 	muxBaseListener net.Listener
 
-
 	muxHTTPListener *muxListener
-
 
 	handlers         *handlers.BaseAPIHandler
 	codexLiveHandler *codexlive.Handler
 
-
 	cfgMu sync.RWMutex
 	cfg   *config.Config
 
-
-
 	oldConfigYaml []byte
 
-
 	accessManager *sdkaccess.Manager
-
 
 	requestLogger logging.RequestLogger
 	loggerToggle  func(bool)
 
-
 	configFilePath string
 
-
 	currentPath string
-
 
 	wsRouteMu     sync.Mutex
 	wsRoutes      map[string]struct{}
 	wsAuthChanged func(bool, bool)
 	wsAuthEnabled atomic.Bool
 
-
 	mgmt *managementHandlers.Handler
 
-
 	pluginHost *pluginhost.Host
-
 
 	managementRoutesRegistered atomic.Bool
 
 	managementRoutesEnabled atomic.Bool
-
 
 	envManagementSecret bool
 
@@ -109,16 +86,6 @@ type Server struct {
 	exampleAPIKeySafeModeActive  atomic.Bool
 }
 
-
-
-
-
-
-
-
-
-
-
 func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdkaccess.Manager, configFilePath string, opts ...ServerOption) *Server {
 	if cfg != nil {
 		cfg = cfg.CloneForRuntime()
@@ -133,7 +100,6 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	if !cfg.Debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
-
 
 	engine := gin.New()
 	if errSetTrustedProxies := engine.SetTrustedProxies(cfg.TrustedProxies); errSetTrustedProxies != nil {
@@ -155,7 +121,6 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	envAdminPassword = strings.TrimSpace(envAdminPassword)
 	envManagementSecret := envAdminPasswordSet && envAdminPassword != ""
 
-
 	s := &Server{
 		engine:                       engine,
 		handlers:                     handlers.NewBaseAPIHandlers(effectiveSDKConfig(cfg), authManager),
@@ -169,13 +134,9 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 		exampleAPIKeySafeModeEnabled: optionState.exampleAPIKeySafeMode,
 	}
 
-
 	engine.Use(logging.GinLogrusLogger())
 	engine.Use(logging.CPATraceIDMiddleware())
 	engine.Use(s.maxRequestBodyBytesMiddleware())
-
-
-
 
 	var requestLogger logging.RequestLogger
 	var toggle func(bool)
@@ -237,20 +198,14 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	}
 	s.localPassword = optionState.localPassword
 
-
-
 	engine.Use(s.homeHeartbeatMiddleware())
 	engine.Use(s.exampleAPIKeySafeModeMiddleware())
 
-
 	s.setupRoutes()
-
 
 	if optionState.routerConfigurator != nil {
 		optionState.routerConfigurator(engine, s.handlers, cfg)
 	}
-
-
 
 	hasManagementSecret := cfg.RemoteManagement.SecretKey != "" || envManagementSecret || s.localPassword != ""
 	s.managementRoutesEnabled.Store(hasManagementSecret)
@@ -264,7 +219,6 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	if optionState.keepAliveEnabled {
 		s.enableKeepAlive(optionState.keepAliveTimeout, optionState.keepAliveOnTimeout)
 	}
-
 
 	s.server = &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
@@ -284,18 +238,12 @@ func (s *Server) getConfig() *config.Config {
 	return s.cfg
 }
 
-
 func (s *Server) Handler() http.Handler {
 	if s == nil || s.server == nil {
 		return nil
 	}
 	return s.server.Handler
 }
-
-
-
-
-
 
 func (s *Server) Start() error {
 	if s == nil || s.server == nil {
@@ -411,13 +359,6 @@ func (s *Server) Start() error {
 	}
 }
 
-
-
-
-
-
-
-
 func (s *Server) Stop(ctx context.Context) error {
 	log.Debug("Stopping API server...")
 
@@ -443,7 +384,6 @@ func (s *Server) Stop(ctx context.Context) error {
 			log.Debugf("failed to close shared listener: %v", errCloseBase)
 		}
 	}
-
 
 	var errCloseServer error
 	if s.server != nil {

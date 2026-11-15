@@ -6,20 +6,15 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
-
-
 func IsChatTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
 
-
 	if bytes.Equal(payload, []byte("data: [DONE]")) || bytes.Equal(payload, []byte("[DONE]")) {
 		return true
 	}
-
 
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
@@ -34,7 +29,6 @@ func IsChatTokenEvent(payload []byte) bool {
 			return true
 		}
 	}
-
 
 	if ojson.GetBytesNoCopy(payload, "error.message").Exists() || ojson.GetBytesNoCopy(payload, "error").Exists() {
 		return true
@@ -71,7 +65,6 @@ func IsChatTokenEvent(payload []byte) bool {
 			}
 		}
 
-
 		message := choice.Get("message")
 		if message.Exists() {
 			if len(message.Get("content").String()) > 0 {
@@ -90,7 +83,6 @@ func IsChatTokenEvent(payload []byte) bool {
 			}
 		}
 
-
 		if len(choice.Get("finish_reason").String()) > 0 {
 			return true
 		}
@@ -98,9 +90,6 @@ func IsChatTokenEvent(payload []byte) bool {
 
 	return false
 }
-
-
-
 
 func ObserveChatTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {

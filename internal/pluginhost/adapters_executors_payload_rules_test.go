@@ -17,7 +17,6 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-
 type payloadUpstream struct {
 	*httptest.Server
 	mu     sync.Mutex
@@ -72,8 +71,6 @@ func TestExecutorAdapterAppliesPayloadRulesAfterTranslation(t *testing.T) {
 			return pluginapi.ExecutorResponse{Payload: []byte(`{"choices":[{"message":{"content":"ok"}}]}`)}, nil
 		},
 	}, []sdktranslator.Format{sdktranslator.FormatOpenAI}, []sdktranslator.Format{sdktranslator.FormatOpenAI})
-
-
 
 	_, errExecute := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "claude-model(high)",
@@ -193,7 +190,6 @@ func TestExecutorAdapterPayloadRulesCanonicalizeSourceFormatAlias(t *testing.T) 
 			return pluginapi.ExecutorResponse{Payload: []byte(`{"choices":[{"message":{"content":"ok"}}]}`)}, nil
 		},
 	}, []sdktranslator.Format{sdktranslator.FormatOpenAI}, []sdktranslator.Format{sdktranslator.FormatOpenAI})
-
 
 	_, errExecute := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "claude-model",

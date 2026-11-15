@@ -10,12 +10,6 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
-
-
-
-
 func newSharedClaudeOAuthAuth(id string) *cliproxyauth.Auth {
 	return &cliproxyauth.Auth{
 		ID:         id,
@@ -62,9 +56,6 @@ func TestClaudeExecutorPrepareRequestAuthIsRaceFreeOnSharedCredential(t *testing
 		t.Fatal("device ID pool was not established under concurrency")
 	}
 }
-
-
-
 
 func TestClaudeExecutorSharedCredentialMetadataReadersUseOneLock(t *testing.T) {
 	auth := &cliproxyauth.Auth{ID: "claude-race-all-readers", Metadata: map[string]any{

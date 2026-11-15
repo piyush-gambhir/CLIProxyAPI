@@ -9,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 func IsClaudeMCPToolName(name string) bool {
 	if len(name) == 0 || len(name) > 64 || !strings.HasPrefix(name, "mcp__") {
 		return false
@@ -30,18 +28,9 @@ func IsClaudeMCPToolName(name string) bool {
 	return true
 }
 
-
-
 func ClaudeMCPAliasWordCount() int {
 	return len(claudeMCPAliasEnglishWords)
 }
-
-
-
-
-
-
-
 
 func ClaudeMCPToolAlias(secret, original string, attempt uint32) string {
 	toolDigest := claudeMCPAliasDigest(secret, "tool", original)
@@ -51,10 +40,6 @@ func ClaudeMCPToolAlias(secret, original string, attempt uint32) string {
 		original,
 	)
 }
-
-
-
-
 
 func AllocateClaudeMCPToolAlias(secret, original string, reserved map[string]bool) (string, bool) {
 	words := claudeMCPAliasEnglishWords
@@ -77,9 +62,6 @@ func AllocateClaudeMCPToolAlias(secret, original string, reserved map[string]boo
 	return "", false
 }
 
-
-
-
 func claudeMCPAliasFor(server, toolID, original string) string {
 	prefix := "mcp__" + server + "__" + toolID + "_"
 	maxSemanticLen := 64 - len(prefix)
@@ -88,8 +70,6 @@ func claudeMCPAliasFor(server, toolID, original string) string {
 	}
 	return prefix + claudeMCPToolSemanticSuffix(original, maxSemanticLen)
 }
-
-
 
 func claudeMCPAliasServerComponent(secret string) string {
 	serverDigest := claudeMCPAliasDigest(secret, "server", "")

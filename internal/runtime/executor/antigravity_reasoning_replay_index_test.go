@@ -12,9 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-
 func antigravityReplayItemContextHashForTest(item, payload []byte, contentIndex int) []byte {
 	return antigravitySetReplayItemContextHashValue(item, newAntigravityReplayRequestIndex(payload).contextFingerprint(contentIndex))
 }
@@ -729,9 +726,6 @@ func syntheticAntigravityReplayBenchmarkPayloadWithProvenanceIDs(inlineBytes, tu
 	return []byte(payload.String())
 }
 
-
-
-
 func syntheticAntigravityReplayMixedPayload(turns int) []byte {
 	var payload strings.Builder
 	payload.WriteString(`{"request":{"systemInstruction":{"parts":[{"text":"sys"}]},"contents":[`)
@@ -824,14 +818,6 @@ func TestAntigravityReplayMergeRandomizedDifferential(t *testing.T) {
 	t.Logf("cases=300 casesThatApplied=%d ledgerItems=%d (thought=%d call=%d)", applied, len(items), thoughtItems, callItems)
 }
 
-
-
-
-
-
-
-
-
 func TestAntigravityReplayNonArrayPartsFailsClosed(t *testing.T) {
 	payload := []byte(`{"request":{"contents":[` +
 		`{"role":"user","parts":[{"text":"hi"}]},` +
@@ -849,16 +835,10 @@ func TestAntigravityReplayNonArrayPartsFailsClosed(t *testing.T) {
 		t.Fatalf("malformed parts must not be mutated: changed=%t body=%s", changed, got)
 	}
 
-
 	if _, legacyChanged := legacyApplyAntigravityReasoningReplayItems(payload, items, nil); legacyChanged {
 		t.Fatal("legacy oracle unexpectedly mutated malformed parts")
 	}
 }
-
-
-
-
-
 
 func TestAntigravityReplayLegacyItemWithoutTargetHash(t *testing.T) {
 	payload := []byte(`{"request":{"contents":[` +
@@ -866,7 +846,6 @@ func TestAntigravityReplayLegacyItemWithoutTargetHash(t *testing.T) {
 		`{"role":"model","parts":[{"text":"chunk-a"},{"text":"chunk-b"},{"text":"chunk-c"}]}` +
 		`]}}`)
 	const signature = "legacy-positional-signature-12345"
-
 
 	item := buildAntigravityThoughtSignatureItem(1, 7, signature, "", "")
 	item = antigravityReplayItemContextHashForTest(item, payload, 1)
@@ -892,7 +871,6 @@ func TestAntigravityReplayLegacyItemWithoutTargetHash(t *testing.T) {
 		t.Fatalf("legacy oracle disagrees\n got: %s\nwant: %s", got, want)
 	}
 
-
 	drifted, errSet := ojson.SetBytes(payload, "request.contents.0.parts.0.text", "different question")
 	if errSet != nil {
 		t.Fatal(errSet)
@@ -902,9 +880,6 @@ func TestAntigravityReplayLegacyItemWithoutTargetHash(t *testing.T) {
 		t.Fatalf("context drift must reject a positional legacy item: changed=%t body=%s", driftedChanged, driftedOut)
 	}
 }
-
-
-
 
 func BenchmarkApplyAntigravityReasoningReplayItems(b *testing.B) {
 	const turns = 32

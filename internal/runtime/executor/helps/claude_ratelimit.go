@@ -17,14 +17,8 @@ const (
 	defaultClaudeRateLimitFuzzMinSeconds = 1
 	defaultClaudeRateLimitFuzzMaxSeconds = 30
 
-
-
 	maxClaudeRateLimitWindow = 7*24*time.Hour + time.Hour
 )
-
-
-
-
 
 func ClaudeHeadersIndicateUnifiedRateLimitRejection(headers http.Header) bool {
 	if headers == nil {
@@ -75,11 +69,6 @@ func isOverageOrFableOnlyRejection(headers http.Header, unifiedStatus, status5h,
 		return true
 	}
 
-
-
-
-
-
 	if shared7dAllowed && status5h == "" {
 		if isClaudeUtilizationHealthy(getHeaderCaseInsensitive(headers, "Anthropic-Ratelimit-Unified-5h-Utilization")) {
 			return true
@@ -94,10 +83,6 @@ func isOverageOrFableOnlyRejection(headers http.Header, unifiedStatus, status5h,
 			return true
 		}
 	}
-
-
-
-
 
 	if unifiedStatus == "rejected" && status5h == "" && status7d == "" && strings.Contains(representativeClaim, "overage") {
 		util5h := getHeaderCaseInsensitive(headers, "Anthropic-Ratelimit-Unified-5h-Utilization")
@@ -124,9 +109,6 @@ func isClaudeUtilizationHealthy(raw string) bool {
 	return u >= 0 && u < 1.0
 }
 
-
-
-
 var claudeQuotaStatusHeaders = []string{
 	"Anthropic-Ratelimit-Unified-Status",
 	"Anthropic-Ratelimit-Unified-5h-Status",
@@ -134,13 +116,6 @@ var claudeQuotaStatusHeaders = []string{
 	"Anthropic-Ratelimit-Unified-7d_oi-Status",
 	"Anthropic-Ratelimit-Unified-Overage-Status",
 }
-
-
-
-
-
-
-
 
 func ParseClaudeRateLimitResetForError(headers http.Header, body []byte, now time.Time) *time.Duration {
 	if headers == nil || !claudeBodyIsExplicitPerMinuteRateLimit(body) || claudeHeadersHaveQuotaStatus(headers) {
@@ -155,7 +130,6 @@ func ParseClaudeRateLimitResetForError(headers http.Header, body []byte, now tim
 		return ParseClaudeRateLimitReset(headers, now)
 	}
 
-
 	rateHeaders := headers.Clone()
 	for name := range rateHeaders {
 		if strings.EqualFold(name, "Anthropic-Ratelimit-Unified-Reset") {
@@ -164,10 +138,6 @@ func ParseClaudeRateLimitResetForError(headers http.Header, body []byte, now tim
 	}
 	return ParseClaudeRateLimitReset(rateHeaders, now)
 }
-
-
-
-
 
 func claudeBodyIsExplicitPerMinuteRateLimit(body []byte) bool {
 	var envelope struct {
@@ -205,9 +175,6 @@ func claudeHeadersHaveQuotaStatus(headers http.Header) bool {
 	return false
 }
 
-
-
-
 func singleHeaderValueCaseInsensitive(headers http.Header, target string) (string, bool) {
 	value := ""
 	found := false
@@ -223,10 +190,6 @@ func singleHeaderValueCaseInsensitive(headers http.Header, target string) (strin
 	}
 	return value, found
 }
-
-
-
-
 
 func ParseClaudeRateLimitReset(headers http.Header, now time.Time) *time.Duration {
 	return parseClaudeRateLimitResetWithFuzz(headers, now, defaultClaudeRateLimitFuzzMinSeconds, defaultClaudeRateLimitFuzzMaxSeconds)
@@ -259,7 +222,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 		rejectedWindows = append(rejectedWindows, "7d_oi")
 	}
 
-
 	if !overageOnlyRejection {
 		if rawRetryAfter := getHeaderCaseInsensitive(headers, "Retry-After"); rawRetryAfter != "" {
 			if !containsString(rejectedWindows, "retry-after") {
@@ -271,7 +233,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 		}
 	}
 
-
 	if status5h == "rejected" {
 		if raw := getHeaderCaseInsensitive(headers, "Anthropic-Ratelimit-Unified-5h-Reset"); raw != "" {
 			if t, ok := parseUnixOrTimestamp(raw); ok && t.After(now) {
@@ -279,7 +240,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 			}
 		}
 	}
-
 
 	if status7d == "rejected" {
 		if raw := getHeaderCaseInsensitive(headers, "Anthropic-Ratelimit-Unified-7d-Reset"); raw != "" {
@@ -289,7 +249,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 		}
 	}
 
-
 	if status7dOI == "rejected" && !overageOnlyRejection {
 		if raw := getHeaderCaseInsensitive(headers, "Anthropic-Ratelimit-Unified-7d_oi-Reset"); raw != "" {
 			if t, ok := parseUnixOrTimestamp(raw); ok && t.After(now) {
@@ -297,7 +256,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 			}
 		}
 	}
-
 
 	unifiedRejected := !overageOnlyRejection && (unifiedStatus == "rejected" || status5h == "rejected" || status7d == "rejected" || status7dOI == "rejected" ||
 		(unifiedStatus == "" && !isClaudeWindowAllowed(status5h) && !isClaudeWindowAllowed(status7d)))
@@ -307,8 +265,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 			if !containsString(rejectedWindows, "unified") {
 				rejectedWindows = append(rejectedWindows, "unified")
 			}
-
-
 
 			if !claudeUnifiedResetIsOverageBillingBoundary(headers, raw) {
 				if resetAt, ok := parseUnixOrTimestamp(raw); ok && resetAt.After(now) {
@@ -328,7 +284,6 @@ func parseClaudeRateLimitResetWithFuzz(headers http.Header, now time.Time, minFu
 		}
 		return nil
 	}
-
 
 	var latestDeadline time.Time
 	for _, deadline := range candidateDeadlines {

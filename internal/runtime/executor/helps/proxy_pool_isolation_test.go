@@ -16,12 +16,7 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-
-
 func enabledPoolConfig() *config.Config { return testConfig() }
-
-
-
 
 func TestProxyPoolIsolatesCredentials(t *testing.T) {
 	ResetProxyTransports()
@@ -55,7 +50,6 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 		t.Fatal("different unauthenticated proxies shared one pool")
 	}
 
-
 	keyOne := poolAuth("", poolEnabled())
 	keyOne.Attributes = map[string]string{cliproxyauth.AttributeAPIKey: "sk-one"}
 	keyTwo := poolAuth("", poolEnabled())
@@ -77,7 +71,6 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 		t.Fatalf("label must not become a scope, got %q", got)
 	}
 
-
 	rotatedBefore := poolAuth("stable-id", poolEnabled())
 	rotatedBefore.Attributes = map[string]string{cliproxyauth.AttributeAPIKey: "sk-old"}
 	rotatedAfter := poolAuth("stable-id", poolEnabled())
@@ -86,8 +79,6 @@ func TestProxyPoolIsolatesCredentials(t *testing.T) {
 		t.Fatal("rotating API key under the same Auth.ID must not reuse the old key's pool")
 	}
 }
-
-
 
 func TestProxyPoolBoundsIdleSocketsPerCredential(t *testing.T) {
 	ResetProxyTransports()
@@ -106,9 +97,6 @@ func TestProxyPoolBoundsIdleSocketsPerCredential(t *testing.T) {
 		t.Fatalf("IdleConnTimeout = %s, want %s", tr.IdleConnTimeout, proxyPoolDefaultIdleConnTimeout)
 	}
 }
-
-
-
 
 func TestProxyPoolCapacityBoundsManyCredentials(t *testing.T) {
 	ResetProxyTransports()
@@ -138,10 +126,6 @@ func TestProxyPoolCapacityBoundsManyCredentials(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestEvictedTransportDoesNotRebuildIdlePool(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -166,7 +150,6 @@ func TestEvictedTransportDoesNotRebuildIdlePool(t *testing.T) {
 	staleAuth.ProxyURL = "direct"
 	staleClient := NewProxyAwareHTTPClient(context.Background(), cfg, staleAuth, 0)
 
-
 	for i := 0; i < proxyPoolCapacity+8; i++ {
 		other := poolOptInAuth("evict-filler-" + strconv.Itoa(i))
 		if tr := pooledProxyTransport("direct", cfg, other); tr == nil {
@@ -185,13 +168,8 @@ func TestEvictedTransportDoesNotRebuildIdlePool(t *testing.T) {
 		t.Fatalf("close body: %v", errClose)
 	}
 
-
-
 	<-closedCh
 }
-
-
-
 
 func TestProxyPoolDropsUnexpectedlyClosedConnection(t *testing.T) {
 	ResetProxyTransports()
@@ -235,7 +213,6 @@ func TestProxyPoolDropsUnexpectedlyClosedConnection(t *testing.T) {
 	if got := opened.Load(); got != 1 {
 		t.Fatalf("connections after first request = %d, want 1", got)
 	}
-
 
 	mu.Lock()
 	for _, conn := range live {

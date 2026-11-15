@@ -67,8 +67,6 @@ func (l *FileRequestLogger) writeNonStreamingLog(
 	}
 	if isWebsocketTranscript {
 
-
-
 		return nil
 	}
 	return writeResponseSection(w, statusCode, true, responseHeaders, bytes.NewReader(response), decompressErr, true)
@@ -429,28 +427,11 @@ func responseBodyStartsWithLeadingNewline(reader *bufio.Reader) bool {
 	return false
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func (l *FileRequestLogger) formatLogContent(url, method string, headers map[string][]string, body, websocketTimeline, apiRequest, apiResponse, apiWebsocketTimeline, response []byte, status int, responseHeaders map[string][]string, apiResponseErrors []*interfaces.ErrorMessage) string {
 	var content strings.Builder
 	isWebsocketTranscript := hasSectionPayload(websocketTimeline)
 	downstreamTransport := inferDownstreamTransport(headers, websocketTimeline, nil)
 	upstreamTransport := inferUpstreamTransport(apiRequest, nil, apiResponse, nil, apiWebsocketTimeline, nil, apiResponseErrors)
-
 
 	content.WriteString(l.formatRequestInfo(url, method, headers, body, downstreamTransport, upstreamTransport, !isWebsocketTranscript))
 
@@ -519,10 +500,8 @@ func (l *FileRequestLogger) formatLogContent(url, method string, headers map[str
 
 	if isWebsocketTranscript {
 
-
 		return content.String()
 	}
-
 
 	content.WriteString("=== RESPONSE ===\n")
 	content.WriteString(fmt.Sprintf("Status: %d\n", status))
@@ -542,20 +521,10 @@ func (l *FileRequestLogger) formatLogContent(url, method string, headers map[str
 	return content.String()
 }
 
-
-
-
-
-
-
-
-
-
 func (l *FileRequestLogger) decompressResponse(responseHeaders map[string][]string, response []byte) ([]byte, error) {
 	if responseHeaders == nil || len(response) == 0 {
 		return response, nil
 	}
-
 
 	var contentEncoding string
 	for key, values := range responseHeaders {
@@ -580,14 +549,6 @@ func (l *FileRequestLogger) decompressResponse(responseHeaders map[string][]stri
 	}
 }
 
-
-
-
-
-
-
-
-
 func (l *FileRequestLogger) decompressGzip(data []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
@@ -607,14 +568,6 @@ func (l *FileRequestLogger) decompressGzip(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-
-
-
-
-
-
-
-
 func (l *FileRequestLogger) decompressDeflate(data []byte) ([]byte, error) {
 	reader := flate.NewReader(bytes.NewReader(data))
 	defer func() {
@@ -631,14 +584,6 @@ func (l *FileRequestLogger) decompressDeflate(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-
-
-
-
-
-
-
-
 func (l *FileRequestLogger) decompressBrotli(data []byte) ([]byte, error) {
 	reader := brotli.NewReader(bytes.NewReader(data))
 
@@ -649,14 +594,6 @@ func (l *FileRequestLogger) decompressBrotli(data []byte) ([]byte, error) {
 
 	return decompressed, nil
 }
-
-
-
-
-
-
-
-
 
 func (l *FileRequestLogger) decompressZstd(data []byte) ([]byte, error) {
 	decoder, err := zstd.NewReader(bytes.NewReader(data))
@@ -672,16 +609,6 @@ func (l *FileRequestLogger) decompressZstd(data []byte) ([]byte, error) {
 
 	return decompressed, nil
 }
-
-
-
-
-
-
-
-
-
-
 
 func (l *FileRequestLogger) formatRequestInfo(url, method string, headers map[string][]string, body []byte, downstreamTransport string, upstreamTransport string, includeBody bool) string {
 	var content strings.Builder

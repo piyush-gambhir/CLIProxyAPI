@@ -21,7 +21,6 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// OAuth configuration constants for OpenAI Sign in with ChatGPT (SIWC).
 const (
 	SIWCDynamicClientID  = "dynamic_agent_client"
 	SIWCAgentNameHint    = "CLIProxyAPI"
@@ -44,12 +43,10 @@ var (
 	siwcRefreshGroup     singleflight.Group
 )
 
-// IsValidUUID reports whether raw is a canonical 36-char UUID string.
 func IsValidUUID(raw string) bool {
 	return siwcUUIDPattern.MatchString(strings.TrimSpace(raw))
 }
 
-// GenerateRandomBase64URL generates a 32-byte cryptographically random base64url string.
 func GenerateRandomBase64URL() (string, error) {
 	buf := make([]byte, 32)
 	if _, errRead := rand.Read(buf); errRead != nil {
@@ -58,7 +55,6 @@ func GenerateRandomBase64URL() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// GenerateSIWCAuthURL constructs the OpenAI Sign in with ChatGPT authorization URL.
 func (o *CodexAuth) GenerateSIWCAuthURL(state, nonce, deviceID, redirectURI string, pkceCodes *PKCECodes) (string, error) {
 	if pkceCodes == nil {
 		return "", fmt.Errorf("PKCE codes are required")
@@ -97,7 +93,6 @@ func (o *CodexAuth) GenerateSIWCAuthURL(state, nonce, deviceID, redirectURI stri
 	return fmt.Sprintf("%s?%s", SIWCAuthorizeURL, params.Encode()), nil
 }
 
-// GenerateSIWCReauthURL reuses the issued registration when replacing an unusable grant.
 func (o *CodexAuth) GenerateSIWCReauthURL(clientID, state, nonce, deviceID, redirectURI string, pkceCodes *PKCECodes) (string, error) {
 	clientID = strings.TrimSpace(clientID)
 	if clientID == "" || clientID == SIWCDynamicClientID {
@@ -181,7 +176,7 @@ func (o *CodexAuth) requestSIWCToken(ctx context.Context, form url.Values, clien
 		return nil, fmt.Errorf("OpenAI OAuth token response did not contain an ID token")
 	}
 	scope := tokenResp.Get("scope")
-	// An omitted, unchanged scope on refresh must not discard a rotated refresh token.
+
 	if (requireIDToken || scope.Exists()) && (scope.Type != ojson.String || strings.TrimSpace(scope.Str) == "") {
 		return nil, fmt.Errorf("OpenAI OAuth token response has invalid scope")
 	}
@@ -244,7 +239,6 @@ func (o *CodexAuth) requestSIWCToken(ctx context.Context, form url.Values, clien
 	}, nil
 }
 
-// ExchangeSIWCCodeForTokens exchanges a Sign in with ChatGPT authorization code for tokens.
 func (o *CodexAuth) ExchangeSIWCCodeForTokens(ctx context.Context, code, issuedClientID, redirectURI, deviceID string, pkceCodes *PKCECodes) (*CodexSIWCTokenData, error) {
 	if pkceCodes == nil {
 		return nil, fmt.Errorf("PKCE codes are required for SIWC token exchange")
@@ -272,7 +266,6 @@ func (o *CodexAuth) ExchangeSIWCCodeForTokens(ctx context.Context, code, issuedC
 	return o.requestSIWCToken(ctx, form, issuedClientID, deviceID, true)
 }
 
-// SIWCRefreshError marks an error as originating from a Sign in with ChatGPT (SIWC) token refresh.
 type SIWCRefreshError struct {
 	Err error
 }
@@ -291,12 +284,10 @@ func (e *SIWCRefreshError) Unwrap() error {
 	return e.Err
 }
 
-// IsSIWCRefreshError reports that this error came from the SIWC refresh partition.
 func (e *SIWCRefreshError) IsSIWCRefreshError() bool {
 	return true
 }
 
-// WrapSIWCRefreshError wraps err in a SIWCRefreshError if non-nil.
 func WrapSIWCRefreshError(err error) error {
 	if err == nil {
 		return nil
@@ -308,7 +299,6 @@ func WrapSIWCRefreshError(err error) error {
 	return &SIWCRefreshError{Err: err}
 }
 
-// RefreshSIWCTokens refreshes a Sign in with ChatGPT access token using its refresh token and issued client ID.
 func (o *CodexAuth) RefreshSIWCTokens(ctx context.Context, refreshToken, clientID, deviceID string) (*CodexSIWCTokenData, error) {
 	refreshToken = strings.TrimSpace(refreshToken)
 	if refreshToken == "" {
@@ -349,7 +339,6 @@ func (o *CodexAuth) RefreshSIWCTokens(ctx context.Context, refreshToken, clientI
 	return tokenData, nil
 }
 
-// RefreshSIWCTokensWithRetry refreshes SIWC tokens with exponential backoff.
 func (o *CodexAuth) RefreshSIWCTokensWithRetry(ctx context.Context, refreshToken, clientID, deviceID string, maxRetries int) (*CodexSIWCTokenData, error) {
 	if maxRetries <= 0 {
 		maxRetries = 1

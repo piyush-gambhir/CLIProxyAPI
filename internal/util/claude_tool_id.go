@@ -19,9 +19,6 @@ var (
 	claudeToolUseIDCounter      uint64
 )
 
-
-
-
 func SanitizeClaudeToolID(id string) string {
 	s := claudeToolUseIDSanitizer.ReplaceAllString(id, "_")
 	if s == "" {
@@ -29,9 +26,6 @@ func SanitizeClaudeToolID(id string) string {
 	}
 	return s
 }
-
-
-
 
 func SanitizeClaudeFunctionName(name string) string {
 	if name == "" {
@@ -46,9 +40,6 @@ func SanitizeClaudeFunctionName(name string) string {
 	}
 	return s
 }
-
-
-
 
 func GeminiClaudeToolUseID(callID, name, argsRaw string) string {
 	callID = strings.TrimSpace(callID)
@@ -69,8 +60,6 @@ func GeminiClaudeToolUseID(callID, name, argsRaw string) string {
 	sum := sha256.Sum256([]byte(strings.Join([]string{callID, name, argsRaw}, "\x00")))
 	return geminiClaudeToolUseIDPrefix + hex.EncodeToString(sum[:16])
 }
-
-
 
 func IsGeminiClaudeToolUseID(id string) bool {
 	id = strings.TrimSpace(id)

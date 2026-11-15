@@ -11,11 +11,7 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-
 const zeroWidthSpace = "\u200B"
-
-
-
 
 const combiningGraphemeJoiner = "\u034F"
 
@@ -26,14 +22,11 @@ type sensitiveWordRule struct {
 	isReplacement bool
 }
 
-
 type SensitiveWordMatcher struct {
 	regex             *regexp.Regexp
 	replaceFn         func(string) string
 	lookupReplacement func(string) (string, bool)
 }
-
-
 
 func SensitiveWordConfigCacheKey(words []string, replacements map[string]string) string {
 	var b strings.Builder
@@ -70,19 +63,13 @@ func SensitiveWordConfigCacheKey(words []string, replacements map[string]string)
 	return b.String()
 }
 
-
-
 func BuildSensitiveWordMatcher(words []string) *SensitiveWordMatcher {
 	return BuildSensitiveWordMatcherWithReplacements(words, nil)
 }
 
-
-
 func BuildSensitiveWordMatcherWithReplacements(words []string, replacements map[string]string) *SensitiveWordMatcher {
 	return buildSensitiveWordMatcher(words, replacements, obfuscateWord, zeroWidthSpace)
 }
-
-
 
 func BuildAntigravitySensitiveWordMatcher(words []string, replacements map[string]string) *SensitiveWordMatcher {
 	return buildSensitiveWordMatcher(words, replacements, obfuscateAntigravityPhrase, combiningGraphemeJoiner)
@@ -228,7 +215,6 @@ func sortRulesLongestFirst(rules []sensitiveWordRule) {
 	})
 }
 
-
 func obfuscateWord(word string) string {
 	if strings.Contains(word, zeroWidthSpace) {
 		return word
@@ -256,8 +242,6 @@ func obfuscateSingleSubwordCGJ(subword string) (string, bool) {
 	}
 	return string(r) + combiningGraphemeJoiner + subword[size:], true
 }
-
-
 
 func obfuscateAntigravityPhrase(phrase string) string {
 	if phrase == "" || strings.Contains(phrase, combiningGraphemeJoiner) {
@@ -305,7 +289,6 @@ func obfuscateAntigravityPhrase(phrase string) string {
 	return string(r) + combiningGraphemeJoiner + phrase[size:]
 }
 
-
 func (m *SensitiveWordMatcher) obfuscateText(text string) string {
 	if m == nil || m.regex == nil {
 		return text
@@ -316,18 +299,12 @@ func (m *SensitiveWordMatcher) obfuscateText(text string) string {
 	return m.regex.ReplaceAllStringFunc(text, obfuscateWord)
 }
 
-
 func (m *SensitiveWordMatcher) Matches(text string) bool {
 	if m == nil || m.regex == nil {
 		return false
 	}
 	return m.regex.MatchString(text)
 }
-
-
-
-
-
 
 func (m *SensitiveWordMatcher) SanitizeDevinText(text string) string {
 	if m == nil || m.regex == nil || text == "" {
@@ -397,12 +374,9 @@ func (m *SensitiveWordMatcher) SanitizeDevinText(text string) string {
 	return strings.TrimSpace(strings.Join(keptLines, "\n"))
 }
 
-
 func (m *SensitiveWordMatcher) ObfuscateText(text string) string {
 	return m.obfuscateText(text)
 }
-
-
 
 func ObfuscateSensitiveWords(payload []byte, matcher *SensitiveWordMatcher) []byte {
 	if matcher == nil || matcher.regex == nil || len(payload) == 0 {
@@ -415,8 +389,6 @@ func ObfuscateSensitiveWords(payload []byte, matcher *SensitiveWordMatcher) []by
 	return doc.Bytes()
 }
 
-
-
 func ObfuscateSensitiveWordsDoc(doc *ojson.Doc, matcher *SensitiveWordMatcher) bool {
 	if matcher == nil || matcher.regex == nil || doc == nil || doc.Len() == 0 {
 		return false
@@ -428,7 +400,6 @@ func ObfuscateSensitiveWordsDoc(doc *ojson.Doc, matcher *SensitiveWordMatcher) b
 	return modified
 }
 
-
 func ObfuscateSensitiveWordsInSystemInstruction(payload []byte, matcher *SensitiveWordMatcher) []byte {
 	if matcher == nil || matcher.regex == nil || len(payload) == 0 {
 		return payload
@@ -439,7 +410,6 @@ func ObfuscateSensitiveWordsInSystemInstruction(payload []byte, matcher *Sensiti
 	}
 	return doc.Bytes()
 }
-
 
 func ObfuscateSensitiveWordsInSystemInstructionDoc(doc *ojson.Doc, matcher *SensitiveWordMatcher) bool {
 	if matcher == nil || matcher.regex == nil || doc == nil || doc.Len() == 0 {

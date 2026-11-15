@@ -317,8 +317,6 @@ func TestResponsesWebsocketWriterCloseDoesNotWaitForActiveDataWriter(t *testing.
 		}
 		writer := newResponsesWebsocketWriter(conn)
 
-
-
 		writer.writeMu.Lock()
 		closeDone := make(chan error, 1)
 		go func() {
@@ -2763,10 +2761,6 @@ func TestShouldExposeResponsesUpstreamError(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestResponsesUpstreamErrorBodyDrivesExposure(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -2790,8 +2784,6 @@ func TestResponsesUpstreamErrorBodyDrivesExposure(t *testing.T) {
 			body:   `{"error":{"type":"invalid_request_error","code":"context_length_exceeded","message":"too long"}}`,
 			want:   true,
 		},
-
-
 
 		{name: "unauthorized", status: http.StatusUnauthorized, body: "invalid token"},
 		{name: "payment required", status: http.StatusPaymentRequired, body: "insufficient credits"},
@@ -3222,7 +3214,6 @@ func TestResponsesWebsocketHidesNonClientUpstreamDisconnectErrors(t *testing.T) 
 				t.Fatalf("non-client upstream error was exposed: %s", payload)
 			}
 
-
 			var closeErr *websocket.CloseError
 			if errors.As(errRead, &closeErr) && closeErr.Code != websocket.CloseAbnormalClosure {
 				t.Fatalf("non-client upstream error produced a close frame: %#v", closeErr)
@@ -3230,10 +3221,6 @@ func TestResponsesWebsocketHidesNonClientUpstreamDisconnectErrors(t *testing.T) 
 		})
 	}
 }
-
-
-
-
 
 func TestResponsesWebsocketExposesCyberPolicyRegardlessOfStatus(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -4081,15 +4068,7 @@ func TestResponsesWebsocketClosesAfterNonRetryableClientError(t *testing.T) {
 	}
 }
 
-
-
-
 const itemNotPersistedUpstreamMessage = "Item with id 'rs_0b5f3eb6f51f175c0169ca74e4a85881998539920821603a74' not found. Items are not persisted when `store` is set to false. Try again with `store` set to true, or remove this item from your input."
-
-
-
-
-
 
 func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -4135,7 +4114,6 @@ func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *test
 		t.Fatalf("first response = %s, err=%v", firstResponse, errRead)
 	}
 
-
 	staleRequest := `{"type":"response.create","previous_response_id":"resp-1","input":[{"type":"reasoning","id":"rs_0b5f3eb6f51f175c0169ca74e4a85881998539920821603a74"},{"type":"message","id":"msg-2"}]}`
 	if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(staleRequest)); errWrite != nil {
 		t.Fatalf("write stale request: %v", errWrite)
@@ -4156,7 +4134,6 @@ func TestResponsesWebsocketExposesItemNotPersistedAndRecoversOnReconnect(t *test
 	if _, extra, errRead := conn.ReadMessage(); errRead == nil {
 		t.Fatalf("received frame after terminal error: %s", extra)
 	}
-
 
 	reconn, _, errDial := websocket.DefaultDialer.Dial(wsURL, sessionHeader)
 	if errDial != nil {
@@ -4593,7 +4570,6 @@ func TestResponsesWebsocketPrewarmPreservesCompactedFollowup(t *testing.T) {
 					t.Fatalf("expected first failure: %s", result)
 				}
 
-
 				_ = conn.Close()
 				var errReconnect error
 				conn, _, errReconnect = websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/v1/responses/ws", http.Header{"Session_id": []string{auth.ID}})
@@ -4793,7 +4769,6 @@ func TestResponsesWebsocketMidConnectionPrewarmHandledLocallyForSSEUpstream(t *t
 		}
 	}()
 
-
 	errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","input":[{"type":"message","id":"msg-initial"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 1 websocket message: %v", errWrite)
@@ -4809,7 +4784,6 @@ func TestResponsesWebsocketMidConnectionPrewarmHandledLocallyForSSEUpstream(t *t
 	if executor.streamCalls != 1 {
 		t.Fatalf("stream calls after frame 1 = %d, want 1", executor.streamCalls)
 	}
-
 
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","generate":false,"input":[{"type":"message","id":"msg-prewarm"}]}`))
 	if errWrite != nil {
@@ -4847,7 +4821,6 @@ func TestResponsesWebsocketMidConnectionPrewarmHandledLocallyForSSEUpstream(t *t
 	if ojson.GetBytesNoCopy(completedPayload, "response.usage.total_tokens").Int() != 0 {
 		t.Fatalf("frame 2 prewarm total tokens = %d, want 0", ojson.GetBytesNoCopy(completedPayload, "response.usage.total_tokens").Int())
 	}
-
 
 	thirdRequest := fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","id":"msg-followup"}]}`, prewarmResponseID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(thirdRequest))
@@ -4935,7 +4908,6 @@ func TestResponsesWebsocketMidConnectionPrewarmEmptyInputFollowupForSSEUpstream(
 		}
 	}()
 
-
 	errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","input":[{"type":"message","id":"msg-initial"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 1 message: %v", errWrite)
@@ -4944,7 +4916,6 @@ func TestResponsesWebsocketMidConnectionPrewarmEmptyInputFollowupForSSEUpstream(
 	if errReadMessage != nil {
 		t.Fatalf("read frame 1 response: %v", errReadMessage)
 	}
-
 
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","generate":false,"input":[{"type":"message","id":"msg-prewarm"}]}`))
 	if errWrite != nil {
@@ -4962,7 +4933,6 @@ func TestResponsesWebsocketMidConnectionPrewarmEmptyInputFollowupForSSEUpstream(
 	if len(ojson.GetBytesNoCopy(completedPayload, "response.output").Array()) != 0 {
 		t.Fatalf("frame 2 prewarm output not empty: %s", completedPayload)
 	}
-
 
 	thirdRequest := fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[]}`, prewarmID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(thirdRequest))
@@ -5018,7 +4988,6 @@ func TestResponsesWebsocketMidConnectionIncrementalPrewarmHandledLocallyForSSEUp
 		}
 	}()
 
-
 	errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","model":"test-model","input":[{"type":"message","id":"msg-initial"}]}`))
 	if errWrite != nil {
 		t.Fatalf("write frame 1 websocket message: %v", errWrite)
@@ -5035,7 +5004,6 @@ func TestResponsesWebsocketMidConnectionIncrementalPrewarmHandledLocallyForSSEUp
 	if executor.streamCalls != 1 {
 		t.Fatalf("stream calls after frame 1 = %d, want 1", executor.streamCalls)
 	}
-
 
 	frame2Msg := fmt.Sprintf(`{"type":"response.create","model":"test-model","previous_response_id":%q,"generate":false,"input":[{"type":"message","id":"msg-prewarm-incremental"}]}`, frame1ResponseID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(frame2Msg))
@@ -5074,7 +5042,6 @@ func TestResponsesWebsocketMidConnectionIncrementalPrewarmHandledLocallyForSSEUp
 	if ojson.GetBytesNoCopy(completedPayload, "response.usage.total_tokens").Int() != 0 {
 		t.Fatalf("frame 2 prewarm total tokens = %d, want 0", ojson.GetBytesNoCopy(completedPayload, "response.usage.total_tokens").Int())
 	}
-
 
 	thirdRequest := fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","id":"msg-followup"}]}`, prewarmResponseID)
 	errWrite = conn.WriteMessage(websocket.TextMessage, []byte(thirdRequest))
@@ -5296,10 +5263,6 @@ func TestResponsesWebsocketRetainsObservedCompactionAcrossSubsequentTurns(t *tes
 	}
 	defer conn.Close()
 
-
-
-
-
 	requests := []string{
 		`{"type":"response.create","model":"test-model","input":[{"type":"message","role":"user","id":"old-user"}]}`,
 		`{"type":"response.create","input":[{"type":"compaction_trigger"}]}`,
@@ -5314,8 +5277,6 @@ func TestResponsesWebsocketRetainsObservedCompactionAcrossSubsequentTurns(t *tes
 			t.Fatalf("read websocket message %d: %v", index+1, errRead)
 		}
 	}
-
-
 
 	inputTurn4 := ojson.GetBytesNoCopy(executor.payloads[3], "input").Array()
 	wantIDsTurn4 := []string{"cmp-1", "turn-4-user"}
@@ -5485,8 +5446,6 @@ func TestResponsesWebsocketPluginSwitchDoesNotInheritObservedCompaction(t *testi
 		t.Fatalf("dial websocket: %v", err)
 	}
 	defer conn.Close()
-
-
 
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_plugin_id":"plugin-a","input":[{"type":"message","role":"user","id":"old-user"}]}`,
@@ -5661,11 +5620,6 @@ func TestResponsesWebsocketSuccessiveCompactionsInSameSession(t *testing.T) {
 	}
 	defer conn.Close()
 
-
-
-
-
-
 	requests := []string{
 		`{"type":"response.create","model":"test-model","input":[{"type":"message","role":"user","id":"turn-1-user"}]}`,
 		`{"type":"response.create","input":[{"type":"compaction_trigger"}]}`,
@@ -5741,8 +5695,6 @@ func TestResponsesWebsocketUsesObservedCompactionResponseForHomeRuntimeAuth(t *t
 	manager.SetConfig(&internalconfig.Config{Home: internalconfig.HomeConfig{Enabled: true}})
 	manager.PublishHomeDispatch(dispatcher, executionregistry.New(), 1)
 	manager.RegisterExecutor(executor)
-
-
 
 	base := handlers.NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, manager)
 	h := NewOpenAIResponsesAPIHandler(base)
@@ -5853,8 +5805,6 @@ func TestResponsesWebsocketProviderRouteSwitchDoesNotInheritCompaction(t *testin
 	}
 	defer conn.Close()
 
-
-
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_provider":"prov-a","route_target_model":"target-model-a","input":[{"type":"message","role":"user","id":"old-user"}]}`,
 		`{"type":"response.create","route_provider":"prov-b","route_target_model":"target-model-b","input":[{"type":"compaction","id":"cmp-a-1","encrypted_content":"opaque"},{"type":"message","role":"user","id":"new-user"}]}`,
@@ -5938,9 +5888,6 @@ func TestResponsesWebsocketProviderRouteSwitchBackDoesNotInheritStaleCompaction(
 	}
 	defer conn.Close()
 
-
-
-
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_provider":"prov-a","route_target_model":"target-model-a","input":[{"type":"message","role":"user","id":"turn-1-user"}]}`,
 		`{"type":"response.create","route_provider":"prov-b","route_target_model":"target-model-b","input":[{"type":"message","role":"user","id":"turn-2-user"}]}`,
@@ -6021,9 +5968,6 @@ func TestResponsesWebsocketProviderRouteIgnoresResidualPinnedAuth(t *testing.T) 
 	}
 	defer conn.Close()
 
-
-
-
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","input":[{"type":"message","role":"user","id":"unrouted-user"}]}`,
 		`{"type":"response.create","model":"` + model + `","route_to_custom":true,"input":[{"type":"compaction_trigger"}]}`,
@@ -6096,8 +6040,6 @@ func TestResponsesWebsocketPluginToProviderOverrideSwitch(t *testing.T) {
 		t.Fatalf("dial websocket: %v", err)
 	}
 	defer conn.Close()
-
-
 
 	requests := []string{
 		`{"type":"response.create","model":"` + model + `","route_to_plugin":true,"input":[{"type":"message","role":"user","id":"old-user"}]}`,
@@ -7019,11 +6961,6 @@ func TestDedupeResponsesWebsocketInputItemsByIDAfterRepair(t *testing.T) {
 
 func TestDedupeResponsesWebsocketInputItemsByIDKeepsReferencedToolCall(t *testing.T) {
 
-
-
-
-
-
 	payload := []byte(`{"input":[{"type":"function_call","id":"fc-1","call_id":"call-1","name":"exec_command"},{"type":"function_call","id":"fc-1","call_id":"call-2","name":"exec_command"},{"type":"function_call_output","id":"fco-1","call_id":"call-1"}]}`)
 
 	deduped := dedupeResponsesWebsocketInputItemsByID(payload)
@@ -7211,8 +7148,6 @@ func TestResponsesWebsocketCompactionResetsTurnStateOnTranscriptReplacement(t *t
 		t.Fatalf("compact status = %d, want %d", compactResp.StatusCode, http.StatusOK)
 	}
 
-
-
 	postCompact := `{"type":"response.create","input":[{"type":"function_call","id":"fc-compact","call_id":"call-1","name":"tool"},{"type":"message","id":"msg-2"}]}`
 	if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(postCompact)); errWrite != nil {
 		t.Fatalf("write post-compact websocket message: %v", errWrite)
@@ -7292,8 +7227,6 @@ func TestNormalizeSubsequentRequestCompactSkipsMerge(t *testing.T) {
 		{"type":"message","role":"assistant","id":"msg-3","content":"another assistant reply"},
 		{"type":"function_call","id":"fc-2","call_id":"call-stale","name":"read","arguments":"{}"}
 	]`)
-
-
 
 	raw := []byte(`{"type":"response.create","input":[
 		{"type":"message","role":"user","id":"msg-1c","content":"compacted user msg"},
@@ -7464,7 +7397,6 @@ func TestNormalizeSubsequentRequestIncrementalInputStillMerges(t *testing.T) {
 
 	input := ojson.GetBytesNoCopy(normalized, "input").Array()
 
-
 	if len(input) != 4 {
 		t.Fatalf("input len = %d, want 4 (merged)", len(input))
 	}
@@ -7478,7 +7410,6 @@ func TestNormalizeSubsequentRequestIncrementalInputStillMerges(t *testing.T) {
 }
 
 func TestNormalizeSubsequentRequestAssistantInputTriggersTranscriptReplacement(t *testing.T) {
-
 
 	lastRequest := []byte(`{"model":"gpt-5.4","stream":true,"input":[
 		{"type":"message","role":"user","id":"msg-1","content":"hello"}
@@ -7618,7 +7549,6 @@ func TestResponsesWebsocketWriterWritePing(t *testing.T) {
 	if err := nilWriter.writePing(); err == nil {
 		t.Fatal("expected error on nil writer.writePing(), got nil")
 	}
-
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := responsesWebsocketUpgrader.Upgrade(w, r, nil)
@@ -7795,7 +7725,6 @@ func TestResponsesWebsocketWriterCloseInterruptsBlockedPing(t *testing.T) {
 				}
 				serverConnCh <- conn
 			}()
-
 
 			buf := make([]byte, 512)
 			if _, errRead := clientRaw.Read(buf); errRead != nil {
@@ -8101,8 +8030,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("turn 1 type = %q, want response.completed (%s)", got, msg1)
 	}
 
-
-
 	provider.deniedModel = "test-model"
 	for _, rawContinuation := range []string{
 		`{"type":"response.create","model":"","input":[{"type":"message","role":"user","content":"empty model"}]}`,
@@ -8127,7 +8054,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("fresh handshake after revoke: err=%v resp=%v, want 403", errDial, resp)
 	}
 
-
 	msg2 := sendTurn(turn1Payload)
 	if got := ojson.GetBytesNoCopy(msg2, "type").String(); got != "error" {
 		t.Fatalf("turn 2 after revoke type = %q, want error (%s)", got, msg2)
@@ -8141,7 +8067,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 	if got := len(executor.Payloads()); got != 1 {
 		t.Fatalf("executor payloads after revoked turn = %d, want 1", got)
 	}
-
 
 	provider.revoked.Store(false)
 	msg3 := sendTurn(`{"type":"response.create","model":"quota-blocked-model","input":[{"type":"message","role":"user","content":"blocked"}]}`)
@@ -8158,7 +8083,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		t.Fatalf("executor payloads after model-denied turn = %d, want 1", got)
 	}
 
-
 	msg4 := sendTurn(`{"type":"response.create","model":"test-model","input":[{"type":"message","role":"user","content":"allowed again"}]}`)
 	if got := ojson.GetBytesNoCopy(msg4, "type").String(); got != "response.completed" {
 		t.Fatalf("turn 4 type = %q, want response.completed (%s)", got, msg4)
@@ -8166,7 +8090,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 	if got := len(executor.Payloads()); got != 2 {
 		t.Fatalf("executor payloads after allowed turn = %d, want 2", got)
 	}
-
 
 	provider.mu.Lock()
 	defer provider.mu.Unlock()
@@ -8193,9 +8116,6 @@ func TestResponsesWebsocketReauthorizesEachTurnAndKeepsSocketOpen(t *testing.T) 
 		}
 	}
 }
-
-
-
 
 func TestForwardResponsesWebsocketPrefersBufferedErrorOverClosedData(t *testing.T) {
 	gin.SetMode(gin.TestMode)

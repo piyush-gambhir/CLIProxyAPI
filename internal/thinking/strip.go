@@ -1,4 +1,3 @@
-
 package thinking
 
 import (
@@ -7,22 +6,6 @@ import (
 	"github.com/MoeForge/moego/ojson"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 func StripThinkingConfig(body []byte, provider string) []byte {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
@@ -34,7 +17,6 @@ func StripThinkingConfig(body []byte, provider string) []byte {
 	}
 	return doc.Bytes()
 }
-
 
 func StripThinkingFieldsDoc(doc *ojson.Doc, format string, keepTopLevelEffort ...bool) {
 	_ = stripThinkingFieldsDoc(doc, format, keepTopLevelEffort...)
@@ -101,7 +83,6 @@ func stripThinkingFieldsDoc(doc *ojson.Doc, format string, keepTopLevelEffort ..
 			}
 		}
 	}
-
 
 	if provider == "claude" && !keepEffort {
 		if oc := doc.Get("output_config"); oc.Exists() && oc.IsObject() && len(oc.Map()) == 0 {

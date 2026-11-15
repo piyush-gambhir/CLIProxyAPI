@@ -12,7 +12,6 @@ type responseStatusKey struct{}
 type responseHeadersKey struct{}
 type clientRequestMetadataKey struct{}
 
-
 type ClientRequestMetadata struct {
 	ClientIP         string
 	ResolvedClientIP string
@@ -51,14 +50,12 @@ func GetEndpoint(ctx context.Context) string {
 	return ""
 }
 
-
 func WithClientRequestMetadata(ctx context.Context, metadata ClientRequestMetadata) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, clientRequestMetadataKey{}, metadata)
 }
-
 
 func GetClientRequestMetadata(ctx context.Context) ClientRequestMetadata {
 	if ctx == nil {
@@ -90,10 +87,6 @@ func WithResponseHeadersHolder(ctx context.Context) context.Context {
 	return context.WithValue(ctx, responseHeadersKey{}, &responseHeadersHolder{})
 }
 
-
-
-
-
 func WithFreshResponseHeadersHolder(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -124,8 +117,6 @@ func SetResponseHeaders(ctx context.Context, headers http.Header) {
 	defer holder.mu.Unlock()
 	holder.headers = cloneHTTPHeader(headers)
 }
-
-
 
 func MergeResponseHeaders(ctx context.Context, headers http.Header) {
 	if ctx == nil || len(headers) == 0 {

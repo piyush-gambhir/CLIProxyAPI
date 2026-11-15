@@ -1,6 +1,3 @@
-
-
-
 package middleware
 
 import (
@@ -25,7 +22,6 @@ const requestBodyOverrideContextKey = "REQUEST_BODY_OVERRIDE"
 const responseBodyOverrideContextKey = "RESPONSE_BODY_OVERRIDE"
 const websocketTimelineOverrideContextKey = "WEBSOCKET_TIMELINE_OVERRIDE"
 
-
 type RequestInfo struct {
 	URL                 string
 	Method              string
@@ -35,8 +31,6 @@ type RequestInfo struct {
 	Timestamp           time.Time
 	deferredBodyCapture *deferredRequestBodyCapture
 }
-
-
 
 type ResponseWriterWrapper struct {
 	gin.ResponseWriter
@@ -57,16 +51,6 @@ type ResponseWriterWrapper struct {
 	finalized           bool
 	firstChunkTimestamp time.Time
 }
-
-
-
-
-
-
-
-
-
-
 
 func (w *ResponseWriterWrapper) Unwrap() http.ResponseWriter {
 	if w == nil {
@@ -93,20 +77,12 @@ func NewResponseWriterWrapper(w gin.ResponseWriter, logger logging.RequestLogger
 	}
 }
 
-
-
-
-
-
 func (w *ResponseWriterWrapper) Write(data []byte) (int, error) {
 	w.closeConnectionIfRequestBodyUnconsumed(w.effectiveStatusCode())
 
-
 	w.ensureHeadersCaptured()
 
-
 	n, err := w.ResponseWriter.Write(data)
-
 
 	if w.isStreaming && w.chunkChannel != nil {
 
@@ -127,7 +103,6 @@ func (w *ResponseWriterWrapper) Write(data []byte) (int, error) {
 
 	return n, err
 }
-
 
 func (w *ResponseWriterWrapper) FlushError() error {
 	return httpwire.FlushResponse(w.ResponseWriter)
@@ -185,16 +160,11 @@ func (w *ResponseWriterWrapper) shouldBufferResponseBody() bool {
 	return status >= http.StatusBadRequest && status != clienterror.StatusClientClosedRequest
 }
 
-
-
-
 func (w *ResponseWriterWrapper) WriteString(data string) (int, error) {
 	w.closeConnectionIfRequestBodyUnconsumed(w.effectiveStatusCode())
 	w.ensureHeadersCaptured()
 
-
 	n, err := w.ResponseWriter.WriteString(data)
-
 
 	if w.isStreaming && w.chunkChannel != nil {
 
@@ -214,9 +184,6 @@ func (w *ResponseWriterWrapper) WriteString(data string) (int, error) {
 	return n, err
 }
 
-
-
-
 func (w *ResponseWriterWrapper) WriteHeader(statusCode int) {
 	if w.ResponseWriter.Written() {
 		if statusCode >= http.StatusBadRequest && statusCode != clienterror.StatusClientClosedRequest {
@@ -227,13 +194,10 @@ func (w *ResponseWriterWrapper) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 	w.closeConnectionIfRequestBodyUnconsumed(statusCode)
 
-
 	w.captureCurrentHeaders()
-
 
 	contentType := w.ResponseWriter.Header().Get("Content-Type")
 	w.isStreaming = w.detectStreaming(contentType) || w.streamWriter != nil
-
 
 	if !w.finalized && w.isStreaming && w.logger != nil && w.logger.IsEnabled() {
 		if w.streamWriter == nil {
@@ -254,9 +218,7 @@ func (w *ResponseWriterWrapper) WriteHeader(statusCode int) {
 					w.chunkChannel = chunkChan
 					w.streamDone = doneChan
 
-
 					go w.processStreamingChunks(doneChan, chunkChan, streamWriter)
-
 
 					_ = streamWriter.WriteStatus(statusCode, w.headers)
 				}
@@ -266,26 +228,19 @@ func (w *ResponseWriterWrapper) WriteHeader(statusCode int) {
 		}
 	}
 
-
 	w.ResponseWriter.WriteHeader(statusCode)
 }
-
-
-
 
 func (w *ResponseWriterWrapper) ensureHeadersCaptured() {
 
 	w.captureCurrentHeaders()
 }
 
-
-
 func (w *ResponseWriterWrapper) captureCurrentHeaders() {
 
 	if w.headers == nil {
 		w.headers = make(map[string][]string)
 	}
-
 
 	for key, values := range w.ResponseWriter.Header() {
 
@@ -295,21 +250,15 @@ func (w *ResponseWriterWrapper) captureCurrentHeaders() {
 	}
 }
 
-
-
-
 func (w *ResponseWriterWrapper) detectStreaming(contentType string) bool {
 
 	if strings.Contains(contentType, "text/event-stream") {
 		return true
 	}
 
-
-
 	if strings.TrimSpace(contentType) != "" {
 		return false
 	}
-
 
 	if body := w.currentCapturedRequestBody(); len(body) > 0 {
 		return bytes.Contains(body, []byte(`"stream": true`)) ||
@@ -344,8 +293,6 @@ func (w *ResponseWriterWrapper) currentCapturedRequestBody() []byte {
 	return w.requestInfo.Body
 }
 
-
-
 func (w *ResponseWriterWrapper) processStreamingChunks(done chan struct{}, chunkChan <-chan []byte, streamWriter logging.StreamingLogWriter) {
 	if done == nil {
 		return
@@ -361,10 +308,6 @@ func (w *ResponseWriterWrapper) processStreamingChunks(done chan struct{}, chunk
 		streamWriter.WriteChunkAsync(chunk)
 	}
 }
-
-
-
-
 
 func (w *ResponseWriterWrapper) Finalize(c *gin.Context) error {
 	if w == nil || w.finalized {
@@ -425,7 +368,6 @@ func (w *ResponseWriterWrapper) Finalize(c *gin.Context) error {
 		}
 
 		w.streamWriter.SetFirstChunkTimestamp(w.firstChunkTimestamp)
-
 
 		apiRequest := w.extractAPIRequest(c)
 		apiResponse := w.extractAPIResponse(c)

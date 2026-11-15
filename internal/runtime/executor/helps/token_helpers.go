@@ -9,7 +9,6 @@ import (
 	"github.com/tiktoken-go/tokenizer"
 )
 
-
 func TokenizerForModel(model string) (tokenizer.Codec, error) {
 	sanitized := strings.ToLower(strings.TrimSpace(model))
 	switch {
@@ -37,7 +36,6 @@ func TokenizerForModel(model string) (tokenizer.Codec, error) {
 		return tokenizer.Get(tokenizer.O200kBase)
 	}
 }
-
 
 func CountOpenAIChatTokens(enc tokenizer.Codec, payload []byte) (int64, error) {
 	if enc == nil {
@@ -69,7 +67,6 @@ func CountOpenAIChatTokens(enc tokenizer.Codec, payload []byte) (int64, error) {
 	}
 	return int64(count), nil
 }
-
 
 func BuildOpenAIUsageJSON(count int64) []byte {
 	return []byte(fmt.Sprintf(`{"usage":{"prompt_tokens":%d,"completion_tokens":0,"total_tokens":%d}}`, count, count))

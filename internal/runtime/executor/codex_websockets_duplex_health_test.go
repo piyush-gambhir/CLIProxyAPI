@@ -66,7 +66,6 @@ func TestCodexDuplexConnectionTimeoutDoesNotCoolHealthyAccount(t *testing.T) {
 		if ojson.GetBytes(chunk.Payload, "type").String() == "response.completed" {
 			sawCompleted = true
 
-
 			input <- core.WebsocketInput{Err: &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}}
 		}
 		if chunk.Err != nil {

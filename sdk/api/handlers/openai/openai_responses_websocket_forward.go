@@ -30,7 +30,6 @@ type responsesWebsocketForwardOptions struct {
 	suppressError            func(*interfaces.ErrorMessage) bool
 	localInterrupt           *responsesLocalInterrupt
 
-
 	websocketOwned func() bool
 }
 
@@ -50,8 +49,6 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 	}
 	toolCacheTurn := opts.toolCacheTurn
 	completed := false
-
-
 
 	turnEnded := false
 	responseStarted := false
@@ -74,11 +71,6 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 		defer func() {
 			opts.localInterrupt.end()
 
-
-
-
-
-
 			if c.Request.Context().Err() == nil {
 				if claimed := opts.localInterrupt.takeClaimed(); claimed != nil {
 					_, _ = writeResponsesWebsocketError(writer, wsTimelineLog, &interfaces.ErrorMessage{
@@ -90,7 +82,6 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 		}()
 	}
 	localFrames := opts.localInterrupt.framesChan()
-
 
 	handleErr := func(errMsg *interfaces.ErrorMessage) ([]byte, string, []string, *interfaces.ErrorMessage, error) {
 		h.LoggingAPIResponseError(context.WithValue(context.Background(), "gin", c), errMsg)
@@ -126,9 +117,6 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 		case interruptPayload := <-localFrames:
 			if turnEnded {
 
-
-
-
 				if _, errWrite := writeResponsesWebsocketError(writer, wsTimelineLog, &interfaces.ErrorMessage{
 					StatusCode: http.StatusBadRequest,
 					Error:      errors.New("no active response to interrupt"),
@@ -158,16 +146,11 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 				duplex := opts.duplexStream != nil && opts.duplexStream()
 				if duplex || !completed {
 
-
-
-
-
 					if pendingErrMsg, hasPending := handlers.PendingStreamError(errs); hasPending {
 						return handleErr(pendingErrMsg)
 					}
 				}
 				if duplex {
-
 
 					_, errClose := writer.closeWithoutError()
 					cancel(nil)
@@ -194,15 +177,11 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 				return completedOutput, completedResponseID, sortedStringSet(pendingToolCallIDs), nil, nil
 			}
 
-
-
-
 			if opts.localInterrupt != nil {
 				if interruptPayload := opts.localInterrupt.takeClaimed(); interruptPayload != nil {
 					if !turnEnded {
 						return completeResponsesWebsocketLocalInterrupt(writer, wsTimelineLog, cancel, interruptPayload, outputItemsByIndex, outputItemsFallback, pendingToolCallIDs)
 					}
-
 
 					if _, errWrite := writeResponsesWebsocketError(writer, wsTimelineLog, &interfaces.ErrorMessage{
 						StatusCode: http.StatusBadRequest,
@@ -244,8 +223,6 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 				recordPendingToolCallIDsFromPayload(pendingToolCallIDs, payloads[i])
 				var payloadErrMsg *interfaces.ErrorMessage
 
-
-
 				preserveErrorEvent := responseStarted && opts.duplexStream != nil && opts.duplexStream()
 				if eventType == wsEventTypeError && preserveErrorEvent {
 					turnEnded = true
@@ -263,14 +240,11 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 					}
 				} else if isResponsesWebsocketCompletionEvent(eventType) || eventType == "response.incomplete" {
 
-
-
 					completed = true
 					turnEnded = true
 					completedOutput = responseCompletedOutputFromPayload(payloads[i], outputItemsByIndex, outputItemsFallback)
 					completedResponseID = responseCompletedIDFromPayload(payloads[i])
 				} else if eventType == "response.failed" {
-
 
 					turnEnded = true
 				}
@@ -297,18 +271,7 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocket(
 					return completedOutput, completedResponseID, sortedStringSet(pendingToolCallIDs), payloadErrMsg, errTerminate
 				}
 
-
-
-
-
-
-
 				if turnEnded && opts.localInterrupt != nil && opts.localInterrupt.isActive() {
-
-
-
-
-
 
 					opts.localInterrupt.deactivate()
 				}
@@ -363,14 +326,6 @@ func responsesWebsocketErrorStatus(errMsg *interfaces.ErrorMessage) int {
 	}
 	return clienterror.HTTPStatusFromError(errMsg.Error)
 }
-
-
-
-
-
-
-
-
 
 func shouldExposeResponsesUpstreamError(errMsg *interfaces.ErrorMessage) bool {
 	if errMsg == nil {
@@ -434,8 +389,6 @@ func writeResponsesWebsocketTerminalError(
 	payload []byte,
 ) ([]byte, bool, error) {
 	if !shouldExposeResponsesUpstreamError(errMsg) {
-
-
 
 		if wsTimelineLog != nil && errMsg != nil {
 			appendWebsocketTimelineDisconnect(wsTimelineLog, errMsg.Error, time.Now())

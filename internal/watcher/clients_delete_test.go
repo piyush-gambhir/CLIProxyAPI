@@ -62,8 +62,6 @@ func TestAuthDeleteFileRemovalClassification(t *testing.T) {
 	assertDelete("c", true)
 	removalRevision := w.pendingUpdates["b"].Revision()
 
-
-
 	if errWriteFile := os.WriteFile(path, []byte(`{"type":"plugin","ids":["b"]}`), 0o600); errWriteFile != nil {
 		t.Fatal(errWriteFile)
 	}
@@ -75,8 +73,6 @@ func TestAuthDeleteFileRemovalClassification(t *testing.T) {
 	if errSnapshotAuthFile != nil || len(fileSnapshot) != 1 || fileSnapshot[0].ID != "b" || fileSnapshot[0].Attributes[coreauth.AttributePath] != path {
 		t.Fatalf("expected only B in the single-file snapshot, got %+v, err=%v", fileSnapshot, errSnapshotAuthFile)
 	}
-
-
 
 	write(`{"type":"plugin","ids":["a","b"]}`)
 	addition := w.pendingUpdates["b"]

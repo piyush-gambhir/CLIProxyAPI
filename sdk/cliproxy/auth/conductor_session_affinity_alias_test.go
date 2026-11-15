@@ -30,7 +30,6 @@ func TestManagerSessionAffinityAliasCooldownPreservesSelection(t *testing.T) {
 					manager := NewManager(nil, selector, nil)
 					manager.SetRetryConfig(0, 0, 0)
 
-
 					highID, lowID := "z-high-"+t.Name(), "a-low-"+t.Name()
 					retryAfter := time.Hour
 					cool := func(id, model string) {
@@ -50,7 +49,6 @@ func TestManagerSessionAffinityAliasCooldownPreservesSelection(t *testing.T) {
 						}
 						cool(candidate.ID, routeModel)
 					}
-
 
 					manager.SetOAuthModelAlias(map[string][]internalconfig.OAuthModelAlias{
 						"codex": {{Name: targetModel, Alias: routeModel, Fork: true}},

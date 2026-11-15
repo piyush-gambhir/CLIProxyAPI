@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 package main
 
 import (
@@ -35,18 +25,12 @@ import (
 )
 
 const (
-
 	providerKey = "myprov"
-
 
 	fOpenAI = sdktr.Format("openai.chat")
 
-
 	fMyProv = sdktr.Format("myprov.chat")
 )
-
-
-
 
 func init() {
 	sdktr.Register(fOpenAI, fMyProv,
@@ -62,22 +46,9 @@ func init() {
 	)
 }
 
-
-
 type MyExecutor struct{}
 
-
 func (MyExecutor) Identifier() string { return providerKey }
-
-
-
-
-
-
-
-
-
-
 
 func (MyExecutor) PrepareRequest(req *http.Request, a *coreauth.Auth) error {
 	if req == nil || a == nil {
@@ -121,7 +92,6 @@ func (MyExecutor) Execute(ctx context.Context, a *coreauth.Auth, req clipexec.Re
 		return clipexec.Response{}, errNew
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
-
 
 	if errPrep := (MyExecutor{}).PrepareRequest(httpReq, a); errPrep != nil {
 		return clipexec.Response{}, errPrep

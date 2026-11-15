@@ -6,12 +6,10 @@ import (
 	"sync"
 )
 
-
 type ExecutionLifecycle interface {
 	Bind(func() error) error
 	End(string)
 }
-
 
 func BindExecutionResource(opts Options, closer io.Closer) error {
 	if opts.ExecutionLifecycle == nil || closer == nil {

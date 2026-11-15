@@ -11,8 +11,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
 func cacheGeminiResponsesTextSignatures(modelName, messageID, text string, signatures []string) bool {
 	if messageID == "" || text == "" {
 		return false
@@ -48,8 +46,6 @@ func restoreGeminiResponsesTextSignatures(modelName string, items []ojson.Result
 		if !found {
 			continue
 		}
-
-
 
 		replayed := make(map[string]bool)
 		textHash := fmt.Sprintf("%x", sha256.Sum256([]byte(text)))

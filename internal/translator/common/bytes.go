@@ -27,7 +27,6 @@ func ClaudeInputTokensJSON(count int64) []byte {
 	return out
 }
 
-// NewRawArrayItems creates a raw item slice sized for the expected input.
 func NewRawArrayItems(capacity int64) [][]byte {
 	if capacity <= 0 {
 		return nil
@@ -54,8 +53,6 @@ func JoinRawArray(items [][]byte) []byte {
 	return append(out, ']')
 }
 
-// SetRawArrayItems replaces an empty JSON array at path with raw items.
-// The single-item path avoids allocating an intermediate joined array.
 func SetRawArrayItems(data []byte, path string, items [][]byte) []byte {
 	if len(items) == 0 {
 		return data
@@ -75,7 +72,6 @@ func SetRawArrayItems(data []byte, path string, items [][]byte) []byte {
 	return data
 }
 
-// SetRawArrayItemsDoc replaces a JSON array at path in doc with raw items.
 func SetRawArrayItemsDoc(doc *ojson.Doc, path string, items [][]byte) {
 	if doc == nil || len(items) == 0 {
 		return
@@ -83,8 +79,6 @@ func SetRawArrayItemsDoc(doc *ojson.Doc, path string, items [][]byte) {
 	_ = doc.SetRawBytes(path, JoinRawArray(items))
 }
 
-// SSEEventData builds one complete SSE frame. Each frame carries its own
-// blank-line terminator so concatenated frames stay separable downstream.
 func SSEEventData(event string, payload []byte) []byte {
 	out := make([]byte, 0, securityutil.ByteCapacity(len(event), len(payload), 16))
 	out = append(out, "event: "...)
@@ -119,10 +113,6 @@ func AppendSSEEventBytes(out []byte, event string, payload []byte, trailingNewli
 	return out
 }
 
-// SetStringWithoutHTMLEscape sets a string field in a JSON payload without escaping
-// HTML characters (<, >, &). Standard ojson.Set/SetBytes delegates string values
-// containing quotes or special characters to encoding/json.Marshal, which unconditionally
-// escapes <, >, & to \u003c, \u003e, \u0026.
 func SetStringWithoutHTMLEscape(data []byte, path, value string) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
@@ -134,8 +124,6 @@ func SetStringWithoutHTMLEscape(data []byte, path, value string) ([]byte, error)
 	return ojson.SetRawBytes(data, path, raw)
 }
 
-// SetStringWithoutHTMLEscapeDoc sets a string field in an ojson.Doc without escaping
-// HTML characters (<, >, &).
 func SetStringWithoutHTMLEscapeDoc(doc *ojson.Doc, path, value string) error {
 	if doc == nil {
 		return nil

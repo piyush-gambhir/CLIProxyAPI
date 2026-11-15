@@ -7,9 +7,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-
-
-
 func (cfg *Config) ForAPIKey() *Config {
 	if cfg == nil || len(cfg.OAuthOnlyFields) == 0 {
 		return cfg
@@ -25,9 +22,6 @@ func (cfg *Config) ForAPIKey() *Config {
 	filtered.OAuthOnlyFields = nil
 	return &filtered
 }
-
-
-
 
 func (cfg Config) MarshalYAML() (any, error) {
 	var root yaml.Node

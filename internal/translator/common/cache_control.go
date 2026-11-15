@@ -8,7 +8,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// isValidCacheControl checks if the cache_control object has an exact valid "type" of "ephemeral".
 func isValidCacheControl(cc ojson.Result) bool {
 	if !cc.Exists() || cc.Type == ojson.Null || !cc.IsObject() {
 		return false
@@ -33,8 +32,6 @@ func claudeBlockCanHostCacheControl(block ojson.Result) bool {
 	}
 }
 
-// AttachCacheControl copies a Claude-compatible cache_control object from src onto dst.
-// Returns dst unchanged when cache_control is missing, not an object, or dst is an empty text block.
 func AttachCacheControl(dst []byte, src ojson.Result) []byte {
 	cc := src.Get("cache_control")
 	if !isValidCacheControl(cc) || !claudeBlockCanHostCacheControl(util.ParseGJSONBytesNoCopy(dst)) {
@@ -47,9 +44,6 @@ func AttachCacheControl(dst []byte, src ojson.Result) []byte {
 	return out
 }
 
-// AttachMessageCacheControl applies message-level cache_control onto the last eligible non-empty content block.
-// Part-level cache_control wins when the target block already has one.
-// String content is promoted to a content array so Claude can accept cache_control.
 func AttachMessageCacheControl(msg []byte, src ojson.Result) []byte {
 	cc := src.Get("cache_control")
 	if !isValidCacheControl(cc) {
@@ -97,9 +91,6 @@ func AttachMessageCacheControl(msg []byte, src ojson.Result) []byte {
 	return outDoc.Bytes()
 }
 
-// AttachToolMessageCacheControl hoists part-level or message-level cache_control
-// onto the tool_result content block in msg.
-// Part-level cache_control from src content takes precedence over message-level cache_control.
 func AttachToolMessageCacheControl(msg []byte, src ojson.Result) []byte {
 	rawCC := extractFirstPartCacheControl(src)
 	if rawCC == "" {

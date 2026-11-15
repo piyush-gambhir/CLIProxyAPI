@@ -105,7 +105,6 @@ func TestReleaseFlusherIdleFlushDoesNotAllocate(t *testing.T) {
 		return nil
 	})
 
-
 	for i := 0; i < 1000; i++ {
 		group := executionregistry.ReleaseGroup{CredentialID: fmt.Sprintf("cred-%d", i), Model: "gpt"}
 		flusher.groups[group] = releaseState{Latest: 1, Acked: 1}

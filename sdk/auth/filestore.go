@@ -17,12 +17,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-
 type PluginAuthParser interface {
 	ParseAuth(context.Context, pluginapi.AuthParseRequest) (*cliproxyauth.Auth, bool, error)
 }
-
-
 
 type PluginMultiAuthParser interface {
 	ParseAuths(context.Context, pluginapi.AuthParseRequest) ([]*cliproxyauth.Auth, bool, error)
@@ -33,7 +30,6 @@ type pluginAuthParserHolder struct {
 }
 
 var pluginAuthParserValue atomic.Value
-
 
 func RegisterPluginAuthParser(parser PluginAuthParser) {
 	pluginAuthParserValue.Store(pluginAuthParserHolder{parser: parser})
@@ -51,26 +47,21 @@ func currentPluginAuthParser() PluginAuthParser {
 	return holder.parser
 }
 
-
 type FileTokenStore struct {
 	mu      sync.Mutex
 	dirLock sync.RWMutex
 	baseDir string
 }
 
-
-
 func NewFileTokenStore() *FileTokenStore {
 	return &FileTokenStore{}
 }
-
 
 func (s *FileTokenStore) SetBaseDir(dir string) {
 	s.dirLock.Lock()
 	s.baseDir = strings.TrimSpace(dir)
 	s.dirLock.Unlock()
 }
-
 
 func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
@@ -89,9 +80,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 		return "", fmt.Errorf("auth filestore: missing file path attribute for %s", auth.ID)
 	}
 
-
-
-
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
 			return "", nil
@@ -104,7 +92,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 	if err = os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return "", fmt.Errorf("auth filestore: create dir failed: %w", err)
 	}
-
 
 	type metadataSetter interface {
 		SetMetadata(map[string]any)
@@ -174,7 +161,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 	return path, nil
 }
 
-
 func (s *FileTokenStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error) {
 	dir := s.baseDirSnapshot()
 	if dir == "" {
@@ -205,7 +191,6 @@ func (s *FileTokenStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error)
 	}
 	return entries, nil
 }
-
 
 func (s *FileTokenStore) Delete(ctx context.Context, id string) error {
 	id = strings.TrimSpace(id)
@@ -488,7 +473,6 @@ func extractAccessToken(metadata map[string]any) string {
 	}
 	return ""
 }
-
 
 func jsonEqual(a, b []byte) bool {
 	var objA any

@@ -10,42 +10,19 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-
-
-
-
-
-
-
-
-
 const (
 	claudeWebSearchToolName = "web_search"
 
-
-
-
 	responsesWebSearchIDPrefix = "ws_"
-
-
 
 	claudeServerToolIDPrefix = "srvtoolu_"
 )
-
-
-
 
 var claudeServerToolIDSanitizer = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 
 func responsesWebSearchCallID(claudeToolUseID string) string {
 	return responsesWebSearchIDPrefix + claudeToolUseID
 }
-
-
-
-
-
-
 
 func claudeWebSearchToolUseID(responsesItemID string) string {
 	body := strings.TrimPrefix(strings.TrimSpace(responsesItemID), responsesWebSearchIDPrefix)
@@ -56,21 +33,12 @@ func claudeWebSearchToolUseID(responsesItemID string) string {
 	return claudeServerToolIDPrefix + body
 }
 
-
-
 func claudeWebSearchQuery(input string) string {
 	if input == "" {
 		return ""
 	}
 	return strings.TrimSpace(ojson.Get(input, "query").String())
 }
-
-
-
-
-
-
-
 
 func claudeWebSearchResultsToResponses(content ojson.Result) []byte {
 	if content.IsObject() {
@@ -92,9 +60,6 @@ func claudeWebSearchResultsToResponses(content ojson.Result) []byte {
 	return translatorcommon.JoinRawArray(results)
 }
 
-
-
-
 func buildResponsesWebSearchCallItem(claudeToolUseID, query string, results []byte) []byte {
 	return buildResponsesWebSearchCallItemWithStatus(claudeToolUseID, query, "completed", results)
 }
@@ -114,9 +79,6 @@ func buildResponsesWebSearchCallItemWithStatus(claudeToolUseID, query, status st
 }
 
 type webSearchResultLookupContextKey struct{}
-
-
-
 
 func WithWebSearchResultLookup(ctx context.Context, lookup func(toolUseID string) ([]byte, bool)) context.Context {
 	if lookup == nil {
@@ -143,15 +105,9 @@ func lookupWebSearchResultFor(ctx context.Context, toolUseID string) []byte {
 	return content
 }
 
-
-
-
 func convertResponsesWebSearchCallToClaudeBlocks(item ojson.Result) [][]byte {
 	return convertResponsesWebSearchCallToClaudeBlocksWithQuery(item, "", true)
 }
-
-
-
 
 func convertResponsesWebSearchCallToClaudeBlocksWithQuery(item ojson.Result, fallbackQuery string, withResult bool) [][]byte {
 	return convertResponsesWebSearchCallToClaudeBlocksWithContext(context.Background(), item, fallbackQuery, withResult)
@@ -189,19 +145,7 @@ func convertResponsesWebSearchCallToClaudeBlocksWithContext(ctx context.Context,
 	return [][]byte{useDoc.Bytes(), resultDoc.Bytes()}
 }
 
-
-
-
-
-
-
-
-
-
-
-
 type responsesWebSearchHistory struct {
-
 	boundaryAfter []bool
 
 	skip map[int]bool
@@ -214,8 +158,6 @@ func responsesWebSearchItemIsPaused(item ojson.Result) bool {
 		strings.EqualFold(strings.TrimSpace(item.Get("status").String()), "in_progress") &&
 		!item.Get("results").Exists()
 }
-
-
 
 func responsesItemIsTurnBoundary(item ojson.Result) bool {
 	typ := item.Get("type").String()
@@ -281,9 +223,6 @@ func (h responsesWebSearchHistory) claudeBlocksWithContext(ctx context.Context, 
 	return convertResponsesWebSearchCallToClaudeBlocksWithContext(ctx, item, query, true)
 }
 
-
-
-
 func responsesWebSearchCallQuery(item ojson.Result) string {
 	if query := strings.TrimSpace(item.Get("action.query").String()); query != "" {
 		return query
@@ -308,9 +247,6 @@ func responsesWebSearchResultsToClaude(results ojson.Result) []byte {
 			return true
 		}
 
-
-
-
 		if strings.TrimSpace(entry.Get("encrypted_content").String()) == "" {
 			return true
 		}
@@ -324,10 +260,6 @@ func responsesWebSearchResultsToClaude(results ojson.Result) []byte {
 	}
 	return translatorcommon.JoinRawArray(blocks)
 }
-
-
-
-
 
 func attachClaudeCitations(textBlock []byte, annotations ojson.Result) []byte {
 	if !annotations.IsArray() {
@@ -363,10 +295,6 @@ func claudeBlocksHaveEmptyWebSearchResult(blocks [][]byte) bool {
 	}
 	return false
 }
-
-
-
-
 
 func stripClaudeWebSearchCitationsFromParts(parts [][]byte) ([][]byte, int) {
 	droppedTotal := 0

@@ -36,9 +36,6 @@ func TestCompatibilityRequestPair(t *testing.T) {
 	}
 }
 
-
-
-
 func TestTranslateRequestPairWithAPIKeyModelCompatibilityCountsTranslations(t *testing.T) {
 	from := sdktranslator.Format("api-key-compat-count-from")
 	to := sdktranslator.Format("api-key-compat-count-to")

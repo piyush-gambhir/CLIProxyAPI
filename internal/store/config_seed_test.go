@@ -25,9 +25,6 @@ import (
 
 const seedTestPlaintextSecret = "seed-plaintext-secret"
 
-
-
-
 var seedTestConfigsKeepingPlaintext = map[string]string{
 	"unparsable":      "remote-management:\n  secret-key: " + seedTestPlaintextSecret + "\nport: [8317\n",
 	"anchored secret": "defaults: &management\n  secret-key: " + seedTestPlaintextSecret + "\nmanagement: *management\n",
@@ -39,7 +36,6 @@ var seedTestDriverID atomic.Uint64
 func seedTestPlaintextConfig(section string) string {
 	return "# operator note\nport: 8317\n" + section + ":\n  secret-key: " + seedTestPlaintextSecret + "\n"
 }
-
 
 func seedTestSettledConfigs(t *testing.T) map[string]string {
 	t.Helper()
@@ -72,9 +68,6 @@ func readSeedTestFile(t *testing.T, path string) []byte {
 	return data
 }
 
-
-
-
 func assertSeededWithHashedSecret(t *testing.T, seeded []byte, configPath, section string) {
 	t.Helper()
 	if bytes.Contains(seeded, []byte(seedTestPlaintextSecret)) {
@@ -93,8 +86,6 @@ func assertSeededWithHashedSecret(t *testing.T, seeded []byte, configPath, secti
 		t.Fatalf("seeded config differs from the local file:\nremote:\n%s\nlocal:\n%s", seeded, local)
 	}
 }
-
-
 
 func newSeedTestObjectStore(t *testing.T, configPath string) (*ObjectTokenStore, *[][]byte) {
 	t.Helper()
@@ -162,8 +153,6 @@ func TestObjectTokenStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 	}
 }
 
-
-
 func TestObjectTokenStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range seedTestConfigsKeepingPlaintext {
 		t.Run(name, func(t *testing.T) {
@@ -185,8 +174,6 @@ func TestObjectTokenStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T)
 		})
 	}
 }
-
-
 
 type seedTestDatabase struct {
 	mu      sync.Mutex
@@ -234,7 +221,6 @@ func (c *seedTestConn) ExecContext(_ context.Context, query string, args []drive
 	c.database.mu.Unlock()
 	return driver.RowsAffected(1), nil
 }
-
 
 func (*seedTestConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
 	return seedTestRows{}, nil
@@ -308,8 +294,6 @@ func TestPostgresStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 		})
 	}
 }
-
-
 
 func TestPostgresStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range seedTestConfigsKeepingPlaintext {
