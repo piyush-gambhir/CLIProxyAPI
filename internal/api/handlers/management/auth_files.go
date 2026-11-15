@@ -332,7 +332,7 @@ func (h *Handler) lookupAuthFile(name string, authIndex string) (*coreauth.Auth,
 	return nil, false
 }
 
-// GetAuthFileModels returns the models supported by a specific auth file
+
 func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	name := c.Query("name")
 	if name == "" {
@@ -340,7 +340,7 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 		return
 	}
 
-	// Try to find auth ID via authManager
+
 	var authID string
 	if h.authManager != nil {
 		auths := h.authManager.List()
@@ -353,10 +353,10 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	}
 
 	if authID == "" {
-		authID = name // fallback to filename as ID
+		authID = name
 	}
 
-	// Get models from registry
+
 	reg := registry.GetGlobalRegistry()
 	models := reg.GetModelsForClient(authID)
 
@@ -380,7 +380,7 @@ func (h *Handler) GetAuthFileModels(c *gin.Context) {
 	c.JSON(200, gin.H{"models": result})
 }
 
-// List auth files from disk when the auth manager is unavailable.
+
 func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagination) {
 	observedAt := time.Now().UTC()
 	nameFilter := strings.TrimSpace(c.Query("name"))
@@ -420,7 +420,7 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagi
 		name := candidate.entry.Name()
 		fileData := gin.H{"name": name, "size": candidate.info.Size(), "modtime": candidate.info.ModTime(), "cooldowns": nil}
 
-		// Read file to get type field
+
 		full := filepath.Join(h.cfg.AuthDir, name)
 		if data, errRead := os.ReadFile(full); errRead == nil {
 			var fieldBuf [7]ojson.Result
@@ -483,12 +483,12 @@ func (h *Handler) listAuthFilesFromDisk(c *gin.Context, pagination authFilesPagi
 	c.JSON(200, authFilesListResponse(observedAt, files, pagination, total, end))
 }
 
-// authFileQuotaContext carries request-scoped quota capability data for auth file entries.
+
 type authFileQuotaContext struct {
-	// pluginIDs maps normalized provider keys to the quota plugin selected for them.
-	// A nil map means no quota plugins are available.
+
+
 	pluginIDs map[string]string
-	// v8 hides declarative quota_probe support because v8 only serves plugin quota routes.
+
 	v8 bool
 }
 
@@ -502,15 +502,15 @@ func isPersistentAuthFailure(auth *coreauth.Auth, now time.Time) bool {
 	if auth == nil {
 		return false
 	}
-	// Terminal unauthorized failure with no refresh scheduled.
+
 	if coreauth.HasUnauthorizedAuthFailure(auth) {
 		return true
 	}
-	// An OAuth credential whose access token is expired cannot be used to serve requests.
+
 	if exp, ok := auth.AccessTokenExpirationTime(); ok && !exp.IsZero() && !exp.After(now) {
 		return true
 	}
-	// An explicit token expiration status.
+
 	if strings.EqualFold(strings.TrimSpace(auth.StatusMessage), "token expired") {
 		return true
 	}
@@ -555,7 +555,7 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return unavailable, coreauth.StatusDisabled, statusMessage, nextRetry
 	}
 
-	// Never reconcile an active authentication or token failure to active.
+
 	if isPersistentAuthFailure(auth, now) {
 		if !nextRetry.IsZero() && !nextRetry.After(now) {
 			nextRetry = time.Time{}
@@ -566,9 +566,9 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return true, coreauth.StatusError, statusMessage, nextRetry
 	}
 
-	// Check if there is an active credential-level cooldown.
-	// Matching selector.availabilityBlock: if neither Unavailable nor Quota.Exceeded is true,
-	// an inactive timestamp does not block the credential.
+
+
+
 	hasActiveCredCooldown := false
 	if auth.Unavailable || auth.Quota.Exceeded {
 		if !auth.NextRetryAfter.IsZero() && auth.NextRetryAfter.After(now) {
@@ -582,7 +582,7 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		}
 	}
 
-	// Check per-model states.
+
 	hasSchedulableModels := false
 	allSchedulableBlocked := true
 	hasActiveModelCooldown := false
@@ -611,8 +611,8 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		(auth.Quota.Exceeded && !auth.Quota.NextRecoverAt.IsZero()) ||
 		hadAnyModelCooldown
 
-	// If there is an active credential cooldown, keep unavailable/error.
-	// If all recorded models are blocked and the credential itself was marked unavailable, keep unavailable/error.
+
+
 	if hasActiveCredCooldown || (hasSchedulableModels && allSchedulableBlocked && auth.Unavailable) {
 		if !nextRetry.IsZero() && !nextRetry.After(now) {
 			nextRetry = time.Time{}
@@ -620,7 +620,7 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return true, coreauth.StatusError, statusMessage, nextRetry
 	}
 
-	// If the credential was not marked unavailable and has no active credential cooldown, keep unavailable=false.
+
 	if !auth.Unavailable && !hasActiveCredCooldown {
 		if status == coreauth.StatusError && hasSchedulableModels && !allSchedulableBlocked {
 			status = coreauth.StatusActive
@@ -629,12 +629,12 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return false, status, statusMessage, time.Time{}
 	}
 
-	// If a cooldown was recorded but has expired (and no active model cooldown blocks all models):
+
 	if hadCooldown && !hasActiveCredCooldown && !hasActiveModelCooldown {
 		return false, coreauth.StatusActive, "", time.Time{}
 	}
 
-	// If partial models are still cooling, the credential as a whole remains available for other models.
+
 	if hadCooldown && hasSchedulableModels && !allSchedulableBlocked {
 		if status == coreauth.StatusError && !hasActiveCredCooldown {
 			status = coreauth.StatusActive
@@ -643,7 +643,7 @@ func reconcileAuthFileCooldownState(auth *coreauth.Auth, now time.Time) (unavail
 		return false, status, statusMessage, time.Time{}
 	}
 
-	// If nextRetry is in the past, do not expose a past retry deadline.
+
 	if !nextRetry.IsZero() && !nextRetry.After(now) {
 		nextRetry = time.Time{}
 	}
@@ -698,7 +698,7 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 			entry["quota_plugin_id"] = pluginID
 		}
 	}
-	// Declarative quota_probe is only executed by the v0 quota/fetch route.
+
 	if !quota.v8 && auth.Metadata != nil {
 		if probe, okProbe := auth.Metadata["quota_probe"]; okProbe && probe != nil {
 			entry["supports_quota"] = true
@@ -739,7 +739,7 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 			entry["size"] = info.Size()
 			entry["modtime"] = info.ModTime()
 		} else if os.IsNotExist(err) {
-			// Hide credentials removed from disk but still lingering in memory.
+
 			if !runtimeOnly && (auth.Disabled || auth.Status == coreauth.StatusDisabled || strings.EqualFold(strings.TrimSpace(auth.StatusMessage), "removed via management api")) {
 				return nil
 			}
@@ -751,8 +751,8 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 	if claims := extractCodexIDTokenClaims(auth); claims != nil {
 		entry["id_token"] = claims
 	}
-	// Expose priority from Attributes (set by synthesizer from JSON "priority" field).
-	// Fall back to Metadata for auths registered via UploadAuthFile (no synthesizer).
+
+
 	if p := strings.TrimSpace(authAttribute(auth, "priority")); p != "" {
 		if parsed, err := strconv.Atoi(p); err == nil {
 			entry["priority"] = parsed
@@ -771,8 +771,8 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 			}
 		}
 	}
-	// Expose note from Attributes (set by synthesizer from JSON "note" field).
-	// Fall back to Metadata for auths registered via UploadAuthFile (no synthesizer).
+
+
 	if note := strings.TrimSpace(authAttribute(auth, "note")); note != "" {
 		entry["note"] = note
 	} else if auth.Metadata != nil {
@@ -792,8 +792,8 @@ func (h *Handler) buildAuthFileEntryLocked(auth *coreauth.Auth, quota authFileQu
 		entry["request_retry"] = requestRetry
 	}
 	if quota.v8 {
-		// OAuth login entry the credential was signed in through; multi-entry plugins store it
-		// next to the provider, and the deprecated v0 route keeps its frozen response shape.
+
+
 		if oauthProvider := authOAuthProvider(auth); oauthProvider != "" {
 			entry["oauth_provider"] = oauthProvider
 		}
@@ -876,9 +876,9 @@ func authFileRequestRetryFromJSON(data []byte) (int, bool) {
 	return (&coreauth.Auth{Metadata: metadata}).RequestRetryOverride()
 }
 
-// quotaObservationPayload exposes only passive provider observations. Cooldown
-// fields are intentionally excluded so this management response cannot be
-// mistaken for scheduler state or influence scheduling behavior.
+
+
+
 func quotaObservationPayloadForProvider(provider string, quota coreauth.QuotaState) gin.H {
 	if !coreauth.ProviderSupportsQuotaObservation(provider) {
 		return quotaObservationPayload(coreauth.QuotaState{})

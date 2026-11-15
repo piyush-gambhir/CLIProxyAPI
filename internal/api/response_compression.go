@@ -39,7 +39,7 @@ func responseCompressionMiddleware(cfg *config.Config) gin.HandlerFunc {
 		c.Writer = commitWriter
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				// Discard uncommitted data so outer recovery can send a clean error.
+
 				if writer != nil && original.Written() {
 					writer.finish()
 				}
@@ -49,7 +49,7 @@ func responseCompressionMiddleware(cfg *config.Config) gin.HandlerFunc {
 			if writer != nil {
 				writer.finish()
 			}
-			// Commit even bodyless responses through the hook before restoring Gin's writer.
+
 			commitWriter.WriteHeaderNow()
 			c.Writer = original
 		}()
@@ -75,8 +75,8 @@ func responseCompressionMiddleware(cfg *config.Config) gin.HandlerFunc {
 	}
 }
 
-// negotiateResponseCompression ranks quality first, using server preference for ties.
-// The second result reports whether identity is allowed, including wildcard exclusions.
+
+
 func negotiateResponseCompression(header string) (string, bool) {
 	qualities := make(map[string]float64)
 	for _, token := range strings.Split(header, ",") {
@@ -115,8 +115,8 @@ func negotiateResponseCompression(header string) (string, bool) {
 	return selected, identityAllowed
 }
 
-// responseCompressionCommitWriter merges Vary at the first transport write without buffering.
-// Gin's WriteHeader only stages the status; Hijacker and other interfaces remain embedded.
+
+
 type responseCompressionCommitWriter struct {
 	gin.ResponseWriter
 	committed bool
@@ -173,9 +173,9 @@ type responseCompressorPool interface {
 	Put(any)
 }
 
-// responseCompressorPools reuse encoders across responses. The default zstd encoder keeps an
-// 8 MiB window and its buffers (about 18 MB per stream); a 1 MiB window with lower encoder
-// memory loses little ratio on API responses, which are far smaller than the window.
+
+
+
 var responseCompressorPools = map[string]responseCompressorPool{
 	"zstd": &sync.Pool{New: func() any {
 		encoder, errNewWriter := zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1), zstd.WithWindowSize(1<<20), zstd.WithLowerEncoderMem(true))
@@ -188,7 +188,7 @@ var responseCompressorPools = map[string]responseCompressorPool{
 	"gzip": &sync.Pool{New: func() any { return gzip.NewWriter(io.Discard) }},
 }
 
-// newResponseCompressor takes a pooled encoder writing to dst, or nil when none can be created.
+
 func newResponseCompressor(encoding string, dst io.Writer) responseCompressor {
 	pool := responseCompressorPools[encoding]
 	if pool == nil {
@@ -202,8 +202,8 @@ func newResponseCompressor(encoding string, dst io.Writer) responseCompressor {
 	return compressor
 }
 
-// responseCompressionWriter keeps headers uncommitted until the encoding is known.
-// Gin's remaining interfaces, including Hijacker and Pusher, are embedded unchanged.
+
+
 type responseCompressionWriter struct {
 	gin.ResponseWriter
 	encoding   string
@@ -276,7 +276,7 @@ func (w *responseCompressionWriter) Write(data []byte) (n int, err error) {
 	return n, w.writeErr
 }
 
-// WriteString must not bypass the compression path through the embedded writer.
+
 func (w *responseCompressionWriter) WriteString(data string) (int, error) {
 	return w.Write([]byte(data))
 }
@@ -296,7 +296,7 @@ func (w *responseCompressionWriter) Flush() {
 	}
 }
 
-// FlushError preserves transport errors for httpwire and streaming cancellation.
+
 func (w *responseCompressionWriter) FlushError() error {
 	if w.writeErr != nil {
 		return w.writeErr
@@ -352,7 +352,7 @@ func (w *responseCompressionWriter) decide(force bool, size int) {
 	w.decided = true
 	w.Header().Del("Content-Length")
 	w.Header().Set("Content-Encoding", w.encoding)
-	// Gin otherwise commits headers lazily when the encoder emits its first bytes.
+
 	w.ResponseWriter.WriteHeaderNow()
 }
 
@@ -402,8 +402,8 @@ func (w *responseCompressionWriter) finish() {
 				log.Errorf("close response compression encoder: %v", errClose)
 			}
 		}
-		// Drop the response writer reference before pooling the encoder, and fail later writes
-		// instead of sending them uncompressed under Content-Encoding.
+
+
 		w.compressor.Reset(io.Discard)
 		responseCompressorPools[w.encoding].Put(w.compressor)
 		w.compressor = nil

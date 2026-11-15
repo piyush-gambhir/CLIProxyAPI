@@ -1,6 +1,6 @@
-// Package logging provides Gin middleware for HTTP request logging and panic recovery.
-// It integrates Gin web framework with logrus for structured logging of HTTP requests,
-// responses, and error handling with panic recovery capabilities.
+
+
+
 package logging
 
 import (
@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// aiAPIPrefixes defines path prefixes for AI API requests that should have request ID tracking.
+
 var aiAPIPrefixes = []string{
 	"/v1",
 	"/v1beta",
@@ -29,27 +29,27 @@ const (
 	creditsUsedKey = "__antigravity_credits_used__"
 )
 
-// GinLogrusLogger returns a Gin middleware handler that logs HTTP requests and responses
-// using logrus. It captures request details including method, path, status code, latency,
-// client IP, and any error messages. Request ID is only added for AI API requests.
-//
-// Output format (AI API): [2025-12-23 20:14:10] [info ] | a1b2c3d4 | 200 |       23.559s | ...
-// Output format (others): [2025-12-23 20:14:10] [info ] | -------- | 200 |       23.559s | ...
-//
-// Returns:
-//   - gin.HandlerFunc: A middleware handler for request logging
+
+
+
+
+
+
+
+
+
 func GinLogrusLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := util.MaskSensitiveQuery(c.Request.URL.RawQuery)
-		// OAuth state is a callback capability; authorization codes and issued
-		// client IDs must not be included in management access logs either.
+
+
 		if strings.HasPrefix(path, "/v8/management/oauth/") {
 			raw = ""
 		}
 
-		// Only generate request ID for AI API paths
+
 		var requestID string
 		if isAIAPIPath(path) {
 			generatedID, errGenerate := GenerateRequestID()
@@ -65,7 +65,7 @@ func GinLogrusLogger() gin.HandlerFunc {
 
 		c.Next()
 
-		// Keep failed health probes visible, including responses from global middleware.
+
 		if path == "/healthz" && (c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead) &&
 			c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
 			return
@@ -115,7 +115,7 @@ func GinLogrusLogger() gin.HandlerFunc {
 	}
 }
 
-// isAIAPIPath checks if the given path is an AI API endpoint that should have request ID tracking.
+
 func isAIAPIPath(path string) bool {
 	for _, prefix := range aiAPIPrefixes {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
@@ -125,16 +125,16 @@ func isAIAPIPath(path string) bool {
 	return false
 }
 
-// GinLogrusRecovery returns a Gin middleware handler that recovers from panics and logs
-// them using logrus. When a panic occurs, it captures the panic value, stack trace,
-// and request path, then returns a 500 Internal Server Error response to the client.
-//
-// Returns:
-//   - gin.HandlerFunc: A middleware handler for panic recovery
+
+
+
+
+
+
 func GinLogrusRecovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		if err, ok := recovered.(error); ok && errors.Is(err, http.ErrAbortHandler) {
-			// Let net/http handle ErrAbortHandler so the connection is aborted without noisy stack logs.
+
 			panic(http.ErrAbortHandler)
 		}
 
@@ -148,8 +148,8 @@ func GinLogrusRecovery() gin.HandlerFunc {
 	})
 }
 
-// SkipGinRequestLogging marks the provided Gin context so that GinLogrusLogger
-// will skip emitting a log line for the associated request.
+
+
 func SkipGinRequestLogging(c *gin.Context) {
 	if c == nil {
 		return

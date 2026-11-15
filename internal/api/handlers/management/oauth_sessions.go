@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// oauthSessionTTL must cover device-code flows (xAI ~30m, Kimi ~15m).
+
 	oauthSessionTTL          = 30 * time.Minute
 	oauthCompletedSessionTTL = time.Minute
 	maxOAuthStateLength      = 128
@@ -34,7 +34,7 @@ var (
 	errOAuthSessionExists     = errors.New("oauth session already exists")
 )
 
-// ErrSIWCCallbackRequiresV8 prevents legacy callback sinks from accepting SIWC codes.
+
 var ErrSIWCCallbackRequiresV8 = fmt.Errorf("%w: SIWC callbacks require /v8/management/oauth/callback", errOAuthSessionNotPending)
 
 type oauthRecoveryTarget struct {
@@ -437,15 +437,15 @@ func (s *oauthSessionStore) claimCommit(state, provider string) bool {
 	return true
 }
 
-// Cancel removes a pending OAuth session so background waiters exit without saving credentials.
-// Returns true when a pending session was cancelled.
+
+
 func (s *oauthSessionStore) Cancel(state string) bool {
 	state = strings.TrimSpace(state)
 	if state == "" {
 		return false
 	}
-	// SIWC completion and cancellation share a per-session gate. A cancellation
-	// that wins this gate prevents persistence; after a committed bind it is a no-op.
+
+
 	if session, ok := s.Get(state); ok && session.SIWC != nil {
 		session.SIWC.mu.Lock()
 		defer session.SIWC.mu.Unlock()
@@ -573,10 +573,10 @@ func IsOAuthSessionPending(state, provider string) bool {
 	return oauthSessions.IsPending(state, provider)
 }
 
-// guardOAuthSessionPendingForSave returns errOAuthSessionNotPending when the session
-// is no longer pending (cancelled, completed, errored, or expired).
-// Call immediately before persisting credentials so a cancel that races with token
-// exchange or metadata fetch cannot save credentials for a cancelled flow.
+
+
+
+
 func guardOAuthSessionPendingForSave(state, provider string) error {
 	if IsOAuthSessionPending(state, provider) {
 		return nil
@@ -584,9 +584,9 @@ func guardOAuthSessionPendingForSave(state, provider string) error {
 	return errOAuthSessionNotPending
 }
 
-// claimOAuthSessionCommit atomically verifies that the session is still pending
-// and transitions it into the committing state so a concurrent CancelOAuthSession
-// cannot report true while credentials are being persisted.
+
+
+
 func claimOAuthSessionCommit(state, provider string) error {
 	if oauthSessions.claimCommit(state, provider) {
 		return nil
@@ -594,8 +594,8 @@ func claimOAuthSessionCommit(state, provider string) error {
 	return errOAuthSessionNotPending
 }
 
-// CancelOAuthSession cancels a pending OAuth session by state.
-// Background callback and device-code waiters observe IsOAuthSessionPending as false and exit without saving credentials.
+
+
 func CancelOAuthSession(state string) bool {
 	return oauthSessions.Cancel(state)
 }
@@ -733,7 +733,7 @@ func writeOAuthCallbackFile(authDir, canonicalProvider, state, code, errorMessag
 	if err != nil {
 		return "", fmt.Errorf("marshal oauth callback payload: %w", err)
 	}
-	// Publish complete JSON atomically so background waiters cannot read a partial callback.
+
 	tmp, errCreate := os.CreateTemp(authDir, ".oauth-callback-*")
 	if errCreate != nil {
 		return "", fmt.Errorf("create oauth callback file: %w", errCreate)

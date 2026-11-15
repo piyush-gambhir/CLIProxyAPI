@@ -111,8 +111,8 @@ func TestFileCooldownStateStore_StateRelativePath(t *testing.T) {
 	}
 }
 
-// With a relative auth-dir the file synthesizer records an auth file as "<auth-dir>/<name>", so the state path must strip
-// the auth dir there too; otherwise the store, rooted at the auth dir, writes "<auth-dir>/<auth-dir>/<name>.cds".
+
+
 func TestFileCooldownStateStore_StateRelativePathRelativeAuthDir(t *testing.T) {
 	store := NewFileCooldownStateStoreWithAuthDir("auths", "auths")
 	cases := []struct {
@@ -297,7 +297,7 @@ func TestManager_Update_ClearsPersistedCooldownWhenCredentialsChange(t *testing.
 		t.Fatalf("Register() returned error: %v", errRegister)
 	}
 
-	// 1. Fail with 401 unauthorized
+
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: "codex",
@@ -309,7 +309,7 @@ func TestManager_Update_ClearsPersistedCooldownWhenCredentialsChange(t *testing.
 		t.Fatal("expected cooldown record to be saved after unauthorized failure")
 	}
 
-	// 2. Update without credential change (e.g. metadata note update)
+
 	sameCredAuth := &Auth{
 		ID:       auth.ID,
 		Provider: "codex",
@@ -326,7 +326,7 @@ func TestManager_Update_ClearsPersistedCooldownWhenCredentialsChange(t *testing.
 		t.Fatal("expected cooldown record to remain when credentials did not change")
 	}
 
-	// 3. Update with credential change (new access_token)
+
 	newCredAuth := &Auth{
 		ID:       auth.ID,
 		Provider: "codex",

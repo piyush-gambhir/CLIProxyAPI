@@ -1,9 +1,9 @@
-// Package claude provides HTTP handlers for Claude API code-related functionality.
-// This package implements Claude-compatible streaming chat completions with sophisticated
-// client rotation and quota management systems to ensure high availability and optimal
-// resource utilization across multiple backend clients. It handles request translation
-// between Claude API format and the underlying Gemini backend, providing seamless
-// API compatibility while maintaining robust error handling and connection management.
+
+
+
+
+
+
 package claude
 
 import (
@@ -32,48 +32,48 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ClaudeCodeAPIHandler contains the handlers for Claude API endpoints.
-// It holds a pool of clients to interact with the backend service.
+
+
 type ClaudeCodeAPIHandler struct {
 	*handlers.BaseAPIHandler
 }
 
-// NewClaudeCodeAPIHandler creates a new Claude API handlers instance.
-// It takes an BaseAPIHandler instance as input and returns a ClaudeCodeAPIHandler.
-//
-// Parameters:
-//   - apiHandlers: The base API handler instance.
-//
-// Returns:
-//   - *ClaudeCodeAPIHandler: A new Claude code API handler instance.
+
+
+
+
+
+
+
+
 func NewClaudeCodeAPIHandler(apiHandlers *handlers.BaseAPIHandler) *ClaudeCodeAPIHandler {
 	return &ClaudeCodeAPIHandler{
 		BaseAPIHandler: apiHandlers,
 	}
 }
 
-// HandlerType returns the identifier for this handler implementation.
+
 func (h *ClaudeCodeAPIHandler) HandlerType() string {
 	return Claude
 }
 
-// Models returns a list of models supported by this handler.
+
 func (h *ClaudeCodeAPIHandler) Models() []map[string]any {
-	// Get dynamic models from the global registry
+
 	modelRegistry := registry.GetGlobalRegistry()
 	return modelRegistry.GetAvailableModels("claude")
 }
 
-// ClaudeMessages handles Claude-compatible streaming chat completions.
-// This function implements a sophisticated client rotation and quota management system
-// to ensure high availability and optimal resource utilization across multiple backend clients.
-//
-// Parameters:
-//   - c: The Gin context for the request.
+
+
+
+
+
+
 func (h *ClaudeCodeAPIHandler) ClaudeMessages(c *gin.Context) {
-	// Extract raw JSON data from the incoming request
+
 	rawJSON, err := c.GetRawData()
-	// If data retrieval fails, return a 400 Bad Request error.
+
 	if err != nil {
 		c.JSON(clienterror.HTTPStatusFromErrorOr(err, http.StatusBadRequest), handlers.ErrorResponse{
 			Error: handlers.ErrorDetail{
@@ -84,10 +84,10 @@ func (h *ClaudeCodeAPIHandler) ClaudeMessages(c *gin.Context) {
 		return
 	}
 
-	// Decode claude-fable-5-dd-<reversed> model IDs back to the real model name for routing.
+
 	rawJSON = rewriteClaudeDDModelInBody(rawJSON)
 
-	// Check if the client requested a streaming response.
+
 	streamResult := ojson.GetBytesNoCopy(rawJSON, "stream")
 	if !streamResult.Exists() || streamResult.Type == ojson.False {
 		h.handleNonStreamingResponse(c, rawJSON)
@@ -96,16 +96,16 @@ func (h *ClaudeCodeAPIHandler) ClaudeMessages(c *gin.Context) {
 	}
 }
 
-// ClaudeMessages handles Claude-compatible streaming chat completions.
-// This function implements a sophisticated client rotation and quota management system
-// to ensure high availability and optimal resource utilization across multiple backend clients.
-//
-// Parameters:
-//   - c: The Gin context for the request.
+
+
+
+
+
+
 func (h *ClaudeCodeAPIHandler) ClaudeCountTokens(c *gin.Context) {
-	// Extract raw JSON data from the incoming request
+
 	rawJSON, err := c.GetRawData()
-	// If data retrieval fails, return a 400 Bad Request error.
+
 	if err != nil {
 		c.JSON(clienterror.HTTPStatusFromErrorOr(err, http.StatusBadRequest), handlers.ErrorResponse{
 			Error: handlers.ErrorDetail{
@@ -116,7 +116,7 @@ func (h *ClaudeCodeAPIHandler) ClaudeCountTokens(c *gin.Context) {
 		return
 	}
 
-	// Decode claude-fable-5-dd-<reversed> model IDs back to the real model name for routing.
+
 	rawJSON = rewriteClaudeDDModelInBody(rawJSON)
 
 	c.Header("Content-Type", "application/json")
@@ -137,8 +137,8 @@ func (h *ClaudeCodeAPIHandler) ClaudeCountTokens(c *gin.Context) {
 	cliCancel()
 }
 
-// rewriteClaudeDDModelInBody decodes model IDs of the form claude-fable-5-dd-<reversed>
-// back into the original model name used for routing and upstream requests.
+
+
 func rewriteClaudeDDModelInBody(rawJSON []byte) []byte {
 	modelName := ojson.GetBytesNoCopy(rawJSON, "model").String()
 	resolved := claudemodels.ResolveClaudeModelIDPrefix(modelName)
@@ -152,26 +152,26 @@ func rewriteClaudeDDModelInBody(rawJSON []byte) []byte {
 	return updated
 }
 
-// ClaudeModels handles the Claude models listing endpoint.
-// It returns a JSON response containing available Claude models and their specifications.
-//
-// Parameters:
-//   - c: The Gin context for the request.
+
+
+
+
+
 func (h *ClaudeCodeAPIHandler) ClaudeModels(c *gin.Context) {
 	cfg := h.CurrentConfig()
 	disableCloaking := cfg != nil && cfg.ClaudeCode.DisableCloakingModelList
 	h.WriteModelListResponse(c, h.HandlerType(), claudemodels.BuildResponse(h.Models(), disableCloaking))
 }
 
-// handleNonStreamingResponse handles non-streaming content generation requests for Claude models.
-// This function processes the request synchronously and returns the complete generated
-// response in a single API call. It supports various generation parameters and
-// response formats.
-//
-// Parameters:
-//   - c: The Gin context for the request
-//   - modelName: The name of the Gemini model to use for content generation
-//   - rawJSON: The raw JSON request body containing generation parameters and content
+
+
+
+
+
+
+
+
+
 func (h *ClaudeCodeAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
 	alt := h.GetAlt(c)
@@ -188,8 +188,8 @@ func (h *ClaudeCodeAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSO
 		return
 	}
 
-	// Decompress gzipped responses - Claude API sometimes returns gzip without Content-Encoding header
-	// This fixes title generation and other non-streaming responses that arrive compressed
+
+
 	if len(resp) >= 2 && resp[0] == 0x1f && resp[1] == 0x8b {
 		gzReader, errGzip := gzip.NewReader(bytes.NewReader(resp))
 		if errGzip != nil {
@@ -214,16 +214,16 @@ func (h *ClaudeCodeAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSO
 	cliCancel()
 }
 
-// handleStreamingResponse streams Claude-compatible responses backed by Gemini.
-// It sets up SSE, selects a backend client with rotation/quota logic,
-// forwards chunks, and translates them to Claude CLI format.
-//
-// Parameters:
-//   - c: The Gin context for the request.
-//   - rawJSON: The raw JSON request body.
+
+
+
+
+
+
+
 func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byte) {
-	// Get the http.Flusher interface to manually flush the response.
-	// This is crucial for streaming as it allows immediate sending of data chunks
+
+
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, handlers.ErrorResponse{
@@ -237,8 +237,8 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 
 	modelName := strings.Clone(ojson.GetBytesNoCopy(rawJSON, "model").String())
 
-	// Create a cancellable context for the backend client request
-	// This allows proper cleanup and cancellation of ongoing requests
+
+
 	cliCtx, cliCancel := h.GetContextWithCancel(h, c, context.Background())
 
 	setSSEHeaders := func() {
@@ -274,7 +274,7 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 	}
 	upstreamHeaders = resolvedHeaders
 
-	// Peek at the first chunk to determine success or failure before setting headers
+
 	for {
 		select {
 		case <-c.Request.Context().Done():
@@ -282,7 +282,7 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 			return
 		case errMsg, ok := <-errChan:
 			if !ok {
-				// Err channel closed cleanly; wait for data channel.
+
 				errChan = nil
 				continue
 			}
@@ -294,7 +294,7 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 				h.forwardClaudeStream(c, flusher, func(err error) { cliCancel(err) }, make(chan []byte), pendingErrors)
 				return
 			}
-			// Upstream failed immediately. Return proper error status and JSON.
+
 			h.WriteErrorResponse(c, errMsg)
 			if errMsg != nil {
 				cliCancel(errMsg.Error)
@@ -321,17 +321,17 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 					}
 					return
 				}
-				// Stream closed without data: delegate to forwardClaudeStream with the closed dataChan to surface missing message_stop.
+
 				commitSSE()
 				h.forwardClaudeStream(c, flusher, func(err error) { cliCancel(err) }, dataChan, errChan)
 				return
 			}
 
-			// Success! Set headers now.
+
 			stopKeepAlive()
 			commitSSE()
 
-			// Write the first chunk
+
 			var streamState claudeSSEStreamState
 			streamState.trailingNewlines = 2
 			streamState.ObserveChunk(chunk)
@@ -344,7 +344,7 @@ func (h *ClaudeCodeAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON [
 				flusher.Flush()
 			}
 
-			// Continue streaming the rest
+
 			h.forwardClaudeStreamWithState(c, flusher, func(err error) { cliCancel(err) }, dataChan, errChan, &streamState)
 			return
 		case <-keepAliveC:
@@ -648,8 +648,8 @@ func (h *ClaudeCodeAPIHandler) WriteErrorResponse(c *gin.Context, msg *interface
 			if len(values) == 0 || handlers.IsCPAReservedResponseHeader(key) {
 				continue
 			}
-			// A locally trusted cooldown deadline outranks the raw upstream
-			// Retry-After; keep the value written above.
+
+
 			if coreauth.HasTrustedRetryDeadline(msg.Error) && http.CanonicalHeaderKey(key) == "Retry-After" {
 				continue
 			}

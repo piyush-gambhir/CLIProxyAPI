@@ -131,7 +131,7 @@ func TestResponsesWebsocketRequestLoggingLifecycle(t *testing.T) {
 					t.Fatal("request capture was not observed")
 				}
 			}
-			// Routing happens even for a locally answered prewarm request.
+
 			send(`{"type":"response.create","model":"logging-model","generate":false}`)
 			readEvent("response.created")
 			readEvent("response.completed")
@@ -144,7 +144,7 @@ func TestResponsesWebsocketRequestLoggingLifecycle(t *testing.T) {
 				assertNoCapture()
 				assertNoCapture()
 			}
-			// A lifecycle callback can perform host HTTP work after its turn ended.
+
 			go record(context.WithoutCancel(callbackCtx), "late-plugin", []byte("callback-body"))
 			assertNoCapture()
 			send(payload)
@@ -200,7 +200,7 @@ func TestResponsesWebsocketRejectedUpgradeKeepsErrorCapture(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodGet, "/v1/responses", nil)
 	c.Request.Header.Set("Connection", "Upgrade")
 	c.Request.Header.Set("Upgrade", "websocket")
-	// Missing handshake headers make the upgrade fail before a socket exists.
+
 	(&OpenAIResponsesAPIHandler{}).ResponsesWebsocket(c)
 	if c.Writer.Status() < http.StatusBadRequest {
 		t.Fatal("invalid WebSocket handshake was accepted")

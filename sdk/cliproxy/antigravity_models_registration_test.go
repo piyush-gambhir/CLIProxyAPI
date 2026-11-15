@@ -21,8 +21,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-// waitForAntigravityClientModel polls until the registry publishes modelID
-// for clientID, bounded so a missing publication fails instead of hanging.
+
+
 func waitForAntigravityClientModel(t *testing.T, clientID, modelID string) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
@@ -98,13 +98,13 @@ func TestAntigravityDynamicRegistrationLifecycle(t *testing.T) {
 		antigravityAuthFailureCache = make(map[string]antigravityFailureState)
 		antigravityCapabilityMu.Unlock()
 	}
-	// Errors preserve the last successful account catalog.
+
 	expire()
 	status.Store(403)
 	svc.refreshAntigravityModels(t.Context())
 	svc.WaitAntigravityProbes()
 	assertModels(true)
-	// A successful empty catalog revokes all registrations, without disabling the auth.
+
 	expire()
 	status.Store(200)
 	response.Store(map[string]any{"models": map[string]any{}})
@@ -115,7 +115,7 @@ func TestAntigravityDynamicRegistrationLifecycle(t *testing.T) {
 	if current.Disabled {
 		t.Fatal("empty catalog disabled credential")
 	}
-	// Registration from cache must not temporarily restore static-only models.
+
 	svc.registerModelsForAuth(t.Context(), current)
 	svc.WaitAntigravityProbes()
 	assertModels(false)
@@ -286,8 +286,8 @@ func TestAntigravityRestartSeedsPersistedHintsBeforeProbeAndAcrossProbeFailure(t
 		t.Fatal("initial probe did not register gemini-3-flash")
 	}
 
-	// Simulate process restart: clear in-memory registry and capability caches,
-	// then reload the auth file from disk.
+
+
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	resetAntigravityCapabilityCache()
 	blockProbe.Store(true)
@@ -306,7 +306,7 @@ func TestAntigravityRestartSeedsPersistedHintsBeforeProbeAndAcrossProbeFailure(t
 	restartedSvc.registerModelsForAuth(t.Context(), loadedAuth)
 	<-probeStarted
 
-	// Before the startup probe answers, persisted hints must make the account routable immediately.
+
 	models := GlobalModelRegistry().GetModelsForClient(loadedAuth.ID)
 	if len(models) != 2 || !GlobalModelRegistry().ClientSupportsModel(loadedAuth.ID, "gemini-3-flash") {
 		t.Fatalf("expected persisted models to be registered before startup probe answers, got %v", models)
@@ -322,14 +322,14 @@ func TestAntigravityRestartSeedsPersistedHintsBeforeProbeAndAcrossProbeFailure(t
 		t.Fatalf("expected gemini-3-flash web search capability to be restored before probe answers, got %+v", flashModel)
 	}
 
-	// When the startup probe fails with a transient error, the account must stay routable.
+
 	unblockProbe()
 	restartedSvc.WaitAntigravityProbes()
 	if !GlobalModelRegistry().ClientSupportsModel(loadedAuth.ID, "gemini-3-flash") {
 		t.Fatal("failed startup probe made previously routable account unroutable")
 	}
 
-	// Changing project_id or base_url on a cold cache must not reuse hints from the old route.
+
 	GlobalModelRegistry().UnregisterClient(loadedAuth.ID)
 	resetAntigravityCapabilityCache()
 	changedProjectAuth := loadedAuth.Clone()
@@ -382,7 +382,7 @@ func TestAntigravityAuthUpdateWithSkipPersistStillPersistsHintsAcrossRestart(t *
 	}
 	t.Cleanup(func() { GlobalModelRegistry().UnregisterClient(auth.ID) })
 
-	// Exercise the real consumeAuthUpdates / runtimeAuthSyncHook path which wraps ctx with WithSkipPersist.
+
 	svc.handleAuthUpdate(coreauth.WithSkipPersist(t.Context()), watcher.AuthUpdate{
 		Action: watcher.AuthUpdateActionAdd,
 		ID:     auth.ID,
@@ -393,7 +393,7 @@ func TestAntigravityAuthUpdateWithSkipPersistStillPersistsHintsAcrossRestart(t *
 		t.Fatal("initial watcher auth update did not register gemini-3-flash")
 	}
 
-	// Simulate restart and verify hints were written to disk despite WithSkipPersist on the auth update.
+
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	resetAntigravityCapabilityCache()
 	restartedManager := coreauth.NewManager(store, nil, nil)
@@ -531,7 +531,7 @@ func TestAntigravityPersistedHintsFencesStaleRevision(t *testing.T) {
 		revision: 2,
 	}
 
-	// Revision 1 starts persisting first and blocks inside Store.Save.
+
 	antigravityCapabilityMu.Lock()
 	antigravityCapabilityCache[key] = antigravityCapabilityCacheEntry{
 		hints:     oldHints.clone(),
@@ -547,7 +547,7 @@ func TestAntigravityPersistedHintsFencesStaleRevision(t *testing.T) {
 	}()
 	<-store.firstSaveIn
 
-	// Revision 2 publishes to the cache while revision 1 is stalled in Store.Save.
+
 	antigravityCapabilityMu.Lock()
 	antigravityCapabilityCache[key] = antigravityCapabilityCacheEntry{
 		hints:     newHints.clone(),
@@ -561,7 +561,7 @@ func TestAntigravityPersistedHintsFencesStaleRevision(t *testing.T) {
 	close(store.releaseSave)
 	wg.Wait()
 
-	// A delayed caller from revision 1 also attempts to persist afterward.
+
 	svc.persistAntigravityCapabilityHints(t.Context(), auth, key, "https://daily.invalid", oldHints)
 
 	resetAntigravityCapabilityCache()
@@ -615,18 +615,18 @@ func TestAntigravityPersistedHintsRetriesAfterTransientStoreFailure(t *testing.T
 	}
 	t.Cleanup(func() { GlobalModelRegistry().UnregisterClient(auth.ID) })
 
-	// Fail store writes during the initial probe.
+
 	store.failSaves.Store(true)
 	svc.registerModelsForAuth(t.Context(), auth)
 	svc.WaitAntigravityProbes()
 
-	// Restore store and run a refresh/registration pass with the same cached hints.
+
 	store.failSaves.Store(false)
 	svc.refreshAntigravityModels(t.Context())
 	svc.WaitAntigravityProbes()
 
-	// Simulate remote-backed restart (e.g. Postgres/ObjectStore resetting local spool from remote)
-	// and verify hints were persisted to remote once store recovered.
+
+
 	if errRemove := os.RemoveAll(authDir); errRemove != nil {
 		t.Fatal(errRemove)
 	}
@@ -661,10 +661,10 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		if r.Header.Get("Authorization") == "Bearer token-slow-b" {
 			_, _ = w.Write([]byte(`{"models":{"gemini-3-flash":{}}}`))
 			authBProbed <- struct{}{}
-			// Hold the response briefly after the server-side signal so the client
-			// deterministically receives and publishes it well after authBProbed
-			// fires; waiting only on that signal would race the probe result
-			// against later authB updates.
+
+
+
+
 			time.Sleep(200 * time.Millisecond)
 			return
 		}
@@ -730,22 +730,22 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		GlobalModelRegistry().UnregisterClient(authB.ID)
 	})
 
-	// Block all subsequent store Save calls (holding store-wide saveMu).
+
 	store.blockAll.Store(true)
 	svc.registerModelsForAuth(t.Context(), authA)
 	if got := <-store.saveEntered; got != authA.ID {
 		t.Fatalf("first saveEntered = %q, want %q", got, authA.ID)
 	}
 
-	// Even while authA's metadata persistence is blocked in Store.Save, its models must already be published.
+
 	if !GlobalModelRegistry().ClientSupportsModel(authA.ID, "gemini-3-flash") {
 		cancelLifetime()
 		svc.WaitAntigravityProbes()
 		t.Fatal("blocked metadata persistence delayed model publication to registry")
 	}
 
-	// Refreshing models must not block on authA's stalled persistence, must still publish authB,
-	// and must allow authA to run a subsequent probe when its cache expires.
+
+
 	keyA := svc.antigravityCapabilityKey(authA)
 	antigravityCapabilityMu.Lock()
 	entryA := antigravityCapabilityCache[keyA]
@@ -769,13 +769,13 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		svc.WaitAntigravityProbes()
 		t.Fatal("stalled persistence on authA blocked subsequent probe for authA")
 	}
-	// authBProbed only proves the handler wrote the response; the probe may not
-	// have parsed it or published the catalog yet. Wait for actual registry
-	// publication before any authB update below, otherwise that update changes
-	// authB's model settings and correctly discards the late probe result.
+
+
+
+
 	waitForAntigravityClientModel(t, authB.ID, "gemini-3-flash")
-	// Wait for authA's refreshed persistence to preempt authA's first Save and enter Save
-	// (which happens after applyAntigravityModelHints published authA's updated catalog).
+
+
 	select {
 	case <-store.saveEntered:
 	case <-time.After(time.Second):
@@ -783,8 +783,8 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		svc.WaitAntigravityProbes()
 		t.Fatal("subsequent persistence task did not start after registry publication")
 	}
-	// While authA's background Save is blocked holding store.saveMu, a normal persisting
-	// foreground Update on authB must preempt authA's background Save and succeed.
+
+
 	store.blockAll.Store(false)
 	updateBDone := make(chan error, 1)
 	go func() {
@@ -805,8 +805,8 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		svc.WaitAntigravityProbes()
 		t.Fatal("persisting Update on authB blocked while store Save was stalled on authA")
 	}
-	// Also verify that if a store ignores context cancellation during a background Save on authA,
-	// a foreground persisting Update on authB still honors its own context cancellation.
+
+
 	svc.WaitAntigravityProbes()
 	store.firstSaveIn = make(chan struct{})
 	store.releaseSave = make(chan struct{})
@@ -855,7 +855,7 @@ func TestAntigravityBlockedHintPersistenceDoesNotBlockPublicationOrOtherAccounts
 		t.Fatal("authA updated models were not published while authA initial persistence was stalled")
 	}
 
-	// Canceling service lifetime must unblock the stalled persistence without closing releaseSave.
+
 	cancelLifetime()
 	doneWait := make(chan struct{})
 	go func() {
@@ -912,10 +912,10 @@ func TestAntigravityConcurrentAuthUpdatePreservesBothNewTokenAndPersistedHints(t
 	}
 	t.Cleanup(func() { GlobalModelRegistry().UnregisterClient(auth.ID) })
 
-	// Capture a pre-probe auth snapshot before hints are persisted.
+
 	staleSnapshot := auth.Clone()
 
-	// 1. Interleave an active Update (saving rotated-token-1) with concurrent hint persistence.
+
 	store.blockFirst.Store(true)
 	staleSnapshot.Metadata["access_token"] = "rotated-token-1"
 	updateDone := make(chan error, 1)
@@ -949,9 +949,9 @@ func TestAntigravityConcurrentAuthUpdatePreservesBothNewTokenAndPersistedHints(t
 	<-persistDone
 	svc.WaitAntigravityProbes()
 
-	// 2. Capture a snapshot that already contains version 1 hints ("gemini-3-flash"),
-	// then persist version 2 hints ("gemini-3-flash", "gemini-3.1-flash-lite") while blocked,
-	// and trigger manager.Update with the version-1 snapshot to preempt and then retry version 2.
+
+
+
 	snapshotWithOldHints, _ := manager.GetByID(auth.ID)
 	snapshotWithOldHints = snapshotWithOldHints.Clone()
 	snapshotWithOldHints.Metadata["access_token"] = "rotated-token-2"
@@ -978,20 +978,20 @@ func TestAntigravityConcurrentAuthUpdatePreservesBothNewTokenAndPersistedHints(t
 	svc.queueAntigravityHintPersistence(t.Context(), auth, key, server.URL, newerHints)
 	<-store.firstSaveIn
 
-	// Update must preempt the blocked hint persistence without closing store.releaseSave,
-	// and the preempted persistence must re-queue and save version 2 hints.
+
+
 	if _, errUpdate := manager.Update(t.Context(), snapshotWithOldHints); errUpdate != nil {
 		t.Fatal(errUpdate)
 	}
 	svc.WaitAntigravityProbes()
 
-	// A subsequent Update carrying version-1 hints in its snapshot must also preserve version 2 hints.
+
 	snapshotWithOldHints.Metadata["access_token"] = "rotated-token-2"
 	if _, errUpdate := manager.Update(t.Context(), snapshotWithOldHints); errUpdate != nil {
 		t.Fatal(errUpdate)
 	}
 
-	// Simulate restart and verify both rotated-token-2 and version 2 hints survived on disk.
+
 	GlobalModelRegistry().UnregisterClient(auth.ID)
 	resetAntigravityCapabilityCache()
 	restartedManager := coreauth.NewManager(baseStore, nil, nil)

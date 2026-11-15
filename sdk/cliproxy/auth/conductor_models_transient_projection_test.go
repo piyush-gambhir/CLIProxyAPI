@@ -111,8 +111,8 @@ func TestManager_ClientModelProjection_TransientCooldownExpiresWithForkedAlias(t
 		}
 	}
 
-	// Simulate the recorded transient deadline now lying in the past without a
-	// new MarkResult or credential refresh: /v1/models must list both models.
+
+
 	epoch := reg.ClientRegistrationEpoch(auth.ID)
 	staleUntil := time.Now().Add(-time.Second)
 	if !reg.ApplyClientModelProjections(auth.ID, epoch, snap.Generation, []registry.ClientModelProjection{
@@ -293,7 +293,7 @@ func TestManager_ClientModelProjection_CredentialQuotaIgnoresExpiredModelTransie
 		t.Fatalf("expected SuspendUntil=%v, got %v", recoverAt, proj.SuspendUntil)
 	}
 
-	// Sibling model with no ModelState entry also inherits the credential_quota deadline.
+
 	siblingProj := m.clientModelProjectionForAuth(auth, "grok-4.6", now)
 	if !siblingProj.Suspended || siblingProj.SuspendReason != "credential_quota" || !siblingProj.SuspendUntil.Equal(recoverAt) {
 		t.Fatalf("unexpected sibling projection under credential_quota: %+v", siblingProj)

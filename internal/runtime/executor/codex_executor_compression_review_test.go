@@ -67,7 +67,7 @@ func TestCodexImageCompressionRejectedFallback(t *testing.T) {
 					req := cliproxyexecutor.Request{Model: model, Payload: []byte(`{"model":"` + model + `","prompt":"` + strings.Repeat("a compressible cat ", 400) + `"}`)}
 					opts := codexOpenAIImageTestOptions(codexImagesGenerationsPath, stream)
 					auth := codexCompressionAuth()
-					// Custom headers must not relabel the plaintext fallback or direct body.
+
 					auth.Attributes = map[string]string{"header:Content-Encoding": "zstd"}
 					var output []byte
 					if stream {

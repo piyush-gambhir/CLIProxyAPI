@@ -1,5 +1,5 @@
-// Package cmd contains CLI helpers. This file implements importing a Vertex AI
-// service account JSON into the auth store as a dedicated "vertex" credential.
+
+
 package cmd
 
 import (
@@ -17,9 +17,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DoVertexImport imports a Google Cloud service account key JSON and persists
-// it as a "vertex" provider credential. The file content is embedded in the auth
-// file to allow portable deployment across stores.
+
+
+
 func DoVertexImport(cfg *config.Config, keyPath string, prefix string) {
 	if cfg == nil {
 		cfg = &config.Config{}
@@ -42,7 +42,7 @@ func DoVertexImport(cfg *config.Config, keyPath string, prefix string) {
 		log.Errorf("vertex-import: invalid service account json: %v", errUnmarshal)
 		return
 	}
-	// Validate and normalize private_key before saving
+
 	normalizedSA, errFix := vertex.NormalizeServiceAccountMap(sa)
 	if errFix != nil {
 		log.Errorf("vertex-import: %v", errFix)
@@ -56,13 +56,13 @@ func DoVertexImport(cfg *config.Config, keyPath string, prefix string) {
 		return
 	}
 	if strings.TrimSpace(email) == "" {
-		// Keep empty email but warn
+
 		log.Warn("vertex-import: client_email missing in service account json")
 	}
-	// Default location if not provided by user. Can be edited in the saved file later.
+
 	location := "global"
 
-	// Normalize and validate prefix: must be a single segment (no "/" allowed).
+
 	prefix = strings.TrimSpace(prefix)
 	prefix = strings.Trim(prefix, "/")
 	if prefix != "" && strings.Contains(prefix, "/") {
@@ -70,14 +70,14 @@ func DoVertexImport(cfg *config.Config, keyPath string, prefix string) {
 		return
 	}
 
-	// Include prefix in filename so importing the same project with different
-	// prefixes creates separate credential files instead of overwriting.
+
+
 	baseName := sanitizeFilePart(projectID)
 	if prefix != "" {
 		baseName = sanitizeFilePart(prefix) + "-" + baseName
 	}
 	fileName := fmt.Sprintf("vertex-%s.json", baseName)
-	// Build auth record
+
 	storage := &vertex.VertexCredentialStorage{
 		ServiceAccount: sa,
 		ProjectID:      projectID,

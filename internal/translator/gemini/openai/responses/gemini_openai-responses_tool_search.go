@@ -10,9 +10,9 @@ import (
 
 const openAIResponsesToolSearchIDPrefix = "tsc_"
 
-// normalizeOpenAIResponsesToolSearchItems rewrites replayed client-executed
-// tool_search history into the function_call / function_call_output shape that
-// the Gemini request conversion already pairs and serializes.
+
+
+
 func normalizeOpenAIResponsesToolSearchItems(items []ojson.Result, forwardMap map[string]string) []ojson.Result {
 	normalized := make([]ojson.Result, 0, len(items))
 	for _, item := range items {

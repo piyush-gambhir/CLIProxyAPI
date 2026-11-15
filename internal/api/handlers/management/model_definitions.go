@@ -10,7 +10,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-// RefreshModelDefinitions triggers an immediate on-demand refresh of the model catalogs.
+
 func (h *Handler) RefreshModelDefinitions(c *gin.Context) {
 	var sources registry.CatalogSources
 	home := false
@@ -58,8 +58,8 @@ func (h *Handler) RefreshModelDefinitions(c *gin.Context) {
 	})
 }
 
-// GetStaticModelDefinitions returns static model metadata for a given channel.
-// Channel is provided via path param (:channel) or query param (?channel=...).
+
+
 func (h *Handler) GetStaticModelDefinitions(c *gin.Context) {
 	channel := strings.TrimSpace(c.Param("channel"))
 	if channel == "" {

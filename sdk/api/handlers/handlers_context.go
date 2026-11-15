@@ -69,7 +69,7 @@ func markNestedExecution(ctx context.Context) {
 	}
 }
 
-// WithPinnedAuthID returns a child context that requests execution on a specific auth ID.
+
 func WithPinnedAuthID(ctx context.Context, authID string) context.Context {
 	authID = strings.TrimSpace(authID)
 	if authID == "" {
@@ -81,7 +81,7 @@ func WithPinnedAuthID(ctx context.Context, authID string) context.Context {
 	return context.WithValue(ctx, pinnedAuthContextKey{}, authID)
 }
 
-// WithSelectedAuthIDCallback returns a child context that receives the selected auth ID.
+
 func WithSelectedAuthIDCallback(ctx context.Context, callback func(string)) context.Context {
 	if callback == nil {
 		return ctx
@@ -92,7 +92,7 @@ func WithSelectedAuthIDCallback(ctx context.Context, callback func(string)) cont
 	return context.WithValue(ctx, selectedAuthCallbackContextKey{}, callback)
 }
 
-// WithFinalizedResponseFormatCallback returns a child context that receives the effective response_format after payload rules.
+
 func WithFinalizedResponseFormatCallback(ctx context.Context, callback func(string)) context.Context {
 	if callback == nil {
 		return ctx
@@ -103,7 +103,7 @@ func WithFinalizedResponseFormatCallback(ctx context.Context, callback func(stri
 	return context.WithValue(ctx, finalizedResponseFormatCallbackContextKey{}, callback)
 }
 
-// WithOriginalRequest returns a child context that preserves the un-defaulted original request bytes for payload rules.
+
 func WithOriginalRequest(ctx context.Context, rawJSON []byte) context.Context {
 	if len(rawJSON) == 0 {
 		return ctx
@@ -114,8 +114,8 @@ func WithOriginalRequest(ctx context.Context, rawJSON []byte) context.Context {
 	return context.WithValue(ctx, originalRequestContextKey{}, cloneBytes(rawJSON))
 }
 
-// PrepareStreamModelRoute resolves a stream route once and stores it on the returned context for execution.
-// The boolean reports whether the route overrides normal model-to-provider resolution.
+
+
 func (h *BaseAPIHandler) PrepareStreamModelRoute(ctx context.Context, handlerType string, modelName string, rawJSON []byte) (context.Context, bool) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -127,9 +127,9 @@ func (h *BaseAPIHandler) PrepareStreamModelRoute(ctx context.Context, handlerTyp
 }
 
 func preparedModelRouteFromContext(ctx context.Context, skipRouterPluginID string) (modelRouteDecision, bool) {
-	// A host.model.execute_stream callback is a nested execution. Its caller is
-	// excluded from model routing, so an outer prepared route cannot be reused:
-	// it may point straight back at that caller.
+
+
+
 	if ctx == nil || strings.TrimSpace(skipRouterPluginID) != "" {
 		return modelRouteDecision{}, false
 	}
@@ -137,7 +137,7 @@ func preparedModelRouteFromContext(ctx context.Context, skipRouterPluginID strin
 	return decision, ok
 }
 
-// PreparedStreamPluginExecutor returns the executor plugin ID if the prepared route targets a plugin executor.
+
 func PreparedStreamPluginExecutor(ctx context.Context) string {
 	decision, ok := preparedModelRouteFromContext(ctx, "")
 	if !ok {
@@ -146,7 +146,7 @@ func PreparedStreamPluginExecutor(ctx context.Context) string {
 	return strings.TrimSpace(decision.ExecutorPluginID)
 }
 
-// PreparedStreamProviderRoute returns the provider and target model if the prepared route targets a provider route override.
+
 func PreparedStreamProviderRoute(ctx context.Context) (string, string) {
 	decision, ok := preparedModelRouteFromContext(ctx, "")
 	if !ok {
@@ -155,7 +155,7 @@ func PreparedStreamProviderRoute(ctx context.Context) (string, string) {
 	return strings.TrimSpace(decision.Provider), strings.TrimSpace(decision.Model)
 }
 
-// WithExecutionSessionID returns a child context tagged with a long-lived execution session ID.
+
 func WithExecutionSessionID(ctx context.Context, sessionID string) context.Context {
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID == "" {
@@ -167,7 +167,7 @@ func WithExecutionSessionID(ctx context.Context, sessionID string) context.Conte
 	return context.WithValue(ctx, executionSessionContextKey{}, sessionID)
 }
 
-// WithDisallowFreeAuth returns a child context that requests skipping known free-tier credentials.
+
 func WithDisallowFreeAuth(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -175,9 +175,9 @@ func WithDisallowFreeAuth(ctx context.Context) context.Context {
 	return context.WithValue(ctx, disallowFreeAuthContextKey{}, true)
 }
 
-// headersFromContext extracts the original HTTP request headers from the gin context
-// embedded in the provided context. This allows session affinity selectors to read
-// client-provided session headers.
+
+
+
 func headersFromContext(ctx context.Context) http.Header {
 	if ctx == nil {
 		return nil
@@ -188,10 +188,10 @@ func headersFromContext(ctx context.Context) http.Header {
 	return nil
 }
 
-// queryFromContext extracts the original HTTP request query parameters from the
-// gin context embedded in the provided context. Mirrors headersFromContext so
-// model routers can observe inbound query parameters for plain HTTP requests,
-// where execOptions.Query is not populated by callers.
+
+
+
+
 func queryFromContext(ctx context.Context) url.Values {
 	if ctx == nil {
 		return nil

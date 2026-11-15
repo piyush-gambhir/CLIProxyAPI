@@ -722,7 +722,7 @@ func TestResolveDevinChatModelUID_AllCatalogModels(t *testing.T) {
 			if resolved == "" {
 				t.Errorf("model %q with effort %q resolved to empty string", baseID, eff)
 			}
-			// If model defines thinking levels, resolved UID must have an effort suffix
+
 			if m.Thinking != nil && len(m.Thinking.Levels) > 0 {
 				if !HasDevinEffortSuffix(resolved) && baseID != "swe-1-7" && baseID != "glm-5-2" && baseID != "glm-5-2-1m" && baseID != "swe-1-6-slow" && baseID != "model_claude_4_5_opus" {
 					t.Errorf("thinking model %q with effort %q resolved to bare UID %q without effort suffix", baseID, eff, resolved)

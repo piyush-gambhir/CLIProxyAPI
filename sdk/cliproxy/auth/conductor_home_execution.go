@@ -131,7 +131,7 @@ func (m *Manager) executeHomeOnce(ctx context.Context, providers []string, req c
 			selection.End("attempt_bind_failed")
 			return cliproxyexecutor.Response{}, errBind
 		}
-		// Enrich before auth preparation so prepare-stage usage records observe the client request.
+
 		clearSchedulerSelectionID(opts.Metadata)
 		execCtx = contextWithRequestedModelAlias(execCtx, opts, routeModel)
 		execCtx = coreusage.WithSelectionID(execCtx, "")
@@ -143,7 +143,7 @@ func (m *Manager) executeHomeOnce(ctx context.Context, providers []string, req c
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
-		// Home owns credential availability; execute its dispatch without local state filtering.
+
 		models, pooled, aliasResult, routing := m.executionModelCandidatesWithAlias(auth, routeModel)
 		if aliasResult.ForceMapping && responseAlias != "" {
 			aliasResult.OriginalAlias = responseAlias

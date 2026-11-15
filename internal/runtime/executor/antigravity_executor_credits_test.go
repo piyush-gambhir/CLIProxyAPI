@@ -23,11 +23,11 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// resetAntigravityCreditsRetryState clears the package-level credits state
-// between tests. It empties each map in place instead of assigning a fresh
-// sync.Map, because credits hint refreshes run on background goroutines that
-// may still be writing these maps when a test's cleanup runs. Replacing the
-// variable is an unsynchronized write and races with them; Clear is not.
+
+
+
+
+
 func resetAntigravityCreditsRetryState() {
 	antigravityCreditsFailureByAuth.Clear()
 	antigravityShortCooldownByAuth.Clear()
@@ -337,7 +337,7 @@ func TestAntigravityExecute_CreditsInjectedWhenConductorRequests(t *testing.T) {
 		},
 	}
 
-	// Simulate conductor setting credits requested flag in context
+
 	ctx := cliproxyauth.WithAntigravityCredits(context.Background())
 
 	resp, err := exec.Execute(ctx, auth, cliproxyexecutor.Request{
@@ -400,7 +400,7 @@ func TestAntigravityExecute_NoCreditsWithoutConductorFlag(t *testing.T) {
 		},
 	}
 
-	// No conductor credits flag set in context
+
 	_, err := exec.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-4-6",
 		Payload: []byte(`{"request":{"contents":[{"role":"user","parts":[{"text":"hi"}]}]}}`),
@@ -413,7 +413,7 @@ func TestAntigravityExecute_NoCreditsWithoutConductorFlag(t *testing.T) {
 	if len(requestBodies) != 1 {
 		t.Fatalf("request count = %d, want 1", len(requestBodies))
 	}
-	// Should NOT contain credits since conductor didn't request them
+
 	if strings.Contains(requestBodies[0], `"enabledCreditTypes"`) {
 		t.Fatalf("request should not contain enabledCreditTypes without conductor flag: %s", requestBodies[0])
 	}
@@ -708,14 +708,14 @@ func TestMaybeRefreshAntigravityCreditsHint_RefreshesExpiredHintAndRecoversCredi
 		}, nil
 	}))
 
-	// Fresh hint (< antigravityCreditsHintRefreshInterval) must not trigger a refresh.
+
 	exec.maybeRefreshAntigravityCreditsHint(ctx, auth, "token")
 	if loadCodeAssistCalls != 0 {
 		t.Fatalf("loadCodeAssist calls for fresh hint = %d, want 0", loadCodeAssistCalls)
 	}
 
-	// Once hint.UpdatedAt is older than antigravityCreditsHintRefreshInterval,
-	// maybeRefreshAntigravityCreditsHint must re-query loadCodeAssist and recover credits.
+
+
 	cliproxyauth.SetAntigravityCreditsHint(auth.ID, cliproxyauth.AntigravityCreditsHint{
 		Known:           true,
 		Available:       false,
@@ -855,7 +855,7 @@ func TestAntigravityManagerExecuteAndStream_ToppedUpCreditsRecoverDuringQuotaCoo
 				ResponseFormat: sdktranslator.FormatAntigravity,
 			}
 
-			// Step 1: Exhaust weekly quota (QUOTA_EXHAUSTED) and credits (INSUFFICIENT_G1_CREDITS_BALANCE).
+
 			cliproxyauth.SetAntigravityCreditsHint(authID, cliproxyauth.AntigravityCreditsHint{
 				Known:           true,
 				Available:       true,
@@ -885,7 +885,7 @@ func TestAntigravityManagerExecuteAndStream_ToppedUpCreditsRecoverDuringQuotaCoo
 				t.Fatalf("hint after exhaustion = %#v (ok=%v), want Known=true Available=false", hint, ok)
 			}
 
-			// Step 2: Top up credits and expire the cached hint/throttle window while model remains in 1h quota cooldown.
+
 			toppedUp.Store(true)
 			callsBeforeTopUp := loadCodeAssistCalls.Load()
 			if value, ok := antigravityCreditsHintRefreshByID.Load(authID); ok {
@@ -903,7 +903,7 @@ func TestAntigravityManagerExecuteAndStream_ToppedUpCreditsRecoverDuringQuotaCoo
 				UpdatedAt:       time.Now().Add(-antigravityCreditsHintRefreshInterval - time.Second),
 			})
 
-			// Step 3: Request recovers via credits fallback while model cooldown is active and triggers loadCodeAssist refresh.
+
 			if stream {
 				streamResult, errStream := manager.ExecuteStream(context.Background(), []string{"antigravity"}, req, opts)
 				if errStream != nil {

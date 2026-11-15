@@ -21,11 +21,11 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// codexMinimumBudgetUpstream is a simplified lower-bound-only model of the ChatGPT
-// Codex backend for this regression test: it records every body, rejects any numeric
-// max_output_tokens below 16 (integer or fractional, so the floor is the only rule
-// exercised), and accepts absent or non-numeric values. It does not model the real
-// backend's full input validation.
+
+
+
+
+
 func codexMinimumBudgetUpstream(t *testing.T) (*httptest.Server, <-chan []byte) {
 	t.Helper()
 	requests := make(chan []byte, 4)
@@ -81,8 +81,8 @@ func codexMinimumBudgetUpstream(t *testing.T) (*httptest.Server, <-chan []byte) 
 	return server, requests
 }
 
-// Issue 7304: operator-triggered inference verification must succeed against the
-// real Codex minimum even though it uses a minimal synthetic prompt budget.
+
+
 func TestCodexVerifyInferenceMinimumOutputBudget_Issue7304(t *testing.T) {
 	server, requests := codexMinimumBudgetUpstream(t)
 
@@ -124,9 +124,9 @@ func TestCodexVerifyInferenceMinimumOutputBudget_Issue7304(t *testing.T) {
 	}
 }
 
-// Issue 7304: small positive integer budgets from every Codex source format must be
-// normalized to the upstream minimum before user payload rules; invalid budgets
-// (0, negative, fractional, non-numeric) stay untouched and no budget is injected.
+
+
+
 func TestCodexSmallOutputBudgetsAllSourceFormats_Issue7304(t *testing.T) {
 	modelRule := []config.PayloadModelRule{{Name: "gpt-5.6-sol", Protocol: "codex"}}
 	matchedRule := []config.PayloadModelRule{{
@@ -188,11 +188,11 @@ func TestCodexSmallOutputBudgetsAllSourceFormats_Issue7304(t *testing.T) {
 					auth := codexOAuthTestAuth(server.URL)
 					auth.ID = "codex-output-budget-7304-test"
 
-					// wantAccept mirrors the simplified upstream model above: any
-					// numeric budget below 16 is rejected (the simulator does not
-					// distinguish integer from fractional), so accepts cover normalized,
-					// valid, absent, and non-numeric values. Accepted requests must
-					// succeed; rejected ones must surface a budget error.
+
+
+
+
+
 					wantAccept := true
 					if tc.want != "" {
 						if parsed, errParse := strconv.ParseFloat(tc.want, 64); errParse == nil && parsed < 16 {

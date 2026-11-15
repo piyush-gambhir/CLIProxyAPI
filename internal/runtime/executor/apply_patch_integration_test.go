@@ -519,7 +519,7 @@ func TestApplyPatchHTTPGatewayErrorMatrix(t *testing.T) {
 	}
 }
 
-// task6DrainUsage synchronizes the asynchronous dispatcher before changing observers.
+
 func task6DrainUsage(t *testing.T) {
 	t.Helper()
 	id := "task6-drain-" + t.Name()
@@ -652,7 +652,7 @@ func TestApplyPatchXAIWebsocketFailureMatrix(t *testing.T) {
 }
 
 func TestApplyPatchNonStreamNativeNilWithoutErrorIs502(t *testing.T) {
-	// Preserve the built-in request transform and restore the exact response transforms.
+
 	sdktranslator.Register(sdktranslator.FormatOpenAIResponse, sdktranslator.FormatOpenAI, nil, sdktranslator.ResponseTransform{
 		Stream:    chatresponses.ConvertOpenAIChatCompletionsResponseToOpenAIResponses,
 		NonStream: func(context.Context, string, []byte, []byte, []byte, *any) []byte { return nil },

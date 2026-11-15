@@ -1,4 +1,4 @@
-// Package codex implements thinking configuration for Codex (OpenAI Responses API) models.
+
 package codex
 
 import (
@@ -7,12 +7,12 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-// Applier implements thinking.ProviderApplier for Codex models.
+
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
 
-// NewApplier creates a new Codex thinking applier.
+
 func NewApplier() *Applier {
 	return &Applier{}
 }
@@ -21,7 +21,7 @@ func init() {
 	thinking.RegisterProvider("codex", NewApplier())
 }
 
-// Apply applies thinking configuration to Codex request body.
+
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	effort, ok := resolveCodexEffort(config, modelInfo)
 	if !ok {
@@ -34,7 +34,7 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	return result, nil
 }
 
-// ApplyDoc applies thinking configuration onto doc in place.
+
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {
 		return nil

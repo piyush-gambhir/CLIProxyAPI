@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// dashboardModel displays server info, stats cards, and config overview.
+
 type dashboardModel struct {
 	client   *Client
 	viewport viewport.Model
@@ -20,7 +20,7 @@ type dashboardModel struct {
 	height   int
 	ready    bool
 
-	// Cached data for re-rendering on locale change
+
 	lastConfig    map[string]any
 	lastAuthFiles []map[string]any
 	lastAPIKeys   []string
@@ -61,10 +61,10 @@ func (m dashboardModel) fetchData() tea.Msg {
 func (m dashboardModel) Update(msg tea.Msg) (dashboardModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case localeChangedMsg:
-		// Re-render immediately with cached data using new locale
+
 		m.content = m.renderDashboard(m.lastConfig, m.lastAuthFiles, m.lastAPIKeys)
 		m.viewport.SetContent(m.content)
-		// Also fetch fresh data in background
+
 		return m, m.fetchData
 
 	case dashboardDataMsg:
@@ -73,7 +73,7 @@ func (m dashboardModel) Update(msg tea.Msg) (dashboardModel, tea.Cmd) {
 			m.content = errorStyle.Render("⚠ Error: " + msg.err.Error())
 		} else {
 			m.err = nil
-			// Cache data for locale switching
+
 			m.lastConfig = msg.config
 			m.lastAuthFiles = msg.authFiles
 			m.lastAPIKeys = msg.apiKeys
@@ -125,13 +125,13 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 	sb.WriteString(helpStyle.Render(T("dashboard_help")))
 	sb.WriteString("\n\n")
 
-	// ━━━ Connection Status ━━━
+
 	connStyle := lipgloss.NewStyle().Bold(true).Foreground(colorSuccess)
 	sb.WriteString(connStyle.Render(T("connected")))
 	sb.WriteString(fmt.Sprintf("  %s", m.client.baseURL))
 	sb.WriteString("\n\n")
 
-	// ━━━ Stats Cards ━━━
+
 	cardWidth := 25
 	if m.width > 0 {
 		cardWidth = (m.width - 2) / 2
@@ -147,7 +147,7 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 		Width(cardWidth).
 		Height(2)
 
-	// Card 1: API Keys
+
 	keyCount := len(apiKeys)
 	card1 := cardStyle.Render(fmt.Sprintf(
 		"%s\n%s",
@@ -155,7 +155,7 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 		lipgloss.NewStyle().Foreground(colorMuted).Render(T("mgmt_keys")),
 	))
 
-	// Card 2: Auth Files
+
 	authCount := len(authFiles)
 	activeAuth := 0
 	for _, f := range authFiles {
@@ -172,7 +172,7 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 	sb.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, card1, " ", card2))
 	sb.WriteString("\n\n")
 
-	// ━━━ Current Config ━━━
+
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Foreground(colorHighlight).Render(T("current_config")))
 	sb.WriteString("\n")
 	sb.WriteString(strings.Repeat("─", minInt(m.width, 60)))
@@ -206,14 +206,14 @@ func (m dashboardModel) renderDashboard(cfg map[string]any, authFiles []map[stri
 			}{T("proxy_url"), proxyURL})
 		}
 
-		// Render config items as a compact row
+
 		for _, item := range configItems {
 			sb.WriteString(fmt.Sprintf("  %s %s\n",
 				labelStyle.Render(item.label+":"),
 				valueStyle.Render(item.value)))
 		}
 
-		// Routing strategy
+
 		strategy := "round-robin"
 		if routing, ok := cfg["routing"].(map[string]any); ok {
 			if s := getString(routing, "strategy"); s != "" {

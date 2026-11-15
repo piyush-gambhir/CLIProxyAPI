@@ -1,18 +1,18 @@
-// Command fetch_devin_models connects to the Devin/Codeium Connect-RPC API using
-// stored auth credentials and saves the dynamically fetched model list to a
-// JSON file for inspection or offline catalog updates.
-//
-// Usage:
-//
-//	go run ./cmd/fetch_devin_models [flags]
-//
-// Flags:
-//
-//	--auths-dir <path>  Directory containing auth JSON files (default: config auth-dir)
-//	--config    <path>  Config file path                 (default: "config.yaml")
-//	--output    <path>  Output JSON file path             (default: "devin_models.json")
-//	--raw               Dump all raw variants without aggregating thinking levels (default: false)
-//	--pretty            Pretty-print the output JSON      (default: true)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 package main
 
 import (
@@ -304,7 +304,7 @@ func parseSingleModelConfig(b []byte) rawDevinModel {
 		b = b[n:]
 
 		switch num {
-		case 1: // label
+		case 1:
 			if typ == protowire.BytesType {
 				val, mLen := protowire.ConsumeString(b)
 				if mLen >= 0 {
@@ -313,7 +313,7 @@ func parseSingleModelConfig(b []byte) rawDevinModel {
 					continue
 				}
 			}
-		case 5: // multimodal
+		case 5:
 			if typ == protowire.VarintType {
 				val, mLen := protowire.ConsumeVarint(b)
 				if mLen >= 0 {
@@ -322,7 +322,7 @@ func parseSingleModelConfig(b []byte) rawDevinModel {
 					continue
 				}
 			}
-		case 10: // vendor
+		case 10:
 			if typ == protowire.VarintType {
 				val, mLen := protowire.ConsumeVarint(b)
 				if mLen >= 0 {
@@ -331,7 +331,7 @@ func parseSingleModelConfig(b []byte) rawDevinModel {
 					continue
 				}
 			}
-		case 18: // context length
+		case 18:
 			if typ == protowire.VarintType {
 				val, mLen := protowire.ConsumeVarint(b)
 				if mLen >= 0 {
@@ -340,7 +340,7 @@ func parseSingleModelConfig(b []byte) rawDevinModel {
 					continue
 				}
 			}
-		case 22: // chat_model_uid
+		case 22:
 			if typ == protowire.BytesType {
 				val, mLen := protowire.ConsumeString(b)
 				if mLen >= 0 {
@@ -429,8 +429,8 @@ var devinCompoundSuffixes = []struct {
 	{suffix: "-thinking", effort: ""},
 	{suffix: "-max-1m", effort: "max", readd: "-1m"},
 	{suffix: "-none-1m", effort: "none", readd: "-1m"},
-	// Lightning tier keeps the effort before the -lightning suffix upstream
-	// (e.g. swe-2-high-lightning), so it aggregates as <base>-lightning.
+
+
 	{suffix: "-minimal-lightning", effort: "minimal", readd: "-lightning"},
 	{suffix: "-low-lightning", effort: "low", readd: "-lightning"},
 	{suffix: "-medium-lightning", effort: "medium", readd: "-lightning"},
@@ -580,8 +580,8 @@ func aggregateModels(raw []rawDevinModel) []devinModelJSON {
 			}
 		}
 
-		// Lightning display names strip both the effort word and "Lightning";
-		// re-append it so swe-2-lightning shows as "SWE-2 Lightning".
+
+
 		displayName := entry.displayName
 		if strings.HasSuffix(id, "-lightning") && !strings.HasSuffix(strings.ToLower(displayName), "lightning") {
 			displayName = strings.TrimSpace(displayName + " Lightning")

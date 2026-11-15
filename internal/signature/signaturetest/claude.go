@@ -1,4 +1,4 @@
-// Package signaturetest provides synthetic envelopes for signature regression tests.
+
 package signaturetest
 
 import (
@@ -7,14 +7,14 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
-// AntigravityCAQS builds a double-base64 Google Claude thinking envelope.
-// All opaque fields are generated zeros, not captured or replayable state.
+
+
 func AntigravityCAQS() string {
 	return AntigravityCAQSWithChannel(18)
 }
 
-// AntigravityCAQSWithChannel builds a double-base64 Google Claude thinking
-// envelope with the specified channel_id.
+
+
 func AntigravityCAQSWithChannel(channelID uint64) string {
 	appendVarint := func(dst []byte, field protowire.Number, value uint64) []byte {
 		return protowire.AppendVarint(protowire.AppendTag(dst, field, protowire.VarintType), value)

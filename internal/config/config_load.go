@@ -14,32 +14,32 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LoadConfig reads a YAML configuration file from the given path,
-// unmarshals it into a Config struct, applies environment variable overrides,
-// and returns it.
-//
-// Parameters:
-//   - configFile: The path to the YAML configuration file
-//
-// Returns:
-//   - *Config: The loaded configuration
-//   - error: An error if the configuration could not be loaded
+
+
+
+
+
+
+
+
+
+
 func LoadConfig(configFile string) (*Config, error) {
 	return LoadConfigOptional(configFile, false)
 }
 
-// ComputeSourceHash returns the Config.SourceHash value for config file bytes.
+
 func ComputeSourceHash(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
 
-// PrepareConfigFileForUpload applies the file rewrites of a startup load: a plaintext
-// management secret is replaced with its bcrypt hash and conflicting legacy fields are
-// removed. Stores that seed remote storage from configFile before the startup load call
-// it first, so the plaintext secret never leaves the machine and the local and remote
-// copies stay identical. When the plaintext cannot be removed it returns an error and
-// leaves configFile untouched, so every later attempt refuses the file again.
+
+
+
+
+
+
 func PrepareConfigFileForUpload(configFile string) error {
 	data, errRead := os.ReadFile(configFile)
 	if errRead != nil {
@@ -58,11 +58,11 @@ func PrepareConfigFileForUpload(configFile string) error {
 	return nil
 }
 
-// prepareConfigForUpload returns data with the file rewrites of a startup load applied.
-// It fails when the result would still hold a plaintext management secret: hashing
-// replaces only the effective key and the layout cleanup only drops an overridden legacy
-// key, so a YAML anchor or a copy elsewhere keeps the plaintext, and rewriting those could
-// change other settings that share them.
+
+
+
+
+
 func prepareConfigForUpload(data []byte) ([]byte, error) {
 	var cfg Config
 	if errParse := yaml.Unmarshal(data, &cfg); errParse != nil {
@@ -98,10 +98,10 @@ func prepareConfigForUpload(data []byte) ([]byte, error) {
 	return cleaned, nil
 }
 
-// plaintextManagementSecrets returns the plaintext management secrets of data: the
-// effective one and the values of the legacy and v8 secret keys, since an overridden
-// legacy key still holds its own. YAML anchors, aliases and merge keys are resolved, so
-// data must already decode as a Config, which rejects cyclic aliases.
+
+
+
+
 func plaintextManagementSecrets(data []byte, effective string) []string {
 	candidates := []string{effective}
 	var doc yaml.Node
@@ -122,9 +122,9 @@ func plaintextManagementSecrets(data []byte, effective string) []string {
 	return plaintexts
 }
 
-// yamlScalarExists reports whether node or any value below it is a non-null scalar equal
-// to value. Mapping keys only name settings and are skipped, as are alias nodes, whose
-// anchors are visited where they are defined.
+
+
+
 func yamlScalarExists(node *yaml.Node, value string) bool {
 	if node.Kind == yaml.ScalarNode {
 		return node.ShortTag() != "!!null" && node.Value == value
@@ -141,8 +141,8 @@ func yamlScalarExists(node *yaml.Node, value string) bool {
 	return false
 }
 
-// managementSecretKeyPath returns the management secret key path used by data: the v8
-// path when the document defines it, the legacy path otherwise.
+
+
 func managementSecretKeyPath(data []byte) []string {
 	var source yaml.Node
 	if yaml.Unmarshal(data, &source) == nil && len(source.Content) > 0 && yamlPath(expandConfigAliases(source.Content[0]), "management.secret-key") != nil {
@@ -151,16 +151,16 @@ func managementSecretKeyPath(data []byte) []string {
 	return []string{"remote-management", "secret-key"}
 }
 
-// LoadConfigOptional reads YAML from configFile.
-// If optional is true and the file is missing, it returns an empty Config.
-// If optional is true and the file is empty or invalid, it returns an empty Config.
+
+
+
 func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
-	// Read the entire configuration file into memory.
+
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		if optional {
 			if os.IsNotExist(err) || errors.Is(err, syscall.EISDIR) {
-				// Missing and optional: return empty config (cloud deploy standby).
+
 				cfg := &Config{CredentialInFlight: DefaultCredentialInFlightConfig()}
 				cfg.NormalizePluginsConfig()
 				cfg.NormalizeClaudeConfig()
@@ -170,7 +170,7 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	// In cloud deploy mode (optional=true), if file is empty or contains only whitespace, return empty config.
+
 	if optional && len(bytes.TrimSpace(data)) == 0 {
 		cfg := &Config{CredentialInFlight: DefaultCredentialInFlightConfig()}
 		cfg.NormalizePluginsConfig()
@@ -188,10 +188,10 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, errValidate
 	}
 
-	// Unmarshal the YAML data into the Config struct.
+
 	var cfg Config
-	// Set defaults before unmarshal so that absent keys keep defaults.
-	cfg.Host = "" // Default empty: binds to all interfaces (IPv4 + IPv6)
+
+	cfg.Host = ""
 	cfg.LoggingToFile = false
 	cfg.LogsMaxTotalSizeMB = 0
 	cfg.ErrorLogsMaxFiles = 10
@@ -211,7 +211,7 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	cfg.CredentialInFlight = DefaultCredentialInFlightConfig()
 	if err = yaml.Unmarshal(data, &cfg); err != nil {
 		if optional {
-			// In cloud deploy mode, if YAML parsing fails, return empty config instead of error.
+
 			cfgOptional := &Config{CredentialInFlight: DefaultCredentialInFlightConfig()}
 			cfgOptional.NormalizePluginsConfig()
 			cfgOptional.NormalizeClaudeConfig()
@@ -240,8 +240,8 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, errValidate
 	}
 
-	// Hash remote management key if plaintext is detected (nested)
-	// We consider a value to be already hashed if it looks like a bcrypt hash ($2a$, $2b$, or $2y$ prefix).
+
+
 	if cfg.RemoteManagement.SecretKey != "" && !looksLikeBcrypt(cfg.RemoteManagement.SecretKey) {
 		hashed, errHash := hashSecret(cfg.RemoteManagement.SecretKey)
 		if errHash != nil {
@@ -249,8 +249,8 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		}
 		cfg.RemoteManagement.SecretKey = hashed
 
-		// Persist the hashed value back to the config file to avoid re-hashing on next startup.
-		// Preserve YAML comments and ordering; update only the nested key.
+
+
 		_ = SaveConfigPreserveCommentsUpdateNestedScalar(configFile, managementSecretKeyPath(data), hashed)
 	}
 
@@ -291,57 +291,57 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		return nil, errResolvePluginsDir
 	}
 
-	// Sanitize Gemini API key configuration and migrate legacy entries.
+
 	cfg.SanitizeGeminiKeys()
 
-	// Sanitize native Interactions API key configuration.
+
 	cfg.SanitizeInteractionsKeys()
 
-	// Sanitize Vertex-compatible API keys.
+
 	cfg.SanitizeVertexCompatKeys()
 
-	// Sanitize Codex keys: drop entries without base-url
+
 	cfg.SanitizeCodexKeys()
 
-	// Sanitize xAI keys: drop entries without base-url
+
 	cfg.SanitizeXAIKeys()
 
-	// Sanitize Meta keys.
+
 	cfg.SanitizeMetaKeys()
 
-	// Sanitize Codex header defaults.
+
 	cfg.SanitizeCodexHeaderDefaults()
 
-	// Sanitize Claude header defaults.
+
 	cfg.SanitizeClaudeHeaderDefaults()
 
-	// Sanitize Claude key headers
+
 	cfg.SanitizeClaudeKeys()
 
-	// Sanitize Antigravity and Devin sensitive-word replacement maps.
+
 	cfg.SanitizeAntigravity()
 	cfg.SanitizeDevin()
 
-	// Sanitize OpenAI compatibility providers: drop entries without base-url
+
 	cfg.SanitizeOpenAICompatibility()
 
-	// Normalize OAuth provider model exclusion map.
+
 	cfg.OAuthExcludedModels = NormalizeOAuthExcludedModels(cfg.OAuthExcludedModels)
 
-	// Normalize global OAuth model name aliases.
+
 	cfg.SanitizeOAuthModelAlias()
 
-	// Normalize global OAuth model settings.
+
 	cfg.SanitizeOAuthSettings()
 
-	// Normalize global OAuth request-scoped error rules.
+
 	cfg.SanitizeOAuthRequestScopedErrors()
 
-	// Validate raw payload rules and drop invalid entries.
+
 	cfg.SanitizePayloadRules()
 
-	// Only conflicting legacy fields are removed on load. A legacy-only document
-	// stays legacy until a v8 configuration write explicitly migrates it.
+
+
 	current, errRead := os.ReadFile(configFile)
 	if errRead != nil {
 		return nil, errRead
@@ -356,10 +356,10 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 		}
 	}
 
-	// Record the exact bytes this config was parsed from, so a consumer can tell
-	// it apart from a newer version of the file.
+
+
 	cfg.SourceHash = ComputeSourceHash(data)
 
-	// Return the populated configuration struct.
+
 	return &cfg, nil
 }

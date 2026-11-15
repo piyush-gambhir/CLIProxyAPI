@@ -14,16 +14,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigV8ContextKey marks operations registered by the v8 API that save configuration.
+
 const ConfigV8ContextKey = "management.config-v8"
 
-// ConfigV8 serves the persisted configuration using v8 names. GET is a view;
-// only a successful configuration mutation migrates the stored document.
-//
-// Reads return an ETag holding the SHA-256 of the on-disk config bytes.
-// Writes honour an optional If-Match against that token, so a client can
-// detect that another writer saved after its read (412) instead of silently
-// overwriting the change. Without If-Match, writes stay unconditional.
+
+
+
+
+
+
+
 func (h *Handler) ConfigV8(c *gin.Context) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -122,7 +122,7 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 				return
 			}
 		}
-		// Paths identify YAML keys, never array indexes. Lists are replaced whole.
+
 		dst := root
 		for _, part := range parts {
 			if part == "" || dst.Kind != yaml.MappingNode {
@@ -154,7 +154,7 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 	if !yamlRequest && c.Request.Method != http.MethodDelete {
 		preserveV8TURNSecrets(root, before)
 	}
-	// Revisions are owned by Home and must not become ordinary editable settings.
+
 	for _, field := range []string{"credentials/concurrency/lifecycle-config-revision", "credentials/concurrency/observation-barrier-revision", "plugins/auth-revision"} {
 		old := configV8Node(before, strings.Split(field, "/"))
 		next := configV8Node(root, strings.Split(field, "/"))
@@ -191,19 +191,19 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_config", "message": err.Error()})
 		return
 	}
-	// Save the validated canonical tree directly: projecting runtime defaults
-	// back onto it loses explicit nulls, empty maps, and opaque plugin settings.
-	// WriteConfig retains the inode of a mounted configuration file.
+
+
+
 	if err = WriteConfig(h.configFilePath, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": err.Error()})
 		return
 	}
-	// Runtime-only ownership state is never sourced from an uploaded YAML document.
+
 	next.Home = h.cfg.Home
-	// WriteConfig may normalize the bytes, so report the version actually on
-	// disk. If it cannot be read back, omit the ETag instead of guessing one.
-	// Like Home, SourceHash keeps its runtime owner and is published by the
-	// reload, so it is not overwritten on next here.
+
+
+
+
 	if saved, errSaved := os.ReadFile(h.configFilePath); errSaved == nil {
 		c.Header("ETag", configV8ETag(config.ComputeSourceHash(saved)))
 	}
@@ -213,16 +213,16 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "config-version": 8})
 }
 
-// configV8ETag renders a config source hash as a strong ETag.
+
 func configV8ETag(hash string) string {
 	return `"` + hash + `"`
 }
 
-// ifMatchSatisfied reports whether the optional If-Match header lines pass
-// the RFC 9110 strong comparison against currentHash. Repeated lines form
-// one list. An absent header always passes; a present but blank header
-// carries no tag and fails; the whole field "*" matches any current
-// version; weak and malformed entity tags never match.
+
+
+
+
+
 func ifMatchSatisfied(values []string, currentHash string) bool {
 	if len(values) == 0 {
 		return true
@@ -240,8 +240,8 @@ func ifMatchSatisfied(values []string, currentHash string) bool {
 	return false
 }
 
-// splitEntityTagList splits an If-Match field value on list commas. A comma
-// inside a quoted entity tag is tag content, not a separator.
+
+
 func splitEntityTagList(field string) []string {
 	parts := []string{}
 	start := 0
@@ -262,10 +262,10 @@ func splitEntityTagList(field string) []string {
 
 var v8ICEServersPath = []string{"oauth", "providers", "codex", "live-media-relay", "ice-servers"}
 
-// JSON reads redact TURN secrets. Preserve omitted credentials when a client
-// writes that JSON back, matching by endpoint rather than array position so a
-// changed URL cannot inherit credentials for a different server. Explicit empty
-// strings/null clear a secret; YAML writes retain full replacement semantics.
+
+
+
+
 func preserveV8TURNSecrets(root, before *yaml.Node) {
 	next := configV8Node(root, v8ICEServersPath)
 	previous := configV8Node(before, v8ICEServersPath)
@@ -321,8 +321,8 @@ func configV8Node(root *yaml.Node, parts []string) *yaml.Node {
 	return root
 }
 
-// deleteConfigV8Path prunes only empty ancestors of the removed field. Other
-// explicit empty maps can carry inheritance or plugin semantics and stay intact.
+
+
 func deleteConfigV8Path(root *yaml.Node, parts []string) bool {
 	if root == nil || root.Kind != yaml.MappingNode || len(parts) == 0 {
 		return false
@@ -355,8 +355,8 @@ func cloneConfigV8Node(node *yaml.Node) *yaml.Node {
 	return &copy
 }
 
-// Unlike JSON merge-patch, null is retained: optional key overrides use it to
-// inherit the group value. DELETE is the explicit field-removal operation.
+
+
 func mergeConfigV8Patch(dst, src *yaml.Node) {
 	if dst.Kind != yaml.MappingNode || src.Kind != yaml.MappingNode {
 		if dst.Kind == yaml.ScalarNode && src.Kind == yaml.ScalarNode {

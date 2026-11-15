@@ -172,8 +172,8 @@ func TestConvertCodexResponseToGemini_ReasoningThoughtSignature(t *testing.T) {
 		if got := part.Get("thoughtSignature").String(); got != encodeGeminiCodexThoughtSignature(signature) {
 			t.Fatalf("thoughtSignature is not the carrier-encoded Meta signature; payload=%s", out)
 		}
-		// The Gemini wire form must survive an official-SDK-style []byte
-		// JSON decode (standard base64), and unwrap back to the raw signature.
+
+
 		var sdkPart struct {
 			ThoughtSignature []byte `json:"thoughtSignature"`
 		}
@@ -269,8 +269,8 @@ func TestConvertCodexResponseToGeminiNonStream_MultiSummaryRoundTrip(t *testing.
 		t.Fatalf("round-trip summaries = %s, want [step A, step B]", reasoning.Get("summary").Raw)
 	}
 
-	// Streaming done-only reasoning item without prior deltas must still emit
-	// its summary thought parts and attach the signature to the next text delta.
+
+
 	var streamParam any
 	doneOnly := []byte(`data: {"type":"response.output_item.done","item":{"id":"rs_done_only","type":"reasoning","encrypted_content":"` + signature + `","summary":[{"type":"summary_text","text":"done-only thought"}]}}`)
 	doneChunks := ConvertCodexResponseToGemini(ctx, "muse-spark-1.3", nil, nil, doneOnly, &streamParam)
@@ -282,9 +282,9 @@ func TestConvertCodexResponseToGeminiNonStream_MultiSummaryRoundTrip(t *testing.
 		t.Fatalf("text chunk after done-only reasoning = %q, want carrier signature", textChunks)
 	}
 
-	// Two consecutive streamed reasoning items must flush the first item's
-	// signature before the second item's thought deltas so each reasoning item
-	// keeps its own summary on replay.
+
+
+
 	sig2 := signature + "." + strings.Repeat("Zy9", 21)[:62]
 	var consecutiveParam any
 	var streamedParts []string
@@ -307,8 +307,8 @@ func TestConvertCodexResponseToGeminiNonStream_MultiSummaryRoundTrip(t *testing.
 		t.Fatalf("replayed consecutive reasoning items = %s, want separate summaries", replayCodex)
 	}
 
-	// Whitespace-only and space-padded thought chunks must round-trip without
-	// trimming inter-word spaces.
+
+
 	var wsParam any
 	var wsParts []string
 	for _, ev := range [][]byte{

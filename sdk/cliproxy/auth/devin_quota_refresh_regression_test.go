@@ -10,10 +10,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-// Tests in this file cover the refresh lifecycle half of issue #6690:
-// refreshed Devin quota observations must reach the stored auth, and a
-// refresh that confirms restored daily+weekly quota must release the
-// credential-wide cooldown early.
+
+
+
+
 
 func devinRefreshAuthFixture(t *testing.T, id string) (*Manager, *Auth, string, string) {
 	t.Helper()
@@ -107,9 +107,9 @@ func TestDevinQuotaExhaustionSchedulesRevalidation(t *testing.T) {
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-refresh-revalidate-6690")
 	recoverAt := time.Now().Add(72 * time.Hour)
 	base := devinExhaustedAuth(t, m, auth.ID, model, sibling, recoverAt)
-	// Devin session tokens are permanent (no expiry, nil refresh lead), so a
-	// plain token-refresh decision must not depend on those paths.
-	// Fresh last refresh: not yet due, but kept in the schedule.
+
+
+
 	base.LastRefreshedAt = time.Now()
 	if m.shouldRefresh(base, time.Now()) {
 		t.Fatal("revalidation must respect its interval right after a refresh")
@@ -121,14 +121,14 @@ func TestDevinQuotaExhaustionSchedulesRevalidation(t *testing.T) {
 	if !next.After(time.Now()) || next.After(time.Now().Add(2*time.Hour)) {
 		t.Fatalf("revalidation check = %v, want within a bounded near-term horizon", next)
 	}
-	// Stale last refresh: due now.
+
 	base.LastRefreshedAt = time.Now().Add(-2 * time.Hour)
 	if !m.shouldRefresh(base, time.Now()) {
 		t.Fatal("exhausted Devin credential past its revalidation interval must refresh")
 	}
 
-	// A healthy Devin credential must not start polling: revalidation is
-	// scoped to the active credential-quota state only.
+
+
 	healthy := &Auth{ID: "devin-healthy", Provider: "devin", Status: StatusActive, LastRefreshedAt: time.Now()}
 	if m.shouldRefresh(healthy, time.Now()) {
 		t.Fatal("healthy Devin credential must not be refreshed for quota revalidation")
@@ -195,7 +195,7 @@ func TestDevinRefresh_StaleObservationCannotReleaseCooldown(t *testing.T) {
 	base := devinExhaustedAuth(t, m, auth.ID, model, sibling, time.Now().Add(72*time.Hour))
 
 	stale := devinRefreshedObservation(base, "90%", "90%", time.Time{}, time.Time{})
-	// Older than the stored snapshot: must be rejected as a release signal.
+
 	storedSnap, _ := m.GetByID(auth.ID)
 	stale.Quota.ObservedAt = storedSnap.Quota.ObservedAt.Add(-time.Hour)
 	if _, err := m.UpdateRefreshedAuth(context.Background(), base, stale); err != nil {
@@ -221,7 +221,7 @@ func TestDevinMarkResult_EnrollsExhaustedCredentialForRevalidation(t *testing.T)
 	loop := newAuthAutoRefreshLoop(m, 5*time.Second, 1)
 	m.refreshLoop = loop
 
-	// Healthy permanent-token credentials start unscheduled.
+
 	loop.applyDirty(time.Now())
 	loop.mu.Lock()
 	_, scheduled := loop.index[auth.ID]
@@ -251,7 +251,7 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-propagated-sibling-6690")
 
-	// Sibling first earns an unrelated long block (404 -> 12h).
+
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error: &Error{Code: "not_found", Message: "model missing", HTTPStatus: http.StatusNotFound},
@@ -263,7 +263,7 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 	}
 	unrelatedDeadline := sibState.NextRetryAfter
 
-	// The reporting model then exhausts the weekly quota (short 2h reset).
+
 	retryAfter := 2 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -276,7 +276,7 @@ func TestDevinRefresh_PropagatedSiblingKeepsPreExistingBlock(t *testing.T) {
 		t.Fatalf("expected credential_quota after propagation, got %+v", base.Quota)
 	}
 
-	// Restored quota must release only the quota component.
+
 	updated := devinRefreshedObservation(base, "80%", "55%", time.Time{}, time.Time{})
 	if _, err := m.UpdateRefreshedAuth(context.Background(), base, updated); err != nil {
 		t.Fatalf("UpdateRefreshedAuth: %v", err)
@@ -301,14 +301,14 @@ func TestDevinRefresh_PreservesSiblingModelScoped429Block(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-sibling-429-6690")
 
-	// Sibling earns an independent model-scoped 429 block (12h).
+
 	longRetry := 12 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error:      &Error{Code: "rate_limit", Message: "model rate limit", HTTPStatus: http.StatusTooManyRequests},
 		RetryAfter: &longRetry,
 	})
-	// Reporting model exhausts the weekly quota (2h reset).
+
 	quotaRetry := 2 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -335,9 +335,9 @@ func TestDevinRefresh_PreservesSibling404UnderLongerQuota(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-sibling-404-long-6690")
 
-	// Sibling earns a 404 block (12h); the credential quota runs longer (72h),
-	// so propagation extends the sibling deadline. Restoration must restore
-	// the sibling to its original 404 block, not release it.
+
+
+
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error: &Error{Code: "not_found", Message: "model missing", HTTPStatus: http.StatusNotFound},
@@ -397,9 +397,9 @@ func TestDevinRefresh_RepeatedPropagationReleasesHealthySibling(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-repeat-prop-6690")
 
-	// Sibling gains a healthy ModelState from a successful request.
+
 	m.MarkResult(context.Background(), Result{AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true})
-	// Two successive credential quota failures propagate to the sibling.
+
 	for _, retry := range []time.Duration{2 * time.Hour, 6 * time.Hour} {
 		r := retry
 		m.MarkResult(context.Background(), Result{
@@ -432,7 +432,7 @@ func TestDevinRefresh_OwnFailureAfterPropagationUpdatesIndependentLayer(t *testi
 			withQuotaCooldownEnabled(t)
 			m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-own-after-prop-"+tc.name+"-6690")
 
-			// Credential quota propagates to the sibling first.
+
 			quotaRetry := 2 * time.Hour
 			m.MarkResult(context.Background(), Result{
 				AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -440,7 +440,7 @@ func TestDevinRefresh_OwnFailureAfterPropagationUpdatesIndependentLayer(t *testi
 				RetryAfter:      &quotaRetry,
 				CredentialScope: true,
 			})
-			// An in-flight sibling request then reports its own failure.
+
 			own := Result{
 				AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 				Error: &Error{Code: "own_failure", Message: "own", HTTPStatus: tc.status},
@@ -483,7 +483,7 @@ func TestDevinQuotaShadowSurvivesCooldownPersistenceReload(t *testing.T) {
 		CredentialScope: true,
 	})
 
-	// Simulate a restart: records persist, then restore into a fresh manager.
+
 	m.mu.RLock()
 	records := m.cooldownStateRecordsForAuthLocked(m.auths[auth.ID], time.Now())
 	m.mu.RUnlock()
@@ -518,8 +518,8 @@ func TestDevinRefresh_AlternatingCredentialReportsFullyRelease(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-alternating-6690")
 
-	// Model reports credential exhaustion first; an in-flight sibling request
-	// then reports the same credential exhaustion. Neither is independent.
+
+
 	for _, mID := range []string{model, sibling} {
 		r := 2 * time.Hour
 		m.MarkResult(context.Background(), Result{
@@ -546,7 +546,7 @@ func TestDevinRefresh_OwnFailureUnderLongQuotaKeepsOwnDeadline(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-own-deadline-6690")
 
-	// Sibling starts with a healthy state, then a 72h credential quota wraps it.
+
 	m.MarkResult(context.Background(), Result{AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true})
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
@@ -555,7 +555,7 @@ func TestDevinRefresh_OwnFailureUnderLongQuotaKeepsOwnDeadline(t *testing.T) {
 		RetryAfter:      &qr,
 		CredentialScope: true,
 	})
-	// In-flight sibling 404 arrives under the wrap (own 12h block).
+
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error: &Error{Code: "not_found", Message: "missing", HTTPStatus: http.StatusNotFound},
@@ -598,7 +598,7 @@ func TestDevinRestoredIndependent_KeepsStaleSuccessWatermark(t *testing.T) {
 		CredentialScope: true,
 		ExecutionSeq:    seqQuota,
 	})
-	// Sibling own failure dispatched after the quota failure.
+
 	seqOwn := m.nextExecutionSeq()
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
@@ -610,7 +610,7 @@ func TestDevinRestoredIndependent_KeepsStaleSuccessWatermark(t *testing.T) {
 	if _, err := m.UpdateRefreshedAuth(context.Background(), base, updated); err != nil {
 		t.Fatalf("UpdateRefreshedAuth: %v", err)
 	}
-	// A stale success dispatched before the own failure must not clear it.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true, ExecutionSeq: seqQuota,
 	})
@@ -624,8 +624,8 @@ func TestDevinRefresh_ReportingModelKeepsIndependentBlock(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-reporting-own-6690")
 
-	// Model reports credential exhaustion; sibling then reports its own 404;
-	// finally the sibling itself reports credential exhaustion (in-flight).
+
+
 	qr := 2 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -661,7 +661,7 @@ func TestDevinRefresh_TwoWindowsNormalizeStaleWrap(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-two-windows-6690")
 
-	// First quota window (short, expires immediately for the test clock).
+
 	shortRetry := time.Minute
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -669,7 +669,7 @@ func TestDevinRefresh_TwoWindowsNormalizeStaleWrap(t *testing.T) {
 		RetryAfter:      &shortRetry,
 		CredentialScope: true,
 	})
-	// Force natural expiry of the first window without sleeping.
+
 	seed, _ := m.GetByID(auth.ID)
 	past := time.Now().Add(-time.Hour)
 	seed.NextRetryAfter = past
@@ -681,12 +681,12 @@ func TestDevinRefresh_TwoWindowsNormalizeStaleWrap(t *testing.T) {
 	if _, err := m.Update(context.Background(), seed); err != nil {
 		t.Fatalf("expire seed: %v", err)
 	}
-	// After expiry the sibling earns a fresh independent block.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error: &Error{Code: "not_found", Message: "missing", HTTPStatus: http.StatusNotFound},
 	})
-	// A second credential quota window wraps the credential again.
+
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -735,7 +735,7 @@ func TestDevinRefresh_AlternatingAfterReloadFullyReleases(t *testing.T) {
 	}
 	m2.mu.Unlock()
 
-	// Post-restart, the sibling reports credential exhaustion this time.
+
 	m2.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
 		Error:           &Error{Code: "rate_limit", Message: "weekly quota", HTTPStatus: http.StatusTooManyRequests},
@@ -761,7 +761,7 @@ func TestDevinRestoreDoesNotClobberNewerShadow(t *testing.T) {
 	if _, err := m.Register(context.Background(), auth); err != nil {
 		t.Fatalf("register: %v", err)
 	}
-	// Live state already carries a newer independent shadow.
+
 	live, _ := m.GetByID(auth.ID)
 	newShadow := &ModelState{Unavailable: true, Status: StatusError, NextRetryAfter: time.Now().Add(12 * time.Hour), UpdatedAt: time.Now()}
 	liveState := &ModelState{
@@ -821,7 +821,7 @@ func TestCooldownRecord_IndependentStateJSONRoundTrip(t *testing.T) {
 	if decoded.IndependentState == nil || !decoded.IndependentState.NextRetryAfter.Equal(deadline) || decoded.IndependentState.Quota.Reason != "quota" {
 		t.Fatalf("independent state lost in round-trip: %+v", decoded.IndependentState)
 	}
-	// Old records without the new fields must still load.
+
 	var legacy CooldownStateRecord
 	if errLegacy := json.Unmarshal([]byte(`{"auth_id":"old","next_retry_after":"2026-10-20T00:00:00Z"}`), &legacy); errLegacy != nil {
 		t.Fatalf("legacy unmarshal: %v", errLegacy)
@@ -835,8 +835,8 @@ func TestDevinRefresh_InFlightCompositionKeepsExactOwnDeadline(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-inflight-exact-6690")
 
-	// 72h credential quota first; the (untracked) sibling then reports its
-	// own in-flight 404, and finally reports credential exhaustion itself.
+
+
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -872,8 +872,8 @@ func TestDevinRefresh_ReportingModelKeepsModelScoped429(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, _ := devinRefreshAuthFixture(t, "devin-reporting-429-6690")
 
-	// The model first earns an ordinary model-scoped 429 (12h), then reports
-	// credential exhaustion itself. Restoration must keep the 12h block.
+
+
 	longRetry := 12 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -905,7 +905,7 @@ func TestDevinRefresh_LegacyLabelOnlySiblingReleases(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-legacy-label-6690")
 
-	// Legacy persisted shape: propagated label, no marker/shadow fields.
+
 	recoverAt := time.Now().Add(72 * time.Hour)
 	seed, _ := m.GetByID(auth.ID)
 	seed.Unavailable = true
@@ -920,7 +920,7 @@ func TestDevinRefresh_LegacyLabelOnlySiblingReleases(t *testing.T) {
 	if _, err := m.Update(context.Background(), seed); err != nil {
 		t.Fatalf("seed legacy: %v", err)
 	}
-	// The legacy sibling now reports credential exhaustion itself.
+
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
@@ -943,8 +943,8 @@ func TestDevinRefresh_ExpiredWindowThenNewOwnFailurePreserved(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-expire-success-6690")
 
-	// Model earns a 12h independent model-scoped 429; sibling wraps it with
-	// a short 2h credential quota.
+
+
 	longRetry := 12 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
@@ -958,9 +958,9 @@ func TestDevinRefresh_ExpiredWindowThenNewOwnFailurePreserved(t *testing.T) {
 		RetryAfter:      &shortRetry,
 		CredentialScope: true,
 	})
-	// Force the credential window to expire naturally (timestamps only):
-	// the auth credential deadline and every propagated deadline pass,
-	// while the model's own 12h deadline (max with the 2h window) survives.
+
+
+
 	seed, _ := m.GetByID(auth.ID)
 	past := time.Now().Add(-time.Hour)
 	seed.NextRetryAfter = past
@@ -980,17 +980,17 @@ func TestDevinRefresh_ExpiredWindowThenNewOwnFailurePreserved(t *testing.T) {
 	if _, err := m.Update(context.Background(), seed); err != nil {
 		t.Fatalf("expire seed: %v", err)
 	}
-	// Sibling succeeds after expiry; aggregation re-derives an ordinary
-	// auth-level "quota" from the model's still-live deadline.
+
+
 	m.MarkResult(context.Background(), Result{AuthID: auth.ID, Provider: "devin", Model: sibling, Success: true})
-	// Model reports a fresh independent 24h model-scoped 429.
+
 	freshRetry := 24 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: model, Success: false,
 		Error:      &Error{Code: "rate_limit", Message: "model rate limit again", HTTPStatus: http.StatusTooManyRequests},
 		RetryAfter: &freshRetry,
 	})
-	// A new credential quota window wraps the credential again.
+
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
@@ -1018,7 +1018,7 @@ func TestDevinRestorePreservesLiveUnwrappedIndependent(t *testing.T) {
 	if _, err := m.Register(context.Background(), auth); err != nil {
 		t.Fatalf("register: %v", err)
 	}
-	// Live state: a fresh unwrapped independent 404 block (post-restoration).
+
 	live, _ := m.GetByID(auth.ID)
 	liveState := &ModelState{
 		Unavailable: true, Status: StatusError, NextRetryAfter: time.Now().Add(12 * time.Hour),
@@ -1032,7 +1032,7 @@ func TestDevinRestorePreservesLiveUnwrappedIndependent(t *testing.T) {
 		t.Fatalf("seed live: %v", err)
 	}
 
-	// A stale wrapped record (loaded earlier, applied late) must not erase it.
+
 	staleRecord := CooldownStateRecord{
 		Provider: "devin", AuthID: auth.ID, Model: "claude-opus-5-5", Status: "cooling",
 		NextRetryAfter: time.Now().Add(72 * time.Hour), Reason: "credential_quota",
@@ -1060,9 +1060,9 @@ func TestDevinRestoreDoesNotCaptureCredentialDerivedLegacyQuota(t *testing.T) {
 	if _, err := m.Register(context.Background(), auth); err != nil {
 		t.Fatalf("register: %v", err)
 	}
-	// Legacy (pre-fix) reporting state: reason "quota" whose own error is the
-	// explicit Devin weekly-exhaustion message — credential-derived, not an
-	// independent rate limit.
+
+
+
 	live, _ := m.GetByID(auth.ID)
 	liveState := &ModelState{
 		Unavailable: true, Status: StatusError, NextRetryAfter: time.Now().Add(5 * time.Minute),
@@ -1097,7 +1097,7 @@ func TestDevinRestoreIndependentRecordUnderLiveWrapPreserved(t *testing.T) {
 	withQuotaCooldownEnabled(t)
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-restore-under-wrap-6690")
 
-	// Live credential quota wraps the credential (model has no state yet).
+
 	qr := 72 * time.Hour
 	m.MarkResult(context.Background(), Result{
 		AuthID: auth.ID, Provider: "devin", Model: sibling, Success: false,
@@ -1105,7 +1105,7 @@ func TestDevinRestoreIndependentRecordUnderLiveWrapPreserved(t *testing.T) {
 		RetryAfter:      &qr,
 		CredentialScope: true,
 	})
-	// A delayed unwrapped independent record for the model applies late.
+
 	record := CooldownStateRecord{
 		Provider: "devin", AuthID: auth.ID, Model: model, Status: "cooling",
 		NextRetryAfter: time.Now().Add(12 * time.Hour), Reason: "quota",
@@ -1205,7 +1205,7 @@ func (devinFalseRefreshEvaluator) ShouldRefresh(time.Time, *Auth) bool { return 
 func TestDevinRevalidate_EvaluatorFalseKeepsFutureSchedule(t *testing.T) {
 	m, auth, model, sibling := devinRefreshAuthFixture(t, "devin-evaluator-6690")
 	base := devinExhaustedAuth(t, m, auth.ID, model, sibling, time.Now().Add(72*time.Hour))
-	base.LastRefreshedAt = time.Now().Add(-2 * time.Hour) // revalidation due
+	base.LastRefreshedAt = time.Now().Add(-2 * time.Hour)
 	base.Runtime = devinFalseRefreshEvaluator{}
 
 	if m.shouldRefresh(base, time.Now()) {
@@ -1226,8 +1226,8 @@ func TestDevinRefresh_RestoredKeepsUnrelatedModelCooldown(t *testing.T) {
 	recoverAt := time.Now().Add(72 * time.Hour)
 	base := devinExhaustedAuth(t, m, auth.ID, model, sibling, recoverAt)
 
-	// Give one model an unrelated, longer non-quota block that must survive.
-	// Mark it as a freshly written own state (not a stale in-flight result).
+
+
 	seed, _ := m.GetByID(auth.ID)
 	longBlock := time.Now().Add(120 * time.Hour)
 	seed.ModelStates[model].Quota = QuotaState{Exceeded: true, Reason: "cloudflare challenge", NextRecoverAt: longBlock}

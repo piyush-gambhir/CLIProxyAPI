@@ -15,7 +15,7 @@ import (
 
 const codexResponsesLiteHeaderName = "X-OpenAI-Internal-Codex-Responses-Lite"
 
-// CodexModelUsesResponsesLite identifies models whose native Codex route uses Responses Lite.
+
 func CodexModelUsesResponsesLite(model string) bool {
 	slug := strings.ToLower(strings.TrimSpace(thinking.ParseSuffix(model).ModelName))
 	if idx := strings.LastIndex(slug, "/"); idx >= 0 {
@@ -24,7 +24,7 @@ func CodexModelUsesResponsesLite(model string) bool {
 	return slug != "" && (strings.HasPrefix(slug, "gpt-6") || registry.CodexClientModelUsesResponsesLite(slug))
 }
 
-// CodexResponsesLiteRequestDoc reads the route hints without changing the payload.
+
 func CodexResponsesLiteRequestDoc(doc *ojson.Doc, headers http.Header) bool {
 	if strings.EqualFold(strings.TrimSpace(headers.Get(codexResponsesLiteHeaderName)), "true") {
 		return true
@@ -36,9 +36,9 @@ func CodexResponsesLiteRequestDoc(doc *ojson.Doc, headers http.Header) bool {
 	return value.Type == ojson.True || (value.Type == ojson.String && strings.EqualFold(strings.TrimSpace(value.String()), "true"))
 }
 
-// CodexResponsesLiteRequestForAuthDoc reports whether the request uses the
-// Codex Responses-Lite protocol after resolving client_metadata, client
-// headers, credential header: attributes, and models.json override_header.
+
+
+
 func CodexResponsesLiteRequestForAuthDoc(doc *ojson.Doc, modelName string, auth *cliproxyauth.Auth, headers http.Header) bool {
 	if CodexResponsesLiteRequestDoc(doc, nil) {
 		return true
@@ -64,12 +64,12 @@ func CodexResponsesLiteRequestForAuthDoc(doc *ojson.Doc, modelName string, auth 
 	return strings.EqualFold(effective, "true")
 }
 
-// CodexRequestHasReasoningForHostedImageDoc reports whether the request carries
-// a reasoning configuration (top-level reasoning.effort, configuration_update
-// input item, or model thinking suffix). Upstream Codex /responses binds hosted
-// image_generation to gpt-image-2-codex, which rejects complexity whenever
-// reasoning effort is present on Responses-Lite models (#7270), whereas
-// standard Responses requests without reasoning effort succeed (#7384).
+
+
+
+
+
+
 func CodexRequestHasReasoningForHostedImageDoc(doc *ojson.Doc, model string) bool {
 	if thinking.HasThinkingSuffix(model) {
 		return true
@@ -102,10 +102,10 @@ func CodexRequestHasReasoningForHostedImageDoc(doc *ojson.Doc, model string) boo
 	return false
 }
 
-// ValidateCodexHostedImageGenerationDoc checks the final, configured Responses payload
-// after all outbound headers, including credential and model overrides, are resolved.
-// Native Codex Responses Lite cannot serve forced hosted images, while API-key, SIWC,
-// explicit passthrough, and standalone Images API requests retain their own contracts.
+
+
+
+
 func ValidateCodexHostedImageGenerationDoc(doc *ojson.Doc, upstreamHeaders http.Header, cfg *config.Config, nativeCodex bool) error {
 	if !nativeCodex || doc == nil || (cfg != nil && cfg.DisableImageGeneration == config.DisableImageGenerationPassthrough) {
 		return nil

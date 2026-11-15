@@ -7,8 +7,8 @@ import (
 
 var emptyGeminiUserTurnJSON = []byte(`{"role":"user","parts":[{"text":""}]}`)
 
-// EnsureGeminiLeadingUserContent ensures that the contents array at the given path
-// starts with a user turn when sending to Gemini/Antigravity upstreams.
+
+
 func EnsureGeminiLeadingUserContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -20,8 +20,8 @@ func EnsureGeminiLeadingUserContent(payload []byte, path string) []byte {
 	return doc.Bytes()
 }
 
-// EnsureGeminiLeadingUserContentDoc ensures that the contents array at the given path
-// starts with a user turn in place on doc.
+
+
 func EnsureGeminiLeadingUserContentDoc(doc *ojson.Doc, path string) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -61,8 +61,8 @@ func contentHasFunctionResponse(content ojson.Result) bool {
 	return false
 }
 
-// contentHasFunctionResponseMedia reports whether any functionResponse in the
-// content carries nested media parts (inlineData/fileData).
+
+
 func contentHasFunctionResponseMedia(content ojson.Result) bool {
 	parts := content.Get("parts")
 	if !parts.IsArray() {
@@ -79,12 +79,12 @@ func contentHasFunctionResponseMedia(content ojson.Result) bool {
 	return false
 }
 
-// EnsureGeminiTrailingUserContent ensures that the contents array at the given path
-// ends with a user turn when sending to Gemini/Antigravity upstreams.
-// If the final turn contains a functionResponse, it is preserved without appending
-// an empty user turn because upstream expects the model to generate the response.
-// A model-role functionResponse turn carrying nested media is the exception:
-// Antigravity rejects it as the final turn with 400 INVALID_ARGUMENT (#6524).
+
+
+
+
+
+
 func EnsureGeminiTrailingUserContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -96,8 +96,8 @@ func EnsureGeminiTrailingUserContent(payload []byte, path string) []byte {
 	return doc.Bytes()
 }
 
-// EnsureGeminiTrailingUserContentDoc ensures that the contents array at the given path
-// ends with a user turn in place on doc.
+
+
 func EnsureGeminiTrailingUserContentDoc(doc *ojson.Doc, path string) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -128,11 +128,11 @@ func EnsureGeminiTrailingUserContentDoc(doc *ojson.Doc, path string) bool {
 	return doc.SetRawBytes(path, translatorcommon.JoinRawArray(contentItems)) == nil
 }
 
-// DropGeminiTrailingThoughtOnlyContent removes trailing model turns made only of
-// thought parts, keeping at least one turn. Such a tail comes from a replayed
-// trailing reasoning item; dropping it avoids relying only on the synthetic
-// empty user turn, which did not prevent Antigravity (#6530) or Vertex (#6630)
-// from rejecting the request as ending with a model turn.
+
+
+
+
+
 func DropGeminiTrailingThoughtOnlyContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -144,8 +144,8 @@ func DropGeminiTrailingThoughtOnlyContent(payload []byte, path string) []byte {
 	return doc.Bytes()
 }
 
-// DropGeminiTrailingThoughtOnlyContentDoc removes trailing model turns made only of
-// thought parts in place on doc, keeping at least one turn.
+
+
 func DropGeminiTrailingThoughtOnlyContentDoc(doc *ojson.Doc, path string) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -187,8 +187,8 @@ func contentIsThoughtOnlyModelTurn(content ojson.Result) bool {
 	return true
 }
 
-// EnsureGeminiBoundaryUserContent ensures that the contents array at the given path
-// both starts and ends with a user turn when sending to Gemini/Antigravity upstreams.
+
+
 func EnsureGeminiBoundaryUserContent(payload []byte, path string) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -200,8 +200,8 @@ func EnsureGeminiBoundaryUserContent(payload []byte, path string) []byte {
 	return doc.Bytes()
 }
 
-// EnsureGeminiBoundaryUserContentDoc ensures that the contents array at the given path
-// both starts and ends with a user turn in place on doc.
+
+
 func EnsureGeminiBoundaryUserContentDoc(doc *ojson.Doc, path string) bool {
 	leading := EnsureGeminiLeadingUserContentDoc(doc, path)
 	trailing := EnsureGeminiTrailingUserContentDoc(doc, path)

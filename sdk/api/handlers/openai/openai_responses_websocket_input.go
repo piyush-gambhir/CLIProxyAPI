@@ -20,15 +20,15 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// responsesLocalInterrupt cancels an in-flight HTTP turn. A websocket upstream
-// does not use it; that interrupt is written to the existing socket instead.
-// A claimed frame is never silently dropped: the forward loop consumes it, or
-// deliver returns false so the reader answers the interrupt itself.
-//
-// wsTurnActive is the socket-scoped ownership gate: while the current turn
-// runs on an upstream websocket, no frame may claim the local path at all,
-// not even in the window after that socket was lost. "No live websocket
-// channel right now" must never be read as "this turn is HTTP".
+
+
+
+
+
+
+
+
+
 type responsesLocalInterrupt struct {
 	mu           sync.Mutex
 	active       bool
@@ -40,9 +40,9 @@ func newResponsesLocalInterrupt() *responsesLocalInterrupt {
 	return &responsesLocalInterrupt{frames: make(chan []byte, 1)}
 }
 
-// begin activates claims for a turn and records its ownership in the same
-// critical section: a websocket-owned turn must never expose an instant in
-// which claims are active but ownership is not yet visible to deliver.
+
+
+
 func (s *responsesLocalInterrupt) begin(websocketOwned bool) {
 	if s == nil {
 		return
@@ -53,8 +53,8 @@ func (s *responsesLocalInterrupt) begin(websocketOwned bool) {
 	s.mu.Unlock()
 }
 
-// reactivate reopens claims for the next response on the same turn (duplex),
-// preserving the ownership recorded by begin.
+
+
 func (s *responsesLocalInterrupt) reactivate() {
 	if s == nil {
 		return
@@ -73,9 +73,9 @@ func (s *responsesLocalInterrupt) endWebsocketTurn() {
 	s.mu.Unlock()
 }
 
-// stopClaims stops accepting new frames without draining the queue: a frame
-// already claimed by deliver stays consumable so the forward loop answers it
-// instead of silently dropping it when the turn ends.
+
+
+
 func (s *responsesLocalInterrupt) stopClaims() {
 	if s == nil {
 		return
@@ -85,18 +85,18 @@ func (s *responsesLocalInterrupt) stopClaims() {
 	s.mu.Unlock()
 }
 
-// end stops new claims at turn teardown; claimed frames stay queued for
-// takeClaimed so they can still be answered.
+
+
 func (s *responsesLocalInterrupt) end() {
 	s.stopClaims()
 }
 
-// deactivate stops new claims once the turn completed.
+
 func (s *responsesLocalInterrupt) deactivate() {
 	s.stopClaims()
 }
 
-// isActive reports whether new frames may still be claimed for the turn.
+
 func (s *responsesLocalInterrupt) isActive() bool {
 	if s == nil {
 		return false
@@ -106,9 +106,9 @@ func (s *responsesLocalInterrupt) isActive() bool {
 	return s.active
 }
 
-// deliver claims a frame only if it is actually retained: a full queue
-// rejects so the reader answers the frame itself instead of the client
-// waiting for an answer that only ever addresses the first claim.
+
+
+
 func (s *responsesLocalInterrupt) deliver(payload []byte) bool {
 	if s == nil {
 		return false
@@ -133,8 +133,8 @@ func (s *responsesLocalInterrupt) framesChan() <-chan []byte {
 	return s.frames
 }
 
-// takeClaimed consumes a queued claimed frame without blocking. The caller
-// becomes responsible for answering it exactly once.
+
+
 func (s *responsesLocalInterrupt) takeClaimed() []byte {
 	if s == nil {
 		return nil
@@ -147,9 +147,9 @@ func (s *responsesLocalInterrupt) takeClaimed() []byte {
 	}
 }
 
-// readResponsesWebsocketInput is the only downstream reader. Interrupts are
-// handled immediately so they are not queued behind an active response.
-// The bounded queue backpressures clients instead of retaining unlimited input.
+
+
+
 func readResponsesWebsocketInput(ctx context.Context, cancel context.CancelCauseFunc, conn *websocket.Conn, interrupt func([]byte) error, local *responsesLocalInterrupt, writer *responsesWebsocketWriter, timeline websocketTimelineAppender, epoch *atomic.Uint64) (<-chan cliproxyexecutor.WebsocketInput, <-chan struct{}) {
 	input := make(chan cliproxyexecutor.WebsocketInput, 16)
 	done := make(chan struct{})
@@ -166,8 +166,8 @@ func readResponsesWebsocketInput(ctx context.Context, cancel context.CancelCause
 			if kind != websocket.TextMessage && kind != websocket.BinaryMessage {
 				continue
 			}
-			// Control frames bypass response.create normalization. The original
-			// response_id, mode, and extension fields must reach upstream unchanged.
+
+
 			if json.Valid(payload) && ojson.GetBytesNoCopy(payload, "type").String() == "response.interrupt" {
 				appendResponsesInterruptDiagnostic(timeline, payload, "")
 				errInterrupt := interrupt(payload)
@@ -180,8 +180,8 @@ func readResponsesWebsocketInput(ctx context.Context, cancel context.CancelCause
 					continue
 				default:
 					appendResponsesInterruptDiagnostic(timeline, payload, "rejected")
-					// The sanitized outcome replaces raw error logging here: errors
-					// from transport dependencies may contain credentials or URLs.
+
+
 					_, errWrite := writeResponsesWebsocketError(writer, nil, &interfaces.ErrorMessage{
 						StatusCode: http.StatusBadRequest,
 						Error:      errInterrupt,
@@ -208,8 +208,8 @@ func appendResponsesInterruptDiagnostic(timeline websocketTimelineAppender, payl
 	if timeline == nil {
 		return
 	}
-	// Hash client-controlled IDs and omit all arbitrary fields, including mode.
-	// Only correlation metadata is needed to diagnose control-frame timing.
+
+
 	idHash := sha256.Sum256([]byte(ojson.GetBytesNoCopy(payload, "response_id").String()))
 	diagnostic := struct {
 		Type           string `json:"type"`
@@ -246,7 +246,7 @@ func (h *OpenAIResponsesAPIHandler) forwardResponsesWebsocketInterrupt(ctx conte
 		return fmt.Errorf("upstream executor does not support response.interrupt")
 	}
 	ctx = cliproxyexecutor.WithWebsocketAuthCheck(ctx, func(authID string) bool {
-		// Home runtime credentials live on the execution session, not in the global map.
+
 		auth, found := h.AuthManager.GetByID(authID)
 		if !found || auth == nil {
 			auth, found = h.AuthManager.GetExecutionSessionAuthByID(sessionID, authID)

@@ -19,10 +19,10 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// websocketLossInterruptExecutor runs a turn whose upstream websocket is
-// lost mid-flight: InterruptExecutionSession stops seeing a live socket only
-// after the test releases the loss, mirroring disconnect teardown winning
-// the race against the handler's error delivery.
+
+
+
+
 type websocketLossInterruptExecutor struct {
 	lost chan struct{}
 }
@@ -68,11 +68,11 @@ func (e *websocketLossInterruptExecutor) InterruptExecutionSession(context.Conte
 	}
 }
 
-// When the upstream websocket dies mid-turn, an interrupt racing the loss
-// delivery must not be answered with a fabricated local incomplete: the turn
-// is websocket-owned, so the client only sees the loss result. The upstream
-// loss is detected through InterruptExecutionSession itself, which makes the
-// interleaving deterministic.
+
+
+
+
+
 func TestResponsesInterruptRacingWebsocketLossIsNotAnsweredLocally(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	executor := &websocketLossInterruptExecutor{lost: make(chan struct{})}
@@ -119,17 +119,17 @@ func TestResponsesInterruptRacingWebsocketLossIsNotAnsweredLocally(t *testing.T)
 		t.Fatalf("expected response.created, got %s", created)
 	}
 
-	// The upstream socket is gone before the interrupt is dispatched, but
-	// the handler has not consumed the loss yet.
+
+
 	close(executor.lost)
 	send(`{"type":"response.interrupt","response_id":"r-ws"}`)
 
-	// The next downstream message must be the upstream-loss notice, never a
-	// locally fabricated incomplete for r-ws. If the interrupt had been
-	// claimed locally, the forward loop would have cancelled the executor
-	// context and written that incomplete before the loss terminal could
-	// be delivered, so observing the loss notice first also proves the
-	// frame was never locally answered.
+
+
+
+
+
+
 	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {
 		_, payload, errNext := client.ReadMessage()

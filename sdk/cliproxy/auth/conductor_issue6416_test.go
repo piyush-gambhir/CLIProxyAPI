@@ -105,11 +105,11 @@ func (s *issue6416MockStore) List(context.Context) ([]*Auth, error) {
 	return items, nil
 }
 
-// TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCredential reproduces
-// Issue #6416:
-// When a request is started with an old token, and the auth is updated with a new access token
-// while the request is in flight, a subsequent 429 from the old request must NOT cool down
-// or mark unavailable the new credential.
+
+
+
+
+
 func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCredential(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -157,10 +157,10 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 		_, execErr = m.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: model}, cliproxyexecutor.Options{})
 	}()
 
-	// Wait until the request is in-flight within the executor.
+
 	<-execStarted
 
-	// Replace the credential with a new access token while the request is in-flight.
+
 	currentAuth, ok := m.GetByID(authID)
 	if !ok || currentAuth == nil {
 		t.Fatal("auth not found")
@@ -173,7 +173,7 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 		t.Fatalf("update auth: %v", errUpdate)
 	}
 
-	// Release the in-flight request, which will return 429 using the old token.
+
 	close(allowExecToFail)
 	<-reqDone
 
@@ -181,7 +181,7 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 		t.Fatal("expected in-flight request to fail with 429")
 	}
 
-	// Verify the updated credential: the new credential must NOT be cooling or unavailable.
+
 	freshAuth, ok := m.GetByID(authID)
 	if !ok || freshAuth == nil {
 		t.Fatal("fresh auth not found")
@@ -202,9 +202,9 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_DoesNotCooldownNewCr
 	}
 }
 
-// TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldownNewCredential tests
-// that streaming responses where the stream fails with 429 after credentials were replaced
-// do not cool down the newly installed credential.
+
+
+
 func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldownNewCredential(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -255,7 +255,7 @@ func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldow
 
 	<-streamStarted
 
-	// Replace the credential with a new access token while stream is in-flight.
+
 	currentAuth, ok := m.GetByID(authID)
 	if !ok || currentAuth == nil {
 		t.Fatal("auth not found")
@@ -280,7 +280,7 @@ func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldow
 		}
 	}
 
-	// Verify the updated credential: the new credential must NOT be cooling or unavailable.
+
 	freshAuth, ok := m.GetByID(authID)
 	if !ok || freshAuth == nil {
 		t.Fatal("fresh auth not found")
@@ -298,9 +298,9 @@ func TestManager_Issue6416_LateStreamResultBeforeCredentialUpdate_DoesNotCooldow
 	}
 }
 
-// TestManager_Issue6416_LoadInitializesCredentialVersion tests that Manager.Load
-// initializes CredentialVersion from store even when unpersisted (value 0), so that
-// subsequent in-flight requests and updates track version changes correctly.
+
+
+
 func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -315,7 +315,7 @@ func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 			authID: {
 				ID:                authID,
 				Provider:          "codex",
-				CredentialVersion: 0, // unpersisted on disk
+				CredentialVersion: 0,
 				Metadata: map[string]any{
 					"access_token": "old-access-token",
 				},
@@ -364,7 +364,7 @@ func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 
 	<-execStarted
 
-	// Update with new token
+
 	newAuth := loadedAuth.Clone()
 	newAuth.Metadata = map[string]any{"access_token": "new-access-token"}
 	updated, errUpdate := m.Update(context.Background(), newAuth)
@@ -387,9 +387,9 @@ func TestManager_Issue6416_LoadInitializesCredentialVersion(t *testing.T) {
 	}
 }
 
-// TestManager_Issue6416_Late401ResultBeforeCredentialUpdate_DoesNotInvalidateNewCredential tests
-// that in-flight requests that hit 401 on an invalidated old token do not mark the
-// newly installed token as unauthorized or unavailable.
+
+
+
 func TestManager_Issue6416_Late401ResultBeforeCredentialUpdate_DoesNotInvalidateNewCredential(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -459,9 +459,9 @@ func TestManager_Issue6416_Late401ResultBeforeCredentialUpdate_DoesNotInvalidate
 	}
 }
 
-// TestManager_Issue6416_APIKeyRotation_LateResultDoesNotCooldownNewAPIKey tests
-// that rotating an API key (without refresh token) properly increments CredentialVersion
-// and isolates the new API key from in-flight failures of the old API key.
+
+
+
 func TestManager_Issue6416_APIKeyRotation_LateResultDoesNotCooldownNewAPIKey(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -539,9 +539,9 @@ func TestManager_Issue6416_APIKeyRotation_LateResultDoesNotCooldownNewAPIKey(t *
 	}
 }
 
-// TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored verifies that
-// MarkResult directly ignores availability and cooldown effects when CredentialVersion
-// is older than the current registered auth, even if result version is 0 when auth version > 1.
+
+
+
 func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -568,7 +568,7 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("registered CredentialVersion = %d, want 1", registered.CredentialVersion)
 	}
 
-	// Update credentials to version 2.
+
 	updatedAuth := registered.Clone()
 	updatedAuth.Metadata = map[string]any{"access_token": "token-v2"}
 	updated, errUpdate := m.Update(context.Background(), updatedAuth)
@@ -579,7 +579,7 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("updated CredentialVersion = %d, want 2", updated.CredentialVersion)
 	}
 
-	// Stale MarkResult with CredentialVersion = 1 and 429 error.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -597,7 +597,7 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("afterStale model state must not be in quota cooldown after stale MarkResult (v1)")
 	}
 
-	// Stale MarkResult with CredentialVersion = 0 (unversioned in-flight snapshot) and 429 error.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -615,7 +615,7 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 		t.Fatalf("afterStaleZero model state must not be in quota cooldown after stale MarkResult (v0)")
 	}
 
-	// Current MarkResult with CredentialVersion = 2 and 429 error must apply cooldown.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -632,8 +632,8 @@ func TestManager_Issue6416_DirectMarkResult_StaleCredentialVersionIgnored(t *tes
 	}
 }
 
-// TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored verifies that
-// MarkResult directly ignores results from a previous registration epoch.
+
+
 func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -658,7 +658,7 @@ func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *tes
 	}
 	epoch1 := registered.RegistrationEpoch
 
-	// Remove and re-register to advance RegistrationEpoch.
+
 	m.Remove(context.Background(), authID)
 	reRegistered, errReReg := m.Register(context.Background(), initialAuth.Clone())
 	if errReReg != nil {
@@ -669,7 +669,7 @@ func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *tes
 		t.Fatalf("expected epoch2 (%d) > epoch1 (%d)", epoch2, epoch1)
 	}
 
-	// Stale MarkResult with epoch1 and 429 error must be ignored.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -688,9 +688,9 @@ func TestManager_Issue6416_DirectMarkResult_StaleRegistrationEpochIgnored(t *tes
 	}
 }
 
-// TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffinity verifies
-// that late failures from an older credential version do not unseat or tear down
-// session affinity bindings on the updated credential.
+
+
+
 func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffinity(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -724,7 +724,7 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		},
 	}
 
-	// First execution succeeds and establishes affinity binding.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -734,13 +734,13 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		Options:           opts,
 	})
 
-	// Pick with session ID must select authID.
+
 	picked, errPick := selector.Pick(context.Background(), "codex", model, opts, []*Auth{registered})
 	if errPick != nil || picked == nil || picked.ID != authID {
 		t.Fatalf("expected selector to pick %s via affinity, got %v (err=%v)", authID, picked, errPick)
 	}
 
-	// Update credentials to version 2.
+
 	updatedAuth := registered.Clone()
 	updatedAuth.Metadata = map[string]any{"access_token": "token-v2"}
 	updated, errUpdate := m.Update(context.Background(), updatedAuth)
@@ -748,7 +748,7 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		t.Fatalf("update: %v", errUpdate)
 	}
 
-	// Stale failure from version 1 arrives with 429 error.
+
 	m.MarkResult(context.Background(), Result{
 		AuthID:            authID,
 		Provider:          "codex",
@@ -759,16 +759,16 @@ func TestManager_Issue6416_LateResultBeforeCredentialUpdate_PreservesSessionAffi
 		Options:           opts,
 	})
 
-	// Session affinity must still be preserved for the new credential version.
+
 	pickedAfter, errPickAfter := selector.Pick(context.Background(), "codex", model, opts, []*Auth{updated})
 	if errPickAfter != nil || pickedAfter == nil || pickedAfter.ID != authID {
 		t.Fatalf("expected session affinity to remain preserved after stale MarkResult, got %v (err=%v)", pickedAfter, errPickAfter)
 	}
 }
 
-// TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown verifies
-// that updating non-secret fields (like Label or ProxyURL) does not advance CredentialVersion,
-// ensuring in-flight failures correctly cool down the credential.
+
+
+
 func TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown(t *testing.T) {
 	previous := quotaCooldownDisabled.Load()
 	quotaCooldownDisabled.Store(false)
@@ -822,7 +822,7 @@ func TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown(t 
 
 	<-execStarted
 
-	// Update non-secret metadata (Label only, token unchanged).
+
 	currentAuth, _ := m.GetByID(authID)
 	nonSecretAuth := currentAuth.Clone()
 	nonSecretAuth.Label = "updated-label"
@@ -837,7 +837,7 @@ func TestManager_Issue6416_NonSecretUpdate_PreservesVersionAndAppliesCooldown(t 
 	close(allowExecToFail)
 	<-reqDone
 
-	// Because secret was not replaced, 429 should cool down the credential.
+
 	finalAuth, _ := m.GetByID(authID)
 	ms := finalAuth.ModelStates[model]
 	if ms == nil || !ms.Quota.Exceeded {

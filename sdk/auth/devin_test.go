@@ -202,7 +202,7 @@ func TestDevinAuthenticatorHeadlessManualCallbackURLLogin(t *testing.T) {
 	cfg := &config.Config{}
 
 	mockPrompt := func(prompt string) (string, error) {
-		// User accidentally pastes the full callback URL from browser address bar
+
 		return "http://127.0.0.1:12345/callback?code=parsed-callback-code", nil
 	}
 

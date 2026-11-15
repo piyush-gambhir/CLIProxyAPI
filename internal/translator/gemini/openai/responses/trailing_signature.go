@@ -11,8 +11,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// Keep text signature carriers off the client-visible reasoning timeline. The
-// existing replay cache bounds their lifetime and size and supports Home storage.
+
+
 func cacheGeminiResponsesTextSignatures(modelName, messageID, text string, signatures []string) bool {
 	if messageID == "" || text == "" {
 		return false
@@ -48,9 +48,9 @@ func restoreGeminiResponsesTextSignatures(modelName string, items []ojson.Result
 		if !found {
 			continue
 		}
-		// Replay the cached prefix in its original order, then retain uncached
-		// explicit carriers. Skipping cached entries instead would reorder A,B
-		// into B,A when the client also supplied an explicit carrier for A.
+
+
+
 		replayed := make(map[string]bool)
 		textHash := fmt.Sprintf("%x", sha256.Sum256([]byte(text)))
 		for _, raw := range cached {

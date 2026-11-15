@@ -80,7 +80,7 @@ func TestSanitizeFunctionName(t *testing.T) {
 			if got != tt.expected {
 				t.Errorf("SanitizeFunctionName(%q) = %v, want %v", tt.input, got, tt.expected)
 			}
-			// Verify Gemini compliance
+
 			if len(got) > 64 {
 				t.Errorf("SanitizeFunctionName(%q) result too long: %d", tt.input, len(got))
 			}

@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-// GenerateRandomState generates a cryptographically secure random state parameter
-// for OAuth2 flows to prevent CSRF attacks.
-//
-// Returns:
-//   - string: A hexadecimal encoded random state string
-//   - error: An error if the random generation fails, nil otherwise
+
+
+
+
+
+
 func GenerateRandomState() (string, error) {
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
@@ -22,7 +22,7 @@ func GenerateRandomState() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// OAuthCallback captures the parsed OAuth callback parameters.
+
 type OAuthCallback struct {
 	Code             string
 	State            string
@@ -31,9 +31,9 @@ type OAuthCallback struct {
 	ErrorDescription string
 }
 
-// AsyncPrompt runs a prompt function in a goroutine and returns channels for
-// the result. The returned channels are buffered (size 1) so the goroutine can
-// complete even if the caller abandons the channels.
+
+
+
 func AsyncPrompt(promptFn func(string) (string, error), message string) (<-chan string, <-chan error) {
 	inputCh := make(chan string, 1)
 	errCh := make(chan error, 1)
@@ -48,8 +48,8 @@ func AsyncPrompt(promptFn func(string) (string, error), message string) (<-chan 
 	return inputCh, errCh
 }
 
-// ParseOAuthCallback extracts OAuth parameters from a callback URL.
-// It returns nil when the input is empty.
+
+
 func ParseOAuthCallback(input string) (*OAuthCallback, error) {
 	trimmed := strings.TrimSpace(input)
 	if trimmed == "" {

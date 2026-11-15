@@ -27,7 +27,7 @@ func TestCodexDuplexInitialFailure(t *testing.T) {
 	}{
 		{"response_failed_auth", `{"type":"response.failed","response":{"error":{"type":"authentication_error","message":"expired credential"}}}`, 401, false, false},
 		{"response_failed_quota", `{"type":"response.failed","response":{"error":{"type":"usage_limit_reached","message":"quota exhausted","resets_in_seconds":3600}}}`, 429, true, false},
-		// The top-level status is authoritative even when the error type is generic.
+
 		{"error_auth", `{"type":"error","status":401,"headers":{"X-Request-Id":"initial-rejection"},"error":{"type":"server_error","message":"expired credential"}}`, 401, false, true},
 		{"error_quota", `{"type":"error","status_code":429,"headers":{"X-Request-Id":"initial-rejection"},"error":{"type":"usage_limit_reached","message":"quota exhausted","resets_in_seconds":3600}}`, 429, true, true},
 	} {
@@ -41,7 +41,7 @@ func TestCodexDuplexInitialFailure(t *testing.T) {
 						return
 					}
 					defer func() { _ = c.Close() }()
-					// Bound a broken test without making server closure drive client recovery.
+
 					_ = c.SetReadDeadline(time.Now().Add(10 * time.Second))
 					if _, _, err = c.ReadMessage(); err != nil {
 						t.Error(err)
@@ -63,7 +63,7 @@ func TestCodexDuplexInitialFailure(t *testing.T) {
 							return
 						}
 					}
-					// Keep the rejected socket open: the executor must terminate it itself.
+
 					_, _, _ = c.ReadMessage()
 				}))
 				defer upstream.Close()

@@ -14,11 +14,11 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// MaxRequestBodyBytesContextKey stores the configured request body size limit (in bytes) on the Gin context.
+
 const MaxRequestBodyBytesContextKey = "maxRequestBodyBytes"
 
-// ReadRequestBody reads the incoming request body and decodes supported
-// Content-Encoding values before handlers inspect JSON fields.
+
+
 func ReadRequestBody(c *gin.Context) ([]byte, error) {
 	maxBytes := int64(0)
 	if c != nil {

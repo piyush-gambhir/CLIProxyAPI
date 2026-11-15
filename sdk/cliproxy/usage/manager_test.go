@@ -76,8 +76,8 @@ func TestGenerateFromContextHonorsExplicitFalse(t *testing.T) {
 }
 
 func TestRecordOmittedGenerateIsEnabled(t *testing.T) {
-	// Existing callers construct Record without setting Generate.
-	// Omission must remain distinguishable from explicit false and default to true.
+
+
 	record := Record{
 		Provider: "openai",
 		Model:    "gpt-5.4",

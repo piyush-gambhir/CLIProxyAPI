@@ -35,7 +35,7 @@ type issue6258RedirectTransport struct {
 }
 
 func (transport issue6258RedirectTransport) RoundTrip(request *http.Request) (*http.Response, error) {
-	// Exercise real HTTP body truncation, while keeping the fixed Vertex host local.
+
 	local := request.Clone(request.Context())
 	local.URL.Scheme = transport.target.Scheme
 	local.URL.Host = transport.target.Host
@@ -263,7 +263,7 @@ func TestIssue6258ExecutorCleanEOFControl(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/apply_patch=%t", provider, patch), func(t *testing.T) {
 				body, payload := issue6258ExecutorContent, `{"input":"hello","stream":true}`
 				if patch {
-					// A valid source STOP must not become an invalid patch when Responses finalization is deferred.
+
 					body, payload = executorPatchResponse, executorPatchRequest
 				}
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {

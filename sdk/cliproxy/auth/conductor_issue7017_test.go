@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// Issue 7017: a Codex turn_rate_limit_exceeded 429 ("Codex is at capacity")
-// is a transient capacity rejection, not quota exhaustion. MarkResult must
-// cool only the reporting model until the upstream Retry-After, never label
-// it quota, and never advance the quota exponential backoff ladder.
+
+
+
+
 
 type issue7017TransientError struct{ msg string }
 
@@ -101,7 +101,7 @@ func TestIssue7017MarkResultTurnRateLimitCoolsModelWithoutQuota(t *testing.T) {
 		t.Fatalf("sibling model must stay available, got %+v", sibling)
 	}
 
-	// The cooldown projection must not present this as quota either.
+
 	views := CooldownSnapshotForAuth(got, time.Now())
 	if len(views) == 0 {
 		t.Fatal("expected a cooldown view for the reporting model")

@@ -11,7 +11,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// keysTabModel displays and manages API keys.
+
 type keysTabModel struct {
 	client       *Client
 	viewport     viewport.Model
@@ -28,10 +28,10 @@ type keysTabModel struct {
 	height       int
 	ready        bool
 	cursor       int
-	confirm      int // -1 = no deletion pending
+	confirm      int
 	status       string
 
-	// Editing / Adding
+
 	editing   bool
 	adding    bool
 	editIdx   int
@@ -124,7 +124,7 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 		return m, m.fetchKeys
 
 	case tea.KeyMsg:
-		// ---- Editing / Adding mode ----
+
 		if m.editing || m.adding {
 			switch msg.String() {
 			case "enter":
@@ -171,7 +171,7 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			}
 		}
 
-		// ---- Delete confirmation ----
+
 		if m.confirm >= 0 {
 			switch msg.String() {
 			case "y", "Y":
@@ -192,7 +192,7 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			return m, nil
 		}
 
-		// ---- Normal mode ----
+
 		switch msg.String() {
 		case "j", "down":
 			if len(m.keys) > 0 {
@@ -207,7 +207,7 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			}
 			return m, nil
 		case "a":
-			// Add new key
+
 			m.adding = true
 			m.editing = false
 			m.editInput.SetValue("")
@@ -216,7 +216,7 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			m.viewport.SetContent(m.renderContent())
 			return m, textinput.Blink
 		case "e":
-			// Edit selected key
+
 			if m.cursor < len(m.keys) {
 				m.editing = true
 				m.adding = false
@@ -229,14 +229,14 @@ func (m keysTabModel) Update(msg tea.Msg) (keysTabModel, tea.Cmd) {
 			}
 			return m, nil
 		case "d":
-			// Delete selected key
+
 			if m.cursor < len(m.keys) {
 				m.confirm = m.cursor
 				m.viewport.SetContent(m.renderContent())
 			}
 			return m, nil
 		case "c":
-			// Copy selected key to clipboard
+
 			if m.cursor < len(m.keys) {
 				key := m.keys[m.cursor]
 				if err := clipboard.WriteAll(key); err != nil {
@@ -299,7 +299,7 @@ func (m keysTabModel) renderContent() string {
 		return sb.String()
 	}
 
-	// ━━━ Access API Keys (interactive) ━━━
+
 	sb.WriteString(tableHeaderStyle.Render(fmt.Sprintf("  %s (%d)", T("access_keys"), len(m.keys))))
 	sb.WriteString("\n")
 
@@ -320,13 +320,13 @@ func (m keysTabModel) renderContent() string {
 		sb.WriteString(rowStyle.Render(row))
 		sb.WriteString("\n")
 
-		// Delete confirmation
+
 		if m.confirm == i {
 			sb.WriteString(warningStyle.Render(fmt.Sprintf("    "+T("confirm_delete_key"), maskKey(key))))
 			sb.WriteString("\n")
 		}
 
-		// Edit input
+
 		if m.editing && m.editIdx == i {
 			sb.WriteString(m.editInput.View())
 			sb.WriteString("\n")
@@ -335,7 +335,7 @@ func (m keysTabModel) renderContent() string {
 		}
 	}
 
-	// Add input
+
 	if m.adding {
 		sb.WriteString("\n")
 		sb.WriteString(m.editInput.View())
@@ -346,7 +346,7 @@ func (m keysTabModel) renderContent() string {
 
 	sb.WriteString("\n")
 
-	// ━━━ Provider Keys (read-only display) ━━━
+
 	renderProviderKeys(&sb, "Gemini API Keys", m.gemini)
 	renderProviderKeys(&sb, "Interactions API Keys", m.interactions)
 	renderProviderKeys(&sb, "Claude API Keys", m.claude)

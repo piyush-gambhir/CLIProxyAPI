@@ -34,7 +34,7 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 		setCodexRequiredBoolDoc(rawJSON, ensureDoc, "parallel_tool_calls", true)
 	}
 	setCodexRequiredIncludeDoc(rawJSON, ensureDoc)
-	// Preserve max_output_tokens and fill it from legacy token limits when unset.
+
 	if maxOutputTokens := ojson.GetBytesNoCopy(rawJSON, "max_output_tokens"); !maxOutputTokens.Exists() || maxOutputTokens.Type == ojson.Null {
 		for _, path := range []string{"max_completion_tokens", "max_tokens"} {
 			if v := ojson.GetBytesNoCopy(rawJSON, path); v.Type == ojson.Number {
@@ -67,10 +67,10 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 	inputResult = stripCodexResponsesCacheBreakpointsDoc(rawJSON, inputResult, ensureDoc)
 	applyResponsesCompactionCompatibilityDoc(rawJSON, ensureDoc)
 
-	// Delete the user field as it is not supported by the Codex upstream.
+
 	deleteCodexRequestFieldsDoc(rawJSON, ensureDoc, "user")
 
-	// Convert role "system" to "developer" in input array to comply with Codex API requirements.
+
 	inputResult = convertSystemRoleToDeveloperDoc(inputResult, ensureDoc)
 	normalizeCodexBuiltinToolsDoc(rawJSON, ensureDoc)
 	normalizeEmptyFunctionCallArgumentsDoc(inputResult, ensureDoc)
@@ -82,13 +82,13 @@ func ConvertOpenAIResponsesRequestToCodex(modelName string, inputRawJSON []byte,
 	return rawJSON, nil
 }
 
-// normalizeEmptyFunctionCallArgumentsDoc rewrites blank string arguments on
-// history function_call items to "{}". Some Responses clients serialize
-// parameter-less tool calls as an empty string, which strict Codex Responses
-// upstreams reject with "`arguments` must be valid JSON". Only blank strings
-// are touched: non-empty strings (even invalid JSON) pass through unchanged
-// so other errors keep their original shape, and custom_tool_call items use
-// the separate input field and are never affected.
+
+
+
+
+
+
+
 func normalizeEmptyFunctionCallArgumentsDoc(inputResult ojson.Result, ensureDoc func() *ojson.Doc) {
 	if !inputResult.IsArray() {
 		return
@@ -162,13 +162,13 @@ func deleteCodexRequestFieldsDoc(rawJSON []byte, ensureDoc func() *ojson.Doc, pa
 	}
 }
 
-// stripCodexResponsesCacheBreakpointsDoc removes any "prompt_cache_breakpoint" hint
-// attached to input items: inside content-part arrays (message input[].content[]
-// and function_call_output input[].output[]) or as an item-level field. Some
-// clients (e.g. GitHub Copilot CLI) attach this field per content item when
-// targeting the OpenAI Responses format. Codex Responses rejects it outright:
-// {"error":{"message":"prompt_cache_breakpoint is not supported on this model", ...}}.
-// The top-level prompt_cache_options strip above does not cover these nested cases.
+
+
+
+
+
+
+
 func stripCodexResponsesCacheBreakpointsDoc(rawJSON []byte, input ojson.Result, ensureDoc func() *ojson.Doc) ojson.Result {
 	if !bytes.Contains(rawJSON, []byte(`"prompt_cache_breakpoint"`)) {
 		return input
@@ -225,8 +225,8 @@ func stripCodexResponsesCacheBreakpointsDoc(rawJSON []byte, input ojson.Result, 
 	return util.ParseGJSONBytesNoCopy(joined)
 }
 
-// stripPromptCacheBreakpointFromContent removes "prompt_cache_breakpoint" from each
-// content part that carries it and reports whether anything changed.
+
+
 func stripPromptCacheBreakpointFromContent(content ojson.Result) ([]byte, bool) {
 	parts := content.Array()
 	hasBreakpoint := false
@@ -258,14 +258,14 @@ func stripPromptCacheBreakpointFromContent(content ojson.Result) ([]byte, bool) 
 	return translatorcommon.JoinRawArray(rebuiltParts), true
 }
 
-// applyResponsesCompactionCompatibility handles OpenAI Responses context_management.compaction
-// for Codex upstream compatibility.
-//
-// Codex /responses currently rejects context_management with:
-// {"detail":"Unsupported parameter: context_management"}.
-//
-// Compatibility strategy:
-// 1) Remove context_management before forwarding to Codex upstream.
+
+
+
+
+
+
+
+
 func applyResponsesCompactionCompatibilityDoc(rawJSON []byte, ensureDoc func() *ojson.Doc) {
 	if !ojson.GetBytesNoCopy(rawJSON, "context_management").Exists() {
 		return
@@ -273,9 +273,9 @@ func applyResponsesCompactionCompatibilityDoc(rawJSON []byte, ensureDoc func() *
 	_ = ensureDoc().Delete("context_management")
 }
 
-// convertSystemRoleToDeveloper traverses the input array and converts any message items
-// with role "system" to role "developer". This is necessary because Codex API does not
-// accept "system" role in the input array.
+
+
+
 func convertSystemRoleToDeveloper(rawJSON []byte) []byte {
 	return convertSystemRoleToDeveloperWithInput(rawJSON, util.GetGJSONBytesNoCopy(rawJSON, "input"))
 }
@@ -377,8 +377,8 @@ func convertSystemRoleToDeveloperWithInput(rawJSON []byte, inputResult ojson.Res
 	return updated
 }
 
-// normalizeCodexBuiltinToolsDoc rewrites legacy/preview built-in tool variants to the
-// stable names expected by the current Codex upstream.
+
+
 func normalizeCodexBuiltinToolsDoc(rawJSON []byte, ensureDoc func() *ojson.Doc) {
 	normalizeCodexBuiltinToolArrayDoc(rawJSON, ensureDoc, "tools")
 	normalizeCodexBuiltinToolAtPathDoc(rawJSON, ensureDoc, "tool_choice.type")
@@ -429,9 +429,9 @@ func normalizeCodexBuiltinToolAtPathDoc(rawJSON []byte, ensureDoc func() *ojson.
 	log.Debugf("codex responses: normalized builtin tool type at %s from %q to %q", path, currentType, normalizedType)
 }
 
-// normalizeCodexBuiltinToolType centralizes the current known Codex Responses
-// built-in tool alias compatibility. If Codex introduces more legacy aliases,
-// extend this helper instead of adding path-specific rewrite logic elsewhere.
+
+
+
 func normalizeCodexBuiltinToolType(toolType string) string {
 	switch toolType {
 	case "web_search_preview", "web_search_preview_2025_03_11":

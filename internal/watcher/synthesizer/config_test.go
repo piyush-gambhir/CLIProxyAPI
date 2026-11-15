@@ -301,8 +301,8 @@ func TestConfigSynthesizer_ClaudeKeys_SkipsEmptyAndHeaders(t *testing.T) {
 	ctx := &SynthesisContext{
 		Config: &config.Config{
 			ClaudeKey: []config.ClaudeKey{
-				{APIKey: ""},    // empty, should be skipped
-				{APIKey: "   "}, // whitespace, should be skipped
+				{APIKey: ""},
+				{APIKey: "   "},
 				{APIKey: "valid-key", Headers: map[string]string{"X-Custom": "value"}},
 			},
 		},
@@ -611,8 +611,8 @@ func TestConfigSynthesizer_CodexKeys_SkipsEmptyAndHeaders(t *testing.T) {
 	ctx := &SynthesisContext{
 		Config: &config.Config{
 			CodexKey: []config.CodexKey{
-				{APIKey: ""},   // empty key without base URL, should be skipped
-				{APIKey: "  "}, // whitespace key without base URL, should be skipped
+				{APIKey: ""},
+				{APIKey: "  "},
 				{APIKey: "valid-key", Headers: map[string]string{"Authorization": "Bearer xyz"}},
 			},
 		},
@@ -842,8 +842,8 @@ func TestConfigSynthesizer_VertexCompat_SkipsEmptyAndHeaders(t *testing.T) {
 	ctx := &SynthesisContext{
 		Config: &config.Config{
 			VertexCompatAPIKey: []config.VertexCompatKey{
-				{APIKey: "", BaseURL: "https://vertex.api"},   // empty key creates auth without api_key attr
-				{APIKey: "  ", BaseURL: "https://vertex.api"}, // whitespace key creates auth without api_key attr
+				{APIKey: "", BaseURL: "https://vertex.api"},
+				{APIKey: "  ", BaseURL: "https://vertex.api"},
 				{APIKey: "valid-key", BaseURL: "https://vertex.api", Headers: map[string]string{"X-Vertex": "test"}},
 			},
 		},
@@ -855,18 +855,18 @@ func TestConfigSynthesizer_VertexCompat_SkipsEmptyAndHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// Vertex compat doesn't skip empty keys - it creates auths without api_key attribute
+
 	if len(auths) != 3 {
 		t.Fatalf("expected 3 auths, got %d", len(auths))
 	}
-	// First two should not have api_key attribute
+
 	if _, ok := auths[0].Attributes["api_key"]; ok {
 		t.Error("expected first auth to not have api_key attribute")
 	}
 	if _, ok := auths[1].Attributes["api_key"]; ok {
 		t.Error("expected second auth to not have api_key attribute")
 	}
-	// Third should have headers
+
 	if auths[2].Attributes["header:X-Vertex"] != "test" {
 		t.Errorf("expected header:X-Vertex=test, got %s", auths[2].Attributes["header:X-Vertex"])
 	}
@@ -921,7 +921,7 @@ func TestConfigSynthesizer_OpenAICompat_FallbackWithModels(t *testing.T) {
 						{Name: "model-x"},
 					},
 					Headers: map[string]string{"X-API": "header-value"},
-					// No APIKeyEntries - should use fallback path
+
 				},
 			},
 		},
@@ -982,7 +982,7 @@ func TestConfigSynthesizer_IDStability(t *testing.T) {
 		},
 	}
 
-	// Generate IDs twice with fresh generators
+
 	synth1 := NewConfigSynthesizer()
 	ctx1 := &SynthesisContext{
 		Config:      cfg,
@@ -1341,9 +1341,9 @@ func TestConfigSynthesizer_RequestScopedErrors(t *testing.T) {
 	}
 }
 
-// TestConfigSynthesizer_ConnectionPoolOverride pins the per-credential pool opt-in:
-// the override declared on an API-key entry must reach the auth record so the
-// generic proxy client can pool just that credential.
+
+
+
 func TestConfigSynthesizer_ConnectionPoolOverride(t *testing.T) {
 	enabled := true
 	maxIdle := 4
@@ -1390,15 +1390,15 @@ func TestConfigSynthesizer_ConnectionPoolOverride(t *testing.T) {
 	if claudeAuth.ProxyConnectionPool != nil {
 		t.Fatal("entry without a connection-pool block must stay unpooled")
 	}
-	// The override must be copied, never aliased to live config values.
+
 	*pool.Enabled = false
 	if !enabled {
 		t.Fatal("auth override aliases the config pointer")
 	}
 }
 
-// TestConfigSynthesizer_OpenAICompatConnectionPoolMerge pins field-level inheritance
-// for OpenAI-compatible keys: a per-key block only replaces the fields it sets.
+
+
 func TestConfigSynthesizer_OpenAICompatConnectionPoolMerge(t *testing.T) {
 	groupEnabled := true
 	groupMax := 2
@@ -1448,9 +1448,9 @@ func TestConfigSynthesizer_OpenAICompatConnectionPoolMerge(t *testing.T) {
 	}
 }
 
-// TestConfigSynthesizer_EmptyConnectionPoolBlockOptsIn pins that writing the block
-// without fields requests the pool defaults. Dropping it during synthesis disabled
-// pooling for `connection-pool: {}` and for keys inheriting an empty group block.
+
+
+
 func TestConfigSynthesizer_EmptyConnectionPoolBlockOptsIn(t *testing.T) {
 	cfg := &config.Config{CodexKey: []config.CodexKey{{
 		APIKey:         "empty-block",
@@ -1476,8 +1476,8 @@ func TestConfigSynthesizer_EmptyConnectionPoolBlockOptsIn(t *testing.T) {
 		t.Fatalf("empty block must leave enabled unset (defaults to on), got %v", *enabled)
 	}
 
-	// An OpenAI-compatible provider with no API keys still synthesizes one auth
-	// record (e.g. a local Ollama/vLLM daemon) and must inherit the group pool block.
+
+
 	keyless := &config.Config{OpenAICompatibility: []config.OpenAICompatibility{{
 		Name:           "local-ollama",
 		BaseURL:        "http://127.0.0.1:11434/v1",

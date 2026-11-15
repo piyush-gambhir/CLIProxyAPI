@@ -23,8 +23,8 @@ data: {"type":"response.completed","response":{"id":"resp_1","model":"gpt-5.6-lu
 
 data: [DONE]`
 
-// TestObserveCodexTokenEventRecordsResponseModel guards the wiring between the codex
-// stream loops and the usage reporter: every transport funnels through observeCodexTokenEvent.
+
+
 func TestObserveCodexTokenEventRecordsResponseModel(t *testing.T) {
 	reporter := helps.NewExecutorUsageReporter(context.Background(), NewCodexExecutor(&config.Config{}), "gpt-6-astra", nil)
 
@@ -71,8 +71,8 @@ func (c *codexResponseModelUsageCapture) await(t *testing.T) coreusage.Record {
 	}
 }
 
-// TestCodexUsageRecordsCarryResponseModelPerModel checks that the attempt record reports
-// the served model while the image generation tool record must not claim it.
+
+
 func TestCodexUsageRecordsCarryResponseModelPerModel(t *testing.T) {
 	const alias = "codex-response-model-wiring-test"
 	capture := &codexResponseModelUsageCapture{alias: alias, records: make(chan coreusage.Record, 4)}

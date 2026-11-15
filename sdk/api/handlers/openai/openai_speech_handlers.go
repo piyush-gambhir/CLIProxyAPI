@@ -25,8 +25,8 @@ const (
 	defaultXAISpeechSampleRate = 24000
 )
 
-// openAISpeechVoices maps OpenAI TTS voice names onto Grok voices.
-// Unknown names pass through so Grok voice ids keep working.
+
+
 var openAISpeechVoices = map[string]string{
 	"alloy":   "ara",
 	"ash":     "orion",
@@ -73,7 +73,7 @@ func (h *OpenAIAPIHandler) handleXAISpeech(c *gin.Context) {
 	}
 
 	cliCtx, cliCancel := h.GetContextWithCancel(h, c, context.Background())
-	// Keep-alive newlines would be prefixed onto the audio body.
+
 	resp, upstreamHeaders, errMsg := h.ExecuteWithAuthManager(cliCtx, xaiSpeechHandlerType, model, payload, "")
 	if errMsg != nil {
 		h.WriteErrorResponse(c, errMsg)

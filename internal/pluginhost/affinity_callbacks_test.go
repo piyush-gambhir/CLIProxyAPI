@@ -109,7 +109,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			t.Fatalf("callFromPlugin error = %v", errCall)
 		}
 
-		// Verify no secret, email, credential ID, or physical file path leaked in raw json
+
 		rawStr := string(rawResp)
 		for _, sensitive := range []string{"secret-api-key-a", "owner-a@example.com", "claude-owner-a@example.com.json", "/etc/secrets"} {
 			if strings.Contains(rawStr, sensitive) {
@@ -155,7 +155,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 	})
 
 	t.Run("long session ID normalization (> 256 bytes)", func(t *testing.T) {
-		longSessionID := strings.Repeat("s", 252) // prefix "claude:" + 252 chars = 259 chars > 256
+		longSessionID := strings.Repeat("s", 252)
 		opts := cliproxyexecutor.Options{
 			Headers:  map[string][]string{"X-Claude-Code-Session-Id": {longSessionID}},
 			Metadata: make(map[string]any),
@@ -194,7 +194,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			t.Fatalf("initial pick = %s, want %s", picked.ID, authA.ID)
 		}
 
-		// Rebind to authB
+
 		picked2, _ := selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*coreauth.Auth{authB})
 		if picked2.ID != authB.ID {
 			t.Fatalf("second pick = %s, want %s", picked2.ID, authB.ID)
@@ -213,7 +213,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 	})
 
 	t.Run("unknown subagent does not guess parent binding", func(t *testing.T) {
-		// Parent is bound to authA
+
 		parentSession := "parent-main-thread-100"
 		opts := cliproxyexecutor.Options{
 			Headers:  map[string][]string{"Session-Id": {parentSession}},
@@ -221,7 +221,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 		}
 		selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*coreauth.Auth{authA})
 
-		// Query unknown child subagent
+
 		reqPayload, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 			Provider:  "anthropic",
 			Model:     "claude-3-7-sonnet",
@@ -235,7 +235,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 	})
 
 	t.Run("ambiguous unqualified session resolves to ambiguous across namespaces", func(t *testing.T) {
-		// Bind "ambig-sess" under claude to authA, and under codex to authB
+
 		optsClaude := cliproxyexecutor.Options{
 			Headers:  map[string][]string{"X-Claude-Code-Session-Id": {"ambig-sess"}},
 			Metadata: make(map[string]any),
@@ -248,7 +248,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 		}
 		selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", optsCodex, []*coreauth.Auth{authB})
 
-		// Query bare "ambig-sess" without namespace
+
 		reqPayload, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 			Provider:  "anthropic",
 			Model:     "claude-3-7-sonnet",
@@ -260,7 +260,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			t.Fatalf("ambiguous session status = %q, want %q", resp.Status, pluginapi.HostAffinityStatusAmbiguous)
 		}
 
-		// Qualified queries resolve unambiguously
+
 		reqClaude, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 			Provider:  "anthropic",
 			Model:     "claude-3-7-sonnet",
@@ -331,7 +331,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 					t.Fatalf("pick failed: auth=%v err=%v", picked, errPick)
 				}
 
-				// Query via bare ID
+
 				reqBare, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 					Provider:  "anthropic",
 					Model:     "claude-3-7-sonnet",
@@ -346,7 +346,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 					t.Fatalf("bare lookup %q: got status=%q index=%q, want bound index=%q", tc.bareID, respBare.Status, respBare.AuthIndex, tc.auth.Index)
 				}
 
-				// Query via qualified ID
+
 				reqQual, _ := json.Marshal(pluginapi.HostAffinityLookupRequest{
 					Provider:  "anthropic",
 					Model:     "claude-3-7-sonnet",
@@ -360,7 +360,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 			})
 		}
 
-		// Conflict test: bind task:shared-clash to authA and claude:shared-clash to authB
+
 		optsClash1 := cliproxyexecutor.Options{
 			Headers:  map[string][]string{"X-Task-ID": {"shared-clash"}},
 			Metadata: make(map[string]any),
@@ -392,7 +392,7 @@ func TestHostAffinityLookupCallback_Contract(t *testing.T) {
 		}
 		selector.Pick(context.Background(), "anthropic", "claude-3-7-sonnet", opts, []*coreauth.Auth{authA})
 
-		// Disable authA in manager
+
 		authA.Disabled = true
 		manager.Update(context.Background(), authA)
 		defer func() {

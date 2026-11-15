@@ -61,7 +61,7 @@ func TestRefreshTokens_UsesIndependentTimeout(t *testing.T) {
 	}
 }
 
-// jsonResponse builds a canned control-plane response for the fake transport.
+
 func jsonResponse(req *http.Request, body string) *http.Response {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -184,7 +184,7 @@ func TestExchangeCodeForTokensUsesNative220ControlPlaneShape(t *testing.T) {
 		}
 	}
 
-	// Key order mirrors the captured native exchange body.
+
 	wantBody := `{"grant_type":"authorization_code","code":"auth-code","redirect_uri":"` + RedirectURI + `","client_id":"` + ClientID + `","code_verifier":"verifier","state":"` + state + `"}`
 	if got := string(tokenBody); got != wantBody {
 		t.Fatalf("exchange body = %q, want %q", got, wantBody)

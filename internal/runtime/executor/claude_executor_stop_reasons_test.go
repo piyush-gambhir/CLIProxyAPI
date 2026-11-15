@@ -17,11 +17,11 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// pause_turn end to end through the executor with the web search result cache:
-// the first response pauses after one finished and one unanswered search; the
-// client history keeps no results. The next upstream request must carry the
-// finished search with its cached results and end with the paused search sent
-// back without a result.
+
+
+
+
+
 func TestClaudeExecutorPauseTurnContinuationRestoresFinishedSearchAndKeepsPausedOne(t *testing.T) {
 	for _, stream := range []bool{false, true} {
 		t.Run(map[bool]string{false: "non-stream", true: "stream"}[stream], func(t *testing.T) {
@@ -91,7 +91,7 @@ func TestClaudeExecutorPauseTurnContinuationRestoresFinishedSearchAndKeepsPaused
 			if first.Get("end_turn").Raw != "false" {
 				t.Fatalf("first response end_turn = %q: %s", first.Get("end_turn").Raw, first.Raw)
 			}
-			// Codex history: output items without web_search_call results.
+
 			history := []string{`{"type":"message","role":"user","content":[{"type":"input_text","text":"research"}]}`}
 			for _, item := range first.Get("output").Array() {
 				raw := item.Raw

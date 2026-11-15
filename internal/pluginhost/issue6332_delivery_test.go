@@ -36,7 +36,7 @@ func (h *issue6332NestedLifecycle) CompleteRequest(_ context.Context, c pluginap
 	h.completed <- c
 }
 
-// Exercise the actual plugin RPC callbacks and stream bridge, not a fake model executor.
+
 func TestIssue6332PluginNestedDelivery(t *testing.T) {
 	for _, mode := range []string{"complete", "cancel_partial", "cancel_complete"} {
 		t.Run(mode, func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestIssue6332PluginNestedDelivery(t *testing.T) {
 				}
 				requests <- body
 				w.Header().Set("Content-Type", "text/event-stream")
-				// Cancellation of partial upstream output must not commit replay.
+
 				finish := `,"finishReason":"STOP"`
 				if mode == "cancel_partial" {
 					finish = ""
@@ -78,7 +78,7 @@ func TestIssue6332PluginNestedDelivery(t *testing.T) {
 			host := New()
 			host.SetModelExecutor(base)
 			outer, finishOuter := usage.WithStreamDelivery(context.Background())
-			// No outer completion is acknowledged until the nested tool loop finishes.
+
 			defer finishOuter(context.Canceled)
 			callbackID, closeCallback := host.openCallbackContextForPlugin(outer, "tool-loop-plugin")
 			defer closeCallback()

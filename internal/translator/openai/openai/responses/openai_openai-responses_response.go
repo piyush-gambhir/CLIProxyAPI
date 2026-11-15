@@ -22,9 +22,9 @@ type oaiToResponsesStateReasoning struct {
 type oaiToResponsesState struct {
 	translatorcommon.ApplyPatchErrorState
 	ApplyPatchCalls map[string]*translatorcommon.ApplyPatchCallState
-	// RequestEcho holds the request fields echoed into the completed
-	// response, extracted once at stream init so the request body itself
-	// is neither retained nor re-scanned at stream end.
+
+
+
 	RequestEcho        responsesRequestEcho
 	ToolIndex          *responsesToolIndex
 	RequestInitialized bool
@@ -36,8 +36,8 @@ type oaiToResponsesState struct {
 	CompletionPending  bool
 	ReasoningID        string
 	ReasoningIndex     int
-	// aggregation buffers for response.output
-	// Per-output message text buffers by index
+
+
 	MsgTextBuf            map[int]*strings.Builder
 	ReasoningBuf          strings.Builder
 	Reasonings            []oaiToResponsesStateReasoning
@@ -49,20 +49,20 @@ type oaiToResponsesState struct {
 	FuncArgsSent          map[string]int
 	MsgOutputIx           map[int]int
 	NextOutputIx          int
-	// message item state per output index
-	MsgItemAdded    map[int]bool // whether response.output_item.added emitted for message
-	MsgContentAdded map[int]bool // whether response.content_part.added emitted for message
-	MsgItemDone     map[int]bool // whether message done events were emitted
-	// function item state
+
+	MsgItemAdded    map[int]bool
+	MsgContentAdded map[int]bool
+	MsgItemDone     map[int]bool
+
 	FuncItemAdded  map[string]bool
 	FuncItemCustom map[string]bool
 	FuncArgsDone   map[string]bool
 	FuncItemDone   map[string]bool
-	// names of freeform ("custom") tools from the original request; calls to
-	// these are emitted as custom_tool_call items instead of function_call
+
+
 	CustomToolNames map[string]struct{}
 	FinishReason    string
-	// usage aggregation
+
 	PromptTokens     int64
 	CachedTokens     int64
 	CompletionTokens int64
@@ -71,7 +71,7 @@ type oaiToResponsesState struct {
 	UsageSeen        bool
 }
 
-// responseIDCounter provides a process-wide unique counter for synthesized response identifiers.
+
 var responseIDCounter uint64
 
 func emitRespEvent(event string, payload []byte) []byte {
@@ -89,11 +89,11 @@ func incompleteByFinishReason(reason string) ([]byte, bool) {
 	}
 }
 
-// responsesRequestEcho carries the typed values of the Responses request
-// fields echoed into response objects. Extraction walks the top level of
-// the request once; apply writes the fields in the same fixed order and
-// with the same typed conversions as the previous per-field lookups, so
-// the emitted JSON is unchanged.
+
+
+
+
+
 type responsesRequestEcho struct {
 	instructions          string
 	hasInstructions       bool
@@ -314,7 +314,7 @@ func buildResponsesCompletedEvent(st *oaiToResponsesState, nextSeq func() int) [
 	if len(incompleteDetails) > 0 {
 		_ = completedDoc.SetRawBytes("response.incomplete_details", incompleteDetails)
 	}
-	// Inject original request fields into response as per docs/response.completed.json
+
 	st.RequestEcho.applyDoc(completedDoc, "response.")
 
 	type completedOutputItem struct {
@@ -422,8 +422,8 @@ func buildResponsesCompletedEvent(st *oaiToResponsesState, nextSeq func() int) [
 	return emitRespEvent(eventType, completedDoc.Bytes())
 }
 
-// ConvertOpenAIChatCompletionsResponseToOpenAIResponses converts OpenAI Chat Completions streaming chunks
-// to OpenAI Responses SSE events (response.*).
+
+
 func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &oaiToResponsesState{
@@ -623,7 +623,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 	if !st.Started {
 		st.ResponseID = strings.Clone(root.Get("id").String())
 		st.Created = root.Get("created").Int()
-		// reset aggregation state for a new streaming response
+
 		st.MsgTextBuf = make(map[int]*strings.Builder)
 		st.ReasoningBuf.Reset()
 		st.ReasoningID = ""
@@ -654,7 +654,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 		st.UsageSeen = false
 		st.CompletedEmitted = false
 		st.CompletionPending = false
-		// response.created
+
 		createdDoc := ojson.NewDocString(`{"type":"response.created","sequence_number":0,"response":{"id":"","object":"response","created_at":0,"status":"in_progress","background":false,"error":null,"output":[]}}`)
 		_ = createdDoc.Set("sequence_number", nextSeq())
 		_ = createdDoc.Set("response.id", st.ResponseID)
@@ -680,7 +680,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 	}
 
 	stopReasoning := func(text string) {
-		// Emit reasoning done events
+
 		textDoneDoc := ojson.NewDocString(`{"type":"response.reasoning_summary_text.done","sequence_number":0,"item_id":"","output_index":0,"summary_index":0,"text":""}`)
 		_ = textDoneDoc.Set("sequence_number", nextSeq())
 		_ = textDoneDoc.Set("item_id", st.ReasoningID)
@@ -784,9 +784,9 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 			_, isIncomplete := incompleteByFinishReason(st.FinishReason)
 			isExplicitToolFinish := st.FinishReason == "tool_calls" || st.FinishReason == "stop"
 
-			// If stream ended without finish_reason:
-			// If no arguments or partial/invalid JSON arguments were received, do not synthesize empty arguments
-			// or complete the in-flight tool call item as successfully completed.
+
+
+
 			name := st.ToolIndex.canonicalName(st.FuncNames[key])
 			if name == "" {
 				name, _ = st.ToolIndex.singleCustomName()
@@ -925,19 +925,19 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 		return out
 	}
 
-	// choices[].delta content / tool_calls / reasoning_content
+
 	if choices := root.Get("choices"); choices.Exists() && choices.IsArray() {
 		choices.ForEach(func(_, choice ojson.Result) bool {
 			idx := int(choice.Get("index").Int())
 			delta := choice.Get("delta")
 			if delta.Exists() {
-				// reasoning_content (OpenAI reasoning incremental text)
+
 				rc := delta.Get("reasoning_content")
 				if !rc.Exists() || rc.String() == "" {
 					rc = delta.Get("reasoning")
 				}
 				if rc.Exists() && rc.String() != "" {
-					// On first appearance, add reasoning item and part
+
 					if st.ReasoningID == "" {
 						st.ReasoningID = fmt.Sprintf("rs_%s_%d", st.ResponseID, idx)
 						st.ReasoningIndex = allocOutputIndex()
@@ -952,7 +952,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 						_ = partDoc.Set("output_index", st.ReasoningIndex)
 						out = append(out, emitRespEvent("response.reasoning_summary_part.added", partDoc.Bytes()))
 					}
-					// Append incremental text to reasoning buffer
+
 					st.ReasoningBuf.WriteString(rc.String())
 					msgDoc := ojson.NewDocString(`{"type":"response.reasoning_summary_text.delta","sequence_number":0,"item_id":"","output_index":0,"summary_index":0,"delta":""}`)
 					_ = msgDoc.Set("sequence_number", nextSeq())
@@ -963,7 +963,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 				}
 
 				if c := delta.Get("content"); c.Exists() && c.String() != "" {
-					// Ensure the message item and its first content part are announced before any text deltas
+
 					if st.ReasoningID != "" {
 						stopReasoning(st.ReasoningBuf.String())
 						st.ReasoningBuf.Reset()
@@ -997,21 +997,21 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 					_ = msgDoc.Set("content_index", 0)
 					_ = msgDoc.Set("delta", c.String())
 					out = append(out, emitRespEvent("response.output_text.delta", msgDoc.Bytes()))
-					// aggregate for response.output
+
 					if st.MsgTextBuf[idx] == nil {
 						st.MsgTextBuf[idx] = &strings.Builder{}
 					}
 					st.MsgTextBuf[idx].WriteString(c.String())
 				}
 
-				// tool calls
+
 				if tcs := delta.Get("tool_calls"); tcs.Exists() && tcs.IsArray() && len(tcs.Array()) > 0 {
 					if st.ReasoningID != "" {
 						stopReasoning(st.ReasoningBuf.String())
 						st.ReasoningBuf.Reset()
 					}
-					// Before emitting any function events, if a message is open for this index,
-					// close its text/content to match Codex expected ordering.
+
+
 					emitMessageItemDone(idx)
 
 					tcs.ForEach(func(_, tc ojson.Result) bool {
@@ -1023,7 +1023,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 						}
 						newID, newName := tc.Get("id").String(), st.ToolIndex.canonicalName(tc.Get("function.name").String())
 						oldID, oldName := st.FuncCallIDs[key], st.ToolIndex.canonicalName(st.FuncNames[key])
-						// Retain conflicting nonempty IDs until the winning tool is known.
+
 						if newID != "" && oldID != "" && newID != oldID {
 							st.FuncIdentityConflicts[key] = true
 						}
@@ -1055,9 +1055,9 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 				return false
 			}
 
-			// finish_reason triggers item-level finalization. The terminal event is
-			// deferred until [DONE] or transport finalization so late usage-only chunks
-			// can still populate response.usage.
+
+
+
 			if fr := choice.Get("finish_reason"); fr.Exists() && fr.String() != "" {
 				st.FinishReason = strings.Clone(fr.String())
 				finalizeOpenItems()
@@ -1071,8 +1071,8 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponses(ctx context.Context, 
 	return out
 }
 
-// ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream builds a single Responses JSON
-// from a non-streaming OpenAI Chat Completions response.
+
+
 func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 	requestForNamespace := pickRequestJSON(originalRequestRawJSON, requestRawJSON)
@@ -1090,47 +1090,47 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		respStatus = "incomplete"
 	}
 
-	// Basic response scaffold
+
 	respDoc := ojson.NewDocString(`{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null,"incomplete_details":null}`)
 	_ = respDoc.Set("status", respStatus)
 	if isIncomplete {
 		_ = respDoc.SetRawBytes("incomplete_details", incompleteDetails)
 	}
 
-	// id: use provider id if present, otherwise synthesize
+
 	id := root.Get("id").String()
 	if id == "" {
 		id = fmt.Sprintf("resp_%x_%d", time.Now().UnixNano(), atomic.AddUint64(&responseIDCounter, 1))
 	}
 	_ = respDoc.Set("id", id)
 
-	// created_at: map from chat.completion created
+
 	created := root.Get("created").Int()
 	if created == 0 {
 		created = time.Now().Unix()
 	}
 	_ = respDoc.Set("created_at", created)
 
-	// Echo request fields when available (aligns with streaming path behavior)
+
 	echo := responsesRequestEcho{}
 	if len(requestRawJSON) > 0 {
 		echo = extractResponsesRequestEcho(util.ParseGJSONBytesNoCopy(requestRawJSON))
-		// Also support max_tokens from chat completion style
+
 		if !echo.hasMaxOutputTokens && echo.hasMaxTokens {
 			echo.maxOutputTokens, echo.hasMaxOutputTokens = echo.maxTokens, true
 		}
 	}
 	if !echo.hasModel {
-		// Fallback model from response
+
 		if v := root.Get("model"); v.Exists() {
 			echo.model, echo.hasModel = v.String(), true
 		}
 	}
 	echo.applyDoc(respDoc, "")
 
-	// Build output list from choices[...]
+
 	var outputItems [][]byte
-	// Detect and capture reasoning content if present (with fallback to reasoning)
+
 	rc := ojson.GetBytesNoCopy(rawJSON, "choices.0.message.reasoning_content")
 	if !rc.Exists() || rc.String() == "" {
 		rc = ojson.GetBytesNoCopy(rawJSON, "choices.0.message.reasoning")
@@ -1145,7 +1145,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		if strings.HasPrefix(rid, "resp_") {
 			rid = strings.TrimPrefix(rid, "resp_")
 		}
-		// Prefer summary_text from reasoning_content; encrypted_content is optional
+
 		reasoningItemDoc := ojson.NewDocString(`{"id":"","type":"reasoning","encrypted_content":"","summary":[]}`)
 		_ = reasoningItemDoc.Set("id", fmt.Sprintf("rs_%s", rid))
 		if rcText != "" {
@@ -1159,7 +1159,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		choices.ForEach(func(_, choice ojson.Result) bool {
 			msg := choice.Get("message")
 			if msg.Exists() {
-				// Text message part
+
 				if c := msg.Get("content"); c.Exists() && c.String() != "" {
 					itemStatus := "completed"
 					if isIncomplete {
@@ -1172,14 +1172,14 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 					outputItems = append(outputItems, itemDoc.Bytes())
 				}
 
-				// Function/tool calls
+
 				if tcs := msg.Get("tool_calls"); tcs.Exists() && tcs.IsArray() {
 					customToolNames := toolIndex.custom
 					tcs.ForEach(func(tcIndex, tc ojson.Result) bool {
 						callID := tc.Get("id").String()
 						if callID == "" {
-							// Providers may omit tool_call ids; synthesize one so the
-							// function_call item stays usable for Codex round-trips.
+
+
 							callID = fmt.Sprintf("call_%s_%d_%d", id, choice.Get("index").Int(), tcIndex.Int())
 						}
 						name := toolIndex.canonicalName(tc.Get("function.name").String())
@@ -1244,17 +1244,17 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 		_ = respDoc.SetRawBytes("output", translatorcommon.JoinRawArray(outputItems))
 	}
 
-	// usage mapping
+
 	if usage := root.Get("usage"); usage.Exists() {
-		// Map common tokens
+
 		if usage.Get("prompt_tokens").Exists() || usage.Get("completion_tokens").Exists() || usage.Get("total_tokens").Exists() {
 			_ = respDoc.Set("usage.input_tokens", usage.Get("prompt_tokens").Int())
 			if d := usage.Get("prompt_tokens_details.cached_tokens"); d.Exists() {
 				_ = respDoc.Set("usage.input_tokens_details.cached_tokens", d.Int())
 			}
 			_ = respDoc.Set("usage.output_tokens", usage.Get("completion_tokens").Int())
-			// Chat Completions upstreams report reasoning under completion_tokens_details;
-			// Responses-native upstreams report it under output_tokens_details. Accept both.
+
+
 			if d := usage.Get("output_tokens_details.reasoning_tokens"); d.Exists() {
 				_ = respDoc.Set("usage.output_tokens_details.reasoning_tokens", d.Int())
 			} else if d := usage.Get("completion_tokens_details.reasoning_tokens"); d.Exists() {
@@ -1262,7 +1262,7 @@ func ConvertOpenAIChatCompletionsResponseToOpenAIResponsesNonStream(_ context.Co
 			}
 			_ = respDoc.Set("usage.total_tokens", usage.Get("total_tokens").Int())
 		} else {
-			// Fallback to raw usage object if structure differs
+
 			_ = respDoc.Set("usage", usage.Value())
 		}
 	}
@@ -1287,12 +1287,12 @@ func (st *oaiToResponsesState) canFinalizeResponse() bool {
 	return st.ReasoningID == ""
 }
 
-// CanFinalizeResponseStream reports whether EOF can safely synthesize the source terminator.
+
 func (st *oaiToResponsesState) CanFinalizeResponseStream() bool {
 	return st.ToolInputError() == nil && !st.CompletedEmitted && st.CompletionPending
 }
 
-// FinalizeToolInput rejects a patch-enabled stream lacking its source terminator.
+
 func (st *oaiToResponsesState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.CompletedEmitted {
 		return nil

@@ -72,7 +72,7 @@ type pluginMenuInfo struct {
 	Description string `json:"description"`
 }
 
-// ListPlugins returns discovered, configured, and registered plugin entries.
+
 func (h *Handler) ListPlugins(c *gin.Context) {
 	if h == nil || h.cfg == nil {
 		c.JSON(http.StatusOK, pluginListResponse{
@@ -170,7 +170,7 @@ func (h *Handler) ListPlugins(c *gin.Context) {
 	})
 }
 
-// GetPluginConfig returns the preserved plugins.configs.<id> object as JSON.
+
 func (h *Handler) GetPluginConfig(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -224,7 +224,7 @@ func (h *Handler) GetPluginConfig(c *gin.Context) {
 	c.JSON(http.StatusNotFound, gin.H{"error": "plugin_not_found", "message": "plugin not found"})
 }
 
-// PatchPluginEnabled updates plugins.configs.<id>.enabled without touching plugins.enabled.
+
 func (h *Handler) PatchPluginEnabled(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -260,7 +260,7 @@ func (h *Handler) PatchPluginEnabled(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// PutPluginConfig replaces plugins.configs.<id> with the request object.
+
 func (h *Handler) PutPluginConfig(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -288,7 +288,7 @@ func (h *Handler) PutPluginConfig(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-// PatchPluginConfig shallow-merges plugins.configs.<id> with the request object.
+
 func (h *Handler) PatchPluginConfig(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {
@@ -330,7 +330,7 @@ func (h *Handler) PatchPluginConfig(c *gin.Context) {
 	h.persistLocked(c)
 }
 
-// DeletePlugin removes the selected local plugin file and its saved config.
+
 func (h *Handler) DeletePlugin(c *gin.Context) {
 	id, okID := pluginIDFromRequest(c)
 	if !okID {

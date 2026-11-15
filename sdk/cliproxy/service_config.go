@@ -56,8 +56,8 @@ type configCommit struct {
 	sequence uint64
 }
 
-// routingRuntimeState must stay comparable: applyManagerConfig compares two
-// values with != to decide whether to rebuild the selector.
+
+
 type routingRuntimeState struct {
 	strategy                 string
 	sessionAffinity          bool
@@ -97,8 +97,8 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 	if guard := cfg.Routing.ResetSoonest.FiveHourGuardPercent; guard != nil && *guard >= 0 && *guard <= 100 {
 		state.fiveHourGuardPercent = *guard
 	}
-	// The poller exists to feed reset-soonest routing, so it defaults on with
-	// that strategy and off otherwise. An explicit setting always wins.
+
+
 	state.quotaPollerEnabled = state.strategy == "reset-soonest"
 	if enabled := cfg.Routing.QuotaPoller.Enabled; enabled != nil {
 		state.quotaPollerEnabled = *enabled
@@ -129,8 +129,8 @@ func normalizedRoutingRuntimeState(cfg *config.Config) routingRuntimeState {
 	return state
 }
 
-// positiveDurationOr parses a duration string, falling back when it is empty,
-// unparsable or not positive.
+
+
 func positiveDurationOr(raw string, fallback time.Duration) time.Duration {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
@@ -183,9 +183,9 @@ func (s *Service) applyConfigUpdateWithAuthSynthesis(ctx context.Context, newCfg
 	return s.applyConfigRuntime(ctx, commit, synthesizeConfigAuths)
 }
 
-// commitConfigUpdate applies only in-memory configuration state. Runtime work that
-// may block on plugins, storage, or networking is deliberately deferred. Catalog
-// source generations change here so an older commit cannot restart stale readers.
+
+
+
 func (s *Service) commitConfigUpdate(newCfg *config.Config) configCommit {
 	if s == nil {
 		return configCommit{}
@@ -211,7 +211,7 @@ func (s *Service) commitConfigUpdate(newCfg *config.Config) configCommit {
 		log.WithError(errValidate).Warn("rejected invalid model catalog sources")
 		return configCommit{}
 	}
-	// Clone before assigning the generation: callers may still hold the input snapshot.
+
 	newCfg = newCfg.CloneForRuntime()
 	helps.AdvanceProxyPoolGeneration(s.proxyPoolPublisher, newCfg)
 	s.cfgMu.Lock()

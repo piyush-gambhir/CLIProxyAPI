@@ -44,7 +44,7 @@ func TestAuthDeleteFileRemovalClassification(t *testing.T) {
 		t.Fatal("expected multi-auth synthesis to mark plugin virtual auths")
 	}
 	initialRevision := w.pendingUpdates["a"].Revision()
-	// Removing one ID from an existing file is not a whole-file removal.
+
 	write(`{"type":"plugin","ids":["b","c"]}`)
 	assertDelete("a", false)
 	if w.pendingUpdates["a"].Revision() <= initialRevision {
@@ -62,8 +62,8 @@ func TestAuthDeleteFileRemovalClassification(t *testing.T) {
 	assertDelete("c", true)
 	removalRevision := w.pendingUpdates["b"].Revision()
 
-	// Re-create only B without a create event. Both snapshot APIs must read the
-	// source file rather than the cleared watcher state or queued tombstones.
+
+
 	if errWriteFile := os.WriteFile(path, []byte(`{"type":"plugin","ids":["b"]}`), 0o600); errWriteFile != nil {
 		t.Fatal(errWriteFile)
 	}
@@ -76,8 +76,8 @@ func TestAuthDeleteFileRemovalClassification(t *testing.T) {
 		t.Fatalf("expected only B in the single-file snapshot, got %+v, err=%v", fileSnapshot, errSnapshotAuthFile)
 	}
 
-	// Pending updates are keyed by ID: a newer add replaces the marked delete,
-	// and a later content delete must not inherit its file-removal mark.
+
+
 	write(`{"type":"plugin","ids":["a","b"]}`)
 	addition := w.pendingUpdates["b"]
 	if addition.Action != AuthUpdateActionAdd || addition.IsFileRemoval() || addition.Revision() <= removalRevision {

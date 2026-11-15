@@ -61,7 +61,7 @@ func TestInteractionsApplyPatchNamedLateIdentity(t *testing.T) {
 	}
 }
 
-// The first supplied call ID is not a change to an upstream-established ID.
+
 func TestInteractionsApplyPatchFirstLateIDAccepted(t *testing.T) {
 	var param any
 	patchSend(&param, patchStep("step.start", map[string]any{"type": "function_call", "id": "item_2", "name": "functions__apply_patch"}))
@@ -97,7 +97,7 @@ func TestInteractionsApplyPatchNamedLateIdentityEvidence(t *testing.T) {
 	}
 }
 
-// Skipped/invalid snapshots must retain conflicting unmatched aliases as well as indexes.
+
 func TestInteractionsApplyPatchUnresolvedAllKeys(t *testing.T) {
 	for _, partial := range []bool{false, true} {
 		for _, discover := range []string{"index", "step-index", "item", "call"} {

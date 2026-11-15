@@ -68,8 +68,8 @@ func xaiReasoningReplayScopeFromRequestDoc(ctx context.Context, from sdktranslat
 	if !xaiReasoningReplayEnabledForSource(from) {
 		return xaiReasoningReplayScope{}
 	}
-	// End-to-end WebSocket requests use upstream previous_response_id state.
-	// Replaying encrypted reasoning as input as well would duplicate the turn.
+
+
 	if cliproxyexecutor.DownstreamWebsocket(ctx) && strings.TrimSpace(ojson.GetBytesNoCopy(req.Payload, "previous_response_id").String()) != "" {
 		return xaiReasoningReplayScope{}
 	}
@@ -81,11 +81,11 @@ func xaiReasoningReplayScopeFromRequestDoc(ctx context.Context, from sdktranslat
 	}
 }
 
-// xaiReasoningReplayIsolateSessionKey namespaces client-controlled session keys
-// by the downstream CPA API key so two callers cannot share encrypted reasoning
-// or assistant text by reusing prompt_cache_key / window / session headers.
-// Trusted execution session keys keep their existing form. Client-controlled
-// sessions without a caller API key are disabled rather than shared globally.
+
+
+
+
+
 func xaiReasoningReplayIsolateSessionKey(ctx context.Context, sessionKey string) string {
 	sessionKey = strings.TrimSpace(sessionKey)
 	if sessionKey == "" {
@@ -314,15 +314,15 @@ func cacheXAIReasoningReplayFromCompleted(ctx context.Context, scope xaiReasonin
 	case internalcache.XAIReasoningReplayStored:
 		return
 	case internalcache.XAIReasoningReplayNoReplayableState:
-		// Successful completed turn without cacheable reasoning must not leave
-		// a previous turn's encrypted state to be injected later.
+
+
 		if errDelete := internalcache.DeleteXAIReasoningReplayItemRequired(ctx, scope.modelName, scope.sessionKey); errDelete != nil {
 			log.Warnf("xai reasoning replay cache delete failed after non-replayable completed output: %v", errDelete)
 		}
 	case internalcache.XAIReasoningReplayStoreBackendError:
 		log.Debug("xai reasoning replay cache store backend error; retaining previous entry")
 	default:
-		// Invalid args: nothing to store or clear.
+
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Embed the executor stub for the unused request methods.
+
 type disabledRefreshOutcomeExecutor struct {
 	mockOAuthErrorExecutor
 	extendExpiry bool
@@ -17,7 +17,7 @@ type disabledRefreshOutcomeExecutor struct {
 func (e *disabledRefreshOutcomeExecutor) Refresh(_ context.Context, a *Auth) (*Auth, error) {
 	e.refreshCalls.Add(1)
 	if e.extendExpiry {
-		// A provider can renew validity without rotating the credential strings.
+
 		a.Metadata["expires_at"] = time.Now().Add(24 * time.Hour).Format(time.RFC3339)
 	}
 	return a, nil

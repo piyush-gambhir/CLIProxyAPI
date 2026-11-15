@@ -14,7 +14,7 @@ import (
 const (
 	readTimeout          = 60 * time.Second
 	writeTimeout         = 10 * time.Second
-	maxInboundMessageLen = 64 << 20 // 64 MiB
+	maxInboundMessageLen = 64 << 20
 	heartbeatInterval    = 30 * time.Second
 	pendingChannelBuffer = 64
 )
@@ -223,7 +223,7 @@ type session struct {
 	closed     chan struct{}
 	closeOnce  sync.Once
 	writeMutex sync.Mutex
-	pending    sync.Map // map[string]*pendingRequest
+	pending    sync.Map
 }
 
 func newSession(conn *websocket.Conn, mgr *Manager, id string) *session {

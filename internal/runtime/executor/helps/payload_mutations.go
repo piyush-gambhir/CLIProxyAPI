@@ -5,8 +5,8 @@ import (
 	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// SetStringIfDifferent updates path only when its value is not already the
-// canonical JSON string. Values with another JSON type are still normalized.
+
+
 func SetStringIfDifferent(payload []byte, path, value string) []byte {
 	current := ojson.GetBytesNoCopy(payload, path)
 	if current.Type == ojson.String && current.String() == value {
@@ -19,8 +19,8 @@ func SetStringIfDifferent(payload []byte, path, value string) []byte {
 	return updated
 }
 
-// SetStringIfDifferentDoc updates path on doc in place only when its value is not
-// already the canonical JSON string. Values with another JSON type are still normalized.
+
+
 func SetStringIfDifferentDoc(doc *ojson.Doc, path, value string) bool {
 	if doc == nil {
 		return false
@@ -32,8 +32,8 @@ func SetStringIfDifferentDoc(doc *ojson.Doc, path, value string) bool {
 	return doc.Set(path, value) == nil
 }
 
-// SetBoolIfDifferent updates path only when its value is not already the
-// canonical JSON boolean. Values with another JSON type are still normalized.
+
+
 func SetBoolIfDifferent(payload []byte, path string, value bool) []byte {
 	current := ojson.GetBytesNoCopy(payload, path)
 	if (value && current.Type == ojson.True) || (!value && current.Type == ojson.False) {
@@ -46,8 +46,8 @@ func SetBoolIfDifferent(payload []byte, path string, value bool) []byte {
 	return updated
 }
 
-// SetBoolIfDifferentDoc updates path on doc in place only when its value is not
-// already the canonical JSON boolean. Values with another JSON type are still normalized.
+
+
 func SetBoolIfDifferentDoc(doc *ojson.Doc, path string, value bool) bool {
 	if doc == nil {
 		return false
@@ -59,7 +59,7 @@ func SetBoolIfDifferentDoc(doc *ojson.Doc, path string, value bool) bool {
 	return doc.Set(path, value) == nil
 }
 
-// SetRawIfDifferent updates path only when the existing raw JSON is identical.
+
 func SetRawIfDifferent(payload []byte, path string, value []byte) []byte {
 	current := ojson.GetBytesNoCopy(payload, path)
 	if current.Exists() && len(current.Indexes) == 0 && current.Raw == string(value) {
@@ -72,7 +72,7 @@ func SetRawIfDifferent(payload []byte, path string, value []byte) []byte {
 	return updated
 }
 
-// SetRawIfDifferentDoc updates path on doc in place only when the existing raw JSON differs.
+
 func SetRawIfDifferentDoc(doc *ojson.Doc, path string, value []byte) bool {
 	if doc == nil {
 		return false
@@ -84,7 +84,7 @@ func SetRawIfDifferentDoc(doc *ojson.Doc, path string, value []byte) bool {
 	return doc.SetRawBytes(path, value) == nil
 }
 
-// JoinRawJSONArray joins validated raw JSON array items without re-encoding them.
+
 func JoinRawJSONArray(items [][]byte) []byte {
 	size := securityutil.ByteCapacity(len(items), 1)
 	for _, item := range items {
@@ -101,7 +101,7 @@ func JoinRawJSONArray(items [][]byte) []byte {
 	return append(out, ']')
 }
 
-// JoinRawJSONStrings joins raw JSON array items held as strings.
+
 func JoinRawJSONStrings(items []string) []byte {
 	size := securityutil.ByteCapacity(len(items), 1)
 	for _, item := range items {

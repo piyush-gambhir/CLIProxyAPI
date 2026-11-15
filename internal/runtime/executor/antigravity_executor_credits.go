@@ -53,8 +53,8 @@ var (
 	randSourceMutex                   sync.Mutex
 	antigravityCreditsFailureByAuth   sync.Map
 	antigravityShortCooldownByAuth    sync.Map
-	antigravityCreditsBalanceByAuth   sync.Map // auth.ID → antigravityCreditsBalance
-	antigravityCreditsHintRefreshByID sync.Map // auth.ID → *antigravityCreditsHintRefreshState
+	antigravityCreditsBalanceByAuth   sync.Map
+	antigravityCreditsHintRefreshByID sync.Map
 	antigravityRefreshGroup           singleflight.Group
 	antigravityQuotaExhaustedKeywords = []string{
 		"quota_exhausted",
@@ -143,7 +143,7 @@ func antigravityAuthHasCreditsRequired(ctx context.Context, auth *cliproxyauth.A
 
 	val, ok := antigravityCreditsBalanceByAuth.Load(authID)
 	if !ok {
-		return true, nil // optimistic: assume credits available when balance unknown
+		return true, nil
 	}
 	bal, valid := val.(antigravityCreditsBalance)
 	if !valid {
@@ -169,7 +169,7 @@ func antigravityCreditsBalanceAvailable(authID string, bal antigravityCreditsBal
 	return available
 }
 
-// parseMetaFloat extracts a float64 from auth.Metadata (handles string and numeric types).
+
 func parseMetaFloat(metadata map[string]any, key string) (float64, bool) {
 	v, ok := metadata[key]
 	if !ok {
@@ -470,14 +470,14 @@ func (e *AntigravityExecutor) queueAntigravityCreditsRefresh(ctx context.Context
 	var refreshCtx context.Context
 	var cancelRefresh context.CancelFunc
 	if timeout > 0 {
-		// Keep the existing independent warm-hint budget and transport selection.
+
 		lifecycle = context.Background()
 		if rt, ok := ctx.Value("cliproxy.roundtripper").(http.RoundTripper); ok && rt != nil {
 			lifecycle = context.WithValue(lifecycle, "cliproxy.roundtripper", rt)
 		}
 		refreshCtx, cancelRefresh = context.WithTimeout(lifecycle, timeout)
 	} else {
-		// Optional post-refresh work follows its lifecycle without adding a timer.
+
 		refreshCtx, cancelRefresh = context.WithCancel(lifecycle)
 	}
 	task := &antigravityCreditsRefreshTask{

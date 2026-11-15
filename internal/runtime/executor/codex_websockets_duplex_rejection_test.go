@@ -20,8 +20,8 @@ import (
 	translator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// The server waits for all explicit creates before rejecting one. This makes
-// queue ownership deterministic without sleeps or production timeouts.
+
+
 func TestCodexDuplexRejectedCreateMetadata(t *testing.T) {
 	for _, scenario := range []struct {
 		name                     string

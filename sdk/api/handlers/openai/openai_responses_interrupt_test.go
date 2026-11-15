@@ -27,10 +27,10 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// TestResponsesInterruptInFlight verifies that a Codex response.interrupt sent while
-// generation is running is forwarded unchanged to the current upstream socket, and that
-// the same socket accepts the next response.create. Idle, malformed, and disabled-auth
-// interrupts must fail locally without opening or writing that socket.
+
+
+
+
 func TestResponsesInterruptInFlight(t *testing.T) {
 	for _, steering := range []bool{false, true} {
 		t.Run(fmt.Sprintf("steering_%t", steering), func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestResponsesInterruptInFlight(t *testing.T) {
 					return
 				}
 				write(`{"type":"response.created","response":{"id":"r1"}}`)
-				// Hold completion until the in-flight interrupt arrives unchanged.
+
 				if payload := read(); !bytes.Equal(payload, interrupt) {
 					t.Errorf("interrupt changed: %s", payload)
 					return
@@ -192,8 +192,8 @@ func (homeInterruptDispatcher) RPopAuth(context.Context, string, string, http.He
 
 func (homeInterruptDispatcher) AbortAmbiguousDispatch() {}
 
-// homeInterruptExecutor records whether an interrupt was accepted for a Home
-// session credential that is not present in the global auth map.
+
+
 type homeInterruptExecutor struct {
 	mu          sync.Mutex
 	metadata    []map[string]any
@@ -364,8 +364,8 @@ func TestCompleteResponsesWebsocketLocalInterruptCancelsBeforeWritingIncomplete(
 	}
 }
 
-// TestResponsesInterruptStopsHTTPUpstream verifies that an in-flight interrupt
-// cancels an HTTP upstream turn and lets the same socket continue.
+
+
 func TestResponsesInterruptStopsHTTPUpstream(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	executor := &blockingHTTPInterruptExecutor{canceledCh: make(chan struct{})}
@@ -450,8 +450,8 @@ func TestResponsesInterruptStopsHTTPUpstream(t *testing.T) {
 	}
 }
 
-// TestResponsesInterruptUsesHomeSessionAuth verifies that a credential staged only
-// on the Home execution session can still authorize response.interrupt.
+
+
 func TestResponsesInterruptUsesHomeSessionAuth(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	manager := coreauth.NewManager(nil, nil, nil)

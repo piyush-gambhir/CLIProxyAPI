@@ -12,10 +12,10 @@ import (
 
 var claude55Model = regexp.MustCompile(`^claude-(opus|sonnet)-5-5(?:-(high|reasoning))?(?:-[0-9]{8})?(?:\[[^\[\]]+\])?$`)
 
-// PrepareAntigravityClaudeStructuredOutput replaces native output schemas with
-// best-effort prompt instructions for Claude 5.5, which rejects forced tool use.
-// Call after sensitive-word obfuscation and before schema cleaning or payload rules.
-// The boolean tells the request builder not to restore VALIDATED tool mode.
+
+
+
+
 func PrepareAntigravityClaudeStructuredOutput(model string, payload []byte) ([]byte, bool) {
 	if len(payload) == 0 {
 		return payload, false
@@ -27,8 +27,8 @@ func PrepareAntigravityClaudeStructuredOutput(model string, payload []byte) ([]b
 	return doc.Bytes(), true
 }
 
-// PrepareAntigravityClaudeStructuredOutputDoc replaces native output schemas with
-// best-effort prompt instructions in place on doc for Claude 5.5.
+
+
 func PrepareAntigravityClaudeStructuredOutputDoc(model string, doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -56,7 +56,7 @@ func PrepareAntigravityClaudeStructuredOutputDoc(model string, doc *ojson.Doc) b
 		return false
 	}
 
-	// Wrap the untouched schema as a format, not as format settings themselves.
+
 	format := ojson.Parse(`{"type":"json_schema","schema":` + schema.Raw + `}`)
 	instruction := common.BuildClaudeStructuredOutputInstruction(format)
 	systemPath := "request.systemInstruction"
@@ -67,7 +67,7 @@ func PrepareAntigravityClaudeStructuredOutputDoc(model string, doc *ojson.Doc) b
 		return false
 	}
 
-	// Remove only native output leaves; other config fields and aliases stay put.
+
 	for _, container := range containers {
 		for _, key := range append(schemaKeys, "responseMimeType", "response_mime_type") {
 			_ = util.DeleteJSONDocIfExists(doc, container+"."+key)

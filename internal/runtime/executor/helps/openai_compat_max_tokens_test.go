@@ -23,7 +23,7 @@ func TestShouldUseMaxCompletionTokensForModel(t *testing.T) {
 			{
 				Name:  "legacy/gpt-3.5",
 				Alias: "gpt-3.5",
-				// Omitted defaults to false
+
 			},
 		},
 	}

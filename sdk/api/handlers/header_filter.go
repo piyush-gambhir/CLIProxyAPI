@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// gatewayHeaderPrefixes lists header name prefixes injected by known AI gateway
-// proxies. Claude Code's client-side telemetry detects these and reports the
-// gateway type, so we strip them from upstream responses to avoid detection.
+
+
+
 var gatewayHeaderPrefixes = []string{
 	"x-litellm-",
 	"helicone-",
@@ -17,10 +17,10 @@ var gatewayHeaderPrefixes = []string{
 	"x-bt-",
 }
 
-// hopByHopHeaders lists RFC 7230 Section 6.1 hop-by-hop headers that MUST NOT
-// be forwarded by proxies, plus security-sensitive headers that should not leak.
+
+
 var hopByHopHeaders = map[string]struct{}{
-	// RFC 7230 hop-by-hop
+
 	"Connection":          {},
 	"Keep-Alive":          {},
 	"Proxy-Authenticate":  {},
@@ -29,9 +29,9 @@ var hopByHopHeaders = map[string]struct{}{
 	"Trailer":             {},
 	"Transfer-Encoding":   {},
 	"Upgrade":             {},
-	// Security-sensitive
+
 	"Set-Cookie": {},
-	// CPA-managed (set by handlers, not upstream)
+
 	"Content-Length":   {},
 	"Content-Encoding": {},
 }
@@ -46,14 +46,14 @@ var cpaReservedResponseHeaders = map[string]struct{}{
 	"X-Cpa-Trace-Id":                   {},
 }
 
-// IsCPAReservedResponseHeader reports whether a downstream response header is managed by CPA.
+
 func IsCPAReservedResponseHeader(name string) bool {
 	_, reserved := cpaReservedResponseHeaders[http.CanonicalHeaderKey(name)]
 	return reserved
 }
 
-// FilterUpstreamHeaders returns a copy of src with hop-by-hop and security-sensitive
-// headers removed. Returns nil if src is nil or empty after filtering.
+
+
 func FilterUpstreamHeaders(src http.Header) http.Header {
 	if src == nil {
 		return nil
@@ -71,8 +71,8 @@ func FilterUpstreamHeaders(src http.Header) http.Header {
 		if _, scoped := connectionScoped[canonicalKey]; scoped {
 			continue
 		}
-		// Strip headers injected by known AI gateway proxies to avoid
-		// Claude Code client-side gateway detection.
+
+
 		lowerKey := strings.ToLower(key)
 		gatewayMatch := false
 		for _, prefix := range gatewayHeaderPrefixes {
@@ -106,14 +106,14 @@ func connectionScopedHeaders(src http.Header) map[string]struct{} {
 	return scoped
 }
 
-// WriteUpstreamHeaders writes filtered upstream headers to the gin response writer.
-// Headers already set by CPA (e.g., Content-Type) are NOT overwritten.
+
+
 func WriteUpstreamHeaders(dst http.Header, src http.Header) {
 	if src == nil {
 		return
 	}
 	for key, values := range src {
-		// Don't overwrite headers already set by CPA handlers
+
 		if dst.Get(key) != "" {
 			continue
 		}

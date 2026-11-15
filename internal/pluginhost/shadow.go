@@ -18,11 +18,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Plugin dynamic libraries are loaded from content-addressed shadow copies.
-// A loaded Go plugin image must stay mapped for the lifetime of the host
-// process (its runtime cannot be unloaded), so loading from a shadow copy
-// keeps the original artifact replaceable and gives every distinct plugin
-// build its own path, which dynamic loaders map as a fresh image.
+
+
+
+
+
 
 const (
 	shadowPluginPrefix           = "cliproxy-plugin-"
@@ -106,10 +106,10 @@ func cleanupShadowTempFilesOnce(dir string) {
 	removeStaleShadowTempFiles(cleaned)
 }
 
-// removeStaleShadowPluginDirs removes shadow directories left behind by
-// host processes that already exited. Directories whose owner process is
-// still alive are kept, because that process may reuse the resident plugin
-// images inside them.
+
+
+
+
 func removeStaleShadowPluginDirs(baseDir string, currentPID int) {
 	entries, errRead := os.ReadDir(baseDir)
 	if errRead != nil {

@@ -22,10 +22,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// TestCodexStreamDisconnectAfterHeadersFailsOver reproduces issue #6247:
-// When upstream A sends HTTP 200 headers and closes the connection before emitting
-// any SSE bytes, the gateway must fail over to credential B instead of aborting
-// with invalid_request_error.
+
+
+
+
 func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 	for _, buffering := range []bool{false, true} {
 		name := "unbuffered"
@@ -49,11 +49,11 @@ func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 					if flusher, ok := w.(http.Flusher); ok {
 						flusher.Flush()
 					}
-					// Disconnect after headers but before any SSE bytes.
+
 					return
 				}
 
-				// Account B completes the stream.
+
 				w.Header().Set("Content-Type", "text/event-stream")
 				w.WriteHeader(http.StatusOK)
 				_, _ = fmt.Fprintf(w, "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_b\",\"model\":%q}}\n\n", model)
@@ -96,7 +96,7 @@ func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 				t.Fatal(errRegister)
 			}
 
-			// Test ExecuteStream directly via Conductor
+
 			req := cliproxyexecutor.Request{
 				Model:   model,
 				Payload: []byte(fmt.Sprintf(`{"model":%q,"input":"hello","stream":true}`, model)),
@@ -139,9 +139,9 @@ func TestCodexStreamDisconnectAfterHeadersFailsOver(t *testing.T) {
 	}
 }
 
-// TestCodexStreamDisconnectExhaustionNotInvalidRequestError verifies that when
-// retries are exhausted for a stream that disconnects before any SSE bytes,
-// the surfaced JSON error is classified as an upstream/server error (not invalid_request_error).
+
+
+
 func TestCodexStreamDisconnectExhaustionNotInvalidRequestError(t *testing.T) {
 	const model = "gpt-6-astra"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -150,7 +150,7 @@ func TestCodexStreamDisconnectExhaustionNotInvalidRequestError(t *testing.T) {
 		if flusher, ok := w.(http.Flusher); ok {
 			flusher.Flush()
 		}
-		// Close without any SSE data bytes.
+
 	}))
 	defer server.Close()
 
@@ -201,9 +201,9 @@ func TestCodexStreamDisconnectExhaustionNotInvalidRequestError(t *testing.T) {
 	}
 }
 
-// TestCodexStreamDisconnectAfterOutputDoesNotFailOver verifies that when upstream A
-// disconnects AFTER emitting visible output tokens/deltas, it does NOT attempt credential B
-// (replaying partial output is unsafe), and instead surfaces the incomplete stream error chunk.
+
+
+
 func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 	for _, buffering := range []bool{false, true} {
 		name := "unbuffered"
@@ -223,14 +223,14 @@ func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 
 				w.Header().Set("Content-Type", "text/event-stream")
 				w.WriteHeader(http.StatusOK)
-				// Emit initial chunks including output text delta
+
 				_, _ = fmt.Fprintf(w, "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_a\",\"model\":%q}}\n\n", model)
 				_, _ = fmt.Fprintf(w, "data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"msg_a\",\"type\":\"message\"}}\n\n")
 				_, _ = fmt.Fprintf(w, "data: {\"type\":\"response.output_text.delta\",\"output_index\":0,\"content_index\":0,\"item_id\":\"msg_a\",\"delta\":\"MOCK_A_PARTIAL\"}\n\n")
 				if flusher, ok := w.(http.Flusher); ok {
 					flusher.Flush()
 				}
-				// Disconnect without response.completed
+
 			}))
 			defer server.Close()
 
@@ -289,11 +289,11 @@ func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 				streamBody += string(chunk.Payload)
 			}
 
-			// Partial output MUST be delivered to downstream
+
 			if !strings.Contains(streamBody, "MOCK_A_PARTIAL") {
 				t.Fatalf("expected partial output MOCK_A_PARTIAL in stream body, got: %s", streamBody)
 			}
-			// Incomplete stream error MUST be delivered at the end
+
 			if chunkErr == nil {
 				t.Fatal("expected incomplete stream terminal chunk error, got nil")
 			}
@@ -302,7 +302,7 @@ func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 			gotAttempts := append([]string(nil), attempts...)
 			mu.Unlock()
 
-			// Must ONLY attempt account-a, NOT fail over to account-b
+
 			if len(gotAttempts) != 1 || gotAttempts[0] != "account-a" {
 				t.Fatalf("attempts = %v, want [account-a] (partial output must not replay to B)", gotAttempts)
 			}
@@ -310,8 +310,8 @@ func TestCodexStreamDisconnectAfterOutputDoesNotFailOver(t *testing.T) {
 	}
 }
 
-// TestCodexStreamAbnormalDisconnectBeforeOutputFailsOver tests that abnormal connection
-// termination (e.g. TCP reset / connection close via Hijacker) before output also fails over.
+
+
 func TestCodexStreamAbnormalDisconnectBeforeOutputFailsOver(t *testing.T) {
 	const model = "gpt-6-astra"
 	var mu sync.Mutex
@@ -329,7 +329,7 @@ func TestCodexStreamAbnormalDisconnectBeforeOutputFailsOver(t *testing.T) {
 			if flusher, ok := w.(http.Flusher); ok {
 				flusher.Flush()
 			}
-			// Hijack and close TCP connection immediately to simulate abnormal drop.
+
 			if hj, ok := w.(http.Hijacker); ok {
 				if conn, _, errHijack := hj.Hijack(); errHijack == nil {
 					_ = conn.Close()
@@ -339,7 +339,7 @@ func TestCodexStreamAbnormalDisconnectBeforeOutputFailsOver(t *testing.T) {
 			return
 		}
 
-		// Account B completes the stream
+
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
 		_, _ = fmt.Fprintf(w, "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_b\",\"model\":%q}}\n\n", model)

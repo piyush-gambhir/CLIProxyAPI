@@ -21,7 +21,7 @@ import (
 )
 
 func TestClassifyClaudeUpstreamError_FableOnlyRejectionIsModelScoped(t *testing.T) {
-	// Given
+
 	headers := http.Header{
 		"Anthropic-Ratelimit-Unified-Status":       []string{"rejected"},
 		"Anthropic-Ratelimit-Unified-5h-Status":    []string{"allowed"},
@@ -30,10 +30,10 @@ func TestClassifyClaudeUpstreamError_FableOnlyRejectionIsModelScoped(t *testing.
 		"Retry-After": []string{"120"},
 	}
 
-	// When
+
 	err := classifyClaudeUpstreamError(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fable usage window rejected."}}`))
 
-	// Then
+
 	var scoped interface{ IsCredentialScoped() bool }
 	if !errors.As(err, &scoped) || scoped == nil {
 		t.Fatalf("expected %T to expose credential scope", err)
@@ -44,7 +44,7 @@ func TestClassifyClaudeUpstreamError_FableOnlyRejectionIsModelScoped(t *testing.
 }
 
 func TestClassifyClaudeUpstreamError_FableOnlyAllowedWarningIsModelScoped(t *testing.T) {
-	// Given: 7d window is in allowed_warning, 7d_oi is rejected
+
 	headers := http.Header{
 		"Anthropic-Ratelimit-Unified-Status":       []string{"rejected"},
 		"Anthropic-Ratelimit-Unified-5h-Status":    []string{"allowed"},
@@ -53,10 +53,10 @@ func TestClassifyClaudeUpstreamError_FableOnlyAllowedWarningIsModelScoped(t *tes
 		"Retry-After": []string{"120"},
 	}
 
-	// When
+
 	err := classifyClaudeUpstreamError(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fable usage window rejected."}}`))
 
-	// Then
+
 	var scoped interface{ IsCredentialScoped() bool }
 	if !errors.As(err, &scoped) || scoped == nil {
 		t.Fatalf("expected %T to expose credential scope", err)
@@ -67,7 +67,7 @@ func TestClassifyClaudeUpstreamError_FableOnlyAllowedWarningIsModelScoped(t *tes
 }
 
 func TestClassifyClaudeUpstreamError_OverageRejectionIsModelScoped_Issue5915(t *testing.T) {
-	// Given: exact headers from Issue #5915 (7d allowed, 5h status omitted, overage rejected)
+
 	headers := http.Header{
 		"Anthropic-Ratelimit-Unified-Status":                  []string{"rejected"},
 		"Anthropic-Ratelimit-Unified-Representative-Claim":    []string{"seven_day_overage_included"},
@@ -81,10 +81,10 @@ func TestClassifyClaudeUpstreamError_OverageRejectionIsModelScoped_Issue5915(t *
 		"Retry-After": []string{"121180"},
 	}
 
-	// When
+
 	err := classifyClaudeUpstreamError(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fable usage window rejected."}}`))
 
-	// Then
+
 	var scoped interface{ IsCredentialScoped() bool }
 	if !errors.As(err, &scoped) || scoped == nil {
 		t.Fatalf("expected %T to expose credential scope", err)
@@ -101,14 +101,14 @@ func TestClassifyClaudeUpstreamError_ModelLevelCoolingForcesModelScope(t *testin
 		"Retry-After":                           []string{"60"},
 	}
 
-	// Default cooling treats explicit 5h rejection as credential-scoped
+
 	errDefault := classifyClaudeUpstreamErrorWithCooling(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error"}}`), false)
 	var scopedDefault interface{ IsCredentialScoped() bool }
 	if !errors.As(errDefault, &scopedDefault) || !scopedDefault.IsCredentialScoped() {
 		t.Fatal("expected default cooling to treat 5h rejection as credential-scoped")
 	}
 
-	// With modelLevelCooling=true, it is model-scoped
+
 	errModelLevel := classifyClaudeUpstreamErrorWithCooling(http.StatusTooManyRequests, headers, []byte(`{"type":"error","error":{"type":"rate_limit_error"}}`), true)
 	var scopedModelLevel interface{ IsCredentialScoped() bool }
 	if !errors.As(errModelLevel, &scopedModelLevel) || scopedModelLevel.IsCredentialScoped() {
@@ -153,10 +153,10 @@ func TestClassifyClaudeUpstreamError_SharedOrAmbiguousRejectionRemainsCredential
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// When
+
 			err := classifyClaudeUpstreamError(http.StatusTooManyRequests, tt.headers, []byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Shared usage window rejected."}}`))
 
-			// Then
+
 			var scoped interface{ IsCredentialScoped() bool }
 			if !errors.As(err, &scoped) || scoped == nil {
 				t.Fatalf("expected %T to expose credential scope", err)
@@ -268,7 +268,7 @@ func TestClaudeExecutor_AuthManager_FableOnlyRejectionDoesNotBlockOpus(t *testin
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
 
-	// Verify that Fable model state cooldown is driven by Retry-After (~120s) and not 7 days.
+
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -348,7 +348,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// 1. A healthy subscription model (Opus) succeeds first.
+
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpusFirst := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -358,7 +358,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("initial Opus request failed: %v", errOpusFirst)
 	}
 
-	// 2. An overage-only model (Fable) fails with spend cap reached.
+
 	payloadFable := []byte(`{"model":"claude-fable-5-1","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errFable := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -371,7 +371,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
 
-	// 3. Verify that the auth credential itself remains available (not credential-scoped).
+
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -386,7 +386,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("auth NextRetryAfter = %v; want zero time", updatedAuth.NextRetryAfter)
 	}
 
-	// 4. Verify that Fable model state cooldown is set.
+
 	fableState := updatedAuth.ModelStates["claude-fable-5-1"]
 	if fableState == nil {
 		t.Fatal("fable model state not found")
@@ -398,7 +398,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatal("fable model state NextRetryAfter should be set")
 	}
 
-	// 5. Verify sibling Opus model state remains healthy.
+
 	opusState := updatedAuth.ModelStates["claude-opus-5"]
 	if opusState == nil {
 		t.Fatal("opus model state not found")
@@ -407,7 +407,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapReachedDoesNotBlockOpus_Issue
 		t.Fatalf("sibling opus model state was marked unavailable")
 	}
 
-	// 6. Verify Opus on the same credential can still be served cleanly.
+
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
 		Payload: payloadOpus,
@@ -450,7 +450,7 @@ func TestClaudeExecutor_AuthManager_ModelLevelCoolingConfigScopesSharedRejection
 
 	manager := cliproxyauth.NewManager(nil, nil, nil)
 	manager.SetRetryConfig(0, 0, 0)
-	// Enable ModelLevelCooling on ClaudeConfig
+
 	manager.RegisterExecutor(NewClaudeExecutor(&config.Config{
 		DisableCooling: false,
 		Claude: config.ClaudeConfig{
@@ -485,7 +485,7 @@ func TestClaudeExecutor_AuthManager_ModelLevelCoolingConfigScopesSharedRejection
 		t.Fatalf("Sonnet upstream attempts = %d, want 1", got)
 	}
 
-	// Verify auth credential is not credential-scoped because ModelLevelCooling=true
+
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -494,7 +494,7 @@ func TestClaudeExecutor_AuthManager_ModelLevelCoolingConfigScopesSharedRejection
 		t.Fatal("auth Quota.Reason = credential_quota; want non-credential_quota when ModelLevelCooling=true")
 	}
 
-	// Sibling Opus request still succeeds on the same credential
+
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -554,7 +554,7 @@ func TestClaudeExecutor_ExecuteStream_OverageRejectionIsModelScoped(t *testing.T
 }
 
 func TestClassifyClaudeUpstreamError_OverageRejectionWithRetryAfter_Issue5920(t *testing.T) {
-	// Given: exact headers from Issue #5920 (7d allowed, 5h allowed, 7d_oi rejected, Retry-After present)
+
 	headers := http.Header{
 		"Anthropic-Ratelimit-Unified-Status":                  []string{"rejected"},
 		"Anthropic-Ratelimit-Unified-Representative-Claim":    []string{"seven_day_overage_included"},
@@ -640,7 +640,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-	// 1. Initial healthy subscription request succeeds first.
+
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpusFirst := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
@@ -650,7 +650,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("initial Opus request failed: %v", errOpusFirst)
 	}
 
-	// 2. Fable request fails with 429 carrying Retry-After: 97273.
+
 	payloadFable := []byte(`{"model":"claude-fable-5-1","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errFable := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -663,7 +663,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
 
-	// 3. Verify that the auth credential itself remains available (not benched globally for 27h).
+
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -675,7 +675,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("auth NextRetryAfter = %v; want zero time", updatedAuth.NextRetryAfter)
 	}
 
-	// 4. Verify that Fable model state cooldown is NOT 27 hours (Retry-After was skipped).
+
 	fableState := updatedAuth.ModelStates["claude-fable-5-1"]
 	if fableState == nil {
 		t.Fatal("fable model state not found")
@@ -687,7 +687,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapWithRetryAfter_Issue5920(t *t
 		t.Fatalf("fable model cooldown was %v; want exponential backoff (<10m), not 27h spend cap", fableState.Quota.NextRecoverAt)
 	}
 
-	// 5. Verify sibling Opus request still succeeds on the same credential.
+
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",
 		Payload: payloadOpus,
@@ -755,8 +755,8 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapFirstRequestAllowsOpus_Issue5
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-	// 1. Initial request on the fresh credential is for the overage-only model (Fable).
-	// No prior Opus request has created any active model state.
+
+
 	payloadFable := []byte(`{"model":"claude-fable-5-1","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errFable := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-fable-5-1",
@@ -769,7 +769,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapFirstRequestAllowsOpus_Issue5
 		t.Fatalf("Fable upstream attempts = %d, want 1", got)
 	}
 
-	// 2. Fable model state must not have a 27h cooldown.
+
 	updatedAuth, ok := manager.GetByID(auth.ID)
 	if !ok || updatedAuth == nil {
 		t.Fatal("auth not found")
@@ -785,7 +785,7 @@ func TestClaudeExecutor_AuthManager_OverageSpendCapFirstRequestAllowsOpus_Issue5
 		t.Fatalf("fable model cooldown was %v; want exponential backoff (<10m), not 27h spend cap", fableState.Quota.NextRecoverAt)
 	}
 
-	// 3. Subsequent Opus request on the same credential can still be served cleanly.
+
 	payloadOpus := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":[{"type":"text","text":"test"}]}]}`)
 	_, errOpus := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{
 		Model:   "claude-opus-5",

@@ -14,9 +14,9 @@ import (
 
 type requestScopedErrorConfigContextKey struct{}
 
-// WithRequestScopedErrorConfig stores the runtime config snapshot on ctx so
-// usage reporters can evaluate request-scoped error rules when publishing
-// attempt failures.
+
+
+
 func WithRequestScopedErrorConfig(ctx context.Context, cfg *internalconfig.Config) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -27,8 +27,8 @@ func WithRequestScopedErrorConfig(ctx context.Context, cfg *internalconfig.Confi
 	return context.WithValue(ctx, requestScopedErrorConfigContextKey{}, cfg)
 }
 
-// RequestScopedErrorConfigFromContext retrieves the runtime config snapshot
-// stored by WithRequestScopedErrorConfig.
+
+
 func RequestScopedErrorConfigFromContext(ctx context.Context) *internalconfig.Config {
 	if ctx == nil {
 		return nil
@@ -37,7 +37,7 @@ func RequestScopedErrorConfigFromContext(ctx context.Context) *internalconfig.Co
 	return cfg
 }
 
-// Request-scoped error actions.
+
 const (
 	RequestScopedActionStop                = "stop"
 	RequestScopedActionStopAndCooldown     = "stop-and-cooldown"
@@ -186,13 +186,13 @@ func cloneRequestScopedErrorRules(rules []internalconfig.RequestScopedErrorRule)
 	return out
 }
 
-// ResolveRequestScopedErrorRules extracts and deep-copies the effective
-// RequestScopedErrorRule list for an auth and config snapshot.
+
+
 func ResolveRequestScopedErrorRules(auth *Auth, cfg *internalconfig.Config) []internalconfig.RequestScopedErrorRule {
 	return cloneRequestScopedErrorRules(extractRequestScopedErrorRules(auth, cfg))
 }
 
-// MatchRequestScopedErrorRules evaluates an error against a pre-resolved rule list.
+
 func MatchRequestScopedErrorRules(rules []internalconfig.RequestScopedErrorRule, err error) (string, bool) {
 	if err == nil || len(rules) == 0 || cliproxyexecutor.IsUpstreamWebsocketTurnError(err) {
 		return "", false
@@ -245,7 +245,7 @@ func MatchRequestScopedErrorRules(rules []internalconfig.RequestScopedErrorRule,
 	return "", false
 }
 
-// extractRequestScopedErrorRules retrieves the configured RequestScopedErrorRule list for an auth.
+
 func extractRequestScopedErrorRules(auth *Auth, cfg *internalconfig.Config) []internalconfig.RequestScopedErrorRule {
 	if auth != nil && auth.Metadata != nil {
 		raw, ok := auth.Metadata["request_scoped_errors"]
@@ -361,9 +361,9 @@ func extractErrorBody(err error) string {
 	return err.Error()
 }
 
-// MatchRequestScopedErrorAction evaluates an error against the auth's RequestScopedErrors rules.
-// If a rule matches, it returns (action, true).
-// If no rule matches, it returns ("", false).
+
+
+
 func MatchRequestScopedErrorAction(auth *Auth, err error, cfg *internalconfig.Config) (string, bool) {
 	return matchRequestScopedErrorAction(auth, err, cfg)
 }

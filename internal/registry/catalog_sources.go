@@ -17,9 +17,9 @@ import (
 
 const embeddedCatalogSource = "embed"
 
-// catalogUpdater serializes source changes with publication, not network I/O.
-// Cancellation saves work; the generation check also protects against readers
-// that finish after cancellation (including local file reads).
+
+
+
 type catalogUpdater struct {
 	mu              sync.Mutex
 	source          string
@@ -80,7 +80,7 @@ func (u *catalogUpdater) configure(ctx context.Context, source string) {
 	}()
 }
 
-// CatalogSourceStatus reports the outcome of refreshing a single model catalog.
+
 type CatalogSourceStatus struct {
 	Source           string   `json:"source"`
 	Refreshed        bool     `json:"refreshed"`
@@ -89,7 +89,7 @@ type CatalogSourceStatus struct {
 	Error            string   `json:"error,omitempty"`
 }
 
-// CatalogRefreshResult reports the outcome of an on-demand model catalog refresh.
+
 type CatalogRefreshResult struct {
 	Catalog          string                         `json:"catalog"`
 	CodexCatalog     string                         `json:"codex_catalog"`
@@ -379,15 +379,15 @@ var catalogRuntime struct {
 	home    bool
 }
 
-// SetLocalModelCatalogs sets the process default before the service starts.
-// Explicit catalog sources still take precedence over this default.
+
+
 func SetLocalModelCatalogs(local bool) {
 	catalogRuntime.Lock()
 	defer catalogRuntime.Unlock()
 	catalogRuntime.local = local
 }
 
-// StartModelCatalogUpdaters binds process-wide readers to the service lifetime.
+
 func StartModelCatalogUpdaters(ctx context.Context, sources CatalogSources, home bool) {
 	catalogRuntime.Lock()
 	defer catalogRuntime.Unlock()
@@ -397,8 +397,8 @@ func StartModelCatalogUpdaters(ctx context.Context, sources CatalogSources, home
 	configureCatalogs(ctx, sources, catalogRuntime.local, home)
 }
 
-// UpdateModelCatalogSources updates an already-started process policy on reload.
-// Updates before service startup or after shutdown do not start readers.
+
+
 func UpdateModelCatalogSources(sources CatalogSources, home bool) {
 	catalogRuntime.Lock()
 	defer catalogRuntime.Unlock()
@@ -409,7 +409,7 @@ func UpdateModelCatalogSources(sources CatalogSources, home bool) {
 	}
 }
 
-// RefreshModelCatalogs triggers an immediate on-demand refresh across all model catalog updaters.
+
 func RefreshModelCatalogs(ctx context.Context) (CatalogRefreshResult, error) {
 	catalogRuntime.Lock()
 	sources := catalogRuntime.sources
@@ -418,8 +418,8 @@ func RefreshModelCatalogs(ctx context.Context) (CatalogRefreshResult, error) {
 	return RefreshModelCatalogsWithPolicy(ctx, sources, home)
 }
 
-// RefreshModelCatalogsWithPolicy triggers an immediate on-demand refresh using fallbackSources
-// and fallbackHome when process-wide catalog updaters have not been started.
+
+
 func RefreshModelCatalogsWithPolicy(ctx context.Context, fallbackSources CatalogSources, fallbackHome bool) (CatalogRefreshResult, error) {
 	if errValidate := fallbackSources.Validate(); errValidate != nil {
 		return CatalogRefreshResult{

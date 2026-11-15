@@ -23,16 +23,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ClaudeExecutor handles Anthropic Claude over the messages API and keeps bounded
-// in-memory thread alias state for OAuth continuations.
-// If api_key is unavailable on auth, it falls back to legacy via ClientAdapter.
+
+
+
 type ClaudeExecutor struct {
 	cfg                     *config.Config
 	requestLogProvider      string
 	upstreamModelNormalizer func(string) string
 	oauthProfileFetcher     claudeOAuthProfileFetcher
-	// oauthToolAliases is shared by every ForAPIKey copy of this executor;
-	// constructors allocate it so copies made per request reuse one store.
+
+
 	oauthToolAliases *claudeOAuthToolAliasStore
 }
 
@@ -88,9 +88,9 @@ func sanitizeClaudeMessagesForClaudeUpstreamWithDebugDoc(ctx context.Context, do
 	if doc == nil {
 		return false
 	}
-	// The internal commentary marker must never reach any upstream, so its
-	// restore runs unconditionally, independent of the provider signature
-	// sanitization gate below (which non-Claude model names skip entirely).
+
+
+
 	changed := sigcompat.RestoreCodexCommentaryMarkersDoc(doc) > 0
 	preserveEmpty := len(preserveEmptyThinkingBlocks) > 0 && preserveEmptyThinkingBlocks[0]
 	if shouldSanitizeClaudeMessagesForUpstream(baseModel) || preserveEmpty {
@@ -228,11 +228,11 @@ func stripClaudeToolUseProvenanceFieldsDoc(doc *ojson.Doc, partPath string) bool
 	return changed
 }
 
-// sanitizeClaudeWebSearchDomains removes empty allowed_domains/blocked_domains
-// arrays from built-in web_search tools. Some clients (e.g. litellm) emit an
-// empty array instead of omitting the field, and Anthropic rejects it with
-// "Empty list of domains is ambiguous. Provide at least one domain or null.".
-// Deleting the key is equivalent to leaving it unset.
+
+
+
+
+
 func sanitizeClaudeWebSearchDomains(body []byte) []byte {
 	tools := ojson.GetBytesNoCopy(body, "tools")
 	if !tools.Exists() || !tools.IsArray() {
@@ -298,14 +298,14 @@ func logClaudeSignatureSanitizeReport(ctx context.Context, baseModel string, rep
 	helps.LogWithRequestID(ctx).WithFields(fields).Debug("claude executor: sanitized signature history before upstream")
 }
 
-// Anthropic-compatible upstreams may reject or even crash when Claude models
-// omit max_tokens. Prefer registered model metadata before using a fallback.
+
+
 const defaultModelMaxTokens = 1024
 
-// stripTranslatedDefaultMaxTokens removes the translator-synthesized default
-// max_tokens from originalTranslated when the caller's original request did not
-// explicitly supply an output token limit in the source protocol, allowing
-// payload.default rules targeting max_tokens to take effect.
+
+
+
+
 func stripTranslatedDefaultMaxTokens(from sdktranslator.Format, originalPayload, originalTranslated []byte) []byte {
 	if len(originalTranslated) == 0 || from == sdktranslator.FormatClaude {
 		return originalTranslated
@@ -389,13 +389,13 @@ func claudeWebSearchResultCacheCredentialScope(auth *cliproxyauth.Auth) string {
 
 var _ cliproxyauth.NativeToolSearchSupport = (*ClaudeExecutor)(nil)
 
-// SupportsNativeToolSearch reports whether a credential can receive Codex
-// tool_search as Anthropic native tool search (defer_loading tools and
-// tool_reference results) for the given upstream model. Anthropic's own origin
-// qualifies; a custom base URL qualifies only when native-tool-search is
-// enabled for it. Models that predate tool search never qualify, and nothing
-// qualifies while upstream.claude.tool-search is off. That switch is read from
-// the translator so the executor and the translator always agree on it.
+
+
+
+
+
+
+
 func (e *ClaudeExecutor) SupportsNativeToolSearch(auth *cliproxyauth.Auth, upstreamModel string) bool {
 	return e.supportsNativeToolSearch(responsesclaude.ClientToolSearchEnabled(), auth, upstreamModel)
 }
@@ -415,15 +415,15 @@ func (e *ClaudeExecutor) supportsNativeToolSearch(toolSearch bool, auth *cliprox
 	return entry != nil && entry.NativeToolSearch
 }
 
-// applyNativeToolSearchFallback removes Codex tool_search from a Responses
-// request before translation when the credential cannot use native tool
-// search, so the translated body matches the pre-tool-search translation.
-// While upstream.claude.tool-search is off the translator already produces
-// that translation from the unmodified request, so nothing is removed.
-//
-// The returned context pins upstream.claude.tool-search for the rest of the
-// request, so this decision and the request and response translations agree
-// even if the configuration is reloaded mid-request.
+
+
+
+
+
+
+
+
+
 func (e *ClaudeExecutor) applyNativeToolSearchFallback(ctx context.Context, auth *cliproxyauth.Auth, from sdktranslator.Format, upstreamModel string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (context.Context, cliproxyexecutor.Request, cliproxyexecutor.Options) {
 	if from != sdktranslator.FormatOpenAIResponse {
 		return ctx, req, opts
@@ -447,14 +447,14 @@ func (e *ClaudeExecutor) applyNativeToolSearchFallback(ctx context.Context, auth
 	return ctx, req, opts
 }
 
-// pinResponsesSystemItemPlacement decides, before translation, whether the
-// Responses translator keeps mid-session system items in place as role=system
-// turns, which keeps the prompt-cache prefix of earlier turns stable. The turn
-// needs the cloaked Claude Code wire, which sends the mid-conversation system
-// beta, and a model that accepts it. Strict cloaking drops every caller system
-// instruction and rebuild_mid_system_message folds the turns into the system
-// field, so both keep the top-level path, as does an uncloaked request, which
-// forwards the caller's betas unchanged.
+
+
+
+
+
+
+
+
 func (e *ClaudeExecutor) pinResponsesSystemItemPlacement(ctx context.Context, auth *cliproxyauth.Auth, from sdktranslator.Format, upstreamModel string, policy claudeWirePolicy, settings claudeCloakSettings) context.Context {
 	if from != sdktranslator.FormatOpenAIResponse {
 		return ctx
@@ -536,7 +536,7 @@ func setClaudeResponseModel(payload []byte, model string) ([]byte, bool) {
 	return doc.Bytes(), true
 }
 
-// PrepareRequest injects Claude credentials into the outgoing HTTP request.
+
 func (e *ClaudeExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
 	if req == nil {
 		return nil
@@ -564,7 +564,7 @@ func (e *ClaudeExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Au
 	return nil
 }
 
-// HttpRequest injects Claude credentials into the request and executes it.
+
 func (e *ClaudeExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
 	if req == nil {
 		return nil, fmt.Errorf("claude executor: request is nil")
@@ -580,5 +580,5 @@ func (e *ClaudeExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Aut
 	return httpClient.Do(httpReq)
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
+
 func (e *ClaudeExecutor) SupportsApplyPatch() bool { return e != nil }

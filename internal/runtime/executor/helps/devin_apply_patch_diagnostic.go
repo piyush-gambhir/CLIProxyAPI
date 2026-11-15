@@ -16,9 +16,9 @@ const (
 	maxDevinDiagnosticToolCalls = 128
 )
 
-// DevinApplyPatchDiagnostics records only argument lengths, a short prefix for
-// shape classification, and fixed error codes. It never logs argument text.
-// One instance belongs to one upstream response.
+
+
+
 type DevinApplyPatchDiagnostics struct {
 	original []byte
 	calls    []*devinApplyPatchCallStats
@@ -36,8 +36,8 @@ type devinApplyPatchCallStats struct {
 	head           []byte
 }
 
-// NewDevinApplyPatchDiagnostics resolves apply_patch calls against the original
-// client request declarations.
+
+
 func NewDevinApplyPatchDiagnostics(original []byte) *DevinApplyPatchDiagnostics {
 	if !ApplyPatchRequested(original) {
 		return nil
@@ -50,7 +50,7 @@ func NewDevinApplyPatchDiagnostics(original []byte) *DevinApplyPatchDiagnostics 
 	}
 }
 
-// ObserveDelta resolves the call key for a raw wire delta and records its shape.
+
 func (d *DevinApplyPatchDiagnostics) ObserveDelta(tc DevinToolCallDelta) int {
 	if d == nil {
 		return -1
@@ -82,9 +82,9 @@ func (d *DevinApplyPatchDiagnostics) ObserveDelta(tc DevinToolCallDelta) int {
 	return key
 }
 
-// MarkRecovered marks the call identified by key as recovered from a complete
-// bare patch in invalid_json_str so subsequent failures on later calls report
-// the actually failing call.
+
+
+
 func (d *DevinApplyPatchDiagnostics) MarkRecovered(key int) {
 	if d == nil {
 		return
@@ -94,7 +94,7 @@ func (d *DevinApplyPatchDiagnostics) MarkRecovered(key int) {
 	}
 }
 
-// Observe accumulates one Devin tool-call delta for the call identified by key.
+
 func (d *DevinApplyPatchDiagnostics) Observe(key int, tc DevinToolCallDelta) {
 	if d == nil || key < 0 {
 		return
@@ -131,7 +131,7 @@ func (d *DevinApplyPatchDiagnostics) Observe(key int, tc DevinToolCallDelta) {
 	call.bytes += len(tc.Arguments) + len(tc.InvalidJSONStr)
 }
 
-// Render returns a bounded log diagnostic using only fixed error codes.
+
 func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 	var b strings.Builder
 	b.WriteString(ApplyPatchUpstreamErrorMessage)
@@ -148,7 +148,7 @@ func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 	}
 	var calls []*devinApplyPatchCallStats
 	for _, call := range d.calls {
-		// An unnamed call may still be the patch call whose identity arrives late.
+
 		if call.name == "" || IsApplyPatchUpstreamTool(d.original, call.name) {
 			calls = append(calls, call)
 		}
@@ -157,8 +157,8 @@ func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 	if len(calls) == 0 {
 		return logging.SafeDiagnosticForLog(b.String())
 	}
-	// Describe only the call most likely rejected: the first unrecovered one
-	// Devin flagged as invalid JSON, otherwise the latest one.
+
+
 	index := len(calls) - 1
 	for i, call := range calls {
 		if call.invalidJSON && !call.recovered {
@@ -175,7 +175,7 @@ func (d *DevinApplyPatchDiagnostics) Render(param any, reason string) string {
 	return logging.SafeDiagnosticForLog(b.String())
 }
 
-// shape classifies only the argument prefix: a JSON object, a bare patch, or other text.
+
 func (c *devinApplyPatchCallStats) shape() string {
 	switch {
 	case c.bytes == 0:
@@ -255,8 +255,8 @@ func devinParseErrorCode(message string) string {
 	}
 }
 
-// CanBeDevinBareApplyPatchPrefix reports whether raw can still become a valid
-// bare apply_patch payload as further streaming chunks arrive.
+
+
 func CanBeDevinBareApplyPatchPrefix(raw string) bool {
 	if !utf8.ValidString(raw) {
 		return false
@@ -278,8 +278,8 @@ func CanBeDevinBareApplyPatchPrefix(raw string) bool {
 	return next == '\n' || next == '\r'
 }
 
-// RecoverDevinBareApplyPatch validates that raw is a complete, well-framed
-// bare Codex apply_patch payload and wraps it into {"input": "..."}.
+
+
 func RecoverDevinBareApplyPatch(raw string) (string, bool) {
 	if !utf8.ValidString(raw) {
 		return "", false

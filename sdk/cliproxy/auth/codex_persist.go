@@ -10,7 +10,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 )
 
-// IsCodexAuthRecord reports whether auth represents a Codex credential record.
+
 func IsCodexAuthRecord(auth *Auth) bool {
 	if auth == nil {
 		return false
@@ -29,9 +29,9 @@ func IsCodexAuthRecord(auth *Auth) bool {
 	return false
 }
 
-// PersistCodexAuthFile persists a Codex auth record to path using inter-process file locking,
-// read-before-write merging, and scoped refresh patches when present.
-// It returns handled=false when auth is not a Codex credential record.
+
+
+
 func PersistCodexAuthFile(ctx context.Context, path string, auth *Auth) (bool, error) {
 	if !IsCodexAuthRecord(auth) {
 		return false, nil

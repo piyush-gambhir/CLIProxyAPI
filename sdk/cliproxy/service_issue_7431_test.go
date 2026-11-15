@@ -95,7 +95,7 @@ func TestIssue7431_ServiceApplyManagerConfigPreservesWeightedSelectorAcrossAffin
 		t.Fatalf("picks before reload = %v, want [%s %s]", pickedBefore, auths[0].ID, auths[1].ID)
 	}
 
-	// Reload routing config changing session-affinity while keeping strategy: weighted-round-robin.
+
 	reloadedCfg := &internalconfig.Config{
 		Routing: internalconfig.RoutingConfig{
 			Strategy:           "weighted-round-robin",

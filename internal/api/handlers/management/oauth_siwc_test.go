@@ -42,8 +42,8 @@ func (s *testSIWCOAuth) ExchangeSIWCCodeForTokens(ctx context.Context, code, cli
 	s.calls.Add(1)
 	s.inputs <- siwcExchangeInput{code, clientID, redirect, deviceID, pkce}
 	if s.release != nil {
-		// Deliberately ignore cancellation to prove the commit gate rejects a
-		// successful but late upstream result after cancellation or expiration.
+
+
 		<-s.release
 	}
 	if s.err != nil {

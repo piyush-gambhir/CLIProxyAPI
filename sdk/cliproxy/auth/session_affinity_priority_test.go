@@ -297,7 +297,7 @@ func TestManagerSessionAffinityRebindOnQuotaPreservesBindingAcrossTransientFailo
 				})
 			}
 
-			// Quota failure (429) must rebind to lowID and stay bound after highID recovers.
+
 			manager.MarkResult(ctx, Result{
 				AuthID:   highID,
 				Provider: provider,
@@ -322,7 +322,7 @@ func TestManagerSessionAffinityRebindOnQuotaPreservesBindingAcrossTransientFailo
 				t.Fatalf("binding after quota recovery = %q, want sticky %q", got.ID, lowID)
 			}
 
-			// Auth failure (403) on a new session must also rebind and stay bound.
+
 			authFailOpts := cliproxyexecutor.Options{Metadata: map[string]any{
 				cliproxyexecutor.DerivedSessionIDMetadataKey: "auth-error-session",
 			}}
@@ -400,7 +400,7 @@ func TestManagerSessionAffinityRebindOnQuotaLCPPreservesBindingAcrossTransientFa
 	}
 	manager.MarkResult(ctx, Result{AuthID: highID, Provider: provider, Model: model, Success: true, Options: turn1})
 
-	// Turn 2 hits highID, fails with transient 502, fails over to lowID, and succeeds on lowID.
+
 	turn2 := makeTurnOpts(`{"messages":[{"role":"user","content":"turn 1 hello"},{"role":"assistant","content":"hi"},{"role":"user","content":"turn 2 question"}]}`)
 	got2Attempt1, _, errPick := manager.pickNext(ctx, provider, model, turn2, nil)
 	if errPick != nil || got2Attempt1 == nil || got2Attempt1.ID != highID {
@@ -422,7 +422,7 @@ func TestManagerSessionAffinityRebindOnQuotaLCPPreservesBindingAcrossTransientFa
 	}
 	manager.MarkResult(ctx, Result{AuthID: lowID, Provider: provider, Model: model, Success: true, Options: turn2Failover})
 
-	// Once highID recovers from transient cooldown, turn 3 must return to highID.
+
 	expireSessionAffinityPriorityModelCooldown(t, manager, highID, model)
 	turn3 := makeTurnOpts(`{"messages":[{"role":"user","content":"turn 1 hello"},{"role":"assistant","content":"hi"},{"role":"user","content":"turn 2 question"},{"role":"assistant","content":"turn 2 answer"},{"role":"user","content":"turn 3 follow-up"}]}`)
 	got3, _, errPick := manager.pickNext(ctx, provider, model, turn3, nil)
@@ -431,7 +431,7 @@ func TestManagerSessionAffinityRebindOnQuotaLCPPreservesBindingAcrossTransientFa
 	}
 	manager.MarkResult(ctx, Result{AuthID: highID, Provider: provider, Model: model, Success: true, Options: turn3})
 
-	// Now turn 4 fails on highID with 429 quota, fails over to lowID, and must stay on lowID after highID recovers.
+
 	turn4 := makeTurnOpts(`{"messages":[{"role":"user","content":"turn 1 hello"},{"role":"assistant","content":"hi"},{"role":"user","content":"turn 2 question"},{"role":"assistant","content":"turn 2 answer"},{"role":"user","content":"turn 3 follow-up"},{"role":"assistant","content":"turn 3 answer"},{"role":"user","content":"turn 4 quota"}]}`)
 	got4Attempt1, _, errPick := manager.pickNext(ctx, provider, model, turn4, nil)
 	if errPick != nil || got4Attempt1 == nil || got4Attempt1.ID != highID {
@@ -483,7 +483,7 @@ func TestSessionAffinitySelectorRebindOnQuotaDirectPickRebindsWhenAuthRemovedOrZ
 		t.Fatalf("initial pick = %v (err=%v), want %q", first, errPick, authA.ID)
 	}
 
-	// Weight of authA becomes 0 -> filtered out by positiveWeightAuths; must rebind and stick to the new auth.
+
 	authAZero := &Auth{ID: "auth-a", Status: StatusActive, Attributes: map[string]string{"weight": "0", "priority": "1"}}
 	second, errPick := selector.Pick(ctx, "claude", "claude-3", opts, []*Auth{authAZero, authB, authC})
 	if errPick != nil || second == nil || second.ID == authA.ID {
@@ -536,7 +536,7 @@ func TestSessionAffinitySelectorRebindOnQuotaLCPCompactionPreservesMetadataOnTra
 		Success:  true,
 	})
 
-	// Put high into transient cooldown (502) and send a compacted continuation.
+
 	highTransient := &Auth{
 		ID:             "auth-high",
 		Status:         StatusError,
@@ -576,7 +576,7 @@ func TestSessionAffinitySelectorRebindOnQuotaLCPCompactionPreservesMetadataOnTra
 		Success:  true,
 	})
 
-	// Next turn after high recovers must still route back to high.
+
 	nextPayload := []byte(`{"contents":[
 		{"role":"user","parts":[{"text":"<summary>Steps 1 and 2 completed</summary>"}]},
 		{"role":"model","parts":[{"text":"ack 2"}]},
@@ -699,13 +699,13 @@ func TestManagerExecuteAndStreamRebindOnQuotaEndToEnd(t *testing.T) {
 				Headers: http.Header{"Session-Id": []string{"exec-session-1"}},
 			}
 
-			// 1. Cold Execute binds to highID.
+
 			resp, errExec := manager.Execute(ctx, []string{provider}, req, opts)
 			if errExec != nil || string(resp.Payload) != highID {
 				t.Fatalf("cold Execute = %q (err=%v), want %q", string(resp.Payload), errExec, highID)
 			}
 
-			// 2. Cascade transient errors on highID (502) and midID (503) during Execute -> fails over to lowID.
+
 			failAuthErr = map[string]error{
 				highID: &Error{HTTPStatus: http.StatusBadGateway, Message: "502 overloaded"},
 				midID:  &Error{HTTPStatus: http.StatusServiceUnavailable, Message: "503 connect error"},
@@ -715,7 +715,7 @@ func TestManagerExecuteAndStreamRebindOnQuotaEndToEnd(t *testing.T) {
 				t.Fatalf("transient cascade Execute = %q (err=%v), want %q", string(resp.Payload), errExec, lowID)
 			}
 
-			// 3. Clear transient errors and expire cooldowns -> next ExecuteStream returns to highID.
+
 			failAuthErr = nil
 			if !disableCooling {
 				expireSessionAffinityPriorityModelCooldown(t, manager, highID, model)
@@ -730,7 +730,7 @@ func TestManagerExecuteAndStreamRebindOnQuotaEndToEnd(t *testing.T) {
 				t.Fatalf("ExecuteStream after transient recovery = %q, want %q", string(chunk.Payload), highID)
 			}
 
-			// 4. Transient error on highID during ExecuteStream -> fails over to midID, then returns to highID.
+
 			failAuthErr = map[string]error{
 				highID: &Error{Code: ErrorCodeForceCooldown, Message: "stream completed without any response data"},
 			}
@@ -743,7 +743,7 @@ func TestManagerExecuteAndStreamRebindOnQuotaEndToEnd(t *testing.T) {
 				t.Fatalf("ExecuteStream transient failover = %q, want %q", string(chunk.Payload), midID)
 			}
 
-			// ErrorCodeForceCooldown always schedules a transient cooldown even when disableCooling is true.
+
 			failAuthErr = nil
 			expireSessionAffinityPriorityModelCooldown(t, manager, highID, model)
 			resp, errExec = manager.Execute(ctx, []string{provider}, req, opts)
@@ -751,7 +751,7 @@ func TestManagerExecuteAndStreamRebindOnQuotaEndToEnd(t *testing.T) {
 				t.Fatalf("Execute after stream transient recovery = %q (err=%v), want %q", string(resp.Payload), errExec, highID)
 			}
 
-			// 5. Quota error (429) on highID -> fails over and rebinds to midID permanently.
+
 			failAuthErr = map[string]error{
 				highID: &Error{HTTPStatus: http.StatusTooManyRequests, Message: "quota"},
 			}
@@ -842,7 +842,7 @@ func TestManagerSessionAffinityRebindOnNeverRefusesFailoverAndPreservesBinding(t
 				Options:  opts,
 			})
 
-			// Transient failure on highID must refuse failover with 503 session_auth_retry and keep binding.
+
 			manager.MarkResult(ctx, Result{
 				AuthID:   highID,
 				Provider: provider,
@@ -860,7 +860,7 @@ func TestManagerSessionAffinityRebindOnNeverRefusesFailoverAndPreservesBinding(t
 				}
 			}
 
-			// A new unbound session while highID is cooling down must still pick lowID.
+
 			gotOther, errOther := testCase.pick(manager, ctx, provider, model, otherOpts, nil)
 			if errOther != nil || gotOther == nil || gotOther.ID != lowID {
 				t.Fatalf("new session pick while highID unavailable = %v (err=%v), want %q", gotOther, errOther, lowID)
@@ -879,7 +879,7 @@ func TestManagerSessionAffinityRebindOnNeverRefusesFailoverAndPreservesBinding(t
 				Options:  opts,
 			})
 
-			// Quota/auth failures (429, 403) on highID must refuse failover with 429 session_auth_unavailable and keep binding.
+
 			for _, blockErr := range []*Error{
 				{HTTPStatus: http.StatusTooManyRequests, Message: "usage limit reached"},
 				{HTTPStatus: http.StatusForbidden, Message: "forbidden"},
@@ -955,7 +955,7 @@ func TestManagerSessionAffinityRebindOnNeverLCPAndFallbackKeyPreserveBinding(t *
 		}
 	}
 
-	// 1. LCP cold binding on highID.
+
 	turn1 := makeTurnOpts(`{"messages":[{"role":"user","content":"turn 1 hello"}]}`)
 	got1, _, errPick := manager.pickNext(ctx, provider, model, turn1, nil)
 	if errPick != nil || got1 == nil || got1.ID != highID {
@@ -963,7 +963,7 @@ func TestManagerSessionAffinityRebindOnNeverLCPAndFallbackKeyPreserveBinding(t *
 	}
 	manager.MarkResult(ctx, Result{AuthID: highID, Provider: provider, Model: model, Success: true, Options: turn1})
 
-	// 2. LCP turn 2 fails on highID with 429 quota -> failover attempt must refuse with 429 session_auth_unavailable and preserve binding.
+
 	turn2 := makeTurnOpts(`{"messages":[{"role":"user","content":"turn 1 hello"},{"role":"assistant","content":"hi"},{"role":"user","content":"turn 2 question"}]}`)
 	got2, _, errPick := manager.pickNext(ctx, provider, model, turn2, nil)
 	if errPick != nil || got2 == nil || got2.ID != highID {
@@ -996,8 +996,8 @@ func TestManagerSessionAffinityRebindOnNeverLCPAndFallbackKeyPreserveBinding(t *
 	}
 	manager.MarkResult(ctx, Result{AuthID: highID, Provider: provider, Model: model, Success: true, Options: turn2Recovered})
 
-	// 3. Fallback-key path (non-subagent, non-fork: conversation -> prompt_cache_key + conversation)
-	// refuses failover when bound auth is transiently unavailable.
+
+
 	fallbackInitOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{"conversation":"conv-never-1"}`),
 	}
@@ -1095,7 +1095,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		Headers: http.Header{"Session-Id": []string{"never-e2e-session-b"}},
 	}
 
-	// 1. Bind session A to authAID.
+
 	resp, errExec := manager.Execute(ctx, []string{provider}, req, sessionAOpts)
 	if errExec != nil || string(resp.Payload) != authAID {
 		t.Fatalf("cold Execute = %q (err=%v), want %q", string(resp.Payload), errExec, authAID)
@@ -1104,7 +1104,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("authB calls = %d, want 0", calls[authBID])
 	}
 
-	// 2. Make authA return 429 usage limit reached -> returns 429 to client without calling authB or running extra retry rounds.
+
 	calls[authAID] = 0
 	failAuthErr = map[string]func(int) error{
 		authAID: func(_ int) error {
@@ -1122,7 +1122,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("authB calls after authA 429 = %d, want 0", calls[authBID])
 	}
 
-	// 3. Next request on session A while authA is in 429 cooldown returns 429 session_auth_unavailable without calling authA or authB.
+
 	_, errExec = manager.Execute(ctx, []string{provider}, req, sessionAOpts)
 	if errExec == nil || statusCodeFromError(errExec) != http.StatusTooManyRequests {
 		t.Fatalf("subsequent Execute on cooled session A = %v, want 429", errExec)
@@ -1131,7 +1131,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("calls after cooled session A = (A=%d, B=%d), want (1, 0)", calls[authAID], calls[authBID])
 	}
 
-	// 4. A request with a new session ID (session B) goes to authB.
+
 	respB, errExecB := manager.Execute(ctx, []string{provider}, req, sessionBOpts)
 	if errExecB != nil || string(respB.Payload) != authBID {
 		t.Fatalf("new session B Execute = %q (err=%v), want %q", string(respB.Payload), errExecB, authBID)
@@ -1140,7 +1140,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("authB calls = %d, want 1", calls[authBID])
 	}
 
-	// 5. Expire authA cooldown -> session A still bound to authA.
+
 	failAuthErr = nil
 	expireSessionAffinityPriorityModelCooldown(t, manager, authAID, model)
 	resp, errExec = manager.Execute(ctx, []string{provider}, req, sessionAOpts)
@@ -1148,7 +1148,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("Execute after authA quota recovery = %q (err=%v), want %q", string(resp.Payload), errExec, authAID)
 	}
 
-	// 6. Transient 502 error on authA (with transient cooldown disabled) is retried on authA through retry rounds and never sent to authB.
+
 	prevTransientSec := transientErrorCooldownSeconds.Load()
 	SetTransientErrorCooldownSeconds(-1)
 	defer SetTransientErrorCooldownSeconds(int(prevTransientSec))
@@ -1171,7 +1171,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("calls after 502 retry = (A=%d, B=%d), want (2, 0)", calls[authAID], calls[authBID])
 	}
 
-	// 7. When authA fails with 502 across all retry rounds (or cooldown exceeds maxWait), Execute returns 503 session_auth_retry and never calls authB.
+
 	SetTransientErrorCooldownSeconds(-1)
 	manager.SetRetryConfig(2, 30*time.Second, 0)
 	calls[authAID] = 0
@@ -1193,7 +1193,7 @@ func TestManagerExecuteAndStreamRebindOnNeverEndToEnd(t *testing.T) {
 		t.Fatalf("calls after exhausted 502 retry rounds = (A=%d, B=%d), want (3, 0)", calls[authAID], calls[authBID])
 	}
 
-	// 8. When authA is in transient 502 cooldown exceeding maxWait, both initial and subsequent requests on session A return 503 session_auth_retry and never call authB.
+
 	SetTransientErrorCooldownSeconds(0)
 	manager.SetRetryConfig(2, 0, 0)
 	calls[authAID] = 0
@@ -1291,13 +1291,13 @@ func TestManagerSessionAffinityRebindOnNeverBlocksAntigravityCreditsCrossAuthFal
 		Headers: http.Header{"Session-Id": []string{"antigravity-never-session"}},
 	}
 
-	// 1. Cold Execute binds session to authA.
+
 	resp, errExec := manager.Execute(ctx, []string{provider}, req, opts)
 	if errExec != nil || string(resp.Payload) != authAID {
 		t.Fatalf("cold Execute = %q (err=%v), want %q", string(resp.Payload), errExec, authAID)
 	}
 
-	// 2. authA returns 429 and has no credits; authB has available credits, but rebind-on: never must block switching to authB.
+
 	failAuthA = true
 	calls[authAID] = 0
 	calls[authBID] = 0
@@ -1315,7 +1315,7 @@ func TestManagerSessionAffinityRebindOnNeverBlocksAntigravityCreditsCrossAuthFal
 		t.Fatalf("authB calls after ExecuteStream 429 = %d, want 0", calls[authBID])
 	}
 
-	// 3. Explicit PinnedAuthMetadataKey pointing to authB on the same session must also be rejected and never call authB via credits fallback.
+
 	pinnedBOpts := cliproxyexecutor.Options{
 		Headers: http.Header{"Session-Id": []string{"antigravity-never-session"}},
 		Metadata: map[string]any{
@@ -1365,13 +1365,13 @@ func TestManagerSessionAffinityRebindOnNeverSingleAuthDisabledOrModelRemovedRetu
 		Headers: http.Header{"Session-Id": []string{"single-never-session"}},
 	}
 
-	// 1. Bind session to authID.
+
 	resp, errExec := manager.Execute(ctx, []string{provider}, req, opts)
 	if errExec != nil || string(resp.Payload) != authID {
 		t.Fatalf("cold Execute = %q (err=%v), want %q", string(resp.Payload), errExec, authID)
 	}
 
-	// 2. Disable the only credential -> candidate list is empty, bound session must return 429 session_auth_unavailable (not 503).
+
 	disabled := auth.Clone()
 	disabled.Disabled = true
 	disabled.Status = StatusDisabled
@@ -1387,7 +1387,7 @@ func TestManagerSessionAffinityRebindOnNeverSingleAuthDisabledOrModelRemovedRetu
 		t.Fatalf("Execute disabled bound auth error = %v, want session_auth_unavailable", errExec)
 	}
 
-	// An unbound session when candidates is empty must still receive auth_not_found.
+
 	unboundOpts := cliproxyexecutor.Options{
 		Headers: http.Header{"Session-Id": []string{"single-never-unbound-session"}},
 	}
@@ -1395,7 +1395,7 @@ func TestManagerSessionAffinityRebindOnNeverSingleAuthDisabledOrModelRemovedRetu
 		t.Fatalf("Execute unbound session with empty candidates = %v, want auth_not_found", errUnbound)
 	}
 
-	// 3. Re-enable auth, but remove model support from registry -> bound session must also return 429 session_auth_unavailable.
+
 	enabled := auth.Clone()
 	enabled.Disabled = false
 	enabled.Status = StatusActive

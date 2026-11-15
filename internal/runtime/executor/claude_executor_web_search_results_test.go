@@ -19,8 +19,8 @@ import (
 
 const claudeWebSearchExecutorResults = `[{"type":"web_search_result","url":"https://example.com/a","title":"A","encrypted_content":"enc-a","page_age":null},{"type":"web_search_result","url":"https://example.com/b","title":"B","encrypted_content":"enc-b","page_age":null}]`
 
-// claudeWebSearchUpstream answers the first request with a native web search
-// and every later one with plain text, recording each request body.
+
+
 func claudeWebSearchUpstream(t *testing.T, bodies *[][]byte, mu *sync.Mutex) http.Handler {
 	t.Helper()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -143,8 +143,8 @@ func runClaudeWebSearchScenario(t *testing.T, cfg *config.Config, stream bool, r
 
 const (
 	claudeWebSearchExecutorUser = `{"type":"message","role":"user","content":[{"type":"input_text","text":"search for q"}]}`
-	// The history as Codex stores it: the web_search_call has no results, while
-	// the assistant message keeps its web_search_result_location annotations.
+
+
 	claudeWebSearchExecutorHistory = claudeWebSearchExecutorUser +
 		`,{"type":"web_search_call","id":"ws_srvtoolu_01abc","status":"completed","action":{"type":"search","query":"q"}},` +
 		`{"type":"message","role":"assistant","content":[{"type":"output_text","text":"found two pages","annotations":[{"type":"web_search_result_location","url":"https://example.com/a","title":"A","cited_text":"found two pages","encrypted_index":"IDX_A"}]}]},` +
@@ -228,8 +228,8 @@ func TestClaudeExecutor_WebSearchResultCacheDisabledByDefault(t *testing.T) {
 	}
 }
 
-// User payload rules stay the final barrier: a filter rule that removes the
-// result content must not be undone by the restore.
+
+
 func TestClaudeExecutor_WebSearchResultRestoreRunsBeforePayloadRules(t *testing.T) {
 	cfg := enabledClaudeWebSearchCacheConfig()
 	cfg.Payload = config.PayloadConfig{Filter: []config.PayloadFilterRule{{
@@ -279,7 +279,7 @@ func TestClaudeExecutor_WebSearchResultCacheHonorsConfiguredLimit(t *testing.T) 
 	if len(bodies) != 4 {
 		t.Fatalf("upstream requests = %d, want 4", len(bodies))
 	}
-	// Limit is 1, so session-2's search result evicted session-1's entry.
+
 	if got := claudeWebSearchResultContent(t, bodies[2]); got != "[]" {
 		t.Fatalf("evicted session-1: web_search_tool_result content = %s, want []", got)
 	}

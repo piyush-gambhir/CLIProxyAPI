@@ -13,18 +13,18 @@ import (
 
 var keepaliveSSEComment = []byte(": keepalive\n\n")
 
-// KeepaliveSSEComment returns the standard SSE comment used for keepalive.
+
 func KeepaliveSSEComment() []byte {
 	return bytes.Clone(keepaliveSSEComment)
 }
 
-// IsGrokClientUserAgent checks if the user agent contains "grok-pager" or "grok-shell".
+
 func IsGrokClientUserAgent(userAgent string) bool {
 	ua := strings.ToLower(userAgent)
 	return strings.Contains(ua, "grok-pager") || strings.Contains(ua, "grok-shell")
 }
 
-// IsGrokClientHeaders checks if the provided HTTP headers indicate a Grok client.
+
 func IsGrokClientHeaders(headers http.Header) bool {
 	if headers == nil {
 		return false
@@ -39,7 +39,7 @@ func IsGrokClientHeaders(headers http.Header) bool {
 	return false
 }
 
-// IsGrokClientContext checks if either the context (e.g. Gin context) or headers indicate a Grok client.
+
 func IsGrokClientContext(ctx context.Context, headers http.Header) bool {
 	if ctx != nil {
 		if ginCtx, ok := ctx.Value("gin").(*gin.Context); ok && ginCtx != nil && ginCtx.Request != nil {
@@ -51,12 +51,12 @@ func IsGrokClientContext(ctx context.Context, headers http.Header) bool {
 	return IsGrokClientHeaders(headers)
 }
 
-// IsKeepalivePayload reports whether a JSON payload has type "keepalive".
+
 func IsKeepalivePayload(payload []byte) bool {
 	return ojson.GetBytesNoCopy(payload, "type").String() == "keepalive"
 }
 
-// IsKeepaliveSSELine reports whether an SSE line represents a keepalive event or data frame.
+
 func IsKeepaliveSSELine(line []byte) bool {
 	trimmed := bytes.TrimSpace(line)
 	if bytes.HasPrefix(trimmed, []byte("event:")) {
@@ -70,9 +70,9 @@ func IsKeepaliveSSELine(line []byte) bool {
 	return false
 }
 
-// TransformKeepaliveSSELine transforms a keepalive SSE line into an SSE comment line
-// when isGrokClient is true. If the line is not a keepalive line or isGrokClient is false,
-// it returns the original line and false.
+
+
+
 func TransformKeepaliveSSELine(line []byte, isGrokClient bool) ([]byte, bool) {
 	if !isGrokClient {
 		return line, false

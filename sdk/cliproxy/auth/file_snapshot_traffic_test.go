@@ -17,8 +17,8 @@ import (
 
 const trafficAuthID = "traffic.json"
 
-// afterSaveStore is a FileTokenStore that runs afterSave once, right after the next
-// store write; failNext fails the next write instead.
+
+
 type afterSaveStore struct {
 	*sdkauth.FileTokenStore
 	afterSave func()
@@ -38,7 +38,7 @@ func (s *afterSaveStore) Save(ctx context.Context, auth *coreauth.Auth) (string,
 	return path, errSave
 }
 
-// newTrafficManager returns a manager on a real file store with one registered auth file.
+
 func newTrafficManager(t *testing.T) (*coreauth.Manager, *afterSaveStore, string) {
 	t.Helper()
 	dir := t.TempDir()
@@ -55,8 +55,8 @@ func newTrafficManager(t *testing.T) (*coreauth.Manager, *afterSaveStore, string
 	return manager, store, path
 }
 
-// readTrafficSnapshot synthesizes the auth file on disk as the watcher does, bound to the
-// bytes read. excluded stands for an attribute the file does not hold.
+
+
 func readTrafficSnapshot(t *testing.T, path, excluded string) *coreauth.Auth {
 	t.Helper()
 	data, errRead := os.ReadFile(path)
@@ -76,8 +76,8 @@ func readTrafficSnapshot(t *testing.T, path, excluded string) *coreauth.Auth {
 	return auths[0]
 }
 
-// requireDiscarded applies snapshot and requires the manager to discard it: the current
-// auth comes back, no error, nothing committed.
+
+
 func requireDiscarded(t *testing.T, manager *coreauth.Manager, snapshot *coreauth.Auth) *coreauth.Auth {
 	t.Helper()
 	before, _ := manager.GetByID(snapshot.ID)
@@ -89,7 +89,7 @@ func requireDiscarded(t *testing.T, manager *coreauth.Manager, snapshot *coreaut
 	return current
 }
 
-// requireApplied applies snapshot and requires the manager to commit it.
+
 func requireApplied(t *testing.T, manager *coreauth.Manager, snapshot *coreauth.Auth) {
 	t.Helper()
 	before, _ := manager.GetByID(snapshot.ID)
@@ -124,7 +124,7 @@ func diskField(t *testing.T, path, key string) any {
 	return content[key]
 }
 
-// assertResultRuntimeState checks that got still holds the runtime state a failed request left in want.
+
 func assertResultRuntimeState(t *testing.T, got, want *coreauth.Auth) {
 	t.Helper()
 	if want.Status != coreauth.StatusError || want.LastError == nil || !want.Unavailable || !want.Quota.Exceeded || len(want.ModelStates) != 1 {
@@ -153,8 +153,8 @@ func assertResultRuntimeState(t *testing.T, got, want *coreauth.Auth) {
 	}
 }
 
-// A request completes between a scan's read of the auth file and the apply of its
-// snapshot; the request's save leaves the file untouched, so the snapshot applies.
+
+
 func TestFileSnapshotAppliedAfterNoOpResultSave(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -179,9 +179,9 @@ func TestFileSnapshotAppliedAfterNoOpResultSave(t *testing.T) {
 	}
 }
 
-// A failed request leaves status, last error, cooldown, quota and model state on the
-// auth after a scan read the file; applying the scan's snapshot keeps all of it and
-// applies the snapshot's attributes in the same step.
+
+
+
 func TestFileSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -198,8 +198,8 @@ func TestFileSnapshotKeepsRequestRuntimeState(t *testing.T) {
 	assertResultRuntimeState(t, got, want)
 }
 
-// The operator edits the auth file after a request re-saved it; the scan reading the
-// edit applies it and the next request's save keeps it.
+
+
 func TestFileSnapshotAppliesExternalEditAfterResultSave(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -219,9 +219,9 @@ func TestFileSnapshotAppliesExternalEditAfterResultSave(t *testing.T) {
 	}
 }
 
-// A scan reads the file, then the auth-files PATCH persists a new prefix, with request
-// results before and after it. The scan's snapshot is discarded and the PATCH stays, on
-// disk too; a snapshot that read the written file applies.
+
+
+
 func TestFileSnapshotFencedByContentWriteAmidResults(t *testing.T) {
 	ctx := context.Background()
 	manager, store, path := newTrafficManager(t)
@@ -257,8 +257,8 @@ func TestFileSnapshotFencedByContentWriteAmidResults(t *testing.T) {
 	}
 }
 
-// The auth-files PATCH disables the auth after a scan read the file: the scan's snapshot,
-// read while the auth was enabled, must not enable it again.
+
+
 func TestFileSnapshotFencedByDisableToggle(t *testing.T) {
 	ctx := context.Background()
 	manager, _, path := newTrafficManager(t)
@@ -278,8 +278,8 @@ func TestFileSnapshotFencedByDisableToggle(t *testing.T) {
 	}
 }
 
-// The auth-files PATCH's save fails after a scan read the file: nothing changed on disk,
-// so the scan's snapshot still applies and brings the runtime back to the file's content.
+
+
 func TestFileSnapshotAppliedAfterFailedSave(t *testing.T) {
 	ctx := context.Background()
 	manager, store, path := newTrafficManager(t)
@@ -301,9 +301,9 @@ func TestFileSnapshotAppliedAfterFailedSave(t *testing.T) {
 	}
 }
 
-// A login or upload writes the auth file through the store itself, then hands the new auth
-// to the manager without persisting. A scan snapshot read before that write must not bring
-// the old content back, neither into the runtime nor, through the next request's save, to disk.
+
+
+
 func TestFileSnapshotFencedByWriteOutsideManager(t *testing.T) {
 	ctx := context.Background()
 	manager, store, path := newTrafficManager(t)

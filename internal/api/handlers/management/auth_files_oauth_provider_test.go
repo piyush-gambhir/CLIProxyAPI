@@ -79,7 +79,7 @@ func TestAuthFilesList_ReportsOAuthProvider(t *testing.T) {
 		if attributes == nil {
 			attributes = make(map[string]string)
 		}
-		// Runtime-only entries do not require files on disk.
+
 		attributes["runtime_only"] = "true"
 		if _, errRegister := manager.Register(context.Background(), &coreauth.Auth{
 			ID: tc.id, FileName: tc.id + ".json", Provider: "vendor", Attributes: attributes, Metadata: tc.metadata,
@@ -157,7 +157,7 @@ func TestAuthFilesOAuthProvider_LoginLifecycle(t *testing.T) {
 					t.Fatalf("HasMultipleAuthProviders(%q) = %t", tc.portal, got)
 				}
 
-				// Exercise management conversion independently of the host's stamping.
+
 				rawResp, errPoll := provider.PollLogin(context.Background(), pluginapi.AuthLoginPollRequest{Provider: tc.portal})
 				if errPoll != nil {
 					t.Fatalf("plugin poll: %v", errPoll)
@@ -336,7 +336,7 @@ func TestAuthFilesOAuthProvider_ColdStartLifecycle(t *testing.T) {
 			case "unhandled-plugin":
 				ctx.PluginAuthParser = host
 			case "core-plugin-parser":
-				// The synthesizer must also support parsers that omit file attribution.
+
 				ctx.PluginAuthParser = oauthProviderFileParser(func(_ context.Context, req pluginapi.AuthParseRequest) (*coreauth.Auth, bool, error) {
 					auth := host.AuthDataToCoreAuth(pluginapi.AuthData{Provider: "vendor", StorageJSON: []byte(`{"type":"vendor"}`)}, req.Path, req.FileName)
 					auth.Metadata = nil

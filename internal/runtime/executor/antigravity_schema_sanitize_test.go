@@ -44,9 +44,9 @@ const sanitizeTestPayload = `{
   }
 }`
 
-// TestSanitizeAntigravityRequestSchemasPreservesHistory guards against the schema cleaner being
-// applied to the whole payload, which silently stripped keys such as "title" from functionCall
-// arguments replayed from conversation history.
+
+
+
 func TestSanitizeAntigravityRequestSchemasPreservesHistory(t *testing.T) {
 	for _, tc := range []struct {
 		name                 string
@@ -84,8 +84,8 @@ func TestSanitizeAntigravityRequestSchemasPreservesHistory(t *testing.T) {
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasStillCleansSchemas verifies the schema itself is still
-// renamed and cleaned, so scoping the cleaner did not disable it.
+
+
 func TestSanitizeAntigravityRequestSchemasStillCleansSchemas(t *testing.T) {
 	got := sanitizeAntigravityRequestSchemas(sanitizeTestPayload, false)
 
@@ -113,8 +113,8 @@ func TestSanitizeAntigravityRequestSchemasStillCleansSchemas(t *testing.T) {
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasCleansResultSchemas covers the schemas a function
-// declaration can carry besides its parameters. Missing one sends it upstream uncleaned.
+
+
 func TestSanitizeAntigravityRequestSchemasCleansResultSchemas(t *testing.T) {
 	payload := `{"request": {"tools": [{"functionDeclarations": [{
 	  "name": "t",
@@ -138,21 +138,21 @@ func TestSanitizeAntigravityRequestSchemasCleansResultSchemas(t *testing.T) {
 	}
 }
 
-// TestAntigravitySchemaPathsCoverEverySchemaLocation pins the set of payload locations that get
-// cleaned. Scoping the cleaner traded "clean everything" for an explicit list, so a schema at a
-// location missing from that list now reaches upstream uncleaned and is rejected — four such gaps
-// were found this way, one per location that had been overlooked.
-//
-// The declaration keys must stay in step with allowedToolKeys in
-// internal/translator/antigravity/claude/antigravity_claude_request.go, which is the authoritative
-// list of what a function declaration may carry. Add a schema-bearing key there and it must be
-// added here too; this test only fails once the key is listed below, so treat the pairing as
-// something to check whenever that list changes.
+
+
+
+
+
+
+
+
+
+
 func TestAntigravitySchemaPathsCoverEverySchemaLocation(t *testing.T) {
 	const schema = `{"type":"object","$id":"drop","properties":{"a":{"type":"string"}}}`
 
-	// Both spellings of the declarations container are exercised: the Gemini translator forwards
-	// snake_case untouched, so covering only camelCase leaves those requests uncleaned.
+
+
 	for _, declContainer := range []string{"functionDeclarations", "function_declarations"} {
 		for _, genContainer := range antigravityGenerationConfigContainers {
 			t.Run(declContainer+"_"+strings.TrimPrefix(genContainer, "request."), func(t *testing.T) {
@@ -188,8 +188,8 @@ func TestAntigravitySchemaPathsCoverEverySchemaLocation(t *testing.T) {
 				}
 				base := "request.tools.0." + declContainer + ".0."
 				for _, k := range antigravityDeclarationSchemaKeys {
-					// Only the camelCase alias is renamed onto parameters, matching whole-payload
-					// cleaning. Every other spelling is cleaned where the client put it.
+
+
 					if k == "parametersJsonSchema" {
 						if ojson.Get(got, base+k).Exists() {
 							t.Errorf("%s should have been renamed onto parameters: %s", k, got)
@@ -206,10 +206,10 @@ func TestAntigravitySchemaPathsCoverEverySchemaLocation(t *testing.T) {
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasMatchesWholePayloadCleaning pins the emitted schema to what
-// whole-payload cleaning produced. Narrowing the scope must change which nodes are cleaned, never
-// the result for a schema node — in particular the Claude VALIDATED placeholder, which the cleaner
-// only adds when the schema is not top-level.
+
+
+
+
 func TestSanitizeAntigravityRequestSchemasMatchesWholePayloadCleaning(t *testing.T) {
 	shapes := map[string]string{
 		"optionalOnly": `{"type":"object","properties":{"flag":{"type":"string"}}}`,
@@ -235,7 +235,7 @@ func TestSanitizeAntigravityRequestSchemasMatchesWholePayloadCleaning(t *testing
 		}
 	}
 
-	// Explicitly pin the placeholder, so the equivalence above cannot pass by both sides dropping it.
+
 	doc := `{"request":{"tools":[{"functionDeclarations":[{"name":"t","parameters":` + shapes["optionalOnly"] + `}]}]}}`
 	got := ojson.Get(sanitizeAntigravityRequestSchemas(doc, true), schemaPath)
 	if req := got.Get("required").Array(); len(req) != 1 || req[0].String() != "_" {
@@ -431,8 +431,8 @@ func TestAntigravityBuildRequestSanitizesSnakeCaseGenerationResponseSchemas(t *t
 			}
 
 			base := "request.generationConfig."
-			// The upstream API accepts either spelling, so the field must stay where the client put
-			// it. Only the unsupported keywords inside it are what upstream rejects.
+
+
 			schema := ojson.GetBytes(encoded, base+testCase.alias)
 			if !schema.Exists() {
 				t.Fatalf("snake_case response schema was renamed or dropped: %s", encoded)
@@ -450,8 +450,8 @@ func TestAntigravityBuildRequestSanitizesSnakeCaseGenerationResponseSchemas(t *t
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasCleansBothSpellingsInPlace covers a payload carrying both
-// spellings: each is cleaned where it sits, and neither is silently dropped.
+
+
 func TestSanitizeAntigravityRequestSchemasCleansBothSpellingsInPlace(t *testing.T) {
 	payload := `{"request":{"generationConfig":{` +
 		`"responseSchema":{"type":"object","$id":"drop-a","properties":{"canonical":{"type":"string"}}},` +
@@ -477,13 +477,13 @@ func TestSanitizeAntigravityRequestSchemasCleansBothSpellingsInPlace(t *testing.
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasIsIdempotent guards the hint duplication seen in
-// production, where a schema cleaned by a translator was cleaned again by this executor.
+
+
 func TestSanitizeAntigravityRequestSchemasIsIdempotent(t *testing.T) {
-	// "withDesc" already has a description, so the hint is parenthesised; "bare" has none, so the
-	// hint is stored on its own. Both spellings must survive a second cleaning pass unchanged.
-	// "compound" has no description and two hints, so the first pass stores the enum hint bare and
-	// appends the constraint after it — the second pass must recognise that leading bare form.
+
+
+
+
 	payload := `{"request": {"tools": [{"functionDeclarations": [{
 	  "name": "manage_todo_list",
 	  "parameters": {"type": "object", "properties": {
@@ -508,20 +508,20 @@ func TestSanitizeAntigravityRequestSchemasIsIdempotent(t *testing.T) {
 	}
 }
 
-// propertyNamesShapes are the two nestings reported against the private Gemini backend, which
-// rejects the standard JSON Schema keyword "propertyNames" with an unknown-field 400.
+
+
 var propertyNamesShapes = map[string]string{
-	// An object nested in an array item.
+
 	"arrayItem": `{"type":"object","properties":{"records":{"type":"array","items":{"type":"object",` +
 		`"properties":{"name":{"type":"string"}},"propertyNames":{"type":"string"}}}}}`,
-	// A dynamic map declared by a property that is itself named "properties".
+
 	"propertyNamedProperties": `{"type":"object","properties":{"properties":{"type":"object",` +
 		`"propertyNames":{"type":"string"}}}}`,
 }
 
-// TestSanitizeAntigravityRequestSchemasStripsPropertyNamesEverywhere covers every payload location
-// that can carry a schema, in both spellings of the declarations container. A location that keeps
-// "propertyNames" sends a request the backend rejects before inference.
+
+
+
 func TestSanitizeAntigravityRequestSchemasStripsPropertyNamesEverywhere(t *testing.T) {
 	for shapeName, schema := range propertyNamesShapes {
 		for _, declContainer := range []string{"functionDeclarations", "function_declarations"} {
@@ -554,9 +554,9 @@ func TestSanitizeAntigravityRequestSchemasStripsPropertyNamesEverywhere(t *testi
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasKeepsPropertyNamesInHistory pins the boundary of the fix:
-// only schema locations may be rewritten. A functionCall argument or a property named
-// "propertyNames" is data and must survive untouched.
+
+
+
 func TestSanitizeAntigravityRequestSchemasKeepsPropertyNamesInHistory(t *testing.T) {
 	payload := `{"request":{
 		"contents":[{"role":"model","parts":[{"functionCall":{"name":"t","args":{
@@ -588,8 +588,8 @@ func TestSanitizeAntigravityRequestSchemasKeepsPropertyNamesInHistory(t *testing
 	}
 }
 
-// TestAntigravityBuildRequestStripsPropertyNamesFromOutboundBody asserts on the body that actually
-// leaves the executor, so a later transformation cannot reintroduce the keyword unnoticed.
+
+
 func TestAntigravityBuildRequestStripsPropertyNamesFromOutboundBody(t *testing.T) {
 	for shapeName, schema := range propertyNamesShapes {
 		for _, modelName := range []string{"gemini-3.1-pro", "claude-opus-4-6"} {
@@ -620,8 +620,8 @@ func TestAntigravityBuildRequestStripsPropertyNamesFromOutboundBody(t *testing.T
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasStripsEncryptedMetadata covers Codex client tool parameters
-// that carry "encrypted": true or "encrypted": false markers.
+
+
 func TestSanitizeAntigravityRequestSchemasStripsEncryptedMetadata(t *testing.T) {
 	encryptedSchema := `{"type":"object","properties":{"key":{"type":"string","encrypted":true},"timeout":{"type":"integer","encrypted":false}},"required":["key"]}`
 
@@ -642,8 +642,8 @@ func TestSanitizeAntigravityRequestSchemasStripsEncryptedMetadata(t *testing.T) 
 }
 
 func TestSanitizeAntigravityRequestSchemasNormalizesTrueBooleanSubschemas(t *testing.T) {
-	// Issue #3551: RevenueCat MCP and other MCP tools declare boolean `true` subschemas in properties.
-	// Upstream Antigravity rejects boolean `true` in Schema objects with HTTP 400.
+
+
 	payload := `{"request":{
 		"tools":[{"functionDeclarations":[{
 			"name":"mcp__revenuecat_create_product_store_state_plan",
@@ -693,39 +693,39 @@ func TestSanitizeAntigravityRequestSchemasNormalizesTrueBooleanSubschemas(t *tes
 			}
 		}
 
-		// Check false is preserved
+
 		if val := params.Get("properties.disabled"); val.Type != ojson.False {
 			t.Errorf("useAntigravitySchema=%v: disabled should be false, got %s", useAntigravitySchema, val.Raw)
 		}
 
-		// Check nested property
+
 		if val := params.Get("properties.metadata.properties.nested_flag"); val.Type != ojson.JSON || val.Raw != "{}" {
 			t.Errorf("useAntigravitySchema=%v: nested_flag should be {}, got %s", useAntigravitySchema, val.Raw)
 		}
 
-		// Check items: true -> items: {}
+
 		if val := params.Get("properties.tags.items"); val.Type != ojson.JSON || val.Raw != "{}" {
 			t.Errorf("useAntigravitySchema=%v: tags.items should be {}, got %s", useAntigravitySchema, val.Raw)
 		}
 
-		// Check large int preserved without float conversion
+
 		if val := params.Get("properties.large_int"); val.Raw != "9007199254740993" {
 			t.Errorf("useAntigravitySchema=%v: large_int corrupted, got %s", useAntigravitySchema, val.Raw)
 		}
 	}
 }
 
-// Issue 3662 regression: the original fix preserved multi-branch tool unions for
-// every Antigravity model, but the Antigravity Claude backend converts Gemini
-// function declarations into Claude custom.input_schema and rejects nested
-// multi-branch anyOf/oneOf unions with HTTP 400 ("JSON schema is invalid").
-// Tool schemas for Claude models must therefore have nested multi-branch unions
-// flattened to a single strongest branch before they are sent upstream, while
-// Gemini models keep the preserved-union behavior from the original fix.
+
+
+
+
+
+
+
 func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(t *testing.T) {
-	// Reduced reproduction from the regression report: a nested boolean/object/array
-	// union under properties.value, plus a two-string-branch nested union. Merely
-	// declaring these tools must not poison the whole Claude request.
+
+
+
 	payload := []byte(`{"request":{"tools":[{"functionDeclarations":[{"name":"diagnostic_union","parametersJsonSchema":{` +
 		`"type":"object",` +
 		`"properties":{` +
@@ -763,7 +763,7 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 		if value.Get("anyOf").Exists() || value.Get("oneOf").Exists() {
 			t.Fatalf("claude tool union survived sanitization; Antigravity Claude rejects nested multi-branch unions: %s", params.Raw)
 		}
-		// The pre-regression behavior selected the strongest (object) branch.
+
 		if got := value.Get("type").String(); got != "object" {
 			t.Fatalf("claude flattened value type = %q, want object (strongest branch): %s", got, params.Raw)
 		}
@@ -783,14 +783,14 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 		}
 	})
 
-	// The Claude-request translator serves whichever Antigravity model the client
-	// selected, Gemini included: its union handling must stay model-unaware and
-	// preserve multi-branch unions, because only the executor knows the target
-	// model. Flattening in the translator would lose non-first branches (audio)
-	// before the executor's Gemini path could keep them.
-	// Function return schemas are not the rejected custom.input_schema: even for
-	// Claude models their multi-branch unions must survive cleaning, like any other
-	// response-side schema. Only declaration parameter schemas are flattened.
+
+
+
+
+
+
+
+
 	t.Run("claude keeps unions in function return schemas", func(t *testing.T) {
 		unionSchema := `{"type":"object","properties":{"item":{"anyOf":[{"type":"string"},{"type":"object","properties":{"image":{"type":"string"}},"required":["image"]},{"type":"object","properties":{"audio":{"type":"string"}},"required":["audio"]}]}},"required":["item"]}`
 		decl := `{"name":"diagnostic_union"` +
@@ -824,10 +824,10 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 		}
 	})
 
-	// A nullable multi-branch union cleaned by the Claude-request translator first
-	// (which strips the null branch and sets nullable:true on the parent) must keep
-	// that nullability when the executor flattens it for a Claude model, matching
-	// what direct Claude cleaning produces.
+
+
+
+
 	t.Run("claude chain keeps nullable marker after flattening", func(t *testing.T) {
 		input := []byte(`{"model":"claude-opus-5-5-high","max_tokens":1024,"messages":[{"role":"user","content":"hi"}],"tools":[{"name":"diagnostic_union","input_schema":{"type":"object","properties":{"value":{"anyOf":[{"type":"string"},{"type":"integer"},{"type":"null"}]}},"required":["value"]}}]}`)
 		translated, errConv := antigravityclaude.ConvertClaudeRequestToAntigravity("claude-opus-5-5-high", input, false)
@@ -888,9 +888,9 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 	})
 
 	t.Run("gemini keeps preserved tool unions", func(t *testing.T) {
-		// One model per existing useAntigravitySchema group: gemini-3.1-pro shares the
-		// Claude VALIDATED placeholder group, gemini-3.6-flash does not. Both are Gemini
-		// and must keep the preserved unions from the original Issue 3662 fix.
+
+
+
 		for _, modelName := range []string{"gemini-3.1-pro-low", "gemini-3.6-flash-high"} {
 			params := declParams(t, modelName)
 
@@ -907,11 +907,11 @@ func TestAntigravityBuildRequestFlattensToolUnionsForClaude_Issue3662Regression(
 	})
 }
 
-// TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations is the
-// regression test for the quadratic tool sanitizing reported in Issue 6714:
-// sanitizing must not rewrite the whole tools document once per function
-// declaration. The allocation bound is asserted directly in the test (not via
-// a benchmark) so a return to per-declaration document rewrites fails loudly.
+
+
+
+
+
 func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *testing.T) {
 	const declCount = 256
 
@@ -923,14 +923,14 @@ func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *test
 			input.WriteByte(',')
 			want.WriteByte(',')
 		}
-		// parametersJsonSchema forces the rename onto parameters and $id forces
-		// a cleaner rewrite of the schema. The padded description sits on the
-		// declaration, outside the schema, so whole-document copies must pay for
-		// it while per-declaration edits do not; the bound below then measures
-		// document-rewrite cost only, not the cleaner's per-schema cost (Issue 6713).
+
+
+
+
+
 		fmt.Fprintf(&input, `{"name":"tool_%d","description":"%s","parametersJsonSchema":{"type":"object","$id":"drop","properties":{"q":{"type":"string"}}}}`, i, strings.Repeat("x", 4096))
-		// The schema has no required properties, so the Claude VALIDATED
-		// placeholder is inserted even on the Gemini path (antigravity=true).
+
+
 		fmt.Fprintf(&want, `{"name":"tool_%d","description":"%s","parameters":{"type":"object","properties":{"q":{"type":"string"},"_":{"type":"boolean"}},"required":["_"]}}`, i, strings.Repeat("x", 4096))
 	}
 	input.WriteString(`]}]}}`)
@@ -949,10 +949,10 @@ func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *test
 			ojson.Get(got, "request.tools.0.functionDeclarations.0").Raw)
 	}
 
-	// Whole-document work is bounded by a constant number of passes: extracting
-	// request.tools, rebuilding it, and writing it back. Everything beyond a
-	// small multiple of the payload size means per-declaration document rewrites
-	// are back; the pre-fix implementation allocated O(declCount x payload).
+
+
+
+
 	const allowedCopies = 32
 	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > uint64(allowedCopies*len(payload)) {
 		t.Fatalf("sanitizing %d declarations allocated %d bytes for a %d byte payload, want at most %d (cost must be linear in the tools size, not per declaration)",
@@ -960,12 +960,12 @@ func TestSanitizeAntigravityRequestSchemasScalesLinearlyWithDeclarations(t *test
 	}
 }
 
-// TestSanitizeAntigravityRequestSchemasPreservesToolArrayWhitespace pins the
-// byte-equivalence claim of the per-declaration rewrite: rebuilding the tools
-// and declarations arrays must keep the whitespace around array elements, so
-// a pretty-printed payload only changes inside the cleaned declarations. The
-// expected value is the input with only the affected schema bytes replaced,
-// exactly what the previous whole-document sjson edits produced.
+
+
+
+
+
+
 func TestSanitizeAntigravityRequestSchemasPreservesToolArrayWhitespace(t *testing.T) {
 	input := "{\n" +
 		"  \"request\": {\n" +
@@ -980,13 +980,13 @@ func TestSanitizeAntigravityRequestSchemasPreservesToolArrayWhitespace(t *testin
 		"  }\n" +
 		"}\n"
 
-	// Declaration a is renamed and cleaned in place (sjson compacts the
-	// replacement gaps inside the edited node, as the whole-document edits
-	// did). Declaration b is already clean, and declarations b and c and
-	// the googleSearch tool are untouched, so every other byte (including the
-	// whitespace around commas and brackets) must survive verbatim. The odd
-	// "}} ," separator is the declaration's own closing bytes, one space of
-	// inter-element whitespace, the comma, and the newline.
+
+
+
+
+
+
+
 	want := strings.Replace(input,
 		`{"name": "a", "parametersJsonSchema": {"type": "object", "$id": "drop", "properties": {"q": {"type": "string"}}}}`,
 		`{"name": "a","parameters":{"type": "object", "properties": {"q": {"type": "string"},"_":{"type":"boolean"}},"required":["_"]}}`, 1)

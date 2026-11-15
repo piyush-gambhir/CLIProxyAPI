@@ -67,7 +67,7 @@ func TestPreparedMigrationKeepsReleaseAtSourceUntilTakeover(t *testing.T) {
 	if errRelease := next.PushConcurrencyRelease(context.Background(), frame); !errors.Is(errRelease, ErrNotConnected) {
 		t.Fatalf("unacknowledged target accepted release: %v", errRelease)
 	}
-	// Cancellation before the subscriber reports the plan also rolls back balance state.
+
 	source.failClusterRebalance()
 	frame.ReleaseSeq++
 	if errRelease := source.PushConcurrencyRelease(context.Background(), frame); errRelease != nil {

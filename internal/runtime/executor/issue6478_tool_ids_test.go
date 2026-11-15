@@ -23,7 +23,7 @@ var issue6478Calls = []struct {
 }{
 	{id: "Write:1#e1f0da81143649f3a378d24af6fc3ec9", name: "Write"},
 	{id: "PowerShell:66#cd50350578c34275a26a09a477a81ffb", name: "PowerShell"},
-	// A lossy replacement would collide with the first call's already legal ID.
+
 	{id: "Write_1_e1f0da81143649f3a378d24af6fc3ec9", name: "Read"},
 	{id: "call_8jAZYBK5veMdr1DD2DqObARK", name: "Bash"},
 }
@@ -59,8 +59,8 @@ func issue6478AssertPortableIDs(t *testing.T, ids []string) {
 	}
 }
 
-// Exercise both public execution paths, then replay the client-visible IDs back
-// through the real Claude-to-Devin request builder and inspect the wire payload.
+
+
 func TestIssue6478_DevinClaudeOutputAndToolResultRoundTrip(t *testing.T) {
 	var frames []byte
 	for i, call := range issue6478Calls {

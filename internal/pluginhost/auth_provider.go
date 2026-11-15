@@ -210,7 +210,7 @@ func (h *Host) HasAuthProvider(provider string) bool {
 	return h.authProviderRecord(provider) != nil
 }
 
-// HasMultipleAuthProviders reports whether the active owning plugin declares multiple OAuth entries.
+
 func (h *Host) HasMultipleAuthProviders(provider string) bool {
 	record := h.authProviderRecord(provider)
 	return record != nil && h.recordHasMultipleAuthProviders(*record)
@@ -224,7 +224,7 @@ func (h *Host) recordHasMultipleAuthProviders(record capabilityRecord) bool {
 	return okIdentifiers && len(identifiers) > 1
 }
 
-// SameAuthProvider reports whether providerA and providerB belong to the same active plugin auth provider.
+
 func (h *Host) SameAuthProvider(providerA, providerB string) bool {
 	providerA = normalizeProviderID(providerA)
 	providerB = normalizeProviderID(providerB)
@@ -725,7 +725,7 @@ func pluginAuthParseResponseAuths(resp pluginapi.AuthParseResponse) []pluginapi.
 
 type oauthProxyURLContextKey struct{}
 
-// WithOAuthProxyURL attaches a session-scoped proxy URL to ctx for plugin OAuth login calls.
+
 func WithOAuthProxyURL(ctx context.Context, proxyURL string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -1051,7 +1051,7 @@ func (h *Host) RefreshAuth(ctx context.Context, auth *coreauth.Auth) (refreshed 
 	return next, true, nil
 }
 
-// explicitPortalHint must be resolved before merging existing auth fields.
+
 func preserveAuthOAuthProviderMetadata(data *pluginapi.AuthData, auth *coreauth.Auth, explicitPortalHint string) {
 	if data == nil || auth == nil {
 		return

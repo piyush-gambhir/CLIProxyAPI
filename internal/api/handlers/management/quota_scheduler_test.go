@@ -13,8 +13,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/quota"
 )
 
-// useIsolatedQuotaStore points the status endpoint at a private store so the
-// test does not depend on the process-wide one.
+
+
 func useIsolatedQuotaStore(t *testing.T, now time.Time) *quota.Store {
 	t.Helper()
 	store := quota.NewStore(func() time.Time { return now })
@@ -40,10 +40,10 @@ func requestQuotaSchedulerStatus(t *testing.T, h *Handler) map[string]any {
 	return payload
 }
 
-// TestQuotaSchedulerStatusMatchesTheContract pins the response to the shape the
-// external Limits view decodes: an accounts map keyed by auth file name, each
-// account carrying provider, plan, fetched_at and the canonical windows, each
-// window carrying used_percent, reset_at, known and hard_limited.
+
+
+
+
 func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "")
 	now := time.Now().UTC().Truncate(time.Second)
@@ -82,7 +82,7 @@ func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 	h := NewHandlerWithoutConfigFilePath(cfg, manager)
 	payload := requestQuotaSchedulerStatus(t, h)
 
-	// Extra top-level keys the design adds on top of the contract.
+
 	if payload["strategy"] != "reset-soonest" {
 		t.Fatalf("strategy = %v, want reset-soonest", payload["strategy"])
 	}
@@ -128,8 +128,8 @@ func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 			t.Fatalf("claude %s reset_at = %q, want RFC3339: %v", windowKey, resetAt, errParse)
 		}
 	}
-	// A Claude account has no weekly window; the key must be absent, not null,
-	// so the contract's optional field decodes.
+
+
 	if _, present := claude["weekly"]; present {
 		t.Fatalf("claude account should not carry a weekly window: %v", claude)
 	}
@@ -148,7 +148,7 @@ func TestQuotaSchedulerStatusMatchesTheContract(t *testing.T) {
 		t.Fatalf("codex account should not carry a fable window: %v", codex)
 	}
 
-	// The ranking view is grouped per provider family and ordered by pick order.
+
 	ranking, ok := payload["ranking"].([]any)
 	if !ok || len(ranking) != 2 {
 		t.Fatalf("ranking = %v, want one entry per credential", payload["ranking"])
@@ -236,8 +236,8 @@ func TestQuotaSchedulerStatusWithNoCredentials(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
 	}
-	// An empty pool must still emit an accounts object and an empty ranking array,
-	// not null, so the decoder on the other side succeeds.
+
+
 	var raw struct {
 		Accounts map[string]any `json:"accounts"`
 		Ranking  []any          `json:"ranking"`
@@ -303,14 +303,14 @@ func TestRoutingStrategyNameAndGuardDefaults(t *testing.T) {
 		t.Fatalf("fiveHourGuardPercent() = %v, want 75", got)
 	}
 
-	// An out-of-range guard is ignored rather than applied.
+
 	outOfRange := 150.0
 	cfg.Routing.ResetSoonest.FiveHourGuardPercent = &outOfRange
 	if got := h.fiveHourGuardPercent(); got != quota.DefaultFiveHourGuardPercent {
 		t.Fatalf("fiveHourGuardPercent() = %v, want the default", got)
 	}
 
-	// An unknown strategy is echoed back rather than silently renamed.
+
 	cfg.Routing.Strategy = "mystery"
 	if got := h.routingStrategyName(); got != "mystery" {
 		t.Fatalf("routingStrategyName() = %q, want mystery", got)

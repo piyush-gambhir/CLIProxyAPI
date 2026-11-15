@@ -14,7 +14,7 @@ import (
 func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Create a listener on a random available port.
+
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
@@ -37,12 +37,12 @@ func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(
 	})
 	server.server.Handler = engine
 
-	// Start the server with the listener.
+
 	go func() {
 		_ = server.server.Serve(ln)
 	}()
 
-	// Start an in-flight request.
+
 	reqDone := make(chan error, 1)
 	go func() {
 		resp, errGet := http.Get("http://" + ln.Addr().String() + "/slow")
@@ -60,9 +60,9 @@ func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(
 
 	<-reqStarted
 
-	// Call server.Stop with an expired context (simulating the expired shutdown deadline).
-	// Under violent shutdown (s.server.Close), the server should immediately close in-flight
-	// connections without waiting and without returning context deadline exceeded.
+
+
+
 	expiredCtx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 	defer cancel()
 
@@ -77,7 +77,7 @@ func TestServerStop_ViolentShutdownImmediatelyClosesWithoutContextDeadlineError(
 		t.Fatalf("server.Stop error = %v, want nil for violent shutdown", errStop)
 	}
 
-	// Verify the in-flight request was terminated / interrupted.
+
 	select {
 	case errReq := <-reqDone:
 		if errReq == nil {

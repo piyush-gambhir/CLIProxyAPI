@@ -1,4 +1,4 @@
-// Package credentialweight defines shared credential weight validation and parsing.
+
 package credentialweight
 
 import (
@@ -10,14 +10,14 @@ import (
 )
 
 const (
-	// Default is used when a credential does not define a weight.
+
 	Default int64 = 1
-	// Max bounds scheduler arithmetic while allowing practical proportional routing.
+
 	Max int64 = 1_000_000
 )
 
-// Normalize validates and normalizes an explicit weight. Non-positive values are
-// valid and normalize to zero, which excludes the credential from weighted routing.
+
+
 func Normalize(weight int64) (int64, error) {
 	if weight <= 0 {
 		return 0, nil
@@ -28,7 +28,7 @@ func Normalize(weight int64) (int64, error) {
 	return weight, nil
 }
 
-// ParseString parses a scheduler attribute. An empty value uses the default weight.
+
 func ParseString(raw string) (int64, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -41,7 +41,7 @@ func ParseString(raw string) (int64, error) {
 	return Normalize(weight)
 }
 
-// ParseValue parses a JSON-compatible auth-file metadata value.
+
 func ParseValue(value any) (int64, error) {
 	switch typed := value.(type) {
 	case int:

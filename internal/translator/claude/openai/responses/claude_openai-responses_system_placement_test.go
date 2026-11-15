@@ -29,10 +29,10 @@ func placementMessages(root ojson.Result) [][]byte {
 	return messages
 }
 
-// Codex appends system-level items to the end of input on later turns. The
-// messages translated for one turn must stay a prefix of the next turn's
-// messages and the top-level system blocks must not change, or Claude's prompt
-// cache misses on everything after the first changed block.
+
+
+
+
 func TestResponsesMidSessionSystemItemsKeepPromptPrefixBetweenTurns(t *testing.T) {
 	turnTwo := `[
 		{"type": "message", "role": "developer", "content": [{"type": "input_text", "text": "base instructions"}]},
@@ -79,8 +79,8 @@ func TestResponsesMidSessionSystemItemsKeepPromptPrefixBetweenTurns(t *testing.T
 	}
 }
 
-// A queued turn attaches to the next user message emitted, which may be the
-// user message still being accumulated when the item arrives.
+
+
 func TestResponsesMidSessionSystemItemFollowsPendingUserMessage(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
 		"model": "claude-opus-5",
@@ -104,8 +104,8 @@ func TestResponsesMidSessionSystemItemFollowsPendingUserMessage(t *testing.T) {
 	}
 }
 
-// A system-level item between a tool call and its output must not separate
-// tool_use from tool_result. It follows the tool_result message.
+
+
 func TestResponsesMidSessionSystemItemWaitsForToolResult(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
 		"model": "claude-opus-5",
@@ -132,9 +132,9 @@ func TestResponsesMidSessionSystemItemWaitsForToolResult(t *testing.T) {
 	}
 }
 
-// Items with a part a role=system turn cannot carry, items that are not
-// messages, and items no user message follows keep the top-level path. The
-// structured-output instruction stays the last system block.
+
+
+
 func TestResponsesMidSessionSystemItemTopLevelFallbacks(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
 		"model": "claude-opus-5",
@@ -173,8 +173,8 @@ func TestResponsesMidSessionSystemItemTopLevelFallbacks(t *testing.T) {
 	}
 }
 
-// A request carrying only a structured-output format keeps its fallback user
-// message now that the instruction is appended after the input loop.
+
+
 func TestResponsesStructuredOutputOnlyKeepsFallbackUserMessage(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{"model":"claude-opus-5",`+placementFormatJSON+`}`)
 	if got := len(root.Get("system").Array()); got != 1 {
@@ -185,9 +185,9 @@ func TestResponsesStructuredOutputOnlyKeepsFallbackUserMessage(t *testing.T) {
 	}
 }
 
-// In-place turns keep cache_control exactly as top-level blocks do: block-level
-// markers stay, a blank part's marker moves to the preceding block, and the
-// item's marker lands on the last block unless that block already has one.
+
+
+
 func TestResponsesMidSessionSystemItemKeepsCacheControl(t *testing.T) {
 	root := convertPlacement(t, context.Background(), "claude-opus-5", `{
 		"model": "claude-opus-5",
@@ -222,8 +222,8 @@ func TestResponsesMidSessionSystemItemKeepsCacheControl(t *testing.T) {
 	}
 }
 
-// Without a pinned decision, the requested model decides; a pinned decision
-// overrides it in both directions, and the top-level path keeps source order.
+
+
 func TestResponsesSystemItemPlacementFollowsPinnedDecision(t *testing.T) {
 	body := `{
 		"model": "m",

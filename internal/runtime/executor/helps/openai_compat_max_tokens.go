@@ -7,8 +7,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// ShouldUseMaxCompletionTokensForModel reports whether the resolved model under an
-// OpenAI compatibility configuration has use-max-completion-tokens set to true.
+
+
 func ShouldUseMaxCompletionTokensForModel(compat *config.OpenAICompatibility, upstreamModel, requestedModel string) bool {
 	if compat == nil {
 		return false
@@ -40,9 +40,9 @@ func openAICompatibilityModelUsesMaxCompletionTokens(models []config.OpenAICompa
 	return false, false
 }
 
-// NormalizeOpenAIMaxTokens normalizes max_tokens and max_completion_tokens according to the model's preference.
-// When useMaxCompletionTokens is true, it ensures max_completion_tokens is set and max_tokens is removed.
-// When useMaxCompletionTokens is false, it ensures max_tokens is used and max_completion_tokens is removed.
+
+
+
 func NormalizeOpenAIMaxTokens(payload []byte, useMaxCompletionTokens bool) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -54,7 +54,7 @@ func NormalizeOpenAIMaxTokens(payload []byte, useMaxCompletionTokens bool) []byt
 	return doc.Bytes()
 }
 
-// NormalizeOpenAIMaxTokensDoc normalizes max_tokens and max_completion_tokens in place on doc.
+
 func NormalizeOpenAIMaxTokensDoc(doc *ojson.Doc, useMaxCompletionTokens bool) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false

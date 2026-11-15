@@ -18,8 +18,8 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Without a watcher (Home mode), a registration dropped for obsolete global exclusions
-// must still be replaced by the re-registration that runs when the config is applied.
+
+
 func TestModelRegistrationDroppedForGlobalExclusionsIsReplacedWithoutWatcher(t *testing.T) {
 	models := registry.GetClaudeModels()
 	if len(models) < 2 {
@@ -40,7 +40,7 @@ func TestModelRegistrationDroppedForGlobalExclusionsIsReplacedWithoutWatcher(t *
 	releaseOld := sync.OnceFunc(func() { close(oldRelease) })
 	auth, errRegister := service.coreManager.Register(t.Context(), &coreauth.Auth{
 		ID: t.Name(), Provider: "claude", Attributes: map[string]string{"auth_kind": "oauth"},
-		// Pause only the first registration after it captured its fence.
+
 		Runtime: &registrationInterleaveRuntime{onRead: func() {
 			if reads.Add(1) == 1 {
 				close(oldStarted)
@@ -63,7 +63,7 @@ func TestModelRegistrationDroppedForGlobalExclusionsIsReplacedWithoutWatcher(t *
 	t.Cleanup(func() { releaseOld(); <-oldDone })
 	<-oldStarted
 
-	// Worst case: the obsolete registration finishes after the commit but before the runtime apply.
+
 	commit := service.commitConfigUpdate(newCfg)
 	if commit.cfg == nil {
 		t.Fatal("config update was rejected")
@@ -114,7 +114,7 @@ func TestModelRegistrationFenceRetainsGlobalExclusionsAfterAuthUpdate(t *testing
 					t.Fatal(errUpdate)
 				}
 			}
-			// Updating auth inputs must not let an old plugin result adopt the new config.
+
 			fence = fence.withAuth(auth)
 			if fence.publishModels(service, auth.ID, "claude", []*ModelInfo{{ID: "model-b"}}) {
 				t.Error("obsolete config published models after auth update")
@@ -125,7 +125,7 @@ func TestModelRegistrationFenceRetainsGlobalExclusionsAfterAuthUpdate(t *testing
 			if got := reg.ClientRegistrationEpoch(auth.ID); got != epoch {
 				t.Fatalf("obsolete config advanced epoch from %d to %d", epoch, got)
 			}
-			// A caller supplying an old config explicitly must not capture a fresh identity.
+
 			service.registerModelsForAuthWithConfigAndCache(t.Context(), oldCfg, auth, nil)
 			if got := reg.ClientRegistrationEpoch(auth.ID); got != epoch {
 				t.Fatalf("explicit stale config advanced epoch from %d to %d", epoch, got)
@@ -155,7 +155,7 @@ func TestModelRegistrationAllowsIrrelevantConfigReload(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			oldCfg := &config.Config{OAuthExcludedModels: map[string][]string{"claude": {"model-a"}}}
-			// A debug-only change must not discard work that has no replacement scheduled.
+
 			newCfg := &config.Config{Debug: true, OAuthExcludedModels: tc.rules}
 			service := &Service{cfg: oldCfg, coreManager: coreauth.NewManager(nil, nil, nil)}
 			auth, errRegister := service.coreManager.Register(t.Context(), &coreauth.Auth{
@@ -192,7 +192,7 @@ func TestModelRegistrationSnapshotsGlobalExclusionValues(t *testing.T) {
 	t.Cleanup(func() { reg.UnregisterClient(auth.ID) })
 	fence := newModelRegistrationFence(auth, cfg)
 	epoch := reg.ClientRegistrationEpoch(auth.ID)
-	// Capture rule values, not just config/map identity.
+
 	service.cfgMu.Lock()
 	cfg.OAuthExcludedModels["claude"][0] = "model-b"
 	service.cfgMu.Unlock()
@@ -225,7 +225,7 @@ func TestModelRegistrationRejectsObsoleteGlobalExclusions(t *testing.T) {
 				service := &Service{cfg: oldCfg, coreManager: manager}
 				path := filepath.Join(t.TempDir(), "credential.json")
 				data := []byte(`{"type":"claude"}`)
-				// Manager.Update validates file-synthesized snapshots against disk.
+
 				if errWrite := os.WriteFile(path, data, 0o600); errWrite != nil {
 					t.Fatal(errWrite)
 				}
@@ -262,7 +262,7 @@ func TestModelRegistrationRejectsObsoleteGlobalExclusions(t *testing.T) {
 				t.Cleanup(func() { releaseOld(); <-oldDone })
 				<-oldStarted
 
-				// Reload while the old registration is paused after capturing its fence.
+
 				if commit := service.commitConfigUpdate(newCfg); commit.cfg == nil {
 					t.Fatal("config update was rejected")
 				}

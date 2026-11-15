@@ -14,8 +14,8 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// A turn whose only content is a file the target cannot receive must be refused
-// before any upstream call, instead of forwarding an empty turn.
+
+
 func TestExecutorsRefuseAFileOnlyTurnBeforeCallingUpstream(t *testing.T) {
 	var upstreamCalls int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,16 +27,16 @@ func TestExecutorsRefuseAFileOnlyTurnBeforeCallingUpstream(t *testing.T) {
 	const (
 		claudeFile = `{"model":"m","max_tokens":8,"messages":[{"role":"user","content":[{"type":"container_upload","file_id":"file_not_stored"}]}]}`
 		openAIFile = `{"model":"m","messages":[{"role":"user","content":[{"type":"file","file":{"file_id":"file-not-stored"}}]}]}`
-		// The attachment-only user turn is followed by a developer step that must not hide it.
+
 		interactionsDeveloper = `{"model":"m","input":[{"type":"user_input","content":[{"type":"text","text":"hello"}]},{"type":"model_output","content":[{"type":"text","text":"hi"}]},{"type":"user_input","content":[{"type":"document","uri":"gs://b/a.pdf"}]},{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}]}`
-		// The same emptied audio turn is followed by an instruction step that names itself by role or by type alone.
+
 		interactionsCodexAudioPrefix        = `{"model":"m","input":[{"type":"user_input","content":[{"type":"text","text":"hello"}]},{"type":"model_output","content":[{"type":"text","text":"hi"}]},{"type":"user_input","content":[{"type":"audio","uri":"gs://b/a.wav"}]},`
 		interactionsCodexAudioRoleDeveloper = interactionsCodexAudioPrefix + `{"type":"user_input","role":"developer","content":[{"type":"text","text":"note"}]}]}`
 		interactionsCodexAudioTypeSystem    = interactionsCodexAudioPrefix + `{"type":"system","content":[{"type":"text","text":"note"}]}]}`
 		interactionsCodexAudioTypeDeveloper = interactionsCodexAudioPrefix + `{"type":"developer","content":[{"type":"text","text":"note"}]}]}`
-		// The only new user turn is inline audio, which Claude cannot read and must not receive as placeholder text.
+
 		geminiAudio = `{"model":"m","contents":[{"role":"user","parts":[{"text":"hello"}]},{"role":"model","parts":[{"text":"hi"}]},{"role":"user","parts":[{"inlineData":{"mimeType":"audio/wav","data":"UklGRg=="}}]}]}`
-		// The only new user turn is a remote image URL, so the earlier turn must not be answered in its place.
+
 		openAIImageURL = `{"model":"m","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"},{"role":"user","content":[{"type":"image_url","image_url":{"url":"https://x.test/a.png"}}]}]}`
 	)
 	keyAuth := func(provider string, extra map[string]string) *cliproxyauth.Auth {

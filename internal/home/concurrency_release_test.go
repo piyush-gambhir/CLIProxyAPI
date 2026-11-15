@@ -104,8 +104,8 @@ func TestReleaseFlusherIdleFlushDoesNotAllocate(t *testing.T) {
 	flusher := newReleaseFlusher(time.Hour, time.Hour, func(context.Context, ConcurrencyReleaseFrame) error {
 		return nil
 	})
-	// Simulate a long-lived pool: every credential/model pair has been acked and
-	// remains in the state map. An idle flush must not walk (or allocate for) it.
+
+
 	for i := 0; i < 1000; i++ {
 		group := executionregistry.ReleaseGroup{CredentialID: fmt.Sprintf("cred-%d", i), Model: "gpt"}
 		flusher.groups[group] = releaseState{Latest: 1, Acked: 1}

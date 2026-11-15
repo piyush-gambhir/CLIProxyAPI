@@ -253,9 +253,9 @@ func (e *CodexWebsocketsExecutor) Execute(ctx context.Context, auth *cliproxyaut
 				return resp, errSend
 			}
 
-			// Retry once with a fresh websocket connection. This is mainly to handle
-			// upstream closing the socket between sequential requests within the same
-			// execution session.
+
+
+
 			connRetry, closerRetry, respHSRetry, errDialRetry := e.ensureUpstreamConnWithSIWC(ctx, auth, sess, authID, wsURL, wsHeaders, useSIWC)
 			if errDialRetry == nil && connRetry != nil {
 				previousConn, previousReadCh := conn, readCh

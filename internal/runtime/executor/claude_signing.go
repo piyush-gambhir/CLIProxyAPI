@@ -57,15 +57,15 @@ func finalizeAnthropicMessagesBodyCCH(body []byte, fallbackBilling string) ([]by
 	return signAnthropicMessagesBody(bodyWithPlaceholder)
 }
 
-// claudeBodyNeedsBillingFallback reports whether a confirmed native helper request
-// still needs CPA's billing-header fallback.
-//
-// The measured minimal helper carries no system field at all, which is exactly the
-// native wire shape, so injecting a billing header there would be the deviation.
-// Keying on "system is absent" rather than "no billing header present" means that
-// if anything later in the pipeline (a payload rule, for instance) does attach a
-// system prompt, the fallback comes back and the request cannot go upstream with a
-// system block that native would never send unsigned.
+
+
+
+
+
+
+
+
+
 func claudeBodyNeedsBillingFallback(body []byte) bool {
 	return ojson.GetBytesNoCopy(body, "system").Exists()
 }
@@ -214,11 +214,11 @@ func isKimiMessagesUpstream(auth *cliproxyauth.Auth, endpoint string) bool {
 	return isKimiAPIEndpoint(endpoint)
 }
 
-// stripDefaultKimiClaudeCodeAttribution removes the Claude Code billing/CCH
-// attribution block from a Kimi Messages body when the caller did not opt into
-// the full CLI profile. Kimi treats the block as prompt text, so forwarding it
-// unchanged would leak CPA's attribution into the model's context. Other system
-// content is preserved.
+
+
+
+
+
 func stripDefaultKimiClaudeCodeAttribution(auth *cliproxyauth.Auth, endpoint string, cliFingerprint bool, body []byte) []byte {
 	if cliFingerprint || !isKimiMessagesUpstream(auth, endpoint) {
 		return body
@@ -271,31 +271,31 @@ func stripClaudeCodeAttributionSystemDoc(doc *ojson.Doc) bool {
 	return doc.SetRawBytes("system", []byte("["+strings.Join(kept, ",")+"]")) == nil
 }
 
-// claudeCCHSigningEnabled applies CPA's CCH policy.
-//
-// Native gate, identical in Claude Code 2.1.220 through 2.1.234:
-//
-//	s = (provider === "firstParty" && isFirstPartyBaseURL()) || provider === "vertex"
-//	      ? " cch=00000;" : ""
-//
-// where isFirstPartyBaseURL() is true when ANTHROPIC_BASE_URL is unset or its
-// host is api.anthropic.com. Every other backend (bedrock, foundry, mantle,
-// anthropicAws, anthropicGoogleCloud, gateway, any custom base URL) sends the
-// billing header without cch.
-//
-// CPA maps that onto two authorities:
-//
-//   - A real Claude OAuth credential always signs, on every upstream. CPA is the
-//     hop that restores the first-party shape: a downstream Claude Code pointed at
-//     CPA sees a non-first-party base URL and therefore omits cch itself, so the
-//     value has to be regenerated here rather than inherited.
-//   - An API key or delegated provider signs only when it explicitly opted into
-//     the claude-code-cli profile AND the upstream is one the native gate accepts.
-//     On any other gateway the billing header still goes out, but without cch, so
-//     a per-request hash cannot bust that gateway's prompt cache.
-//
-// origin is the concrete upstream URL of the request being built. CPA additionally
-// requires https and the default port, which native does not check.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func claudeCCHSigningEnabled(apiKey string, kind claudeCCHUpstreamKind, cliFingerprint bool, origin string) bool {
 	if isClaudeOAuthToken(apiKey) {
 		return true
@@ -309,8 +309,8 @@ func claudeCCHSigningEnabled(apiKey string, kind claudeCCHUpstreamKind, cliFinge
 	return kind == claudeCCHUpstreamAnthropic && isAnthropicUpstreamBase(origin)
 }
 
-// signAnthropicMessagesBody reproduces Claude Code 2.1.220's final-body CCH.
-// It changes only the five CCH digits in the outgoing body.
+
+
 func signAnthropicMessagesBody(body []byte) ([]byte, error) {
 	cchOffset, ok := claudeBillingCCHDigitsOffset(body)
 	if !ok {
@@ -386,8 +386,8 @@ func isLowerHex(value []byte) bool {
 	return true
 }
 
-// normalizeClaudeCCHInput builds the hash view without reserializing JSON.
-// Model string values are emptied, while dispatch-only members are omitted.
+
+
 func normalizeClaudeCCHInput(body []byte) ([]byte, error) {
 	if !json.Valid(body) {
 		return nil, fmt.Errorf("invalid JSON body")
@@ -576,8 +576,8 @@ func (scanner *claudeCCHJSONScanner) addExcludedMemberEdits(members []claudeCCHJ
 		case end+1 < len(members):
 			scanner.addEdit(members[start].start, members[end].commaAfter+1)
 		case start > 0 && end > start:
-			// Claude Code 2.1.220 leaves the preceding comma in its hash view
-			// when an object ends with multiple consecutive dispatch members.
+
+
 			scanner.addEdit(members[start].start, members[end].end)
 		case start > 0:
 			scanner.addEdit(members[start].commaBefore, members[end].end)
@@ -649,7 +649,7 @@ func resolveClaudeKeyConfig(cfg *config.Config, auth *cliproxyauth.Auth) *config
 	return nil
 }
 
-// resolveClaudeKeyCloakConfig finds the matching ClaudeKey config and returns its CloakConfig.
+
 func resolveClaudeKeyCloakConfig(cfg *config.Config, auth *cliproxyauth.Auth) *config.CloakConfig {
 	if cfg != nil && cfg.Home.Enabled && auth != nil {
 		if mode, strictMode, words, replacements, cacheUserID, ok := claudeauth.ReadMetadataHomeCloak(&auth.Metadata); ok {

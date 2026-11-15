@@ -139,7 +139,7 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				lost := cliproxyexecutor.IsUpstreamWebsocketTurnError(sess.terminalErr)
 				sess.activeMu.Unlock()
 				if lost {
-					// The socket this continuation refers to was lost, not replaced.
+
 					return nil, &cliproxyexecutor.UpstreamWebsocketTurnError{FullContextRequired: true}
 				}
 			}
@@ -209,11 +209,11 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 		errSend = mapCodexWebsocketWriteError(sess, conn, errSend)
 		helps.RecordAPIWebsocketError(ctx, e.cfg, "send", errSend)
 		if sess != nil && !isEphemeralSession && cliproxyexecutor.DownstreamWebsocket(ctx) {
-			// A failed write may still have delivered the create: never send it again.
+
 			errSend = codexWebsocketTurnEventID(codexWebsocketTurnTransportError(errSend), originalPayload)
 			if cliproxyexecutor.IsUpstreamWebsocketTurnError(errSend) {
-				// The reader may not see the failure before the invalidation: record the loss
-				// so the next continuation answers 409 instead of requiring a replay.
+
+
 				sess.markTerminalError(conn, errSend)
 				e.invalidateUpstreamConn(sess, conn, "send_error", errSend)
 				sess.clearActive(conn, readCh)
@@ -238,7 +238,7 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				return nil, errSend
 			}
 
-			// Retry once with a new websocket connection for the same execution session.
+
 			connRetry, closerRetry, respHSRetry, errDialRetry := e.ensureUpstreamConnWithSIWC(ctx, auth, sess, authID, wsURL, wsHeaders, useSIWC)
 			if errDialRetry != nil || connRetry == nil {
 				_ = recordWebsocketDialRetryFailure(ctx, e.cfg, wsReqLog, respHSRetry, errDialRetry)
@@ -321,16 +321,16 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 	var outputItemsFallback [][]byte
 
 	var bufferedChunks [][]byte
-	// bufferedFrames counts every websocket message read during bootstrap, including the ones the
-	// loop skips, so a peer that only sends frames the loop ignores cannot keep the window open.
+
+
 	bufferedFrames := 0
 	bufferedBytes := 0
 	var initialChunks [][]byte
 	immediateTerminal := false
 	immediateIncomplete := false
-	// bootstrapTerminalErr holds a non-overload terminal failure seen while buffering. It is
-	// delivered as an in-stream chunk after the buffered handshake so downstream behaviour stays
-	// identical to the unbuffered path instead of silently turning into a credential failover.
+
+
+
 	var bootstrapTerminalErr error
 	sawOutputDelta := false
 
@@ -366,13 +366,13 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				reporter.PublishFailure(ctx, mappedErr)
 				return nil, mappedErr
 			}
-			// Count every message ReadMessage returns, including the ones this loop goes on to skip,
-			// so a peer sending only skippable text frames still closes the window. Control frames
-			// are not counted: the websocket library answers ping and pong inside ReadMessage and
-			// never returns them, so only the read deadline bounds a peer that sends nothing else.
-			// windowOpen is carried into the skip branches below rather than breaking here, because
-			// this message has not been processed yet and dropping it would lose a token, or a
-			// terminal event, from the turn.
+
+
+
+
+
+
+
 			bufferedFrames++
 			timeSinceStart := nowCodexBootstrap().Sub(bootstrapStart)
 			timeoutReached := bootstrapTimeout > 0 && timeSinceStart >= bootstrapTimeout
@@ -403,9 +403,9 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 					reporter.PublishFailure(ctx, errBinary)
 					return nil, errBinary
 				}
-				// No window check here: ReadMessage only ever returns text or binary, and binary
-				// returned just above, so nothing reaches this line. The empty-payload skip below
-				// is the reachable one and does consult the window.
+
+
+
 				continue
 			}
 
@@ -455,11 +455,11 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				return nil, wsErr
 			}
 			if streamErr, terminalBody, ok := codexTerminalFailureErrWithCooling(payload, e.modelLevelCooling()); ok {
-				// A transient capacity or usage-limit rejection during bootstrap is retried on
-				// another credential, so the downstream websocket session must survive this
-				// upstream teardown. Notifying the disconnect here (or when no buffered payload
-				// chunk precedes the error) would close the client connection before the retry
-				// can deliver anything.
+
+
+
+
+
 				overloadFailover := isCodexOverloadBootstrapFailure(terminalBody)
 				usageLimitFailover := isCodexUsageLimitError(terminalBody)
 				failoverPending := overloadFailover || usageLimitFailover
@@ -494,9 +494,9 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 					if isEphemeralSession {
 						closeCodexWebsocketSession(sess, "bootstrap_overload")
 					}
-					// Fail the attempt before the downstream headers are committed so the
-					// conductor can transparently retry on another credential, and report the
-					// status the upstream refused to put on the wire.
+
+
+
 					helps.LogWithRequestID(ctx).Debugf("codex websockets executor: bootstrap overload rejection after %d messages read, failing over", bufferedFrames)
 					if overloadFailover {
 						return nil, newCodexBootstrapOverloadErr(terminalBody)
@@ -562,9 +562,9 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 				currentChunks = helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, originalPayload, clientBody, line, &param, claudeInputTokens)
 			}
 
-			// !isTerminalEvent is redundant against the closed allow-list, which admits no terminal
-			// type, and the empty-payload rule cannot fire on a payload already known non-empty. It
-			// stays as the guard a reader expects to find, and its SSE counterpart is !terminalSuccess.
+
+
+
 			if windowOpen && isCodexBootstrapBufferableEvent(eventType, payload) && !isTerminalEvent {
 				frameBytes := len(payload)
 				for i := range currentChunks {
@@ -605,8 +605,8 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 		if isEphemeralSession {
 			closeCodexWebsocketSession(sess, "bootstrap_terminal_error")
 		}
-		// The upstream connection was already invalidated and released in the terminal-failure
-		// branch above, so only the buffered payloads plus the in-stream error remain to emit.
+
+
 		out <- cliproxyexecutor.StreamChunk{Err: bootstrapTerminalErr}
 		close(out)
 		return &cliproxyexecutor.StreamResult{Headers: upstreamHeaders, Chunks: out}, nil
@@ -714,11 +714,11 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 			if wsErr, ok := parseCodexWebsocketErrorWithCooling(payload, e.modelLevelCooling()); ok {
 				terminateReason = "upstream_error"
 				terminateErr = wsErr
-				// The disconnect notification makes the downstream handler close the client and
-				// cancel the request context, so it must follow delivery of the error to the
-				// conductor; otherwise the cancellation can drop the error and its cooldown.
-				// When no payload chunk has been emitted yet, the conductor may still fail over
-				// to another credential on the same downstream websocket, so do not notify disconnect.
+
+
+
+
+
 				if sess != nil {
 					e.invalidateUpstreamConnWithoutDisconnectNotify(sess, conn, "upstream_error", wsErr)
 					sess.clearActive(conn, readCh)
@@ -745,8 +745,8 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 			if streamErr, terminalBody, ok := codexTerminalFailureErrWithCooling(payload, e.modelLevelCooling()); ok {
 				terminateReason = "upstream_error"
 				terminateErr = streamErr
-				// Publish the downstream disconnect only after an in-stream error was delivered,
-				// see the upstream error branch above.
+
+
 				if sess != nil {
 					e.invalidateUpstreamConnWithoutDisconnectNotify(sess, conn, "terminal_failure", streamErr)
 					sess.clearActive(conn, readCh)
@@ -858,8 +858,8 @@ func (e *CodexWebsocketsExecutor) ExecuteStream(ctx context.Context, auth *clipr
 	return &cliproxyexecutor.StreamResult{Headers: upstreamHeaders, Chunks: out}, nil
 }
 
-// codexWebsocketPrepared contains the request pipeline output shared by the
-// ordinary per-response stream and subsequent creates on a duplex connection.
+
+
 type codexWebsocketPrepared struct {
 	from                 sdktranslator.Format
 	responseFormat       sdktranslator.Format

@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	maxTXTRecordBytes = 255 // RFC 6763 §6.1 single character-string limit
-	maxTXTBytes       = 400 // draft-su-ai-gateway-discovery-00 TXT budget
+	maxTXTRecordBytes = 255
+	maxTXTBytes       = 400
 
 	txtSchemaVersion = "1"
 	defaultMountPath = "/"
 )
 
-// TXT keys defined by draft-su-ai-gateway-discovery-00.
-// Every key is at most nine characters long (RFC 6763 §6.4).
+
+
 const (
 	txtKeyVersion   = "txtvers"
 	txtKeyPath      = "path"
@@ -27,8 +27,8 @@ const (
 	txtKeyRole      = "role"
 )
 
-// Legacy TXT keys advertised by CPA releases before the draft schema.
-// Browsers still accept them so older gateways remain discoverable.
+
+
 const (
 	legacyKeyVersion     = "version"
 	legacyKeyAuth        = "auth_required"
@@ -40,11 +40,11 @@ const (
 	legacyKeyGemini      = "api_gemini"
 )
 
-// protocolRoute maps a protocol token to its standard route below the gateway mount path.
+
 type protocolRoute struct {
-	version     string // Versioned prefix below path, e.g. /v1 or /v1beta
-	suffix      string // Operation route below the versioned prefix
-	legacyField string // Legacy api_* key that carried the versioned base path
+	version     string
+	suffix      string
+	legacyField string
 }
 
 var protocolRoutes = map[string]protocolRoute{
@@ -63,7 +63,7 @@ var protocolRoutes = map[string]protocolRoute{
 	"interactions":     {version: "/v1beta", suffix: "/interactions", legacyField: legacyKeyGemini},
 }
 
-// printableTXTASCII checks bytes without Unicode folding or whitespace normalization.
+
 func printableTXTASCII(value string) bool {
 	for i := 0; i < len(value); i++ {
 		if value[i] < 0x20 || value[i] > 0x7e {
@@ -73,7 +73,7 @@ func printableTXTASCII(value string) bool {
 	return true
 }
 
-// TXTOptions contains input fields for generating DNS-SD TXT records.
+
 type TXTOptions struct {
 	Path         string
 	Product      string
@@ -85,7 +85,7 @@ type TXTOptions struct {
 	NodeRole     string
 }
 
-// DefaultTXTOptions provides safe defaults for CPA TXT records.
+
 func DefaultTXTOptions() TXTOptions {
 	return TXTOptions{
 		Path:         defaultMountPath,
@@ -98,9 +98,9 @@ func DefaultTXTOptions() TXTOptions {
 	}
 }
 
-// BuildTXTRecords constructs the draft-su-ai-gateway-discovery-00 TXT record.
-// Required attributes are always emitted first; optional attributes are skipped
-// when they would exceed the 255-byte string or 400-byte record budget.
+
+
+
 func BuildTXTRecords(opts TXTOptions) ([]string, error) {
 	path := opts.Path
 	if path == "" {
@@ -121,7 +121,7 @@ func BuildTXTRecords(opts TXTOptions) ([]string, error) {
 		if len(record) > maxTXTRecordBytes {
 			return nil, fmt.Errorf("discovery: TXT record %q exceeds %d bytes", record, maxTXTRecordBytes)
 		}
-		totalBytes += len(record) + 1 // +1 for the DNS character-string length prefix
+		totalBytes += len(record) + 1
 	}
 	if totalBytes > maxTXTBytes {
 		return nil, fmt.Errorf("discovery: required TXT records exceed %d bytes", maxTXTBytes)
@@ -172,7 +172,7 @@ func txtFlag(enabled bool) string {
 	return "0"
 }
 
-// parseTXTFlag accepts the draft boolean encoding ("0" or "1") only.
+
 func parseTXTFlag(value string) (bool, bool) {
 	switch value {
 	case "1":
@@ -214,8 +214,8 @@ func validTXTToken(token string) bool {
 	return true
 }
 
-// ParseTXTRecords parses "key=value" strings into a map with lowercase keys.
-// Per RFC 6763 §6.4, only the first occurrence of a key is used.
+
+
 func ParseTXTRecords(txt []string) map[string]string {
 	result := make(map[string]string, len(txt))
 	for _, entry := range txt {
@@ -232,8 +232,8 @@ func ParseTXTRecords(txt []string) map[string]string {
 	return result
 }
 
-// validateMountPath returns p when it is a safe absolute path for the TXT path attribute.
-// It rejects authorities, queries, fragments, escapes, traversal segments, and trailing slashes.
+
+
 func validateMountPath(p string) string {
 	if p == defaultMountPath {
 		return p
@@ -256,7 +256,7 @@ func validateMountPath(p string) string {
 	return p
 }
 
-// joinURLPath appends route below base without producing a double slash.
+
 func joinURLPath(base, route string) string {
 	if base == defaultMountPath {
 		return route
@@ -264,11 +264,11 @@ func joinURLPath(base, route string) string {
 	return base + route
 }
 
-// applyTXTMetadata fills svc from parsed TXT attributes and reports whether the
-// record is usable. Draft records (txtvers) are validated strictly; legacy CPA
-// records (version + api_*) remain accepted for mixed-version networks.
+
+
+
 func applyTXTMetadata(svc *DiscoveredService, parsed map[string]string) bool {
-	// Clear schema-specific metadata if the destination was previously populated.
+
 	svc.RawTXT = parsed
 	svc.Product = parsed[txtKeyProduct]
 	svc.InstanceID, svc.NodeRole, svc.Path = "", "", ""
@@ -328,7 +328,7 @@ func applyDraftTXTMetadata(svc *DiscoveredService, parsed map[string]string) boo
 	return true
 }
 
-// draftTXTList bounds retained hints without changing token spelling or syntax.
+
 func draftTXTList(value string) []string {
 	var result []string
 	seen := make(map[string]bool)
@@ -363,7 +363,7 @@ func applyLegacyTXTMetadata(svc *DiscoveredService, parsed map[string]string) bo
 	svc.Protocols = parseTXTList(parsed[txtKeyProtocols])
 	svc.AuthMethods = parseTXTList(parsed[legacyKeyAuthMethods])
 	if _, present := parsed[txtKeyProtocols]; !present {
-		// A base path does not imply support for any particular operation.
+
 		for _, key := range []string{legacyKeyOpenAI, legacyKeyAnthropic, legacyKeyGemini} {
 			if base := validateMountPath(parsed[key]); base != "" {
 				svc.Endpoints[key] = base
@@ -382,8 +382,8 @@ func applyLegacyTXTMetadata(svc *DiscoveredService, parsed map[string]string) bo
 	return len(svc.Endpoints) > 0
 }
 
-// validateDraftTXTRecords enforces wire-size limits before parsing loses duplicate
-// strings and their length prefixes. Call this for draft entries before conversion.
+
+
 func validateDraftTXTRecords(records []string) bool {
 	total := 0
 	for _, record := range records {
@@ -398,7 +398,7 @@ func validateDraftTXTRecords(records []string) bool {
 	return true
 }
 
-// ProtocolFromSubtype converts a DNS-SD subtype label (e.g. "_responses") to its protocol token.
+
 func ProtocolFromSubtype(subtype string) string {
 	return strings.ToLower(strings.TrimPrefix(strings.TrimSpace(subtype), "_"))
 }

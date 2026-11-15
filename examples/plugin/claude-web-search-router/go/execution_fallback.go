@@ -29,8 +29,8 @@ func buildExecutionPlansForExecute(cfg pluginConfig, req pluginapi.ModelRouteReq
 	return executionPlansForExecuteRoute(cfg, req, route)
 }
 
-// executionPlansForExecuteRoute builds plans for plugin executor without requiring
-// ModelRouteRequest.AvailableProviders (host does not pass it on executor.execute_stream).
+
+
 func executionPlansForExecuteRoute(cfg pluginConfig, req pluginapi.ModelRouteRequest, route string) []executionPlan {
 	backend := routeBackend(strings.TrimSpace(route))
 	if !backendRunnableLenient(backend, cfg, req) {
@@ -152,7 +152,7 @@ func runWebSearchWithExecutionFallback(ctx context.Context, exec pluginapi.Execu
 	return runOrderedExecutionPlans(ctx, exec, hostCallbackID, cfg, buildExecutionPlansForExecute(cfg, req), false)
 }
 
-// runWebSearchStreamWithExecutionFallback buffers the full host stream (non-streaming RPC path only).
+
 func runWebSearchStreamWithExecutionFallback(ctx context.Context, exec pluginapi.ExecutorRequest, hostCallbackID string) ([]byte, http.Header, error) {
 	cfg := loadedConfig()
 	req := pluginapi.ModelRouteRequest{

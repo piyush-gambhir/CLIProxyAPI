@@ -11,12 +11,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// oauthProvider represents an OAuth provider option.
+
 type oauthProvider struct {
 	name       string
-	apiPath    string // management API path
+	apiPath    string
 	emoji      string
-	deviceFlow bool // true for RFC 8628 device-code providers
+	deviceFlow bool
 }
 
 var oauthProviders = []oauthProvider{
@@ -29,7 +29,7 @@ var oauthProviders = []oauthProvider{
 	{"Meta", "meta-auth-url", "🔵", true},
 }
 
-// oauthTabModel handles OAuth login flows.
+
 type oauthTabModel struct {
 	client   *Client
 	viewport viewport.Model
@@ -41,17 +41,17 @@ type oauthTabModel struct {
 	height   int
 	ready    bool
 
-	// Remote browser / device-code mode
-	authURL       string // auth URL to display
-	authState     string // OAuth state parameter
-	providerName  string // current provider name
-	userCode      string // device-code user_code (optional)
-	deviceFlow    bool   // true when waiting on device authorization
-	expiresIn     int    // device-code / poll timeout in seconds
-	callbackInput textinput.Model
-	inputActive   bool // true when user is typing callback URL
 
-	// pollGeneration invalidates in-flight start/poll commands after cancel or restart.
+	authURL       string
+	authState     string
+	providerName  string
+	userCode      string
+	deviceFlow    bool
+	expiresIn     int
+	callbackInput textinput.Model
+	inputActive   bool
+
+
 	pollGeneration int
 }
 
@@ -60,7 +60,7 @@ type oauthState int
 const (
 	oauthIdle oauthState = iota
 	oauthPending
-	oauthRemote // remote browser mode: waiting for manual callback or device auth
+	oauthRemote
 	oauthSuccess
 	oauthError
 )
@@ -72,7 +72,7 @@ const (
 	oauthStatusPollInterval  = 2 * time.Second
 )
 
-// Messages
+
 type oauthStartMsg struct {
 	url          string
 	state        string
@@ -118,7 +118,7 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 		return m, nil
 	case oauthStartMsg:
 		if !shouldAcceptOAuthStart(msg, m.pollGeneration) {
-			// Stale start after Esc/restart: cancel server session so credentials are not saved.
+
 			if msg.err == nil && strings.TrimSpace(msg.state) != "" {
 				return m, m.cancelOAuthSession(msg.state)
 			}
@@ -182,7 +182,7 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// ---- Input active: typing callback URL (web flow only) ----
+
 		if m.inputActive && !m.deviceFlow {
 			switch msg.String() {
 			case "enter":
@@ -196,7 +196,7 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 				m.viewport.SetContent(m.renderContent())
 				return m, m.submitCallback(callbackURL)
 			case "esc":
-				// Cancel the remote OAuth session even while the callback input is focused.
+
 				return m, m.cancelRemoteOAuth()
 			default:
 				var cmd tea.Cmd
@@ -206,14 +206,14 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 			}
 		}
 
-		// ---- Remote mode but not typing ----
+
 		if m.state == oauthRemote {
 			switch msg.String() {
 			case "c", "C":
 				if m.deviceFlow {
 					return m, nil
 				}
-				// Re-activate input
+
 				m.inputActive = true
 				m.callbackInput.Focus()
 				m.viewport.SetContent(m.renderContent())
@@ -226,7 +226,7 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 			return m, cmd
 		}
 
-		// ---- Pending (auto polling) ----
+
 		if m.state == oauthPending {
 			if msg.String() == "esc" {
 				m.pollGeneration++
@@ -237,7 +237,7 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 			return m, nil
 		}
 
-		// ---- Idle ----
+
 		switch msg.String() {
 		case "up", "k":
 			if m.cursor > 0 {
@@ -281,7 +281,7 @@ func (m oauthTabModel) Update(msg tea.Msg) (oauthTabModel, tea.Cmd) {
 
 func (m oauthTabModel) startOAuth(provider oauthProvider, generation int) tea.Cmd {
 	return func() tea.Msg {
-		// Call the auth URL endpoint with is_webui=true
+
 		data, err := m.client.getJSON("/v0/management/" + provider.apiPath + "?is_webui=true")
 		if err != nil {
 			return oauthStartMsg{generation: generation, err: fmt.Errorf("failed to start %s login: %w", provider.name, err)}
@@ -298,7 +298,7 @@ func (m oauthTabModel) startOAuth(provider oauthProvider, generation int) tea.Cm
 		expiresIn := int(getFloat(data, "expires_in"))
 		deviceFlow := provider.deviceFlow || flow == "device" || userCode != ""
 
-		// Try to open browser (best effort)
+
 		_ = openBrowser(authURL)
 
 		return oauthStartMsg{
@@ -313,7 +313,7 @@ func (m oauthTabModel) startOAuth(provider oauthProvider, generation int) tea.Cm
 	}
 }
 
-// cancelRemoteOAuth clears local remote/device UI state and cancels the server session.
+
 func (m *oauthTabModel) cancelRemoteOAuth() tea.Cmd {
 	state := m.authState
 	m.pollGeneration++
@@ -344,11 +344,11 @@ func (m oauthTabModel) cancelOAuthSession(state string) tea.Cmd {
 
 func (m oauthTabModel) submitCallback(callbackURL string) tea.Cmd {
 	return func() tea.Msg {
-		// Determine provider from current context
+
 		providerKey := ""
 		for _, p := range oauthProviders {
 			if p.name == m.providerName {
-				// Map provider name to the canonical key the API expects
+
 				switch p.apiPath {
 				case "anthropic-auth-url":
 					providerKey = "anthropic"
@@ -448,12 +448,12 @@ func (m oauthTabModel) pollOAuthStatus(state string, expiresIn int, deviceFlow b
 	}
 }
 
-// shouldAcceptOAuthStart reports whether a start result belongs to the current flow.
+
 func shouldAcceptOAuthStart(msg oauthStartMsg, generation int) bool {
 	return msg.generation == generation
 }
 
-// shouldAcceptOAuthPoll reports whether a poll result belongs to the active remote flow.
+
 func shouldAcceptOAuthPoll(msg oauthPollMsg, authState string, generation int, state oauthState) bool {
 	if msg.generation != generation {
 		return false
@@ -464,7 +464,7 @@ func shouldAcceptOAuthPoll(msg oauthPollMsg, authState string, generation int, s
 	return state == oauthRemote
 }
 
-// shouldFailOAuthStatusPoll reports whether consecutive status request errors should fail the flow.
+
 func shouldFailOAuthStatusPoll(consecutiveErrors, maxErrors int) bool {
 	if maxErrors <= 0 {
 		return consecutiveErrors > 0
@@ -504,7 +504,7 @@ func (m oauthTabModel) renderContent() string {
 		sb.WriteString("\n\n")
 	}
 
-	// ---- Remote browser / device-code mode ----
+
 	if m.state == oauthRemote {
 		if m.deviceFlow {
 			sb.WriteString(m.renderDeviceMode())
@@ -552,11 +552,11 @@ func (m oauthTabModel) renderRemoteMode() string {
 	sb.WriteString(providerStyle.Render(fmt.Sprintf("  ✦ %s OAuth", m.providerName)))
 	sb.WriteString("\n\n")
 
-	// Auth URL section
+
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Foreground(colorInfo).Render(T("oauth_auth_url")))
 	sb.WriteString("\n")
 
-	// Wrap URL to fit terminal width
+
 	urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	maxURLWidth := m.width - 6
 	if maxURLWidth < 40 {
@@ -571,7 +571,7 @@ func (m oauthTabModel) renderRemoteMode() string {
 	sb.WriteString(helpStyle.Render(T("oauth_remote_hint")))
 	sb.WriteString("\n\n")
 
-	// Callback URL input
+
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Foreground(colorInfo).Render(T("oauth_callback_url")))
 	sb.WriteString("\n")
 
@@ -630,7 +630,7 @@ func (m oauthTabModel) renderDeviceMode() string {
 	return sb.String()
 }
 
-// wrapText splits a long string into lines of at most maxWidth characters.
+
 func wrapText(s string, maxWidth int) []string {
 	if maxWidth <= 0 {
 		return []string{s}

@@ -338,7 +338,7 @@ func TestHomeDispatchSessionIDsExtractsParentSessionID(t *testing.T) {
 		Routing: internalconfig.RoutingConfig{SessionAffinityTTL: "1h"},
 	})
 
-	// 1. Root Claude session
+
 	rootOpts := cliproxyexecutor.Options{
 		Headers: http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-1"}},
 	}
@@ -347,7 +347,7 @@ func TestHomeDispatchSessionIDsExtractsParentSessionID(t *testing.T) {
 		t.Fatalf("root session = (%q, %q), want (claude:claude-root-1, \"\")", sessionID, parentID)
 	}
 
-	// 2. Subagent Claude session
+
 	subOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-1"},
@@ -359,7 +359,7 @@ func TestHomeDispatchSessionIDsExtractsParentSessionID(t *testing.T) {
 		t.Fatalf("subagent session = (%q, %q), want (claude:claude-root-1:agent:sub-checker, claude:claude-root-1)", subSessionID, subParentID)
 	}
 
-	// 3. Pi slot session with parent
+
 	piSubOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Slot-Session-Id":   []string{"pi-slot-worker-1"},
@@ -371,7 +371,7 @@ func TestHomeDispatchSessionIDsExtractsParentSessionID(t *testing.T) {
 		t.Fatalf("pi subagent session = (%q, %q), want (slot:pi-slot-worker-1, slot:pi-slot-main-0)", piSessionID, piParentID)
 	}
 
-	// 4. LCP-derived session in metadata
+
 	lcpOpts := cliproxyexecutor.Options{
 		Metadata: map[string]any{
 			cliproxyexecutor.CanonicalSessionIDMetadataKey: "lcp:v1:abc12345",
@@ -501,7 +501,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		Routing: internalconfig.RoutingConfig{SessionAffinityTTL: "1h"},
 	})
 
-	// 1. Header session + Body parent_session_id
+
 	opts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"child-session-001"},
@@ -516,7 +516,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		t.Fatalf("parentID = %q, want claude:parent-session-999", parentID)
 	}
 
-	// 2. Nested Claude metadata.user_id with parent_session_id
+
 	nestedOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"metadata": {
@@ -532,7 +532,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		t.Fatalf("nestedParentID = %q, want claude:parent-session-888", nestedParentID)
 	}
 
-	// 3. LCP metadata prioritization over msg-hash fallback
+
 	lcpOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"hello world"}]}`),
 		Metadata: map[string]any{
@@ -547,7 +547,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		t.Fatalf("lcpParentID = %q, want empty", lcpParentID)
 	}
 
-	// 3b. LCP with metadata parent
+
 	lcpForkOpts := cliproxyexecutor.Options{
 		Metadata: map[string]any{
 			cliproxyexecutor.CanonicalSessionIDMetadataKey: "lcp:v1:fork-child-xyz",
@@ -559,7 +559,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		t.Fatalf("lcpFork = (%q, %q), want (lcp:v1:fork-child-xyz, lcp:v1:parent-root-abc)", lcpForkSessionID, lcpForkParentID)
 	}
 
-	// 3c. Self-referential parent is suppressed
+
 	lcpSelfParentOpts := cliproxyexecutor.Options{
 		Metadata: map[string]any{
 			cliproxyexecutor.CanonicalSessionIDMetadataKey: "lcp:v1:same-session",
@@ -571,7 +571,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		t.Fatalf("self-referential parent = (%q, %q), want (%q, empty)", selfSessionID, selfParentID, "lcp:v1:same-session")
 	}
 
-	// 4. Antigravity hierarchy
+
 	agyOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Http-Session-Id":   []string{"agy-child-101"},
@@ -586,7 +586,7 @@ func TestHomeDispatchSessionIDsExtractsParentFromHeaderPlusBody(t *testing.T) {
 		t.Fatalf("agyParentID = %q, want agy:agy-parent-100", agyParentID)
 	}
 
-	// 5. Gemini cachedContent hierarchy
+
 	geminiOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{"cachedContent":"cache-child-201","parent_session_id":"cache-parent-200"}`),
 	}
@@ -606,7 +606,7 @@ func TestHomeDispatchSessionIDsNestedRequestSubagent(t *testing.T) {
 		Routing: internalconfig.RoutingConfig{SessionAffinityTTL: "1h"},
 	})
 
-	// 1. Nested request with sessionId and agent_id
+
 	nestedAgentOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -625,7 +625,7 @@ func TestHomeDispatchSessionIDsNestedRequestSubagent(t *testing.T) {
 		t.Fatalf("parentID = %q, want session:root", parentID)
 	}
 
-	// 2. Nested request with sessionId and subagent_id
+
 	nestedSubagentOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -695,7 +695,7 @@ func TestHomeDispatchSessionIDsMatchesLCPCompactionViaReportHomeResult(t *testin
 	defer selector.Stop()
 	manager := NewManager(nil, selector, nil)
 
-	// 1. Initial request in Home mode (without explicit session IDs).
+
 	initialOpts := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatGemini,
 		OriginalRequest: []byte(`{"contents":[
@@ -714,7 +714,7 @@ func TestHomeDispatchSessionIDsMatchesLCPCompactionViaReportHomeResult(t *testin
 	initialAuth := &Auth{ID: "auth-home-live-1"}
 	initialSessionID, _ := manager.homeDispatchSessionIDs(initialOpts)
 
-	// 2. Report execution result via reportHomeResult (ephemeral Home dispatch result, not manual BindWithResult).
+
 	manager.reportHomeResult(context.Background(), Result{
 		AuthID:   initialAuth.ID,
 		Provider: "google",
@@ -723,7 +723,7 @@ func TestHomeDispatchSessionIDsMatchesLCPCompactionViaReportHomeResult(t *testin
 		Success:  true,
 	}, initialAuth)
 
-	// 3. Post-compaction request in Home mode.
+
 	compactedOpts := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatGemini,
 		OriginalRequest: []byte(`{"contents":[
@@ -753,7 +753,7 @@ func TestHomeDispatchSessionIDsMatchesLCPCompactionViaReportHomeResult(t *testin
 		t.Fatalf("expected is_compaction=true in metadata, got %v", compactedOpts.Metadata[cliproxyexecutor.IsCompactionMetadataKey])
 	}
 
-	// Verify that the initial placeholder "home-pending" was successfully updated to the real AuthID in the LCP matcher
+
 	boundAuths, _, okLookup := selector.matcher.LookupSession(initialSessionID)
 	if !okLookup || len(boundAuths) == 0 || boundAuths[0] != "auth-home-live-1" {
 		t.Fatalf("expected initial session bound to auth-home-live-1 after reportHomeResult, got ok=%v auths=%v", okLookup, boundAuths)
@@ -765,7 +765,7 @@ func TestHomeDispatchSessionIDsWithoutPresetProviderMetadata(t *testing.T) {
 	defer selector.Stop()
 	manager := NewManager(nil, selector, nil)
 
-	// 1. Initial request in Home mode without preset SessionAffinityProviderMetadataKey
+
 	initialOpts := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatGemini,
 		OriginalRequest: []byte(`{"contents":[
@@ -783,7 +783,7 @@ func TestHomeDispatchSessionIDsWithoutPresetProviderMetadata(t *testing.T) {
 	initialAuth := &Auth{ID: "auth-gemini-inferred-1"}
 	initialSessionID, _ := manager.homeDispatchSessionIDs(initialOpts)
 
-	// 2. Report result using the actual execution provider "gemini" (which canonicalizes to "google")
+
 	manager.reportHomeResult(context.Background(), Result{
 		AuthID:   initialAuth.ID,
 		Provider: "gemini",
@@ -792,7 +792,7 @@ func TestHomeDispatchSessionIDsWithoutPresetProviderMetadata(t *testing.T) {
 		Success:  true,
 	}, initialAuth)
 
-	// 3. Compacted continuation request without preset provider metadata
+
 	compactedOpts := cliproxyexecutor.Options{
 		SourceFormat: sdktranslator.FormatGemini,
 		OriginalRequest: []byte(`{"contents":[

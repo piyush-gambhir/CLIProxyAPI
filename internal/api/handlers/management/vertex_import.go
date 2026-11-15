@@ -14,7 +14,7 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// ImportVertexCredential handles uploading a Vertex service account JSON and saving it as an auth record.
+
 func (h *Handler) ImportVertexCredential(c *gin.Context) {
 	if h == nil || h.cfg == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "config unavailable"})

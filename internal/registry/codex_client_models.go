@@ -35,29 +35,29 @@ func init() {
 	}
 }
 
-// GetCodexClientModelsJSON returns the current Codex client model catalog.
+
 func GetCodexClientModelsJSON() []byte {
 	data, _ := GetCodexClientModelsSnapshot()
 	return data
 }
 
-// GetCodexClientModelsRevision returns the current revision of the Codex client model catalog.
+
 func GetCodexClientModelsRevision() uint64 {
 	codexClientCatalogStore.mu.RLock()
 	defer codexClientCatalogStore.mu.RUnlock()
 	return codexClientCatalogStore.revision
 }
 
-// GetCodexClientModelsSnapshot returns a consistent catalog copy and revision.
-// The revision changes only when validated catalog content changes.
+
+
 func GetCodexClientModelsSnapshot() ([]byte, uint64) {
 	codexClientCatalogStore.mu.RLock()
 	defer codexClientCatalogStore.mu.RUnlock()
 	return append([]byte(nil), codexClientCatalogStore.data...), codexClientCatalogStore.revision
 }
 
-// CodexClientModelUsesResponsesLite reports whether slug is marked
-// use_responses_lite in the active Codex client model catalog.
+
+
 func CodexClientModelUsesResponsesLite(slug string) bool {
 	slug = strings.ToLower(strings.TrimSpace(slug))
 	if slug == "" {
@@ -68,8 +68,8 @@ func CodexClientModelUsesResponsesLite(slug string) bool {
 	return codexClientCatalogStore.responsesLiteMap[slug]
 }
 
-// CodexClientModelThinkingLevels returns a copy of the supported reasoning
-// levels for slug in the active Codex client model catalog, or nil if absent.
+
+
 func CodexClientModelThinkingLevels(slug string) []string {
 	slug = strings.ToLower(strings.TrimSpace(slug))
 	if slug == "" {
@@ -103,8 +103,8 @@ func loadCodexClientModelsFromBytes(data []byte, source string) (bool, error) {
 	return true, nil
 }
 
-// ValidateCodexClientModelsJSON validates the fields required to serve a
-// complete Codex client model catalog.
+
+
 func ValidateCodexClientModelsJSON(data []byte) error {
 	_, _, err := parseAndValidateCodexClientModelsJSON(data)
 	return err

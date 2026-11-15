@@ -11,7 +11,7 @@ const (
 	claudeWebSearchToolTypeB = "web_search_20260209"
 )
 
-// isClaudeSourceFormat reports whether the inbound protocol is Claude / Anthropic Messages.
+
 func isClaudeSourceFormat(source string) bool {
 	switch strings.ToLower(strings.TrimSpace(source)) {
 	case "claude", "anthropic":

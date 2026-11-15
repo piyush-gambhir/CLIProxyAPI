@@ -1,6 +1,6 @@
 package config
 
-// HomeConfig stores runtime-only Home control plane settings from -home-jwt.
+
 type HomeConfig struct {
 	Enabled                 bool          `yaml:"enabled" json:"enabled"`
 	NodeID                  string        `yaml:"-" json:"-"`
@@ -10,7 +10,7 @@ type HomeConfig struct {
 	TLS                     HomeTLSConfig `yaml:"tls" json:"-"`
 }
 
-// HomeTLSConfig configures client-side TLS for the home Redis connection.
+
 type HomeTLSConfig struct {
 	Enable              bool   `yaml:"enable" json:"-"`
 	ServerName          string `yaml:"server-name" json:"-"`
@@ -21,8 +21,8 @@ type HomeTLSConfig struct {
 	UseTargetServerName bool   `yaml:"-" json:"-"`
 }
 
-// NormalizeHomePort ensures that the CPA server port received from Home is valid,
-// defaulting to 8317 when omitted or non-positive.
+
+
 func NormalizeHomePort(port int) int {
 	if port <= 0 {
 		return 8317

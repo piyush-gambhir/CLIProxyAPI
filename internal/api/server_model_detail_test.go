@@ -112,8 +112,8 @@ func TestIssue5190ModelDetailHomeVisibility(t *testing.T) {
 		t.Fatalf("unauthorized detail: %d", rr.Code)
 	}
 	server.cfg.Home.Enabled = true
-	// The catalog fixture does not implement Home's readiness handshake.
-	// Reuse the registered route without the unrelated readiness middleware.
+
+
 	engine = gin.New()
 	for _, route := range server.engine.Routes() {
 		if route.Method == http.MethodGet && route.Path == "/v1/models/*model" {

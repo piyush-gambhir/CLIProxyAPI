@@ -657,8 +657,8 @@ func TestPluginExecutor429CredentialScopedCoolsEntireCredentialAndSiblingModels(
 				t.Fatalf("sibling modelB state = %+v, want unavailable with reason=credential_quota", stateB)
 			}
 
-			// Sending requests for sibling modelB (pre-existing ModelState) and modelC (unvisited model)
-			// must NOT select the cooled credential again.
+
+
 			for _, siblingModel := range []string{modelB, modelC} {
 				_, errSibling := authMgr.Execute(context.Background(), []string{provider}, coreexecutor.Request{
 					Model:   siblingModel,

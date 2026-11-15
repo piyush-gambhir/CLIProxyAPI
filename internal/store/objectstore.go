@@ -28,7 +28,7 @@ const (
 	objectStoreAuthPrefix = "auths"
 )
 
-// ObjectStoreConfig captures configuration for the object storage-backed token store.
+
 type ObjectStoreConfig struct {
 	Endpoint  string
 	Bucket    string
@@ -41,8 +41,8 @@ type ObjectStoreConfig struct {
 	PathStyle bool
 }
 
-// ObjectTokenStore persists configuration and authentication metadata using an S3-compatible object storage backend.
-// Files are mirrored to a local workspace so existing file-based flows continue to operate.
+
+
 type ObjectTokenStore struct {
 	client            *minio.Client
 	cfg               ObjectStoreConfig
@@ -55,7 +55,7 @@ type ObjectTokenStore struct {
 	refreshProbeReady bool
 }
 
-// NewObjectTokenStore initializes an object storage backed token store.
+
 func NewObjectTokenStore(cfg ObjectStoreConfig) (*ObjectTokenStore, error) {
 	cfg.Endpoint = strings.TrimSpace(cfg.Endpoint)
 	cfg.Bucket = strings.TrimSpace(cfg.Bucket)
@@ -122,11 +122,11 @@ func NewObjectTokenStore(cfg ObjectStoreConfig) (*ObjectTokenStore, error) {
 	}, nil
 }
 
-// SetBaseDir implements the optional interface used by authenticators; it is a no-op because
-// the object store controls its own workspace.
+
+
 func (s *ObjectTokenStore) SetBaseDir(string) {}
 
-// ConfigPath returns the managed configuration file path inside the spool directory.
+
 func (s *ObjectTokenStore) ConfigPath() string {
 	if s == nil {
 		return ""
@@ -134,7 +134,7 @@ func (s *ObjectTokenStore) ConfigPath() string {
 	return s.configPath
 }
 
-// AuthDir returns the local directory containing mirrored auth files.
+
 func (s *ObjectTokenStore) AuthDir() string {
 	if s == nil {
 		return ""
@@ -142,7 +142,7 @@ func (s *ObjectTokenStore) AuthDir() string {
 	return s.authDir
 }
 
-// Bootstrap ensures the target bucket exists and synchronizes data from the object storage backend.
+
 func (s *ObjectTokenStore) Bootstrap(ctx context.Context, exampleConfigPath string) error {
 	if s == nil {
 		return fmt.Errorf("object store: not initialized")
@@ -159,7 +159,7 @@ func (s *ObjectTokenStore) Bootstrap(ctx context.Context, exampleConfigPath stri
 	return nil
 }
 
-// Save persists authentication metadata to disk and uploads it to the object storage backend.
+
 func (s *ObjectTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
 		return "", fmt.Errorf("object store: auth is nil")
@@ -177,9 +177,9 @@ func (s *ObjectTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (s
 		return "", fmt.Errorf("object store: missing file path attribute for %s", auth.ID)
 	}
 
-	// Runtime updates must not recreate a disabled credential whose source file
-	// was deliberately removed. Login and migration callers explicitly mark the
-	// save when creating a missing disabled credential is intentional.
+
+
+
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); errors.Is(statErr, fs.ErrNotExist) {
 			return "", nil
@@ -252,7 +252,7 @@ func (s *ObjectTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (s
 	return path, nil
 }
 
-// List enumerates auth JSON files from the mirrored workspace.
+
 func (s *ObjectTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error) {
 	dir := strings.TrimSpace(s.AuthDir())
 	if dir == "" {
@@ -285,7 +285,7 @@ func (s *ObjectTokenStore) List(_ context.Context) ([]*cliproxyauth.Auth, error)
 	return entries, nil
 }
 
-// Delete removes an auth file locally and remotely.
+
 func (s *ObjectTokenStore) Delete(ctx context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -308,7 +308,7 @@ func (s *ObjectTokenStore) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// PersistAuthFiles uploads the provided auth files to the object storage backend.
+
 func (s *ObjectTokenStore) PersistAuthFiles(ctx context.Context, _ string, paths ...string) error {
 	if len(paths) == 0 {
 		return nil
@@ -333,7 +333,7 @@ func (s *ObjectTokenStore) PersistAuthFiles(ctx context.Context, _ string, paths
 	return nil
 }
 
-// PersistConfig uploads the local configuration file to the object storage backend.
+
 func (s *ObjectTokenStore) PersistConfig(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -397,9 +397,9 @@ func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example str
 				}
 			}
 		}
-		// Seed the bucket with the file the startup load leaves behind, so a plaintext
-		// management secret never reaches it. Fail instead of skipping: the startup load
-		// could turn a refused file into one that a later start would upload.
+
+
+
 		if errPrepare := config.PrepareConfigFileForUpload(s.configPath); errPrepare != nil {
 			return fmt.Errorf("object store: prepare local config for seeding: %w", errPrepare)
 		}
@@ -419,10 +419,10 @@ func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example str
 }
 
 func (s *ObjectTokenStore) syncAuthFromBucket(ctx context.Context) error {
-	// NOTE: We intentionally do NOT use os.RemoveAll here.
-	// Wiping the directory triggers file watcher delete events, which then
-	// propagate deletions to the remote object store (race condition).
-	// Instead, we just ensure the directory exists and overwrite files incrementally.
+
+
+
+
 	if err := os.MkdirAll(s.authDir, 0o700); err != nil {
 		return fmt.Errorf("object store: create auth directory: %w", err)
 	}
@@ -575,17 +575,17 @@ func (s *ObjectTokenStore) resolveDeletePath(id string) (string, error) {
 	if id == "" {
 		return "", fmt.Errorf("object store: id is empty")
 	}
-	// Absolute paths are honored as-is; callers must ensure they point inside the mirror.
+
 	if filepath.IsAbs(id) {
 		return id, nil
 	}
-	// Treat any non-absolute id (including nested like "team/foo") as relative to the mirror authDir.
-	// Normalize separators and guard against path traversal.
+
+
 	clean := filepath.Clean(filepath.FromSlash(id))
 	if clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(os.PathSeparator)) {
 		return "", fmt.Errorf("object store: invalid auth identifier %s", id)
 	}
-	// Ensure .json suffix.
+
 	if !strings.HasSuffix(strings.ToLower(clean), ".json") {
 		clean += ".json"
 	}

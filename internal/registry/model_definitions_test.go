@@ -8,7 +8,7 @@ import (
 )
 
 func TestCodexConfigurationUpdateCapability(t *testing.T) {
-	// Counterexample: present in every tier without support_configuration_update.
+
 	const incapableModelID = "gpt-5.6-luna"
 	for _, tier := range []struct {
 		name    string

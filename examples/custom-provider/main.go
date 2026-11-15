@@ -1,13 +1,13 @@
-// Package main demonstrates how to create a custom AI provider executor
-// and integrate it with the CLI Proxy API server. This example shows how to:
-// - Create a custom executor that implements the Executor interface
-// - Register custom translators for request/response transformation
-// - Integrate the custom provider with the SDK server
-// - Register custom models in the model registry
-//
-// This example uses a simple echo service (httpbin.org) as the upstream API
-// for demonstration purposes. In a real implementation, you would replace
-// this with your actual AI service provider.
+
+
+
+
+
+
+
+
+
+
 package main
 
 import (
@@ -35,19 +35,19 @@ import (
 )
 
 const (
-	// providerKey is the identifier for our custom provider.
+
 	providerKey = "myprov"
 
-	// fOpenAI represents the OpenAI chat format.
+
 	fOpenAI = sdktr.Format("openai.chat")
 
-	// fMyProv represents our custom provider's chat format.
+
 	fMyProv = sdktr.Format("myprov.chat")
 )
 
-// init registers trivial translators for demonstration purposes.
-// In a real implementation, you would implement proper request/response
-// transformation logic between OpenAI format and your provider's format.
+
+
+
 func init() {
 	sdktr.Register(fOpenAI, fMyProv,
 		func(model string, raw []byte, stream bool) ([]byte, error) { return raw, nil },
@@ -62,23 +62,23 @@ func init() {
 	)
 }
 
-// MyExecutor is a minimal provider implementation for demonstration purposes.
-// It implements the Executor interface to handle requests to a custom AI provider.
+
+
 type MyExecutor struct{}
 
-// Identifier returns the unique identifier for this executor.
+
 func (MyExecutor) Identifier() string { return providerKey }
 
-// PrepareRequest optionally injects credentials to raw HTTP requests.
-// This method is called before each request to allow the executor to modify
-// the HTTP request with authentication headers or other necessary modifications.
-//
-// Parameters:
-//   - req: The HTTP request to prepare
-//   - a: The authentication information
-//
-// Returns:
-//   - error: An error if request preparation fails
+
+
+
+
+
+
+
+
+
+
 func (MyExecutor) PrepareRequest(req *http.Request, a *coreauth.Auth) error {
 	if req == nil || a == nil {
 		return nil
@@ -108,7 +108,7 @@ func upstreamEndpoint(a *coreauth.Auth) string {
 			return ep
 		}
 	}
-	// Demo echo endpoint; replace with your upstream.
+
 	return "https://httpbin.org/post"
 }
 
@@ -122,7 +122,7 @@ func (MyExecutor) Execute(ctx context.Context, a *coreauth.Auth, req clipexec.Re
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	// Inject credentials via PrepareRequest hook.
+
 	if errPrep := (MyExecutor{}).PrepareRequest(httpReq, a); errPrep != nil {
 		return clipexec.Response{}, errPrep
 	}
@@ -187,7 +187,7 @@ func main() {
 
 	hooks := cliproxy.Hooks{
 		OnAfterStart: func(s *cliproxy.Service) {
-			// Register demo models for the custom provider so they appear in /v1/models.
+
 			models := []*cliproxy.ModelInfo{{ID: "myprov-pro-1", Object: "model", Type: providerKey, DisplayName: "MyProv Pro 1"}}
 			for _, a := range core.List() {
 				if strings.EqualFold(a.Provider, providerKey) {
@@ -202,7 +202,7 @@ func main() {
 		WithConfigPath("config.yaml").
 		WithCoreAuthManager(core).
 		WithServerOptions(
-			// Optional: add a simple middleware + custom request logger
+
 			api.WithMiddleware(func(c *gin.Context) { c.Header("X-Example", "custom-provider"); c.Next() }),
 			api.WithRequestLoggerFactory(func(cfg *config.Config, cfgPath string) logging.RequestLogger {
 				return logging.NewFileRequestLoggerWithOptions(true, "logs", filepath.Dir(cfgPath), cfg.ErrorLogsMaxFiles)
@@ -220,6 +220,6 @@ func main() {
 	if errRun := svc.Run(ctx); errRun != nil && !errors.Is(errRun, context.Canceled) {
 		panic(errRun)
 	}
-	_ = os.Stderr // keep os import used (demo only)
+	_ = os.Stderr
 	_ = time.Second
 }

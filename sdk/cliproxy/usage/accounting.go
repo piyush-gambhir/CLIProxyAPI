@@ -2,10 +2,10 @@ package usage
 
 import "strings"
 
-// TokenAccountingSchemaVersion identifies the canonical token accounting contract.
+
 const TokenAccountingSchemaVersion = 2
 
-// TokenAccountingQuality describes how confidently a token total can be classified.
+
 type TokenAccountingQuality string
 
 const (
@@ -23,7 +23,7 @@ const (
 	tokenAccountingSemanticsSeparateReasoning
 )
 
-// TokenInputBreakdown contains mutually exclusive input token buckets.
+
 type TokenInputBreakdown struct {
 	TotalTokens      int64 `json:"total_tokens"`
 	UncachedTokens   int64 `json:"uncached_tokens"`
@@ -31,14 +31,14 @@ type TokenInputBreakdown struct {
 	CacheWriteTokens int64 `json:"cache_write_tokens"`
 }
 
-// TokenOutputBreakdown contains mutually exclusive output token buckets.
+
 type TokenOutputBreakdown struct {
 	TotalTokens        int64 `json:"total_tokens"`
 	NonReasoningTokens int64 `json:"non_reasoning_tokens"`
 	ReasoningTokens    int64 `json:"reasoning_tokens"`
 }
 
-// TokenBreakdown is the canonical, non-overlapping token accounting contract.
+
 type TokenBreakdown struct {
 	SchemaVersion      int                    `json:"schema_version"`
 	Quality            TokenAccountingQuality `json:"quality"`
@@ -48,7 +48,7 @@ type TokenBreakdown struct {
 	UnclassifiedTokens int64                  `json:"unclassified_tokens"`
 }
 
-// Valid reports whether the breakdown satisfies the v2 accounting invariants.
+
 func (b TokenBreakdown) Valid() bool {
 	if b.SchemaVersion != TokenAccountingSchemaVersion || !validTokenAccountingQuality(b.Quality) {
 		return false
@@ -87,8 +87,8 @@ func validTokenAccountingQuality(quality TokenAccountingQuality) bool {
 	}
 }
 
-// NewSubsetTokenBreakdown normalizes protocols where cache tokens are included
-// in input totals and reasoning tokens are included in output totals.
+
+
 func NewSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTotal, reasoning, total int64) TokenBreakdown {
 	cacheTotal, okCache := nonNegativeSum(cacheRead, cacheWrite)
 	expectedTotal, okExpected := nonNegativeSum(inputTotal, outputTotal)
@@ -118,8 +118,8 @@ func NewSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTotal, rea
 	}
 }
 
-// NewPartialSubsetTokenBreakdown preserves known subset buckets while assigning
-// an authoritative remainder to the unclassified bucket.
+
+
 func NewPartialSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTotal, reasoning, total int64) TokenBreakdown {
 	cacheTotal, okCache := nonNegativeSum(cacheRead, cacheWrite)
 	expectedTotal, okExpected := nonNegativeSum(inputTotal, outputTotal)
@@ -158,8 +158,8 @@ func NewPartialSubsetTokenBreakdown(inputTotal, cacheRead, cacheWrite, outputTot
 	}
 }
 
-// NewIndependentTokenBreakdown normalizes protocols where uncached input,
-// cache reads, cache writes, non-reasoning output, and reasoning are separate.
+
+
 func NewIndependentTokenBreakdown(uncachedInput, cacheRead, cacheWrite, nonReasoningOutput, reasoning, total int64) TokenBreakdown {
 	inputTotal, okInput := nonNegativeSum(uncachedInput, cacheRead, cacheWrite)
 	outputTotal, okOutput := nonNegativeSum(nonReasoningOutput, reasoning)
@@ -189,8 +189,8 @@ func NewIndependentTokenBreakdown(uncachedInput, cacheRead, cacheWrite, nonReaso
 	}
 }
 
-// NewSeparateReasoningTokenBreakdown normalizes protocols where cache tokens
-// are included in input totals while reasoning is separate from ordinary output.
+
+
 func NewSeparateReasoningTokenBreakdown(inputTotal, cacheRead, cacheWrite, nonReasoningOutput, reasoning, total int64) TokenBreakdown {
 	cacheTotal, okCache := nonNegativeSum(cacheRead, cacheWrite)
 	if !okCache || inputTotal < 0 || cacheTotal > inputTotal {
@@ -223,8 +223,8 @@ func NewSeparateReasoningTokenBreakdown(inputTotal, cacheRead, cacheWrite, nonRe
 	}
 }
 
-// NewUnclassifiedTokenBreakdown preserves an authoritative total without
-// guessing how an unknown protocol partitions it.
+
+
 func NewUnclassifiedTokenBreakdown(total int64) TokenBreakdown {
 	if total <= 0 {
 		quality := TokenAccountingQualityComplete
@@ -241,15 +241,15 @@ func NewUnclassifiedTokenBreakdown(total int64) TokenBreakdown {
 	}
 }
 
-// EnsureTokenBreakdown attaches a valid v2 breakdown to legacy or direct SDK
-// usage details without guessing whether reasoning is already inside output.
+
+
 func EnsureTokenBreakdown(detail Detail) Detail {
 	return EnsureTokenBreakdownForProvider(detail, "", "")
 }
 
-// EnsureTokenBreakdownForProvider attaches a valid v2 breakdown to legacy or
-// direct SDK usage details using the known provider's token semantics. Unknown
-// providers remain unclassified instead of guessing how their buckets overlap.
+
+
+
 func EnsureTokenBreakdownForProvider(detail Detail, provider, executorType string) Detail {
 	if !detail.TokenBreakdown.Valid() {
 		semantics := tokenAccountingSemanticsFor(provider, executorType)

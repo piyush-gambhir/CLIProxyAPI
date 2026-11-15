@@ -11,7 +11,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-// ComputeOpenAICompatModelsHash returns a stable hash for OpenAI-compatible models.
+
 func ComputeOpenAICompatModelsHash(models []config.OpenAICompatibilityModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -26,7 +26,7 @@ func ComputeOpenAICompatModelsHash(models []config.OpenAICompatibilityModel) str
 	return hashJoined(keys)
 }
 
-// ComputeVertexCompatModelsHash returns a stable hash for Vertex-compatible models.
+
 func ComputeVertexCompatModelsHash(models []config.VertexCompatModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -45,7 +45,7 @@ func ComputeVertexCompatModelsHash(models []config.VertexCompatModel) string {
 	return hashJoined(keys)
 }
 
-// ComputeClaudeModelsHash returns a stable hash for Claude model aliases.
+
 func ComputeClaudeModelsHash(models []config.ClaudeModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -60,7 +60,7 @@ func ComputeClaudeModelsHash(models []config.ClaudeModel) string {
 	return hashJoined(keys)
 }
 
-// ComputeCodexModelsHash returns a stable hash for Codex model aliases.
+
 func ComputeCodexModelsHash(models []config.CodexModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {
@@ -75,7 +75,7 @@ func ComputeCodexModelsHash(models []config.CodexModel) string {
 	return hashJoined(keys)
 }
 
-// ComputeGeminiModelsHash returns a stable hash for Gemini model aliases.
+
 func ComputeGeminiModelsHash(models []config.GeminiModel) string {
 	keys := modelRoutingKeys(func(out func(key string)) {
 		for _, model := range models {

@@ -1,9 +1,9 @@
-// Package main demonstrates how to use coreauth.Manager.HttpRequest/NewHttpRequest
-// to execute arbitrary HTTP requests with provider credentials injected.
-//
-// This example registers a minimal custom executor that injects an Authorization
-// header from auth.Attributes["api_key"], then performs two requests against
-// httpbin.org to show the injected headers.
+
+
+
+
+
+
 package main
 
 import (
@@ -23,7 +23,7 @@ import (
 
 const providerKey = "echo"
 
-// EchoExecutor is a minimal provider implementation for demonstration purposes.
+
 type EchoExecutor struct{}
 
 func (EchoExecutor) Identifier() string { return providerKey }
@@ -87,7 +87,7 @@ func main() {
 		},
 	}
 
-	// Example 1: Build a prepared request and execute it using your own http.Client.
+
 	reqPrepared, errReqPrepared := core.NewHttpRequest(
 		ctx,
 		auth,
@@ -114,7 +114,7 @@ func main() {
 	}
 	fmt.Printf("Prepared request status: %d\n%s\n\n", respPrepared.StatusCode, bodyPrepared)
 
-	// Example 2: Execute a raw request via core.HttpRequest (auto inject + do).
+
 	rawBody := []byte(`{"hello":"world"}`)
 	rawReq, errRawReq := http.NewRequestWithContext(ctx, http.MethodPost, "https://httpbin.org/anything", bytes.NewReader(rawBody))
 	if errRawReq != nil {

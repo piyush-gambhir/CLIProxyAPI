@@ -203,7 +203,7 @@ func TestListAuthFiles_ExpiredCooldownReconciledToActive(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// Credential-level expired cooldown (e.g. Codex quota exhaustion in Issue 5964)
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "codex-expired",
 		Index:          "idx-codex-expired",
@@ -222,7 +222,7 @@ func TestListAuthFiles_ExpiredCooldownReconciledToActive(t *testing.T) {
 		Attributes: map[string]string{"runtime_only": "true"},
 	})
 
-	// Model-level expired cooldown where all model cooldowns have elapsed
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "model-expired",
 		Index:          "idx-model-expired",
@@ -278,7 +278,7 @@ func TestListAuthFiles_ExpiredCooldownWithSubsequentTokenFailure(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An OAuth auth that had a cooldown, but subsequently had its access token expire / refresh fail.
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "codex-token-expired",
 		Index:          "idx-codex-token-expired",
@@ -327,7 +327,7 @@ func TestListAuthFiles_PartialModelCooldownWithAuthFailure(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// Auth has an independent auth error ("unauthorized"), but only one of its models is in cooldown.
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:            "auth-unauthorized-partial-model",
 		Index:         "idx-auth-unauthorized",
@@ -379,8 +379,8 @@ func TestListAuthFiles_UnexpiredTokenWithRefresh401_NoCooldown(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An OAuth credential whose access token is still valid (+48h), but background refresh failed with 401
-	// and scheduled a retry backoff. The credential itself is still active and usable.
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:               "auth-valid-token-refresh-401",
 		Index:            "idx-valid-token",
@@ -425,8 +425,8 @@ func TestListAuthFiles_UnexpiredTokenWithRefresh401_ExpiredCooldown(t *testing.T
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An OAuth credential with a valid access token (+48h) that previously entered quota cooldown (now expired),
-	// and has a pending refresh retry after a 401 refresh error.
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:               "auth-valid-token-expired-cooldown",
 		Index:            "idx-valid-token-exp-cool",
@@ -482,8 +482,8 @@ func TestListAuthFiles_ModelLevel403CooldownExpired(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An auth whose model failed with 403 (forbidden) and the conductor copied the error to auth-level,
-	// but the model-level cooldown has now elapsed.
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "auth-model-403-expired",
 		Index:          "idx-model-403-exp",
@@ -537,7 +537,7 @@ func TestListAuthFiles_SingleModel403Cooling_OtherModelActive(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An auth where Model A is in a 403 cooldown, but Model B is active and healthy.
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:            "auth-single-403-other-active",
 		Index:         "idx-single-403",
@@ -588,9 +588,9 @@ func TestListAuthFiles_ExpiredCooldown_ExpiredToken_InFlightRefresh(t *testing.T
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An OAuth credential whose quota cooldown expired, but its access token is expired,
-	// and a background refresh is currently in-flight/scheduled (NextRefreshAfter in future).
-	// Because the access token is expired, selector blocks it and it must NOT be reported as active.
+
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:               "auth-expired-cooldown-expired-token",
 		Index:            "idx-exp-cool-exp-tok",
@@ -642,9 +642,9 @@ func TestListAuthFiles_ActiveAuth_InactiveFutureTimestamp(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An active, healthy auth that has an inactive future NextRetryAfter timestamp
-	// (Unavailable=false, Quota.Exceeded=false). Matching selector.availabilityBlock,
-	// an inactive timestamp does not block the credential or report it as in error.
+
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:             "auth-active-inactive-future-timestamp",
 		Index:          "idx-active-inactive-future",
@@ -681,9 +681,9 @@ func TestListAuthFiles_ModelCooling_OtherModelPermanentBlocked(t *testing.T) {
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// Model A is in active cooldown (+30m).
-	// Model B has a permanent failure with no recovery time (Unavailable=true, NextRetryAfter=zero).
-	// Because all schedulable models are blocked, the credential as a whole cannot serve any model.
+
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:            "auth-all-blocked-cooling-and-perm",
 		Index:         "idx-all-blocked",
@@ -731,9 +731,9 @@ func TestListAuthFiles_SparseModelState_BlockedModelDoesNotMakeAuthUnavailable(t
 	cfg := &config.Config{AuthDir: t.TempDir()}
 	manager.SetConfig(cfg)
 
-	// An auth where Model A has an active cooldown in ModelStates, but Model B has no entry in the sparse map yet.
-	// Because other supported models are schedulable and auth.Unavailable is false, the credential as a whole
-	// must NOT be reported as unavailable.
+
+
+
 	registerAuthForLookupTest(t, manager, &coreauth.Auth{
 		ID:          "auth-sparse-models",
 		Index:       "idx-sparse-models",
@@ -807,10 +807,10 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		Attributes: map[string]string{"path": credPath, "source": credPath},
 	})
 
-	// Trigger terminal refresh failure via ForceRefreshAuth while access_token is still valid.
+
 	_, _ = manager.ForceRefreshAuth(context.Background(), "codex-a.json")
 
-	// Ordinary successful completed inference must NOT mask the terminal renewal failure.
+
 	manager.MarkResult(context.Background(), coreauth.Result{
 		AuthID:            "codex-a.json",
 		Provider:          "codex",
@@ -864,7 +864,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		}
 	}
 
-	// Targeted OAuth recovery via StartOAuthV8: cancelling or wrong provider does not mark codex-a.json repaired.
+
 	router := gin.New()
 	router.Use(func(c *gin.Context) {
 		c.Set(ConfigV8ContextKey, true)
@@ -899,7 +899,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	}
 	state, _ := startResp["state"].(string)
 
-	// Cancel login session and confirm codex-a.json still requires sign-in.
+
 	wCancel := httptest.NewRecorder()
 	router.ServeHTTP(wCancel, httptest.NewRequest(http.MethodDelete, "/v8/management/oauth/session?state="+state, nil))
 	if wCancel.Code != http.StatusOK {
@@ -910,7 +910,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatal("cancelling OAuth session must not clear RequiresSignIn")
 	}
 
-	// Targeted recovery with a DIFFERENT account (other@example.com) must fail and not mark codex-a.json repaired.
+
 	mockSvc := &targetedRecoveryTestCodexOAuthService{
 		authDir:   authDir,
 		email:     "other@example.com",
@@ -942,7 +942,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatal("authenticating a different account must not mark target credential repaired")
 	}
 
-	// Targeted recovery with missing account_id or missing email must also be rejected (fail-closed).
+
 	for _, missingCase := range []struct {
 		name      string
 		email     string
@@ -976,7 +976,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		}
 	}
 
-	// If saving to storage succeeds but runtime adoption fails, GetAuthStatus must report saved=true, adopted=false, recovery_stage=credential_saved.
+
 	mockSvc.email = "a@example.com"
 	mockSvc.accountID = "acc-a"
 	h.SetPostAuthPersistHook(func(context.Context, *coreauth.Auth) error {
@@ -999,7 +999,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if unadoptedStatus["status"] != "ok" || unadoptedStatus["saved"] != true || unadoptedStatus["adopted"] != false || unadoptedStatus["recovery_stage"] != coreauth.RecoveryStageCredentialSaved {
 		t.Fatalf("expected saved=true adopted=false recovery_stage=credential_saved when runtime adoption fails, got %#v", unadoptedStatus)
 	}
-	// An unrelated runtime update or replacement with a different grant must NOT falsely satisfy adoption for unadoptedStartResp.State.
+
 	unrelatedReplacement := stillBroken.Clone()
 	unrelatedReplacement.Metadata["access_token"] = "unrelated-access-token"
 	unrelatedReplacement.Metadata["refresh_token"] = "unrelated-refresh-token"
@@ -1010,8 +1010,8 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	if unrelatedStatus["adopted"] != false || unrelatedStatus["recovery_stage"] != coreauth.RecoveryStageCredentialSaved {
 		t.Fatalf("unrelated credential update must not mark OAuth session adopted, got %#v", unrelatedStatus)
 	}
-	// When a delayed watcher/reload subsequently adopts the actual saved file into manager AND an automatic refresh rotates
-	// the tokens BEFORE GetAuthStatus is polled again, polling GetAuthStatus must still report adopted=true and renewal_verified=true.
+
+
 	if errDelayedReg := h.registerAuthFromFile(context.Background(), credPath, nil); errDelayedReg != nil {
 		t.Fatalf("delayed registerAuthFromFile error: %v", errDelayedReg)
 	}
@@ -1027,7 +1027,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	}
 	h.SetPostAuthPersistHook(nil)
 
-	// Targeted recovery with the MATCHING account (a@example.com / acc-a) saves fresh tokens, adopts into manager, and clears RequiresSignIn.
+
 	wMatchStart := httptest.NewRecorder()
 	reqMatchStart := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"codex","name":"codex-a.json"}`))
 	reqMatchStart.Header.Set("Content-Type", "application/json")
@@ -1053,8 +1053,8 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected codex-a.json repaired in manager, got RequiresSignIn=%v RefreshError=%+v", repaired.RequiresSignIn, repaired.RefreshError)
 	}
 
-	// Operator-triggered POST /v8/management/credentials/verify:
-	// 1) response.incomplete must fail (HTTP 502) and NOT mark inference_verified=true.
+
+
 	exec.streamPayloads = [][]byte{[]byte(`data: {"type":"response.incomplete","response":{"status":"incomplete"}}` + "\n\n")}
 	wVerifyIncomp := httptest.NewRecorder()
 	reqVerifyIncomp := httptest.NewRequest(http.MethodPost, "/v8/management/credentials/verify", strings.NewReader(`{"name":"codex-a.json","model":"gpt-5.5"}`))
@@ -1064,7 +1064,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("VerifyAuthFileV8 (incomplete) status = %d, want 502: %s", wVerifyIncomp.Code, wVerifyIncomp.Body.String())
 	}
 
-	// 1b) 503 transient failure must NOT be misclassified as quota_blocked.
+
 	exec.streamPayloads = nil
 	exec.streamErr = &coreauth.Error{Code: "service_unavailable", Message: "upstream 503", HTTPStatus: http.StatusServiceUnavailable, Retryable: true}
 	wVerify503 := httptest.NewRecorder()
@@ -1083,7 +1083,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	}
 	_, _, _ = manager.ResetQuota(context.Background(), "codex-a.json")
 
-	// 2) 429 quota error after valid auth must transition recovery_stage to quota_blocked and sanitize any secrets in the error message.
+
 	exec.streamPayloads = nil
 	exec.streamErr = &coreauth.Error{
 		Code:       "rate_limit_exceeded",
@@ -1111,7 +1111,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 	}
 	_, _, _ = manager.ResetQuota(context.Background(), "codex-a.json")
 
-	// 3) Completed stream transitions recovery_stage to inference_verified.
+
 	exec.streamErr = nil
 	exec.streamPayloads = [][]byte{[]byte(`data: {"type":"response.completed"}` + "\n\n")}
 	wVerifyOK := httptest.NewRecorder()
@@ -1129,8 +1129,8 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected verified=true inference_verified=true recovery_stage=inference_verified, got %#v", okVerifyResp)
 	}
 
-	// 3b) After a subsequent automatic refresh rotates tokens on the adopted credential, GetAuthStatus for matchStartResp.State
-	// must still report adopted=true and transition to renewal_verified=true / recovery_stage=renewal_verified.
+
+
 	exec.err = nil
 	exec.rotateTokens = true
 	if _, errForceRefresh := manager.ForceRefreshAuth(coreauth.WithSkipPersist(context.Background()), "codex-a.json"); errForceRefresh != nil {
@@ -1141,8 +1141,8 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected adopted=true renewal_verified=true recovery_stage=renewal_verified after token rotation, got %#v", rotatedStatus)
 	}
 
-	// 3c) If the adopted credential is subsequently replaced via Update by an unrelated credential
-	// and that replacement credential is refreshed, the original OAuth session must NOT claim the replacement's renewal.
+
+
 	currentAdopted, _ := manager.GetByID("codex-a.json")
 	postRotationUnrelated := currentAdopted.Clone()
 	postRotationUnrelated.Metadata["access_token"] = "unrelated-access-token"
@@ -1158,7 +1158,7 @@ func TestListAuthFiles_V8CodexTerminalRenewalRecoveryWorkflow_Issue5783(t *testi
 		t.Fatalf("expected adopted=false and adoption_error after unrelated credential replacement + refresh, got %#v", replacedAfterRotationStatus)
 	}
 
-	// 4) Opt-in post-login verification (verify=true on StartOAuthV8) sanitizes verification_error in GetAuthStatus.
+
 	exec.streamPayloads = nil
 	exec.streamErr = &coreauth.Error{
 		Code:       "rate_limit_exceeded",
@@ -1345,7 +1345,7 @@ func TestRefreshAuthFilesV8_SignInRequiredAndRedaction_Issue7135(t *testing.T) {
 		Attributes: map[string]string{"path": credPath, "source": credPath},
 	})
 
-	// Simulate executor.Refresh returning (auth, nil) without rotating tokens when RejectedRefreshToken is unchanged.
+
 	exec.err = nil
 	exec.rotateTokens = false
 
@@ -1358,7 +1358,7 @@ func TestRefreshAuthFilesV8_SignInRequiredAndRedaction_Issue7135(t *testing.T) {
 	router.POST("/v8/management/credentials/refresh", h.RefreshAuthFiles)
 	router.GET("/v8/management/credentials", h.ListAuthFiles)
 
-	// 1. Refreshing a sign-in-required dead credential with unchanged tokens must fail (HTTP 500) and keep status=error, unavailable=true.
+
 	wRefreshDead := httptest.NewRecorder()
 	reqRefreshDead := httptest.NewRequest(http.MethodPost, "/v8/management/credentials/refresh", strings.NewReader(`{"name":"codex-dead.json"}`))
 	reqRefreshDead.Header.Set("Content-Type", "application/json")
@@ -1383,7 +1383,7 @@ func TestRefreshAuthFilesV8_SignInRequiredAndRedaction_Issue7135(t *testing.T) {
 		t.Fatalf("expected status=error unavailable=true requires_sign_in=true recovery_stage=sign_in_required, got %#v", deadEntry)
 	}
 
-	// 2. When a credential refresh genuinely rotates tokens on v8 /credentials/refresh, the response must use the redacted entry view.
+
 	exec.rotateTokens = true
 	wRefreshOK := httptest.NewRecorder()
 	reqRefreshOK := httptest.NewRequest(http.MethodPost, "/v8/management/credentials/refresh", strings.NewReader(`{"name":"codex-dead.json"}`))

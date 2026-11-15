@@ -83,7 +83,7 @@ func TestManagerWeightedPinnedSessionCompensation(t *testing.T) {
 					selector.cache.Set(bindingKey, bID)
 				}
 				tried := map[string]struct{}{triedID: {}}
-				// Exercise the production entrypoints as well as direct legacy selection.
+
 				pick := func(opts cliproxyexecutor.Options) (*Auth, error) {
 					if mode == "no-affinity" {
 						if mixed {
@@ -137,7 +137,7 @@ func TestManagerWeightedPinnedSessionCompensation(t *testing.T) {
 						t.Fatalf("compensation changed pinned binding: %q, found=%t", binding, ok)
 					}
 				}
-				// A broader accounting pool must never make an invalid pin selectable.
+
 				for _, pinnedID := range []string{excluded[0].ID, excluded[1].ID, excluded[2].ID, excluded[3].ID, excluded[4].ID, excluded[5].ID, excluded[6].ID, triedID, "missing"} {
 					opts := cliproxyexecutor.Options{
 						Headers:  stickyHeaders,
@@ -150,7 +150,7 @@ func TestManagerWeightedPinnedSessionCompensation(t *testing.T) {
 						t.Fatalf("invalid pin %q changed accounting: current=%v pending=%v", pinnedID, state.currentForTest(), state.pendingForTest())
 					}
 				}
-				// A valid lower-priority pin still wins without charging another tier.
+
 				lowerID := t.Name() + "-lower-priority"
 				lowerOpts := cliproxyexecutor.Options{
 					Headers:  http.Header{"Session_id": {"lower-pinned-session"}},

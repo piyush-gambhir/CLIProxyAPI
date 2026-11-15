@@ -12,7 +12,7 @@ type responseStatusKey struct{}
 type responseHeadersKey struct{}
 type clientRequestMetadataKey struct{}
 
-// ClientRequestMetadata stores immutable downstream request metadata for asynchronous consumers.
+
 type ClientRequestMetadata struct {
 	ClientIP         string
 	ResolvedClientIP string
@@ -51,7 +51,7 @@ func GetEndpoint(ctx context.Context) string {
 	return ""
 }
 
-// WithClientRequestMetadata stores a snapshot of downstream request metadata in ctx.
+
 func WithClientRequestMetadata(ctx context.Context, metadata ClientRequestMetadata) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -59,7 +59,7 @@ func WithClientRequestMetadata(ctx context.Context, metadata ClientRequestMetada
 	return context.WithValue(ctx, clientRequestMetadataKey{}, metadata)
 }
 
-// GetClientRequestMetadata returns downstream request metadata stored in ctx.
+
 func GetClientRequestMetadata(ctx context.Context) ClientRequestMetadata {
 	if ctx == nil {
 		return ClientRequestMetadata{}
@@ -90,10 +90,10 @@ func WithResponseHeadersHolder(ctx context.Context) context.Context {
 	return context.WithValue(ctx, responseHeadersKey{}, &responseHeadersHolder{})
 }
 
-// WithFreshResponseHeadersHolder starts an isolated upstream response attempt.
-// Unlike WithResponseHeadersHolder, it always shadows any holder inherited from
-// the parent request so a later retry cannot observe headers from an earlier
-// credential or model attempt.
+
+
+
+
 func WithFreshResponseHeadersHolder(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -125,8 +125,8 @@ func SetResponseHeaders(ctx context.Context, headers http.Header) {
 	holder.headers = cloneHTTPHeader(headers)
 }
 
-// MergeResponseHeaders adds headers observed after the initial HTTP response,
-// such as quota metadata delivered in a websocket event.
+
+
 func MergeResponseHeaders(ctx context.Context, headers http.Header) {
 	if ctx == nil || len(headers) == 0 {
 		return

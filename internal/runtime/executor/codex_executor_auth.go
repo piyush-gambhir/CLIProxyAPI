@@ -297,7 +297,7 @@ func (e *CodexExecutor) refreshLocked(ctx context.Context, auth *cliproxyauth.Au
 			needSIWC = hasSIWC
 		}
 	}
-	// Explicit refresh requests must also respect the server's renewal window.
+
 	if earliest, okEarliest := auth.SIWCEarliestRefreshTime(); okEarliest && now.Before(earliest) {
 		needSIWC = false
 	}
@@ -353,7 +353,7 @@ func (e *CodexExecutor) refreshLocked(ctx context.Context, auth *cliproxyauth.Au
 	siwcRefreshed := false
 	var siwcErr error
 
-	// Execute refreshes sequentially so outer and SIWC never race on the same credential state.
+
 	if needOuter {
 		if homeEnabled {
 			if refreshed, handled, errHome := helps.RefreshAuthViaHome(ctx, cfg, auth); handled {
@@ -459,7 +459,7 @@ func (e *CodexExecutor) refreshLocked(ctx context.Context, auth *cliproxyauth.Au
 		}
 	}
 
-	// Always preserve use_siwc and siwc fields on both Metadata and Storage.
+
 	if hasPreservedUseSIWC {
 		auth.Metadata["use_siwc"] = preservedUseSIWC
 	}

@@ -285,7 +285,7 @@ func TestAvailableAuthsForRouteModel_CrossCandidateModelErrorPrioritizedOverNewe
 		Unavailable:   true,
 		Status:        StatusError,
 		StatusMessage: candidateBGlobalErr,
-		UpdatedAt:     now.Add(-10 * time.Second), // Newer timestamp, but only auth-level
+		UpdatedAt:     now.Add(-10 * time.Second),
 	}
 
 	manager := NewManager(nil, nil, nil)
@@ -357,7 +357,7 @@ func TestMixedUnavailableErrorLocked_GlobalModelErrorPriorityAcrossShards(t *tes
 		Unavailable:   true,
 		Status:        StatusError,
 		StatusMessage: geminiAuthErr,
-		UpdatedAt:     now.Add(-10 * time.Second), // Newer timestamp, but only auth-level on gemini
+		UpdatedAt:     now.Add(-10 * time.Second),
 	}); err != nil {
 		t.Fatalf("manager.Register(gemini): %v", err)
 	}
@@ -389,7 +389,7 @@ func TestErrorWithCause_IsDoesNotPanicOnNonComparableError(t *testing.T) {
 	cause := nonComparableSliceError{"err1", "err2"}
 	wrapped := WithCause(&Error{Code: "auth_unavailable", Message: "no auth available"}, cause)
 	target := nonComparableSliceError{"err1", "err2"}
-	// Must not panic on non-comparable error target
+
 	_ = errors.Is(wrapped, target)
 }
 
@@ -1133,7 +1133,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 				shortRetry := 30 * time.Second
 				rpmBody := `{"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed the requests per minute rate limit. Please try again later."}}`
 
-				// 1. Per-minute 429 with allowed 5h window and future unified reset.
+
 				allowedCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(allowedCtx, http.Header{
 					"Retry-After":                           {"30"},
@@ -1150,7 +1150,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: rpmBody, HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// 2. Per-minute 429 with only Retry-After and no unified rejection headers.
+
 				plainCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(plainCtx, http.Header{
 					"Retry-After": {"30"},
@@ -1165,7 +1165,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: rpmBody, HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// 3. Model-level cooling (e.g. API-key upstream) that explicitly reports unified 5h rejection.
+
 				fiveHourDelay := 2 * time.Hour
 				rejectedCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(rejectedCtx, http.Header{
@@ -1286,7 +1286,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					"Anthropic-Ratelimit-Unified-Reset":                {strconv.FormatInt(time.Now().Add(delay).Unix(), 10)},
 				})
 
-				// Step 1: Record subscription 429 on credAuth and modelScopedAuth.
+
 				staleSeq := manager.nextExecutionSeq()
 				failureSeq := manager.nextExecutionSeq()
 				manager.MarkResult(rejectedCtx, Result{
@@ -1310,7 +1310,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: "rate_limit_error", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// Step 2: Earlier in-flight requests complete with 200 OK and allowed unified headers.
+
 				allowedCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(allowedCtx, http.Header{
 					"Anthropic-Ratelimit-Unified-Status":    {"allowed"},
@@ -1339,7 +1339,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					ExecutionSeq: staleSeq,
 				})
 
-				// Step 3: Subsequent requests during active cooldown still emit unified rate-limit headers.
+
 				for _, tc := range []struct {
 					model     string
 					wantClaim string
@@ -1394,7 +1394,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					t.Fatalf("register auth: %v", errRegister)
 				}
 
-				// 1. Model-scoped unified 429 records rejected signals.
+
 				quotaDelay := time.Hour
 				rejectedCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(rejectedCtx, http.Header{
@@ -1413,7 +1413,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: "quota", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// 2. Simulate natural expiry of the quota deadline without wall-clock sleep.
+
 				past := time.Now().Add(-time.Minute)
 				if _, okModify, errModify := manager.Modify(context.Background(), authID, 0, func(a *Auth) error {
 					a.NextRetryAfter = past
@@ -1427,7 +1427,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					t.Fatalf("Modify() ok=%v err=%v", okModify, errModify)
 				}
 
-				// 3. Subsequent request fails with 503 Service Unavailable and Retry-After.
+
 				serverDelay := 45 * time.Second
 				manager.MarkResult(context.Background(), Result{
 					AuthID:     authID,
@@ -1438,7 +1438,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:      &Error{Code: "server_error", Message: "overloaded", HTTPStatus: http.StatusServiceUnavailable},
 				})
 
-				// 4. Subsequent selection error must not advertise unified subscription exhaustion.
+
 				_, errExec := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{Model: modelID}, cliproxyexecutor.Options{})
 				if errExec == nil {
 					t.Fatal("expected unavailable/cooldown error after 503, got nil")
@@ -1599,7 +1599,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					"Anthropic-Ratelimit-Unified-Reset":                {strconv.FormatInt(time.Now().Add(shortDelay).Unix(), 10)},
 				})
 
-				// Credential-scoped: 2h seven_day on model A, then shorter 1h five_hour on model B.
+
 				manager.MarkResult(sevenDayCtx, Result{
 					AuthID:          credAuth,
 					Provider:        "claude",
@@ -1619,7 +1619,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: ErrorCodeCredentialQuota, Message: "5h quota", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// Model-scoped: 2h seven_day, then shorter 1h five_hour.
+
 				manager.MarkResult(sevenDayCtx, Result{
 					AuthID:          modelScopedAuth,
 					Provider:        "claude",
@@ -1639,7 +1639,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: "5h quota", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// Longer ordinary 10m RPM 429 followed by shorter 1m unified 429: governing deadline stays ordinary RPM.
+
 				rpmLong := 10 * time.Minute
 				unifiedShort := time.Minute
 				rpmCtx := internallogging.WithResponseHeadersHolder(context.Background())
@@ -1719,7 +1719,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					t.Fatalf("register auth: %v", errRegister)
 				}
 
-				// 1. Model A enters a 10m ordinary RPM cooldown (no unified rejection headers).
+
 				rpmDelay := 10 * time.Minute
 				rpmCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(rpmCtx, http.Header{"Retry-After": {"600"}})
@@ -1733,7 +1733,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: "rpm", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// 2. Model B triggers a shorter 1m credential-wide 5h quota cooldown.
+
 				credDelay := time.Minute
 				fiveHourCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(fiveHourCtx, http.Header{
@@ -1752,7 +1752,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: ErrorCodeCredentialQuota, Message: "5h quota", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// 3. Expire the 1m credential-wide quota deterministically while Model A's 10m RPM block remains live.
+
 				past := time.Now().Add(-time.Second)
 				manager.mu.Lock()
 				curAuth := manager.auths[authID]
@@ -1768,7 +1768,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					manager.scheduler.upsertAuth(snapshot)
 				}
 
-				// 4. Model A is still cooling down from its independent 10m RPM error and must not emit 5h unified headers.
+
 				_, errExecA := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{Model: modelA}, cliproxyexecutor.Options{})
 				var cdErrA *modelCooldownError
 				if !errors.As(errExecA, &cdErrA) {
@@ -1813,7 +1813,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					t.Fatalf("register auth: %v", errRegister)
 				}
 
-				// 1. Model A enters a 2h independent model-scoped seven_day quota cooldown.
+
 				twoHours := 2 * time.Hour
 				sevenDayCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(sevenDayCtx, http.Header{
@@ -1833,7 +1833,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: "rate_limit_error", Message: "7d model quota", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// 2. Model B triggers a shorter 1h credential-scoped five_hour quota cooldown.
+
 				oneHour := time.Hour
 				fiveHourCtx := internallogging.WithResponseHeadersHolder(context.Background())
 				internallogging.SetResponseHeaders(fiveHourCtx, http.Header{
@@ -1853,7 +1853,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					Error:           &Error{Code: ErrorCodeCredentialQuota, Message: "5h cred quota", HTTPStatus: http.StatusTooManyRequests},
 				})
 
-				// Model A must report seven_day AND ~2h Retry-After / reset (not 1h).
+
 				_, errExecA := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{Model: modelA}, cliproxyexecutor.Options{})
 				var cdErrA *modelCooldownError
 				if !errors.As(errExecA, &cdErrA) {
@@ -1868,7 +1868,7 @@ func TestModelCooldownError_ClaudeUnifiedRateLimitHeaders(t *testing.T) {
 					t.Fatalf("%s modelA Retry-After = %q, want ~7200s (>= 7100s) matching 2h independent deadline", pathName, hdrA.Get("Retry-After"))
 				}
 
-				// Model B must report five_hour AND ~1h Retry-After.
+
 				_, errExecB := manager.Execute(context.Background(), []string{"claude"}, cliproxyexecutor.Request{Model: modelB}, cliproxyexecutor.Options{})
 				var cdErrB *modelCooldownError
 				if !errors.As(errExecB, &cdErrB) {

@@ -16,10 +16,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// SIWC (Sign in with ChatGPT) subscriptions reject configuration_update input
-// items with subscription_sharing_unsupported_capability, so the SIWC body
-// rules must drop every such item and promote the last nonempty effort into
-// the top-level reasoning.effort even though that invalidates the prompt cache.
+
+
+
+
 func TestStripCodexSIWCUnsupportedFieldsConfigurationUpdates(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -274,9 +274,9 @@ func TestCodexExecutorUseSIWCKeepsSuffixEffortOverConfigurationUpdate(t *testing
 	}))
 	defer server.Close()
 
-	// With an explicit model suffix the thinking layer resolves the operator's
-	// override into the top-level effort. The SIWC strip must keep that
-	// suffix intent instead of resurrecting the last configuration_update.
+
+
+
 	executor := NewCodexExecutor(&config.Config{})
 	_, err := executor.Execute(context.Background(), codexSIWCAuthForUpdateTest(server.URL), cliproxyexecutor.Request{
 		Model:   "gpt-6-astra(xhigh)",

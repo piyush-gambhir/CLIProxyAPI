@@ -1,14 +1,14 @@
 package executor
 
-// This file is a frozen, pre-index copy of the Antigravity reasoning replay
-// location, context-fingerprint and merge logic. It exists so the differential
-// tests compare the indexed implementation against an INDEPENDENT oracle rather
-// than against itself.
-//
-// Do not refactor these functions, do not make them delegate to the production
-// implementation, and do not "fix" them. If a production behavior change is
-// intentional, assert the new behavior explicitly in a test instead of editing
-// this oracle.
+
+
+
+
+
+
+
+
+
 
 import (
 	"crypto/sha256"
@@ -121,9 +121,9 @@ func legacyAntigravityFunctionCallPartLocationForReplayWithSchemas(payload []byt
 				name, ci, pi, util.IsGeminiClaudeToolUseID(candidateID))
 			return -1, -1, false
 		}
-		// The candidate ID matched exactly, so callID+name+args are already proven
-		// identical. Only the surrounding context drifted, which invalidates the
-		// cached signature but not the tool identity.
+
+
+
 		log.Debugf("antigravity replay: exact tool ID match for %q at contents[%d].parts[%d] rejected by context hash (opaque_id=%t)",
 			name, ci, pi, util.IsGeminiClaudeToolUseID(candidateID))
 		return -1, -1, false
@@ -221,12 +221,12 @@ func legacyAntigravityThoughtSignatureReplayPartPath(payload []byte, itemResult 
 	partArr := parts.Array()
 	targetKind := strings.TrimSpace(itemResult.Get("targetKind").String())
 	targetHash := strings.TrimSpace(itemResult.Get("targetHash").String())
-	// A target hash pins the signature to a part whose own bytes are unchanged,
-	// which is all Gemini validates: the signature's own integrity, never its
-	// binding to the surrounding history. Drift elsewhere in the conversation
-	// therefore costs this signature nothing, so it is deliberately not gated on
-	// the context fingerprint. The fallback below has no such proof and stays
-	// gated.
+
+
+
+
+
+
 	if targetHash != "" {
 		if targetOccurrence := itemResult.Get("targetOccurrence"); targetOccurrence.Exists() {
 			wanted := int(targetOccurrence.Int())
@@ -259,8 +259,8 @@ func legacyAntigravityThoughtSignatureReplayPartPath(payload []byte, itemResult 
 		return "", false
 	}
 
-	// No target hash: nothing proves which part this signature belongs to, so
-	// only a matching context fingerprint makes the positional guess safe.
+
+
 	if !legacyAntigravityReplayItemContextMatches(payload, itemResult, ci) {
 		return "", false
 	}
@@ -270,9 +270,9 @@ func legacyAntigravityThoughtSignatureReplayPartPath(payload []byte, itemResult 
 			return fmt.Sprintf("request.contents.%d.parts.%d", ci, pi), true
 		}
 	}
-	// Legacy cache entries may point at a streamed signature-only part after
-	// multiple text chunks. Attach them to the last semantic part in the same
-	// model content, never to a different turn.
+
+
+
 	for candidate := len(partArr) - 1; candidate >= 0; candidate-- {
 		if kind, _ := antigravityReplayPartFingerprint(partArr[candidate]); kind != "" {
 			return fmt.Sprintf("request.contents.%d.parts.%d", ci, candidate), true
@@ -386,20 +386,20 @@ func legacyMergeAntigravityFunctionCallPartReplayWithSchemas(payload []byte, ite
 		_, allowLegacyIDRestore := toolSchemas[name]
 		return restoreAntigravityNativeFunctionCallReplay(payload, ci, pi, itemResult, allowLegacyIDRestore, true)
 	}
-	// The context drifted, but an exact opaque ID match still proves this call's
-	// identity. Gemini validates a thought signature's own integrity and nothing
-	// about the history around it, so the drift costs the signature nothing: restore
-	// the native call and its signature rather than making the model re-reason.
+
+
+
+
 	if ci, pi, exists := legacyAntigravityFunctionCallProvenanceLocation(payload, itemResult, toolSchemas); exists {
 		return restoreAntigravityNativeFunctionCallReplay(payload, ci, pi, itemResult, false, true)
 	}
 	if callID != "" {
 		stableID := util.GeminiClaudeToolUseID(callID, name, args.Raw)
 		if legacyAntigravityPayloadHasFunctionCallID(payload, callID) || (stableID != "" && legacyAntigravityPayloadHasFunctionCallID(payload, stableID)) {
-			// The call is already in the history under its native or Claude-facing
-			// ID, and neither lookup above accepted it, so the client changed it.
-			// Never replay an opaque signature onto that changed call, and never
-			// insert a second copy of it further down.
+
+
+
+
 			return payload, false
 		}
 		if frIndex, currentResponseID, ok := legacyAntigravityFunctionResponseContentIndexForReplay(payload, itemResult); ok {
@@ -416,8 +416,8 @@ func legacyMergeAntigravityFunctionCallPartReplayWithSchemas(payload []byte, ite
 			}
 		}
 	} else {
-		// Without a native call ID, only an exact semantic match is safe. Never
-		// put an opaque signature on a different call at the old numeric slot.
+
+
 		return payload, false
 	}
 

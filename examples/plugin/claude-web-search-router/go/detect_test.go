@@ -12,7 +12,7 @@ func TestDetectClaudeCodeWebSearchFromFixture(t *testing.T) {
 	if errRead != nil {
 		t.Skipf("fixture not found: %v", errRead)
 	}
-	// Fixture is HTTP capture; extract JSON request body between first blank line after headers.
+
 	body := extractHTTPJSONBody(raw)
 	if len(body) == 0 {
 		t.Fatal("empty JSON body in fixture")

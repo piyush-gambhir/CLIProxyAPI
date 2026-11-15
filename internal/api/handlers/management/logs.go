@@ -30,13 +30,13 @@ const (
 	logCursorFingerprintMax = 4 * 1024
 )
 
-// GetLogs returns log lines with optional incremental loading.
-//
-// The legacy timestamp path keeps line-count as the total scanned line count for
-// compatibility. Cursor and tail reads avoid scanning older files, so line-count
-// is the number of returned lines there. A cursor emitted by the legacy path
-// points at the latest complete log boundary; combining after with limit is
-// therefore tail semantics and does not replay lines trimmed by limit.
+
+
+
+
+
+
+
 func (h *Handler) GetLogs(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})
@@ -131,7 +131,7 @@ func (h *Handler) GetLogs(c *gin.Context) {
 	writeLogsResponse(c, lines, total, latest, nextCursor, false)
 }
 
-// DeleteLogs removes all rotated log files and truncates the active log.
+
 func (h *Handler) DeleteLogs(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})
@@ -192,8 +192,8 @@ func (h *Handler) DeleteLogs(c *gin.Context) {
 	})
 }
 
-// GetRequestErrorLogs lists error request log files when RequestLog is disabled.
-// It returns an empty list when RequestLog is enabled.
+
+
 func (h *Handler) GetRequestErrorLogs(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})
@@ -256,8 +256,8 @@ func (h *Handler) GetRequestErrorLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"files": files})
 }
 
-// GetRequestLogByID finds and downloads a request log file by its request ID.
-// The ID is matched against the suffix of log file names (format: *-{requestID}.log).
+
+
 func (h *Handler) GetRequestLogByID(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})
@@ -379,7 +379,7 @@ func parseLogMetadata(filename string) logFileMeta {
 		}
 	}
 
-	const tsLen = 17 // len("2006-01-02T150405")
+	const tsLen = 17
 	if len(beforeSeq) >= tsLen {
 		tsStr := beforeSeq[len(beforeSeq)-tsLen:]
 		if t, errTime := time.Parse("2006-01-02T150405", tsStr); errTime == nil {
@@ -402,9 +402,9 @@ func parseLogMetadata(filename string) logFileMeta {
 	}
 }
 
-// logFileIsNewer determines whether candidate should take precedence over current.
-// It compares file modification times, and on ties, compares the embedded timestamp
-// and collision sequence for matching prefixes.
+
+
+
 func logFileIsNewer(candidateName string, candidateMod time.Time, currentName string, currentMod time.Time) bool {
 	if candidateMod.After(currentMod) {
 		return true
@@ -426,7 +426,7 @@ func logFileIsNewer(candidateName string, candidateMod time.Time, currentName st
 	return candidateName > currentName
 }
 
-// DownloadRequestErrorLog downloads a specific error request log file by name.
+
 func (h *Handler) DownloadRequestErrorLog(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "handler unavailable"})

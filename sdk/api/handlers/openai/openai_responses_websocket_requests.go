@@ -30,13 +30,13 @@ func normalizeResponsesWebsocketRequestWithIncrementalState(rawJSON []byte, last
 	requestType := strings.TrimSpace(ojson.GetBytesNoCopy(rawJSON, "type").String())
 	switch requestType {
 	case wsRequestTypeCreate:
-		// log.Infof("responses websocket: response.create request")
+
 		if len(lastRequest) == 0 {
 			return normalizeResponseCreateRequest(rawJSON)
 		}
 		return normalizeResponseSubsequentRequest(rawJSON, lastRequest, lastResponseOutput, lastResponseID, lastResponsePendingToolCallIDs, allowIncrementalInputWithPreviousResponseID, allowCompactionReplayBypass)
 	case wsRequestTypeAppend:
-		// log.Infof("responses websocket: response.append request")
+
 		return normalizeResponseSubsequentRequest(rawJSON, lastRequest, lastResponseOutput, lastResponseID, lastResponsePendingToolCallIDs, allowIncrementalInputWithPreviousResponseID, allowCompactionReplayBypass)
 	default:
 		return nil, lastRequest, &interfaces.ErrorMessage{
@@ -98,28 +98,28 @@ func normalizeResponseSubsequentRequest(rawJSON []byte, lastRequest []byte, last
 		}
 	}
 
-	// Compaction can cause clients to replace local websocket history with a new
-	// compact transcript on the next `response.create`. When the input already
-	// contains historical model output items, treating it as an incremental append
-	// duplicates stale turn-state and can leave late orphaned function_call items.
+
+
+
+
 	if shouldReplaceWebsocketTranscript(rawJSON, nextInput) {
 		normalized := normalizeResponseTranscriptReplacement(rawJSON, lastRequest)
 		return normalized, bytes.Clone(normalized), nil
 	}
 
-	// A request without previous_response_id that leaves the last response's tool
-	// calls unanswered cannot extend that response: appending it to the stale turn
-	// would send those function_call items without outputs. Treat it as a
-	// replacement transcript in every upstream mode (e.g. a client-side compaction
-	// summary that carries no compaction markers).
+
+
+
+
+
 	prev := strings.TrimSpace(ojson.GetBytesNoCopy(rawJSON, "previous_response_id").String())
 	if prev == "" && !inputSatisfiesPendingToolCalls(nextInput, lastResponsePendingToolCallIDs) {
 		normalized := normalizeResponseTranscriptReplacement(rawJSON, lastRequest)
 		return normalized, bytes.Clone(normalized), nil
 	}
 
-	// Websocket v2 mode uses response.create with previous_response_id + incremental input.
-	// Do not expand it into a full input transcript; upstream expects the incremental payload.
+
+
 	if allowIncrementalInputWithPreviousResponseID {
 		if prev == "" {
 			prev = strings.TrimSpace(lastResponseID)
@@ -146,11 +146,11 @@ func normalizeResponseSubsequentRequest(rawJSON []byte, lastRequest []byte, last
 		}
 	}
 
-	// When the client sends a compact replay for a downstream that can consume it
-	// directly, the input already carries the canonical history. In that case,
-	// skip merging with stale lastRequest/lastResponseOutput to avoid breaking
-	// function_call / function_call_output pairings.
-	// See: https://github.com/router-for-me/CLIProxyAPI/issues/2207
+
+
+
+
+
 	var mergedInput []byte
 	if allowCompactionReplayBypass && inputContainsFullTranscript(nextInput) {
 		log.Infof("responses websocket: full transcript detected, skipping stale merge (input items=%d)", len(nextInput.Array()))
@@ -329,25 +329,25 @@ type responsesWebsocketInputItem struct {
 }
 
 type responsesWebsocketMergeInputItem struct {
-	// raw may reference a caller-owned request buffer. Merge items must remain
-	// local to mergeResponsesWebsocketInput, which copies every item into the
-	// owned output buffer before returning.
+
+
+
 	raw      string
 	itemType string
 	id       string
 	callID   string
 }
 
-// responsesWebsocketReplayPassthroughPath is the passthrough object that can
-// carry output-only upstream fields on response items.
+
+
 const responsesWebsocketReplayPassthroughPath = "internal_chat_message_metadata_passthrough"
 
-// responsesWebsocketReplaySanitizedItem removes every output-only
-// content_token_count member from a valid response item that CPA replays as
-// input, along with every passthrough object left empty. Parent and child
-// members are matched by their decoded key names, including duplicates and
-// escaped spellings. Retained members are rebuilt from raw field slices
-// without reserializing values; invalid items return unchanged.
+
+
+
+
+
+
 func responsesWebsocketReplaySanitizedItem(raw string) string {
 	if !responsesWebsocketReplayMayContainPassthroughKey(raw) || !json.Valid([]byte(raw)) {
 		return raw
@@ -363,9 +363,9 @@ func responsesWebsocketReplaySanitizedItem(raw string) string {
 	return string(cleaned)
 }
 
-// responsesWebsocketReplaySanitizedBytes is the []byte form used by upstream
-// cache recording entries. Unchanged items return the caller's slice so the
-// storage layer still performs its single detached ownership copy.
+
+
+
 func responsesWebsocketReplaySanitizedBytes(raw []byte) []byte {
 	if len(raw) == 0 || !json.Valid(raw) {
 		return raw
@@ -381,11 +381,11 @@ func responsesWebsocketReplaySanitizedBytes(raw []byte) []byte {
 	return cleaned
 }
 
-// responsesWebsocketReplayMayContainPassthroughKey is a conservative,
-// copy-free screen. A decoded passthrough key contains an underscore and the
-// fragments on either side of one underscore; Unicode escapes therefore
-// require the universal \\u prefix, while literal spellings contain either
-// "internal" or "chat_message_metadata_passthrough".
+
+
+
+
+
 func responsesWebsocketReplayMayContainPassthroughKey(raw string) bool {
 	return strings.Contains(raw, "internal") ||
 		strings.Contains(raw, "chat_message_metadata_passthrough") ||
@@ -437,9 +437,9 @@ func responsesWebsocketSanitizeReplayResult(item ojson.Result) ([]byte, bool) {
 	return out, true
 }
 
-// responsesWebsocketSanitizePassthroughObject drops every decoded
-// content_token_count member from a passthrough object. Members are collected
-// as raw slices and materialized only after a removal is confirmed.
+
+
+
 func responsesWebsocketSanitizePassthroughObject(passthrough ojson.Result) (string, bool, bool) {
 	members := make([]struct{ key, value string }, 0, len(passthrough.Map()))
 	removed := false
@@ -501,9 +501,9 @@ func mergeResponsesWebsocketInput(lastRequest []byte, lastResponseOutput []byte,
 		if errResponse != nil {
 			return nil, fmt.Errorf("invalid previous response output: %w", errResponse)
 		}
-		// Replayed response items become upstream input. Drop output-only
-		// fields the client never sends so another credential cannot reject
-		// them; previous-request and appended client items stay untouched.
+
+
+
 		for index := itemCountBeforeResponse; index < len(items); index++ {
 			items[index].raw = responsesWebsocketReplaySanitizedItem(items[index].raw)
 		}
@@ -539,10 +539,10 @@ func responsesWebsocketPreviousInputNoCopy(lastRequest []byte) (ojson.Result, er
 		if !strings.EqualFold(key.String(), "input") {
 			return true
 		}
-		// encoding/json processes matching duplicate fields in source order,
-		// retains the last value, and still reports a type error from any
-		// incompatible duplicate. Preserve those semantics without copying the
-		// selected array out of the caller-owned request buffer.
+
+
+
+
 		inputFound = true
 		input = value
 		if value.Type != ojson.Null && !value.IsArray() {
@@ -681,8 +681,8 @@ func marshalResponsesWebsocketMergeInputItems(items []responsesWebsocketMergeInp
 		outputLength += len(item.raw)
 	}
 
-	// This allocation establishes ownership of the merged transcript and is the
-	// only large allocation the merge path retains after it returns.
+
+
 	out := make([]byte, 0, outputLength)
 	out = append(out, '[')
 	for index, item := range items {
@@ -785,10 +785,10 @@ func dedupeResponsesWebsocketFunctionCalls(items []responsesWebsocketInputItem) 
 }
 
 func dedupeResponsesWebsocketInputItems(items []responsesWebsocketInputItem) []responsesWebsocketInputItem {
-	// Collect the call_ids that are still referenced by tool-call output
-	// items. When several input items share the same id, the one we keep must
-	// preserve any call_id that has a matching output; otherwise the upstream
-	// rejects the request with "No tool call found for function call output".
+
+
+
+
 	referencedCallIDs := make(map[string]struct{}, len(items))
 	for _, item := range items {
 		switch item.itemType {
@@ -799,9 +799,9 @@ func dedupeResponsesWebsocketInputItems(items []responsesWebsocketInputItem) []r
 		}
 	}
 
-	// For each id, choose the index to keep. The default is the last
-	// occurrence (matching the original dedupe behavior), but we never replace
-	// an item whose call_id still has a matching output with one that does not.
+
+
+
 	keepIndexByID := make(map[string]int, len(items))
 	keepReferencedByID := make(map[string]bool, len(items))
 	for index, item := range items {

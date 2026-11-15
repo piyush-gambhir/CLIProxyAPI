@@ -17,15 +17,15 @@ import (
 	tls "github.com/refraction-networking/utls"
 )
 
-// newResumptionTestCertificate mints a short-lived self-signed leaf for the
-// loopback TLS server used by the resumption test.
+
+
 func newResumptionTestCertificate(t *testing.T) gotls.Certificate {
 	return newResumptionTestCertificateAt(t, time.Now())
 }
 
-// newResumptionTestCertificateAt mints a test leaf valid around now. Tests
-// running inside synctest pass its fake epoch so certificate verification
-// sees the same clock as the handshake timers.
+
+
+
 func newResumptionTestCertificateAt(t *testing.T, now time.Time) gotls.Certificate {
 	t.Helper()
 	key, errKey := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -53,10 +53,10 @@ func newResumptionTestCertificateAt(t *testing.T, now time.Time) gotls.Certifica
 	return gotls.Certificate{Certificate: [][]byte{der}, PrivateKey: key, Leaf: leaf}
 }
 
-// TestClaudeCodeTLSSessionResumptionCompletesHandshake proves the Claude Code
-// inference ClientHello can actually resume: the spec places pre_shared_key
-// after the padding extension, so a malformed ordering or padding interaction
-// would surface here as a handshake failure rather than a silent regression.
+
+
+
+
 func TestClaudeCodeTLSSessionResumptionCompletesHandshake(t *testing.T) {
 	certificate := newResumptionTestCertificate(t)
 	roots := x509.NewCertPool()
@@ -88,8 +88,8 @@ func TestClaudeCodeTLSSessionResumptionCompletesHandshake(t *testing.T) {
 					_ = conn.Close()
 					return
 				}
-				// The greeting flushes the post-handshake NewSessionTicket
-				// messages the client needs in order to resume.
+
+
 				_, _ = server.Write([]byte("ok\n"))
 				_, _ = server.Read(make([]byte, 8))
 				_ = server.Close()
@@ -135,8 +135,8 @@ func TestClaudeCodeTLSSessionResumptionCompletesHandshake(t *testing.T) {
 		t.Fatal("second handshake did not resume, so the session cache is not effective")
 	}
 
-	// The padding extension absorbs the pre_shared_key bytes, so a resumed
-	// ClientHello keeps the same BoringSSL padding boundary as a fresh one.
+
+
 	if firstLength != secondLength {
 		t.Fatalf("resumed ClientHello length = %d, want %d to match the fresh handshake", secondLength, firstLength)
 	}

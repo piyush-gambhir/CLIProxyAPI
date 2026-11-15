@@ -17,8 +17,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-// PluginModelRouterHost routes matching requests to a plugin executor, the router's own executor,
-// or a built-in provider before model-to-provider resolution and auth selection.
+
+
 type PluginModelRouterHost interface {
 	RouteModel(context.Context, pluginapi.ModelRouteRequest) (pluginapi.ModelRouteResponse, bool)
 }
@@ -122,9 +122,9 @@ func nativeInteractionsExecutionError() *interfaces.ErrorMessage {
 	}
 }
 
-// providersForExecution resolves the providers and normalized model for a request. When a model
-// router selected a built-in provider, it skips model->provider resolution and uses the router's
-// provider (with an optional target model); otherwise it falls back to the registry-based path.
+
+
+
 func (h *BaseAPIHandler) providersForExecution(modelName, originalRequestedModel string, allowImageModel bool, routeDecision modelRouteDecision, execOptions modelExecutionOptions) ([]string, string, *interfaces.ErrorMessage) {
 	forcedProvider := strings.ToLower(strings.TrimSpace(execOptions.ForcedProvider))
 	if forcedProvider != "" {
@@ -199,23 +199,23 @@ func (h *BaseAPIHandler) getRequestDetailsWithOptions(modelName string, allowIma
 	}
 
 	providers = util.GetProviderName(baseModel)
-	// Fallback: if baseModel has no provider but differs from resolvedModelName,
-	// try using the full model name. This handles edge cases where custom models
-	// may be registered with their full suffixed name (e.g., "my-model(8192)").
-	// Evaluated in Story 11.8: This fallback is intentionally preserved to support
-	// custom model registrations that include thinking suffixes.
+
+
+
+
+
 	if len(providers) == 0 && baseModel != resolvedModelName {
 		providers = util.GetProviderName(resolvedModelName)
 	}
 
 	if len(providers) == 0 {
-		// The client asked for a model this proxy cannot route. Report it as a request
-		// error so streaming clients receive an actionable message instead of a
-		// gateway failure they would keep retrying. 400 is used rather than 404 to keep
-		// it distinguishable from an unregistered HTTP route.
-		// The model name is client supplied, so it is inserted through sjson rather
-		// than formatted into the JSON literal: an unescaped quote would otherwise
-		// corrupt the body or let the caller overwrite the error code.
+
+
+
+
+
+
+
 		body := `{"error":{"message":"","type":"invalid_request_error","code":"model_not_found","param":"model"}}`
 		body, errSet := ojson.Set(body, "error.message", "unknown provider for model "+modelName)
 		if errSet != nil {
@@ -227,8 +227,8 @@ func (h *BaseAPIHandler) getRequestDetailsWithOptions(modelName string, allowIma
 		}
 	}
 
-	// The thinking suffix is preserved in the model name itself, so no
-	// metadata-based configuration passing is needed.
+
+
 	return providers, resolvedModelName, nil
 }
 
@@ -255,8 +255,8 @@ func isOpenAIImageOnlyModel(model string) bool {
 	}
 }
 
-// validateSpeechOnlyModel rejects speech-only models outside the speech endpoints so they are
-// never sent to a chat upstream.
+
+
 func (h *BaseAPIHandler) validateSpeechOnlyModel(modelName string, allowSpeechModel bool) *interfaces.ErrorMessage {
 	baseModel := strings.TrimSpace(thinking.ParseSuffix(modelName).ModelName)
 	if baseModel == "" {
@@ -354,8 +354,8 @@ func modelRoutersEnabled(host PluginModelRouterHost, skipPluginID string) bool {
 	if detector, ok := host.(modelRouterDetector); ok {
 		return detector.HasModelRouters()
 	}
-	// No detector: treat routing as disabled (same conservative default as before any
-	// ModelRouter existed). Hosts that route must implement HasModelRouters (pluginhost.Host does).
+
+
 	return false
 }
 

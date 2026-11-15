@@ -1,5 +1,5 @@
-// config_reload.go implements debounced configuration hot reload.
-// It detects material changes and reloads clients when the config changes.
+
+
 package watcher
 
 import (
@@ -43,7 +43,7 @@ func (w *Watcher) scheduleConfigReload() {
 	})
 }
 
-// ReloadConfigIfChanged runs the same config reload path used by filesystem events.
+
 func (w *Watcher) ReloadConfigIfChanged() {
 	if w == nil {
 		return
@@ -52,8 +52,8 @@ func (w *Watcher) ReloadConfigIfChanged() {
 }
 
 func (w *Watcher) reloadConfigIfChanged() {
-	// File events and post-save reloads may arrive together; an older read must
-	// not apply after a newer one.
+
+
 	w.configApplyMu.Lock()
 	defer w.configApplyMu.Unlock()
 
@@ -79,9 +79,9 @@ func (w *Watcher) reloadConfigIfChanged() {
 	}
 	log.Infof("config file changed, reloading: %s", w.configPath)
 	if w.reloadConfig() {
-		// Record the bytes the reload actually parsed, not the change-check read or a
-		// later re-read: a write landing between them must not count as applied. A
-		// write-back during load only costs one extra reload.
+
+
+
 		w.clientsMutex.Lock()
 		appliedHash := newHash
 		if w.config != nil && w.config.SourceHash != "" {

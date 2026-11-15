@@ -169,17 +169,17 @@ func TestNormalizeCodexToolIntegerTypes(t *testing.T) {
 			}
 		}
 
-		// Check non-target field cmd in exec_command
+
 		if got := toolMap["exec_command"].Get("parameters.properties.cmd.type").String(); got != "string" {
 			t.Errorf("exec_command cmd type = %q, want string", got)
 		}
 
-		// Check unrelated tool retains number
+
 		if got := toolMap["unrelated_tool"].Get("parameters.properties.timeout_ms.type").String(); got != "number" {
 			t.Errorf("unrelated_tool timeout_ms type = %q, want number", got)
 		}
 
-		// Check additional_tools under input
+
 		addToolType := ojson.GetBytesNoCopy(out, "input.0.tools.0.parameters.properties.yield_time_ms.type").Array()
 		if len(addToolType) != 2 || addToolType[0].String() != "integer" || addToolType[1].String() != "null" {
 			t.Errorf("additional_tools yield_time_ms type = %v, want [integer null]", addToolType)
@@ -237,19 +237,19 @@ func TestNormalizeCodexToolIntegerTypes(t *testing.T) {
 		for _, tool := range ojson.GetBytesNoCopy(out, "tools").Array() {
 			toolMap[tool.Get("name").String()] = tool
 		}
-		// mcp__server__sleep must remain number
+
 		if got := toolMap["mcp__server__sleep"].Get("parameters.properties.duration_ms.type").String(); got != "number" {
 			t.Errorf("mcp__server__sleep duration_ms type = %q, want number", got)
 		}
-		// mcp__server__exec_command must remain number
+
 		if got := toolMap["mcp__server__exec_command"].Get("parameters.properties.yield_time_ms.type").String(); got != "number" {
 			t.Errorf("mcp__server__exec_command yield_time_ms type = %q, want number", got)
 		}
-		// functions__sleep must be normalized to integer
+
 		if got := toolMap["functions__sleep"].Get("parameters.properties.duration_ms.type").String(); got != "integer" {
 			t.Errorf("functions__sleep duration_ms type = %q, want integer", got)
 		}
-		// collab__exec_command must be normalized to integer
+
 		if got := toolMap["collab__exec_command"].Get("parameters.properties.yield_time_ms.type").String(); got != "integer" {
 			t.Errorf("collab__exec_command yield_time_ms type = %q, want integer", got)
 		}

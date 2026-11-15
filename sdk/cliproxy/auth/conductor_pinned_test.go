@@ -44,7 +44,7 @@ func TestManagerNonWeightedPinnedSelection(t *testing.T) {
 							t.Fatal(errRegister)
 						}
 					}
-					// Normalize the legacy selection signatures for the same pinning checks.
+
 					pick := func(ctx context.Context, id string, tried map[string]struct{}) (*Auth, error) {
 						opts := cliproxyexecutor.Options{
 							Headers:  http.Header{"Session_id": {"non-weighted-pinned"}},

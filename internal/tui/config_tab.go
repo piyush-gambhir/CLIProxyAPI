@@ -11,16 +11,16 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// configField represents a single editable config field.
+
 type configField struct {
 	label    string
-	apiPath  string // management API path (e.g. "debug", "proxy-url")
-	kind     string // "bool", "int", "string", "readonly"
-	value    string // current display value
-	rawValue any    // raw value from API
+	apiPath  string
+	kind     string
+	value    string
+	rawValue any
 }
 
-// configTabModel displays parsed config with interactive editing.
+
 type configTabModel struct {
 	client    *Client
 	viewport  viewport.Model
@@ -29,7 +29,7 @@ type configTabModel struct {
 	editing   bool
 	textInput textinput.Model
 	err       error
-	message   string // status message (success/error)
+	message   string
 	width     int
 	height    int
 	ready     bool
@@ -87,7 +87,7 @@ func (m configTabModel) Update(msg tea.Msg) (configTabModel, tea.Cmd) {
 			m.message = successStyle.Render(T("updated_ok"))
 		}
 		m.viewport.SetContent(m.renderContent())
-		// Refresh config from server
+
 		return m, m.fetchConfig
 
 	case tea.KeyMsg:
@@ -111,7 +111,7 @@ func (m configTabModel) handleNormalKey(msg tea.KeyMsg) (configTabModel, tea.Cmd
 		if m.cursor > 0 {
 			m.cursor--
 			m.viewport.SetContent(m.renderContent())
-			// Ensure cursor is visible
+
 			m.ensureCursorVisible()
 		}
 		return m, nil
@@ -129,10 +129,10 @@ func (m configTabModel) handleNormalKey(msg tea.KeyMsg) (configTabModel, tea.Cmd
 				return m, nil
 			}
 			if f.kind == "bool" {
-				// Toggle directly
+
 				return m, m.toggleBool(m.cursor)
 			}
-			// Start editing for int/string
+
 			m.editing = true
 			m.textInput.SetValue(configFieldEditValue(f))
 			m.textInput.Focus()
@@ -229,7 +229,7 @@ func (m *configTabModel) SetSize(w, h int) {
 }
 
 func (m *configTabModel) ensureCursorVisible() {
-	// Each field takes ~1 line, header takes ~4 lines
+
 	targetLine := m.cursor + 5
 	if targetLine < m.viewport.YOffset {
 		m.viewport.SetYOffset(targetLine)
@@ -274,7 +274,7 @@ func (m configTabModel) renderContent() string {
 
 	currentSection := ""
 	for i, f := range m.fields {
-		// Section headers
+
 		section := fieldSection(f.apiPath)
 		if section != currentSection {
 			currentSection = section
@@ -326,7 +326,7 @@ func (m configTabModel) renderContent() string {
 func (m configTabModel) parseConfig(cfg map[string]any) []configField {
 	var fields []configField
 
-	// Server settings
+
 	fields = append(fields, configField{"Port", "port", "readonly", fmt.Sprintf("%.0f", getFloat(cfg, "port")), nil})
 	fields = append(fields, configField{"Host", "host", "readonly", getString(cfg, "host"), nil})
 	fields = append(fields, configField{"Debug", "debug", "bool", fmt.Sprintf("%v", getBool(cfg, "debug")), nil})
@@ -335,25 +335,25 @@ func (m configTabModel) parseConfig(cfg map[string]any) []configField {
 	fields = append(fields, configField{"Max Retry Interval (s)", "max-retry-interval", "int", fmt.Sprintf("%.0f", getFloat(cfg, "max-retry-interval")), nil})
 	fields = append(fields, configField{"Force Model Prefix", "force-model-prefix", "string", getString(cfg, "force-model-prefix"), nil})
 
-	// Logging
+
 	fields = append(fields, configField{"Logging to File", "logging-to-file", "bool", fmt.Sprintf("%v", getBool(cfg, "logging-to-file")), nil})
 	fields = append(fields, configField{"Logs Max Total Size (MB)", "logs-max-total-size-mb", "int", fmt.Sprintf("%.0f", getFloat(cfg, "logs-max-total-size-mb")), nil})
 	fields = append(fields, configField{"Error Logs Max Files", "error-logs-max-files", "int", fmt.Sprintf("%.0f", getFloat(cfg, "error-logs-max-files")), nil})
 	fields = append(fields, configField{"Usage Stats Enabled", "usage-statistics-enabled", "bool", fmt.Sprintf("%v", getBool(cfg, "usage-statistics-enabled")), nil})
 	fields = append(fields, configField{"Request Log", "request-log", "bool", fmt.Sprintf("%v", getBool(cfg, "request-log")), nil})
 
-	// Quota exceeded
+
 	fields = append(fields, configField{"Switch Project on Quota", "quota-exceeded/switch-project", "bool", fmt.Sprintf("%v", getBoolNested(cfg, "quota-exceeded", "switch-project")), nil})
 	fields = append(fields, configField{"Switch Preview Model", "quota-exceeded/switch-preview-model", "bool", fmt.Sprintf("%v", getBoolNested(cfg, "quota-exceeded", "switch-preview-model")), nil})
 
-	// Routing
+
 	if routing, ok := cfg["routing"].(map[string]any); ok {
 		fields = append(fields, configField{"Routing Strategy", "routing/strategy", "string", getString(routing, "strategy"), nil})
 	} else {
 		fields = append(fields, configField{"Routing Strategy", "routing/strategy", "string", "", nil})
 	}
 
-	// WebSocket auth
+
 	fields = append(fields, configField{"WebSocket Auth", "ws-auth", "bool", fmt.Sprintf("%v", getBool(cfg, "ws-auth")), nil})
 
 	return fields

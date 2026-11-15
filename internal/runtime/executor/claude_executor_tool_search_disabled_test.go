@@ -22,9 +22,9 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// toolSearchExecutorGoldenPayload is a Codex Responses turn with a client
-// tool_search session plus a named declaration, which predates tool_search
-// support only as a generic tool.
+
+
+
 const toolSearchExecutorGoldenPayload = `{"model":"claude-sonnet-4-5","input":[` +
 	`{"type":"message","role":"user","content":[{"type":"input_text","text":"create a calendar event"}]},` +
 	`{"type":"tool_search_call","call_id":"call_search_1","status":"completed","execution":"client","arguments":{"query":"calendar"}},` +
@@ -38,13 +38,13 @@ const toolSearchExecutorGoldenPayload = `{"model":"claude-sonnet-4-5","input":[`
 
 var toolSearchExecutorGoldenCCH = regexp.MustCompile(`cch=[0-9a-f]+;`)
 
-// toolSearchExecutorGoldenDate is the calendar day the dev golden was recorded
-// on. OAuth cloaking injects a currentDate reminder, so the render pins the
-// executor clock to this day to keep the golden comparison date-independent.
+
+
+
 var toolSearchExecutorGoldenDate = time.Date(2026, time.October, 11, 12, 0, 0, 0, time.UTC)
 
-// renderToolSearchExecutorGolden captures the upstream bodies the Claude
-// executor sends for toolSearchExecutorGoldenPayload on every request path.
+
+
 func renderToolSearchExecutorGolden(t *testing.T) map[string]string {
 	t.Helper()
 	helps.ResetClaudeDiagnosticsForTest()
@@ -88,8 +88,8 @@ func renderToolSearchExecutorGolden(t *testing.T) map[string]string {
 			if errSend != nil {
 				t.Fatalf("%s %s: %v", authName, path, errSend)
 			}
-			// OAuth cloaking derives metadata.user_id from a random device id,
-			// and the billing header's cch hash covers it.
+
+
 			body, _ := ojson.DeleteBytes(upstream.body, "metadata.user_id")
 			golden[authName+"/"+path] = toolSearchExecutorGoldenCCH.ReplaceAllString(string(body), "cch=0;")
 		}
@@ -97,10 +97,10 @@ func renderToolSearchExecutorGolden(t *testing.T) map[string]string {
 	return golden
 }
 
-// The dev golden was produced by running renderToolSearchExecutorGolden against
-// the executor at origin/dev d739485df, before Codex tool_search support. With
-// upstream.claude.tool-search off every request path must reproduce it, even
-// for credentials that would otherwise use native tool search.
+
+
+
+
 func TestClaudeExecutor_ToolSearchDisabledMatchesDevGolden(t *testing.T) {
 	enableClaudeToolSearchForTest(t, false)
 	if NewClaudeExecutor(&config.Config{}).SupportsNativeToolSearch(nativeToolSearchAuth(nil), "claude-sonnet-4-5") {
@@ -125,8 +125,8 @@ func TestClaudeExecutor_ToolSearchDisabledMatchesDevGolden(t *testing.T) {
 	}
 }
 
-// With the switch on, the same request must leave the dev translation, so the
-// golden comparison above cannot pass by accident.
+
+
 func TestClaudeExecutor_ToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	enableClaudeToolSearchForTest(t, true)
 	raw, errRead := os.ReadFile(filepath.Join("testdata", "tool_search_disabled", "dev_executor_golden.json"))
@@ -142,9 +142,9 @@ func TestClaudeExecutor_ToolSearchEnabledDiffersFromDevGolden(t *testing.T) {
 	}
 }
 
-// toolSearchReloadContext routes the executor to a stub upstream that flips
-// upstream.claude.tool-search to flipTo when the request arrives, as a config
-// reload would, and answers with a Claude call to the tool_search tool.
+
+
+
 func toolSearchReloadContext(t *testing.T, flipTo bool) (context.Context, *[]byte) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -178,8 +178,8 @@ func toolSearchReloadContext(t *testing.T, flipTo bool) (context.Context, *[]byt
 	return context.WithValue(ctx, "cliproxy.roundtripper", http.RoundTripper(transport)), &sent
 }
 
-// A config reload while a request is upstream must not change how that
-// request's response is translated: the value seen when it started holds.
+
+
 func TestClaudeExecutor_ToolSearchSwitchIsPinnedPerRequest(t *testing.T) {
 	payload := []byte(nativeToolSearchResponsesPayload)
 	auth := nativeToolSearchAuth(nil)
@@ -236,8 +236,8 @@ func TestClaudeExecutor_ToolSearchSwitchIsPinnedPerRequest(t *testing.T) {
 	}
 }
 
-// A reload between the fallback decision and translation must not change the
-// translation: it follows the value pinned when the fallback was decided.
+
+
 func TestClaudeExecutor_ToolSearchFallbackPinsTranslation(t *testing.T) {
 	hosted := `{"type":"tool_search","name":"HostedSearch"}`
 	payload := []byte(strings.Replace(nativeToolSearchResponsesPayload, `],"stream":false}`, `,`+hosted+`],"stream":false}`, 1))
@@ -249,11 +249,11 @@ func TestClaudeExecutor_ToolSearchFallbackPinsTranslation(t *testing.T) {
 		auth          *cliproxyauth.Auth
 		wantToolNames map[string]bool
 	}{
-		// Native: the client search tool stays and hosted search is dropped.
+
 		{name: "on official then off", start: true, auth: official, wantToolNames: map[string]bool{"tool_search": true, "HostedSearch": false}},
-		// Fallback strips client search; the pinned translation still drops hosted search.
+
 		{name: "on gateway then off", start: true, auth: gateway, wantToolNames: map[string]bool{"tool_search": false, "HostedSearch": false}},
-		// Dev: no client search tool and the named hosted declaration passes through.
+
 		{name: "off official then on", start: false, auth: official, wantToolNames: map[string]bool{"tool_search": false, "HostedSearch": true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

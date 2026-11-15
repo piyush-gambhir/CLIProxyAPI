@@ -78,7 +78,7 @@ func (h *issue6332PeerHost) InterceptStreamChunk(ctx context.Context, req plugin
 	}
 	h.arrived.Done()
 	h.arrived.Wait()
-	// Both independent terminal interceptors are now active, before either delivery.
+
 	nested, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	h.results <- issue6332ReviewNested(nested, h.base, req.RequestBody)
@@ -93,7 +93,7 @@ func TestIssue6332Review7ConcurrentTerminalInterceptors(t *testing.T) {
 	initial.Add(2)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if requests.Add(1) <= 2 {
-			// Both outer requests must pass their initial replay read before responding.
+
 			initial.Done()
 			initial.Wait()
 		}
@@ -184,7 +184,7 @@ func (h *issue6332CallbackHost) CompleteRequest(ctx context.Context, c pluginapi
 		h.result <- fmt.Errorf("outer lifecycle failed: %+v", c)
 		return
 	}
-	// A lifecycle callback starts a new turn without waiting for usage or upstream cleanup.
+
 	nested, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
 	h.result <- issue6332ReviewNested(nested, h.base, h.body)
@@ -207,7 +207,7 @@ func testIssue6332LifecycleNextTurn(t *testing.T, split bool) {
 	rt := &issue6332LifecycleTransport{release: release, closed: make(chan struct{}), requests: make(chan []byte, 2)}
 	rt.firstFrame = issue6332ToolFrame()
 	if split {
-		// A finishReason alone is not the replay boundary: signature and usage follow.
+
 		rt.firstFrame = `data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"id":"native-call","name":"lookup","args":{"key":"value"}}}]},"finishReason":"STOP"}]}}` + "\n\n" +
 			`data: {"response":{"candidates":[{"content":{"parts":[{"text":"","thoughtSignature":"` + strings.Repeat("s", 128) + `"}]}}]}}` + "\n\n" +
 			`data: {"response":{"usageMetadata":{"promptTokenCount":11,"candidatesTokenCount":22,"totalTokenCount":33}}}` + "\n\n"
@@ -242,7 +242,7 @@ func testIssue6332LifecycleNextTurn(t *testing.T, split bool) {
 	}
 	unblock()
 	<-rt.closed
-	// Join both producers only after the next-turn assertion.
+
 	for range 2 {
 		<-capture.records
 	}

@@ -11,19 +11,19 @@ import (
 	"time"
 )
 
-// Client wraps HTTP calls to the management API.
+
 type Client struct {
 	baseURL   string
 	secretKey string
 	http      *http.Client
 }
 
-// NewClient creates a new management API client targeting localhost on the given port.
+
 func NewClient(port int, secretKey string) *Client {
 	return NewClientWithBaseURL(fmt.Sprintf("http://127.0.0.1:%d", port), secretKey)
 }
 
-// NewClientWithBaseURL creates a new management API client targeting the specified base URL.
+
 func NewClientWithBaseURL(baseURL string, secretKey string) *Client {
 	baseURL = strings.TrimSpace(baseURL)
 	if baseURL == "" {
@@ -44,12 +44,12 @@ func NewClientWithBaseURL(baseURL string, secretKey string) *Client {
 	}
 }
 
-// BaseURL returns the client's configured management API base URL.
+
 func (c *Client) BaseURL() string {
 	return c.baseURL
 }
 
-// SetSecretKey updates management API bearer token used by this client.
+
 func (c *Client) SetSecretKey(secretKey string) {
 	c.secretKey = strings.TrimSpace(secretKey)
 }
@@ -111,7 +111,7 @@ func (c *Client) patch(path string, body io.Reader) ([]byte, error) {
 	return data, nil
 }
 
-// getJSON fetches a path and unmarshals JSON into a generic map.
+
 func (c *Client) getJSON(path string) (map[string]any, error) {
 	data, err := c.get(path)
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *Client) getJSON(path string) (map[string]any, error) {
 	return result, nil
 }
 
-// postJSON sends a JSON body via POST and checks for errors.
+
 func (c *Client) postJSON(path string, body any) error {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -140,12 +140,12 @@ func (c *Client) postJSON(path string, body any) error {
 	return nil
 }
 
-// GetConfig fetches the parsed config.
+
 func (c *Client) GetConfig() (map[string]any, error) {
 	return c.getJSON("/v0/management/config")
 }
 
-// GetConfigYAML fetches the raw config.yaml content.
+
 func (c *Client) GetConfigYAML() (string, error) {
 	data, err := c.get("/v0/management/config.yaml")
 	if err != nil {
@@ -154,14 +154,14 @@ func (c *Client) GetConfigYAML() (string, error) {
 	return string(data), nil
 }
 
-// PutConfigYAML uploads new config.yaml content.
+
 func (c *Client) PutConfigYAML(yamlContent string) error {
 	_, err := c.put("/v0/management/config.yaml", strings.NewReader(yamlContent))
 	return err
 }
 
-// GetAuthFiles lists auth credential files.
-// API returns {"files": [...]}.
+
+
 func (c *Client) GetAuthFiles() ([]map[string]any, error) {
 	wrapper, err := c.getJSON("/v8/management/credentials")
 	if err != nil {
@@ -175,7 +175,7 @@ func (c *Client) GetAuthFiles() ([]map[string]any, error) {
 	return extractList(wrapper, "files")
 }
 
-// DeleteAuthFile deletes a single auth file by name.
+
 func (c *Client) DeleteAuthFile(name string) error {
 	query := url.Values{}
 	query.Set("name", name)
@@ -190,14 +190,14 @@ func (c *Client) DeleteAuthFile(name string) error {
 	return nil
 }
 
-// ToggleAuthFile enables or disables an auth file.
+
 func (c *Client) ToggleAuthFile(name string, disabled bool) error {
 	body, _ := json.Marshal(map[string]any{"name": name, "disabled": disabled})
 	_, err := c.patch("/v0/management/auth-files/status", strings.NewReader(string(body)))
 	return err
 }
 
-// PatchAuthFileFields updates editable fields on an auth file.
+
 func (c *Client) PatchAuthFileFields(name string, fields map[string]any) error {
 	fields["name"] = name
 	body, _ := json.Marshal(fields)
@@ -205,17 +205,17 @@ func (c *Client) PatchAuthFileFields(name string, fields map[string]any) error {
 	return err
 }
 
-// RefreshAuthFile triggers a forced refresh of a single auth credential.
+
 func (c *Client) RefreshAuthFile(name string) error {
 	return c.postJSON("/v0/management/auth-files/refresh", map[string]any{"name": name})
 }
 
-// RefreshAllAuthFiles triggers a forced refresh of all auth credentials.
+
 func (c *Client) RefreshAllAuthFiles() error {
 	return c.postJSON("/v0/management/auth-files/refresh", map[string]any{"all": true})
 }
 
-// GetLogs fetches log lines from the server.
+
 func (c *Client) GetLogs(after int64, limit int) ([]string, int64, error) {
 	query := url.Values{}
 	if limit > 0 {
@@ -269,8 +269,8 @@ func (c *Client) GetLogs(after int64, limit int) ([]string, int64, error) {
 	return lines, latest, nil
 }
 
-// GetAPIKeys fetches the list of API keys.
-// API returns {"api-keys": [...]}.
+
+
 func (c *Client) GetAPIKeys() ([]string, error) {
 	wrapper, err := c.getJSON("/v0/management/api-keys")
 	if err != nil {
@@ -291,7 +291,7 @@ func (c *Client) GetAPIKeys() ([]string, error) {
 	return result, nil
 }
 
-// AddAPIKey adds a new API key by sending old=nil, new=key which appends.
+
 func (c *Client) AddAPIKey(key string) error {
 	body := map[string]any{"old": nil, "new": key}
 	jsonBody, _ := json.Marshal(body)
@@ -299,7 +299,7 @@ func (c *Client) AddAPIKey(key string) error {
 	return err
 }
 
-// EditAPIKey replaces an API key at the given index.
+
 func (c *Client) EditAPIKey(index int, newValue string) error {
 	body := map[string]any{"index": index, "value": newValue}
 	jsonBody, _ := json.Marshal(body)
@@ -307,7 +307,7 @@ func (c *Client) EditAPIKey(index int, newValue string) error {
 	return err
 }
 
-// DeleteAPIKey deletes an API key by index.
+
 func (c *Client) DeleteAPIKey(index int) error {
 	_, code, err := c.doRequest("DELETE", fmt.Sprintf("/v0/management/api-keys?index=%d", index), nil)
 	if err != nil {
@@ -319,44 +319,44 @@ func (c *Client) DeleteAPIKey(index int) error {
 	return nil
 }
 
-// GetGeminiKeys fetches Gemini API keys.
-// API returns {"gemini-api-key": [...]}.
+
+
 func (c *Client) GetGeminiKeys() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/gemini-api-key", "gemini-api-key")
 }
 
-// GetInteractionsKeys fetches native Interactions API keys.
-// API returns {"interactions-api-key": [...]}.
+
+
 func (c *Client) GetInteractionsKeys() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/interactions-api-key", "interactions-api-key")
 }
 
-// GetClaudeKeys fetches Claude API keys.
+
 func (c *Client) GetClaudeKeys() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/claude-api-key", "claude-api-key")
 }
 
-// GetCodexKeys fetches Codex API keys.
+
 func (c *Client) GetCodexKeys() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/codex-api-key", "codex-api-key")
 }
 
-// GetXAIKeys fetches xAI API keys.
+
 func (c *Client) GetXAIKeys() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/xai-api-key", "xai-api-key")
 }
 
-// GetVertexKeys fetches Vertex API keys.
+
 func (c *Client) GetVertexKeys() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/vertex-api-key", "vertex-api-key")
 }
 
-// GetOpenAICompat fetches OpenAI compatibility entries.
+
 func (c *Client) GetOpenAICompat() ([]map[string]any, error) {
 	return c.getWrappedKeyList("/v0/management/openai-compatibility", "openai-compatibility")
 }
 
-// getWrappedKeyList fetches a wrapped list from the API.
+
 func (c *Client) getWrappedKeyList(path, key string) ([]map[string]any, error) {
 	wrapper, err := c.getJSON(path)
 	if err != nil {
@@ -365,7 +365,7 @@ func (c *Client) getWrappedKeyList(path, key string) ([]map[string]any, error) {
 	return extractList(wrapper, key)
 }
 
-// extractList pulls an array of maps from a wrapper object by key.
+
 func extractList(wrapper map[string]any, key string) ([]map[string]any, error) {
 	arr, ok := wrapper[key]
 	if !ok || arr == nil {
@@ -382,7 +382,7 @@ func extractList(wrapper map[string]any, key string) ([]map[string]any, error) {
 	return result, nil
 }
 
-// GetDebug fetches the current debug setting.
+
 func (c *Client) GetDebug() (bool, error) {
 	wrapper, err := c.getJSON("/v0/management/debug")
 	if err != nil {
@@ -396,8 +396,8 @@ func (c *Client) GetDebug() (bool, error) {
 	return false, nil
 }
 
-// GetAuthStatus polls the OAuth session status.
-// Returns status ("wait", "ok", "error") and optional error message.
+
+
 func (c *Client) GetAuthStatus(state string) (string, string, error) {
 	query := url.Values{}
 	query.Set("state", state)
@@ -411,7 +411,7 @@ func (c *Client) GetAuthStatus(state string) (string, string, error) {
 	return status, errMsg, nil
 }
 
-// CancelAuthSession cancels a pending OAuth session on the management server.
+
 func (c *Client) CancelAuthSession(state string) error {
 	state = strings.TrimSpace(state)
 	if state == "" {
@@ -430,30 +430,30 @@ func (c *Client) CancelAuthSession(state string) error {
 	return nil
 }
 
-// ----- Config field update methods -----
 
-// PutBoolField updates a boolean config field.
+
+
 func (c *Client) PutBoolField(path string, value bool) error {
 	body, _ := json.Marshal(map[string]any{"value": value})
 	_, err := c.put("/v0/management/"+path, strings.NewReader(string(body)))
 	return err
 }
 
-// PutIntField updates an integer config field.
+
 func (c *Client) PutIntField(path string, value int) error {
 	body, _ := json.Marshal(map[string]any{"value": value})
 	_, err := c.put("/v0/management/"+path, strings.NewReader(string(body)))
 	return err
 }
 
-// PutStringField updates a string config field.
+
 func (c *Client) PutStringField(path string, value string) error {
 	body, _ := json.Marshal(map[string]any{"value": value})
 	_, err := c.put("/v0/management/"+path, strings.NewReader(string(body)))
 	return err
 }
 
-// DeleteField sends a DELETE request for a config field.
+
 func (c *Client) DeleteField(path string) error {
 	_, _, err := c.doRequest("DELETE", "/v0/management/"+path, nil)
 	return err

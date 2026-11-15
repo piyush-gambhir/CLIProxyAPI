@@ -25,16 +25,16 @@ type openAIResponsesStreamFailedResponse struct {
 	Error  map[string]any `json:"error"`
 }
 
-// openAIResponsesStreamErrorClass pairs the OpenAI error code and the OpenAI
-// error type that a given HTTP status is reported as.
-//
-// The two are kept together deliberately. They are halves of one classification
-// and a client reads both: the code names the condition, the type says whose
-// fault it was and therefore whether a retry is allowed. Deriving them in two
-// places let them contradict each other, which is how a Codex stream that was
-// cut in transit came to be reported with the retryable code "request_timeout"
-// alongside the type "invalid_request_error" — a type that tells every
-// downstream consumer the request was malformed and must not be replayed.
+
+
+
+
+
+
+
+
+
+
 type openAIResponsesStreamErrorClass struct {
 	code      string
 	errorType string
@@ -45,12 +45,12 @@ const (
 	openAIResponsesServerErrorType = "server_error"
 )
 
-// openAIResponsesStreamErrorClasses holds the statuses that do not follow the
-// plain "4xx is the caller's fault, 5xx is ours" split.
-//
-// StatusRequestTimeout is the reason this table exists. A Codex stream that ends
-// before response.completed is surfaced with that status, and the request itself
-// was well formed: the connection failed, so the caller may replay it.
+
+
+
+
+
+
 var openAIResponsesStreamErrorClasses = map[int]openAIResponsesStreamErrorClass{
 	http.StatusUnauthorized:    {code: "invalid_api_key", errorType: openAIResponsesClientErrorType},
 	http.StatusForbidden:       {code: "insufficient_quota", errorType: openAIResponsesClientErrorType},
@@ -86,8 +86,8 @@ func unmarshalJSONWithNumber(data []byte, v any) error {
 	return dec.Decode(v)
 }
 
-// BuildOpenAIResponsesStreamErrorChunk builds an OpenAI Responses streaming error chunk.
-// It matches the official responses streaming event shape where the error details are nested.
+
+
 func BuildOpenAIResponsesStreamErrorChunk(status int, errText string, sequenceNumber int) []byte {
 	if status <= 0 {
 		status = http.StatusInternalServerError
@@ -135,7 +135,7 @@ func BuildOpenAIResponsesStreamErrorChunk(status int, errText string, sequenceNu
 		return data
 	}
 
-	// Extremely defensive fallback.
+
 	fallbackDetail := map[string]any{
 		"type":    "server_error",
 		"code":    "internal_server_error",
@@ -157,7 +157,7 @@ func applyOpenAIResponsesNestedErrorCode(errorDetail map[string]any) map[string]
 	if existing, ok := errorDetail["code"]; ok && existing != nil && strings.TrimSpace(fmt.Sprint(existing)) != "" {
 		return errorDetail
 	}
-	// Anthropic reports input overflow by message only; Responses clients key on this code.
+
 	if m, _ := errorDetail["message"].(string); errorDetail["type"] == "invalid_request_error" && strings.HasPrefix(m, "prompt is too long") {
 		errorDetail["code"] = "context_length_exceeded"
 	}
@@ -212,8 +212,8 @@ func openAIResponsesStreamFailedErrorDetail(status int, errText, code, message s
 	return openAIResponsesStreamErrorDetail(status, errText, code, message)
 }
 
-// BuildOpenAIResponsesStreamFailedChunk builds the terminal Responses event used by official Codex clients.
-// It is intentionally separate from BuildOpenAIResponsesStreamErrorChunk so existing clients keep the legacy shape.
+
+
 func BuildOpenAIResponsesStreamFailedChunk(status int, errText string, sequenceNumber int) []byte {
 	if status <= 0 {
 		status = http.StatusInternalServerError

@@ -109,7 +109,7 @@ func testClaudeExecutorUserAgentFields(t *testing.T, stabilize bool) {
 							t.Fatalf("native %s changed\n got: %s\nwant: %s", field, got, want)
 						}
 					}
-					// Signing may update billing, but both UAs must produce the same prefix.
+
 					system := ojson.GetBytes(upstreamBody, "system")
 					if path == "count_tokens" {
 						if system.Exists() {

@@ -1,8 +1,8 @@
-// Package openai provides response translation functionality for Codex to OpenAI API compatibility.
-// This package handles the conversion of Codex API responses into OpenAI Chat Completions-compatible
-// JSON format, transforming streaming events and non-streaming responses into the format
-// expected by OpenAI API clients. It supports both streaming and non-streaming modes,
-// handling text content, tool calls, reasoning content, and usage metadata appropriately.
+
+
+
+
+
 package chat_completions
 
 import (
@@ -34,10 +34,10 @@ type toolCallStreamState struct {
 	Done             bool
 }
 
-// codexChatToolMetadata carries request-derived tool facts shared by the
-// streaming and non-streaming translators. It is resolved once, on first
-// tool call, instead of re-scanning the original request per tool event;
-// callers pass the same request bytes for a stream's lifetime.
+
+
+
+
 type codexChatToolMetadata struct {
 	resolved           bool
 	reverseToolNames   map[string]string
@@ -65,7 +65,7 @@ func (m *codexChatToolMetadata) resolve(original []byte) {
 	}
 }
 
-// collectChatToolWinners normalizes nested Chat custom declarations for Responses metadata.
+
 func collectChatToolWinners(original []byte) map[string]util.ResponsesToolDescriptor {
 	root := util.ParseGJSONBytesNoCopy(original)
 	var doc *ojson.Doc
@@ -90,8 +90,8 @@ func collectChatToolWinners(original []byte) map[string]util.ResponsesToolDescri
 	return util.CollectResponsesToolWinners(root)
 }
 
-// restoreToolName maps a shortened upstream tool name back to the
-// client-declared original, matching buildReverseMapFromOriginalOpenAI.
+
+
 func (m *codexChatToolMetadata) restoreToolName(original []byte, name string) string {
 	m.resolve(original)
 	if orig, ok := m.reverseToolNames[name]; ok {
@@ -100,7 +100,7 @@ func (m *codexChatToolMetadata) restoreToolName(original []byte, name string) st
 	return name
 }
 
-// isCustomPatch matches isOriginalCustomPatch using the cached metadata.
+
 func (m *codexChatToolMetadata) isCustomPatch(original []byte, item ojson.Result) bool {
 	if item.Get("type").String() != "custom_tool_call" {
 		return false
@@ -113,7 +113,7 @@ func (m *codexChatToolMetadata) isCustomPatch(original []byte, item ojson.Result
 	return m.customPatchWinners[name]
 }
 
-// ConvertCliToOpenAIParams holds parameters for response conversion.
+
 type ConvertCliToOpenAIParams struct {
 	ServiceTier           string
 	toolMetadata          codexChatToolMetadata
@@ -128,20 +128,20 @@ type ConvertCliToOpenAIParams struct {
 	LastImageHashByItemID map[string][32]byte
 }
 
-// ConvertCodexResponseToOpenAI translates a single chunk of a streaming response from the
-// Codex API format to the OpenAI Chat Completions streaming format.
-// It processes various Codex event types and transforms them into OpenAI-compatible JSON responses.
-// The function handles text content, tool calls, reasoning content, and usage metadata, outputting
-// responses that match the OpenAI API format. It supports incremental updates for streaming responses.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response
-//   - rawJSON: The raw JSON response from the Codex API
-//   - param: A pointer to a parameter object for maintaining state between calls
-//
-// Returns:
-//   - [][]byte: A slice of OpenAI-compatible JSON responses
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &ConvertCliToOpenAIParams{
@@ -160,7 +160,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 	}
 	rawJSON = bytes.TrimSpace(rawJSON[5:])
 
-	// Initialize the OpenAI SSE template.
+
 	templateDoc := ojson.NewDocString(`{"id":"","object":"chat.completion.chunk","created":12345,"model":"model","choices":[{"index":0,"delta":{},"finish_reason":null,"native_finish_reason":null}]}`)
 
 	rootResult := util.ParseGJSONBytesNoCopy(rawJSON)
@@ -187,7 +187,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		return [][]byte{}
 	}
 
-	// Extract and set the model version.
+
 	cachedModel := (*param).(*ConvertCliToOpenAIParams).Model
 	if modelResult := rootResult.Get("model"); modelResult.Exists() {
 		_ = templateDoc.Set("model", modelResult.String())
@@ -199,10 +199,10 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 
 	_ = templateDoc.Set("created", (*param).(*ConvertCliToOpenAIParams).CreatedAt)
 
-	// Extract and set the response ID.
+
 	_ = templateDoc.Set("id", (*param).(*ConvertCliToOpenAIParams).ResponseID)
 
-	// Extract and set usage metadata (token counts).
+
 	if usageResult := rootResult.Get("response.usage"); usageResult.Exists() {
 		if outputTokensResult := usageResult.Get("output_tokens"); outputTokensResult.Exists() {
 			_ = templateDoc.Set("usage.completion_tokens", outputTokensResult.Int())
@@ -295,7 +295,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 			return [][]byte{}
 		}
 
-		// Increment index for this new tool call item.
+
 		p := (*param).(*ConvertCliToOpenAIParams)
 		p.FunctionCallIndex++
 		state := &toolCallStreamState{Index: p.FunctionCallIndex, Patch: p.toolMetadata.isCustomPatch(originalRequestRawJSON, itemResult)}
@@ -305,7 +305,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		_ = functionCallItemDoc.Set("index", state.Index)
 		_ = functionCallItemDoc.Set("id", itemResult.Get("call_id").String())
 
-		// Restore original tool name if it was shortened.
+
 		name := p.toolMetadata.restoreToolName(originalRequestRawJSON, itemResult.Get("name").String())
 		_ = functionCallItemDoc.Set("function.name", name)
 		_ = functionCallItemDoc.Set("function.arguments", "")
@@ -342,7 +342,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 			return [][]byte{}
 		}
 
-		// Fallback: no delta events were received, emit the full arguments as a single chunk.
+
 		fullArgsField := "arguments"
 		if dataType == "response.custom_tool_call_input.done" {
 			fullArgsField = "input"
@@ -421,8 +421,8 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 				return [][]byte{}
 			}
 
-			// The tool was announced, but no argument event arrived. Emit only the
-			// completed arguments so the id and name are not duplicated.
+
+
 			state.ArgumentsEmitted = true
 			fullArgs := codexToolCallArguments(itemResult)
 			if state.Patch {
@@ -438,7 +438,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 			return [][]byte{templateDoc.Bytes()}
 		}
 
-		// Fallback path: model skipped output_item.added, so emit the complete tool call now.
+
 		p.FunctionCallIndex++
 		state = &toolCallStreamState{Index: p.FunctionCallIndex, ArgumentsEmitted: true, Done: true, Patch: p.toolMetadata.isCustomPatch(originalRequestRawJSON, itemResult)}
 		registerToolCallState(p, rootResult, itemResult, state)
@@ -447,7 +447,7 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 		_ = functionCallItemDoc.Set("index", state.Index)
 		_ = functionCallItemDoc.Set("id", itemResult.Get("call_id").String())
 
-		// Restore original tool name if it was shortened.
+
 		name := p.toolMetadata.restoreToolName(originalRequestRawJSON, itemResult.Get("name").String())
 		_ = functionCallItemDoc.Set("function.name", name)
 
@@ -466,22 +466,22 @@ func ConvertCodexResponseToOpenAI(_ context.Context, modelName string, originalR
 	return [][]byte{templateDoc.Bytes()}
 }
 
-// ConvertCodexResponseToOpenAINonStream converts a non-streaming Codex response to a non-streaming OpenAI response.
-// This function processes the complete Codex response and transforms it into a single OpenAI-compatible
-// JSON response. It handles message content, tool calls, reasoning content, and usage metadata, combining all
-// the information into a single response that matches the OpenAI API format.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response (unused in current implementation)
-//   - rawJSON: The raw JSON response from the Codex API
-//   - param: A pointer to a parameter object for the conversion (unused in current implementation)
-//
-// Returns:
-//   - []byte: An OpenAI-compatible JSON response containing all message content and metadata
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	rootResult := util.ParseGJSONBytesNoCopy(rawJSON)
-	// Verify this is a terminal response event.
+
 	responseType := rootResult.Get("type").String()
 	if responseType != "response.completed" && responseType != "response.incomplete" {
 		return []byte{}
@@ -499,24 +499,24 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 		_ = templateDoc.Set("service_tier", tier)
 	}
 
-	// Extract and set the model version.
+
 	if modelResult := responseResult.Get("model"); modelResult.Exists() {
 		_ = templateDoc.Set("model", modelResult.String())
 	}
 
-	// Extract and set the creation timestamp.
+
 	if createdAtResult := responseResult.Get("created_at"); createdAtResult.Exists() {
 		_ = templateDoc.Set("created", createdAtResult.Int())
 	} else {
 		_ = templateDoc.Set("created", unixTimestamp)
 	}
 
-	// Extract and set the response ID.
+
 	if idResult := responseResult.Get("id"); idResult.Exists() {
 		_ = templateDoc.Set("id", idResult.String())
 	}
 
-	// Extract and set usage metadata (token counts).
+
 	if usageResult := responseResult.Get("usage"); usageResult.Exists() {
 		if outputTokensResult := usageResult.Get("output_tokens"); outputTokensResult.Exists() {
 			_ = templateDoc.Set("usage.completion_tokens", outputTokensResult.Int())
@@ -536,7 +536,7 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 		}
 	}
 
-	// Process the output array for content and function calls
+
 	var toolMetadata codexChatToolMetadata
 	var toolCalls [][]byte
 	var images [][]byte
@@ -554,7 +554,7 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 
 			switch outputType {
 			case "reasoning":
-				// Extract reasoning content from summary
+
 				if summaryResult := outputItem.Get("summary"); summaryResult.IsArray() {
 					summaryArray := summaryResult.Array()
 					for _, summaryItem := range summaryArray {
@@ -566,7 +566,7 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 						}
 					}
 				}
-				// Extract reasoning content from content
+
 				if contentResult := outputItem.Get("content"); contentResult.IsArray() {
 					contentArray := contentResult.Array()
 					for _, contentItem := range contentArray {
@@ -578,7 +578,7 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 					}
 				}
 			case "message":
-				// Extract message content and URL citations.
+
 				if contentResult := outputItem.Get("content"); contentResult.IsArray() {
 					for _, contentItem := range contentResult.Array() {
 						if contentItem.Get("type").String() != "output_text" {
@@ -595,7 +595,7 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 					}
 				}
 			case "function_call", "custom_tool_call":
-				// Handle function and custom tool call content.
+
 				functionCallDoc := ojson.NewDocString(`{"id":"","type":"function","function":{"name":"","arguments":""}}`)
 
 				if callIdResult := outputItem.Get("call_id"); callIdResult.Exists() {
@@ -630,7 +630,7 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 			}
 		}
 
-		// Set content and reasoning content if found
+
 		if contentText != "" {
 			_ = templateDoc.Set("choices.0.message.content", contentText)
 		}
@@ -643,18 +643,18 @@ func ConvertCodexResponseToOpenAINonStream(_ context.Context, _ string, original
 			_ = templateDoc.SetRawBytes("choices.0.message.annotations", translatorcommon.JoinRawArray(messageAnnotations))
 		}
 
-		// Add tool calls if any
+
 		if len(toolCalls) > 0 {
 			_ = templateDoc.SetRawBytes("choices.0.message.tool_calls", translatorcommon.JoinRawArray(toolCalls))
 		}
 
-		// Add images if any
+
 		if len(images) > 0 {
 			_ = templateDoc.SetRawBytes("choices.0.message.images", translatorcommon.JoinRawArray(images))
 		}
 	}
 
-	// Extract and set the finish reason based on status.
+
 	if statusResult := responseResult.Get("status"); statusResult.Exists() {
 		status := statusResult.String()
 		finishReason := ""
@@ -815,8 +815,8 @@ func codexToolCallArguments(itemResult ojson.Result) string {
 	return itemResult.Get("arguments").String()
 }
 
-// buildReverseMapFromOriginalOpenAI builds a map of shortened tool name -> original tool name
-// from the original OpenAI-style request JSON using the same shortening logic.
+
+
 func buildReverseMapFromOriginalOpenAI(original []byte) map[string]string {
 	rev := map[string]string{}
 	names := collectRequestToolNames(original)
@@ -850,7 +850,7 @@ func mimeTypeFromCodexOutputFormat(outputFormat string) string {
 	}
 }
 
-// codexResponseServiceTier returns only an actual nonempty upstream tier.
+
 func codexResponseServiceTier(response ojson.Result) string {
 	tier := response.Get("service_tier")
 	if tier.Type != ojson.String || strings.TrimSpace(tier.Str) == "" {
@@ -859,7 +859,7 @@ func codexResponseServiceTier(response ojson.Result) string {
 	return strings.TrimSpace(tier.Str)
 }
 
-// setCodexCacheWriteTokensDoc preserves the upstream integer without float conversion.
+
 func setCodexCacheWriteTokensDoc(doc *ojson.Doc, usage ojson.Result) {
 	value := usage.Get("input_tokens_details.cache_write_tokens")
 	if !value.Exists() || value.Type == ojson.Null {
@@ -880,13 +880,13 @@ func setCodexCacheWriteTokensDoc(doc *ojson.Doc, usage ojson.Result) {
 	_ = doc.SetRawBytes("usage.prompt_tokens_details.cached_creation_tokens", []byte(value.Raw))
 }
 
-// isOriginalCustomPatch never promotes an ordinary same-name function to custom.
+
 func isOriginalCustomPatch(original []byte, item ojson.Result) bool {
 	if item.Get("type").String() != "custom_tool_call" {
 		return false
 	}
 	name := util.QualifyResponsesNamespaceToolName(item.Get("namespace").String(), item.Get("name").String())
-	// Chat Completions prefers ordinary functions for ambiguous names, regardless of order.
+
 	for _, tool := range ojson.GetBytesNoCopy(original, "tools").Array() {
 		if tool.Get("type").String() == "function" && tool.Get("function.name").String() == name {
 			return false

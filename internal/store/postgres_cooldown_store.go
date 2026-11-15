@@ -37,7 +37,7 @@ type postgresCooldownStateStore struct {
 	previous map[postgresCooldownStateKey]postgresCooldownStateVersion
 }
 
-// CooldownStateStore returns the PostgreSQL-backed runtime cooldown store.
+
 func (s *PostgresStore) CooldownStateStore() cliproxyauth.CooldownStateStore {
 	if s == nil {
 		return nil

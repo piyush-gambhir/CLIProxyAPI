@@ -26,7 +26,7 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// task6RepairSource completes tool input without implicitly completing the response.
+
 func task6RepairSource(mode string) [][]byte {
 	if mode == "empty" {
 		return nil
@@ -94,7 +94,7 @@ func TestApplyPatchRepairResponsesSourceTerminalHTTP(t *testing.T) {
 					}
 					assertTask6FailedStream(t, stream.Chunks)
 					checkUsage()
-					// Exercise the gateway too, but do not rely on its final HTTP validator.
+
 					auth.ID += "-gateway"
 					checkGatewayUsage := task6CaptureFailureUsage(t, auth.ID)
 					result := task6Gateway(t, exec, auth, true)
@@ -249,13 +249,13 @@ func TestApplyPatchRepairXAIWebsocketPersistentFailureRetry(t *testing.T) {
 	for _, branch := range []string{"bridge", "translator", "translator-terminal", "translator-warmup"} {
 		for _, raw := range []bool{false, true} {
 			if strings.HasPrefix(branch, "translator") && raw {
-				// Raw downstream WebSockets deliberately bypass the SDK translator.
+
 				continue
 			}
 			for _, detach := range []bool{false, true} {
 				t.Run(fmt.Sprintf("%s/raw=%v/detach=%v", branch, raw, detach), func(t *testing.T) {
 					if strings.HasPrefix(branch, "translator") {
-						// Inject only the optional translator failure; retain the real executor/socket.
+
 						sdktranslator.Register(sdktranslator.FormatOpenAIResponse, sdktranslator.FormatCodex, nil, sdktranslator.ResponseTransform{Stream: func(ctx context.Context, model string, original, effective, event []byte, param *any) [][]byte {
 							payload := bytes.TrimSpace(bytes.TrimPrefix(event, []byte("data: ")))
 							if ojson.GetBytes(payload, "type").String() == "repair.invalid" || (ojson.GetBytes(payload, "type").String() == "response.completed" && ojson.GetBytes(payload, "response.id").String() == "repair-invalid") {
@@ -301,7 +301,7 @@ func TestApplyPatchRepairXAIWebsocketPersistentFailureRetry(t *testing.T) {
 									return
 								}
 							}
-							// Leave the attempt open. A same-socket retry would get stale output.
+
 							if _, _, errReadMessage := conn.ReadMessage(); errReadMessage == nil {
 								_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"stale","output":[]}}`))
 								t.Error("failed socket accepted a second request")
@@ -345,7 +345,7 @@ func TestApplyPatchRepairXAIWebsocketPersistentFailureRetry(t *testing.T) {
 					if errExecuteStream != nil {
 						t.Fatal(errExecuteStream)
 					}
-					// The failure frame is a synchronization point before the request lock releases.
+
 					failed := 0
 					for chunk := range first.Chunks {
 						if bytes.Contains(chunk.Payload, []byte("RAW_SECRET")) || task6RepairChunkType(chunk.Payload) == "response.completed" {
@@ -370,7 +370,7 @@ func TestApplyPatchRepairXAIWebsocketPersistentFailureRetry(t *testing.T) {
 					if failed != 1 {
 						t.Fatal("missing clean failure frame")
 					}
-					// Retry starts while the first attempt is blocked delivering its clean error.
+
 					type attempt struct {
 						stream *cliproxyexecutor.StreamResult
 						err    error
@@ -406,7 +406,7 @@ func TestApplyPatchRepairXAIWebsocketPersistentFailureRetry(t *testing.T) {
 						t.Error("failed lifecycle was not ended")
 					}
 					if detach {
-						// A stale bound-resource callback races with the new active connection.
+
 						detached := make(chan struct{})
 						go func() {
 							if errDetach := oldLifecycle.detach(); errDetach != nil {
@@ -433,7 +433,7 @@ func TestApplyPatchRepairXAIWebsocketPersistentFailureRetry(t *testing.T) {
 }
 
 func TestApplyPatchRepairGatewayInitializesGinTestMode(t *testing.T) {
-	// Simulate an isolated fixture starting in Gin's default mode, not suite order.
+
 	gin.SetMode(gin.DebugMode)
 	defer gin.SetMode(gin.TestMode)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -455,7 +455,7 @@ func TestApplyPatchRepairResponsesSourceTerminalNonStream(t *testing.T) {
 	for _, provider := range []string{"xai", "meta", "kimi"} {
 		for _, mode := range []string{"args-eof", "item-eof", "empty", "done"} {
 			if provider == "kimi" && mode != "empty" {
-				// Kimi's non-stream endpoint returns JSON, not a buffered SSE response.
+
 				continue
 			}
 			t.Run(provider+"/"+mode, func(t *testing.T) {
@@ -584,7 +584,7 @@ func TestApplyPatchRepairXAIWebsocketCompactionUsage(t *testing.T) {
 					t.Error("compact execution made no HTTP request")
 				}
 			}
-			// A queued barrier observes every attempt record without timing-based sleeps.
+
 			usage.PublishRecord(t.Context(), usage.Record{RequestID: auth.ID + "-barrier"})
 			count := 0
 			for {

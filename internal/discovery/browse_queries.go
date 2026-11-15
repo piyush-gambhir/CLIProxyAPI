@@ -6,7 +6,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-// browseQueryRetry keeps discovery backoff independent from cached PTR lifetime.
+
 type browseQueryRetry struct {
 	next, last time.Time
 	interval   time.Duration
@@ -32,9 +32,9 @@ func (c *browseCache) queryDue(index int, q dns.Question, state browseQueryRetry
 	if q.Qtype != dns.TypePTR {
 		return false
 	}
-	// RFC 6762 section 5.2: active browse PTRs must be refreshed even after the
-	// discovery backoff has grown longer than their TTL. Retry about every 5%
-	// of TTL from 80% onward; never generate sub-second retries.
+
+
+
 	for _, r := range c.rrset(index, q.Name, dns.TypePTR) {
 		ttl := time.Duration(r.rr.Header().Ttl) * time.Second
 		retry := max(time.Second, ttl/20)
@@ -45,9 +45,9 @@ func (c *browseCache) queryDue(index int, q dns.Question, state browseQueryRetry
 	return false
 }
 
-// queryMessages implements known-answer suppression (RFC 6762 sections 7.1 and
-// 7.2). Oversized answer lists continue in TC-marked query packets rather than
-// forcing IP fragmentation or silently discarding the remaining known answers.
+
+
+
 func (c *browseCache) queryMessages(index int, q dns.Question, now time.Time) []*dns.Msg {
 	const maxPayload = 1200
 	current := &dns.Msg{Question: []dns.Question{q}}

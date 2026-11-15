@@ -24,8 +24,8 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// Exercise the actual downstream handler, auth manager and Codex executor.
-// All coordination uses protocol events, never sleep-based timing guesses.
+
+
 func TestResponsesSteeringFullDuplexIntegration(t *testing.T) {
 	for _, scenario := range []string{"successor", "tool_pending", "disconnect_accepted", "disconnect_pending"} {
 		t.Run(scenario, func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestResponsesSteeringFullDuplexIntegration(t *testing.T) {
 			base := handlers.NewBaseAPIHandlers(&cfg.SDKConfig, manager)
 			base.SetModelRouterHost(&websocketLoggingRouter{
 				record: func(ctx context.Context, _ string, body []byte) {
-					// Model-router host HTTP calls share the duplex connection lifetime.
+
 					helps.RecordAPIRequest(ctx, cfg, helps.UpstreamRequestLog{URL: "https://router.invalid/route", Body: body})
 				},
 			})
@@ -186,7 +186,7 @@ func TestResponsesSteeringFullDuplexIntegration(t *testing.T) {
 			if connections.Load() != 1 {
 				t.Fatalf("unexpected reconnect/replay: %d", connections.Load())
 			}
-			// An upstream disconnect can leave the downstream ready for another turn.
+
 			_ = c.Close()
 			select {
 			case n := <-deferredCount:
@@ -305,7 +305,7 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 				}
 			}
 
-			// Turn 1: First turn is local compaction_trigger; socket must stay open even when steering=true.
+
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"PRE_COMPACT_RAW_TEXT"}]},{"type":"compaction_trigger"}]}`, modelID))); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -316,7 +316,7 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 			}
 			<-httpReceived
 
-			// Turn 2a: Bogus synthetic previous_response_id is rejected locally without hitting upstream.
+
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":"resp_ag_compact_wrong","input":[{"type":"message","role":"user","content":"next"}]}`, modelID))); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -325,7 +325,7 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 				t.Fatalf("expected previous_response_not_found for wrong synthetic ID, got %s", bogusErr.Raw)
 			}
 
-			// Turn 2b: Valid synthetic previous_response_id starts a fresh root WS turn with expanded summary and NO pre-compaction raw text or synthetic ID.
+
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Post-compaction question"}]}]}`, synthID))); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -344,7 +344,7 @@ func TestResponsesWebsocketIsCompatLocalCompactionIntegration_Issue7406(t *testi
 				t.Fatalf("expected expanded summary marker without raw capsule: %s", wsRoot)
 			}
 
-			// Turn 3: Normal incremental continuation on upstream WS works seamlessly.
+
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.create","previous_response_id":"resp_ws_1","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Incremental follow-up"}]}]}`)); errWrite != nil {
 				t.Fatal(errWrite)
 			}
@@ -458,7 +458,7 @@ func TestResponsesWebsocketExistingWSCompactionRejectsStaleParent_Issue7406(t *t
 		}
 	}
 
-	// Turn 1: Real upstream WS response -> resp_ws_c1_t1.
+
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[{"type":"message","role":"user","content":"turn 1"}]}`, modelID)))
 	turn1Done := readUntil("response.completed")
 	oldWSRespID := turn1Done.Get("response.id").String()
@@ -467,7 +467,7 @@ func TestResponsesWebsocketExistingWSCompactionRejectsStaleParent_Issue7406(t *t
 	}
 	<-wsReceived
 
-	// Turn 2: Full local compaction_trigger invalidates c1 and establishes compaction boundary.
+
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"input":[{"type":"message","role":"user","content":"turn 1"},{"type":"compaction_trigger"}]}`, modelID)))
 	compactDone := readUntil("response.completed")
 	synthID := compactDone.Get("response.id").String()
@@ -475,14 +475,14 @@ func TestResponsesWebsocketExistingWSCompactionRejectsStaleParent_Issue7406(t *t
 		t.Fatalf("turn 2 response.id = %q, want resp_ag_compact_*", synthID)
 	}
 
-	// Turn 3a: Stale pre-compaction WS response ID (resp_ws_c1_t1) MUST be rejected with 409 previous_response_not_found, NOT silently grafted onto synthID.
+
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","model":%q,"previous_response_id":%q,"input":[{"type":"message","role":"user","content":"wrong branch"}]}`, modelID, oldWSRespID)))
 	staleErr := readUntil("error")
 	if staleErr.Get("status").Int() != http.StatusConflict || staleErr.Get("error.code").String() != "previous_response_not_found" {
 		t.Fatalf("expected 409 previous_response_not_found for pre-compaction WS ID %q, got %s", oldWSRespID, staleErr.Raw)
 	}
 
-	// Turn 3b: Valid continuation referencing synthID dials fresh WS c2 with expanded summary and no previous_response_id.
+
 	_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"response.create","previous_response_id":%q,"input":[{"type":"message","role":"user","content":"clean post-compact turn"}]}`, synthID)))
 	turn3Done := readUntil("response.completed")
 	if turn3Done.Get("response.id").String() != "resp_ws_c2_t1" {

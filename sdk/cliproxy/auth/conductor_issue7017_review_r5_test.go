@@ -8,9 +8,9 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Review round 5 regressions: an expired own-model quota marker is history,
-// not a live gate, and every safe-header carrier must outrank a raw
-// passthrough Retry-After.
+
+
+
 
 func TestIssue7017ExpiredOwnQuotaDoesNotBlockTransientRetry(t *testing.T) {
 	model := "gpt-6.1-sol"

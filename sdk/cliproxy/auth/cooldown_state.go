@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// CooldownStateRecord is a persisted runtime cooldown snapshot for one auth/model pair.
+
 type CooldownStateRecord struct {
 	Provider       string     `json:"provider,omitempty"`
 	AuthID         string     `json:"auth_id"`
@@ -27,40 +27,40 @@ type CooldownStateRecord struct {
 	Quota          QuotaState `json:"quota,omitempty"`
 	LastError      *Error     `json:"last_error,omitempty"`
 	UpdatedAt      time.Time  `json:"updated_at"`
-	// IndependentState preserves a model's own cooldown beneath an
-	// auth-level credential-quota layer so a restart cannot lose the
-	// distinction and quota restoration keeps reinstate-exactly semantics.
+
+
+
 	IndependentState *ModelState `json:"independent_state,omitempty"`
-	// CredentialQuotaPropagated preserves wrap provenance for models that
-	// carry no independent layer (e.g. the reporting model itself).
+
+
 	CredentialQuotaPropagated bool `json:"credential_quota_propagated,omitempty"`
-	// CooldownSignals persists bounded rejected quota headers captured when
-	// this cooldown was recorded without touching passive Quota.Signals watermarks.
+
+
 	CooldownSignals map[string]string `json:"cooldown_signals,omitempty"`
-	// IndependentCooldownSignals persists CooldownSignals for IndependentState.
+
 	IndependentCooldownSignals map[string]string `json:"independent_cooldown_signals,omitempty"`
-	// ForceCooldownUntil persists the exact outer ErrorCodeForceCooldown deadline
-	// (credQuotaForceUntil for wrapped model records, model/auth forceCooldownUntil otherwise),
-	// preventing longer ordinary extensions or sibling shadows from inflating it on restore.
+
+
+
 	ForceCooldownUntil time.Time `json:"force_cooldown_until,omitempty"`
-	// CredQuotaForceCooldownUntil persists auth-level credential_quota force provenance
-	// independently from model-less auth ForceCooldownUntil when both coexist on an auth.
+
+
 	CredQuotaForceCooldownUntil time.Time `json:"cred_quota_force_cooldown_until,omitempty"`
-	// IndependentForceCooldownUntil persists the exact ErrorCodeForceCooldown deadline
-	// for IndependentState beneath a credential_quota wrap.
+
+
 	IndependentForceCooldownUntil time.Time `json:"independent_force_cooldown_until,omitempty"`
-	// ForceCooldownEvaluated marks records produced by provenance-aware versions so
-	// a zero ForceCooldownUntil means "explicitly ordinary" rather than legacy unknown.
+
+
 	ForceCooldownEvaluated bool `json:"force_cooldown_evaluated,omitempty"`
 }
 
-// CooldownStateStore persists runtime cooldown state independently from auth tokens.
+
 type CooldownStateStore interface {
 	Load(context.Context) ([]CooldownStateRecord, error)
 	Save(context.Context, []CooldownStateRecord) error
 }
 
-// CooldownStateStoreProvider exposes a backend-specific cooldown state store.
+
 type CooldownStateStoreProvider interface {
 	CooldownStateStore() CooldownStateStore
 }
@@ -73,20 +73,20 @@ type cooldownStateFile struct {
 	Records   []CooldownStateRecord `json:"records"`
 }
 
-// FileCooldownStateStore stores cooldown state as one .cds file per auth.
+
 type FileCooldownStateStore struct {
 	mu      sync.Mutex
 	dir     string
 	authDir string
 }
 
-// NewFileCooldownStateStore creates a file-backed cooldown state store rooted at dir.
+
 func NewFileCooldownStateStore(dir string) *FileCooldownStateStore {
 	return NewFileCooldownStateStoreWithAuthDir(dir, "")
 }
 
-// NewFileCooldownStateStoreWithAuthDir creates a store and derives per-auth .cds
-// paths from auth files relative to authDir when possible.
+
+
 func NewFileCooldownStateStoreWithAuthDir(dir, authDir string) *FileCooldownStateStore {
 	return &FileCooldownStateStore{
 		dir:     strings.TrimSpace(dir),
@@ -94,7 +94,7 @@ func NewFileCooldownStateStoreWithAuthDir(dir, authDir string) *FileCooldownStat
 	}
 }
 
-// Load reads all cooldown state files. A missing directory is treated as empty state.
+
 func (s *FileCooldownStateStore) Load(ctx context.Context) ([]CooldownStateRecord, error) {
 	if s == nil || s.dir == "" {
 		return nil, nil
@@ -157,7 +157,7 @@ func readCooldownStateFile(ctx context.Context, path string) ([]CooldownStateRec
 	return envelope.Records, nil
 }
 
-// Save atomically writes one cooldown state file per auth and removes stale files.
+
 func (s *FileCooldownStateStore) Save(ctx context.Context, records []CooldownStateRecord) error {
 	if s == nil || s.dir == "" {
 		return nil

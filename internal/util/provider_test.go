@@ -7,9 +7,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// TestMaskSensitiveQueryMasksValue covers the related half of issue #6666:
-// deleting a client API key by value passes the secret as ?value=, so the
-// request logger must mask it like other secret-bearing parameters.
+
+
+
 func TestMaskSensitiveQueryMasksValue(t *testing.T) {
 	secretKey := "sk-secret-client-key"
 

@@ -15,8 +15,8 @@ import (
 	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Issue 7017: with header passthrough enabled, the raw upstream Retry-After
-// carried in Addon must not overwrite the locally trusted cooldown deadline.
+
+
 func TestIssue7017TrustedRetryAfterWinsOverPassthroughAddon(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	next := time.Now().Add(256 * time.Second)
@@ -45,7 +45,7 @@ func TestIssue7017TrustedRetryAfterWinsOverPassthroughAddon(t *testing.T) {
 		t.Fatalf("other passthrough headers must still apply, got %q", got)
 	}
 
-	// Without a trusted deadline the raw passthrough value still applies.
+
 	recorderPlain := httptest.NewRecorder()
 	cPlain, _ := gin.CreateTestContext(recorderPlain)
 	cPlain.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)

@@ -9,7 +9,7 @@ import (
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/claude"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/browser"
-	// legacy client removed
+
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/misc"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
@@ -17,12 +17,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ClaudeAuthenticator implements the OAuth login flow for Anthropic Claude accounts.
+
 type ClaudeAuthenticator struct {
 	CallbackPort int
 }
 
-// NewClaudeAuthenticator constructs a Claude authenticator with default settings.
+
 func NewClaudeAuthenticator() *ClaudeAuthenticator {
 	return &ClaudeAuthenticator{CallbackPort: 54545}
 }

@@ -19,7 +19,7 @@ func setupTestLoggerHook(t *testing.T) *logtest.Hook {
 	oldLevel := log.GetLevel()
 	log.SetLevel(log.WarnLevel)
 
-	// Deep-clone existing hooks
+
 	savedHooks := make(log.LevelHooks)
 	for lvl, hs := range log.StandardLogger().Hooks {
 		savedHooks[lvl] = append([]log.Hook(nil), hs...)
@@ -215,7 +215,7 @@ func TestWarnLogOnAuthUnavailable_SingleProvider(t *testing.T) {
 		t.Fatal("expected error from Execute, got nil")
 	}
 
-	// Verify exactly one Warn line was emitted explaining the cooling auths
+
 	warnCount := 0
 	for _, entry := range hook.AllEntries() {
 		if entry.Level == log.WarnLevel && strings.Contains(entry.Message, "auth unavailable") {
@@ -496,7 +496,7 @@ func TestWarnLogOnUpstreamFailure_401RefreshSuccess_DoesNotLogWarn(t *testing.T)
 		t.Fatalf("unexpected response payload: %s", string(resp.Payload))
 	}
 
-	// 401 refresh was successful, so no upstream failure warning should be logged
+
 	for _, entry := range hook.AllEntries() {
 		if entry.Level == log.WarnLevel && strings.Contains(entry.Message, "upstream execution failed") {
 			t.Fatalf("did not expect upstream failure warning when 401 refresh succeeded, got: %s", entry.Message)
@@ -531,7 +531,7 @@ func TestWarnLogOnUpstreamFailure_ClientCanceled_DoesNotLogWarn(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
+	cancel()
 
 	exec := &mockCustomErrorExecutor{
 		identifier: "codex",

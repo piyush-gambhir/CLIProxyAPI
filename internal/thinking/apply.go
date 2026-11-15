@@ -1,4 +1,4 @@
-// Package thinking provides unified thinking configuration processing.
+
 package thinking
 
 import (
@@ -19,7 +19,7 @@ type pluginProviderApplier struct {
 
 var providerAppliersMu sync.RWMutex
 
-// nativeProviderAppliers maps built-in provider names to their implementations.
+
 var nativeProviderAppliers = map[string]ProviderApplier{
 	"gemini":      nil,
 	"claude":      nil,
@@ -33,11 +33,11 @@ var nativeProviderAppliers = map[string]ProviderApplier{
 	"xai":         nil,
 }
 
-// pluginProviderAppliers maps plugin-owned provider names to their implementations.
+
 var pluginProviderAppliers = map[string]pluginProviderApplier{}
 
-// GetProviderApplier returns the ProviderApplier for the given provider name.
-// Returns nil if the provider is not registered.
+
+
 func GetProviderApplier(provider string) ProviderApplier {
 	provider = normalizedProviderName(provider)
 	if provider == "" {
@@ -71,7 +71,7 @@ func resolveProviderApplier(providerFormat, providerKey string) (ProviderApplier
 	return GetProviderApplier(providerFormat), false
 }
 
-// RegisterProvider registers a provider applier by name.
+
 func RegisterProvider(name string, applier ProviderApplier) {
 	name = normalizedProviderName(name)
 	if name == "" {
@@ -82,7 +82,7 @@ func RegisterProvider(name string, applier ProviderApplier) {
 	nativeProviderAppliers[name] = applier
 }
 
-// RegisterPluginProvider registers a plugin-owned provider applier.
+
 func RegisterPluginProvider(owner string, name string, priority int, applier ProviderApplier) bool {
 	owner = strings.TrimSpace(owner)
 	name = normalizedProviderName(name)
@@ -106,7 +106,7 @@ func RegisterPluginProvider(owner string, name string, priority int, applier Pro
 	return true
 }
 
-// UnregisterPluginProviders removes all provider appliers owned by one plugin.
+
 func UnregisterPluginProviders(owner string) {
 	owner = strings.TrimSpace(owner)
 	if owner == "" {
@@ -121,7 +121,7 @@ func UnregisterPluginProviders(owner string) {
 	}
 }
 
-// ClearPluginProviders removes all plugin-owned provider appliers.
+
 func ClearPluginProviders() {
 	providerAppliersMu.Lock()
 	defer providerAppliersMu.Unlock()
@@ -132,8 +132,8 @@ func normalizedProviderName(provider string) string {
 	return strings.ToLower(strings.TrimSpace(provider))
 }
 
-// IsUserDefinedModel reports whether the model is a user-defined model that should
-// have thinking configuration passed through without validation.
+
+
 func IsUserDefinedModel(modelInfo *registry.ModelInfo) bool {
 	if modelInfo == nil {
 		return true
@@ -141,13 +141,13 @@ func IsUserDefinedModel(modelInfo *registry.ModelInfo) bool {
 	return modelInfo.UserDefined
 }
 
-// ApplyThinking applies thinking configuration to a request body.
+
 func ApplyThinking(body []byte, model string, fromFormat string, toFormat string, providerKey string) ([]byte, error) {
 	summaryConfig := ExtractSummaryConfig(body, toFormat)
 	return applyThinking(body, nil, model, fromFormat, toFormat, providerKey, nil, false, summaryConfig)
 }
 
-// ApplyThinkingDoc applies thinking configuration to doc in place.
+
 func ApplyThinkingDoc(doc *ojson.Doc, model, fromFormat, toFormat, providerKey string) error {
 	if doc == nil {
 		return nil
@@ -157,14 +157,14 @@ func ApplyThinkingDoc(doc *ojson.Doc, model, fromFormat, toFormat, providerKey s
 	return err
 }
 
-// ApplyThinkingWithSummary applies canonical thinking effort while preserving
-// summary visibility extracted from the original source request.
+
+
 func ApplyThinkingWithSummary(body []byte, model string, fromFormat string, toFormat string, providerKey string, summaryConfig SummaryConfig) ([]byte, error) {
 	return applyThinking(body, nil, model, fromFormat, toFormat, providerKey, nil, false, summaryConfig)
 }
 
-// ApplyThinkingWithSummaryDoc applies canonical thinking effort onto doc in place
-// while preserving summary visibility extracted from the original source request.
+
+
 func ApplyThinkingWithSummaryDoc(doc *ojson.Doc, model, fromFormat, toFormat, providerKey string, summaryConfig SummaryConfig) error {
 	if doc == nil {
 		return nil
@@ -173,14 +173,14 @@ func ApplyThinkingWithSummaryDoc(doc *ojson.Doc, model, fromFormat, toFormat, pr
 	return err
 }
 
-// ApplyThinkingWithSourceAndSummary applies thinking using the original source
-// request when translation has already changed the target protocol.
+
+
 func ApplyThinkingWithSourceAndSummary(body, sourceBody []byte, model, fromFormat, toFormat, providerKey string, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return applyThinking(body, sourceBody, model, fromFormat, toFormat, providerKey, nil, false, summaryConfig, normalizedUpdatesChanged...)
 }
 
-// ApplyThinkingWithSourceAndSummaryDoc applies thinking onto doc in place using
-// the original source request.
+
+
 func ApplyThinkingWithSourceAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, model, fromFormat, toFormat, providerKey string, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {
 		return nil
@@ -189,15 +189,15 @@ func ApplyThinkingWithSourceAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, mod
 	return err
 }
 
-// ApplyThinkingWithFallbackModelInfoAndSummary applies thinking using the global
-// registry first and falls back to fallbackModelInfo when the registry has no
-// entry for the model.
+
+
+
 func ApplyThinkingWithFallbackModelInfoAndSummary(body, sourceBody []byte, model, fromFormat, toFormat, providerKey string, fallbackModelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return applyThinking(body, sourceBody, model, fromFormat, toFormat, providerKey, fallbackModelInfo, false, summaryConfig, normalizedUpdatesChanged...)
 }
 
-// ApplyThinkingWithFallbackModelInfoAndSummaryDoc applies thinking onto doc in place
-// using the global registry first and falling back to fallbackModelInfo.
+
+
 func ApplyThinkingWithFallbackModelInfoAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, model, fromFormat, toFormat, providerKey string, fallbackModelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {
 		return nil
@@ -206,9 +206,9 @@ func ApplyThinkingWithFallbackModelInfoAndSummaryDoc(doc *ojson.Doc, sourceBody 
 	return err
 }
 
-// ApplyThinkingWithModelInfo applies thinking with the exact configured model
-// definition selected for an API-key execution attempt while preserving summary
-// visibility from the original source body.
+
+
+
 func ApplyThinkingWithModelInfo(body, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo) ([]byte, error) {
 	summaryConfig := ExtractSummaryConfig(sourceBody, fromFormat)
 	if len(sourceBody) == 0 {
@@ -217,8 +217,8 @@ func ApplyThinkingWithModelInfo(body, sourceBody []byte, model string, fromForma
 	return ApplyThinkingWithModelInfoAndSummary(body, sourceBody, model, fromFormat, toFormat, providerKey, modelInfo, summaryConfig)
 }
 
-// ApplyThinkingWithModelInfoDoc applies thinking onto doc in place with the exact
-// configured model definition.
+
+
 func ApplyThinkingWithModelInfoDoc(doc *ojson.Doc, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo) error {
 	if doc == nil {
 		return nil
@@ -230,15 +230,15 @@ func ApplyThinkingWithModelInfoDoc(doc *ojson.Doc, sourceBody []byte, model stri
 	return ApplyThinkingWithModelInfoAndSummaryDoc(doc, sourceBody, model, fromFormat, toFormat, providerKey, modelInfo, summaryConfig)
 }
 
-// ApplyThinkingWithModelInfoAndSummary applies the exact configured model
-// definition with a summary intent already resolved across source translation
-// and plugin normalization.
+
+
+
 func ApplyThinkingWithModelInfoAndSummary(body, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) ([]byte, error) {
 	return applyThinking(body, sourceBody, model, fromFormat, toFormat, providerKey, modelInfo, true, summaryConfig, normalizedUpdatesChanged...)
 }
 
-// ApplyThinkingWithModelInfoAndSummaryDoc applies the exact configured model
-// definition onto doc in place with a pre-resolved summary intent.
+
+
 func ApplyThinkingWithModelInfoAndSummaryDoc(doc *ojson.Doc, sourceBody []byte, model string, fromFormat string, toFormat string, providerKey string, modelInfo *registry.ModelInfo, summaryConfig SummaryConfig, normalizedUpdatesChanged ...bool) error {
 	if doc == nil {
 		return nil
@@ -274,7 +274,7 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 	if fromFormat == "" {
 		fromFormat = providerFormat
 	}
-	// 1. Parse suffix and get modelInfo
+
 	suffixResult := ParseSuffix(model)
 	baseModel := suffixResult.ModelName
 	modelInfo := resolvedModelInfo
@@ -284,7 +284,7 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		}
 	}
 
-	// Resolve source intent before stripping unsupported target input items.
+
 	updatesChanged := len(normalizedUpdatesChanged) > 0 && normalizedUpdatesChanged[0]
 	var sourceConfig ThinkingConfig
 	if isResponsesFormat(fromFormat) {
@@ -305,7 +305,7 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 	}
 	nativeResponses := responseTarget && isResponsesFormat(fromFormat) && supportsUpdates
 
-	// 2. Route check: Get provider applier after target cleanup.
+
 	applier, isPluginApplier := resolveProviderApplier(providerFormat, providerKey)
 	if applier == nil {
 		log.WithFields(log.Fields{
@@ -315,13 +315,13 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		return modified, nil
 	}
 
-	// 3. Model capability check
+
 	if !suffixResult.HasSuffix && len(sourceBody) > 0 && isResponsesFormat(fromFormat) && !docValid && hasThinkingConfig(extractConfigurationUpdateConfig(sourceBody)) {
-		// Do not rebuild a malformed target from a separate source update.
+
 		return modified, nil
 	}
 	if nativeResponses && !suffixResult.HasSuffix {
-		// Native Responses keeps the top-level baseline and in-turn updates as-is.
+
 		if log.IsLevelEnabled(log.DebugLevel) && (modelInfo.Thinking != nil || modelInfo.UserDefined) {
 			if config := extractCodexUsageConfigDoc(doc, docValid); hasThinkingConfig(config) {
 				fields := log.Fields{
@@ -342,7 +342,7 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		return modified, nil
 	}
 	if !isPluginApplier && fromFormat == "claude" && providerFormat == "claude" && !suffixResult.HasSuffix && (!docValid || !doc.Get("thinking").Exists()) {
-		// Native Claude effort is independent of thinking activation.
+
 		if applySummaryConfigForProviderDoc(doc, docValid, providerFormat, baseModel, providerKey, modelInfo, summaryConfig) {
 			modified = true
 		}
@@ -377,7 +377,7 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		return modified, nil
 	}
 
-	// 4. Get config: suffix priority over body
+
 	var config ThinkingConfig
 	if suffixResult.HasSuffix {
 		config = parseSuffixToConfig(suffixResult.RawSuffix, providerFormat, model)
@@ -435,7 +435,7 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		config.Level = mapConfiguredHighIntent(config.Level, modelInfo)
 	}
 
-	// 5. Validate and normalize configuration
+
 	validated, err := ValidateConfig(config, modelInfo, fromFormat, providerFormat, suffixResult.HasSuffix)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -462,8 +462,8 @@ func applyThinkingDocCore(doc *ojson.Doc, docValid bool, sourceBody []byte, mode
 		"level":    validated.Level,
 	}).Debug("thinking: processed config to apply |")
 
-	// 6. Apply configuration using provider-specific applier, then restore the
-	// target summary intent that was explicit before suffix processing.
+
+
 	appliedMod, errApply := invokeProviderApplierOnDoc(applier, doc, &docValid, *validated, modelInfo)
 	if appliedMod {
 		modified = true
@@ -559,7 +559,7 @@ func extractSourceThinkingConfig(body []byte, provider string) ThinkingConfig {
 }
 
 func parseSuffixToConfig(rawSuffix, provider, model string) ThinkingConfig {
-	// 1. Try special values first (none, auto, -1)
+
 	if mode, ok := ParseSpecialSuffix(rawSuffix); ok {
 		switch mode {
 		case ModeNone:
@@ -569,12 +569,12 @@ func parseSuffixToConfig(rawSuffix, provider, model string) ThinkingConfig {
 		}
 	}
 
-	// 2. Try level parsing (minimal, low, medium, high, xhigh)
+
 	if level, ok := ParseLevelSuffix(rawSuffix); ok {
 		return ThinkingConfig{Mode: ModeLevel, Level: level}
 	}
 
-	// 3. Try numeric parsing
+
 	if budget, ok := ParseNumericSuffix(rawSuffix); ok {
 		if budget == 0 {
 			return ThinkingConfig{Mode: ModeNone, Budget: 0}
@@ -687,7 +687,7 @@ func normalizeUserDefinedConfig(config ThinkingConfig, fromFormat, toFormat stri
 	return config
 }
 
-// extractThinkingConfig extracts provider-specific thinking config from request body.
+
 func extractThinkingConfig(body []byte, provider string) ThinkingConfig {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return ThinkingConfig{}
@@ -727,8 +727,8 @@ func hasThinkingConfig(config ThinkingConfig) bool {
 	return config.Mode != ModeBudget || config.Budget != 0 || config.Level != ""
 }
 
-// ExtractReasoningEffort returns the source request's thinking setting as a
-// canonical reasoning_effort label for usage logging.
+
+
 func ExtractReasoningEffort(body []byte, provider, model string) string {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	if isResponsesFormat(provider) {
@@ -752,8 +752,8 @@ func ExtractReasoningEffort(body []byte, provider, model string) string {
 	return reasoningEffortFromConfig(config)
 }
 
-// ExtractTranslatedReasoningEffort returns the final provider payload's thinking
-// setting as a canonical reasoning_effort label for usage logging.
+
+
 func ExtractTranslatedReasoningEffort(body []byte, provider string) string {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	config := extractThinkingConfigForUsage(body, provider)
@@ -781,7 +781,7 @@ func extractThinkingConfigForUsage(body []byte, provider string) ThinkingConfig 
 		if config.Mode == ModeNone && hasThinkingConfig(config) {
 			return config
 		}
-		// The last effort directive, not the cached top-level placeholder, is the turn's effort.
+
 		if directive := extractClaudeEffortDirectiveConfig(body); hasThinkingConfig(directive) {
 			return directive
 		}

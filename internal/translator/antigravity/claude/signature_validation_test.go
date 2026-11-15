@@ -140,7 +140,7 @@ func TestStripInvalidGeminiSignatureThinkingBlocksDropsUnsignedThoughtWithMalfor
 	nextCarrier := encodeGeminiClaudeCarrierSignature(validSignature, geminiClaudeCarrierNext, geminiClaudeCarrierText)
 	malformedCarrier := "cpa-gemini-carrier-v1:previous:text:invalid-base64"
 
-	// Trailing next carrier does not bind backward to previous text/thinking
+
 	inputNext := []byte(`{"messages":[{"role":"assistant","content":[{"type":"thinking","thinking":"thought text","signature":""},{"type":"text","text":"visible text"},{"type":"thinking","thinking":"","signature":"` + nextCarrier + `"}]}]}`)
 	outNext := StripInvalidGeminiSignatureThinkingBlocks(inputNext)
 	contentNext := ojson.GetBytesNoCopy(outNext, "messages.0.content").Array()
@@ -148,7 +148,7 @@ func TestStripInvalidGeminiSignatureThinkingBlocksDropsUnsignedThoughtWithMalfor
 		t.Fatalf("wrong direction trailing carrier preserved unsigned thought: %s", outNext)
 	}
 
-	// Trailing malformed carrier does not preserve unsigned thought
+
 	inputMalformed := []byte(`{"messages":[{"role":"assistant","content":[{"type":"thinking","thinking":"thought text","signature":""},{"type":"text","text":"visible text"},{"type":"thinking","thinking":"","signature":"` + malformedCarrier + `"}]}]}`)
 	outMalformed := StripInvalidGeminiSignatureThinkingBlocks(inputMalformed)
 	contentMalformed := ojson.GetBytesNoCopy(outMalformed, "messages.0.content").Array()

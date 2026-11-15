@@ -29,13 +29,13 @@ const (
 	codexOptimizedCollaborationDotPrefix  = codexOptimizedCollaborationNamespace + "."
 )
 
-// CodexMultiAgentV2ToolsPreparedContextKey marks a request whose collaboration
-// tool definitions were prepared at the Responses API boundary.
+
+
 const CodexMultiAgentV2ToolsPreparedContextKey = "codex_multi_agent_v2_tools_prepared"
 
-// codexCollaborationMessageTools are the collaboration tool names whose
-// parameters.properties.message.encrypted field must be stripped so that
-// message content remains readable by the proxy.
+
+
+
 var codexCollaborationMessageTools = map[string]struct{}{
 	"spawn_agent":   {},
 	"send_message":  {},
@@ -56,18 +56,18 @@ type codexClientModelsCatalog struct {
 	Models []map[string]any `json:"models"`
 }
 
-// RewriteCodexSpawnAgentDescription optimizes spawn_agent definitions for
-// official Codex clients when multi-agent v2 optimization is enabled.
+
+
 func RewriteCodexSpawnAgentDescription(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config) []byte {
 	updated, _ := OptimizeCodexMultiAgentV2Request(ctx, headers, payload, cfg)
 	return updated
 }
 
-// RewriteCodexMultiAgentV2Input converts official Codex multi-agent input into
-// standard Responses API messages when multi-agent v2 optimization or model
-// compatibility mode is enabled. When isCompat is true, it converts agent_message
-// items to portable message/user input and proactively removes non-standard metadata
-// fields (author, recipient, internal_chat_message_metadata_passthrough).
+
+
+
+
+
 func RewriteCodexMultiAgentV2Input(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config, isCompat ...bool) []byte {
 	if len(payload) == 0 {
 		return payload
@@ -79,8 +79,8 @@ func RewriteCodexMultiAgentV2Input(ctx context.Context, headers http.Header, pay
 	return doc.Bytes()
 }
 
-// RewriteCodexMultiAgentV2InputDoc converts official Codex multi-agent input in doc
-// into standard Responses API messages in place.
+
+
 func RewriteCodexMultiAgentV2InputDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, cfg *config.Config, isCompat ...bool) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -93,8 +93,8 @@ func RewriteCodexMultiAgentV2InputDoc(doc *ojson.Doc, ctx context.Context, heade
 	return rewriteCodexAgentMessageInputDoc(doc, optimizeEnabled, compatMode)
 }
 
-// RewriteCodexOrphanDelegationInputForConfig applies RewriteCodexOrphanDelegationInput
-// based on cfg.Codex.OrphanDelegationCompatibility and the X-Openai-Subagent header.
+
+
 func RewriteCodexOrphanDelegationInputForConfig(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config) []byte {
 	if cfg == nil || !cfg.Codex.OrphanDelegationCompatibility {
 		return payload
@@ -102,8 +102,8 @@ func RewriteCodexOrphanDelegationInputForConfig(ctx context.Context, headers htt
 	return RewriteCodexOrphanDelegationInput(ctx, headers, payload, true)
 }
 
-// RewriteCodexOrphanDelegationInputForConfigDoc applies RewriteCodexOrphanDelegationInputDoc
-// in place on doc based on cfg.Codex.OrphanDelegationCompatibility and the X-Openai-Subagent header.
+
+
 func RewriteCodexOrphanDelegationInputForConfigDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, cfg *config.Config) bool {
 	if cfg == nil || !cfg.Codex.OrphanDelegationCompatibility {
 		return false
@@ -111,8 +111,8 @@ func RewriteCodexOrphanDelegationInputForConfigDoc(doc *ojson.Doc, ctx context.C
 	return RewriteCodexOrphanDelegationInputDoc(doc, ctx, headers, true)
 }
 
-// TranslateRequestWithCodexMultiAgentV2 normalizes official Codex multi-agent
-// input before translating it to a non-Codex target protocol.
+
+
 func TranslateRequestWithCodexMultiAgentV2(ctx context.Context, headers http.Header, cfg *config.Config, from, to sdktranslator.Format, model string, payload []byte, stream bool) []byte {
 	return TranslateRequestEnvelopeWithCodexMultiAgentV2(ctx, headers, cfg, from, to, sdktranslator.RequestEnvelope{
 		Format: from,
@@ -122,8 +122,8 @@ func TranslateRequestWithCodexMultiAgentV2(ctx context.Context, headers http.Hea
 	}).Body
 }
 
-// TranslateRequestEnvelopeWithCodexMultiAgentV2 normalizes official Codex
-// multi-agent input while preserving request-scoped translation metadata.
+
+
 func TranslateRequestEnvelopeWithCodexMultiAgentV2(ctx context.Context, headers http.Header, cfg *config.Config, from, to sdktranslator.Format, req sdktranslator.RequestEnvelope) sdktranslator.RequestEnvelope {
 	if from == sdktranslator.FormatOpenAIResponse && len(req.Body) > 0 {
 		doc := ojson.NewDoc(req.Body)
@@ -140,8 +140,8 @@ func TranslateRequestEnvelopeWithCodexMultiAgentV2(ctx context.Context, headers 
 	return sdktranslator.TranslateRequestEnvelope(ctx, from, to, req)
 }
 
-// PrepareCodexMultiAgentV2Tools prepares collaboration tool definitions at the
-// Responses API boundary without changing the collaboration namespace.
+
+
 func PrepareCodexMultiAgentV2Tools(ctx context.Context, headers http.Header, payload []byte, enabled, homeEnabled bool) ([]byte, bool) {
 	if len(payload) == 0 {
 		return payload, codexMultiAgentV2ClientEnabled(ctx, headers, enabled)
@@ -154,8 +154,8 @@ func PrepareCodexMultiAgentV2Tools(ctx context.Context, headers http.Header, pay
 	return doc.Bytes(), prepared
 }
 
-// PrepareCodexMultiAgentV2ToolsDoc prepares collaboration tool definitions in doc at the
-// Responses API boundary without changing the collaboration namespace.
+
+
 func PrepareCodexMultiAgentV2ToolsDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, enabled, homeEnabled bool) (bool, bool) {
 	return prepareCodexMultiAgentV2ToolsDoc(doc, ctx, headers, enabled, homeEnabled)
 }
@@ -186,8 +186,8 @@ func prepareCodexMultiAgentV2ToolsDoc(doc *ojson.Doc, ctx context.Context, heade
 	return rewriteCodexCollaborationToolsDoc(doc, messageToolPaths, toolPaths, models, formattedMarkdown), true
 }
 
-// OptimizeCodexMultiAgentV2Request rewrites an eligible spawn_agent request and
-// reports whether the collaboration namespace was renamed for upstream use.
+
+
 func OptimizeCodexMultiAgentV2Request(ctx context.Context, headers http.Header, payload []byte, cfg *config.Config) ([]byte, bool) {
 	if len(payload) == 0 {
 		return payload, false
@@ -200,8 +200,8 @@ func OptimizeCodexMultiAgentV2Request(ctx context.Context, headers http.Header, 
 	return doc.Bytes(), optimized
 }
 
-// OptimizeCodexMultiAgentV2RequestDoc rewrites an eligible spawn_agent request in doc
-// and reports whether the collaboration namespace was renamed for upstream use.
+
+
 func OptimizeCodexMultiAgentV2RequestDoc(doc *ojson.Doc, ctx context.Context, headers http.Header, cfg *config.Config) bool {
 	_, optimized := optimizeCodexMultiAgentV2RequestDoc(doc, ctx, headers, cfg)
 	return optimized
@@ -282,7 +282,7 @@ func headerValueCaseInsensitive(headers http.Header, name string) string {
 	return ""
 }
 
-// IsCodexClientUserAgent reports whether a request uses an official Codex client identity.
+
 func IsCodexClientUserAgent(userAgent string) bool {
 	userAgent = strings.TrimSpace(userAgent)
 	return strings.HasPrefix(userAgent, "Codex Desktop/") ||
@@ -741,14 +741,14 @@ func rewriteCodexCollaborationToolsDoc(doc *ojson.Doc, messageToolPaths, spawnAg
 	return changed
 }
 
-// HasCodexMultiAgentV2NamespaceConflict reports whether the request defines
-// the reserved optimized namespace, which must remain untouched.
+
+
 func HasCodexMultiAgentV2NamespaceConflict(payload []byte) bool {
 	return hasCodexOptimizedCollaborationConflict(payload)
 }
 
-// HasCodexMultiAgentV2NamespaceConflictDoc reports whether doc defines
-// the reserved optimized namespace, which must remain untouched.
+
+
 func HasCodexMultiAgentV2NamespaceConflictDoc(doc *ojson.Doc) bool {
 	return hasCodexOptimizedCollaborationConflictDoc(doc)
 }
@@ -838,8 +838,8 @@ func optimizeCodexCollaborationNamespaceDoc(doc *ojson.Doc, toolPaths []string) 
 	return optimized
 }
 
-// RestoreCodexMultiAgentV2Response restores optimized collaboration namespace
-// values before an upstream response is translated and returned to the client.
+
+
 func RestoreCodexMultiAgentV2Response(payload []byte, optimized bool) []byte {
 	if !optimized || len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -1034,9 +1034,9 @@ func codexSpawnAgentToolPathsDoc(doc *ojson.Doc) []string {
 	return codexToolPathsByNamesDoc(doc, map[string]struct{}{"spawn_agent": {}})
 }
 
-// codexCollaborationMessageToolPaths discovers function tools named
-// spawn_agent, send_message, or followup_task inside top-level tools arrays and
-// input[].additional_tools arrays, including nested namespace tools.
+
+
+
 func codexCollaborationMessageToolPaths(payload []byte) []string {
 	return codexToolPathsByNames(payload, codexCollaborationMessageTools)
 }
@@ -1098,9 +1098,9 @@ func collectCodexToolPathsByNames(tools ojson.Result, path string, paths *[]stri
 	}
 }
 
-// removeCodexCollaborationMessageEncryption deletes the
-// parameters.properties.message.encrypted field from each discovered
-// collaboration message tool so the proxy can read the plaintext message.
+
+
+
 func removeCodexCollaborationMessageEncryption(payload []byte, toolPaths []string) []byte {
 	if len(payload) == 0 || len(toolPaths) == 0 {
 		return payload

@@ -59,8 +59,8 @@ func TestClaudeExecutor_ExecuteStream_Translated_ClientDisconnectAfterTerminalEv
 			_, _ = w.Write([]byte(streamData))
 			flusher.Flush()
 		}
-		// Hold the upstream body open until client disconnects or test ends,
-		// reproducing upstream lag where body close happens after terminal event.
+
+
 		select {
 		case <-r.Context().Done():
 		case <-upstreamClosed:
@@ -104,13 +104,13 @@ func TestClaudeExecutor_ExecuteStream_Translated_ClientDisconnectAfterTerminalEv
 	}
 
 	sawTerminalEvent := false
-	// Read chunks until terminal event is seen, then immediately cancel downstream context
+
 	for chunk := range result.Chunks {
 		if chunk.Err != nil {
 			t.Fatalf("unexpected chunk error during stream read: %v", chunk.Err)
 		}
 		if strings.Contains(string(chunk.Payload), "response.completed") {
-			// Client disconnects immediately upon receiving terminal event (e.g. Codex CLI >=0.153.4)
+
 			sawTerminalEvent = true
 			cancel()
 			break
@@ -257,8 +257,8 @@ func TestClaudeExecutor_ExecuteStream_DoesNotDrainOrReuseUpstreamConnectionAfter
 		w.Header().Set("Content-Type", "text/event-stream")
 		_, _ = w.Write([]byte(streamData))
 		w.(http.Flusher).Flush()
-		// Hold the chunked terminator back until the client either attempts a
-		// post-message_stop drain read or closes the connection.
+
+
 		select {
 		case <-release:
 		case <-r.Context().Done():

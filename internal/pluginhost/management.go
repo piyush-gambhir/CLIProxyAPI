@@ -36,7 +36,7 @@ type resourceRouteRecord struct {
 	route    pluginapi.ResourceRoute
 }
 
-// RegisterManagementRoutes rebuilds the plugin-owned Management API and resource route tables.
+
 func (h *Host) RegisterManagementRoutes(ctx context.Context, reserved map[string]struct{}) {
 	if h == nil {
 		return
@@ -229,7 +229,7 @@ func managementRouteKey(method, path string) string {
 	return strings.ToUpper(strings.TrimSpace(method)) + " " + strings.TrimSpace(path)
 }
 
-// ServeManagementHTTP dispatches an authenticated Management API request to a plugin route.
+
 func (h *Host) ServeManagementHTTP(w http.ResponseWriter, r *http.Request) bool {
 	if h == nil || w == nil || r == nil || r.URL == nil {
 		return false
@@ -293,7 +293,7 @@ func (h *Host) ServeManagementHTTP(w http.ResponseWriter, r *http.Request) bool 
 	return true
 }
 
-// ServeResourceHTTP dispatches an unauthenticated browser-navigable resource request to a plugin route.
+
 func (h *Host) ServeResourceHTTP(w http.ResponseWriter, r *http.Request) bool {
 	if h == nil || w == nil || r == nil || r.URL == nil {
 		return false

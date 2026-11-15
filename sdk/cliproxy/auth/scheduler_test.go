@@ -576,8 +576,8 @@ func TestSchedulerPickMixed_RetryTriedFilterPreservesSmoothWeightedDistribution(
 	scheduler := newSchedulerForTest(&WeightedRoundRobinSelector{}, auths...)
 	providers := []string{"provider-a", "provider-b", "provider-c", "provider-d"}
 
-	// Simulate retries where auth-a failed and is in the tried filter:
-	// Verify that retry picks rotate smoothly across auth-b, auth-c, auth-d without alphabetical bias towards auth-b.
+
+
 	retryCounts := make(map[string]int)
 	tried := map[string]struct{}{"auth-a": {}}
 	for index := 0; index < 30; index++ {
@@ -626,7 +626,7 @@ func TestReadyViewRoundRobinPreservesSuccessorAcrossRebuild(t *testing.T) {
 		original := readyView{
 			flat: []*scheduledAuth{entry("A"), entry("B"), entry("C")},
 		}
-		// Pick A, then B
+
 		if got := original.pickRoundRobin(nil); got == nil || got.auth.ID != "A" {
 			t.Fatalf("first pick = %v, want A", got)
 		}
@@ -650,7 +650,7 @@ func TestReadyViewRoundRobinPreservesSuccessorAcrossRebuild(t *testing.T) {
 		original := readyView{
 			flat: []*scheduledAuth{entry("A"), entry("B"), entry("C")},
 		}
-		// Pick A, B, C
+
 		for _, want := range []string{"A", "B", "C"} {
 			if got := original.pickRoundRobin(nil); got == nil || got.auth.ID != want {
 				t.Fatalf("pick = %v, want %s", got, want)
@@ -678,7 +678,7 @@ func TestReadyViewRoundRobinPreservesSuccessorAcrossRebuild(t *testing.T) {
 		}
 
 		state := snapshotReadyViewCursors(original)
-		// A recovered and is prepended back
+
 		rebuilt := readyView{
 			flat: []*scheduledAuth{entry("A"), entry("B"), entry("C")},
 		}
@@ -1068,7 +1068,7 @@ func TestManagerPluginSchedulerDefaultHighestPriorityOnly(t *testing.T) {
 	}
 
 	scheduler := &fakePluginScheduler{
-		acrossPriorities: false, // default opt-in false
+		acrossPriorities: false,
 		resp:             pluginapi.SchedulerPickResponse{Handled: true, AuthID: "auth-high"},
 		handled:          true,
 	}
@@ -1117,7 +1117,7 @@ func TestManagerPluginSchedulerAcrossPrioritiesUnhandledFallsBackToHighestPriori
 	if len(scheduler.requests[0].Candidates) != 2 {
 		t.Fatalf("Candidates count = %d, want 2", len(scheduler.requests[0].Candidates))
 	}
-	// Fallback should pick auth-high because it has the highest priority tier
+
 	if got == nil || got.ID != "auth-high" {
 		t.Fatalf("picked auth = %v, want auth-high", got)
 	}
@@ -2322,7 +2322,7 @@ func TestManager_SchedulerSharesThinkingSuffixCooldownAndRegistryState(t *testin
 	if len(auth.ModelStates) != 1 || auth.ModelStates[baseModel] == nil {
 		t.Fatalf("ModelStates = %+v, want only canonical key %q", auth.ModelStates, baseModel)
 	}
-	// Only thinking-auth-a is cooling down; thinking-auth-b remains available.
+
 	if count := reg.GetModelCount(baseModel); count != 1 {
 		t.Fatalf("registry model count during cooldown = %d, want 1", count)
 	}
@@ -2550,7 +2550,7 @@ func TestManagerPluginSchedulerUnhandledWithRejectFlagFallsBack(t *testing.T) {
 		t.Fatalf("Register(auth-a) error = %v", errRegister)
 	}
 
-	// When Handled is false, even if Reject is set, it must remain unhandled and fall back to built-in selection.
+
 	scheduler := &fakePluginScheduler{
 		resp:    pluginapi.SchedulerPickResponse{Handled: false, Reject: true},
 		handled: false,
@@ -2680,7 +2680,7 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 	})
 
 	t.Run("attempts_within_one_selection_keep_same_id_for_token_refresh_and_model_pool", func(t *testing.T) {
-		// Part A: 401 token refresh retry within one selection keeps the same SelectionID.
+
 		manager := NewManager(nil, &FillFirstSelector{}, nil)
 		reg := registry.GetGlobalRegistry()
 		reg.RegisterClient("auth-oauth", "gemini", []*registry.ModelInfo{{ID: "gemini-2.5-pro"}})
@@ -2737,7 +2737,7 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 			t.Fatalf("refreshSelIDs = %v, want [%q, %q]", refreshSelIDs, selID, selID)
 		}
 
-		// Part B: Model pool attempts within one selection keep the same SelectionID.
+
 		poolManager := NewManager(nil, &FillFirstSelector{}, nil)
 		poolManager.SetConfig(&internalconfig.Config{
 			OpenAICompatibility: []internalconfig.OpenAICompatibility{
@@ -2845,7 +2845,7 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 				if pickCall == 1 {
 					return pluginapi.SchedulerPickResponse{Handled: true, AuthID: "auth-a"}, true, nil
 				}
-				// Second pick is unhandled -> falls back to built-in FillFirstSelector for auth-b.
+
 				return pluginapi.SchedulerPickResponse{Handled: false}, false, nil
 			},
 		}
@@ -2926,8 +2926,8 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 			t.Fatal("executor was called after rejected Pick")
 		}
 
-		// Rejected Pick with default RejectCode ("auth_unavailable") must not trigger Antigravity credits fallback
-		// on either Execute or ExecuteStream.
+
+
 		creditsManager := NewManager(nil, &FillFirstSelector{}, nil)
 		creditsManager.SetConfig(&internalconfig.Config{
 			QuotaExceeded: internalconfig.QuotaExceeded{AntigravityCredits: true},
@@ -2957,7 +2957,7 @@ func TestManagerPluginSchedulerSelectionID(t *testing.T) {
 		creditsManager.SetPluginScheduler(&fakePluginScheduler{
 			resp: pluginapi.SchedulerPickResponse{
 				Handled: true,
-				Reject:  true, // Omit RejectCode so it defaults to "auth_unavailable".
+				Reject:  true,
 			},
 			handled: true,
 		})

@@ -78,7 +78,7 @@ func TestDevinExecutorPrepareRequest(t *testing.T) {
 		t.Fatalf("invalid Sentry-Trace format: %q", sentryTrace)
 	}
 
-	// Verify User-Agent suppression on the wire
+
 	var receivedUA []string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedUA = r.Header["User-Agent"]
@@ -207,12 +207,12 @@ func TestParseInteractionsPayload(t *testing.T) {
 		t.Fatalf("expected 3 prompt items (user, assistant-with-thought-and-call, tool-result), got %d: %+v", len(prompts), prompts)
 	}
 
-	// 1. User turn
+
 	if prompts[0].Source != 1 || prompts[0].Content != "hello" {
 		t.Errorf("prompt[0] user turn mismatch: %+v", prompts[0])
 	}
 
-	// 2. Assistant turn (attached thought + content + function call)
+
 	if prompts[1].Source != 2 {
 		t.Errorf("prompt[1] source = %d, want 2", prompts[1].Source)
 	}
@@ -226,7 +226,7 @@ func TestParseInteractionsPayload(t *testing.T) {
 		t.Errorf("prompt[1] tool calls mismatch: %+v", prompts[1].ToolCalls)
 	}
 
-	// 3. Tool result turn
+
 	if prompts[2].Source != 4 || prompts[2].ToolCallID != "call_1" || prompts[2].Content != "package main\n" {
 		t.Errorf("prompt[2] tool result mismatch: %+v", prompts[2])
 	}
@@ -281,7 +281,7 @@ func TestSupplementSignaturesFromOriginal(t *testing.T) {
 
 	prompts := []helps.DevinPrompt{
 		{Source: 1, Content: "hello"},
-		{Source: 2, Content: "here is the answer"}, // signature missing in interactions
+		{Source: 2, Content: "here is the answer"},
 	}
 
 	supplementSignaturesFromOriginal(originalRequest, prompts)
@@ -345,7 +345,7 @@ func TestDetectSignatureType_GlobalDetectorIntegration(t *testing.T) {
 }
 
 func TestDevinStatusError_RetryAfter(t *testing.T) {
-	// 1. HTTP 429 with integer Retry-After
+
 	hdr429 := http.Header{}
 	hdr429.Set("Retry-After", "30")
 	err1 := newDevinStatusError(http.StatusTooManyRequests, hdr429, []byte("rate limited"))
@@ -356,7 +356,7 @@ func TestDevinStatusError_RetryAfter(t *testing.T) {
 		t.Fatalf("expected retryAfter 30s, got %v", err1.retryAfter)
 	}
 
-	// 2. HTTP 429 with HTTP Date
+
 	hdrDate := http.Header{}
 	futureTime := time.Now().Add(60 * time.Second).UTC().Format(http.TimeFormat)
 	hdrDate.Set("Retry-After", futureTime)
@@ -365,7 +365,7 @@ func TestDevinStatusError_RetryAfter(t *testing.T) {
 		t.Fatalf("expected retryAfter ~60s, got %v", err2.retryAfter)
 	}
 
-	// 3. HTTP 500 with Retry-After (should not set retryAfter)
+
 	err3 := newDevinStatusError(http.StatusInternalServerError, hdr429, []byte("server error"))
 	if err3.retryAfter != nil {
 		t.Fatalf("expected nil retryAfter for 500, got %v", err3.retryAfter)
@@ -373,14 +373,14 @@ func TestDevinStatusError_RetryAfter(t *testing.T) {
 }
 
 func TestResolveDevinSessionAndCascadeIDs(t *testing.T) {
-	// 1. Direct UUID preservation
+
 	rawUUID := "8176cf8a-feff-44c1-8e3e-b10f6d737ae1"
 	sid, cid := resolveDevinSessionAndCascadeIDs(context.Background(), rawUUID, rawUUID, cliproxyexecutor.Options{})
 	if sid != rawUUID || cid != rawUUID {
 		t.Fatalf("sid/cid = %q/%q, want %q", sid, cid, rawUUID)
 	}
 
-	// 2. Non-UUID mapping to deterministic UUID
+
 	sid1, cid1 := resolveDevinSessionAndCascadeIDs(context.Background(), "lcp:12345678", "", cliproxyexecutor.Options{})
 	sid2, cid2 := resolveDevinSessionAndCascadeIDs(context.Background(), "lcp:12345678", "", cliproxyexecutor.Options{})
 	if sid1 != sid2 || cid1 != cid2 {
@@ -390,7 +390,7 @@ func TestResolveDevinSessionAndCascadeIDs(t *testing.T) {
 		t.Fatalf("mapped sid is not a valid UUID: %q", sid1)
 	}
 
-	// 3. Fallback to ctx session
+
 	ctx := util.WithSessionID(context.Background(), "ctx-session-abc")
 	sidCtx, cidCtx := resolveDevinSessionAndCascadeIDs(ctx, "", "", cliproxyexecutor.Options{})
 	if _, err := uuid.Parse(sidCtx); err != nil {
@@ -400,7 +400,7 @@ func TestResolveDevinSessionAndCascadeIDs(t *testing.T) {
 		t.Fatalf("sidCtx %q != cidCtx %q", sidCtx, cidCtx)
 	}
 
-	// 4. Fallback to fresh UUID when nothing supplied
+
 	sidEmpty, cidEmpty := resolveDevinSessionAndCascadeIDs(context.Background(), "", "", cliproxyexecutor.Options{})
 	if _, err := uuid.Parse(sidEmpty); err != nil {
 		t.Fatalf("sidEmpty is not a valid UUID: %q", sidEmpty)
@@ -411,10 +411,10 @@ func TestResolveDevinSessionAndCascadeIDs(t *testing.T) {
 }
 
 func TestConsumeDevinFramesToInteractions(t *testing.T) {
-	// Synthesize a Connect stream with 2 data frames and 1 EOS trailer
+
 	var streamBuf bytes.Buffer
 
-	// Frame 1: thinking + content
+
 	var f1 []byte
 	f1 = appendDevinFieldBytes(f1, 1, []byte("bot-uuid-1"))
 	f1 = appendDevinFieldBytes(f1, 9, []byte("reasoning step"))
@@ -422,7 +422,7 @@ func TestConsumeDevinFramesToInteractions(t *testing.T) {
 	f1 = appendDevinFieldBytes(f1, 10, []byte("sealed.v1.sig"))
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 
-	// Frame 2: tool call + usage
+
 	var f2 []byte
 	var tcBytes []byte
 	tcBytes = appendDevinFieldBytes(tcBytes, 1, []byte("toolu_1"))
@@ -431,13 +431,13 @@ func TestConsumeDevinFramesToInteractions(t *testing.T) {
 	f2 = appendDevinFieldBytes(f2, 6, tcBytes)
 
 	var usageBytes []byte
-	usageBytes = appendVarintField(usageBytes, 2, 100) // prompt
-	usageBytes = appendVarintField(usageBytes, 3, 50)  // completion
-	usageBytes = appendVarintField(usageBytes, 5, 20)  // cached
+	usageBytes = appendVarintField(usageBytes, 2, 100)
+	usageBytes = appendVarintField(usageBytes, 3, 50)
+	usageBytes = appendVarintField(usageBytes, 5, 20)
 	f2 = appendDevinFieldBytes(f2, 7, usageBytes)
 	streamBuf.Write(helps.WrapConnectEnvelope(f2))
 
-	// Frame 3: EOS Trailer flag 0x02
+
 	trailerJSON := []byte(`{}`)
 	streamBuf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, trailerJSON))
 
@@ -474,7 +474,7 @@ func TestConsumeDevinFramesToInteractions(t *testing.T) {
 		t.Fatalf("steps count = %d, want 3 (thought, model_output, function_call). Payload: %s", len(steps), string(interactionsJSON))
 	}
 
-	// Thought step has signature
+
 	if steps[0].Get("type").String() != "thought" {
 		t.Errorf("step[0] type = %q, want thought", steps[0].Get("type").String())
 	}
@@ -483,7 +483,7 @@ func TestConsumeDevinFramesToInteractions(t *testing.T) {
 		t.Errorf("step[0] signature = %q, want %q", steps[0].Get("signature").String(), expectedSig)
 	}
 
-	// Model output step
+
 	if steps[1].Get("type").String() != "model_output" {
 		t.Errorf("step[1] type = %q, want model_output", steps[1].Get("type").String())
 	}
@@ -491,7 +491,7 @@ func TestConsumeDevinFramesToInteractions(t *testing.T) {
 		t.Errorf("step[1] text = %q, want 'hello response'", steps[1].Get("content.0.text").String())
 	}
 
-	// Function call step
+
 	if steps[2].Get("type").String() != "function_call" {
 		t.Errorf("step[2] type = %q, want function_call", steps[2].Get("type").String())
 	}
@@ -594,7 +594,7 @@ func TestSupplementImagesFromOriginal(t *testing.T) {
 }
 
 func TestDevinExecutor_Refresh(t *testing.T) {
-	// Build mock protobuf response
+
 	var planInfo []byte
 	planInfo = protowire.AppendTag(planInfo, 2, protowire.BytesType)
 	planInfo = protowire.AppendString(planInfo, "Pro")
@@ -714,7 +714,7 @@ func TestDevinExecutor_MaxCompletionTokensClamping(t *testing.T) {
 		},
 	}
 
-	// 1. When requested max_output_tokens exceeds MaxCompletionTokens (e.g. 100000 > 64000)
+
 	payloadOversized := []byte(`{
 		"generation_config": {
 			"max_output_tokens": 100000
@@ -734,7 +734,7 @@ func TestDevinExecutor_MaxCompletionTokensClamping(t *testing.T) {
 		t.Fatalf("prepareDevinHTTPRequest failed: %v", err)
 	}
 
-	// Read body, unwrap 5-byte Connect envelope, and inspect Field 8 Subfield 2 (maxTokens)
+
 	bodyBytes, err := io.ReadAll(httpReq.Body)
 	if err != nil {
 		t.Fatalf("read body failed: %v", err)
@@ -791,9 +791,9 @@ func TestDevinExecutor_MaxCompletionTokensClamping(t *testing.T) {
 }
 
 func TestConsumeDevinFramesToInteractions_MultiToolCallsNoPanic(t *testing.T) {
-	// Build a stream with multiple tool calls across frames to verify slice growth doesn't panic on strings.Builder
+
 	var buf bytes.Buffer
-	// Frame 1: tool call 0 start + partial args
+
 	var tc0 []byte
 	tc0 = protowire.AppendTag(tc0, 1, protowire.BytesType)
 	tc0 = protowire.AppendString(tc0, "call_0")
@@ -807,7 +807,7 @@ func TestConsumeDevinFramesToInteractions_MultiToolCallsNoPanic(t *testing.T) {
 	f1 = protowire.AppendBytes(f1, tc0)
 	buf.Write(helps.WrapConnectEnvelope(f1))
 
-	// Frame 2: tool call 1 start + partial args (triggers append(toolBuilders) and slice reallocation)
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "call_1")
@@ -821,7 +821,7 @@ func TestConsumeDevinFramesToInteractions_MultiToolCallsNoPanic(t *testing.T) {
 	f2 = protowire.AppendBytes(f2, tc1)
 	buf.Write(helps.WrapConnectEnvelope(f2))
 
-	// Frame 3: tool call 0 continuation
+
 	var tc0Cont []byte
 	tc0Cont = protowire.AppendTag(tc0Cont, 1, protowire.BytesType)
 	tc0Cont = protowire.AppendString(tc0Cont, "call_0")
@@ -833,7 +833,7 @@ func TestConsumeDevinFramesToInteractions_MultiToolCallsNoPanic(t *testing.T) {
 	f3 = protowire.AppendBytes(f3, tc0Cont)
 	buf.Write(helps.WrapConnectEnvelope(f3))
 
-	// EOS frame
+
 	buf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
 
 	interactionsJSON, respLog, err := consumeDevinFramesToInteractions(&buf, "devin/swe-2", "swe-2-high")
@@ -858,22 +858,22 @@ func TestConsumeDevinFramesToInteractions_MultiToolCallsNoPanic(t *testing.T) {
 }
 
 func TestStreamDevinFrames_InterleavedThinkingAndContent(t *testing.T) {
-	// Frame 1: thinking part 1
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "thought 1")
 
-	// Frame 2: content text
+
 	var f2 []byte
 	f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 	f2 = protowire.AppendString(f2, "content 1")
 
-	// Frame 3: thinking part 2 (interleaved after content)
+
 	var f3 []byte
 	f3 = protowire.AppendTag(f3, 9, protowire.BytesType)
 	f3 = protowire.AppendString(f3, "thought 2")
 
-	// Frame 4: content text 2
+
 	var f4 []byte
 	f4 = protowire.AppendTag(f4, 3, protowire.BytesType)
 	f4 = protowire.AppendString(f4, "content 2")
@@ -918,15 +918,15 @@ func TestStreamDevinFrames_InterleavedThinkingAndContent(t *testing.T) {
 		}
 	}
 
-	// Verify step sequence:
-	// 1. step.start (0, thought)
-	// 2. step.stop (0)
-	// 3. step.start (1, model_output)
-	// 4. step.stop (1)
-	// 5. step.start (2, thought)
-	// 6. step.stop (2)
-	// 7. step.start (3, model_output)
-	// 8. step.stop (3)
+
+
+
+
+
+
+
+
+
 	var stepEvents []string
 	for _, ev := range events {
 		eventType := ev.Get("event_type").String()
@@ -959,11 +959,11 @@ func TestStreamDevinFrames_InterleavedThinkingAndContent(t *testing.T) {
 }
 
 func TestStreamDevinFrames_SequentialToolCallsSameIndexDifferentID(t *testing.T) {
-	// Simulate two sequential tool calls with the same tc.Index (0) but different IDs:
-	// 1. title_0 (name: title, arguments: {"title": "Triage issue 5802"})
-	// 2. bash_1 (name: bash, arguments: {"command": "gh issue view 5802 2>&1 | head -100"})
 
-	// Frame 1: title_0
+
+
+
+
 	var tc0 []byte
 	tc0 = protowire.AppendTag(tc0, 1, protowire.BytesType)
 	tc0 = protowire.AppendString(tc0, "title_0")
@@ -976,7 +976,7 @@ func TestStreamDevinFrames_SequentialToolCallsSameIndexDifferentID(t *testing.T)
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc0)
 
-	// Frame 2: bash_1
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "bash_1")
@@ -1138,7 +1138,7 @@ func TestConsumeDevinFramesToInteractions_SequentialToolCallsSameIndexDifferentI
 
 func TestConsumeDevinFramesToInteractions_ToolCallsLimit128(t *testing.T) {
 	var buf bytes.Buffer
-	// Create 135 tool calls across sequential ID switches
+
 	for i := 0; i < 135; i++ {
 		var tc []byte
 		tc = protowire.AppendTag(tc, 1, protowire.BytesType)
@@ -1165,7 +1165,7 @@ func TestConsumeDevinFramesToInteractions_ToolCallsLimit128(t *testing.T) {
 }
 
 func TestStreamDevinFrames_SameIDDoesNotDuplicateStart(t *testing.T) {
-	// Frame 1: initial title call
+
 	var tc0 []byte
 	tc0 = protowire.AppendTag(tc0, 1, protowire.BytesType)
 	tc0 = protowire.AppendString(tc0, "call_1")
@@ -1178,7 +1178,7 @@ func TestStreamDevinFrames_SameIDDoesNotDuplicateStart(t *testing.T) {
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc0)
 
-	// Frame 2: continuation with same ID and Name
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "call_1")
@@ -1286,7 +1286,7 @@ func TestDevinExecutorOpenAIToolCallAndResultViaInteractions(t *testing.T) {
 }
 
 func TestStreamDevinFrames_StopReasonMaxTokens(t *testing.T) {
-	// Frame with StopReason = 3 (MAX_TOKENS) and partial content
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "cut short")
@@ -1345,7 +1345,7 @@ func TestStreamDevinFrames_StopReasonMaxTokens(t *testing.T) {
 }
 
 func TestConsumeDevinFramesToInteractions_StopReasonMaxTokens(t *testing.T) {
-	// Frame with StopReason = 3 (MAX_TOKENS) and partial content
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "cut short")
@@ -1371,7 +1371,7 @@ func TestConsumeDevinFramesToInteractions_StopReasonMaxTokens(t *testing.T) {
 }
 
 func TestStreamDevinFrames_StopReasonContentFilter(t *testing.T) {
-	// Frame with StopReason = 11 (CONTENT_FILTER)
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "blocked")
@@ -1430,7 +1430,7 @@ func TestStreamDevinFrames_StopReasonContentFilter(t *testing.T) {
 }
 
 func TestConsumeDevinFramesToInteractions_StopReasonContentFilter(t *testing.T) {
-	// Frame with StopReason = 11 (CONTENT_FILTER)
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "blocked")
@@ -1468,19 +1468,19 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_Signature_Text",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// Frame 2: signature
+
 				var f2 []byte
 				f2 = protowire.AppendTag(f2, 10, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "CAQS-early-sig-19B")
 				f2 = protowire.AppendTag(f2, 21, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "anthropic")
 
-				// Frame 3: text content
+
 				var f3 []byte
 				f3 = protowire.AppendTag(f3, 3, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "answer text")
@@ -1493,12 +1493,12 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_Text_Signature_Same_Frame",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// Frame 2: text content + signature in same frame
+
 				var f2 []byte
 				f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "answer text")
@@ -1515,17 +1515,17 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_Text_Signature",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// Frame 2: text content
+
 				var f2 []byte
 				f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "answer text")
 
-				// Frame 3: late signature
+
 				var f3 []byte
 				f3 = protowire.AppendTag(f3, 10, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "CAQS-late-signature-19B")
@@ -1540,12 +1540,12 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_ToolCall_Signature",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thinking about tools")
 
-				// Frame 2: tool call delta
+
 				var tc0 []byte
 				tc0 = protowire.AppendTag(tc0, 1, protowire.BytesType)
 				tc0 = protowire.AppendString(tc0, "call_1")
@@ -1560,7 +1560,7 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 				f2 = protowire.AppendTag(f2, 6, protowire.BytesType)
 				f2 = protowire.AppendBytes(f2, tc0)
 
-				// Frame 3: late signature
+
 				var f3 []byte
 				f3 = protowire.AppendTag(f3, 10, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "CAQS-tool-signature-19B")
@@ -1577,19 +1577,19 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_SplitSignature_Across_Text",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// Frame 2: signature fragment 1 + text content
+
 				var f2 []byte
 				f2 = protowire.AppendTag(f2, 10, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "CAQS-part1-")
 				f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "answer text")
 
-				// Frame 3: signature fragment 2
+
 				var f3 []byte
 				f3 = protowire.AppendTag(f3, 10, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "part2-done")
@@ -1604,29 +1604,29 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_SignatureFragment1_Text_SignatureFragment2_IndependentFrames",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// Frame 2: signature fragment 1
+
 				var f2 []byte
 				f2 = protowire.AppendTag(f2, 10, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "CAQS-seg1-")
 
-				// Frame 3: independent text frame without signature
+
 				var f3 []byte
 				f3 = protowire.AppendTag(f3, 3, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "interleaving text")
 
-				// Frame 4: signature fragment 2
+
 				var f4 []byte
 				f4 = protowire.AppendTag(f4, 10, protowire.BytesType)
 				f4 = protowire.AppendString(f4, "seg2-done")
 				f4 = protowire.AppendTag(f4, 21, protowire.BytesType)
 				f4 = protowire.AppendString(f4, "anthropic")
 
-				// Frame 5: subsequent text
+
 				var f5 []byte
 				f5 = protowire.AppendTag(f5, 3, protowire.BytesType)
 				f5 = protowire.AppendString(f5, " final text")
@@ -1639,12 +1639,12 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_ManyTextFrames_LateSignature",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// 6 consecutive text frames with no signature
+
 				var frames [][]byte
 				frames = append(frames, f1)
 				for i := 1; i <= 6; i++ {
@@ -1654,7 +1654,7 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 					frames = append(frames, ft)
 				}
 
-				// Late signature arriving on frame 8
+
 				var fsig []byte
 				fsig = protowire.AppendTag(fsig, 10, protowire.BytesType)
 				fsig = protowire.AppendString(fsig, "CAQS-late-after-6-frames")
@@ -1670,12 +1670,12 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 		{
 			name: "Summary_ToolCall_Signature_ToolCallContinuation",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "planning tool call")
 
-				// Frame 2: tool call 0 partial args
+
 				var tc0 []byte
 				tc0 = protowire.AppendTag(tc0, 1, protowire.BytesType)
 				tc0 = protowire.AppendString(tc0, "call_1")
@@ -1689,14 +1689,14 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 				f2 = protowire.AppendTag(f2, 6, protowire.BytesType)
 				f2 = protowire.AppendBytes(f2, tc0)
 
-				// Frame 3: signature arriving between tool deltas
+
 				var f3 []byte
 				f3 = protowire.AppendTag(f3, 10, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "CAQS-interleaved-tool-sig")
 				f3 = protowire.AppendTag(f3, 21, protowire.BytesType)
 				f3 = protowire.AppendString(f3, "anthropic")
 
-				// Frame 4: tool call 0 continuation
+
 				var tc0Cont []byte
 				tc0Cont = protowire.AppendTag(tc0Cont, 3, protowire.BytesType)
 				tc0Cont = protowire.AppendString(tc0Cont, ` status"}`)
@@ -1819,24 +1819,24 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 				}
 			}
 
-			// Verify thinking
+
 			if accumulatedThinking.Len() == 0 {
 				t.Errorf("accumulated thinking is empty")
 			}
 
-			// Verify signature
+
 			if got := accumulatedSig.String(); got != tt.wantSignature {
 				t.Errorf("accumulated signature = %q, want %q", got, tt.wantSignature)
 			}
 
-			// Verify text if expected
+
 			if tt.wantText != "" {
 				if got := accumulatedText.String(); got != tt.wantText {
 					t.Errorf("accumulated text = %q, want %q", got, tt.wantText)
 				}
 			}
 
-			// Verify tool call if expected
+
 			if tt.wantToolID != "" {
 				if gotToolID != tt.wantToolID {
 					t.Errorf("tool ID = %q, want %q", gotToolID, tt.wantToolID)
@@ -1849,7 +1849,7 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 				}
 			}
 
-			// Verify block closure integrity: every started block must be stopped
+
 			for idx, bType := range startedBlocks {
 				if !stoppedBlocks[idx] {
 					t.Errorf("block %d (type: %s) was started but never stopped", idx, bType)
@@ -1863,17 +1863,17 @@ func TestStreamDevinFrames_LateThinkingSignatures_TrailerErrorClosesBlocks(t *te
 	tests := []struct {
 		name        string
 		buildFrames func() [][]byte
-		wantBlocks  map[int]string // expected started block types
+		wantBlocks  map[int]string
 	}{
 		{
 			name: "TrailerError_WithBufferedText",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "thought text")
 
-				// Frame 2: text content
+
 				var f2 []byte
 				f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 				f2 = protowire.AppendString(f2, "answer text")
@@ -1888,12 +1888,12 @@ func TestStreamDevinFrames_LateThinkingSignatures_TrailerErrorClosesBlocks(t *te
 		{
 			name: "TrailerError_WithBufferedToolCall",
 			buildFrames: func() [][]byte {
-				// Frame 1: thinking summary
+
 				var f1 []byte
 				f1 = protowire.AppendTag(f1, 9, protowire.BytesType)
 				f1 = protowire.AppendString(f1, "planning tool call")
 
-				// Frame 2: tool call delta
+
 				var tc0 []byte
 				tc0 = protowire.AppendTag(tc0, 1, protowire.BytesType)
 				tc0 = protowire.AppendString(tc0, "call_err")
@@ -1924,7 +1924,7 @@ func TestStreamDevinFrames_LateThinkingSignatures_TrailerErrorClosesBlocks(t *te
 			for _, f := range frames {
 				buf.Write(helps.WrapConnectEnvelope(f))
 			}
-			// Connect trailer with error code 14 (UNAVAILABLE)
+
 			buf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{"error":{"code":"unavailable","message":"server overload"}}`)))
 
 			e := &DevinExecutor{}
@@ -1954,7 +1954,7 @@ func TestStreamDevinFrames_LateThinkingSignatures_TrailerErrorClosesBlocks(t *te
 
 			for chunk := range out {
 				if chunk.Err != nil {
-					// Verify that all started blocks were already stopped before the error chunk
+
 					for idx, bType := range startedBlocks {
 						if !stoppedBlocks[idx] {
 							t.Errorf("block %d (%s) was not stopped before stream error", idx, bType)
@@ -1989,14 +1989,14 @@ func TestStreamDevinFrames_LateThinkingSignatures_TrailerErrorClosesBlocks(t *te
 				t.Errorf("expected chunk error from trailer error, got none")
 			}
 
-			// Verify all expected blocks were started
+
 			for idx, wantType := range tt.wantBlocks {
 				if gotType := startedBlocks[idx]; gotType != wantType {
 					t.Errorf("block %d type = %q, want %q", idx, gotType, wantType)
 				}
 			}
 
-			// Verify that every block that was started was properly stopped
+
 			for idx, bType := range startedBlocks {
 				if !stoppedBlocks[idx] {
 					t.Errorf("block %d (type: %s) was started but NOT closed with content_block_stop before error exit", idx, bType)
@@ -2125,7 +2125,7 @@ func TestDevinExecutor_ResponsesToolsFilterAndObfuscate(t *testing.T) {
 	interactionsJSON := sdktranslator.TranslateRequest(sdktranslator.FormatOpenAIResponse, sdktranslator.FormatInteractions, "devin/swe-2", responsesPayload, false)
 	systemPrompt, prompts, tools, temp, maxTokens, sessionID, cascadeID, _, _ := parseInteractionsPayload(interactionsJSON, responsesPayload)
 
-	// 1. automation_update must be filtered out, leaving read_resource, exec_command, write_stdin
+
 	if len(tools) != 3 {
 		t.Fatalf("expected 3 tools, got %d", len(tools))
 	}
@@ -2383,7 +2383,7 @@ func TestDevinExecutor_SupplementImagesFromOriginalMultipleToolsNoCrossPollution
 
 	supplementImagesFromOriginal(origRequest, prompts)
 
-	// Tool A (text-only) must NOT receive any images
+
 	if len(prompts[0].Images) != 0 {
 		t.Fatalf("expected 0 images on text-only tool prompt, got %d", len(prompts[0].Images))
 	}
@@ -2391,7 +2391,7 @@ func TestDevinExecutor_SupplementImagesFromOriginalMultipleToolsNoCrossPollution
 		t.Errorf("text-only tool prompt should not have image header: %s", prompts[0].Content)
 	}
 
-	// Tool B (screenshot) MUST receive its image
+
 	if len(prompts[1].Images) != 1 {
 		t.Fatalf("expected 1 image on screenshot tool prompt, got %d", len(prompts[1].Images))
 	}
@@ -2449,7 +2449,7 @@ func TestDevinExecutor_ClaudeToolResultEndToEnd(t *testing.T) {
 		]
 	}`)
 
-	// Real conversion from Claude request to Interactions format
+
 	interactionsJSON, _ := interactionsclaude.ConvertClaudeRequestToInteractions("devin/swe-2", claudeReq, true)
 
 	systemPrompt, prompts, tools, temp, maxTokens, sessionID, cascadeID, _, _ := parseInteractionsPayload(interactionsJSON, claudeReq)
@@ -2486,7 +2486,7 @@ func TestDevinExecutor_ClaudeToolResultEndToEnd(t *testing.T) {
 		t.Errorf("expected content to contain image header, got: %s", imageToolPrompt.Content)
 	}
 
-	// Verify upstream wire encoding
+
 	wireReq := helps.BuildDevinGetChatMessageRequest(
 		"test-token",
 		"test-seed",
@@ -2504,7 +2504,7 @@ func TestDevinExecutor_ClaudeToolResultEndToEnd(t *testing.T) {
 		t.Fatalf("expected non-empty wire request")
 	}
 
-	// Verify wire-level decoded prompts and per-tool image associations
+
 	decoded := decodeWirePrompts(t, wireReq)
 	var wireTextToolPrompt *decodedWirePrompt
 	var wireImageToolPrompt *decodedWirePrompt
@@ -2536,7 +2536,7 @@ func TestDevinExecutor_ClaudeToolResultEndToEnd(t *testing.T) {
 		t.Errorf("wire image mime mismatch: %s", wireImageToolPrompt.images[0].MimeType)
 	}
 
-	// Verify upstream log body
+
 	logBody := helps.BuildDevinUpstreamLogBody(
 		interactionsJSON,
 		true,
@@ -2694,7 +2694,7 @@ func TestDevinExecutor_FunctionResultMixedStructuredAndBusinessJSON(t *testing.T
 }
 
 func TestDevinExecutor_FunctionResultBusinessObjectWithTextFieldPreserved(t *testing.T) {
-	// Case 1: Array contains only a business object with a "text" field, should preserve full JSON
+
 	payloadOnlyBusiness := []byte(`{
 		"model": "devin/swe-2",
 		"input": [
@@ -2716,7 +2716,7 @@ func TestDevinExecutor_FunctionResultBusinessObjectWithTextFieldPreserved(t *tes
 		t.Errorf("expected business object fields to be preserved, got: %s", prompts1[0].Content)
 	}
 
-	// Case 2: Array contains image and business object with a "text" field
+
 	payloadWithImage := []byte(`{
 		"model": "devin/swe-2",
 		"input": [
@@ -2891,7 +2891,7 @@ func TestDevinExecutor_SupplementImagesEdgeCases(t *testing.T) {
 }
 
 func TestRegressionIssue5910_ToolCallAggregationByCallID(t *testing.T) {
-	// Frame 1: call_1 start + partial args
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "call_1")
@@ -2904,7 +2904,7 @@ func TestRegressionIssue5910_ToolCallAggregationByCallID(t *testing.T) {
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc1)
 
-	// Frame 2: call_2 start + args
+
 	var tc2 []byte
 	tc2 = protowire.AppendTag(tc2, 1, protowire.BytesType)
 	tc2 = protowire.AppendString(tc2, "call_2")
@@ -2917,7 +2917,7 @@ func TestRegressionIssue5910_ToolCallAggregationByCallID(t *testing.T) {
 	f2 = protowire.AppendTag(f2, 6, protowire.BytesType)
 	f2 = protowire.AppendBytes(f2, tc2)
 
-	// Frame 3: call_1 continuation args
+
 	var tc1Cont []byte
 	tc1Cont = protowire.AppendTag(tc1Cont, 1, protowire.BytesType)
 	tc1Cont = protowire.AppendString(tc1Cont, "call_1")
@@ -2951,20 +2951,20 @@ func TestRegressionIssue5910_ToolCallAggregationByCallID(t *testing.T) {
 }
 
 func TestRegressionIssue5910_CustomToolCallInvalidJSONStr(t *testing.T) {
-	// Upstream Devin sends raw arguments for custom tool calls in field 4 (invalid_json_str),
-	// parse error in field 5 (invalid_json_err), and custom flag in field 6 (is_custom_tool_call).
+
+
 	var tc []byte
 	tc = protowire.AppendTag(tc, 1, protowire.BytesType)
 	tc = protowire.AppendString(tc, "call_custom_1")
 	tc = protowire.AppendTag(tc, 2, protowire.BytesType)
 	tc = protowire.AppendString(tc, "bash")
-	// Field 4: invalid_json_str = "ls -la"
+
 	tc = protowire.AppendTag(tc, 4, protowire.BytesType)
 	tc = protowire.AppendString(tc, "ls -la")
-	// Field 5: invalid_json_err = "not valid json"
+
 	tc = protowire.AppendTag(tc, 5, protowire.BytesType)
 	tc = protowire.AppendString(tc, "not valid json")
-	// Field 6: is_custom_tool_call = true
+
 	tc = protowire.AppendTag(tc, 6, protowire.VarintType)
 	tc = protowire.AppendVarint(tc, 1)
 
@@ -2999,7 +2999,7 @@ func TestRegressionIssue5910_CustomToolCallInvalidJSONStr(t *testing.T) {
 		t.Errorf("expected step 0 arguments %q, got %q", "ls -la", steps[0].Get("arguments").String())
 	}
 
-	// Also verify streaming receives raw arguments for custom tool call
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
@@ -3046,7 +3046,7 @@ func TestRegressionIssue5910_CustomToolCallInvalidJSONStr(t *testing.T) {
 }
 
 func TestRegressionIssue5910_StreamInterleavedToolCallsByCallID(t *testing.T) {
-	// Frame 1: call_1 start + partial args
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "call_1")
@@ -3059,7 +3059,7 @@ func TestRegressionIssue5910_StreamInterleavedToolCallsByCallID(t *testing.T) {
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc1)
 
-	// Frame 2: call_2 start + full args
+
 	var tc2 []byte
 	tc2 = protowire.AppendTag(tc2, 1, protowire.BytesType)
 	tc2 = protowire.AppendString(tc2, "call_2")
@@ -3072,7 +3072,7 @@ func TestRegressionIssue5910_StreamInterleavedToolCallsByCallID(t *testing.T) {
 	f2 = protowire.AppendTag(f2, 6, protowire.BytesType)
 	f2 = protowire.AppendBytes(f2, tc2)
 
-	// Frame 3: call_1 continuation args
+
 	var tc1Cont []byte
 	tc1Cont = protowire.AppendTag(tc1Cont, 1, protowire.BytesType)
 	tc1Cont = protowire.AppendString(tc1Cont, "call_1")
@@ -3175,18 +3175,18 @@ func TestRegressionIssue5910_StreamInterleavedToolCallsByCallID(t *testing.T) {
 }
 
 func TestRegressionIssue5910_UsageStatsCacheWriteTokensInResponses(t *testing.T) {
-	// Frame 1 with Usage Field 7
+
 	var f7Bytes []byte
-	// Field 2: prompt tokens = 3
+
 	f7Bytes = protowire.AppendTag(f7Bytes, 2, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 3)
-	// Field 3: completion tokens = 10
+
 	f7Bytes = protowire.AppendTag(f7Bytes, 3, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 10)
-	// Field 4: cache_write_tokens = 14361
+
 	f7Bytes = protowire.AppendTag(f7Bytes, 4, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 14361)
-	// Field 5: cached tokens = 50
+
 	f7Bytes = protowire.AppendTag(f7Bytes, 5, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 50)
 
@@ -3198,7 +3198,7 @@ func TestRegressionIssue5910_UsageStatsCacheWriteTokensInResponses(t *testing.T)
 	buf.Write(helps.WrapConnectEnvelope(frame))
 	buf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
 
-	// 1. Non-streaming test
+
 	interactionsJSON, respLog, err := consumeDevinFramesToInteractions(&buf, "devin/swe-2", "chat-model-uid")
 	if err != nil {
 		t.Fatalf("consumeDevinFramesToInteractions failed: %v", err)
@@ -3215,7 +3215,7 @@ func TestRegressionIssue5910_UsageStatsCacheWriteTokensInResponses(t *testing.T)
 	}
 
 	root := ojson.ParseBytes(interactionsJSON)
-	// total input = uncached 3 + cache read 50 + cache write 14361
+
 	if root.Get("usage.total_input_tokens").Int() != 14414 {
 		t.Errorf("usage.total_input_tokens = %d, want 14414", root.Get("usage.total_input_tokens").Int())
 	}
@@ -3233,7 +3233,7 @@ func TestRegressionIssue5910_UsageStatsCacheWriteTokensInResponses(t *testing.T)
 		t.Errorf("token breakdown = %+v, want complete with 3 uncached", detail.TokenBreakdown)
 	}
 
-	// 2. Streaming test
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(frame))
 	streamBuf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
@@ -3298,7 +3298,7 @@ func TestRegressionIssue5910_UsageStatsCacheWriteTokensInResponses(t *testing.T)
 
 func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 	t.Run("structured_results_projected_to_plain_text", func(t *testing.T) {
-		// Case 1: Array of text content blocks
+
 		payloadBlocks := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3327,7 +3327,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("structured result missing extracted text: %q", prompts1[1].Content)
 		}
 
-		// Case 2: Object with type=text and text field
+
 		payloadObject := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3347,7 +3347,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected plain text 'single object output', got %q", prompts2[1].Content)
 		}
 
-		// Case 3: Object with nested content array
+
 		payloadNested := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3367,7 +3367,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected plain text 'nested content text', got %q", prompts3[1].Content)
 		}
 
-		// Case 4: Business object with output/result fields alongside business fields is preserved in full JSON
+
 		payloadBusiness := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3389,7 +3389,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected full business object to be preserved, got %q", prompts4[1].Content)
 		}
 
-		// Case 5: Business object with id, name, content is preserved in full JSON
+
 		payloadBusinessReport := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3411,7 +3411,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected full business report object to be preserved, got %q", prompts5[1].Content)
 		}
 
-		// Case 6: Pure business string array is preserved as raw JSON
+
 		payloadStringArray := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3431,7 +3431,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected string array to be preserved as raw JSON, got %q", prompts6[1].Content)
 		}
 
-		// Case 7: Mixed string and business object array is preserved as raw JSON
+
 		payloadMixedArray := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3453,7 +3453,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 	})
 
 	t.Run("empty_results_get_placeholder", func(t *testing.T) {
-		// Case 1: Empty string result
+
 		payloadEmptyStr := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3469,7 +3469,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected non-empty placeholder for empty string result, got empty string")
 		}
 
-		// Case 2: Absent result/output/content
+
 		payloadAbsent := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3485,7 +3485,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected non-empty placeholder for absent result, got empty string")
 		}
 
-		// Case 3: Array with empty wrapper content block
+
 		payloadEmptyWrapper := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3501,7 +3501,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected placeholder '{}' for empty wrapper result, got %q", prompts3[1].Content)
 		}
 
-		// Case 4: Array with whitespace-only content
+
 		payloadWhitespaceWrapper := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3519,7 +3519,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 	})
 
 	t.Run("orphaned_results_sent_as_user_text", func(t *testing.T) {
-		// Case 1: Interactions payload with trimmed function_call
+
 		payloadTrimmed := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3537,7 +3537,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected content 'orphaned data', got %q", prompts1[0].Content)
 		}
 
-		// Case 2: Messages fallback with assistant.tool_calls properly matched
+
 		payloadMessagesMatched := []byte(`{
 			"model": "devin/swe-2",
 			"messages": [
@@ -3576,7 +3576,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected content 'file content here', got %q", prompts2[1].Content)
 		}
 
-		// Case 3: Messages fallback with orphaned tool message
+
 		payloadMessagesOrphan := []byte(`{
 			"model": "devin/swe-2",
 			"messages": [
@@ -3598,7 +3598,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected content 'orphaned tool message', got %q", prompts3[0].Content)
 		}
 
-		// Case 4: Multiple calls and results pairing with extra orphan result
+
 		payloadMulti := []byte(`{
 			"model": "devin/swe-2",
 			"input": [
@@ -3623,7 +3623,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("expected extra call_C to be source=1 user text, got: %+v", prompts4[3])
 		}
 
-		// Case 5: Orphaned tool result does not steal subsequent user message's image in supplementImagesFromOriginal
+
 		origWithUserImg := []byte(`{
 			"messages": [
 				{
@@ -3658,14 +3658,14 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 		if len(prompts5) != 2 {
 			t.Fatalf("expected 2 prompts, got %d", len(prompts5))
 		}
-		// Prompt 0 is downgraded orphaned tool result
+
 		if prompts5[0].Source != 1 || prompts5[0].OriginalToolCallID != "call_orphan_img" {
 			t.Errorf("prompts5[0] expected source=1 orphaned tool, got: %+v", prompts5[0])
 		}
 		if len(prompts5[0].Images) != 0 {
 			t.Errorf("orphaned tool result should not have stolen user images, got %d images", len(prompts5[0].Images))
 		}
-		// Prompt 1 is real user turn
+
 		if prompts5[1].Source != 1 {
 			t.Errorf("prompts5[1] expected source=1 user turn, got: %+v", prompts5[1])
 		}
@@ -3676,7 +3676,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 			t.Errorf("user turn content missing image header: %q", prompts5[1].Content)
 		}
 
-		// Case 6: Orphaned tool result without any ID does not steal subsequent user message's image
+
 		origWithNoID := []byte(`{
 			"messages": [
 				{
@@ -3723,7 +3723,7 @@ func TestDevinExecutor_FunctionResult_Regression_Issue5911(t *testing.T) {
 }
 
 func TestDevinExecutor_NoModelSubstitutionWarningForIntentionalMapping_NonStream(t *testing.T) {
-	// Build a Devin Connect-RPC response containing Usage with ModelName = "swe-2-high"
+
 	var f7 []byte
 	f7 = protowire.AppendTag(f7, 2, protowire.VarintType)
 	f7 = protowire.AppendVarint(f7, 10)
@@ -3876,7 +3876,7 @@ func TestDevinExecutor_WarnsWhenUpstreamServesUnexpectedModel(t *testing.T) {
 
 	exec := NewDevinExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
-		// Isolate this run from the process-wide model warning throttle.
+
 		ID:         "devin-auth-unexpected-" + uuid.NewString(),
 		Provider:   "devin",
 		Attributes: map[string]string{"api_key": "test-key"},
@@ -3909,7 +3909,7 @@ func TestDevinExecutor_WarnsWhenUpstreamServesUnexpectedModel(t *testing.T) {
 }
 
 func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *testing.T) {
-	// Frame 1: tool call 1
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "call_1")
@@ -3922,7 +3922,7 @@ func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *t
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc1)
 
-	// Frame 2: tool call 2
+
 	var tc2 []byte
 	tc2 = protowire.AppendTag(tc2, 1, protowire.BytesType)
 	tc2 = protowire.AppendString(tc2, "call_2")
@@ -3935,12 +3935,12 @@ func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *t
 	f2 = protowire.AppendTag(f2, 6, protowire.BytesType)
 	f2 = protowire.AppendBytes(f2, tc2)
 
-	// Frame 3: assistant final message content text
+
 	var f3 []byte
 	f3 = protowire.AppendTag(f3, 3, protowire.BytesType)
 	f3 = protowire.AppendString(f3, "Task completed. 要我盯 DAV-1085 结果吗？")
 
-	// 1. Test Streaming in OpenAI Responses wire format (used by Codex Desktop)
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -3992,7 +3992,7 @@ func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *t
 		}
 	}
 
-	// In Codex Desktop / OpenAI Responses, tool call items must be finalized before the assistant final message
+
 	expectedOrder := []string{"function_call", "function_call", "message"}
 	if len(doneItemTypes) != len(expectedOrder) {
 		t.Fatalf("doneItemTypes len = %d (%v), want %d (%v)", len(doneItemTypes), doneItemTypes, len(expectedOrder), expectedOrder)
@@ -4003,7 +4003,7 @@ func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *t
 		}
 	}
 
-	// Also verify the output array in response.completed
+
 	var completedOutputTypes []string
 	for _, chunk := range chunks {
 		lines := strings.Split(string(chunk.Payload), "\n")
@@ -4032,7 +4032,7 @@ func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *t
 		}
 	}
 
-	// 2. Test Non-streaming output order
+
 	var nonStreamBuf bytes.Buffer
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f1))
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4061,7 +4061,7 @@ func TestRegressionIssue5951_DevinToolActivityOrderedBeforeAssistantMessage(t *t
 }
 
 func TestRegressionIssue5951_InterleavedToolArgumentsAndText(t *testing.T) {
-	// Frame 1: call_1 partial args
+
 	var tc1Part1 []byte
 	tc1Part1 = protowire.AppendTag(tc1Part1, 1, protowire.BytesType)
 	tc1Part1 = protowire.AppendString(tc1Part1, "call_1")
@@ -4074,12 +4074,12 @@ func TestRegressionIssue5951_InterleavedToolArgumentsAndText(t *testing.T) {
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc1Part1)
 
-	// Frame 2: text arrival while call_1 is active
+
 	var f2 []byte
 	f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 	f2 = protowire.AppendString(f2, "Working on it... ")
 
-	// Frame 3: call_1 continuation args
+
 	var tc1Part2 []byte
 	tc1Part2 = protowire.AppendTag(tc1Part2, 1, protowire.BytesType)
 	tc1Part2 = protowire.AppendString(tc1Part2, "call_1")
@@ -4090,12 +4090,12 @@ func TestRegressionIssue5951_InterleavedToolArgumentsAndText(t *testing.T) {
 	f3 = protowire.AppendTag(f3, 6, protowire.BytesType)
 	f3 = protowire.AppendBytes(f3, tc1Part2)
 
-	// Frame 4: more final text
+
 	var f4 []byte
 	f4 = protowire.AppendTag(f4, 3, protowire.BytesType)
 	f4 = protowire.AppendString(f4, "Done.")
 
-	// Test streaming
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4172,7 +4172,7 @@ func TestRegressionIssue5951_InterleavedToolArgumentsAndText(t *testing.T) {
 		}
 	}
 
-	// 2. Test Non-streaming: tool arguments must be intact and assistant message must NOT be split
+
 	var nonStreamBuf bytes.Buffer
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f1))
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4204,7 +4204,7 @@ func TestRegressionIssue5951_InterleavedToolArgumentsAndText(t *testing.T) {
 }
 
 func TestRegressionIssue5951_SameFrameToolAndContent(t *testing.T) {
-	// A single frame carrying BOTH tool call delta and content text
+
 	var tc []byte
 	tc = protowire.AppendTag(tc, 1, protowire.BytesType)
 	tc = protowire.AppendString(tc, "call_same_frame")
@@ -4219,7 +4219,7 @@ func TestRegressionIssue5951_SameFrameToolAndContent(t *testing.T) {
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "Finished pwd execution.")
 
-	// 1. Streaming test
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
@@ -4289,7 +4289,7 @@ func TestRegressionIssue5951_SameFrameToolAndContent(t *testing.T) {
 		}
 	}
 
-	// 2. Non-streaming test
+
 	var nonStreamBuf bytes.Buffer
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f1))
 	nonStreamBuf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
@@ -4316,12 +4316,12 @@ func TestRegressionIssue5951_SameFrameToolAndContent(t *testing.T) {
 }
 
 func TestRegressionIssue5951_PreToolExplanationAndPostToolAnswer(t *testing.T) {
-	// Frame 1: pre-tool explanation text
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "I will inspect the repository:")
 
-	// Frame 2: tool call
+
 	var tc1 []byte
 	tc1 = protowire.AppendTag(tc1, 1, protowire.BytesType)
 	tc1 = protowire.AppendString(tc1, "call_ls")
@@ -4334,12 +4334,12 @@ func TestRegressionIssue5951_PreToolExplanationAndPostToolAnswer(t *testing.T) {
 	f2 = protowire.AppendTag(f2, 6, protowire.BytesType)
 	f2 = protowire.AppendBytes(f2, tc1)
 
-	// Frame 3: post-tool final answer text
+
 	var f3 []byte
 	f3 = protowire.AppendTag(f3, 3, protowire.BytesType)
 	f3 = protowire.AppendString(f3, "Inspection completed. All files in order.")
 
-	// 1. Test Streaming: output_item.done and completed.output must be [message, function_call, message]
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4416,7 +4416,7 @@ func TestRegressionIssue5951_PreToolExplanationAndPostToolAnswer(t *testing.T) {
 		}
 	}
 
-	// 2. Test Non-streaming: steps must preserve [model_output, function_call, model_output]
+
 	var nonStreamBuf bytes.Buffer
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f1))
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4445,7 +4445,7 @@ func TestRegressionIssue5951_PreToolExplanationAndPostToolAnswer(t *testing.T) {
 }
 
 func TestRegressionIssue5951_MultiStageToolAndIntermediateExplanation(t *testing.T) {
-	// Frame 1: Tool A
+
 	var tcA []byte
 	tcA = protowire.AppendTag(tcA, 1, protowire.BytesType)
 	tcA = protowire.AppendString(tcA, "call_A")
@@ -4458,12 +4458,12 @@ func TestRegressionIssue5951_MultiStageToolAndIntermediateExplanation(t *testing
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tcA)
 
-	// Frame 2: Intermediate explanation
+
 	var f2 []byte
 	f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 	f2 = protowire.AppendString(f2, "Directory checked, now listing files.")
 
-	// Frame 3: Tool B
+
 	var tcB []byte
 	tcB = protowire.AppendTag(tcB, 1, protowire.BytesType)
 	tcB = protowire.AppendString(tcB, "call_B")
@@ -4476,12 +4476,12 @@ func TestRegressionIssue5951_MultiStageToolAndIntermediateExplanation(t *testing
 	f3 = protowire.AppendTag(f3, 6, protowire.BytesType)
 	f3 = protowire.AppendBytes(f3, tcB)
 
-	// Frame 4: Final answer
+
 	var f4 []byte
 	f4 = protowire.AppendTag(f4, 3, protowire.BytesType)
 	f4 = protowire.AppendString(f4, "All tasks finished successfully.")
 
-	// 1. Test Streaming
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4559,7 +4559,7 @@ func TestRegressionIssue5951_MultiStageToolAndIntermediateExplanation(t *testing
 		}
 	}
 
-	// 2. Test Non-streaming
+
 	var nonStreamBuf bytes.Buffer
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f1))
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4589,7 +4589,7 @@ func TestRegressionIssue5951_MultiStageToolAndIntermediateExplanation(t *testing
 }
 
 func TestRegressionIssue5951_InterleavedToolsWithTextAndContinuation(t *testing.T) {
-	// Frame 1: call_1 start + partial args
+
 	var tc1Part1 []byte
 	tc1Part1 = protowire.AppendTag(tc1Part1, 1, protowire.BytesType)
 	tc1Part1 = protowire.AppendString(tc1Part1, "call_1")
@@ -4602,12 +4602,12 @@ func TestRegressionIssue5951_InterleavedToolsWithTextAndContinuation(t *testing.
 	f1 = protowire.AppendTag(f1, 6, protowire.BytesType)
 	f1 = protowire.AppendBytes(f1, tc1Part1)
 
-	// Frame 2: text arrival
+
 	var f2 []byte
 	f2 = protowire.AppendTag(f2, 3, protowire.BytesType)
 	f2 = protowire.AppendString(f2, "Working on step 1... ")
 
-	// Frame 3: call_2 start + full args
+
 	var tc2 []byte
 	tc2 = protowire.AppendTag(tc2, 1, protowire.BytesType)
 	tc2 = protowire.AppendString(tc2, "call_2")
@@ -4620,7 +4620,7 @@ func TestRegressionIssue5951_InterleavedToolsWithTextAndContinuation(t *testing.
 	f3 = protowire.AppendTag(f3, 6, protowire.BytesType)
 	f3 = protowire.AppendBytes(f3, tc2)
 
-	// Frame 4: call_1 continuation args
+
 	var tc1Part2 []byte
 	tc1Part2 = protowire.AppendTag(tc1Part2, 1, protowire.BytesType)
 	tc1Part2 = protowire.AppendString(tc1Part2, "call_1")
@@ -4631,12 +4631,12 @@ func TestRegressionIssue5951_InterleavedToolsWithTextAndContinuation(t *testing.
 	f4 = protowire.AppendTag(f4, 6, protowire.BytesType)
 	f4 = protowire.AppendBytes(f4, tc1Part2)
 
-	// Frame 5: final text
+
 	var f5 []byte
 	f5 = protowire.AppendTag(f5, 3, protowire.BytesType)
 	f5 = protowire.AppendString(f5, "All done.")
 
-	// 1. Streaming test
+
 	var streamBuf bytes.Buffer
 	streamBuf.Write(helps.WrapConnectEnvelope(f1))
 	streamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4717,7 +4717,7 @@ func TestRegressionIssue5951_InterleavedToolsWithTextAndContinuation(t *testing.
 		}
 	}
 
-	// 2. Non-streaming test
+
 	var nonStreamBuf bytes.Buffer
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f1))
 	nonStreamBuf.Write(helps.WrapConnectEnvelope(f2))
@@ -4751,7 +4751,7 @@ func TestRegressionIssue5951_InterleavedToolsWithTextAndContinuation(t *testing.
 
 func TestStreamDevinFrames_ImmediateTrailerError_NoInitialPayloadBeforeError(t *testing.T) {
 	var buf bytes.Buffer
-	// Immediate Connect trailer error with code 7 (PERMISSION_DENIED)
+
 	buf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{"error":{"code":"permission_denied","message":"Unable to process request due to an MCP configuration issue."}}`)))
 
 	e := &DevinExecutor{}
@@ -4792,13 +4792,13 @@ func TestStreamDevinFrames_ImmediateTrailerError_NoInitialPayloadBeforeError(t *
 
 func TestStreamDevinFrames_MidStreamTrailerError_EmitsTranslatedFailedEventBeforeStreamError(t *testing.T) {
 	var buf bytes.Buffer
-	// Frame 1: text content
+
 	var f1 []byte
 	f1 = protowire.AppendTag(f1, 3, protowire.BytesType)
 	f1 = protowire.AppendString(f1, "partial answer")
 	buf.Write(helps.WrapConnectEnvelope(f1))
 
-	// Connect trailer with error code 7 (PERMISSION_DENIED)
+
 	buf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{"error":{"code":"permission_denied","message":"devin upstream error (permission_denied): MCP configuration issue"}}`)))
 
 	e := &DevinExecutor{}
@@ -4945,11 +4945,11 @@ func TestDevinApplyPatchExecutorReuse(t *testing.T) {
 
 func TestRegressionIssue6505_DevinClaudeStreamingNoFullInputEstimate(t *testing.T) {
 	runTest := func(t *testing.T, promptTokens, cacheWriteTokens int64) {
-		// Frame with Usage Field 7:
-		// Field 2: prompt tokens
-		// Field 3: completion tokens = 4
-		// Field 4: cache_write_tokens
-		// Field 5: cached tokens = 50000
+
+
+
+
+
 		var f7Bytes []byte
 		f7Bytes = protowire.AppendTag(f7Bytes, 2, protowire.VarintType)
 		f7Bytes = protowire.AppendVarint(f7Bytes, uint64(promptTokens))

@@ -30,7 +30,7 @@ type VertexModelsSummary struct {
 	count int
 }
 
-// SummarizeGeminiModels hashes Gemini model aliases for change detection.
+
 func SummarizeGeminiModels(models []config.GeminiModel) GeminiModelsSummary {
 	if len(models) == 0 {
 		return GeminiModelsSummary{}
@@ -55,7 +55,7 @@ func SummarizeGeminiModels(models []config.GeminiModel) GeminiModelsSummary {
 	}
 }
 
-// SummarizeClaudeModels hashes Claude model aliases for change detection.
+
 func SummarizeClaudeModels(models []config.ClaudeModel) ClaudeModelsSummary {
 	if len(models) == 0 {
 		return ClaudeModelsSummary{}
@@ -80,7 +80,7 @@ func SummarizeClaudeModels(models []config.ClaudeModel) ClaudeModelsSummary {
 	}
 }
 
-// SummarizeCodexModels hashes Codex model aliases for change detection.
+
 func SummarizeCodexModels(models []config.CodexModel) CodexModelsSummary {
 	if len(models) == 0 {
 		return CodexModelsSummary{}
@@ -109,7 +109,7 @@ func SummarizeCodexModels(models []config.CodexModel) CodexModelsSummary {
 	}
 }
 
-// SummarizeVertexModels hashes Vertex-compatible model aliases for change detection.
+
 func SummarizeVertexModels(models []config.VertexCompatModel) VertexModelsSummary {
 	if len(models) == 0 {
 		return VertexModelsSummary{}

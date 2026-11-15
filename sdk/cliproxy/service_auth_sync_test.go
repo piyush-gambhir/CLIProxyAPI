@@ -49,9 +49,9 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-	// Set up a mock watcher wrapper where dispatchPersistedAuth records updates
-	// but DOES NOT consume or execute anything asynchronously, verifying that
-	// the synchronous restoration does not depend on the watcher background queue.
+
+
+
 	var persistedUpdates []watcher.AuthUpdate
 	watcherWrapper := &WatcherWrapper{
 		dispatchPersistedAuth: func(update watcher.AuthUpdate) bool {
@@ -71,7 +71,7 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatal("runtimeAuthSyncHook() returned nil")
 	}
 
-	// 1. Initial sync (enabled -> registers models)
+
 	if err := hook(context.Background(), auth); err != nil {
 		t.Fatalf("hook failed for initial sync: %v", err)
 	}
@@ -81,13 +81,13 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatal("expected models registered for active auth, got none")
 	}
 
-	// Verify scheduler selection works for enabled auth
+
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
 		t.Fatalf("expected scheduler to select active auth, got resp=%q, err=%v", string(resp.Payload), errExec)
 	}
 
-	// 2. Disable the credential
+
 	disabledAuth := auth.Clone()
 	disabledAuth.Disabled = true
 	disabledAuth.Status = coreauth.StatusDisabled
@@ -102,18 +102,18 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Verify immediately: models must be unregistered from global registry
+
 	modelsAfterDisable := reg.GetModelsForClient(authID)
 	if len(modelsAfterDisable) != 0 {
 		t.Fatalf("expected 0 models for disabled client, got %d", len(modelsAfterDisable))
 	}
 
-	// Verify scheduler selection fails for disabled auth
+
 	if _, errExecDisabled := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{}); errExecDisabled == nil {
 		t.Fatal("expected scheduler execution to fail for disabled auth, but got nil error")
 	}
 
-	// 3. Re-enable the credential without quota
+
 	enabledAuth := disabledAuth.Clone()
 	enabledAuth.Disabled = false
 	enabledAuth.Status = coreauth.StatusActive
@@ -124,13 +124,13 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatalf("manager update enable failed: %v", errUpdate)
 	}
 
-	// 4. Re-enable hook invocation
+
 	if err := hook(context.Background(), enabledAuth); err != nil {
 		t.Fatalf("hook failed for re-enable: %v", err)
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Verify immediately: models must be restored in the global registry without restart
+
 	modelsAfterEnable := reg.GetModelsForClient(authID)
 	if len(modelsAfterEnable) == 0 {
 		t.Fatal("expected models to be restored synchronously upon re-enable, got none")
@@ -147,13 +147,13 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 		t.Fatalf("expected gpt-6-astra in restored models: %+v", modelsAfterEnable)
 	}
 
-	// Verify scheduler selection is restored for the re-enabled auth
+
 	respAfterEnable, errExecEnable := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExecEnable != nil || string(respAfterEnable.Payload) != authID {
 		t.Fatalf("expected scheduler to select restored auth, got resp=%q, err=%v", string(respAfterEnable.Payload), errExecEnable)
 	}
 
-	// 5. Verify quota cooldown separation: set quota exceeded on the enabled auth
+
 	quotaAuth := enabledAuth.Clone()
 	quotaAuth.Quota = coreauth.QuotaState{
 		Exceeded:      true,
@@ -168,17 +168,17 @@ func TestRuntimeAuthSyncHook_SynchronousModelAndSchedulerRestoration(t *testing.
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Verify quota separation: models remain registered in global registry
+
 	modelsWithQuota := reg.GetModelsForClient(authID)
 	if len(modelsWithQuota) == 0 {
 		t.Fatal("expected models to remain registered when auth is in quota cooldown")
 	}
-	// But scheduler blocks execution due to quota exhaustion
+
 	if _, errQuotaExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{}); errQuotaExec == nil {
 		t.Fatal("expected scheduler to block execution when quota exceeded")
 	}
 
-	// Verify watcher notification occurred
+
 	if len(persistedUpdates) == 0 {
 		t.Fatal("expected watcher to be notified of persisted auth updates")
 	}
@@ -288,8 +288,8 @@ func TestHandleAuthUpdates_FileDeleteOrdering(t *testing.T) {
 					if errRemove := os.Remove(path); errRemove != nil {
 						t.Fatalf("remove auth file: %v", errRemove)
 					}
-					// Use the same watcher stamping/dispatch machinery as file deletes,
-					// without depending on fsnotify scheduling or debounce timers.
+
+
 					deletion := watcher.AuthUpdate{Action: watcher.AuthUpdateActionDelete, ID: authID}
 					deletion.SetFileRemoval(true)
 					if !w.DispatchRuntimeAuthUpdate(deletion) {
@@ -308,11 +308,11 @@ func TestHandleAuthUpdates_FileDeleteOrdering(t *testing.T) {
 				if deleteBeforeSave {
 					deletion = observeDelete()
 				}
-				// Management uploads publish to coreManager before invoking the persist
-				// hook. Exercise that gap as well as the legacy callback's lost revision.
+
+
 				save(!mode.delayHook)
 				if !mode.delayHook {
-					// Hold the queued add so restoration depends on the inline persist hook.
+
 					addition := nextUpdate()
 					if deleteBeforeSave && addition.Revision() <= deletion.Revision() {
 						t.Fatal("re-created auth must have a newer watcher revision")
@@ -367,7 +367,7 @@ func TestHandleAuthUpdates_FileDeleteRecreatedSubset(t *testing.T) {
 			if snapshotPath != path {
 				t.Fatalf("snapshot path=%q, want %q", snapshotPath, path)
 			}
-			// The re-created source file contains only B, independent of watcher state.
+
 			return []*coreauth.Auth{auths[1].Clone()}, nil
 		}},
 	}
@@ -383,7 +383,7 @@ func TestHandleAuthUpdates_FileDeleteRecreatedSubset(t *testing.T) {
 		t.Fatal(errRemove)
 	}
 	write(`{"type":"plugin","ids":["b"]}`)
-	// Do not deliver the create event: the delayed deletes must reconcile IDs themselves.
+
 	service.handleAuthUpdates(ctx, deletes)
 	if _, present := manager.GetByID(auths[0].ID); present || len(reg.GetModelsForClient(auths[0].ID)) != 0 {
 		t.Fatal("auth A, absent from the re-created file, must be removed with its models")
@@ -1154,7 +1154,7 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-	// Initial model sync
+
 	syncHook := service.runtimeAuthSyncHook()
 	if err := syncHook(context.Background(), auth); err != nil {
 		t.Fatalf("initial sync failed: %v", err)
@@ -1162,7 +1162,7 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 
 	handler := server.Handler()
 
-	// 1. Confirm models exist before disabling
+
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1177,7 +1177,7 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("expected initial models, got %s", rec.Body.String())
 	}
 
-	// 2. Disable credential via PATCH /v0/management/auth-files/status
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"`+fileName+`","disabled":true}`))
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1187,7 +1187,7 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("PATCH status disable failed: %s", rec.Body.String())
 	}
 
-	// 3. Confirm GET /v0/management/auth-files/models returns empty list immediately
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1200,7 +1200,7 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("expected 0 models after disable, got: %s", rec.Body.String())
 	}
 
-	// 4. Re-enable credential via PATCH /v0/management/auth-files/status
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"`+fileName+`","disabled":false}`))
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1210,7 +1210,7 @@ func TestEndToEndStatusPatch_RestoresModelsThroughServerPipeline(t *testing.T) {
 		t.Fatalf("PATCH status re-enable failed: %s", rec.Body.String())
 	}
 
-	// 5. Confirm models are synchronously restored immediately without restart
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
 	req.Header.Set("Authorization", "Bearer test-secret")
@@ -1264,7 +1264,7 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 
 	hook := service.runtimeAuthSyncHook()
 
-	// Initial sync
+
 	if err := hook(context.Background(), registeredAuth); err != nil {
 		t.Fatalf("initial hook sync failed: %v", err)
 	}
@@ -1272,7 +1272,7 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatal("expected models after initial sync")
 	}
 
-	// Step 1: Credential is disabled (Generation advances)
+
 	disabledAuth := registeredAuth.Clone()
 	disabledAuth.Disabled = true
 	disabledAuth.Status = coreauth.StatusDisabled
@@ -1283,7 +1283,7 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatalf("update disable failed: %v", errDisable)
 	}
 
-	// Capture the stale async event that would normally sit in an async queue
+
 	staleAsyncDisableUpdate := watcher.AuthUpdate{
 		Action: watcher.AuthUpdateActionModify,
 		ID:     authID,
@@ -1291,7 +1291,7 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 	}
 	staleAsyncDisableUpdate.SetRevision(2)
 
-	// Step 2: Synchronous disable hook runs (assigns revision 2)
+
 	if err := hook(context.Background(), updatedDisabled); err != nil {
 		t.Fatalf("hook disable failed: %v", err)
 	}
@@ -1299,7 +1299,7 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatal("expected 0 models after disable")
 	}
 
-	// Step 3: Credential is immediately re-enabled (advances revision to 3)
+
 	enabledAuth := updatedDisabled.Clone()
 	enabledAuth.Disabled = false
 	enabledAuth.Status = coreauth.StatusActive
@@ -1310,22 +1310,22 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatalf("update enable failed: %v", errEnable)
 	}
 
-	// Step 4: Synchronous enable hook runs (assigns revision 3)
+
 	if err := hook(context.Background(), updatedEnabled); err != nil {
 		t.Fatalf("hook enable failed: %v", err)
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Models must be restored immediately
+
 	if len(reg.GetModelsForClient(authID)) == 0 {
 		t.Fatal("expected models restored immediately upon synchronous enable")
 	}
 
-	// Step 5: The delayed stale disable update from Step 1 is delivered now via consumer
+
 	service.handleAuthUpdate(context.Background(), staleAsyncDisableUpdate)
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Step 6: Verify the stale async event was prevented from overwriting the newer enable state!
+
 	currentAuth, ok := manager.GetByID(authID)
 	if !ok || currentAuth == nil {
 		t.Fatal("expected auth to exist in manager")
@@ -1338,7 +1338,7 @@ func TestRuntimeAuthSync_StaleAsyncEventDoesNotOverwriteSynchronousEnable(t *tes
 		t.Fatal("stale async event unregistered models from global registry!")
 	}
 
-	// Scheduler execution must still succeed and select the enabled auth
+
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
 		t.Fatalf("expected scheduler to select active auth, got resp=%q err=%v", string(resp.Payload), errExec)
@@ -1385,7 +1385,7 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 
 	hook := service.runtimeAuthSyncHook()
 
-	// Initial sync
+
 	if err := hook(context.Background(), registeredAuth); err != nil {
 		t.Fatalf("initial hook sync failed: %v", err)
 	}
@@ -1394,9 +1394,9 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 		t.Fatal("expected models after initial sync")
 	}
 
-	// Step 1: Simulate the watcher generating an unversioned Auth snapshot during a disable
-	// event on disk (as synthesizer.SynthesizeAuthFile produces: RegistrationEpoch=0, Generation=0).
-	// Timestamp is recorded at observation time T1.
+
+
+
 	unversionedDisableTime := time.Now().Add(-50 * time.Millisecond)
 	unversionedDisableAuth := &coreauth.Auth{
 		ID:                authID,
@@ -1405,8 +1405,8 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 		Status:            coreauth.StatusDisabled,
 		CreatedAt:         unversionedDisableTime,
 		UpdatedAt:         unversionedDisableTime,
-		RegistrationEpoch: 0, // Unversioned from file watcher synthesizer
-		Generation:        0, // Unversioned from file watcher synthesizer
+		RegistrationEpoch: 0,
+		Generation:        0,
 		Attributes: map[string]string{
 			"plan_type": "pro",
 		},
@@ -1418,8 +1418,8 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 	}
 	delayedWatcherUpdate.SetRevision(2)
 
-	// Step 2: In the meantime, the credential was synchronously re-enabled via management API
-	// at T2 > T1, updating coreManager with RegistrationEpoch >= 1, Generation >= 2, UpdatedAt = T2.
+
+
 	enabledAuth := registeredAuth.Clone()
 	enabledAuth.Disabled = false
 	enabledAuth.Status = coreauth.StatusActive
@@ -1430,7 +1430,7 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 		t.Fatalf("update enable failed: %v", errEnable)
 	}
 
-	// Synchronous enable hook runs and restores models in GlobalModelRegistry
+
 	if err := hook(context.Background(), updatedEnabled); err != nil {
 		t.Fatalf("hook enable failed: %v", err)
 	}
@@ -1440,11 +1440,11 @@ func TestRuntimeAuthSync_StaleWatcherUnversionedEventDoesNotOverwriteSynchronous
 		t.Fatal("expected models restored immediately upon synchronous enable")
 	}
 
-	// Step 3: Now the delayed unversioned watcher event from Step 1 arrives via the queue consumer
+
 	service.handleAuthUpdate(context.Background(), delayedWatcherUpdate)
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Scheduler execution must still succeed and select the enabled auth
+
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
 		t.Fatalf("expected scheduler to select active auth, got resp=%q err=%v", string(resp.Payload), errExec)
@@ -1482,7 +1482,7 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 
 	hook := service.runtimeAuthSyncHook()
 
-	// Initial sync (Revision 1)
+
 	if err := hook(context.Background(), registeredAuth); err != nil {
 		t.Fatalf("initial hook sync failed: %v", err)
 	}
@@ -1491,14 +1491,14 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 		t.Fatal("expected models after initial sync")
 	}
 
-	// Step 1: A file change occurs on disk (e.g. user disables credential in auth file).
-	// The watcher generates an AuthUpdate with revision 2 and enqueues it.
+
+
 	fileSnapshotAuth := registeredAuth.Clone()
 	fileSnapshotAuth.Disabled = true
 	fileSnapshotAuth.Status = coreauth.StatusDisabled
 	fileSnapshotAuth.UpdatedAt = time.Now()
-	// File synthesizer snapshots are unversioned; keep this fixture aligned so an
-	// intermediate MarkResult generation bump cannot drop a newer watcher revision.
+
+
 	fileSnapshotAuth.RegistrationEpoch = 0
 	fileSnapshotAuth.Generation = 0
 
@@ -1509,8 +1509,8 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 	}
 	fileUpdate.SetRevision(2)
 
-	// Step 2: Before the queue consumer can process fileUpdate, an API request completes.
-	// MarkResult updates the auth in coreManager: auth.Generation++ and auth.UpdatedAt = now.
+
+
 	manager.MarkResult(context.Background(), coreauth.Result{
 		AuthID:   authID,
 		Provider: "codex",
@@ -1518,13 +1518,13 @@ func TestRuntimeAuthSync_FileSnapshotEnqueuedThenRequestExecutionThenConsume(t *
 		Success:  true,
 	})
 
-	// Step 3: Now the queue consumer processes the fileUpdate (revision 2).
-	// Because revision 2 > revision 1, the file update MUST NOT be discarded due to
-	// the intermediate request's UpdatedAt timestamp!
+
+
+
 	service.handleAuthUpdate(context.Background(), fileUpdate)
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Step 4: Verify the file update successfully took effect!
+
 	currentAuth, ok := manager.GetByID(authID)
 	if !ok || currentAuth == nil {
 		t.Fatal("expected auth to exist in manager")
@@ -1569,23 +1569,23 @@ func TestRuntimeAuthSyncHook_ContextCancellationDoesNotAbortSync(t *testing.T) {
 
 	hook := service.runtimeAuthSyncHook()
 
-	// Create a context that is ALREADY canceled (e.g. client aborted request right after save)
+
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	// Calling hook with canceled context must NOT abort registration
+
 	if err := hook(canceledCtx, registeredAuth); err != nil {
 		t.Fatalf("hook failed with canceled context: %v", err)
 	}
 	manager.RegisterExecutor(&syncTestExecutor{})
 
-	// Verify models were registered successfully despite canceled incoming context
+
 	models := reg.GetModelsForClient(authID)
 	if len(models) == 0 {
 		t.Fatal("expected models to be registered even when incoming context is canceled")
 	}
 
-	// Verify scheduler can execute
+
 	resp, errExec := manager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != authID {
 		t.Fatalf("expected scheduler execution to succeed, got resp=%q err=%v", string(resp.Payload), errExec)
@@ -1597,7 +1597,7 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 	fileName := "codex-team.json"
 	filePath := filepath.Join(authDir, fileName)
 
-	// Synthetic JWT containing CodexAuthInfo claims with chatgpt_plan_type: team
+
 	teamIDToken := "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ICJ1c2VyQGV4YW1wbGUuY29tIiwgImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6IHsiY2hhdGdwdF9wbGFuX3R5cGUiOiAidGVhbSIsICJjaGF0Z3B0X2FjY291bnRfaWQiOiAiYWNjLTEyMyJ9fQ.sig"
 	initialContent := fmt.Sprintf(`{"type":"codex","email":"user@example.com","access_token":"token-old","id_token":%q}`, teamIDToken)
 	if errWrite := os.WriteFile(filePath, []byte(initialContent), 0o600); errWrite != nil {
@@ -1660,13 +1660,13 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-	// Initial model sync
+
 	syncHook := service.runtimeAuthSyncHook()
 	if err := syncHook(context.Background(), auth); err != nil {
 		t.Fatalf("initial sync failed: %v", err)
 	}
 
-	// 1. Confirm all team models are initially visible in GET /v1/models
+
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1694,7 +1694,7 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		}
 	}
 
-	// 2. Simulate terminal authentication error on all 4 models (invalidated token)
+
 	unauthErr := &coreauth.Error{
 		HTTPStatus: http.StatusUnauthorized,
 		Code:       "unauthorized",
@@ -1711,7 +1711,7 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		})
 	}
 
-	// Confirm all 4 models are now omitted from /v1/models due to active error/cooldown
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1725,7 +1725,7 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		}
 	}
 
-	// 3. Replace credential via management upload (POST /v0/management/auth-files)
+
 	newContent := fmt.Sprintf(`{"type":"codex","email":"user@example.com","access_token":"token-new","id_token":%q}`, teamIDToken)
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -1749,7 +1749,7 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		t.Fatalf("upload failed: status=%d, body=%s", rec.Code, rec.Body.String())
 	}
 
-	// 4. Verify that GET /v1/models immediately includes all team models without restart
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1763,7 +1763,7 @@ func TestEndToEndAuthFileReplacement_RestoresModelsInV1ModelsWithoutRestart(t *t
 		}
 	}
 
-	// 5. Verify direct inference request succeeds using the replacement credential token
+
 	service.coreManager.RegisterExecutor(&syncTestExecutor{})
 	resp, errExec := service.coreManager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != "token-new" {
@@ -1843,7 +1843,7 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		t.Fatalf("initial sync failed: %v", err)
 	}
 
-	// 1. Simulate terminal auth failure on all 4 models
+
 	unauthErr := &coreauth.Error{
 		HTTPStatus: http.StatusUnauthorized,
 		Code:       "unauthorized",
@@ -1861,7 +1861,7 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		})
 	}
 
-	// Confirm all 4 models are now omitted from /v1/models due to active error/cooldown
+
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1885,7 +1885,7 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		}
 	}
 
-	// 2. Patch auth file fields with fresh access token
+
 	patchBody := fmt.Sprintf(`{"name":%q,"access_token":"token-fresh","id_token":%q}`, fileName, teamIDToken)
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/fields", strings.NewReader(patchBody))
@@ -1896,7 +1896,7 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		t.Fatalf("PATCH fields failed: status=%d, body=%s", rec.Code, rec.Body.String())
 	}
 
-	// 3. Confirm all team models are restored in /v1/models
+
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	handler.ServeHTTP(rec, req)
@@ -1910,7 +1910,7 @@ func TestEndToEndAuthFilePatch_RestoresModelsInV1ModelsWithoutRestart(t *testing
 		}
 	}
 
-	// 4. Verify direct inference request succeeds using fresh token after PATCH
+
 	service.coreManager.RegisterExecutor(&syncTestExecutor{})
 	resp, errExec := service.coreManager.Execute(context.Background(), []string{"codex"}, cliproxyexecutor.Request{Model: "gpt-6-astra"}, cliproxyexecutor.Options{})
 	if errExec != nil || string(resp.Payload) != "token-fresh" {

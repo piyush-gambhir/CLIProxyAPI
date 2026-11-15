@@ -127,7 +127,7 @@ func TestGeminiVertexInteractions_ServiceAccount_ExecuteStream(t *testing.T) {
 	var gotQuery string
 	var gotRevision string
 
-	// Generate a 1MB payload to verify StreamScannerBuffer handles large frames without bufio.ErrTooLong
+
 	largeOutput := strings.Repeat("A", 1024*1024)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +256,7 @@ func TestGeminiVertexInteractions_ServiceAccount_WithoutOptIn_UsesGenerateConten
 		t.Fatal(errUnmarshal)
 	}
 
-	// Service account has location: "global" but NO explicit interactions opt-in
+
 	auth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-global-no-optin",
 		Provider: "vertex",
@@ -328,7 +328,7 @@ func TestGeminiVertexInteractions_RegionalServiceAccount_UsesStandardBridge(t *t
 		t.Fatal(errUnmarshal)
 	}
 
-	// Regional service account without explicit interactions opt-in
+
 	auth := &cliproxyauth.Auth{
 		ID:       "vertex-sa-regional",
 		Provider: "vertex",
@@ -443,7 +443,7 @@ func TestGeminiVertexInteractions_APIKey_WithoutOptIn_UsesGenerateContent(t *tes
 	}))
 	defer server.Close()
 
-	// Third-party relay API key without interactions: true
+
 	auth := &cliproxyauth.Auth{
 		ID:       "vertex-relay-key",
 		Provider: "vertex",

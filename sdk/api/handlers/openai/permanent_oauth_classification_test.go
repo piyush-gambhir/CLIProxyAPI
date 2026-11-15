@@ -59,10 +59,10 @@ func TestReproPermanentOAuthFailureClassification(t *testing.T) {
 			manager.RegisterExecutor(executor)
 			defer manager.StopAutoRefresh()
 
-			// This is the terminal state produced by refreshAuth when a 401
-			// refresh failure has no remaining valid access token. The upstream
-			// TestManager_RefreshAuthUnauthorizedFailureStopsAutoRefreshRetry
-			// independently verifies that transition and unscheduling behavior.
+
+
+
+
 			failed := &coreauth.Auth{
 				ID: failedID, Provider: "codex", Status: coreauth.StatusError,
 				Unavailable: true, StatusMessage: "unauthorized",
@@ -129,8 +129,8 @@ func TestReproPermanentOAuthFailureClassification(t *testing.T) {
 				t.Errorf("terminal auth reached executor %d times", executor.calls.Load())
 			}
 
-			// A healthy candidate must make this same route succeed, proving the
-			// earlier errors are not missing model registration or a bad handler.
+
+
 			healthy := &coreauth.Auth{ID: healthyID, Provider: "codex", Status: coreauth.StatusActive}
 			if _, errRegisterHealthy := manager.Register(context.Background(), healthy); errRegisterHealthy != nil {
 				t.Fatal(errRegisterHealthy)

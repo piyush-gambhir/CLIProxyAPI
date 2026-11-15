@@ -62,7 +62,7 @@ func CachedUserID(apiKey string) string {
 	return generateFakeUserID()
 }
 
-// CachedUserIDRequired returns a stable fake user ID per apiKey for request-time paths.
+
 func CachedUserIDRequired(ctx context.Context, apiKey string) (string, error) {
 	newUserID := func() (string, error) {
 		sessionID, errSessionID := CachedSessionIDRequired(ctx, apiKey)

@@ -1,6 +1,6 @@
-// Package util provides helper functions for SSH tunnel instructions and network-related tasks.
-// This includes detecting the appropriate IP address and printing commands
-// to help users connect to the local server from a remote machine.
+
+
+
 package util
 
 import (
@@ -22,12 +22,12 @@ var ipServices = []string{
 	"https://ipinfo.io/ip",
 }
 
-// getPublicIP attempts to retrieve the public IP address from a list of external services.
-// It iterates through the ipServices and returns the first successful response.
-//
-// Returns:
-//   - string: The public IP address as a string
-//   - error: An error if all services fail, nil otherwise
+
+
+
+
+
+
 func getPublicIP() (string, error) {
 	for _, service := range ipServices {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -64,13 +64,13 @@ func getPublicIP() (string, error) {
 	return "", fmt.Errorf("all IP services failed")
 }
 
-// getOutboundIP retrieves the preferred outbound IP address of this machine.
-// It uses a UDP connection to a public DNS server to determine the local IP
-// address that would be used for outbound traffic.
-//
-// Returns:
-//   - string: The outbound IP address as a string
-//   - error: An error if the IP address cannot be determined, nil otherwise
+
+
+
+
+
+
+
 func getOutboundIP() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
@@ -90,12 +90,12 @@ func getOutboundIP() (string, error) {
 	return localAddr.IP.String(), nil
 }
 
-// GetIPAddress attempts to find the best-available IP address.
-// It first tries to get the public IP address, and if that fails,
-// it falls back to getting the local outbound IP address.
-//
-// Returns:
-//   - string: The determined IP address (preferring public IPv4)
+
+
+
+
+
+
 func GetIPAddress() string {
 	publicIP, err := getPublicIP()
 	if err == nil {
@@ -109,14 +109,14 @@ func GetIPAddress() string {
 		return outboundIP
 	}
 	log.Errorf("Failed to get any IP address: %v", err)
-	return "127.0.0.1" // Fallback
+	return "127.0.0.1"
 }
 
-// PrintSSHTunnelInstructions detects the IP address and prints SSH tunnel instructions
-// for the user to connect to the local OAuth callback server from a remote machine.
-//
-// Parameters:
-//   - port: The local port number for the SSH tunnel
+
+
+
+
+
 func PrintSSHTunnelInstructions(port int) {
 	ipAddress := GetIPAddress()
 	border := "================================================================================"

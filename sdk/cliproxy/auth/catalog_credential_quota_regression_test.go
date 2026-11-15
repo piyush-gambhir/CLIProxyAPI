@@ -65,7 +65,7 @@ func TestCredentialQuotaKeepsHealthyCatalogAcrossRestart(t *testing.T) {
 			t.Fatalf("healthy API provider unexpectedly blocked for %s", model.ID)
 		}
 	}
-	// Simulate the same service restart sequence using the real .cds store.
+
 	for _, id := range []string{"audit-healthy-api", "audit-quota-oauth"} {
 		r.UnregisterClient(id)
 	}

@@ -53,7 +53,7 @@ func init() {
 	responsesWebsocketCompressionEnabled.Store(true)
 }
 
-// SetResponsesWebsocketCompressionEnabled controls compression for future upgrades.
+
 func SetResponsesWebsocketCompressionEnabled(enabled bool) {
 	responsesWebsocketCompressionEnabled.Store(enabled)
 }
@@ -66,10 +66,10 @@ var responsesWebsocketUpgrader = websocket.Upgrader{
 	},
 }
 
-// writeWebsocketCloseForUpstreamError mirrors transport-level upstream close
-// codes to the downstream WebSocket client before the connection is torn down.
-// Without this the client only observes an abnormal closure (1006) and cannot
-// apply its own close-code based handling (e.g. falling back to SSE on 1009).
+
+
+
+
 func writeWebsocketCloseForUpstreamError(conn *websocket.Conn, err error) (bool, error) {
 	if conn == nil {
 		return false, nil
@@ -132,9 +132,9 @@ func newResponsesWebsocketWriter(conn *websocket.Conn) *responsesWebsocketWriter
 	return &responsesWebsocketWriter{conn: conn}
 }
 
-// closeForUpstreamError sends a best-effort close frame without waiting behind
-// an active downstream writer. If a data or Ping write already owns writeMu,
-// the connection is closed immediately so the blocked writer and session can exit.
+
+
+
 func (w *responsesWebsocketWriter) closeForUpstreamError(err error) (bool, error) {
 	if w == nil || w.conn == nil {
 		return false, nil
@@ -231,7 +231,7 @@ func runResponsesWebsocketKeepAlive(ctx context.Context, intervals <-chan time.D
 }
 
 func queueResponsesWebsocketKeepAliveInterval(intervals chan time.Duration, interval time.Duration) {
-	// A single producer replaces a pending interval without waiting for a Ping write.
+
 	select {
 	case <-intervals:
 	default:
@@ -301,10 +301,10 @@ func (w *responsesWebsocketWriter) closeForUpstreamDisconnect(err error, wsTimel
 	return wrote
 }
 
-// isWebsocketConnectionClosedError reports whether the error only means the
-// connection was already torn down. These are expected during shutdown races
-// (the proxy closes after sending a terminal frame, or the client hangs up mid
-// write) and must not be logged as proxy failures.
+
+
+
+
 func isWebsocketConnectionClosedError(err error) bool {
 	if err == nil {
 		return false
@@ -323,7 +323,7 @@ func truncateWebsocketCloseReason(reason string, maxBytes int) string {
 		return reason
 	}
 
-	// Decode from the front so work and output stay bounded by maxBytes.
+
 	var truncated strings.Builder
 	truncated.Grow(min(len(reason), maxBytes))
 	remaining := maxBytes
@@ -413,10 +413,10 @@ func (h *OpenAIResponsesAPIHandler) authenticateResponsesWebsocketTurn(c *gin.Co
 	return result.Principal, nil
 }
 
-// ResponsesWebsocket handles websocket requests for /v1/responses.
-// It accepts `response.create` and `response.append` requests and streams
-// response events back as JSON websocket text messages. `response.interrupt`
-// is forwarded to the current Codex upstream socket without starting a new turn.
+
+
+
+
 func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 	upgrader := responsesWebsocketUpgrader
 	upgrader.EnableCompression = responsesWebsocketCompressionEnabled.Load()
@@ -426,13 +426,13 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 	}
 	writer := newResponsesWebsocketWriter(conn)
 	passthroughSessionID := uuid.NewString()
-	// After the upgrade, error-only HTTP logs cannot consume deferred bodies.
-	// Apply the policy before routing so plugin callbacks inherit it as well.
+
+
 	socketCtx, cancelSocket := context.WithCancelCause(logging.WithDeferredAPIRequestCaptureDisabled(c.Request.Context()))
 	defer cancelSocket(nil)
 	c.Request = c.Request.WithContext(socketCtx)
 	upgradeRequest := c.Request.Clone(socketCtx)
-	// Start Ping at upgrade, before opening an upstream stream can block.
+
 	var keepAliveIntervals chan time.Duration
 	var keepAliveInterval time.Duration
 	updateKeepAlive := func() {
@@ -451,8 +451,8 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		queueResponsesWebsocketKeepAliveInterval(keepAliveIntervals, interval)
 	}
 	updateKeepAlive()
-	// The reader owns the client socket so an in-flight interrupt is not stuck
-	// behind the response currently being forwarded.
+
+
 	requestLogEnabled := false
 	codexResponseSteering := false
 	if h != nil {
@@ -463,7 +463,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 	}
 	wsTimelineLog := newWebsocketTimelineLog(requestLogEnabled, websocketTimelineSourceFromContext(c))
 	localInterrupt := newResponsesLocalInterrupt()
-	// Advanced on every upstream loss: input read under an older epoch predates the loss.
+
 	var inputEpoch atomic.Uint64
 	input, inputDone := readResponsesWebsocketInput(socketCtx, cancelSocket, conn, func(payload []byte) error {
 		return h.forwardResponsesWebsocketInterrupt(socketCtx, passthroughSessionID, payload)
@@ -502,9 +502,9 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 							return
 						case disconnectErr := <-disconnectCh:
 							if provider == "codex" && codexDuplexStream.Load() {
-								// Only the selected credential's duplex stream owns closure:
-								// drain its acknowledgements and pending events in order.
-								// OAuth-only steering still leaves API keys in normal mode.
+
+
+
 								return
 							}
 							if writer.closeForUpstreamDisconnect(disconnectErr, wsTimelineLog) && disconnectErr != nil {
@@ -522,7 +522,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		releaseResponsesWebsocketToolCaches(downstreamSessionKey)
 		if wsTerminateErr != nil {
 			appendWebsocketTimelineDisconnect(wsTimelineLog, wsTerminateErr, time.Now())
-			// log.Infof("responses websocket: session closing id=%s reason=%v", passthroughSessionID, wsTerminateErr)
+
 		} else {
 			log.Infof("responses websocket: session closing id=%s", passthroughSessionID)
 		}
@@ -540,7 +540,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		if errMsg := recordedDisconnectErr.Load(); errMsg != nil {
 			h.LoggingAPIResponseError(c, errMsg)
 		}
-		// Finish control-frame diagnostics before snapshotting the timeline.
+
 		<-inputDone
 		wsTimelineLog.SetContext(c)
 	}()
@@ -550,11 +550,11 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 	var observedCompaction responsesWebsocketObservedCompactionState
 	lastResponseID := ""
 	localCompactionBoundary := false
-	// Remains pending until a generating request commits successfully.
+
 	pendingPrewarmID := ""
 	var lastResponsePendingToolCallIDs []string
 	pinnedAuthID := ""
-	// Preserve independent upstream auth affinity when a downstream session switches providers.
+
 	pinnedAuthByProvider := make(map[string]responsesWebsocketPinnedAuthState)
 	passthroughModelName := ""
 	upstreamMode := responsesWebsocketUpstreamModeUnknown
@@ -563,8 +563,8 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		if h == nil || h.AuthManager == nil {
 			return nil, false, false
 		}
-		// Prefer the current manager view so hot-reloaded transport eligibility is
-		// observed even when the execution session still holds an older auth snapshot.
+
+
 		if auth, ok := h.AuthManager.GetByID(authID); ok {
 			return auth, false, true
 		}
@@ -619,7 +619,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 				errReadMessage = context.Cause(socketCtx)
 			} else {
 				if message.Err == nil && message.Epoch < inputEpoch.Load() {
-					// Read before an upstream loss: never sent, the client resends.
+
 					if errWrite := writeResponsesWebsocketPreviousResponseNotFound(writer, wsTimelineLog, message.Payload); errWrite != nil {
 						wsTerminateErr = errWrite
 						return
@@ -639,7 +639,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 			if websocket.IsCloseError(errReadMessage, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
 				log.Infof("responses websocket: client disconnected id=%s error=%v", passthroughSessionID, errReadMessage)
 			} else {
-				// log.Warnf("responses websocket: read message failed id=%s error=%v", passthroughSessionID, errReadMessage)
+
 			}
 			return
 		}
@@ -647,13 +647,13 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 			continue
 		}
 		updateKeepAlive()
-		// log.Infof(
-		// 	"responses websocket: downstream_in id=%s type=%d event=%s payload=%s",
-		// 	passthroughSessionID,
-		// 	msgType,
-		// 	websocketPayloadEventType(payload),
-		// 	websocketPayloadPreview(payload),
-		// )
+
+
+
+
+
+
+
 		wsTimelineLog.BeginRequest()
 		wsTimelineLog.Append("request", payload, time.Now())
 
@@ -754,16 +754,16 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 				}
 				return
 			}
-			// A full response.create is already a self-contained reset and can safely
-			// establish a new upstream transport without another replay.
+
+
 		}
 		if explicitRequestModelName != "" && !useUpstreamWebsocketPassthrough {
 			passthroughModelName = ""
 		}
 
-		// A completed compaction response is direct evidence that the active target
-		// (whether a specific plugin executor, a specific auth on standard route, or a specific auth on provider route)
-		// supports compaction replay.
+
+
+
 		observedCompactionReplayAuthID := ""
 		observedCompactionSupported := false
 		if observedCompaction.modelName != "" &&
@@ -777,8 +777,8 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 				providerRouteMatches := (observedCompaction.provider == currentProvider && observedCompaction.targetModel == currentTargetModel)
 				if providerRouteMatches && observedCompaction.authID != "" {
 					if currentProvider != "" {
-						// Provider route override: validate against the auth that observed compaction on this provider route.
-						// A leftover pinnedAuthID from an earlier unrouted turn must not veto the routed compaction auth.
+
+
 						if compactionAuth, _, ok := sessionAuthByIDWithSource(observedCompaction.authID); ok && compactionAuth != nil {
 							if compactionAuth.Status == coreauth.StatusActive {
 								observedCompactionSupported = true
@@ -786,7 +786,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 							}
 						}
 					} else {
-						// Standard auth route:
+
 						if pinnedAuthID != "" {
 							if pinnedAuthID == observedCompaction.authID {
 								observedCompactionSupported = true
@@ -837,7 +837,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 					Error:      fmt.Errorf("websocket request requires array field: input"),
 				}
 			} else {
-				// Mid-connection self-contained prewarm without previous_response_id is a new transcript root.
+
 				requestJSON, updatedLastRequest, errMsg = normalizeResponseCreateTranscriptReplacement(payload, lastRequest)
 			}
 		} else if pendingPrewarmID != "" && ojson.GetBytesNoCopy(payload, "type").String() == wsRequestTypeCreate {
@@ -848,7 +848,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 					Error:      fmt.Errorf("websocket request requires array field: input"),
 				}
 			} else {
-				// No parent reference means a self-contained replacement, not a delta.
+
 				requestJSON, updatedLastRequest, errMsg = normalizeResponseCreateTranscriptReplacement(payload, lastRequest)
 			}
 		} else if nativeWebsocketPassthrough {
@@ -1000,19 +1000,19 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 		}
 		dataChan, _, errChan := h.ExecuteStreamWithAuthManager(cliCtx, h.HandlerType(), modelName, requestJSON, "")
 		if !selectedAuthObserved {
-			// Plugin/alternate routes bypass auth selection. Keep canonical HTTP-mode
-			// state instead of inheriting the previous pinned websocket mode.
+
+
 			attemptedUpstreamMode = responsesWebsocketUpstreamModeHTTP
 		}
-		// A connection-scoped continuation cannot rotate credentials in place. Suppress
-		// credential errors and make the client replay the full turn on a new socket
-		// when another eligible target can serve the replayed turn.
+
+
+
 		var lossWriteErr error
 		var replayedPinnedAuthFailure bool
 		replayPinnedAuthFailure := func(errMsg *interfaces.ErrorMessage) bool {
 			if cliproxyexecutor.IsUpstreamWebsocketTurnError(errMsg.Error) {
-				// The upstream websocket was lost: tell the client, keep its socket open, and
-				// fence the input it sent before the loss. A refused continuation is not a loss.
+
+
 				var turnErr *cliproxyexecutor.UpstreamWebsocketTurnError
 				if errors.As(errMsg.Error, &turnErr) {
 					if (turnErr.FullContextRequired || turnErr.NotSent || !codexDuplexStream.Load()) &&
@@ -1064,8 +1064,8 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 			switch {
 			case errors.Is(errForward, websocket.ErrCloseSent):
 			case isWebsocketConnectionClosedError(errForward):
-				// The client hung up while a downstream write was in flight. This is a
-				// normal shutdown race, not a proxy failure.
+
+
 				log.Debugf("responses websocket: client closed during forward id=%s error=%v", passthroughSessionID, errForward)
 			default:
 				log.Warnf("responses websocket: forward failed id=%s error=%v", passthroughSessionID, errForward)
@@ -1077,7 +1077,7 @@ func (h *OpenAIResponsesAPIHandler) ResponsesWebsocket(c *gin.Context) {
 				wsTerminateErr = lossWriteErr
 				return
 			}
-			// Keep the credential: the next full create reconnects on it, never on another one.
+
 			if (attemptedUpstreamMode == responsesWebsocketUpstreamModeWS || upstreamMode == responsesWebsocketUpstreamModeWS) && lastAttemptedAuthID != "" {
 				upstreamMode = responsesWebsocketUpstreamModeWS
 				upstreamWebsocketAuthID = lastAttemptedAuthID
@@ -1228,7 +1228,7 @@ func websocketUpgradeHeaders(req *http.Request) http.Header {
 		return headers
 	}
 
-	// Keep the same sticky turn-state across reconnects when provided by the client.
+
 	turnState := strings.TrimSpace(req.Header.Get(wsTurnStateHeader))
 	if turnState != "" {
 		headers.Set(wsTurnStateHeader, turnState)
@@ -1245,8 +1245,8 @@ func responsesWebsocketPreviousResponseNotFoundError() *interfaces.ErrorMessage 
 	}
 }
 
-// writeResponsesWebsocketUpstreamLoss reports a lost upstream websocket on the still-open client
-// socket: the turn, then every other operation that lost its outcome. An idle loss reports nothing.
+
+
 func writeResponsesWebsocketUpstreamLoss(writer *responsesWebsocketWriter, wsTimelineLog websocketTimelineAppender, errMsg *interfaces.ErrorMessage) error {
 	var turnErr *cliproxyexecutor.UpstreamWebsocketTurnError
 	if !errors.As(errMsg.Error, &turnErr) {
@@ -1267,8 +1267,8 @@ func writeResponsesWebsocketUpstreamLoss(writer *responsesWebsocketWriter, wsTim
 	return nil
 }
 
-// writeResponsesWebsocketPreviousResponseNotFound answers a continuation whose upstream socket is gone.
-// A create read before the loss is answered as not sent instead.
+
+
 func writeResponsesWebsocketPreviousResponseNotFound(writer *responsesWebsocketWriter, wsTimelineLog websocketTimelineAppender, payload []byte) error {
 	errMsg := responsesWebsocketPreviousResponseNotFoundError()
 	if ojson.GetBytesNoCopy(payload, "type").String() == wsRequestTypeCreate && !responsesWebsocketRequestRequiresCurrentUpstream(payload) {

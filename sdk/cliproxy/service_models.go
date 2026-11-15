@@ -14,17 +14,17 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-// registerModelsForAuth (re)binds provider models in the global registry using the core auth ID as client identifier.
+
 func (s *Service) registerModelsForAuth(ctx context.Context, a *coreauth.Auth) bool {
 	return s.registerModelsForAuthWithCache(ctx, a, nil)
 }
 
-// registerModelsForAuthWithCache reports only whether the publication
-// fence rejected this computation: false means a newer auth state
-// superseded it mid-computation and a completion pass must reconcile the
-// latest auth. True also covers paths that attempt no publication
-// (cancellation, plugin errors, invalid input), so it never by itself
-// proves that models were published.
+
+
+
+
+
+
 func (s *Service) registerModelsForAuthWithCache(ctx context.Context, a *coreauth.Auth, compatCache *openAICompatibilityRegistrationCache) bool {
 	return s.registerModelsForAuthWithConfigAndCache(ctx, s.currentConfig(), a, compatCache)
 }
@@ -39,9 +39,9 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	if ctx.Err() != nil {
 		return true
 	}
-	// Capture the publication fence before any runtime read or model
-	// resolution: a registration superseded while it is being computed must
-	// not overwrite or remove the newer registration when it finishes last.
+
+
+
 	fence := newModelRegistrationFence(a, cfg)
 	s.cancelStaleAntigravityProbes(a.ID)
 	if a.Disabled {
@@ -58,7 +58,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		}
 	}
 	authKind := a.AuthKind()
-	// Unregister legacy client ID (if present) to avoid double counting
+
 	if a.Runtime != nil {
 		if idGetter, ok := a.Runtime.(interface{ GetClientID() string }); ok {
 			if rid := idGetter.GetClientID(); rid != "" && rid != a.ID {
@@ -72,9 +72,9 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		provider = "openai-compatibility"
 	}
 	excluded := oauthExcludedModelsForConfig(cfg, provider, authKind)
-	// The "excluded_models" attribute holds only the credential's own exclusions.
-	// When present it takes priority over the global oauth-excluded-models config;
-	// otherwise the current global config applies, so global changes take effect without rewriting credentials.
+
+
+
 	if a.Attributes != nil {
 		if val, ok := a.Attributes["excluded_models"]; ok && strings.TrimSpace(val) != "" {
 			excluded = strings.Split(val, ",")
@@ -112,7 +112,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		}
 		models = applyExcludedModels(models, excluded)
 	case "vertex":
-		// Vertex AI Gemini supports the same model identifiers as Gemini.
+
 		models = registry.GetGeminiVertexModels()
 		if entry := resolveConfigVertexCompatKeyForConfig(cfg, a); entry != nil {
 			if len(entry.Models) > 0 {
@@ -134,9 +134,9 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 			expectedKey := s.antigravityCapabilityKey(a)
 			hints := s.cachedAntigravityHints(a)
 			if hints.ModelIDs != nil {
-				// Publish known catalogs through the same fenced, state-preserving
-				// path as refreshes. An expired catalog remains usable while HTTP
-				// is pending, including its quota and suspension projections.
+
+
+
 				s.applyAntigravityModelHints(ctx, a, provider, hints, expectedKey, a.RegistrationEpoch, expectedRegEpoch)
 				s.asyncProbeAntigravityCapabilities(ctx, a, provider)
 				return true
@@ -212,7 +212,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		}
 		models = applyExcludedModels(models, excluded)
 	default:
-		// Handle OpenAI-compatibility providers by name using config
+
 		if cfg != nil {
 			providerKey := provider
 			compatName := strings.TrimSpace(a.Provider)
@@ -310,7 +310,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 				if len(models) > 0 {
 					published = s.registerResolvedModelsForAuthFenced(a, fence, providerKey, applyModelPrefixes(models, a.Prefix, cfg.ForceModelPrefix))
 				} else {
-					// No matching provider found or models removed entirely; drop any prior registration.
+
 					published = s.unregisterModelsForAuthFenced(a, fence)
 				}
 				return published
@@ -345,13 +345,13 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	return published
 }
 
-// refreshModelRegistrationForAuth re-applies the latest model registration for
-// one auth and reconciles any concurrent auth changes that race with the
-// refresh. Callers are expected to pre-filter provider membership.
-//
-// Re-registration is deliberate: most providers start a fresh registry snapshot.
-// Native Antigravity catalogs instead use fenced replacement to preserve quota
-// and suspension state while account entitlement refreshes are pending.
+
+
+
+
+
+
+
 func (s *Service) refreshModelRegistrationForAuth(current *coreauth.Auth) bool {
 	return s.refreshModelRegistrationForAuthWithContext(context.Background(), current, nil)
 }
@@ -382,21 +382,21 @@ func (s *Service) refreshModelRegistrationForAuthWithContext(ctx context.Context
 	latest, ok := s.latestAuthForModelRegistration(current.ID)
 	if !ok || latest.Disabled {
 		if ok && latest != nil {
-			// Conditional cleanup: only remove the registration that
-			// still belongs to the disabled snapshot just observed. A
-			// concurrent re-enable/re-register advances identity or
-			// epoch and must not lose its newer publication.
+
+
+
+
 			s.unregisterModelsForAuthFenced(latest, newModelRegistrationFence(latest, s.currentConfig()))
 		}
-		// If the auth is absent, applyCoreAuthRemoval owns unregistration;
-		// a stale refresh must not delete a later re-registration.
+
+
 		s.coreManager.RefreshSchedulerEntry(current.ID)
 		return false
 	}
 
-	// Re-apply the latest auth snapshot so concurrent auth updates cannot leave
-	// stale model registrations behind. This may duplicate registration work when
-	// no auth fields changed, but keeps the refresh path simple and correct.
+
+
+
 	s.ensureExecutorsForAuthWithContext(ctx, latest, false)
 	s.registerModelsForAuthWithCache(ctx, latest, compatCache)
 	if ctx.Err() != nil {
@@ -407,9 +407,9 @@ func (s *Service) refreshModelRegistrationForAuthWithContext(ctx context.Context
 	return true
 }
 
-// latestAuthForModelRegistration returns the latest auth snapshot regardless of
-// provider membership. Callers use this after a registration attempt to restore
-// whichever state currently owns the client ID in the global registry.
+
+
+
 func (s *Service) latestAuthForModelRegistration(authID string) (*coreauth.Auth, bool) {
 	if s == nil || s.coreManager == nil || authID == "" {
 		return nil, false
@@ -752,19 +752,19 @@ func applyModelPrefixes(models []*ModelInfo, prefix string, forceModelPrefix boo
 	return out
 }
 
-// matchWildcard performs case-insensitive wildcard matching where '*' matches any substring.
+
 func matchWildcard(pattern, value string) bool {
 	if pattern == "" {
 		return false
 	}
 
-	// Fast path for exact match (no wildcard present).
+
 	if !strings.Contains(pattern, "*") {
 		return pattern == value
 	}
 
 	parts := strings.Split(pattern, "*")
-	// Handle prefix.
+
 	if prefix := parts[0]; prefix != "" {
 		if !strings.HasPrefix(value, prefix) {
 			return false
@@ -772,7 +772,7 @@ func matchWildcard(pattern, value string) bool {
 		value = value[len(prefix):]
 	}
 
-	// Handle suffix.
+
 	if suffix := parts[len(parts)-1]; suffix != "" {
 		if !strings.HasSuffix(value, suffix) {
 			return false
@@ -780,7 +780,7 @@ func matchWildcard(pattern, value string) bool {
 		value = value[:len(value)-len(suffix)]
 	}
 
-	// Handle middle segments in order.
+
 	for i := 1; i < len(parts)-1; i++ {
 		segment := parts[i]
 		if segment == "" {

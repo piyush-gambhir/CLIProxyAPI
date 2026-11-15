@@ -40,8 +40,8 @@ const oauthCallbackSuccessHTML = `<html><head><meta charset="utf-8"><title>Authe
 
 const codexAlphaSearchSourceFormat = "codex-alpha-search"
 
-// setupRoutes configures the API routes for the server.
-// It defines the endpoints and associates them with their respective handlers.
+
+
 func (s *Server) setupRoutes() {
 	healthzHandler := func(c *gin.Context) {
 		if c.Request.Method == http.MethodHead {
@@ -62,7 +62,7 @@ func (s *Server) setupRoutes() {
 	openaiResponsesHandlers.AccessManager = s.accessManager
 	s.codexLiveHandler = codexlive.NewHandler(s.handlers.AuthManager, s.cfg)
 
-	// OpenAI compatible API routes
+
 	v1 := s.engine.Group("/v1")
 	v1.Use(AuthMiddleware(s.accessManager))
 	{
@@ -117,7 +117,7 @@ func (s *Server) setupRoutes() {
 		openaiV1.GET("/videos/:video_id", openaiHandlers.VideosRetrieve)
 	}
 
-	// Codex CLI direct route aliases (chatgpt_base_url compatible)
+
 	codexDirect := s.engine.Group("/backend-api/codex")
 	codexDirect.Use(AuthMiddleware(s.accessManager))
 	{
@@ -127,7 +127,7 @@ func (s *Server) setupRoutes() {
 		codexDirect.POST("/alpha/search", s.codexAlphaSearch)
 	}
 
-	// Gemini compatible API routes
+
 	v1beta := s.engine.Group("/v1beta")
 	v1beta.Use(AuthMiddleware(s.accessManager))
 	{
@@ -137,7 +137,7 @@ func (s *Server) setupRoutes() {
 		v1beta.GET("/models/*action", s.geminiGetHandler(geminiHandlers))
 	}
 
-	// Root endpoint
+
 	s.engine.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "CLI Proxy API Server",
@@ -149,9 +149,9 @@ func (s *Server) setupRoutes() {
 		})
 	})
 
-	// OAuth callback endpoints (reuse main server port)
-	// These endpoints receive provider redirects and persist
-	// the short-lived code/state for the waiting goroutine.
+
+
+
 	s.engine.GET("/anthropic/callback", func(c *gin.Context) {
 		code := c.Query("code")
 		state := c.Query("state")
@@ -231,7 +231,7 @@ func (s *Server) setupRoutes() {
 	s.engine.GET("/callback", devinCallbackHandler)
 	s.engine.GET("/devin/callback", devinCallbackHandler)
 
-	// Management routes are registered lazily by registerManagementRoutes when a secret is configured.
+
 }
 
 func (s *Server) codexAlphaSearchModelRouterHost() handlers.PluginModelRouterHost {
@@ -315,8 +315,8 @@ func sanitizeCodexAlphaSearchBody(body []byte) []byte {
 	return sanitizedBody
 }
 
-// rewriteCodexAlphaSearchModel replaces the top-level model field with the
-// credential-resolved upstream model before the request is forwarded.
+
+
 func rewriteCodexAlphaSearchModel(body []byte, upstreamModel string) []byte {
 	upstreamModel = strings.TrimSpace(upstreamModel)
 	if upstreamModel == "" {
@@ -354,9 +354,9 @@ func homeSelectionAttemptContext(ctx context.Context, selection *auth.HomeDispat
 	return selection.AttemptContext(ctx)
 }
 
-// codexAlphaSearch forwards the standalone search endpoint used by current
-// Codex clients. Unlike /responses, this payload is already in Codex search
-// format and must not pass through a protocol translator.
+
+
+
 func (s *Server) codexAlphaSearch(c *gin.Context) {
 	if s == nil || s.handlers == nil || s.handlers.AuthManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Codex auth manager unavailable"})
@@ -463,8 +463,8 @@ func (s *Server) codexAlphaSearch(c *gin.Context) {
 		}
 		upstreamURL := "https://chatgpt.com/backend-api/codex/alpha/search"
 		requestBody := upstreamRequestBody
-		// API-key Alpha Search reuses normal credential-aware model resolution so
-		// CPA routing prefixes and model aliases are not forwarded upstream.
+
+
 		if current.AuthKind() == auth.AuthKindAPIKey {
 			baseURL := ""
 			if current.Attributes != nil {
@@ -564,8 +564,8 @@ func (s *Server) codexAlphaSearch(c *gin.Context) {
 	_, _ = c.Writer.Write(upstreamBody)
 }
 
-// AttachWebsocketRoute registers a websocket upgrade handler on the primary Gin engine.
-// Home mode does not support AI Studio and must not expose its websocket gateway.
+
+
 func (s *Server) AttachWebsocketRoute(path string, handler http.Handler) {
 	if s == nil || s.engine == nil || handler == nil {
 		return
@@ -608,9 +608,9 @@ func (s *Server) AttachWebsocketRoute(path string, handler http.Handler) {
 	s.engine.GET(trimmed, conditionalAuth, finalHandler)
 }
 
-// isAnthropicModelsRequest reports whether a /v1/models request should be served in
-// Anthropic format. Anthropic API clients send the Anthropic-Version header; Claude
-// Code additionally uses a claude-cli User-Agent.
+
+
+
 func isAnthropicModelsRequest(c *gin.Context) bool {
 	if c.GetHeader("Anthropic-Version") != "" {
 		return true
@@ -618,10 +618,10 @@ func isAnthropicModelsRequest(c *gin.Context) bool {
 	return strings.HasPrefix(c.GetHeader("User-Agent"), "claude-cli")
 }
 
-// unifiedModelsHandler creates a unified handler for the /v1/models endpoint
-// that routes to different handlers based on the request.
-// Anthropic API requests (Anthropic-Version header, or a claude-cli User-Agent)
-// route to the Claude handler, otherwise they route to the OpenAI handler.
+
+
+
+
 func (s *Server) unifiedModelsHandler(openaiHandler *openai.OpenAIAPIHandler, claudeHandler *claude.ClaudeCodeAPIHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if grokbuild.IsGrokShellUserAgent(c.GetHeader("User-Agent")) {
@@ -645,7 +645,7 @@ func (s *Server) unifiedModelsHandler(openaiHandler *openai.OpenAIAPIHandler, cl
 			return
 		}
 
-		// Route to Claude handler for Anthropic API requests.
+
 		if isAnthropicModelsRequest(c) {
 			claudeHandler.ClaudeModels(c)
 		} else {
@@ -707,8 +707,8 @@ func (s *Server) writeModelListResponse(c *gin.Context, sourceFormat string, pay
 	c.JSON(http.StatusOK, payload)
 }
 
-// handleHomeCodexClientModels builds the Codex client catalog from Home model IDs.
-// Template metadata still comes from the local/remote codex_client_models catalog.
+
+
 func (s *Server) handleHomeCodexClientModels(c *gin.Context, clientVersion string) {
 	entries, ok := s.loadHomeModelEntries(c)
 	if !ok {
@@ -738,8 +738,8 @@ func (s *Server) handleHomeCodexClientModels(c *gin.Context, clientVersion strin
 	if responsesclaude.ClientToolSearchEnabled() {
 		payload = codexmodels.BuildResponseForClientWithSearchToolRoutes(models, nil, homeProvidersForModel(entries), webSearchCapabilityForModel, applyPatchCapabilityForModel, homeToolSearchCapabilityForModel(entries), optimizeMultiAgentV2, clientVersion)
 	} else {
-		// upstream.claude.tool-search off keeps the catalog that predates
-		// tool_search, which never consulted Home routes for search support.
+
+
 		payload = codexmodels.BuildResponseForClientWithToolCapabilities(models, nil, webSearchCapabilityForModel, applyPatchCapabilityForModel, nil, optimizeMultiAgentV2, clientVersion)
 	}
 	body, errMarshal := codexmodels.MarshalCompact(payload)
@@ -750,8 +750,8 @@ func (s *Server) handleHomeCodexClientModels(c *gin.Context, clientVersion strin
 	s.writeModelListResponse(c, "openai", body)
 }
 
-// homeApplyPatchCapabilityForModel uses only Home's exact public routing evidence,
-// never the local model registry or the template's metadata model ID.
+
+
 func homeApplyPatchCapabilityForModel(entries []homeModelEntry, manager *auth.Manager) codexmodels.ApplyPatchCapabilityForModelFunc {
 	providersForModel := homeProvidersForModel(entries)
 	return func(id string) bool {
@@ -759,8 +759,8 @@ func homeApplyPatchCapabilityForModel(entries []homeModelEntry, manager *auth.Ma
 	}
 }
 
-// homeProvidersForModel returns Home's routing providers for an exact public
-// model ID. An empty entry stands for an unknown route so it can veto support.
+
+
 func homeProvidersForModel(entries []homeModelEntry) codexmodels.ProvidersForModelFunc {
 	providersByID := make(map[string][]string, len(entries))
 	for _, entry := range entries {
@@ -769,8 +769,8 @@ func homeProvidersForModel(entries []homeModelEntry) codexmodels.ProvidersForMod
 		if len(entry.providers) == 0 {
 			providersByID[id] = append(providersByID[id], "")
 		}
-		// The decoder omits empty section names from providers, but an unknown
-		// route must still veto support when combined with a known section.
+
+
 		for _, route := range entry.nativeCapabilityRoutes {
 			if strings.TrimSpace(route.Provider) == "" {
 				providersByID[id] = append(providersByID[id], "")
@@ -782,9 +782,9 @@ func homeProvidersForModel(entries []homeModelEntry) codexmodels.ProvidersForMod
 	}
 }
 
-// homeToolSearchCapabilityForModel trusts Home's per-route tool_search flag and
-// requires it on every route of the model. A Home that predates the flag never
-// enables native tool search.
+
+
+
 func homeToolSearchCapabilityForModel(entries []homeModelEntry) codexmodels.ToolSearchCapabilityForModelFunc {
 	routesByID := make(map[string][]registry.NativeCapabilityRoute, len(entries))
 	for _, entry := range entries {
@@ -1110,9 +1110,9 @@ func homeGeminiModelMatches(entry homeModelEntry, action string) bool {
 	return action == id || action == "models/"+id || normalizedAction == normalizedID
 }
 
-// homeModelsAuthStatus inspects a home models response for an authentication/error envelope.
-// It returns the HTTP status code to surface (401 for credential issues, 502 otherwise)
-// and true when the payload is an error response rather than model data.
+
+
+
 func homeModelsAuthStatus(raw []byte) (int, bool) {
 	errType := homeModelsErrorType(raw)
 	if errType == "" {
@@ -1186,7 +1186,7 @@ func decodeHomeModels(raw []byte) ([]homeModelEntry, error) {
 	if bySection == nil {
 		return nil, fmt.Errorf("home models payload is not an object")
 	}
-	// The error envelope must never be interpreted as a provider model section.
+
 	if _, hasError := bySection["error"]; hasError {
 		return nil, fmt.Errorf("home models payload contains an error envelope")
 	}
@@ -1281,8 +1281,8 @@ func decodeHomeModels(raw []byte) ([]homeModelEntry, error) {
 	}
 
 	sort.Slice(out, func(i, j int) bool { return out[i].id < out[j].id })
-	// An empty catalog is valid when the client's access scopes have no routes.
-	// Non-empty sections with no usable model IDs still indicate malformed data.
+
+
 	if len(out) == 0 && hasModelRecords {
 		return nil, fmt.Errorf("home models payload contains no models")
 	}
@@ -1354,7 +1354,7 @@ func homeModelInt64Value(model map[string]any, keys ...string) int64 {
 	return 0
 }
 
-// Invalid or unrepresentable provider limits must not wrap into advertised capabilities.
+
 func homeModelTokenLimit(model map[string]any, keys ...string) int {
 	value := homeModelInt64Value(model, keys...)
 	if value < 0 || uint64(value) > uint64(^uint(0)>>1) {

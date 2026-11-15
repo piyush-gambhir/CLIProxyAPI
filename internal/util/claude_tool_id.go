@@ -19,9 +19,9 @@ var (
 	claudeToolUseIDCounter      uint64
 )
 
-// SanitizeClaudeToolID ensures the given id conforms to Claude's
-// tool_use.id regex ^[a-zA-Z0-9_-]+$.  Non-conforming characters are
-// replaced with '_'; an empty result gets a generated fallback.
+
+
+
 func SanitizeClaudeToolID(id string) string {
 	s := claudeToolUseIDSanitizer.ReplaceAllString(id, "_")
 	if s == "" {
@@ -30,9 +30,9 @@ func SanitizeClaudeToolID(id string) string {
 	return s
 }
 
-// SanitizeClaudeFunctionName ensures a function or tool name conforms to Claude's
-// requirements: ^[a-zA-Z0-9_-]{1,64}$. Non-conforming characters (including dots and colons
-// commonly emitted by MCP tools) are replaced with '_'.
+
+
+
 func SanitizeClaudeFunctionName(name string) string {
 	if name == "" {
 		return ""
@@ -47,9 +47,9 @@ func SanitizeClaudeFunctionName(name string) string {
 	return s
 }
 
-// GeminiClaudeToolUseID returns a stable Claude-facing ID for a provider-native
-// Gemini function call. The opaque ID lets the executor recover the exact
-// provider call from its replay ledger instead of trusting client-mutated args.
+
+
+
 func GeminiClaudeToolUseID(callID, name, argsRaw string) string {
 	callID = strings.TrimSpace(callID)
 	name = strings.TrimSpace(name)
@@ -70,8 +70,8 @@ func GeminiClaudeToolUseID(callID, name, argsRaw string) string {
 	return geminiClaudeToolUseIDPrefix + hex.EncodeToString(sum[:16])
 }
 
-// IsGeminiClaudeToolUseID reports whether id belongs to the reserved
-// Claude-facing Gemini provenance namespace.
+
+
 func IsGeminiClaudeToolUseID(id string) bool {
 	id = strings.TrimSpace(id)
 	if !strings.HasPrefix(id, geminiClaudeToolUseIDPrefix) {

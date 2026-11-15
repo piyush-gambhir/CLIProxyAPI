@@ -13,10 +13,10 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// CredentialFileName returns the filename used to persist Claude OAuth credentials.
-// The organization hash is preferred to keep organizations with the same email
-// distinct. The account hash is used when no organization is available, and the
-// legacy email-based format remains the fallback.
+
+
+
+
 func CredentialFileName(email, organizationUUID, accountUUID string) string {
 	email = strings.TrimSpace(email)
 	identity := strings.TrimSpace(organizationUUID)
@@ -32,10 +32,10 @@ func CredentialFileName(email, organizationUUID, accountUUID string) string {
 	return fmt.Sprintf("claude-%s-%s.json", identityHash, email)
 }
 
-// FindMatchingLegacyCredential locates a prior filename for the same Claude
-// identity as target. In addition to the email-only legacy name, an
-// account-hashed name can precede an organization-hashed target when an earlier
-// login did not return organization identity.
+
+
+
+
 func FindMatchingLegacyCredential(ctx context.Context, store coreauth.Store, target *coreauth.Auth) (*coreauth.Auth, error) {
 	if store == nil || !isHashedCredentialTarget(target) {
 		return nil, nil

@@ -43,7 +43,7 @@ func TestAntigravityStalledAccountDoesNotBlockOtherRetries(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		done := make(chan struct{})
 		go func() { defer close(done); svc.runAntigravityModelRefresh(ctx) }()
-		// Synthetic time: every possible first retry deadline is within this window.
+
 		time.Sleep(10 * time.Minute)
 		synctest.Wait()
 		attempts, stalledAttempts := calls.Load(), stalledCalls.Load()
@@ -106,7 +106,7 @@ func TestAntigravityRefreshBoundsQueuedWorkAndCancels(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		resetAntigravityCapabilityCache()
 		defer resetAntigravityCapabilityCache()
-		// Blocked semaphore operations must belong to this synthetic-time bubble.
+
 		slots := antigravityProbeSlots
 		antigravityProbeSlots = make(chan struct{}, cap(slots))
 		defer func() { antigravityProbeSlots = slots }()
@@ -133,13 +133,13 @@ func TestAntigravityRefreshBoundsQueuedWorkAndCancels(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		done := make(chan struct{})
 		go func() { defer close(done); svc.runAntigravityModelRefresh(ctx) }()
-		time.Sleep(2 * time.Minute) // Synthetic time: native probes are waiting for admission.
+		time.Sleep(2 * time.Minute)
 		synctest.Wait()
 		beforeAdmission := calls.Load()
 		for range cap(antigravityProbeSlots) {
 			<-antigravityProbeSlots
 		}
-		time.Sleep(8 * time.Minute) // Repeated scans must not accumulate followers.
+		time.Sleep(8 * time.Minute)
 		synctest.Wait()
 		connected := calls.Load()
 		svc.antigravityProbeMu.Lock()

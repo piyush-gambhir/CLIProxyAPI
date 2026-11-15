@@ -53,7 +53,7 @@ func TestPatchAuthFileStatusInvokesPostAuthPersistHook(t *testing.T) {
 		return nil
 	})
 
-	// 1. Disable the credential
+
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	req := httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"codex-test.json","disabled":true}`))
@@ -72,7 +72,7 @@ func TestPatchAuthFileStatusInvokesPostAuthPersistHook(t *testing.T) {
 		t.Fatalf("expected hook call auth to be disabled, got %+v", hookCalls[0])
 	}
 
-	// 2. Re-enable the credential
+
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"codex-test.json","disabled":false}`))
@@ -234,13 +234,13 @@ func TestPatchAuthFileStatusRestoresModelsViaSyncHook(t *testing.T) {
 		t.Fatalf("register auth: %v", errRegister)
 	}
 
-	// Initial model registration
+
 	reg.RegisterClient(authID, "codex", []*registry.ModelInfo{
 		{ID: "gpt-6-astra", DisplayName: "GPT-6 Astra"},
 	})
 
 	h := NewHandlerWithoutConfigFilePath(&config.Config{AuthDir: authDir}, manager)
-	// Wire postAuthPersistHook to synchronize registry models as runtimeAuthSyncHook does
+
 	h.SetPostAuthPersistHook(func(_ context.Context, a *coreauth.Auth) error {
 		if a == nil || a.ID == "" {
 			return nil
@@ -255,7 +255,7 @@ func TestPatchAuthFileStatusRestoresModelsViaSyncHook(t *testing.T) {
 		return nil
 	})
 
-	// Step 1: Confirm models exist before disabling
+
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
@@ -270,7 +270,7 @@ func TestPatchAuthFileStatusRestoresModelsViaSyncHook(t *testing.T) {
 		t.Fatalf("expected 1 initial model, got: %s", rec.Body.String())
 	}
 
-	// Step 2: Disable the credential
+
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	req := httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"codex-models.json","disabled":true}`))
@@ -290,7 +290,7 @@ func TestPatchAuthFileStatusRestoresModelsViaSyncHook(t *testing.T) {
 		t.Fatalf("expected 0 models after disable, got: %s", rec.Body.String())
 	}
 
-	// Step 3: Re-enable the credential
+
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	req = httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"codex-models.json","disabled":false}`))
@@ -301,7 +301,7 @@ func TestPatchAuthFileStatusRestoresModelsViaSyncHook(t *testing.T) {
 		t.Fatalf("PatchAuthFileStatus re-enable failed: %s", rec.Body.String())
 	}
 
-	// Step 4: Confirm models are restored without restart
+
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v0/management/auth-files/models?name="+fileName, nil)
@@ -340,7 +340,7 @@ func TestPatchPluginVirtualSourceStatusInvokesPostAuthPersistHook(t *testing.T) 
 		return nil
 	})
 
-	// Disable the source file
+
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	req := httptest.NewRequest(http.MethodPatch, "/v0/management/auth-files/status", strings.NewReader(`{"name":"source-sync.json","disabled":true}`))
@@ -361,7 +361,7 @@ func TestPatchPluginVirtualSourceStatusInvokesPostAuthPersistHook(t *testing.T) 
 		}
 	}
 
-	// Re-enable the source file
+
 	hookCalls = nil
 	rec = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(rec)

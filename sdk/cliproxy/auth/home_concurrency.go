@@ -20,13 +20,13 @@ const (
 
 var ErrMalformedHomeConcurrencyTuple = errors.New("malformed Home concurrency tuple")
 
-// HomeConcurrencyBusyError is a trusted, Home-originated concurrency admission failure.
+
 type HomeConcurrencyBusyError struct {
 	cause      *Error
 	retryAfter time.Duration
 }
 
-// NewHomeConcurrencyBusyError creates a typed Home concurrency busy error.
+
 func NewHomeConcurrencyBusyError(message string, retryAfter time.Duration) error {
 	message = strings.TrimSpace(message)
 	if message == "" {
@@ -51,7 +51,7 @@ func (e *HomeConcurrencyBusyError) Error() string {
 	return e.cause.Error()
 }
 
-// Unwrap preserves the Home error's code, retryability, and status for errors.As callers.
+
 func (e *HomeConcurrencyBusyError) Unwrap() error {
 	if e == nil {
 		return nil
@@ -95,7 +95,7 @@ func validateAccountedHomeConcurrencyTuple(tuple homeConcurrencyTuple) error {
 	return nil
 }
 
-// canonicalHomeConcurrencyModelKey removes recognized reasoning suffixes from a Home limiter model key.
+
 func canonicalHomeConcurrencyModelKey(model string) string {
 	if !utf8.ValidString(model) {
 		return ""
@@ -278,15 +278,15 @@ func verifyAccountedHomeConcurrencyIdentity(tuple homeConcurrencyTuple, auth *Au
 	return nil
 }
 
-// SafeResponseHeaders returns trusted response headers only for concrete
-// retry/cooldown errors.
+
+
 func SafeResponseHeaders(err error) http.Header {
-	// An exhausted Home round owns the aggregated multi-credential deadline;
-	// a per-attempt trusted annotation deeper in the chain must not replace it.
+
+
 	var exhausted *homeRetryRoundExhaustedError
 	if errors.As(err, &exhausted) && exhausted != nil {
-		// A nil aggregate means immediate or no aggregate hint; the last
-		// attempt's positive hint must not replace that decision.
+
+
 		if retryAfter := exhausted.RetryAfter(); retryAfter != nil {
 			return safeRetryAfterHeader(*retryAfter)
 		}

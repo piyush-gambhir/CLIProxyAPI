@@ -10,12 +10,12 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// TestIssue6193_Sonnet55ToolChangeBeta verifies that Sonnet 5.5 receives the
-// mid-conversation-tool-changes-2026-07-01 beta, while Sonnet 5 remains excluded,
-// and that on the Claude OAuth / CLI-fingerprint path the beta reaches Anthropic.
+
+
+
 func TestIssue6193_Sonnet55ToolChangeBeta(t *testing.T) {
-	// 1. In claudeCodeCLIBetas, Sonnet 5.5 (and dated/bracket variants) must include
-	// mid-conversation-tool-changes-2026-07-01, while Sonnet 5 must remain excluded.
+
+
 	sonnet55Variants := []string{
 		"claude-sonnet-5-5",
 		"claude-sonnet-5-5-20261001",
@@ -58,9 +58,9 @@ func TestIssue6193_Sonnet55ToolChangeBeta(t *testing.T) {
 		}
 	}
 
-	// 2. Outgoing Anthropic-Beta on Claude OAuth / CLI fingerprint path for claude-sonnet-5-5
-	// must contain mid-conversation-tool-changes-2026-07-01, both when caller sends an explicit beta
-	// and when caller sends no client beta.
+
+
+
 	body := []byte(`{
 		"model": "claude-sonnet-5-5",
 		"max_tokens": 64,

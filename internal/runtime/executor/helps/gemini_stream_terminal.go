@@ -7,7 +7,7 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// IsGeminiTerminalStreamChunk recognizes terminal output from Gemini stream translators.
+
 func IsGeminiTerminalStreamChunk(chunk []byte) bool {
 	for _, line := range bytes.Split(chunk, []byte("\n")) {
 		trimmed := bytes.TrimSpace(line)

@@ -119,7 +119,7 @@ func TestGeminiVertexOpenAPI_ConfigLocationFallback(t *testing.T) {
 		t.Fatalf("attribute location = %q, want us-east5", got)
 	}
 
-	// Verify full resource base-url with /locations/.../publishers/google/models honors openapi-location in actual HTTP path
+
 	var gotPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
@@ -160,7 +160,7 @@ func TestGeminiVertexOpenAPI_ConfigLocationFallback(t *testing.T) {
 		t.Fatalf("Execute(fullBase) path = %q, want %q", gotPath, wantPath)
 	}
 
-	// Verify full global base_url + regional location without openapi_location preserves /locations/global for Execute & ExecuteStream
+
 	var saPaths []string
 	saServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/token" {

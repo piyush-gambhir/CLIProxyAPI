@@ -48,7 +48,7 @@ func TestApplyOAuthSettings_AliasedModel(t *testing.T) {
 		},
 	}
 
-	// Model was aliased: ID is custom-sol, MetadataModelID is gpt-6-sol
+
 	models := []*ModelInfo{
 		{ID: "custom-sol", MetadataModelID: "gpt-6-sol", ContextLength: 272000},
 	}
@@ -150,7 +150,7 @@ func TestApplyOAuthSettings_SkipsAPIKey(t *testing.T) {
 		},
 	}
 
-	// An API-key credential with its own configured max-context-length
+
 	models := []*ModelInfo{
 		{ID: "gpt-6-sol", ContextLength: 1048576, MaxContextLength: 1048576},
 	}

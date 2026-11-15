@@ -388,7 +388,7 @@ func TestTargetedOAuthReloginAntigravityRejectsMismatchedAccountAndUpdatesMatchi
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/v8/management/oauth/status", h.GetAuthStatus)
 
-	// 1. Mismatched account (b@x.test) must be rejected and must NOT write antigravity-b@x.test.json.
+
 	wMismatch := httptest.NewRecorder()
 	reqMismatch := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"antigravity","name":"antigravity-a@x.test.json"}`))
 	reqMismatch.Header.Set("Content-Type", "application/json")
@@ -420,7 +420,7 @@ func TestTargetedOAuthReloginAntigravityRejectsMismatchedAccountAndUpdatesMatchi
 		t.Fatalf("target file changed after mismatched login: %s", string(afterMismatchBytes))
 	}
 
-	// 2. Matching account (a@x.test) updates target file in place and reports adopted status.
+
 	agSvc.email = "a@x.test"
 	agSvc.accessToken = "ag-fresh-token-match"
 	wMatch := httptest.NewRecorder()
@@ -499,7 +499,7 @@ func TestTargetedOAuthReloginKimiUpdatesTargetFileWithoutAddingNewFiles(t *testi
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/v8/management/oauth/status", h.GetAuthStatus)
 
-	// Domain mismatch ("kimi" with domain "kimi.ai" targeting a kimi.com credential) must return 400.
+
 	wDomainMismatch := httptest.NewRecorder()
 	reqDomainMismatch := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"kimi","domain":"kimi.ai","name":"kimi-1700000000000.json"}`))
 	reqDomainMismatch.Header.Set("Content-Type", "application/json")
@@ -508,7 +508,7 @@ func TestTargetedOAuthReloginKimiUpdatesTargetFileWithoutAddingNewFiles(t *testi
 		t.Fatalf("expected 400 for kimi.ai domain against kimi.com target, got %d: %s", wDomainMismatch.Code, wDomainMismatch.Body.String())
 	}
 
-	// Two targeted logins in a row must both update kimi-1700000000000.json in place and keep file count at 1.
+
 	for i, tok := range []string{"kimi-access-relogin-1", "kimi-access-relogin-2"} {
 		kimiSvc.accessToken = tok
 		kimiSvc.refreshToken = "kimi-refresh-" + tok
@@ -644,7 +644,7 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 	router.POST("/v8/management/oauth/callback", h.PostOAuthCallbackV8)
 	router.GET("/v8/management/oauth/status", h.GetAuthStatus)
 
-	// 1. Claude targeted relogin via auth_index (omitting name & provider) rejects mismatched account_uuid, then succeeds on match.
+
 	claudeSvc.accountUUID = "uuid-wrong"
 	wClaudeMismatch := httptest.NewRecorder()
 	reqClaudeMismatch := httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"auth_index":"`+claudeAuth.Index+`"}`))
@@ -679,7 +679,7 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 		t.Fatalf("claude match status = %#v, want ok & adopted", st)
 	}
 
-	// 2. xAI mismatch rejected, match updates xai-custom.json in place.
+
 	xaiSvc.subject = "sub-wrong"
 	wXAIMismatch := httptest.NewRecorder()
 	router.ServeHTTP(wXAIMismatch, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"xai","name":"xai-custom.json"}`)))
@@ -698,7 +698,7 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 		t.Fatalf("xai match status = %#v, want ok & adopted", st)
 	}
 
-	// 3. Meta mismatch rejected, match updates meta-custom.json in place.
+
 	metaSvc.email = "wrong@x.test"
 	wMetaMismatch := httptest.NewRecorder()
 	router.ServeHTTP(wMetaMismatch, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"meta","name":"meta-custom.json"}`)))
@@ -717,7 +717,7 @@ func TestTargetedOAuthReloginClaudeXAIMetaDevinAndAuthIndexVerify(t *testing.T) 
 		t.Fatalf("meta match status = %#v, want ok & adopted", st)
 	}
 
-	// 4. Devin mismatch rejected, match updates devin-custom.json in place.
+
 	devinUserID = "usr-wrong"
 	wDevinMismatch := httptest.NewRecorder()
 	router.ServeHTTP(wDevinMismatch, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"devin","name":"devin-custom.json"}`)))
@@ -745,7 +745,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 	authDir := t.TempDir()
 	manager := coreauth.NewManager(nil, nil, nil)
 
-	// 1. Kimi domain isolation when provider is omitted or auth_index is used.
+
 	kimiComAuth := &coreauth.Auth{
 		ID:             "kimi-com-target.json",
 		FileName:       "kimi-com-target.json",
@@ -792,7 +792,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		}
 	}
 
-	// Commit-time guard also rejects cross-domain Kimi overwrite.
+
 	crossDomainState := "kimi-cross-domain-commit"
 	RegisterOAuthSession(crossDomainState, "kimi")
 	SetOAuthSessionTarget(crossDomainState, oauthRecoveryTarget{
@@ -810,7 +810,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("expected commitAndCompleteBuiltinOAuthSession to reject cross-domain kimi-ai record for kimi target")
 	}
 
-	// 2. Claude organization_uuid isolation: same email + account_uuid in a different organization_uuid must be rejected.
+
 	claudeOrgSvc := &targetedTestClaudeOAuthService{
 		authDir:     authDir,
 		email:       "a@x.test",
@@ -864,7 +864,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("claude org match status = %#v, want ok & adopted", st)
 	}
 
-	// 3. xAI optional identity fields: subject-only or email-only re-login succeeds and preserves the other field; conflicting field fails.
+
 	xaiSvc := &targetedTestXAIOAuthService{
 		email:       "",
 		subject:     "sub-a",
@@ -914,7 +914,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("saved xai-both.json after sub-only login = %#v, want preserved email=a@x.test and sub=sub-a", savedXAIMap)
 	}
 
-	// Email-only login also succeeds and preserves sub.
+
 	xaiSvc.email = "a@x.test"
 	xaiSvc.subject = ""
 	xaiSvc.accessToken = "xai-email-only-fresh"
@@ -935,7 +935,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("saved xai-both.json after email-only login = %#v, want preserved email=a@x.test and sub=sub-a", savedXAIMap2)
 	}
 
-	// Conflicting email with matching sub must be rejected.
+
 	xaiSvc.email = "conflict@x.test"
 	xaiSvc.subject = "sub-a"
 	wXAIConflict := httptest.NewRecorder()
@@ -946,7 +946,7 @@ func TestTargetedOAuthReloginReviewEdgeCasesAndVerification(t *testing.T) {
 		t.Fatalf("xai conflicting email status = %#v, want error", st)
 	}
 
-	// 4. Targeted completion with verify=true runs VerifyInference and reports verification fields.
+
 	agPath := filepath.Join(authDir, "ag-verify.json")
 	agMeta := map[string]any{
 		"type":          "antigravity",

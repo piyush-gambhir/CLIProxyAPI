@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// These snapshots keep assertions independent of the compact production layout.
+
 func (s *weightedPoolState) currentForTest() map[string]int64 {
 	current := make(map[string]int64, len(s.members))
 	for _, member := range s.members {
@@ -33,8 +33,8 @@ func (s *weightedPoolState) hasCurrentForTest() bool {
 	return false
 }
 
-// TestWeightedPoolDigestCollisionIsolation forces digest hits for different exact
-// identities, including a matching state behind a collision-chain head.
+
+
 func TestWeightedPoolDigestCollisionIsolation(t *testing.T) {
 	for _, unrelated := range []*weightedPoolState{
 		weightedPoolForTest("other-route", map[string]int64{"a": 1, "b": 1}, map[string]int64{"a": 7, "b": -7}),
@@ -54,7 +54,7 @@ func TestWeightedPoolDigestCollisionIsolation(t *testing.T) {
 			}
 			t.Cleanup(func() { first.finish(false) })
 			matching := first.state
-			// Put the nonmatching state first to exercise a full chain lookup.
+
 			matching.next, unrelated.next, selector.states[key] = nil, matching, unrelated
 			_, second := selector.reserve("route", []*Auth{{ID: "a"}, {ID: "b"}}, "a")
 			if second == nil || second.state != matching || selector.stateCount != 2 {
@@ -69,7 +69,7 @@ func TestWeightedPoolDigestCollisionIsolation(t *testing.T) {
 			if matching.hasCurrentForTest() || matching.inFlight != 0 || len(matching.pendingForTest()) != 0 {
 				t.Fatal("matching pool did not balance")
 			}
-			// Capacity still counts pools, not just distinct digest buckets.
+
 			_, third := selector.reserve("third-route", []*Auth{{ID: "a"}}, "")
 			third.finish(true)
 			if selector.stateCount != 1 || len(selector.states) != 1 {

@@ -88,10 +88,10 @@ func TestFixCLIToolResponsePreservesObjectNormalization(t *testing.T) {
 	}
 }
 
-// TestConvertGeminiRequestToAntigravityBoundsLargePayloadCopies keeps the number of
-// full-payload copies bounded for large inline data. The assertions run directly in
-// the test (not inside testing.Benchmark) so a regression fails loudly instead of
-// being swallowed by a discarded benchmark result.
+
+
+
+
 func TestConvertGeminiRequestToAntigravityBoundsLargePayloadCopies(t *testing.T) {
 	const inlineDataSize = 4 << 20
 	input := []byte(`{"contents":[{"role":"user","parts":[{"inlineData":{"mimeType":"image/png","data":"` +
@@ -113,8 +113,8 @@ func TestConvertGeminiRequestToAntigravityBoundsLargePayloadCopies(t *testing.T)
 		t.Fatalf("request.safetySettings = %s, want array", got.Raw)
 	}
 
-	// Wrapping the request in the Antigravity envelope and setting the model each
-	// allocate one payload-sized buffer; everything beyond that is a regression.
+
+
 	const allowedCopies = 2
 	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > allowedCopies*inlineDataSize {
 		t.Fatalf("conversion allocated %d bytes for a %d byte payload, want at most %d",

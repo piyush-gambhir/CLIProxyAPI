@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-// referenceHasClientSupportingWebSearch recomputes the web-search aggregate with
-// the original full scan. The index must agree with it in every state the
-// registry can reach, so tests compare the fast path against this oracle
-// instead of only asserting hand-picked expectations.
+
+
+
+
 func referenceHasClientSupportingWebSearch(r *ModelRegistry, modelID, provider, excludeClientID string) bool {
 	for clientID, infos := range r.clientModelInfos {
 		if clientID == excludeClientID {
@@ -26,8 +26,8 @@ func referenceHasClientSupportingWebSearch(r *ModelRegistry, modelID, provider, 
 	return false
 }
 
-// assertWebSearchIndexMatchesScan verifies the incremental index against the
-// full scan for every client/model/provider combination currently registered.
+
+
 func assertWebSearchIndexMatchesScan(t *testing.T, r *ModelRegistry, context string) {
 	t.Helper()
 	r.mutex.RLock()
@@ -52,8 +52,8 @@ func assertWebSearchIndexMatchesScan(t *testing.T, r *ModelRegistry, context str
 				}
 			}
 		}
-		// Cross-check per-client exclusion, which the index answers by
-		// subtracting the excluded client instead of skipping it.
+
+
 		for clientID := range r.clientModelInfos {
 			want := referenceHasClientSupportingWebSearch(r, modelID, "", clientID)
 			got := r.hasClientSupportingWebSearchLocked(modelID, "", clientID)
@@ -62,9 +62,9 @@ func assertWebSearchIndexMatchesScan(t *testing.T, r *ModelRegistry, context str
 			}
 		}
 
-		// The published Info flags are what callers actually read, so verify
-		// them against the scan too: a self-consistent index would still be a
-		// bug if the stored aggregate had been computed from a stale one.
+
+
+
 		registration := r.models[modelID]
 		if registration == nil || registration.Info == nil {
 			continue
@@ -103,8 +103,8 @@ func TestWebSearchIndexMatchesScanAcrossMutations(t *testing.T) {
 	reg := newWebSearchIndexRegistry()
 	assertWebSearchIndexMatchesScan(t, reg, "initial")
 
-	// Re-registration may add or drop contributions; both paths must retract
-	// the old counts before writing the new ones.
+
+
 	reg.RegisterClient("b", "codex", []*ModelInfo{{ID: "shared"}})
 	assertWebSearchIndexMatchesScan(t, reg, "re-register drops web search")
 
@@ -134,25 +134,25 @@ func TestWebSearchIndexMatchesScanAcrossMutations(t *testing.T) {
 }
 
 func TestWebSearchIndexDropsOrphanCountsOnPureAddition(t *testing.T) {
-	// The pure-addition path assumes the client has no prior bookkeeping, but
-	// clientModelInfos can outlive clientModels (any code path that rewrites one
-	// without the other). A stale entry still contributes to the index, so
-	// registering the client again must retract it instead of counting it twice.
+
+
+
+
 	reg := newTestModelRegistry()
 	reg.mutex.Lock()
 	reg.clientModelInfos["ghost"] = map[string]*ModelInfo{
 		"orphaned": {ID: "orphaned", SupportsWebSearch: true},
 	}
 	reg.clientProviders["ghost"] = "codex"
-	// The orphan is seeded in the shape any buggy path would leave behind: the
-	// index still agrees with clientModelInfos, but clientModels no longer
-	// carries the client, so the next registration takes the pure-addition path.
+
+
+
 	reg.incrementWebSearchCountLocked("orphaned", "codex")
 	reg.mutex.Unlock()
 	assertWebSearchIndexMatchesScan(t, reg, "orphan seeded")
 
-	// Registering the same client with a catalog that advertises no web search
-	// must leave a clean index, not the orphaned contribution plus nothing.
+
+
 	reg.RegisterClient("ghost", "codex", []*ModelInfo{{ID: "other"}})
 	assertWebSearchIndexMatchesScan(t, reg, "orphan replaced by pure addition")
 	if reg.hasClientSupportingWebSearchLocked("orphaned", "", "") {
@@ -220,8 +220,8 @@ func TestWebSearchIndexPreservesRealSupporterOnOrphanAddition(t *testing.T) {
 	reg := newTestModelRegistry()
 	reg.RegisterClient("real", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: true}})
 	reg.RegisterClient("ghost", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: true}})
-	// Artificially leave orphaned metadata and index entries. Normal registry
-	// operations keep these maps together; this exercises defensive cleanup.
+
+
 	reg.mutex.Lock()
 	delete(reg.clientModels, "ghost")
 	reg.mutex.Unlock()
@@ -238,15 +238,15 @@ func TestWebSearchIndexRefreshesOrphanedModelsOnPureAddition(t *testing.T) {
 			reg := newTestModelRegistry()
 			reg.RegisterClient("real", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: realSupportsWebSearch}})
 			reg.RegisterClient("ghost", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: true}})
-			// Artificially orphan the old catalog to exercise defensive cleanup.
+
 			reg.mutex.Lock()
 			delete(reg.clientModels, "ghost")
 			reg.mutex.Unlock()
 			assertPublishedWebSearchSupport(t, reg, "m", "antigravity", true)
 			assertWebSearchIndexMatchesScan(t, reg, "orphan seeded before catalog replacement")
 
-			// The old model is absent from the new catalog, so additions cannot
-			// refresh its published capability as a side effect.
+
+
 			reg.RegisterClient("ghost", "antigravity", []*ModelInfo{{ID: "n"}})
 			assertPublishedWebSearchSupport(t, reg, "m", "antigravity", realSupportsWebSearch)
 			assertPublishedWebSearchSupport(t, reg, "n", "antigravity", false)
@@ -261,7 +261,7 @@ func TestWebSearchIndexCleansOrphanOnUnregister(t *testing.T) {
 			reg := newTestModelRegistry()
 			reg.RegisterClient("real", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: realSupportsWebSearch}})
 			reg.RegisterClient("ghost", "antigravity", []*ModelInfo{{ID: "m", SupportsWebSearch: true}})
-			// This inconsistent state is constructed only to test orphan cleanup.
+
 			reg.mutex.Lock()
 			delete(reg.clientModels, "ghost")
 			reg.mutex.Unlock()
@@ -274,7 +274,7 @@ func TestWebSearchIndexCleansOrphanOnUnregister(t *testing.T) {
 			reg.mutex.RUnlock()
 			assertPublishedWebSearchSupport(t, reg, "m", "antigravity", realSupportsWebSearch)
 
-			// Repeated cleanup must not retract the real client's contribution.
+
 			reg.UnregisterClient("ghost")
 			reg.mutex.RLock()
 			wantCount := 0
@@ -306,17 +306,17 @@ func TestWebSearchIndexTracksSoleSupporterAfterUnregister(t *testing.T) {
 	if reg.hasClientSupportingWebSearchLocked("solo", "", "") {
 		t.Fatalf("sole supporter left, but the aggregate still reports web search")
 	}
-	// The published flag must follow the index, otherwise callers keep
-	// advertising web search for a model no client can serve.
+
+
 	if reg.models["solo"] != nil && reg.models["solo"].Info != nil && reg.models["solo"].Info.SupportsWebSearch {
 		t.Fatalf("published Info.SupportsWebSearch stayed true after the sole supporter left")
 	}
 }
 
 func TestWebSearchIndexToleratesNilIndexMaps(t *testing.T) {
-	// The index maps are nil in a partially constructed registry (tests and any
-	// future literal). The helpers must lazily initialize instead of panicking
-	// on assignment to a nil map.
+
+
+
 	reg := &ModelRegistry{mutex: &sync.RWMutex{}}
 	if reg.hasClientSupportingWebSearchLocked("m", "", "") {
 		t.Fatalf("registry without index must not report web-search support")
@@ -332,10 +332,10 @@ func TestWebSearchIndexToleratesNilIndexMaps(t *testing.T) {
 }
 
 func TestWebSearchIndexProviderChangeRetractsOldProvider(t *testing.T) {
-	// Re-registering the same client under a different provider must retract
-	// the old provider's contribution. The old-provider aggregate is recomputed
-	// while this client's counts are still indexed, so a wrong drop/add ordering
-	// leaves a phantom count for the provider the client no longer serves.
+
+
+
+
 	reg := newTestModelRegistry()
 	reg.RegisterClient("x", "codex", []*ModelInfo{
 		{ID: "m", SupportsWebSearch: true},
@@ -362,20 +362,20 @@ func TestWebSearchIndexProviderChangeRetractsOldProvider(t *testing.T) {
 	assertWebSearchIndexMatchesScan(t, reg, "provider change")
 }
 
-// BenchmarkRegisterClientWebSearchAggregate measures whole-registry
-// registration, the hot path that blocked startup: every registered model
-// recomputes the web-search aggregate while the registry write lock is held.
-// Sizes are reported separately because the pre-fix implementation is quadratic
-// in the client count and only the growth curve exposes that.
+
+
+
+
+
 func BenchmarkRegisterClientWebSearchAggregate(b *testing.B) {
 	const modelsPerClient = 20
 
 	infos := make([]*ModelInfo, 0, modelsPerClient)
 	for i := 0; i < modelsPerClient; i++ {
-		// Only the first model advertises web search, and it must be set on
-		// SupportsWebSearch: the aggregate is keyed off that field, not off
-		// NativeCapabilities.WebSearch. Leaving it false makes every lookup miss
-		// the client set, which silently benchmarks a different code path.
+
+
+
+
 		infos = append(infos, &ModelInfo{
 			ID:                fmt.Sprintf("model-%d", i),
 			SupportsWebSearch: i == 0,

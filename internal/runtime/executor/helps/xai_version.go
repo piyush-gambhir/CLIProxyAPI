@@ -17,15 +17,15 @@ import (
 )
 
 const (
-	// DefaultXAIFallbackClientVersion is the stable Grok CLI version used when npm
-	// registry resolution fails. dist-tag latest is 1.0.46; 1.0.50 is the alpha tag.
+
+
 	DefaultXAIFallbackClientVersion = "1.0.46"
-	// XAIClientVersionServerFloor is the minimum Grok CLI version cli-chat-proxy accepts.
-	// Older clients are rejected with HTTP 426 (#6249).
+
+
 	XAIClientVersionServerFloor = "1.0.13"
-	// XAIVersionRefreshInterval is the periodic interval to check for Grok CLI updates from npm.
+
 	XAIVersionRefreshInterval = 3 * time.Hour
-	// XAIVersionFetchTimeout is the maximum duration for a single npm registry lookup.
+
 	XAIVersionFetchTimeout = 10 * time.Second
 )
 
@@ -41,18 +41,18 @@ var (
 	xaiVersionRefreshed    chan struct{}
 )
 
-// GetXAIClientVersion returns the current Grok CLI client version.
-// If the background updater has fetched a newer acceptable version from npm, it returns that version;
-// otherwise it returns DefaultXAIFallbackClientVersion.
+
+
+
 func GetXAIClientVersion() string {
 	xaiClientVersionMu.RLock()
 	defer xaiClientVersionMu.RUnlock()
 	return cachedXAIClientVersion
 }
 
-// StartXAIVersionUpdater starts a background goroutine that periodically refreshes the Grok CLI version from npm.
-// A later call cancels the previous goroutine and binds the new service context and proxy URL.
-// It executes a single fetch on startup and then polls every 3 hours without multiple retries on failure.
+
+
+
 func StartXAIVersionUpdater(ctx context.Context, proxyURL string) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -109,8 +109,8 @@ func refreshXAIClientVersion(ctx context.Context) {
 	}
 }
 
-// FetchXAINPMLatestVersion performs a single request to the npm registry to query the latest version of @xai-official/grok.
-// The returned version is a strict numeric semver at or above XAIClientVersionServerFloor.
+
+
 func FetchXAINPMLatestVersion(ctx context.Context, client *http.Client) (string, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -237,7 +237,7 @@ func notifyXAIVersionRefreshed() {
 	}
 }
 
-// OverrideXAINPMRegistryURLForTest overrides the npm registry URL for testing purposes.
+
 func OverrideXAINPMRegistryURLForTest(url string) func() {
 	xaiClientVersionMu.Lock()
 	oldURL := xaiNPMRegistryURL
@@ -250,7 +250,7 @@ func OverrideXAINPMRegistryURLForTest(url string) func() {
 	}
 }
 
-// SetXAIClientVersionForTest sets the cached Grok CLI version directly for testing purposes.
+
 func SetXAIClientVersionForTest(version string) func() {
 	xaiClientVersionMu.Lock()
 	old := cachedXAIClientVersion
@@ -263,7 +263,7 @@ func SetXAIClientVersionForTest(version string) func() {
 	}
 }
 
-// SetXAIVersionRefreshedHookForTest receives one signal after each refresh attempt.
+
 func SetXAIVersionRefreshedHookForTest(ch chan struct{}) func() {
 	xaiClientVersionMu.Lock()
 	old := xaiVersionRefreshed

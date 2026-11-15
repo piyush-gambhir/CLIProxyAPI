@@ -129,7 +129,7 @@ func TestIsKeepaliveSSELine(t *testing.T) {
 func TestTransformKeepaliveSSELine(t *testing.T) {
 	comment := KeepaliveSSEComment()
 
-	// Grok client: keepalive line is transformed
+
 	got, ok := TransformKeepaliveSSELine([]byte("event: keepalive"), true)
 	if !ok || !bytes.Equal(got, comment) {
 		t.Errorf("TransformKeepaliveSSELine(event: keepalive, true) = %q, %v, want %q, true", string(got), ok, string(comment))
@@ -140,14 +140,14 @@ func TestTransformKeepaliveSSELine(t *testing.T) {
 		t.Errorf("TransformKeepaliveSSELine(data: keepalive, true) = %q, %v, want %q, true", string(got), ok, string(comment))
 	}
 
-	// Grok client: normal line is untouched
+
 	normalLine := []byte(`data: {"type":"response.created"}`)
 	got, ok = TransformKeepaliveSSELine(normalLine, true)
 	if ok || !bytes.Equal(got, normalLine) {
 		t.Errorf("TransformKeepaliveSSELine(normalLine, true) = %q, %v, want unchanged, false", string(got), ok)
 	}
 
-	// Non-Grok client: keepalive line is untouched
+
 	keepaliveLine := []byte("event: keepalive")
 	got, ok = TransformKeepaliveSSELine(keepaliveLine, false)
 	if ok || !bytes.Equal(got, keepaliveLine) {

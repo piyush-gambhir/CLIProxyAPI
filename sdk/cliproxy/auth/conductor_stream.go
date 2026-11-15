@@ -101,8 +101,8 @@ func readStreamBootstrap(ctx context.Context, ch <-chan cliproxyexecutor.StreamC
 			ok    bool
 		)
 		if ctx != nil {
-			// Prefer a chunk that is already available so an upstream error delivered together
-			// with a context cancellation is not discarded.
+
+
 			select {
 			case chunk, ok = <-ch:
 			default:
@@ -128,10 +128,10 @@ func readStreamBootstrap(ctx context.Context, ch <-chan cliproxyexecutor.StreamC
 	}
 }
 
-// recordCanceledUpstreamCooldown keeps an upstream-confirmed cooldown (an error carrying
-// RetryAfter) when the request context was canceled while the executor was returning, for
-// example because the downstream connection was closed in response to the same upstream error.
-// Errors without RetryAfter, such as plain client cancellations, are not recorded.
+
+
+
+
 func (m *Manager) recordCanceledUpstreamCooldown(ctx context.Context, auth *Auth, provider, resultModel, routeModel string, opts cliproxyexecutor.Options, err error, ephemeral bool, executionSeq uint64) {
 	retryAfter := retryAfterFromError(err)
 	if m == nil || auth == nil || retryAfter == nil {

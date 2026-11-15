@@ -11,7 +11,7 @@ import (
 )
 
 func buildSynthetic4KAntigravitySSE() ([]byte, []byte) {
-	// ~8MB base64 payload representing a 4K JPEG/PNG inlineData response.
+
 	largeB64 := strings.Repeat("QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVowMTIzNDU2Nzg5", 160000)
 	var line1 bytes.Buffer
 	line1.WriteString(`data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"thoughtSignature":"sig_abc","inlineData":{"mimeType":"image/jpeg","data":"`)

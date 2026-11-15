@@ -1,8 +1,8 @@
-// Package openai provides response translation functionality for Gemini to OpenAI API compatibility.
-// This package handles the conversion of Gemini API responses into OpenAI Chat Completions-compatible
-// JSON format, transforming streaming events and non-streaming responses into the format
-// expected by OpenAI API clients. It supports both streaming and non-streaming modes,
-// handling text content, tool calls, reasoning content, and usage metadata appropriately.
+
+
+
+
+
 package chat_completions
 
 import (
@@ -20,10 +20,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// convertGeminiResponseToOpenAIChatParams holds parameters for response conversion.
+
 type convertGeminiResponseToOpenAIChatParams struct {
 	UnixTimestamp int64
-	// FunctionIndex tracks tool call indices per candidate index to support multiple candidates.
+
 	FunctionIndex            map[int]int
 	SawToolCall              map[int]bool
 	SawFinishReason          map[int]bool
@@ -37,25 +37,25 @@ type convertGeminiResponseToOpenAIChatParams struct {
 	HasIncompleteToolCall    map[int]bool
 }
 
-// functionCallIDCounter provides a process-wide unique counter for function call identifiers.
+
 var functionCallIDCounter uint64
 
-// ConvertGeminiResponseToOpenAI translates a single chunk of a streaming response from the
-// Gemini API format to the OpenAI Chat Completions streaming format.
-// It processes various Gemini event types and transforms them into OpenAI-compatible JSON responses.
-// The function handles text content, tool calls, reasoning content, and usage metadata, outputting
-// responses that match the OpenAI API format. It supports incremental updates for streaming responses.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response (unused in current implementation)
-//   - rawJSON: The raw JSON response from the Gemini API
-//   - param: A pointer to a parameter object for maintaining state between calls
-//
-// Returns:
-//   - [][]byte: A slice of OpenAI-compatible JSON responses
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
-	// Initialize parameters if nil.
+
 	if *param == nil {
 		*param = &convertGeminiResponseToOpenAIChatParams{
 			UnixTimestamp:            0,
@@ -68,7 +68,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		}
 	}
 
-	// Ensure the Map is initialized (handling cases where param might be reused from older context).
+
 	p := (*param).(*convertGeminiResponseToOpenAIChatParams)
 	if p.FunctionIndex == nil {
 		p.FunctionIndex = make(map[int]int)
@@ -133,11 +133,11 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		return doneChunks
 	}
 
-	// Initialize the OpenAI SSE base template.
-	// We use a base template and clone it for each candidate to support multiple candidates.
+
+
 	baseDoc := ojson.NewDocString(`{"id":"","object":"chat.completion.chunk","created":12345,"model":"model","choices":[{"index":0,"delta":{"role":null,"content":null,"reasoning_content":null,"tool_calls":null},"finish_reason":null,"native_finish_reason":null}]}`)
 
-	// Extract and set the model version.
+
 	if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "modelVersion"); modelVersionResult.Exists() {
 		p.ModelVersion = strings.Clone(modelVersionResult.String())
 		_ = baseDoc.Set("model", p.ModelVersion)
@@ -145,7 +145,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		_ = baseDoc.Set("model", p.ModelVersion)
 	}
 
-	// Extract and set the creation timestamp.
+
 	if createTimeResult := ojson.GetBytesNoCopy(rawJSON, "createTime"); createTimeResult.Exists() {
 		t, err := time.Parse(time.RFC3339Nano, createTimeResult.String())
 		if err == nil {
@@ -156,7 +156,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		_ = baseDoc.Set("created", p.UnixTimestamp)
 	}
 
-	// Extract and set the response ID.
+
 	if responseIDResult := ojson.GetBytesNoCopy(rawJSON, "responseId"); responseIDResult.Exists() {
 		p.ResponseID = strings.Clone(responseIDResult.String())
 		_ = baseDoc.Set("id", p.ResponseID)
@@ -164,8 +164,8 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 		_ = baseDoc.Set("id", p.ResponseID)
 	}
 
-	// Extract and set usage metadata (token counts).
-	// Usage is applied to the base template so it appears in the chunks.
+
+
 	usageResult := ojson.GetBytesNoCopy(rawJSON, "usageMetadata")
 	usageExists := usageResult.Exists()
 	if usageExists {
@@ -180,13 +180,13 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 	var responseStrings [][]byte
 	candidates := ojson.GetBytesNoCopy(rawJSON, "candidates")
 
-	// Iterate over all candidates to support candidate_count > 1.
+
 	if candidates.IsArray() {
 		candidates.ForEach(func(_, candidate ojson.Result) bool {
-			// Create a Doc from baseTemplate for the current candidate.
+
 			templateDoc := ojson.NewDoc(baseTemplate)
 
-			// Set the specific index for this candidate.
+
 			candidateIndex := int(candidate.Get("index").Int())
 			_ = templateDoc.Set("choices.0.index", candidateIndex)
 
@@ -232,8 +232,8 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 						thoughtSignatureResult = partResult.Get("thought_signature")
 					}
 
-					// Speech-to-text models (gemini-3.5-transcribe) deliver the
-					// transcript in an audioTranscription part instead of text.
+
+
 					audioTranscriptionResult := partResult.Get("audioTranscription")
 					if audioTranscriptionResult.Exists() && !partTextResult.Exists() {
 						partTextResult = audioTranscriptionResult.Get("text")
@@ -243,7 +243,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 					hasTextPayload := partTextResult.Exists() && partTextResult.String() != ""
 					hasContentPayload := hasTextPayload || functionCallResult.Exists() || inlineDataResult.Exists()
 
-					// Skip pure thoughtSignature parts but keep any actual payload in the same part.
+
 					if hasThoughtSignature && !hasContentPayload {
 						if p.ActiveToolCall[candidateIndex] != nil {
 							sawNoopFunctionCall = true
@@ -262,7 +262,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 							p.ActiveToolCall[candidateIndex] = nil
 						}
 						setAssistantRole()
-						// Handle text content, distinguishing between regular content and reasoning/thoughts.
+
 						if partResult.Get("thought").Bool() {
 							hasReasoningContent = true
 							reasoningContent.WriteString(text)
@@ -271,7 +271,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 							textContent.WriteString(text)
 						}
 					} else if functionCallResult.Exists() {
-						// Handle function call content.
+
 						if active := p.ActiveToolCall[candidateIndex]; active != nil && active.CanContinueWith(functionCallResult) {
 							p.SawToolCall[candidateIndex] = true
 							delta, done := active.Assembler.PushFunctionCall(functionCallResult)
@@ -346,7 +346,7 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 							}
 							p.SawToolCall[candidateIndex] = true
 
-							// Retrieve the function index for this specific candidate.
+
 							functionCallIndex := p.FunctionIndex[candidateIndex]
 							p.FunctionIndex[candidateIndex]++
 
@@ -420,10 +420,10 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 			}
 
 			responseStrings = append(responseStrings, templateDoc.Bytes())
-			return true // continue loop
+			return true
 		})
 	} else {
-		// If there are no candidates (e.g., a pure usageMetadata chunk), return the usage chunk if present.
+
 		if usageExists && len(responseStrings) == 0 {
 			if upstreamFinishReason := p.UpstreamFinishReason[0]; upstreamFinishReason != "" && !p.SawFinishReason[0] && p.ActiveToolCall[0] == nil && !p.HasIncompleteToolCall[0] {
 				p.SawFinishReason[0] = true
@@ -442,23 +442,23 @@ func ConvertGeminiResponseToOpenAI(_ context.Context, _ string, originalRequestR
 	return responseStrings
 }
 
-// ConvertGeminiResponseToOpenAINonStream converts a non-streaming Gemini response to a non-streaming OpenAI response.
-// This function processes the complete Gemini response and transforms it into a single OpenAI-compatible
-// JSON response. It handles message content, tool calls, reasoning content, and usage metadata, combining all
-// the information into a single response that matches the OpenAI API format.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response (unused in current implementation)
-//   - rawJSON: The raw JSON response from the Gemini API
-//   - param: A pointer to a parameter object for the conversion (unused in current implementation)
-//
-// Returns:
-//   - []byte: An OpenAI-compatible JSON response containing all message content and metadata
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	sanitizedNameMap := util.SanitizedToolNameMap(originalRequestRawJSON)
 	var unixTimestamp int64
-	// Initialize template with an empty choices array to support multiple candidates.
+
 	templateDoc := ojson.NewDocString(`{"id":"","object":"chat.completion","created":123456,"model":"model","choices":[]}`)
 
 	if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "modelVersion"); modelVersionResult.Exists() {
@@ -491,7 +491,7 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 		if thoughtsTokenCount > 0 {
 			_ = templateDoc.Set("usage.completion_tokens_details.reasoning_tokens", thoughtsTokenCount)
 		}
-		// Include cached token count if present (indicates prompt caching is working)
+
 		if cachedTokenCount > 0 {
 			if err := templateDoc.Set("usage.prompt_tokens_details.cached_tokens", cachedTokenCount); err != nil {
 				log.Warnf("gemini openai response: failed to set cached_tokens in non-streaming: %v", err)
@@ -499,18 +499,18 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 		}
 	}
 
-	// Process the main content part of the response for all candidates.
+
 	candidates := ojson.GetBytesNoCopy(rawJSON, "candidates")
 	if candidates.IsArray() {
 		var choicesList [][]byte
 		candidates.ForEach(func(_, candidate ojson.Result) bool {
-			// Construct a single Choice object.
+
 			choiceDoc := ojson.NewDocString(`{"index":0,"message":{"role":"assistant","content":null,"reasoning_content":null,"tool_calls":null},"finish_reason":null,"native_finish_reason":null}`)
 
-			// Set the index for this choice.
+
 			_ = choiceDoc.Set("index", candidate.Get("index").Int())
 
-			// Set finish reason.
+
 			if finishReasonResult := candidate.Get("finishReason"); finishReasonResult.Exists() {
 				finishReason := strings.ToLower(finishReasonResult.String())
 				if isGeminiContentFilterFinishReason(finishReasonResult.String()) {
@@ -544,8 +544,8 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 						thoughtSignatureResult = partResult.Get("thought_signature")
 					}
 
-					// Speech-to-text models (gemini-3.5-transcribe) deliver the
-					// transcript in an audioTranscription part instead of text.
+
+
 					audioTranscriptionResult := partResult.Get("audioTranscription")
 					if audioTranscriptionResult.Exists() && !partTextResult.Exists() {
 						partTextResult = audioTranscriptionResult.Get("text")
@@ -555,13 +555,13 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 					hasTextPayload := partTextResult.Exists() && partTextResult.String() != ""
 					hasContentPayload := hasTextPayload || functionCallResult.Exists() || inlineDataResult.Exists()
 
-					// Skip pure thoughtSignature parts but keep any actual payload in the same part.
+
 					if hasThoughtSignature && !hasContentPayload {
 						continue
 					}
 
 					if partTextResult.Exists() {
-						// Append text content, distinguishing between regular content and reasoning.
+
 						if partResult.Get("thought").Bool() {
 							hasReasoningContent = true
 							reasoningContent.WriteString(partTextResult.String())
@@ -570,7 +570,7 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 							textContent.WriteString(partTextResult.String())
 						}
 					} else if functionCallResult.Exists() {
-						// Append function call content to the tool_calls array.
+
 						hasFunctionCall = true
 						fcItemDoc := ojson.NewDocString(`{"id":"","type":"function","function":{"name":"","arguments":""}}`)
 						fcName := util.RestoreSanitizedToolName(sanitizedNameMap, functionCallResult.Get("name").String())
@@ -622,7 +622,7 @@ func ConvertGeminiResponseToOpenAINonStream(_ context.Context, _ string, origina
 				_ = choiceDoc.Set("native_finish_reason", "tool_calls")
 			}
 
-			// Append the constructed choice to the main choices array.
+
 			choicesList = append(choicesList, choiceDoc.Bytes())
 			return true
 		})

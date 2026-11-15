@@ -81,11 +81,11 @@ func promoteOpenAIResponsesReasoningTextToSummaryDoc(itemDoc *ojson.Doc, content
 type metaSignaturePolicy int
 
 const (
-	// metaSignatureForeign: target is not Meta; a recognized Meta envelope is foreign.
+
 	metaSignatureForeign metaSignaturePolicy = iota
-	// metaSignatureNativeOnly: native Meta upstream (api.meta.ai); only unsuffixed envelopes replay.
+
 	metaSignatureNativeOnly
-	// metaSignatureAllowRouted: Meta-family model served by a router (e.g. OpenRouter meta/muse-*); native or router-suffixed envelopes replay verbatim.
+
 	metaSignatureAllowRouted
 )
 
@@ -105,19 +105,19 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithCompatDoc(ctx context.C
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithCompatModelDoc(ctx, provider, doc, isCompat, "")
 }
 
-// sanitizeOpenAIResponsesReasoningEncryptedContentWithCompatModel is the
-// compat variant that knows its target model: a positively recognized Meta
-// Muse envelope is preserved whenever the upstream actually serves a
-// Meta-family model, whether or not the route is flagged compat (native
-// OpenAI never serves muse-* models, but a router key such as an OpenRouter
-// codex endpoint can serve meta/muse-* through the Codex executor without
-// isCompat). Router-suffixed envelopes replay verbatim there; the native
-// Meta executor keeps its own stricter native-only gate. For any other
-// target the recognized Meta envelope is known-foreign and stripped like
-// other providers'.
-// resolveResponsesSignatureTargetModel returns the canonical model name to use
-// for reasoning signature target checks, falling back to the client-requested
-// model when an upstream alias mapping hides the Meta Muse family name.
+
+
+
+
+
+
+
+
+
+
+
+
+
 func resolveResponsesSignatureTargetModel(baseModel string, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) string {
 	if signature.SignatureProviderFromModelName(baseModel) != signature.SignatureProviderUnknown {
 		return baseModel
@@ -175,14 +175,14 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentKeepForeignDoc(ctx context.
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx, provider, doc, false, true, metaSignatureForeign, signature.SignatureProviderUnknown, false)
 }
 
-// sanitizeOpenAIResponsesReasoningEncryptedContentForMeta is the Meta-target
-// variant and is deliberately native-only: only positively recognized Meta
-// Muse envelopes without a router suffix may replay to api.meta.ai, whose
-// suffix acceptance is unverified. GPT, other known-provider,
-// unknown-format, and router-suffixed values are all stripped, so a wrong
-// signature can never reach the Meta upstream through this path. A future
-// Meta envelope revision will be stripped until the inspector learns it
-// (fail-closed).
+
+
+
+
+
+
+
+
 func sanitizeOpenAIResponsesReasoningEncryptedContentForMeta(ctx context.Context, provider string, body []byte) []byte {
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithOptions(ctx, provider, body, false, true, metaSignatureNativeOnly, signature.SignatureProviderMeta, false)
 }
@@ -191,12 +191,12 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentForMetaDoc(ctx context.Cont
 	return sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx, provider, doc, false, true, metaSignatureNativeOnly, signature.SignatureProviderMeta, false)
 }
 
-// sanitizeOpenAIResponsesReasoningEncryptedContentForMetaBaseURL gates Meta
-// reasoning signatures by whether baseURL is the native Meta upstream
-// (api.meta.ai, which accepts only unsuffixed envelopes) or a third-party
-// Responses provider configured under meta-api-key (which may emit and consume
-// router-suffixed Meta Muse envelopes verbatim when targeting OpenRouter, or
-// strip the OpenRouter suffix for other providers).
+
+
+
+
+
+
 func sanitizeOpenAIResponsesReasoningEncryptedContentForMetaBaseURL(ctx context.Context, provider string, body []byte, baseURL string) []byte {
 	doc := ojson.NewDoc(body)
 	if !sanitizeOpenAIResponsesReasoningEncryptedContentForMetaBaseURLDoc(ctx, provider, doc, baseURL) {
@@ -266,20 +266,20 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx context.
 		provider = "openai responses upstream"
 	}
 
-	// Codex backend rejects store=true and does not persist items when store=false.
-	// A reasoning item that still carries an id without usable encrypted_content is
-	// treated as a store lookup and returns:
-	//   Item with id '...' not found. Items are not persisted when `store` is set to false.
-	// Strip those orphan ids unless the request explicitly opts into store=true.
+
+
+
+
+
 	stripOrphanReasoningIDs := !doc.Get("store").Bool()
 
 	items := inputResult.Array()
 
-	// rebuilt accumulates the edited "input" array as JSON array bytes. It
-	// stays nil while no item needs editing so the common case (nothing to
-	// sanitize) does no allocation or rebuilding. Edits are applied directly
-	// to each item's own Doc rather than re-parsing the whole body,
-	// keeping the cost proportional to the item being edited.
+
+
+
+
+
 	var rebuilt []byte
 	itemsWritten := 0
 	keep := func(raw string) {
@@ -296,8 +296,8 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx context.
 		if rebuilt != nil {
 			return
 		}
-		// First item that needs editing: start the buffer and backfill
-		// it with the raw JSON of every preceding item.
+
+
 		rebuilt = make([]byte, 0, len(inputResult.Raw))
 		rebuilt = append(rebuilt, '[')
 		for i := range index {
@@ -326,11 +326,11 @@ func sanitizeOpenAIResponsesReasoningEncryptedContentWithOptionsDoc(ctx context.
 		}
 		changed := false
 
-		// Official Codex schema sets maxItems: 0 on reasoning.content. Third-party
-		// channels replay cleartext thinking there; promote it into summary when
-		// summary is empty, then force content to [].
-		// When isCompat is true, third-party Responses models (such as DeepSeek)
-		// require original reasoning_text inside reasoning.content to be replayed.
+
+
+
+
+
 		content := item.Get("content")
 		if !isCompat && content.IsArray() && len(content.Array()) > 0 {
 			if openaiResponsesReasoningSummaryIsEmpty(item.Get("summary")) {

@@ -36,7 +36,7 @@ func TestManagerLogin_PreservesExistingAuthFileMetadata(t *testing.T) {
 	fileName := "demo.json"
 	filePath := filepath.Join(authDir, fileName)
 
-	// Pre-populate existing auth file with custom settings
+
 	existing := map[string]any{
 		"type":         "demo",
 		"email":        "user@example.com",
@@ -277,8 +277,8 @@ func TestManagerLogin_SubjectOnlyReloginKeepsEmailCredential(t *testing.T) {
 		t.Fatalf("write canonical credential: %v", errWrite)
 	}
 
-	// The upstream stops returning an email, so the authenticator names the
-	// record after the subject; its identity keys omit the missing email.
+
+
 	subjectFileName := xaiauth.CredentialFileName("", "sub-first")
 	newRecord := &coreauth.Auth{
 		ID:       subjectFileName,
@@ -326,9 +326,9 @@ func TestManagerLogin_SubjectOnlyReloginKeepsEmailCredential(t *testing.T) {
 		t.Fatalf("auth dir holds %d files, want the single canonical credential", len(entries))
 	}
 
-	// Return leg: the upstream returns the email again, and that login must
-	// land on the same canonical file with settings intact, completing the
-	// email+subject -> subject-only -> email+subject round trip.
+
+
+
 	returnRecord := &coreauth.Auth{
 		ID:       emailFileName,
 		FileName: emailFileName,

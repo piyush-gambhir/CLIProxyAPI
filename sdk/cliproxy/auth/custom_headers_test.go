@@ -250,7 +250,7 @@ func TestManagerExecute_CPASessionID_InterceptorClearsSession(t *testing.T) {
 		},
 	}
 
-	// Context initially carries the session identity
+
 	ctx := util.WithSessionID(context.Background(), "header:stale-session-123")
 
 	_, errExec := mgr.Execute(ctx, []string{"test-provider"}, req, opts)

@@ -1984,7 +1984,7 @@ func TestModelsDispatchByAnthropicVersionHeader(t *testing.T) {
 
 	server := newTestServer(t)
 
-	// Anthropic API request (Anthropic-Version header, non-claude-cli User-Agent) -> Claude format.
+
 	t.Run("anthropic version header routes to claude format", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 		req.Header.Set("Authorization", "Bearer test-key")
@@ -2038,7 +2038,7 @@ func TestModelsDispatchByAnthropicVersionHeader(t *testing.T) {
 		}
 	})
 
-	// Plain request (no Anthropic-Version, non-claude-cli User-Agent) -> OpenAI format, unaffected.
+
 	t.Run("plain request stays on openai format", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 		req.Header.Set("Authorization", "Bearer test-key")
@@ -2442,7 +2442,7 @@ func TestCodexClientModelsEndpoint_FiltersMaxAndUltraForOlderClientVersion(t *te
 
 	server := newTestServer(t)
 
-	// Older client version 0.137.0 should NOT have max or ultra reasoning levels
+
 	reqOld := httptest.NewRequest(http.MethodGet, "/v1/models?client_version=0.137.0", nil)
 	reqOld.Header.Set("Authorization", "Bearer test-key")
 	rrOld := httptest.NewRecorder()
@@ -2480,7 +2480,7 @@ func TestCodexClientModelsEndpoint_FiltersMaxAndUltraForOlderClientVersion(t *te
 		t.Fatal("expected gpt-5.6-sol in codex catalog")
 	}
 
-	// Newer client version 0.149.1 should preserve max and ultra reasoning levels
+
 	reqNew := httptest.NewRequest(http.MethodGet, "/v1/models?client_version=0.149.1", nil)
 	reqNew.Header.Set("Authorization", "Bearer test-key")
 	rrNew := httptest.NewRecorder()
@@ -2516,7 +2516,7 @@ func TestCodexClientModelsEndpoint_FiltersMaxAndUltraForOlderClientVersion(t *te
 		t.Fatal("expected ultra reasoning effort for newer client 0.149.1")
 	}
 
-	// Unparseable / empty client versions (e.g. client_version=, client_version=pi) should also preserve max and ultra (unfiltered)
+
 	for _, unparsedVersion := range []string{"", "pi", "latest"} {
 		path := "/v1/models?client_version=" + unparsedVersion
 		reqUnparsed := httptest.NewRequest(http.MethodGet, path, nil)
@@ -2632,7 +2632,7 @@ func TestDefaultRequestLoggerFactory_UsesResolvedLogDirectory(t *testing.T) {
 		}
 	}()
 
-	// Force ResolveLogDirectory to fallback to auth-dir/logs by making ./logs not a writable directory.
+
 	if errWriteFile := os.WriteFile(filepath.Join(tmpDir, "logs"), []byte("not-a-directory"), 0o644); errWriteFile != nil {
 		t.Fatalf("failed to create blocking logs file: %v", errWriteFile)
 	}
@@ -2944,7 +2944,7 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 		},
 	}
 
-	// 1. Entry from codex only -> receives codex setting (524288)
+
 	codexEntry := homeModelEntry{
 		id:        "shared-model",
 		providers: []string{"codex"},
@@ -2954,7 +2954,7 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 		t.Errorf("mCodex max_context_length = %v, want 524288", got)
 	}
 
-	// 2. Entry from claude only -> receives claude setting (200000), NOT codex setting
+
 	claudeEntry := homeModelEntry{
 		id:        "shared-model",
 		providers: []string{"claude"},
@@ -2964,7 +2964,7 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 		t.Errorf("mClaude max_context_length = %v, want 200000", got)
 	}
 
-	// 3. Entry from other provider -> does not receive either setting
+
 	otherEntry := homeModelEntry{
 		id:        "shared-model",
 		providers: []string{"vertex"},
@@ -2974,7 +2974,7 @@ func TestHomeCodexModels_OAuthSettingsChannelIsolation(t *testing.T) {
 		t.Errorf("mOther max_context_length = %v, want nil", got)
 	}
 
-	// 4. Entry from multiple providers (claude, codex) -> deterministic codex precedence
+
 	multiEntry := homeModelEntry{
 		id:        "shared-model",
 		providers: []string{"claude", "codex"},
@@ -3043,7 +3043,7 @@ func TestUpdateClientsContext_AntigravityConnectionPoolPurgesTransports(t *testi
 	cfg1.Antigravity.ConnectionPool.IdleConnTimeout = "30s"
 	server.oldConfigYaml, _ = yaml.Marshal(&cfg1)
 
-	// Pre-populate the cache before reload
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -3467,7 +3467,7 @@ func assertSerializedCPAWebSearch(t *testing.T, model map[string]any, want bool)
 	}
 }
 
-// modelCatalogUnknownExecutor implements only the mandatory provider contract.
+
 type modelCatalogUnknownExecutor struct{ auth.ProviderExecutor }
 
 type modelCatalogUnsupportedExecutor struct{ auth.ProviderExecutor }
@@ -3511,7 +3511,7 @@ func TestHomeApplyPatchCapabilityForModel(t *testing.T) {
 			t.Errorf("%q supported without a manager", tc.id)
 		}
 	}
-	// Multiple entries must never overwrite an unknown routing candidate.
+
 	duplicateLookup := homeApplyPatchCapabilityForModel([]homeModelEntry{
 		{id: "duplicate", providers: []string{"remote"}},
 		{id: "duplicate", providers: []string{"codex"}},
@@ -3521,7 +3521,7 @@ func TestHomeApplyPatchCapabilityForModel(t *testing.T) {
 	}
 }
 
-// newHomeCatalogClient serves the existing Home models protocol without new metadata.
+
 func newHomeCatalogClient(t *testing.T, payload string) *home.Client {
 	t.Helper()
 	listener, errListen := net.Listen("tcp", "127.0.0.1:0")
@@ -3600,7 +3600,7 @@ func TestModelsWithClientVersionHomeApplyPatchRouting(t *testing.T) {
 	server := newTestServer(t)
 	server.cfg.Home.Enabled = true
 	server.cfg.Client.Codex.EnableApplyPatch = true
-	// Exercise the production models router without unrelated heartbeat readiness.
+
 	engine := gin.New()
 	engine.GET("/v1/models", server.unifiedModelsHandler(nil, nil))
 	manager := server.handlers.AuthManager
@@ -3609,7 +3609,7 @@ func TestModelsWithClientVersionHomeApplyPatchRouting(t *testing.T) {
 	manager.RegisterExecutor(executor.NewOpenAICompatExecutor("home-custom", cfg))
 	manager.RegisterExecutor(modelCatalogUnknownExecutor{executor.NewOpenAICompatExecutor("remote", cfg)})
 	modelRegistry := registry.GetGlobalRegistry()
-	// These local routes intentionally disagree with the Home routing evidence.
+
 	modelRegistry.RegisterClient("home-patch-local-native", "codex", []*registry.ModelInfo{{ID: "home-patch-local-only"}})
 	modelRegistry.RegisterClient("home-patch-local-remote", "remote", []*registry.ModelInfo{{ID: "home-patch-supported"}})
 	t.Cleanup(func() {
@@ -3655,7 +3655,7 @@ func TestModelsWithClientVersionHomeApplyPatchRouting(t *testing.T) {
 			for _, id := range []string{"gpt-image-2", "home-patch-local-only", "home-patch-partial"} {
 				assertCodexNullableCatalogField(t, entries[id], "apply_patch_tool_type")
 			}
-			// Home retains its existing template and synthesized protocol restrictions.
+
 			if search, _ := entries["gpt-5.5"]["supports_search_tool"].(bool); !search {
 				t.Error("legacy Home template search support changed")
 			}
@@ -3705,9 +3705,9 @@ func TestModelsWithClientVersionHomeSearchToolRouting(t *testing.T) {
 		want       map[string]bool
 	}{
 		{
-			// Home routing evidence decides search support exactly as local routes do:
-			// pure Codex template routes, or pure Claude routes whose every credential
-			// supports native tool search. A Home without tool_search fails closed.
+
+
+
 			name:       "tool search on",
 			toolSearch: true,
 			want: map[string]bool{
@@ -3720,9 +3720,9 @@ func TestModelsWithClientVersionHomeSearchToolRouting(t *testing.T) {
 			},
 		},
 		{
-			// Off keeps the catalog that predates tool_search: Home routes are not
-			// consulted, so template models keep their search flag and Claude
-			// models never advertise it.
+
+
+
 			name: "tool search off",
 			want: map[string]bool{
 				"home-claude-only":        false,
@@ -3952,7 +3952,7 @@ func TestServerResponsesWebsocketReauthorizesEachTurn(t *testing.T) {
 
 	provider.revoked.Store(true)
 
-	// Control: fresh dial with the revoked key must fail at the handshake with 401.
+
 	freshConn, resp, errFreshDial := websocket.DefaultDialer.Dial(wsURL, headers)
 	if errFreshDial == nil {
 		_ = freshConn.Close()
@@ -3969,7 +3969,7 @@ func TestServerResponsesWebsocketReauthorizesEachTurn(t *testing.T) {
 		_ = resp.Body.Close()
 	}
 
-	// Second turn on the already-open socket must be rejected with an error event and not execute.
+
 	turn2 := []byte(`{"type":"response.create","model":"ws-reauth-model","input":[{"type":"message","role":"user","content":"turn 2"}]}`)
 	if errWrite := conn.WriteMessage(websocket.TextMessage, turn2); errWrite != nil {
 		t.Fatalf("write turn 2: %v", errWrite)

@@ -11,12 +11,12 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// zeroWidthSpace is the Unicode zero-width space character used for obfuscation.
+
 const zeroWidthSpace = "\u200B"
 
-// combiningGraphemeJoiner is the Unicode combining grapheme joiner (U+034F)
-// used for Antigravity system-instruction obfuscation where U+200B obfuscation
-// remains rejected by the upstream endpoint.
+
+
+
 const combiningGraphemeJoiner = "\u034F"
 
 type sensitiveWordRule struct {
@@ -26,15 +26,15 @@ type sensitiveWordRule struct {
 	isReplacement bool
 }
 
-// SensitiveWordMatcher holds the compiled regex and replacement state for matching sensitive words.
+
 type SensitiveWordMatcher struct {
 	regex             *regexp.Regexp
 	replaceFn         func(string) string
 	lookupReplacement func(string) (string, bool)
 }
 
-// SensitiveWordConfigCacheKey builds a deterministic, collision-free cache key
-// for a (words, replacements) configuration pair.
+
+
 func SensitiveWordConfigCacheKey(words []string, replacements map[string]string) string {
 	var b strings.Builder
 	b.WriteString("w:")
@@ -70,20 +70,20 @@ func SensitiveWordConfigCacheKey(words []string, replacements map[string]string)
 	return b.String()
 }
 
-// BuildSensitiveWordMatcher compiles a regex from the word list using U+200B.
-// Words are sorted by length (longest first) for proper matching.
+
+
 func BuildSensitiveWordMatcher(words []string) *SensitiveWordMatcher {
 	return BuildSensitiveWordMatcherWithReplacements(words, nil)
 }
 
-// BuildSensitiveWordMatcherWithReplacements compiles a matcher combining literal
-// replacements and U+200B sensitive-word obfuscation.
+
+
 func BuildSensitiveWordMatcherWithReplacements(words []string, replacements map[string]string) *SensitiveWordMatcher {
 	return buildSensitiveWordMatcher(words, replacements, obfuscateWord, zeroWidthSpace)
 }
 
-// BuildAntigravitySensitiveWordMatcher compiles a matcher for Antigravity system
-// instructions combining literal replacements and per-subword U+034F obfuscation.
+
+
 func BuildAntigravitySensitiveWordMatcher(words []string, replacements map[string]string) *SensitiveWordMatcher {
 	return buildSensitiveWordMatcher(words, replacements, obfuscateAntigravityPhrase, combiningGraphemeJoiner)
 }
@@ -228,7 +228,7 @@ func sortRulesLongestFirst(rules []sensitiveWordRule) {
 	})
 }
 
-// obfuscateWord inserts a zero-width space after the first grapheme.
+
 func obfuscateWord(word string) string {
 	if strings.Contains(word, zeroWidthSpace) {
 		return word
@@ -257,8 +257,8 @@ func obfuscateSingleSubwordCGJ(subword string) (string, bool) {
 	return string(r) + combiningGraphemeJoiner + subword[size:], true
 }
 
-// obfuscateAntigravityPhrase inserts U+034F after the first rune of every
-// alphanumeric subword (>= 2 runes) within phrase, preserving punctuation and whitespace.
+
+
 func obfuscateAntigravityPhrase(phrase string) string {
 	if phrase == "" || strings.Contains(phrase, combiningGraphemeJoiner) {
 		return phrase
@@ -305,7 +305,7 @@ func obfuscateAntigravityPhrase(phrase string) string {
 	return string(r) + combiningGraphemeJoiner + phrase[size:]
 }
 
-// obfuscateText replaces or obfuscates all sensitive words in the text.
+
 func (m *SensitiveWordMatcher) obfuscateText(text string) string {
 	if m == nil || m.regex == nil {
 		return text
@@ -316,7 +316,7 @@ func (m *SensitiveWordMatcher) obfuscateText(text string) string {
 	return m.regex.ReplaceAllStringFunc(text, obfuscateWord)
 }
 
-// Matches reports whether the text contains any configured sensitive word or replacement target.
+
 func (m *SensitiveWordMatcher) Matches(text string) bool {
 	if m == nil || m.regex == nil {
 		return false
@@ -324,11 +324,11 @@ func (m *SensitiveWordMatcher) Matches(text string) bool {
 	return m.regex.MatchString(text)
 }
 
-// SanitizeDevinText applies configured replacements and Devin line-level
-// sensitive-word filtering in a single non-cascading pass:
-//   - matches handled by sensitive-words-replace emit their literal replacement
-//     verbatim without re-scanning or triggering line deletion;
-//   - lines containing an unreplaced sensitive-words match are dropped.
+
+
+
+
+
 func (m *SensitiveWordMatcher) SanitizeDevinText(text string) string {
 	if m == nil || m.regex == nil || text == "" {
 		return text
@@ -397,13 +397,13 @@ func (m *SensitiveWordMatcher) SanitizeDevinText(text string) string {
 	return strings.TrimSpace(strings.Join(keptLines, "\n"))
 }
 
-// ObfuscateText replaces or obfuscates all sensitive words in the text.
+
 func (m *SensitiveWordMatcher) ObfuscateText(text string) string {
 	return m.obfuscateText(text)
 }
 
-// ObfuscateSensitiveWords processes the payload and obfuscates sensitive words
-// in system blocks and message content.
+
+
 func ObfuscateSensitiveWords(payload []byte, matcher *SensitiveWordMatcher) []byte {
 	if matcher == nil || matcher.regex == nil || len(payload) == 0 {
 		return payload
@@ -415,8 +415,8 @@ func ObfuscateSensitiveWords(payload []byte, matcher *SensitiveWordMatcher) []by
 	return doc.Bytes()
 }
 
-// ObfuscateSensitiveWordsDoc processes doc in place and obfuscates sensitive words
-// in system blocks and message content.
+
+
 func ObfuscateSensitiveWordsDoc(doc *ojson.Doc, matcher *SensitiveWordMatcher) bool {
 	if matcher == nil || matcher.regex == nil || doc == nil || doc.Len() == 0 {
 		return false
@@ -428,7 +428,7 @@ func ObfuscateSensitiveWordsDoc(doc *ojson.Doc, matcher *SensitiveWordMatcher) b
 	return modified
 }
 
-// ObfuscateSensitiveWordsInSystemInstruction obfuscates sensitive words in an Antigravity system instruction.
+
 func ObfuscateSensitiveWordsInSystemInstruction(payload []byte, matcher *SensitiveWordMatcher) []byte {
 	if matcher == nil || matcher.regex == nil || len(payload) == 0 {
 		return payload
@@ -440,7 +440,7 @@ func ObfuscateSensitiveWordsInSystemInstruction(payload []byte, matcher *Sensiti
 	return doc.Bytes()
 }
 
-// ObfuscateSensitiveWordsInSystemInstructionDoc obfuscates sensitive words in an Antigravity system instruction in place on doc.
+
 func ObfuscateSensitiveWordsInSystemInstructionDoc(doc *ojson.Doc, matcher *SensitiveWordMatcher) bool {
 	if matcher == nil || matcher.regex == nil || doc == nil || doc.Len() == 0 {
 		return false

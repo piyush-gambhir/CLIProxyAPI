@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// NormalizePluginsConfig applies default plugin configuration values.
+
 func (cfg *Config) NormalizePluginsConfig() {
 	if cfg == nil {
 		return
@@ -35,7 +35,7 @@ func (cfg *Config) NormalizePluginsConfig() {
 	}
 }
 
-// NormalizeClaudeConfig applies default Claude provider configuration values.
+
 func (cfg *Config) NormalizeClaudeConfig() {
 	if cfg == nil {
 		return
@@ -46,8 +46,8 @@ func (cfg *Config) NormalizeClaudeConfig() {
 	}
 }
 
-// SanitizeCodexHeaderDefaults trims surrounding whitespace from the
-// configured Codex header fallback values.
+
+
 func (cfg *Config) SanitizeCodexHeaderDefaults() {
 	if cfg == nil {
 		return
@@ -57,10 +57,10 @@ func (cfg *Config) SanitizeCodexHeaderDefaults() {
 	cfg.Codex.SignInWithChatGPTIdentifier = strings.TrimSpace(cfg.Codex.SignInWithChatGPTIdentifier)
 }
 
-// SanitizeClaudeHeaderDefaults trims surrounding whitespace from the
-// configured Claude fingerprint baseline values, normalizes the native
-// entrypoint and beta override lists, and resets an unknown client-request-id
-// mode to the default.
+
+
+
+
 func (cfg *Config) SanitizeClaudeHeaderDefaults() {
 	if cfg == nil {
 		return
@@ -85,8 +85,8 @@ func (cfg *Config) SanitizeClaudeHeaderDefaults() {
 	cfg.ClaudeHeaderDefaults.Timezone = strings.TrimSpace(cfg.ClaudeHeaderDefaults.Timezone)
 }
 
-// normalizeClaudeEntrypointNames trims and lowercases entrypoint names,
-// dropping empty and duplicate entries while keeping the configured order.
+
+
 func normalizeClaudeEntrypointNames(names []string) []string {
 	if len(names) == 0 {
 		return nil
@@ -110,8 +110,8 @@ func normalizeClaudeEntrypointNames(names []string) []string {
 	return out
 }
 
-// normalizeClaudeBetaNames trims beta names and drops empty and duplicate
-// entries while keeping the configured order.
+
+
 func normalizeClaudeBetaNames(names []string) []string {
 	if len(names) == 0 {
 		return nil
@@ -135,9 +135,9 @@ func normalizeClaudeBetaNames(names []string) []string {
 	return out
 }
 
-// SanitizeOAuthModelAlias normalizes and deduplicates global OAuth model name aliases.
-// It trims whitespace, normalizes channel keys to lower-case, drops empty entries,
-// allows multiple aliases per upstream name, and ensures aliases are unique within each channel.
+
+
+
 func (cfg *Config) SanitizeOAuthModelAlias() {
 	if cfg == nil || len(cfg.OAuthModelAlias) == 0 {
 		return
@@ -185,9 +185,9 @@ func (cfg *Config) SanitizeOAuthModelAlias() {
 	cfg.OAuthModelAlias = out
 }
 
-// SanitizeOAuthSettings normalizes and deduplicates global OAuth model settings.
-// It trims whitespace, normalizes channel keys to lower-case, drops empty entries,
-// and ensures entries are unique within each channel.
+
+
+
 func (cfg *Config) SanitizeOAuthSettings() {
 	if cfg == nil || len(cfg.OAuthSettings) == 0 {
 		return
@@ -235,8 +235,8 @@ func (cfg *Config) SanitizeOAuthSettings() {
 	cfg.OAuthSettings = out
 }
 
-// SanitizeOAuthRequestScopedErrors normalizes and validates global OAuth request-scoped error rules.
-// It trims whitespace, normalizes channel keys to lower-case, validates status/action, and drops invalid rules.
+
+
 func (cfg *Config) SanitizeOAuthRequestScopedErrors() {
 	if cfg == nil || len(cfg.OAuthRequestScopedErrors) == 0 {
 		return
@@ -283,9 +283,9 @@ func (cfg *Config) SanitizeOAuthRequestScopedErrors() {
 	cfg.OAuthRequestScopedErrors = out
 }
 
-// SanitizeOpenAICompatibility removes OpenAI-compatibility provider entries that are
-// not actionable, specifically those missing a BaseURL. It trims whitespace before
-// evaluation and preserves the relative order of remaining entries.
+
+
+
 func (cfg *Config) SanitizeOpenAICompatibility() {
 	if cfg == nil || len(cfg.OpenAICompatibility) == 0 {
 		return
@@ -298,7 +298,7 @@ func (cfg *Config) SanitizeOpenAICompatibility() {
 		e.BaseURL = strings.TrimSpace(e.BaseURL)
 		e.Headers = NormalizeHeaders(e.Headers)
 		if e.BaseURL == "" {
-			// Skip providers with no base-url; treated as removed
+
 			continue
 		}
 		out = append(out, e)
@@ -306,8 +306,8 @@ func (cfg *Config) SanitizeOpenAICompatibility() {
 	cfg.OpenAICompatibility = out
 }
 
-// SanitizeCodexKeys removes Codex API key entries missing a BaseURL.
-// It trims whitespace and preserves order for remaining entries.
+
+
 func (cfg *Config) SanitizeCodexKeys() {
 	if cfg == nil {
 		return
@@ -315,8 +315,8 @@ func (cfg *Config) SanitizeCodexKeys() {
 	cfg.CodexKey = sanitizeCodexKeyEntries(cfg.CodexKey)
 }
 
-// SanitizeXAIKeys removes xAI API key entries missing a BaseURL.
-// It applies the same normalization rules as codex-api-key.
+
+
 func (cfg *Config) SanitizeXAIKeys() {
 	if cfg == nil {
 		return
@@ -327,7 +327,7 @@ func (cfg *Config) SanitizeXAIKeys() {
 	}
 }
 
-// SanitizeMetaKeys normalizes Meta API key entries, defaulting BaseURL to https://api.meta.ai/v1 if empty.
+
 func (cfg *Config) SanitizeMetaKeys() {
 	if cfg == nil {
 		return
@@ -343,7 +343,7 @@ func sanitizeMetaKeyEntries(entries []MetaKey) []MetaKey {
 	for i := range entries {
 		e := entries[i]
 		e.APIKey = strings.TrimSpace(e.APIKey)
-		// meta-api-key requires a valid API key. DCA tokens require OAuth storage (auths/*.json).
+
 		if e.APIKey == "" || strings.HasPrefix(e.APIKey, "dca:") {
 			continue
 		}
@@ -379,8 +379,8 @@ func sanitizeCodexKeyEntries(entries []CodexKey) []CodexKey {
 	return out
 }
 
-// NormalizeSensitiveWordsReplace trims replacement target keys, drops blank keys,
-// and preserves replacement values (including empty strings for phrase deletion).
+
+
 func NormalizeSensitiveWordsReplace(in map[string]string) map[string]string {
 	if len(in) == 0 {
 		return nil
@@ -407,7 +407,7 @@ func NormalizeSensitiveWordsReplace(in map[string]string) map[string]string {
 	return out
 }
 
-// SanitizeAntigravity normalizes Antigravity sensitive-word settings.
+
 func (cfg *Config) SanitizeAntigravity() {
 	if cfg == nil {
 		return
@@ -415,7 +415,7 @@ func (cfg *Config) SanitizeAntigravity() {
 	cfg.Antigravity.SensitiveWordsReplace = NormalizeSensitiveWordsReplace(cfg.Antigravity.SensitiveWordsReplace)
 }
 
-// SanitizeDevin normalizes Devin sensitive-word settings.
+
 func (cfg *Config) SanitizeDevin() {
 	if cfg == nil {
 		return
@@ -423,7 +423,7 @@ func (cfg *Config) SanitizeDevin() {
 	cfg.Devin.SensitiveWordsReplace = NormalizeSensitiveWordsReplace(cfg.Devin.SensitiveWordsReplace)
 }
 
-// NormalizeCloakConfig trims strings and removes blank sensitive words.
+
 func NormalizeCloakConfig(cloak *CloakConfig) *CloakConfig {
 	if cloak == nil {
 		return nil
@@ -448,7 +448,7 @@ func NormalizeCloakConfig(cloak *CloakConfig) *CloakConfig {
 	return cloak
 }
 
-// SanitizeClaudeKeys normalizes headers for Claude credentials.
+
 func (cfg *Config) SanitizeClaudeKeys() {
 	if cfg == nil || len(cfg.ClaudeKey) == 0 {
 		return
@@ -459,9 +459,9 @@ func (cfg *Config) SanitizeClaudeKeys() {
 		entry.Headers = NormalizeHeaders(entry.Headers)
 		entry.ExcludedModels = NormalizeExcludedModels(entry.ExcludedModels)
 		entry.Cloak = NormalizeCloakConfig(entry.Cloak)
-		// Only a recognized value is rewritten. An unrecognized one is preserved as
-		// written so sanitizing a config file never destroys operator input; the
-		// request path falls back to the default profile and reports it once.
+
+
+
 		if normalized, ok := NormalizeClaudeFingerprintProfile(entry.FingerprintProfile); ok {
 			entry.FingerprintProfile = normalized
 		} else {
@@ -510,8 +510,8 @@ func formatGeminiKeyDedupID(entry GeminiKey) string {
 	return b.String()
 }
 
-// FormatConnectionPoolDedupID serializes a per-credential connection-pool override
-// deterministically for credential deduplication and auth-index mapping.
+
+
 func FormatConnectionPoolDedupID(pool *ProxyConnectionPoolConfig) string {
 	if pool == nil {
 		return ""
@@ -530,7 +530,7 @@ func FormatConnectionPoolDedupID(pool *ProxyConnectionPoolConfig) string {
 	return b.String()
 }
 
-// FormatSortedHeaders serializes headers deterministically with null byte separators.
+
 func FormatSortedHeaders(headers map[string]string) string {
 	if len(headers) == 0 {
 		return ""
@@ -550,8 +550,8 @@ func FormatSortedHeaders(headers map[string]string) string {
 	return b.String()
 }
 
-// SanitizeGeminiKeys deduplicates and normalizes Gemini credentials.
-// It uses API key, base URL, proxy URL, prefix, and custom headers as the uniqueness key.
+
+
 func (cfg *Config) SanitizeGeminiKeys() {
 	if cfg == nil {
 		return
@@ -559,8 +559,8 @@ func (cfg *Config) SanitizeGeminiKeys() {
 	cfg.GeminiKey = sanitizeGeminiKeyEntries(cfg.GeminiKey)
 }
 
-// SanitizeInteractionsKeys deduplicates and normalizes native Interactions credentials.
-// It uses API key, base URL, proxy URL, prefix, and custom headers as the uniqueness key.
+
+
 func (cfg *Config) SanitizeInteractionsKeys() {
 	if cfg == nil {
 		return
@@ -580,7 +580,7 @@ func normalizeModelPrefix(prefix string) string {
 	return trimmed
 }
 
-// NormalizeHeaders trims header keys and values and removes empty pairs.
+
 func NormalizeHeaders(headers map[string]string) map[string]string {
 	if len(headers) == 0 {
 		return nil
@@ -600,8 +600,8 @@ func NormalizeHeaders(headers map[string]string) map[string]string {
 	return clean
 }
 
-// NormalizeExcludedModels trims, lowercases, and deduplicates model exclusion patterns.
-// It preserves the order of first occurrences and drops empty entries.
+
+
 func NormalizeExcludedModels(models []string) []string {
 	if len(models) == 0 {
 		return nil
@@ -625,8 +625,8 @@ func NormalizeExcludedModels(models []string) []string {
 	return out
 }
 
-// NormalizeOAuthExcludedModels cleans provider -> excluded models mappings by normalizing provider keys
-// and applying model exclusion normalization to each entry.
+
+
 func NormalizeOAuthExcludedModels(entries map[string][]string) map[string][]string {
 	if len(entries) == 0 {
 		return nil

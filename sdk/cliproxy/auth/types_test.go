@@ -297,7 +297,7 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 	futureJWT := makeTestJWT(futureTime.Unix())
 	pastJWT := makeTestJWT(pastTime.Unix())
 
-	// 1. When expired is missing, ExpirationTime should extract exp from access_token JWT
+
 	authOnlyJWT := &Auth{
 		Metadata: map[string]any{
 			"access_token": futureJWT,
@@ -311,7 +311,7 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 		t.Fatalf("ExpirationTime() = %v (unix %d), want %v (unix %d)", exp, exp.Unix(), futureTime, futureTime.Unix())
 	}
 
-	// 2. When top-level expired is in the past, but access_token has future JWT exp, prioritize the future JWT exp
+
 	authStaleExpired := &Auth{
 		Metadata: map[string]any{
 			"expired":      pastTime.Format(time.RFC3339),
@@ -326,7 +326,7 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 		t.Fatalf("ExpirationTime() with stale expired metadata = %v, want JWT future exp %v", expStale, futureTime)
 	}
 
-	// 3. When both expired metadata and JWT are in the past, return the expired time
+
 	authPastJWT := &Auth{
 		Metadata: map[string]any{
 			"expired":      pastTime.Format(time.RFC3339),
@@ -341,7 +341,7 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 		t.Fatalf("ExpirationTime() = %v, want past time", expPast)
 	}
 
-	// 4. When access_token JWT is expired but id_token JWT is in the future, access_token validity is false
+
 	authExpiredAccessFutureID := &Auth{
 		Metadata: map[string]any{
 			"access_token": pastJWT,
@@ -355,7 +355,7 @@ func TestAuth_ExpirationTime_JWTExp(t *testing.T) {
 		t.Fatalf("AccessTokenExpirationTime() = (%v, %t), want past time and true", exp, ok)
 	}
 
-	// 5. When access_token is empty, HasValidAccessToken is false
+
 	authNoAccess := &Auth{
 		Metadata: map[string]any{
 			"id_token": futureJWT,

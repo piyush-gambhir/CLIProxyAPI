@@ -11,10 +11,10 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// TestFileNameStoresExposeBaseDirCapability pins the capability marker the
-// login flows use to decide whether renaming onto a richer credential file
-// is safe: every built-in backend resolves the save path from the record
-// name and must keep exposing SetBaseDir.
+
+
+
+
 func TestFileNameStoresExposeBaseDirCapability(t *testing.T) {
 	stores := map[string]cliproxyauth.Store{
 		"git":      &GitTokenStore{},
@@ -28,10 +28,10 @@ func TestFileNameStoresExposeBaseDirCapability(t *testing.T) {
 	}
 }
 
-// TestGitTokenStoreSaveResolvesFromRecordFileName proves the behavior the
-// adoption rename relies on outside FileTokenStore: when a record's name is
-// changed before Save, the new file lands at the adopted (email) name and
-// not at the superseded (subject) name it carried before the rename.
+
+
+
+
 func TestGitTokenStoreSaveResolvesFromRecordFileName(t *testing.T) {
 	root := t.TempDir()
 	remoteDir := filepath.Join(root, "remote.git")
@@ -57,7 +57,7 @@ func TestGitTokenStoreSaveResolvesFromRecordFileName(t *testing.T) {
 			"access_token": "token-1",
 		},
 	}
-	// Simulate the login-flow adoption rename onto the richer email file.
+
 	record.ID = emailFileName
 	record.FileName = emailFileName
 	record.Metadata["email"] = "user@example.com"
@@ -77,10 +77,10 @@ func TestGitTokenStoreSaveResolvesFromRecordFileName(t *testing.T) {
 	}
 }
 
-// TestRemoteStoresSaveResolvesFromRecordFileName proves the same rename
-// behavior for the Postgres and object backends: the remote key follows the
-// resolved local path, so an adopted email filename is what reaches the
-// remote store.
+
+
+
+
 func TestRemoteStoresSaveResolvesFromRecordFileName(t *testing.T) {
 	const emailFileName = "xai-user@example.com-0123456789abcdef.json"
 	const subjectFileName = "xai-sub-1-fedcba9876543210.json"
@@ -140,7 +140,7 @@ func TestRemoteStoresSaveResolvesFromRecordFileName(t *testing.T) {
 					"access_token": "token-1",
 				},
 			}
-			// Simulate the login-flow adoption rename onto the email file.
+
 			record.ID = emailFileName
 			record.FileName = emailFileName
 			record.Metadata["email"] = "user@example.com"

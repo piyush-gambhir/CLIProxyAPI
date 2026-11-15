@@ -225,7 +225,7 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 		return client, nil, nil
 	}
 
-	// Priority: request override, then auth proxy, then config proxy.
+
 	proxyStr := strings.TrimSpace(c.requestProxyURL)
 	if proxyStr == "" && c.auth != nil {
 		proxyStr = strings.TrimSpace(c.auth.ProxyURL)
@@ -258,7 +258,7 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 			if setting.URL != nil && (strings.EqualFold(setting.URL.Scheme, "socks5") || strings.EqualFold(setting.URL.Scheme, "socks5h")) {
 				isConfiguredSOCKS = true
 			}
-		default: // ModeInherit
+		default:
 			proxyStr = ""
 		}
 	}
@@ -274,7 +274,7 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 		}
 	}
 
-	// Priority 3 & 4: Context RoundTripper or Default transport
+
 	if baseTransport == nil {
 		if ctxTransport != nil {
 			baseTransport = ctxTransport.Clone()
@@ -380,8 +380,8 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 		}
 		origProxyFunc := baseTransport.Proxy
 
-		// For plain HTTP requests, wrapping DialContext intercepts the plaintext HTTP request bytes.
-		// Handshake bytes (like SOCKS5 or direct writes) are bypassed cleanly by NewOrderedRequestConn.
+
+
 		baseTransport.DialContext = func(dialCtx context.Context, network, addr string) (net.Conn, error) {
 			conn, errDialContext := origDialContext(dialCtx, network, addr)
 			if errDialContext != nil {
@@ -390,9 +390,9 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 			return httpwire.NewOrderedRequestConn(conn, headerOrderFunc), nil
 		}
 
-		// Configure dynamic proxy function:
-		// For plain HTTP, keep origProxyFunc so standard library forwards HTTP requests to the proxy.
-		// For HTTPS, return nil so that DialTLSContext is always called to perform TLS wrapping.
+
+
+
 		baseTransport.Proxy = func(r *http.Request) (*url.URL, error) {
 			if r != nil && r.URL != nil && r.URL.Scheme == "http" {
 				if origProxyFunc != nil {
@@ -415,7 +415,7 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 			var rawConn net.Conn
 			var errDial error
 			if !isTargetHTTPS {
-				// Target is plain HTTP; standard library called DialTLSContext to connect to an HTTPS proxy itself
+
 				if callerTLSDialer != nil {
 					tlsConn, errTLS := callerTLSDialer(dialCtx, network, addr)
 					if errTLS != nil {
@@ -454,10 +454,10 @@ func (c *hostHTTPClient) newHTTPClientForRequest(ctx context.Context, cfg *confi
 				}
 				return httpwire.NewOrderedRequestConn(tlsConn, headerOrderFunc), nil
 			} else if isConfiguredSOCKS {
-				// Configured SOCKS5 proxy: origDialContext is already the SOCKS5 dialer from BuildHTTPTransport
+
 				rawConn, errDial = origDialContext(dialCtx, network, addr)
 			} else if targetProxy != nil {
-				// Target is HTTPS; tunnel through the proxy (HTTP/HTTPS/SOCKS) to addr
+
 				rawConn, errDial = dialProxyTunnel(dialCtx, origDialContext, callerTLSDialer, targetProxy, addr, baseTransport)
 			} else {
 				if callerTLSDialer != nil {
@@ -533,14 +533,14 @@ func installPluginRedirectPolicy(client *http.Client) {
 }
 
 func checkPluginRedirect(req *http.Request, via []*http.Request, previous func(*http.Request, []*http.Request) error) error {
-	// net/http rebuilds each redirect request from the initial request's headers,
-	// so strip credential headers whenever the target or any intermediate hop
-	// leaves the initial request's origin (scheme + host:port).
+
+
+
 	if crossOriginRedirect(req, via) {
 		for name := range req.Header {
 			if isPluginCredentialHeader(name) {
-				// Delete the exact map key because Header.Del canonicalizes and
-				// would miss non-canonical keys such as "x-api-key".
+
+
 				delete(req.Header, name)
 			}
 		}

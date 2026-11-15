@@ -260,7 +260,7 @@ func TestGinLogrusLoggerHealthProbeStatus(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			engine := gin.New()
 			engine.Use(GinLogrusLogger())
-			// Simulate an early global middleware response before route handlers run.
+
 			engine.Use(func(c *gin.Context) { c.AbortWithStatus(tc.status) })
 			engine.Handle(tc.method, tc.path, func(c *gin.Context) { t.Error("aborted request reached route handler") })
 			hook.Reset()

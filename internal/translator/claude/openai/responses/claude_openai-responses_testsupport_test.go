@@ -6,8 +6,8 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// claudeAssistantBlockTypes returns the content block types of the last Claude
-// assistant message produced by the Responses -> Claude request translator.
+
+
 func claudeAssistantBlockTypes(t *testing.T, claudeReq []byte) []string {
 	t.Helper()
 	var kinds []string

@@ -1040,7 +1040,7 @@ func TestKimiExecutorNormalizesToolSchemasForMoonshot(t *testing.T) {
 		Metadata:   map[string]any{"access_token": "test-token"},
 	}
 
-	// Tool with $defs and $ref sibling type, matching the shape used by Codex Desktop app tools
+
 	payload := []byte(`{
 		"model":"kimi-k3",
 		"messages":[{"role":"user","content":"hello"}],
@@ -1086,7 +1086,7 @@ func TestKimiExecutorNormalizesToolSchemasForMoonshot(t *testing.T) {
 		t.Fatalf("upstream tool function not found: %s", upstreamBody)
 	}
 
-	// Moonshot rejects $ref with sibling type; verify $ref is inlined and removed
+
 	if ref := tool.Get("parameters.properties.value.$ref"); ref.Exists() {
 		t.Fatalf("upstream tool parameter still contains $ref: %s", tool.Get("parameters").Raw)
 	}
@@ -1096,11 +1096,11 @@ func TestKimiExecutorNormalizesToolSchemasForMoonshot(t *testing.T) {
 	if got := tool.Get("parameters.properties.value.description").String(); got != "A value" {
 		t.Fatalf("upstream tool parameter value.description = %q, want %q", got, "A value")
 	}
-	// Verify $defs container was pruned
+
 	if defs := tool.Get("parameters.$defs"); defs.Exists() {
 		t.Fatalf("upstream tool parameter still contains $defs: %s", tool.Get("parameters").Raw)
 	}
-	// Verify explicit object type
+
 	if got := tool.Get("parameters.type").String(); got != "object" {
 		t.Fatalf("upstream tool parameters.type = %q, want %q", got, "object")
 	}
@@ -1129,7 +1129,7 @@ func TestKimiExecutorStreamNormalizesToolSchemasFromResponses(t *testing.T) {
 		Metadata:   map[string]any{"access_token": "test-token"},
 	}
 
-	// Codex Responses format payload with tools containing $defs and $ref
+
 	payload := []byte(`{
 		"model":"kimi-k3",
 		"input":[{"type":"message","role":"user","content":"hello"}],
@@ -1653,7 +1653,7 @@ func TestKimiExecutor_KimiAI_TargetURL(t *testing.T) {
 		t.Fatalf("requestedURL = %q, want https://api.kimi.ai/coding/v1/chat/completions", requestedURL)
 	}
 
-	// Also test streaming
+
 	requestedURL = ""
 	streamRes, errStream := executor.ExecuteStream(ctx, auth, cliproxyexecutor.Request{
 		Model:   "kimi-k3",
@@ -1880,7 +1880,7 @@ func TestKimiApplyPatchSSEFramingAndIncompleteEOF(t *testing.T) {
 		terminals int
 	}{
 		{"incomplete_before_done", added + done + completed + done, false, 0},
-		// Completed tool arguments do not substitute for a source response terminal.
+
 		{"completed_call_then_done_then_call", added + argumentsDone + itemDone + done + late + done, false, 0},
 		{"completed_call_then_response_then_done_then_call", added + argumentsDone + itemDone + completed + done + late + done, true, 1},
 		{"response_completed_then_duplicate_done", added + argumentsDone + completed + done + done, true, 1},

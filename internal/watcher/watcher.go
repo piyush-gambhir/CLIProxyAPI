@@ -1,5 +1,5 @@
-// Package watcher watches config/auth files and triggers hot reloads.
-// It supports cross-platform fsnotify event handling.
+
+
 package watcher
 
 import (
@@ -21,7 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// storePersister captures persistence-capable token store methods used by the watcher.
+
 type storePersister interface {
 	PersistConfig(ctx context.Context) error
 	PersistAuthFiles(ctx context.Context, message string, paths ...string) error
@@ -31,7 +31,7 @@ type authDirProvider interface {
 	AuthDir() string
 }
 
-// Watcher manages file watching for configuration and authentication files
+
 type Watcher struct {
 	configPath                 string
 	authDir                    string
@@ -43,7 +43,7 @@ type Watcher struct {
 	authRescanMu               sync.Mutex
 	configReloadMu             sync.Mutex
 	configReloadTimer          *time.Timer
-	configApplyMu              sync.Mutex // Serializes config file reloads so they apply in file order.
+	configApplyMu              sync.Mutex
 	serverUpdateMu             sync.Mutex
 	serverUpdateTimer          *time.Timer
 	serverUpdateLast           time.Time
@@ -59,10 +59,10 @@ type Watcher struct {
 	authQueue                  chan<- AuthUpdate
 	currentAuths               map[string]*coreauth.Auth
 	pendingProviderReloadAuths map[string]*coreauth.Auth
-	authRevisions              map[string]uint64 // Includes deletion tombstones; guarded by clientsMutex.
-	persistedAuthRevisions     map[string]uint64 // Latest revision stamped by dispatchPersistedAuthUpdateWithRevision; guarded by clientsMutex.
-	fileObservations           map[string]uint64 // Tracks file events even when content is unchanged.
-	activeAuthScans            int               // Guarded by clientsMutex.
+	authRevisions              map[string]uint64
+	persistedAuthRevisions     map[string]uint64
+	fileObservations           map[string]uint64
+	activeAuthScans            int
 	runtimeAuths               map[string]*coreauth.Auth
 	dispatchMu                 sync.Mutex
 	dispatchCond               *sync.Cond
@@ -75,7 +75,7 @@ type Watcher struct {
 	oldConfigYaml              []byte
 }
 
-// AuthUpdateAction represents the type of change detected in auth sources.
+
 type AuthUpdateAction string
 
 const (
@@ -84,33 +84,33 @@ const (
 	AuthUpdateActionDelete AuthUpdateAction = "delete"
 )
 
-// AuthUpdate describes an incremental change to auth configuration.
+
 type AuthUpdate struct {
 	Action      AuthUpdateAction
 	ID          string
 	Auth        *coreauth.Auth
-	revision    uint64 // Watcher-local ordering, independent of runtime auth generations.
-	fileRemoval bool   // The source file was removed, not just an ID from its content.
+	revision    uint64
+	fileRemoval bool
 }
 
-// IsFileRemoval reports whether this delete was observed as a whole-file removal.
+
 func (u AuthUpdate) IsFileRemoval() bool {
 	return u.fileRemoval
 }
 
-// SetFileRemoval marks a delete as a whole-file removal rather than a per-ID diff.
+
 func (u *AuthUpdate) SetFileRemoval(fileRemoval bool) {
 	if u != nil {
 		u.fileRemoval = fileRemoval
 	}
 }
 
-// Revision returns the monotonic watcher revision assigned to this update.
+
 func (u AuthUpdate) Revision() uint64 {
 	return u.revision
 }
 
-// SetRevision updates the revision counter for this update.
+
 func (u *AuthUpdate) SetRevision(rev uint64) {
 	if u != nil {
 		u.revision = rev
@@ -118,15 +118,15 @@ func (u *AuthUpdate) SetRevision(rev uint64) {
 }
 
 const (
-	// replaceCheckDelay is a short delay to allow atomic replace (rename) to settle
-	// before deciding whether a Remove event indicates a real deletion.
+
+
 	replaceCheckDelay        = 50 * time.Millisecond
 	configReloadDebounce     = 150 * time.Millisecond
 	authRemoveDebounceWindow = 1 * time.Second
 	serverUpdateDebounce     = 1 * time.Second
 )
 
-// NewWatcher creates a new file watcher instance
+
 func NewWatcher(configPath, authDir string, reloadCallback func(*config.Config)) (*Watcher, error) {
 	watcher, errNewWatcher := fsnotify.NewWatcher()
 	if errNewWatcher != nil {
@@ -156,12 +156,12 @@ func NewWatcher(configPath, authDir string, reloadCallback func(*config.Config))
 	return w, nil
 }
 
-// Start begins watching the configuration file and authentication directory
+
 func (w *Watcher) Start(ctx context.Context) error {
 	return w.start(ctx)
 }
 
-// Stop stops the file watcher
+
 func (w *Watcher) Stop() error {
 	w.stopped.Store(true)
 	w.stopDispatch()
@@ -170,7 +170,7 @@ func (w *Watcher) Stop() error {
 	return w.watcher.Close()
 }
 
-// SetConfig updates the current configuration
+
 func (w *Watcher) SetConfig(cfg *config.Config) {
 	cloned := cfg.CloneForRuntime()
 	w.clientsMutex.Lock()
@@ -246,44 +246,44 @@ func (w *Watcher) isPathInCurrentAuthDir(path string) bool {
 	return w.isPathInCurrentAuthDirLocked(path)
 }
 
-// SetPluginAuthParser updates the plugin auth parser used for file auth synthesis.
+
 func (w *Watcher) SetPluginAuthParser(parser synthesizer.PluginAuthParser) {
 	w.clientsMutex.Lock()
 	defer w.clientsMutex.Unlock()
 	w.pluginAuthParser = parser
 }
 
-// SetAuthUpdateQueue sets the queue used to emit auth updates.
+
 func (w *Watcher) SetAuthUpdateQueue(queue chan<- AuthUpdate) {
 	w.setAuthUpdateQueue(queue)
 }
 
-// DispatchRuntimeAuthUpdate allows external runtime providers (e.g., websocket-driven auths)
-// to push auth updates through the same queue used by file/config watchers.
-// Returns true if the update was enqueued; false if no queue is configured.
+
+
+
 func (w *Watcher) DispatchRuntimeAuthUpdate(update AuthUpdate) bool {
 	return w.dispatchRuntimeAuthUpdate(update)
 }
 
-// DispatchPersistedAuthUpdate pushes already-persisted file auth updates through the watcher queue.
-// Returns true if the update was enqueued; false if no queue is configured.
+
+
 func (w *Watcher) DispatchPersistedAuthUpdate(update AuthUpdate) bool {
 	return w.dispatchPersistedAuthUpdate(update)
 }
 
-// DispatchPersistedAuthUpdateWithRevision pushes already-persisted file auth updates through the watcher queue
-// and returns the stamped monotonic revision.
+
+
 func (w *Watcher) DispatchPersistedAuthUpdateWithRevision(update *AuthUpdate) (bool, uint64) {
 	return w.dispatchPersistedAuthUpdateWithRevision(update)
 }
 
-// RereadDiscardedFileSnapshot invalidates watcher caches for a file snapshot
-// discarded by the manager's digest fence and re-reads the backing file.
+
+
 func (w *Watcher) RereadDiscardedFileSnapshot(auth *coreauth.Auth) {
 	w.rereadDiscardedFileSnapshot(auth)
 }
 
-// SnapshotCoreAuths converts current clients snapshot into core auth entries.
+
 func (w *Watcher) SnapshotCoreAuths() []*coreauth.Auth {
 	w.clientsMutex.RLock()
 	cfg := w.config

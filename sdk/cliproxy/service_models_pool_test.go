@@ -2,13 +2,13 @@ package cliproxy
 
 import "testing"
 
-// TestModelPrefixesDecideWhetherAPoolExists pins the precondition for
-// reset-soonest routing: a shared pool needs bare model IDs registered for every
-// credential, which means no per-credential prefix, or force-model-prefix off.
-//
-// With force-model-prefix on and a per-credential prefix, only
-// "<prefix>/<model>" is registered, so an unprefixed request has no candidates
-// at all and every selection strategy is inert.
+
+
+
+
+
+
+
 func TestModelPrefixesDecideWhetherAPoolExists(t *testing.T) {
 	t.Parallel()
 
@@ -65,9 +65,9 @@ func TestModelPrefixesDecideWhetherAPoolExists(t *testing.T) {
 	}
 }
 
-// TestPrefixedRouteRemainsAvailableAsAManualOverride checks that turning
-// force-model-prefix off does not remove the pinned route: both the bare id and
-// the prefixed id are registered, so the prefix stays usable as an override.
+
+
+
 func TestPrefixedRouteRemainsAvailableAsAManualOverride(t *testing.T) {
 	t.Parallel()
 

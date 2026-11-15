@@ -22,8 +22,8 @@ func newIssue6631ConfigFile(t *testing.T) (configPath, authDir string) {
 	return filepath.Join(tmpDir, "config.yaml"), authDir
 }
 
-// writeIssue6631Config returns an error instead of failing the test so reload
-// callbacks running on other goroutines can use it.
+
+
 func writeIssue6631Config(configPath, authDir string, requestRetry int) error {
 	raw := fmt.Sprintf("auth-dir: %q\nrequest-retry: %d\n", filepath.ToSlash(authDir), requestRetry)
 	return os.WriteFile(configPath, []byte(raw), 0o600)
@@ -43,7 +43,7 @@ func TestReloadConfigIfChangedReloadsWriteLandingDuringReload_Issue6631(t *testi
 		reloadCallback: func(cfg *config.Config) {
 			applied = append(applied, cfg.RequestRetry)
 			if len(applied) == 1 {
-				// A management save lands while this reload is still applying.
+
 				errSave = writeIssue6631Config(configPath, authDir, 2)
 			}
 		},
@@ -53,7 +53,7 @@ func TestReloadConfigIfChangedReloadsWriteLandingDuringReload_Issue6631(t *testi
 	if errSave != nil {
 		t.Fatal(errSave)
 	}
-	// The reload requested by that save must apply it.
+
 	w.ReloadConfigIfChanged()
 
 	if want := []int{1, 2}; !reflect.DeepEqual(applied, want) {
@@ -112,7 +112,7 @@ func TestReloadConfigIfChangedSerializesConcurrentReloads_Issue6631(t *testing.T
 		t.Fatal("first reload did not reach the reload callback")
 	}
 
-	// A newer save lands and requests its own reload while the first one is applying.
+
 	if errWrite := writeIssue6631Config(configPath, authDir, 2); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -121,8 +121,8 @@ func TestReloadConfigIfChangedSerializesConcurrentReloads_Issue6631(t *testing.T
 		defer wg.Done()
 		w.ReloadConfigIfChanged()
 	}()
-	// The bounded wait only gives an unserialized second reload the chance to
-	// overlap; a serialized reload stays blocked, so this cannot fail it.
+
+
 	select {
 	case <-secondEntered:
 	case <-time.After(200 * time.Millisecond):
@@ -153,7 +153,7 @@ func TestReloadConfigIfChangedReloadsAfterWriteBetweenHashAndLoad_Issue6631(t *t
 	loadConfigFileFunc = func(path string) (*config.Config, error) {
 		loads++
 		if loads == 1 {
-			// A management save lands after the change check read version 1.
+
 			errSave = writeIssue6631Config(configPath, authDir, 2)
 		}
 		return originalLoad(path)
@@ -170,7 +170,7 @@ func TestReloadConfigIfChangedReloadsAfterWriteBetweenHashAndLoad_Issue6631(t *t
 	if errSave != nil {
 		t.Fatal(errSave)
 	}
-	// A later save restores the bytes of version 1, which were never applied.
+
 	if errWrite := writeIssue6631Config(configPath, authDir, 1); errWrite != nil {
 		t.Fatal(errWrite)
 	}

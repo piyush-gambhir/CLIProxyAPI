@@ -106,7 +106,7 @@ func TestManagedSubscriberOrdinaryTrafficDoesNotRenewHeartbeat(t *testing.T) {
 					close(releaseConsumer)
 					t.Fatalf("subscription did not become ready: %v", errRun)
 				}
-				// Virtual time keeps this deadline test independent of wall-clock scheduling.
+
 				time.Sleep(time.Minute)
 				synctest.Wait()
 				heartbeatOK := client.HeartbeatOK()

@@ -1,4 +1,4 @@
-// Package openai implements thinking configuration for OpenAI/Codex models.
+
 package openai
 
 import (
@@ -7,12 +7,12 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-// Applier implements thinking.ProviderApplier for OpenAI models.
+
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
 
-// NewApplier creates a new OpenAI thinking applier.
+
 func NewApplier() *Applier {
 	return &Applier{}
 }
@@ -21,7 +21,7 @@ func init() {
 	thinking.RegisterProvider("openai", NewApplier())
 }
 
-// Apply applies thinking configuration to OpenAI request body.
+
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	effort, ok := resolveOpenAIEffort(config, modelInfo)
 	if !ok {
@@ -34,7 +34,7 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	return result, nil
 }
 
-// ApplyDoc applies thinking configuration onto doc in place.
+
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {
 		return nil

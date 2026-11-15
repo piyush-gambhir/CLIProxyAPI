@@ -14,12 +14,12 @@ const devinDiagnosticPatchRequest = `{"tools":[{"type":"custom","name":"apply_pa
 
 func TestDevinApplyPatchDiagnosticsClassifiesShapesWithoutContent(t *testing.T) {
 	d := NewDevinApplyPatchDiagnostics([]byte(devinDiagnosticPatchRequest))
-	// A bare patch split across frames, delivered in the invalid-JSON field.
+
 	d.Observe(0, DevinToolCallDelta{Name: "apply_patch", InvalidJSONStr: "\n*** Begin", InvalidJSONErr: "invalid character '*' looking for beginning of value"})
 	d.Observe(0, DevinToolCallDelta{Name: "apply_patch", InvalidJSONStr: " Patch\n*** Add File: SECRET_PATH\n+SECRET_BODY\n*** End Patch"})
-	// A JSON wrapper on a second patch call.
+
 	d.Observe(1, DevinToolCallDelta{Name: "apply_patch", Arguments: `{"input":"SECRET_BODY"}`})
-	// Ordinary tools are excluded from the summary.
+
 	d.Observe(2, DevinToolCallDelta{Name: "shell", Arguments: `{"cmd":"SECRET_CMD"}`})
 
 	got := d.Render(nil, "legacy_invalid_json_str")
@@ -51,7 +51,7 @@ func TestDevinApplyPatchDiagnosticsUsesTranslatorReason(t *testing.T) {
 	if !strings.Contains(got, `reason="apply_patch arguments must contain only one input field"`) {
 		t.Fatalf("translator reason missing: %s", got)
 	}
-	// An unnamed call is kept because its identity may arrive after the failure.
+
 	if !strings.Contains(got, "apply_patch_calls=1") || !strings.Contains(got, "shape=json_object") {
 		t.Fatalf("unnamed patch call missing: %s", got)
 	}
@@ -104,7 +104,7 @@ func TestDevinApplyPatchDiagnosticsBounded(t *testing.T) {
 		t.Fatalf("diagnostic described more than one call: %s", got)
 	}
 
-	// Without an invalid-JSON call, the latest call is described.
+
 	latest := NewDevinApplyPatchDiagnostics([]byte(devinDiagnosticPatchRequest))
 	latest.Observe(0, DevinToolCallDelta{Name: "apply_patch", Arguments: `{"input":"a"}`})
 	latest.Observe(1, DevinToolCallDelta{Name: "apply_patch", Arguments: `{"input":`})
@@ -112,8 +112,8 @@ func TestDevinApplyPatchDiagnosticsBounded(t *testing.T) {
 		t.Fatalf("latest call not described: %s", got)
 	}
 
-	// Requests without custom apply_patch do not allocate diagnostics, and
-	// diagnostics cap tracked calls at maxDevinDiagnosticToolCalls (128).
+
+
 	if noPatch := NewDevinApplyPatchDiagnostics([]byte(`{"tools":[{"type":"function","name":"apply_patch"}]}`)); noPatch != nil {
 		t.Fatalf("expected nil diagnostics when custom apply_patch is not requested")
 	}

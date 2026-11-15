@@ -86,12 +86,12 @@ func TestSanitizeOAuthRequestScopedErrors(t *testing.T) {
 					Action:      " STOP ",
 				},
 				{
-					Status: 0, // invalid status
+					Status: 0,
 					Match:  []string{"foo"},
 					Action: "stop",
 				},
 				{
-					Status: 400, // missing match / action
+					Status: 400,
 				},
 			},
 			" empty-channel ": {},

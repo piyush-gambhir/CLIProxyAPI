@@ -31,7 +31,7 @@ const (
 	maxTotalDeferredAPIResponseBodyBytes = logging.MaxTotalDeferredAPIResponseBodyBytes
 )
 
-// UpstreamRequestLog captures the outbound upstream request details for logging.
+
 type UpstreamRequestLog struct {
 	URL       string
 	Method    string
@@ -63,12 +63,12 @@ func requestLogCaptureEnabled(cfg *config.Config) bool {
 	return cfg != nil && cfg.RequestLog && !cfg.CommercialMode
 }
 
-// RecordAPIRequest stores the upstream request metadata in Gin context for request logging.
+
 func RecordAPIRequest(ctx context.Context, cfg *config.Config, info UpstreamRequestLog) {
 	if cfg == nil || cfg.CommercialMode {
 		return
 	}
-	// Check the immutable policy and request-scoped capture before accessing the pooled Gin context.
+
 	if !cfg.RequestLog {
 		if logging.DeferredAPIRequestCaptureDisabled(ctx) {
 			return
@@ -225,7 +225,7 @@ func deferredResponseCaptureEnabled(ctx context.Context, cfg *config.Config) boo
 }
 
 func resolveDeferredAPICapture(ctx context.Context, cfg *config.Config) *logging.DeferredAPICapture {
-	// Check the immutable policy and request-scoped capture before accessing the pooled Gin context.
+
 	if !deferredResponseCaptureEnabled(ctx, cfg) {
 		return nil
 	}
@@ -289,7 +289,7 @@ func newAPIRequestLogBuilder(index int, info UpstreamRequestLog, timestamp time.
 	return builder
 }
 
-// RecordAPIResponseMetadata captures upstream response status/header information for the latest attempt.
+
 func RecordAPIResponseMetadata(ctx context.Context, cfg *config.Config, status int, headers http.Header) {
 	logging.SetResponseHeaders(ctx, headers)
 	if !requestLogCaptureEnabled(cfg) {
@@ -319,7 +319,7 @@ func RecordAPIResponseMetadata(ctx context.Context, cfg *config.Config, status i
 	updateAggregatedResponseIfMemoryBacked(ginCtx, attempts)
 }
 
-// RecordAPIResponseError adds an error entry for the latest attempt when no HTTP response is available.
+
 func RecordAPIResponseError(ctx context.Context, cfg *config.Config, err error) {
 	if err == nil {
 		return
@@ -336,7 +336,7 @@ func RecordAPIResponseError(ctx context.Context, cfg *config.Config, err error) 
 	ensureResponseIntro(ginCtx, attempt)
 
 	if attempt.bodyStarted && !attempt.bodyHasContent {
-		// Ensure body does not stay empty marker if error arrives first.
+
 		attempt.bodyStarted = false
 	}
 	if attempt.errorWritten {
@@ -348,7 +348,7 @@ func RecordAPIResponseError(ctx context.Context, cfg *config.Config, err error) 
 	updateAggregatedResponseIfMemoryBacked(ginCtx, attempts)
 }
 
-// AppendAPIResponseChunk appends an upstream response chunk to Gin context for request logging.
+
 func AppendAPIResponseChunk(ctx context.Context, cfg *config.Config, chunk []byte) {
 	if !requestLogCaptureEnabled(cfg) {
 		appendDeferredResponseChunk(ctx, cfg, chunk)
@@ -393,7 +393,7 @@ func AppendAPIResponseChunk(ctx context.Context, cfg *config.Config, chunk []byt
 	updateAggregatedResponseIfMemoryBacked(ginCtx, attempts)
 }
 
-// RecordAPIWebsocketRequest stores an upstream websocket request event in Gin context.
+
 func RecordAPIWebsocketRequest(ctx context.Context, cfg *config.Config, info UpstreamRequestLog) {
 	if cfg == nil || cfg.CommercialMode {
 		return
@@ -429,7 +429,7 @@ func RecordAPIWebsocketRequest(ctx context.Context, cfg *config.Config, info Ups
 	appendAPIWebsocketTimeline(ginCtx, []byte(builder.String()))
 }
 
-// RecordAPIWebsocketHandshake stores the upstream websocket handshake response metadata.
+
 func RecordAPIWebsocketHandshake(ctx context.Context, cfg *config.Config, status int, headers http.Header) {
 	logging.SetResponseHeaders(ctx, headers)
 	if !requestLogCaptureEnabled(cfg) {
@@ -454,13 +454,13 @@ func RecordAPIWebsocketHandshake(ctx context.Context, cfg *config.Config, status
 	appendAPIWebsocketTimeline(ginCtx, []byte(builder.String()))
 }
 
-// RecordAPIWebsocketUpgradeRejection stores a rejected websocket upgrade as an HTTP attempt.
+
 func RecordAPIWebsocketUpgradeRejection(ctx context.Context, cfg *config.Config, info UpstreamRequestLog, status int, headers http.Header, body []byte) {
 	logging.SetResponseHeaders(ctx, headers)
 	if cfg == nil || cfg.CommercialMode {
 		return
 	}
-	// Check the immutable policy and request-scoped capture before accessing the pooled Gin context.
+
 	if !cfg.RequestLog {
 		if logging.DeferredAPIRequestCaptureDisabled(ctx) {
 			return
@@ -480,7 +480,7 @@ func RecordAPIWebsocketUpgradeRejection(ctx context.Context, cfg *config.Config,
 	AppendAPIResponseChunk(ctx, cfg, body)
 }
 
-// WebsocketUpgradeRequestURL converts a websocket URL back to its HTTP handshake URL for logging.
+
 func WebsocketUpgradeRequestURL(rawURL string) string {
 	trimmedURL := strings.TrimSpace(rawURL)
 	if trimmedURL == "" {
@@ -499,7 +499,7 @@ func WebsocketUpgradeRequestURL(rawURL string) string {
 	return parsed.String()
 }
 
-// AppendAPIWebsocketResponse stores an upstream websocket response frame in Gin context.
+
 func AppendAPIWebsocketResponse(ctx context.Context, cfg *config.Config, payload []byte) {
 	if !requestLogCaptureEnabled(cfg) {
 		appendDeferredResponseChunk(ctx, cfg, payload)
@@ -524,14 +524,14 @@ func AppendAPIWebsocketResponse(ctx context.Context, cfg *config.Config, payload
 	appendAPIWebsocketTimeline(ginCtx, []byte(builder.String()))
 }
 
-// AppendCodexAPIWebsocketResponse stores a codex upstream websocket response frame and merges any
-// quota event headers carried by the frame into the request log.
+
+
 func AppendCodexAPIWebsocketResponse(ctx context.Context, cfg *config.Config, payload []byte) {
 	logging.MergeResponseHeaders(ctx, ParseCodexQuotaEventHeaders(payload))
 	AppendAPIWebsocketResponse(ctx, cfg, payload)
 }
 
-// RecordAPIWebsocketError stores an upstream websocket error event in Gin context.
+
 func RecordAPIWebsocketError(ctx context.Context, cfg *config.Config, stage string, err error) {
 	if err == nil {
 		return
@@ -841,7 +841,7 @@ func SummarizeErrorBody(contentType string, body []byte) string {
 		return "[html body omitted]"
 	}
 
-	// Try to extract error message from JSON response
+
 	if message := extractJSONErrorMessage(body); message != "" {
 		return message
 	}
@@ -873,7 +873,7 @@ func extractHTMLTitle(body []byte) string {
 	return strings.Join(strings.Fields(title), " ")
 }
 
-// extractJSONErrorMessage attempts to extract error.message from JSON error responses
+
 func extractJSONErrorMessage(body []byte) string {
 	result := ojson.GetBytesNoCopy(body, "error.message")
 	if result.Exists() && result.String() != "" {
@@ -882,8 +882,8 @@ func extractJSONErrorMessage(body []byte) string {
 	return ""
 }
 
-// logWithRequestID returns a logrus Entry with request_id field populated from context.
-// If no request ID is found in context, it returns the standard logger.
+
+
 func LogWithRequestID(ctx context.Context) *log.Entry {
 	if ctx == nil {
 		return log.NewEntry(log.StandardLogger())
@@ -895,7 +895,7 @@ func LogWithRequestID(ctx context.Context) *log.Entry {
 	return log.WithField("request_id", requestID)
 }
 
-// MarkCreditsUsed flags the request as having used AI credits for billing.
+
 func MarkCreditsUsed(ctx context.Context) {
 	ginCtx := ginContextFrom(ctx)
 	if ginCtx != nil {
@@ -903,7 +903,7 @@ func MarkCreditsUsed(ctx context.Context) {
 	}
 }
 
-// CreditsUsed returns true if the request used AI credits.
+
 func CreditsUsed(ctx context.Context) bool {
 	ginCtx := ginContextFrom(ctx)
 	if ginCtx != nil {

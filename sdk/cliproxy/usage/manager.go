@@ -14,63 +14,63 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DefaultServiceTier is retained for direct SDK and non-OpenAI usage callers.
+
 const DefaultServiceTier = "default"
 
-// AutoServiceTier is the OpenAI request semantics when service_tier is omitted.
-// OpenAI HTTP handlers set it explicitly, without changing other providers'
-// historical direct-SDK default.
+
+
+
 const AutoServiceTier = "auto"
 
-// Record contains the usage statistics captured for a single provider request.
+
 type Record struct {
-	// RequestID uniquely identifies this specific model execution instance (UUID v4).
+
 	RequestID string
-	// TraceID identifies the parent inbound HTTP request when available (8-character hex).
+
 	TraceID string
-	// SelectionID identifies the scheduler selection decision that produced this usage record when available.
+
 	SelectionID string
-	// HomeSelection carries deferred accounting for reused Home dispatches.
+
 	HomeSelection *HomeSelection
 	Provider      string
-	// BaseURL stores the configured upstream base URL when available.
+
 	BaseURL string
-	// ExecutorType stores the concrete executor type that handled the request.
+
 	ExecutorType string
 	Model        string
 	Alias        string
 	APIKey       string
-	// IsNativeKey reports whether the client API key was authenticated by CPA's native config provider.
+
 	IsNativeKey bool
-	// AccessProvider identifies the client request authentication provider (e.g. "config-inline" or plugin ID).
+
 	AccessProvider  string
 	SessionID       string
 	ParentSessionID string
 	AuthID          string
 	AuthIndex       string
-	// AccessTokenSHA256 identifies the OAuth token version without exposing the token.
+
 	AccessTokenSHA256 string
 	AuthType          string
 	Source            string
-	// ReasoningEffort stores the translated upstream thinking level for request event logs.
+
 	ReasoningEffort string
-	// ServiceTier stores the client-requested service tier.
+
 	ServiceTier string
-	// EffectiveServiceTier stores the tier in the final outbound request after
-	// protocol translation and payload defaults or overrides.
+
+
 	EffectiveServiceTier string
-	// RequestServiceTier is a deprecated input-only alias retained for existing
-	// plugin callers. It is normalized into ServiceTier and never emitted.
+
+
 	RequestServiceTier string
-	// ResponseServiceTier stores the final tier reported by the upstream response.
+
 	ResponseServiceTier string
-	// ResponseModel stores the model name reported by the upstream response, empty when unknown.
+
 	ResponseModel string
-	// Generate reports whether the client requested actual generation.
-	// nil or true means generation is enabled; only an explicit false disables generation.
-	// Use GenerateFlag to set the value and GenerateEnabled to read it with the default.
+
+
+
 	Generate *bool
-	// Stream reports whether the request was executed in streaming mode.
+
 	Stream      bool
 	RequestedAt time.Time
 	Latency     time.Duration
@@ -78,33 +78,33 @@ type Record struct {
 	Failed      bool
 	Fail        Failure
 	Detail      Detail
-	// ResponseHeaders stores a snapshot of upstream response headers for usage sinks.
+
 	ResponseHeaders http.Header
 }
 
-// FailureStreamTruncatedCode marks a locally synthesized failure for an
-// accepted upstream stream that ended without its terminal frame.
+
+
 const FailureStreamTruncatedCode = "stream_truncated"
 
-// FailureRequestScopedCode marks failures belonging to the request rather than
-// the selected credential, including local capability validation failures.
+
+
 const FailureRequestScopedCode = "request_scoped"
 
-// FailureForceCooldownCode marks failures matched by a request-scoped error rule
-// configured with a cooldown action (stop-and-cooldown or continue-and-cooldown).
+
+
 const FailureForceCooldownCode = "force_cooldown"
 
-// Failure holds HTTP failure metadata for an upstream request attempt.
+
 type Failure struct {
 	StatusCode int
 	Body       string
-	// Code carries structured failure classification (e.g. FailureStreamTruncatedCode)
-	// across usage sinks so downstream schedulers do not treat locally
-	// synthesized statuses as received upstream refusals.
+
+
+
 	Code string
 }
 
-// Detail holds the token and structured usage breakdown captured from an upstream response.
+
 type Detail struct {
 	InputTokens         int64
 	OutputTokens        int64
@@ -168,7 +168,7 @@ type capturedIdentityHolder struct {
 	hasNativeKey   bool
 }
 
-// WithExecutionRequestID attaches a specific execution instance request ID to the context.
+
 func WithExecutionRequestID(ctx context.Context, requestID string) context.Context {
 	if ctx == nil {
 		return context.Background()
@@ -176,7 +176,7 @@ func WithExecutionRequestID(ctx context.Context, requestID string) context.Conte
 	return context.WithValue(ctx, executionRequestIDContextKey{}, strings.TrimSpace(requestID))
 }
 
-// ExecutionRequestIDFromContext retrieves the execution instance request ID from the context.
+
 func ExecutionRequestIDFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -187,7 +187,7 @@ func ExecutionRequestIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// WithTraceID attaches the parent inbound HTTP request ID to the context.
+
 func WithTraceID(ctx context.Context, traceID string) context.Context {
 	if ctx == nil {
 		return context.Background()
@@ -195,7 +195,7 @@ func WithTraceID(ctx context.Context, traceID string) context.Context {
 	return context.WithValue(ctx, executionTraceIDContextKey{}, strings.TrimSpace(traceID))
 }
 
-// TraceIDFromContext retrieves the parent inbound HTTP request ID from the context.
+
 func TraceIDFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -206,7 +206,7 @@ func TraceIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// WithSelectionID attaches the scheduler selection ID for the selected credential to the context.
+
 func WithSelectionID(ctx context.Context, selectionID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -214,7 +214,7 @@ func WithSelectionID(ctx context.Context, selectionID string) context.Context {
 	return context.WithValue(ctx, selectionIDContextKey{}, strings.TrimSpace(selectionID))
 }
 
-// SelectionIDFromContext retrieves the scheduler selection ID from the context.
+
 func SelectionIDFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -230,7 +230,7 @@ func SelectionIDFromContext(ctx context.Context) string {
 	}
 }
 
-// WithRequestedModelAlias stores the client-requested model name for usage sinks.
+
 func WithRequestedModelAlias(ctx context.Context, alias string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -242,7 +242,7 @@ func WithRequestedModelAlias(ctx context.Context, alias string) context.Context 
 	return context.WithValue(ctx, requestedModelAliasContextKey{}, alias)
 }
 
-// RequestedModelAliasFromContext returns the client-requested model name stored in ctx.
+
 func RequestedModelAliasFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -258,7 +258,7 @@ func RequestedModelAliasFromContext(ctx context.Context) string {
 	}
 }
 
-// WithReasoningEffort stores the client-requested reasoning effort for usage sinks.
+
 func WithReasoningEffort(ctx context.Context, effort string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -270,7 +270,7 @@ func WithReasoningEffort(ctx context.Context, effort string) context.Context {
 	return context.WithValue(ctx, reasoningEffortContextKey{}, effort)
 }
 
-// ReasoningEffortFromContext returns the client-requested reasoning effort stored in ctx.
+
 func ReasoningEffortFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -286,7 +286,7 @@ func ReasoningEffortFromContext(ctx context.Context) string {
 	}
 }
 
-// WithServiceTier stores the client-requested service tier for usage sinks.
+
 func WithServiceTier(ctx context.Context, tier string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -298,7 +298,7 @@ func WithServiceTier(ctx context.Context, tier string) context.Context {
 	return context.WithValue(ctx, serviceTierContextKey{}, tier)
 }
 
-// ServiceTierFromContext returns the client-requested service tier stored in ctx.
+
 func ServiceTierFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return DefaultServiceTier
@@ -322,8 +322,8 @@ func ServiceTierFromContext(ctx context.Context) string {
 	}
 }
 
-// WithGenerate stores whether the client requested actual generation for usage sinks.
-// Missing context values default to true; only an explicit false disables generation.
+
+
 func WithGenerate(ctx context.Context, generate bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -331,8 +331,8 @@ func WithGenerate(ctx context.Context, generate bool) context.Context {
 	return context.WithValue(ctx, generateContextKey{}, generate)
 }
 
-// GenerateFromContext returns whether the client requested actual generation.
-// Missing values default to true.
+
+
 func GenerateFromContext(ctx context.Context) bool {
 	if ctx == nil {
 		return true
@@ -346,7 +346,7 @@ func GenerateFromContext(ctx context.Context) bool {
 	}
 }
 
-// WithStream stores whether the request was executed in streaming mode for usage sinks.
+
 func WithStream(ctx context.Context, stream bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -354,8 +354,8 @@ func WithStream(ctx context.Context, stream bool) context.Context {
 	return context.WithValue(ctx, streamContextKey{}, stream)
 }
 
-// StreamFromContext returns whether the request was executed in streaming mode.
-// Missing values default to false.
+
+
 func StreamFromContext(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -369,7 +369,7 @@ func StreamFromContext(ctx context.Context) bool {
 	}
 }
 
-// WithAccessProvider stores the client authentication provider identifier for usage sinks.
+
 func WithAccessProvider(ctx context.Context, provider string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -393,7 +393,7 @@ func WithAccessProvider(ctx context.Context, provider string) context.Context {
 	return ctx
 }
 
-// WithAPIKey stores the client API key for usage sinks.
+
 func WithAPIKey(ctx context.Context, apiKey string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -417,8 +417,8 @@ func WithAPIKey(ctx context.Context, apiKey string) context.Context {
 	return ctx
 }
 
-// WithCapturedIdentity stores an authoritative snapshot of the request's usage identity
-// (including empty values) so later asynchronous calls do not read a reused gin.Context.
+
+
 func WithCapturedIdentity(ctx context.Context, apiKey, accessProvider string, isNativeKey ...bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -434,8 +434,8 @@ func WithCapturedIdentity(ctx context.Context, apiKey, accessProvider string, is
 	return context.WithValue(ctx, capturedIdentityContextKey{}, holder)
 }
 
-// CaptureIdentity snapshots the current request's usage identity into ctx while the
-// HTTP handler is active so post-handler goroutines never read a reused gin.Context.
+
+
 func CaptureIdentity(ctx context.Context) context.Context {
 	if ctx == nil {
 		return context.Background()
@@ -457,7 +457,7 @@ func CaptureIdentity(ctx context.Context) context.Context {
 	return WithCapturedIdentity(ctx, apiKey, accessProvider)
 }
 
-// HasCapturedIdentity reports whether ctx holds a captured usage identity snapshot.
+
 func HasCapturedIdentity(ctx context.Context) bool {
 	if ctx == nil {
 		return false
@@ -466,7 +466,7 @@ func HasCapturedIdentity(ctx context.Context) bool {
 	return ok && holder != nil
 }
 
-// SetCapturedAPIKey updates the captured API key in ctx when an identity snapshot holder exists.
+
 func SetCapturedAPIKey(ctx context.Context, apiKey string) {
 	if ctx == nil {
 		return
@@ -513,7 +513,7 @@ func apiKeyFromGinContext(ctx context.Context) string {
 	return ""
 }
 
-// APIKeyFromContext returns the client API key stored in ctx or gin.Context.
+
 func APIKeyFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -534,7 +534,7 @@ func APIKeyFromContext(ctx context.Context) string {
 	return apiKeyFromGinContext(ctx)
 }
 
-// AccessProviderFromContext returns the client authentication provider stored in ctx.
+
 func AccessProviderFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -565,7 +565,7 @@ func AccessProviderFromContext(ctx context.Context) string {
 	return ""
 }
 
-// WithIsNativeKey stores whether the client API key is native to CPA for usage sinks.
+
 func WithIsNativeKey(ctx context.Context, isNative bool) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -585,7 +585,7 @@ func WithIsNativeKey(ctx context.Context, isNative bool) context.Context {
 	return ctx
 }
 
-// IsNativeKeyFromContext returns whether the client API key is native to CPA if explicitly set in ctx.
+
 func IsNativeKeyFromContext(ctx context.Context) (bool, bool) {
 	if ctx == nil {
 		return false, false
@@ -605,19 +605,19 @@ func IsNativeKeyFromContext(ctx context.Context) (bool, bool) {
 	return false, false
 }
 
-// IsNativeAccessProvider reports whether provider represents CPA's built-in inline key provider.
+
 func IsNativeAccessProvider(provider string) bool {
 	p := strings.TrimSpace(provider)
 	return strings.EqualFold(p, "config-inline") || strings.EqualFold(p, "config-api-key")
 }
 
-// GenerateFlag returns a pointer suitable for Record.Generate.
+
 func GenerateFlag(generate bool) *bool {
 	return &generate
 }
 
-// GenerateEnabled reports whether generation is enabled for the record field.
-// A nil value defaults to true so legacy callers that omit Generate keep the historical behavior.
+
+
 func GenerateEnabled(generate *bool) bool {
 	if generate == nil {
 		return true
@@ -625,7 +625,7 @@ func GenerateEnabled(generate *bool) bool {
 	return *generate
 }
 
-// Plugin consumes usage records emitted by the proxy runtime.
+
 type Plugin interface {
 	HandleUsage(ctx context.Context, record Record)
 }
@@ -635,7 +635,7 @@ type queueItem struct {
 	record Record
 }
 
-// Manager maintains a queue of usage records and delivers them to registered plugins.
+
 type Manager struct {
 	once     sync.Once
 	stopOnce sync.Once
@@ -651,14 +651,14 @@ type Manager struct {
 	named     map[string]int
 }
 
-// NewManager constructs a manager with a buffered queue.
+
 func NewManager(buffer int) *Manager {
 	m := &Manager{}
 	m.cond = sync.NewCond(&m.mu)
 	return m
 }
 
-// Start launches the background dispatcher. Calling Start multiple times is safe.
+
 func (m *Manager) Start(ctx context.Context) {
 	if m == nil {
 		return
@@ -673,7 +673,7 @@ func (m *Manager) Start(ctx context.Context) {
 	})
 }
 
-// Stop stops the dispatcher and drains the queue.
+
 func (m *Manager) Stop() {
 	if m == nil {
 		return
@@ -689,7 +689,7 @@ func (m *Manager) Stop() {
 	})
 }
 
-// Register appends a plugin to the delivery list.
+
 func (m *Manager) Register(plugin Plugin) {
 	if m == nil || plugin == nil {
 		return
@@ -699,7 +699,7 @@ func (m *Manager) Register(plugin Plugin) {
 	m.pluginsMu.Unlock()
 }
 
-// RegisterNamed registers or replaces a plugin by name.
+
 func (m *Manager) RegisterNamed(name string, plugin Plugin) {
 	if m == nil || plugin == nil {
 		return
@@ -723,8 +723,8 @@ func (m *Manager) RegisterNamed(name string, plugin Plugin) {
 	m.pluginsMu.Unlock()
 }
 
-// Publish enqueues a usage record for processing. If no plugin is registered
-// the record will be discarded downstream.
+
+
 func (m *Manager) Publish(ctx context.Context, record Record) {
 	if m == nil {
 		return
@@ -769,7 +769,7 @@ func (m *Manager) Publish(ctx context.Context, record Record) {
 		}
 	}
 	ctx = WithCapturedIdentity(ctx, record.APIKey, record.AccessProvider, record.IsNativeKey)
-	// ensure worker is running even if Start was not called explicitly
+
 	m.Start(context.Background())
 	m.mu.Lock()
 	if m.closed {
@@ -826,20 +826,20 @@ func safeInvoke(plugin Plugin, ctx context.Context, record Record) {
 
 var defaultManager = NewManager(512)
 
-// DefaultManager returns the global usage manager instance.
+
 func DefaultManager() *Manager { return defaultManager }
 
-// RegisterPlugin registers a plugin on the default manager.
+
 func RegisterPlugin(plugin Plugin) { DefaultManager().Register(plugin) }
 
-// RegisterNamedPlugin registers or replaces a named plugin on the default manager.
+
 func RegisterNamedPlugin(name string, plugin Plugin) { DefaultManager().RegisterNamed(name, plugin) }
 
-// PublishRecord publishes a record using the default manager.
+
 func PublishRecord(ctx context.Context, record Record) { DefaultManager().Publish(ctx, record) }
 
-// StartDefault starts the default manager's dispatcher.
+
 func StartDefault(ctx context.Context) { DefaultManager().Start(ctx) }
 
-// StopDefault stops the default manager's dispatcher.
+
 func StopDefault() { DefaultManager().Stop() }

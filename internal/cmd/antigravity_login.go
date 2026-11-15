@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DoAntigravityLogin triggers the OAuth flow for the antigravity provider and saves tokens.
+
 func DoAntigravityLogin(cfg *config.Config, options *LoginOptions) {
 	if options == nil {
 		options = &LoginOptions{}

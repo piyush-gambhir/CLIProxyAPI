@@ -11,14 +11,14 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// executorPluginReady reports whether the named plugin can actually execute a
-// request right now: it must declare an executor capability AND resolve a
-// non-empty provider identifier (the same requirement enforced by
-// executorAdapterForPlugin at execution time), allow static execution without
-// selected auth, and declare formats compatible with the current request.
-// Routing pre-checks use this so that targets which would fail at execution are
-// treated as unhandled and fall through to lower-priority routers instead of
-// returning handled then 500ing.
+
+
+
+
+
+
+
+
 func (h *Host) executorPluginReady(pluginID string, routeReq pluginapi.ModelRouteRequest) bool {
 	if h == nil {
 		return false
@@ -73,7 +73,7 @@ func (a *executorAdapter) supportsExecutorFormats(req coreexecutor.Request, opts
 	return errOutput == nil
 }
 
-// PluginExecutorRequestToFormat reports the executor input format selected for a direct plugin executor route.
+
 func (h *Host) PluginExecutorRequestToFormat(pluginID string, req coreexecutor.Request, opts coreexecutor.Options) sdktranslator.Format {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
 	if errAdapter != nil {
@@ -82,7 +82,7 @@ func (h *Host) PluginExecutorRequestToFormat(pluginID string, req coreexecutor.R
 	return adapter.RequestToFormat(req, opts)
 }
 
-// ExecutePluginExecutor executes a request with the named plugin executor without changing the requested model.
+
 func (h *Host) ExecutePluginExecutor(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (coreexecutor.Response, error) {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
 	if errAdapter != nil {
@@ -91,7 +91,7 @@ func (h *Host) ExecutePluginExecutor(ctx context.Context, pluginID string, req c
 	return adapter.Execute(ctx, (*coreauth.Auth)(nil), req, opts)
 }
 
-// ExecutePluginExecutorStream executes a streaming request with the named plugin executor without changing the requested model.
+
 func (h *Host) ExecutePluginExecutorStream(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (*coreexecutor.StreamResult, error) {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
 	if errAdapter != nil {
@@ -100,7 +100,7 @@ func (h *Host) ExecutePluginExecutorStream(ctx context.Context, pluginID string,
 	return adapter.ExecuteStream(ctx, (*coreauth.Auth)(nil), req, opts)
 }
 
-// CountPluginExecutor executes a count-tokens request with the named plugin executor without changing the requested model.
+
 func (h *Host) CountPluginExecutor(ctx context.Context, pluginID string, req coreexecutor.Request, opts coreexecutor.Options) (coreexecutor.Response, error) {
 	adapter, errAdapter := h.executorAdapterForPlugin(pluginID)
 	if errAdapter != nil {

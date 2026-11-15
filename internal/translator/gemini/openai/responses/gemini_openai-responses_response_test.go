@@ -261,8 +261,8 @@ func TestConvertGeminiResponseToOpenAIResponsesNonStreamOutputTokensIncludeThoug
 }
 
 func TestConvertGeminiResponseToOpenAIResponses_UnwrapAndAggregateText(t *testing.T) {
-	// Vertex-style Gemini stream wraps the actual response payload under "response".
-	// This test ensures we unwrap and that output_text.done contains the full text.
+
+
 	in := []string{
 		`data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":""}]}}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2,"cachedContentTokenCount":0},"modelVersion":"test-model","responseId":"req_vrtx_1"},"traceId":"t1"}`,
 		`data: {"response":{"candidates":[{"content":{"role":"model","parts":[{"text":"让"}]}}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2,"cachedContentTokenCount":0},"modelVersion":"test-model","responseId":"req_vrtx_1"},"traceId":"t1"}`,
@@ -1823,7 +1823,7 @@ func TestConvertGeminiResponseToOpenAIResponses_PinsRequestPerStream(t *testing.
 		t.Fatalf("completed instructions = %q, want pinned-instructions", got)
 	}
 
-	// Verify nil tool maps resolved on the first chunk are not rebuilt on subsequent chunks.
+
 	var nilMapParam any
 	firstReqNoTools := []byte(`{"model":"gemini-2.5-flash","instructions":"pinned-no-tools"}`)
 	laterReqWithTool := []byte(`{"model":"gemini-2.5-flash","instructions":"later-instructions","tools":[{"type":"function","name":"mcp/search","parameters":{"type":"object"}}]}`)

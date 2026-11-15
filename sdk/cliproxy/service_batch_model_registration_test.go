@@ -78,10 +78,10 @@ func TestRegisterModelsForAuthBatch_StaleSnapshot_Issue6453(t *testing.T) {
 		reg.UnregisterClient(allowedID)
 	})
 
-	// Capture a stale snapshot of auths before excluded_models is configured on authID
+
 	staleSnapshot := manager.List()
 
-	// Update the auth in coreManager to exclude gpt-6-astra and gpt-6.1-sol
+
 	updatedAuth := auth.Clone()
 	updatedAuth.Attributes = map[string]string{
 		"auth_kind":       "oauth",
@@ -92,10 +92,10 @@ func TestRegisterModelsForAuthBatch_StaleSnapshot_Issue6453(t *testing.T) {
 		t.Fatalf("failed to update auth: %v", errUpdate)
 	}
 
-	// Run batch registration with the stale snapshot
+
 	service.registerModelsForAuthBatch(ctx, staleSnapshot)
 
-	// Verify that the excluded models are not supported for this client
+
 	if reg.ClientSupportsModel(authID, "gpt-6-astra") {
 		t.Errorf("expected gpt-6-astra to be excluded for %s, but registry supports it", authID)
 	}
@@ -110,7 +110,7 @@ func TestRegisterModelsForAuthBatch_StaleSnapshot_Issue6453(t *testing.T) {
 		}
 	}
 
-	// Verify scheduler selection picks the allowed account and never the masked account
+
 	selected, errSelect := manager.SelectAuth(ctx, "codex", "gpt-6-astra", cliproxyexecutor.Options{})
 	if errSelect != nil {
 		t.Fatalf("failed to select auth for gpt-6-astra: %v", errSelect)
@@ -181,10 +181,10 @@ func TestRegisterModelsForAuthBatch_ConcurrentUpdateDuringBatch_Issue6453(t *tes
 		}
 	}
 
-	// Run batch registration with the initial snapshot
+
 	service.registerModelsForAuthBatch(ctx, manager.List())
 
-	// Verify that the excluded models are not supported for this client after batch registration completes
+
 	if reg.ClientSupportsModel(authID, "gpt-6-astra") {
 		t.Errorf("expected gpt-6-astra to be excluded for %s, but registry supports it", authID)
 	}
@@ -199,7 +199,7 @@ func TestRegisterModelsForAuthBatch_ConcurrentUpdateDuringBatch_Issue6453(t *tes
 		}
 	}
 
-	// Verify scheduler selection picks the allowed account and never the masked account
+
 	selected, errSelect := manager.SelectAuth(ctx, "codex", "gpt-6-astra", cliproxyexecutor.Options{})
 	if errSelect != nil {
 		t.Fatalf("failed to select auth for gpt-6-astra: %v", errSelect)
@@ -258,9 +258,9 @@ func TestRegisterModelsForAuthBatch_PostBatchReconciliation_Issue6453(t *testing
 	var updateTriggered atomic.Bool
 	modelRegistrationTaskPostRunHook = func(id string) {
 		if id == authID && updateTriggered.CompareAndSwap(false, true) {
-			// After the initial task ran completeModelRegistrationForAuthWithCache with Generation 1,
-			// update coreManager to Generation 2 with excluded_models before the batch loop finishes.
-			// This tests that post-batch reconciliation catches the newer generation and re-registers.
+
+
+
 			updatedAuth := auth.Clone()
 			updatedAuth.Attributes = map[string]string{
 				"auth_kind":       "oauth",
@@ -273,14 +273,14 @@ func TestRegisterModelsForAuthBatch_PostBatchReconciliation_Issue6453(t *testing
 		}
 	}
 
-	// Run batch registration with the initial snapshot.
+
 	service.registerModelsForAuthBatch(ctx, manager.List())
 
 	if !updateTriggered.Load() {
 		t.Fatal("expected post-run hook to trigger during batch registration")
 	}
 
-	// Verify that the post-batch reconciliation corrected the model list so excluded models are not supported
+
 	if reg.ClientSupportsModel(authID, "gpt-6-astra") {
 		t.Errorf("expected gpt-6-astra to be excluded for %s after reconciliation, but registry supports it", authID)
 	}
@@ -295,7 +295,7 @@ func TestRegisterModelsForAuthBatch_PostBatchReconciliation_Issue6453(t *testing
 		}
 	}
 
-	// Verify scheduler selection picks the allowed account and never the masked account
+
 	selected, errSelect := manager.SelectAuth(ctx, "codex", "gpt-6-astra", cliproxyexecutor.Options{})
 	if errSelect != nil {
 		t.Fatalf("failed to select auth for gpt-6-astra: %v", errSelect)

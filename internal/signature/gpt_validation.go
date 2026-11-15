@@ -12,8 +12,8 @@ const MaxGPTReasoningSignatureLen = 32 * 1024 * 1024
 type GPTReasoningSignatureInfo struct {
 	DecodedLen    int
 	CiphertextLen int
-	// RouterSuffix is the dot-delimited suffix a router such as OpenRouter
-	// appends after the native Fernet envelope; empty for native values.
+
+
 	RouterSuffix string
 }
 
@@ -22,9 +22,9 @@ func IsValidGPTReasoningSignature(rawSignature string) bool {
 	return err == nil
 }
 
-// InspectGPTReasoningSignature validates the Fernet-like outer format used
-// by GPT/Codex reasoning encrypted_content. This is only a transport-shape
-// check; it does not prove decryptability.
+
+
+
 func InspectGPTReasoningSignature(rawSignature string) (*GPTReasoningSignatureInfo, error) {
 	sig := strings.TrimSpace(rawSignature)
 	if sig == "" {
@@ -33,11 +33,11 @@ func InspectGPTReasoningSignature(rawSignature string) (*GPTReasoningSignatureIn
 	if len(sig) > MaxGPTReasoningSignatureLen {
 		return nil, fmt.Errorf("GPT reasoning signature exceeds maximum length (%d bytes)", MaxGPTReasoningSignatureLen)
 	}
-	// The literal prefix is the cheapest discriminator and rejects every other
-	// provider's envelope outright, so it runs before the full charset scan.
-	// Probing this validator is on the hot path for signatures of every provider,
-	// and scanning a multi-kilobyte payload only to reject it on five bytes was
-	// pure waste.
+
+
+
+
+
 	if !strings.HasPrefix(sig, "gAAAA") {
 		return nil, fmt.Errorf("invalid GPT reasoning signature: expected gAAAA prefix")
 	}
@@ -87,13 +87,13 @@ func decodeGPTReasoningSignature(sig string) ([]byte, error) {
 	return nil, fmt.Errorf("invalid GPT reasoning signature: base64url decode failed")
 }
 
-// gptReasoningSignatureCharSet is the base64url alphabet, padding included.
+
 var gptReasoningSignatureCharSet = base64AlphabetSet("-_=")
 
-// firstInvalidGPTReasoningSignatureChar scans bytes against a lookup table for the
-// same reason as its Grok counterpart: every legal character is ASCII, and a
-// comparison chain mispredicts on nearly every byte of a multi-kilobyte reasoning
-// blob. The offending rune is decoded only for the error message.
+
+
+
+
 func firstInvalidGPTReasoningSignatureChar(sig string) (int, rune, bool) {
 	for index := 0; index < len(sig); index++ {
 		if !gptReasoningSignatureCharSet[sig[index]] {

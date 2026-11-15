@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// SessionTreeNode represents a node in the session hierarchy.
-// Deprecated: Session tree management and multi-node lineage have moved to Home.
-// This struct is maintained as a migration stub for SDK backward compatibility.
+
+
+
 type SessionTreeNode struct {
 	SessionID       string         `json:"session_id"`
 	ParentSessionID string         `json:"parent_session_id,omitempty"`
@@ -27,8 +27,8 @@ type SessionTreeNode struct {
 	Metadata        map[string]any `json:"metadata,omitempty"`
 }
 
-// Clone returns a deep copy of the node.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (n *SessionTreeNode) Clone() *SessionTreeNode {
 	if n == nil {
 		return nil
@@ -43,8 +43,8 @@ func (n *SessionTreeNode) Clone() *SessionTreeNode {
 	return &res
 }
 
-// SessionTreeStore defines the interface for recording and querying session trees.
-// Deprecated: Session tree management has moved to Home.
+
+
 type SessionTreeStore interface {
 	RecordNode(info SessionTreeInfo) *SessionTreeNode
 	GetNode(sessionID string) (*SessionTreeNode, bool)
@@ -56,24 +56,24 @@ type SessionTreeStore interface {
 	Clear()
 }
 
-// InMemorySessionTreeStore is a backward-compatible in-memory session tree stub.
-// Deprecated: Standalone CPA nodes use flat KV session cache (SessionCache).
-// Full hierarchical session tree management and global aggregation are handled by Home.
+
+
+
 type InMemorySessionTreeStore struct {
 	mu    sync.RWMutex
 	nodes map[string]*SessionTreeNode
 }
 
-// NewInMemorySessionTreeStore creates a new in-memory session tree store stub.
-// Deprecated: Standalone CPA nodes use flat KV session cache.
+
+
 func NewInMemorySessionTreeStore(maxNodes int, ttl time.Duration) *InMemorySessionTreeStore {
 	return &InMemorySessionTreeStore{
 		nodes: make(map[string]*SessionTreeNode),
 	}
 }
 
-// RecordNode records a session tree node stub.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) RecordNode(info SessionTreeInfo) *SessionTreeNode {
 	if s == nil || info.SessionID == "" {
 		return nil
@@ -108,8 +108,8 @@ func (s *InMemorySessionTreeStore) RecordNode(info SessionTreeInfo) *SessionTree
 	return node.Clone()
 }
 
-// GetNode returns a recorded node.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) GetNode(sessionID string) (*SessionTreeNode, bool) {
 	if s == nil {
 		return nil, false
@@ -123,8 +123,8 @@ func (s *InMemorySessionTreeStore) GetNode(sessionID string) (*SessionTreeNode, 
 	return node.Clone(), true
 }
 
-// GetTree returns nodes under rootSessionID.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) GetTree(rootSessionID string) []*SessionTreeNode {
 	if s == nil {
 		return nil
@@ -140,14 +140,14 @@ func (s *InMemorySessionTreeStore) GetTree(rootSessionID string) []*SessionTreeN
 	return res
 }
 
-// GetSubtree returns subtree rooted at sessionID.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) GetSubtree(sessionID string) []*SessionTreeNode {
 	return s.GetTree(sessionID)
 }
 
-// Ancestors returns ancestor session IDs.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) Ancestors(sessionID string) []string {
 	if s == nil {
 		return nil
@@ -160,8 +160,8 @@ func (s *InMemorySessionTreeStore) Ancestors(sessionID string) []string {
 	return nil
 }
 
-// UpdateAffinity updates the latest successful upstream binding.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) UpdateAffinity(sessionID, authID, provider, model string) bool {
 	if s == nil {
 		return false
@@ -184,8 +184,8 @@ func (s *InMemorySessionTreeStore) UpdateAffinity(sessionID, authID, provider, m
 	return false
 }
 
-// Len returns the number of nodes.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) Len() int {
 	if s == nil {
 		return 0
@@ -195,8 +195,8 @@ func (s *InMemorySessionTreeStore) Len() int {
 	return len(s.nodes)
 }
 
-// Clear flushes all nodes.
-// Deprecated: Session tree management has moved to Home.
+
+
 func (s *InMemorySessionTreeStore) Clear() {
 	if s == nil {
 		return

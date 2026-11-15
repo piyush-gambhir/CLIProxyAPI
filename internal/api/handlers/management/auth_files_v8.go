@@ -131,7 +131,7 @@ func applySessionProxyToAuthRecord(record *coreauth.Auth, proxyURL string) {
 	}
 }
 
-// StartOAuthV8 dispatches login using the provider query parameter or POST JSON body.
+
 func (h *Handler) StartOAuthV8(c *gin.Context) {
 	if c.Request != nil && c.Request.URL != nil {
 		if query := c.Request.URL.Query(); query.Has("proxy_url") || query.Has("proxy-url") {
@@ -527,7 +527,7 @@ func (h *Handler) oauthTargetProviderMatches(targetProvider, requestedProvider s
 	return host != nil && host.SameAuthProvider(targetProvider, requestedProvider)
 }
 
-// ImportOAuthV8 dispatches credential import using the provider query parameter.
+
 func (h *Handler) ImportOAuthV8(c *gin.Context) {
 	switch strings.ToLower(strings.TrimSpace(c.Query("provider"))) {
 	case "":
@@ -539,8 +539,8 @@ func (h *Handler) ImportOAuthV8(c *gin.Context) {
 	}
 }
 
-// VerifyAuthFileV8 runs an operator-triggered, account-pinned inference verification
-// using an isolated session and minimal non-user prompt/token budget.
+
+
 func (h *Handler) VerifyAuthFileV8(c *gin.Context) {
 	if h == nil || h.authManager == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "auth manager is not available"})

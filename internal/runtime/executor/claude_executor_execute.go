@@ -34,9 +34,9 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	}
 	url := fmt.Sprintf("%s/v1/messages?beta=true", baseURL)
 	fp := resolveClaudeFingerprintPolicy(e.cfg, auth, apiKey)
-	// Real Claude OAuth always signs CCH. An opted-in API key signs only where
-	// native does, so a third-party gateway keeps a cache-stable billing header.
-	// Default API-key and delegated-provider requests preserve the caller body.
+
+
+
 	cchSigning := claudeCCHSigningEnabled(apiKey, claudeCCHUpstreamAnthropic, fp.ProfileClaudeCodeCLI, url)
 
 	reporter := helps.NewExecutorUsageReporter(ctx, e, baseModel, auth)
@@ -57,8 +57,8 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 			clearClaudeThinkingReplayContent(ctx, replayScope)
 		}
 	}()
-	// Use an upstream stream whenever the downstream response needs translation
-	// from Claude events. Native Claude responses use the JSON response path.
+
+
 	upstreamStream := responseFormat != to
 	originalPayloadSource := req.Payload
 	if len(opts.OriginalRequest) > 0 {
@@ -102,8 +102,8 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 		rebuildMidSystemMessagesToTopLevelDoc(doc)
 	}
 
-	// Apply cloaking (system prompt injection, fake user ID, sensitive word obfuscation)
-	// based on client type and configuration.
+
+
 	isProbeOrHelper := isClaudeProbeOrHelperRequestDoc(doc)
 	explicitCacheMode := isExplicitPromptCacheModeDoc(doc, originalPayload, req.Payload)
 	if explicitCacheMode {
@@ -124,8 +124,8 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	if err != nil {
 		return resp, err
 	}
-	// Only the Messages endpoint on Anthropic itself was captured; count_tokens
-	// keeps its own shape and other gateways never see this field.
+
+
 	diagnosticsState := claudeDiagnosticsRequestState{}
 	if !isProbeOrHelper {
 		isProbeOrHelper = isClaudeProbeOrHelperRequestDoc(doc)
@@ -154,41 +154,41 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 
 	ensureModelMaxTokensDoc(doc, baseModel)
 
-	// Disable thinking if tool_choice forces tool use (Anthropic API constraint)
+
 	disableThinkingIfToolChoiceForcedDoc(doc)
 	reconcileClaudeCodeContextManagementDoc(doc, contextManagementState)
 	normalizeClaudeSamplingForUpstreamDoc(doc, confirmedClaudeCode)
 
-	// Default cache_control for translated entrypoints (Responses/Chat/Gemini) and other
-	// non-native callers. Confirmed native Claude Code owns its marker placement and must
-	// not be rewritten. Cloaked requests always run section-independent ensure so cloaking's
-	// first-user marker cannot suppress system/latest-user breakpoints.
-	// cloaked and confirmedClaudeCode are mutually exclusive: resolveClaudeWirePolicy
-	// forces Cloak off for a confirmed native client.
+
+
+
+
+
+
 	cpaOwnsCacheControl := shouldEnsureCacheControlDoc(doc, cloaked, confirmedClaudeCode, originalPayload, req.Payload)
 	if cpaOwnsCacheControl {
 		ensureCacheControlDoc(doc)
 	}
 
-	// Enforce Anthropic's cache_control block limit (max 4 breakpoints per request).
-	// Cloaking and ensureCacheControl may push the total over 4 when the client
-	// already sends multiple cache_control blocks.
+
+
+
 	enforceCacheControlLimitDoc(doc, 4)
 	stripPromptCacheOptionsDoc(doc)
 
-	// Native selects the 1h cache pool only for OAuth credentials and pairs it with
-	// extended-cache-ttl-2025-04-11, which claudeCodeCLIBetas emits on exactly the
-	// same credential condition. Upgrading after placement is settled mirrors the
-	// native ttl helper.
-	//
-	// This runs only while CPA owns placement, and it then owns the ttl of every
-	// breakpoint it can reach: a marker carrying no ttl is the wire default, not an
-	// opt-in to 5m, so a cloaked caller's bare {"type":"ephemeral"} is upgraded too.
-	// Only a ttl the caller wrote out explicitly survives, because
-	// upgradeClaudeCacheControlTTL skips any block that already has one.
-	// claude-code-cli fingerprint profiles emit extended-cache-ttl and must use the same 1h pool.
-	// In native Claude Code, subagents default to 5m unless 1h is explicitly configured;
-	// probes omit both 1h cache and extended-cache-ttl.
+
+
+
+
+
+
+
+
+
+
+
+
+
 	isSubagent := isClaudeSubagentRequestDoc(incomingHeaders, doc)
 	subagent1h := isSubagent && claudeSubagentRequests1hDoc(incomingHeaders, doc)
 	if cpaOwnsCacheControl && fp.ProfileClaudeCodeCLI && (!isSubagent || subagent1h) && !isProbeOrHelper {
@@ -197,20 +197,20 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 		stripClaudeCacheControlTTLDoc(doc)
 	}
 
-	// Normalize TTL values to prevent ordering violations under prompt-caching-scope-2026-01-05.
-	// A 1h-TTL block must not appear after a 5m-TTL block in evaluation order (tools→system→messages).
+
+
 	if !explicitCacheMode {
 		normalizeCacheControlTTLDoc(doc)
 	}
-	// Set the built-in transport default before the explicit payload barrier.
-	// Native non-stream Haiku helper requests omit stream rather than sending
-	// false, so preserve that measured wire shape when the transport agrees.
+
+
+
 	streamField := doc.Get("stream")
 	if !claudeCodeDetection.HelperProfile || streamField.Exists() || upstreamStream {
 		helps.SetBoolIfDifferentDoc(doc, "stream", upstreamStream)
 	}
 
-	// Extract betas from body and convert to header
+
 	var extraBetas []string
 	var oauthToolNamesReverseMap map[string]string
 	if fp.MCPAlias && cloaked {
@@ -248,7 +248,7 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 		finalizeClaudeCompactionSummaryBodyDoc(doc)
 	}
 	applyClaudePreservedThinkingBindingDoc(doc)
-	// User rules match the fully prepared business body and are applied only once.
+
 	touchedPayloadPaths := helps.ApplyPayloadConfigWithTrackedPathsDoc(
 		e.cfg, baseModel, to.String(), from.String(), "", doc, stripTranslatedDefaultMaxTokens(from, originalPayload, originalTranslated),
 		helps.PayloadRequestedModel(opts, req.Model), helps.PayloadRequestPath(opts), opts.Headers,
@@ -268,7 +268,7 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 			return resp, fmt.Errorf("sign Claude CCH: %w", err)
 		}
 	}
-	// Read-only validation must observe the final configured model and messages.
+
 	if errMidSystem := validateClaudeMidSystemMessageModel(bodyForUpstream, confirmedClaudeCode, isAnthropicUpstreamBase(baseURL)); errMidSystem != nil {
 		return resp, errMidSystem
 	}
@@ -315,9 +315,9 @@ func (e *ClaudeExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, r
 	}
 	helps.RecordAPIResponseMetadata(ctx, e.cfg, httpResp.StatusCode, httpResp.Header.Clone())
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		// Decompress error responses — pass the Content-Encoding value (may be empty)
-		// and let decodeResponseBody handle both header-declared and magic-byte-detected
-		// compression.  This keeps error-path behaviour consistent with the success path.
+
+
+
 		errBody, decErr := decodeResponseBody(httpResp.Body, claudeResponseContentEncoding(httpResp.Header))
 		if decErr != nil {
 			helps.RecordAPIResponseError(ctx, e.cfg, decErr)

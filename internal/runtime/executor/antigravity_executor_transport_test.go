@@ -38,9 +38,9 @@ func antigravityAuthWithIDAndProxy(id, proxyURL string) *cliproxyauth.Auth {
 	}
 }
 
-// TestNewAntigravityHTTPClientSharesTransport is the regression test for the bug where
-// every proxied Antigravity request created a new transport, so no keep-alive connection
-// was ever reused and every request paid a full TCP + TLS handshake.
+
+
+
 func TestNewAntigravityHTTPClientSharesTransport(t *testing.T) {
 	enabled := true
 	poolCfg := func(sdkCfg ...config.SDKConfig) *config.Config {
@@ -97,7 +97,7 @@ func TestNewAntigravityHTTPClientSharesTransport(t *testing.T) {
 			if len(transport.TLSClientConfig.NextProtos) != 0 {
 				t.Fatalf("Antigravity must omit ALPN like the native client, got %v", transport.TLSClientConfig.NextProtos)
 			}
-			// Native Antigravity uses DefaultMaxIdleConnsPerHost of 2.
+
 			if transport.MaxIdleConnsPerHost < antigravityDefaultMaxIdleConnsPerHost {
 				t.Fatalf("MaxIdleConnsPerHost = %d, want >= %d", transport.MaxIdleConnsPerHost, antigravityDefaultMaxIdleConnsPerHost)
 			}
@@ -114,9 +114,9 @@ func TestNewAntigravityHTTPClientSharesTransport(t *testing.T) {
 	}
 }
 
-// TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff guards that Antigravity pool
-// limits defaults to 30s timeout, 2 idle conns per host, and hard-caps idle timeout at 240s
-// when connection pooling is enabled.
+
+
+
 func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 	enabled := true
 	poolCfg := &config.Config{
@@ -133,8 +133,8 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 		IdleConnTimeout:     time.Hour,
 	}
 	applyAntigravityPoolLimits(wide, poolCfg)
-	// Larger connection limits are kept, but IdleConnTimeout MUST be hard-capped at 240s
-	// to avoid exceeding the Google Frontend (GFE / ESF) 240-second cutoff.
+
+
 	if wide.MaxIdleConnsPerHost != 256 || wide.MaxIdleConns != 512 {
 		t.Fatalf("larger connection limits must be preserved, got perHost=%d total=%d",
 			wide.MaxIdleConnsPerHost, wide.MaxIdleConns)
@@ -143,7 +143,7 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 		t.Fatalf("IdleConnTimeout = %v, want capped at %v", wide.IdleConnTimeout, antigravityMaxAllowedIdleConnTimeout)
 	}
 
-	// Zero idle timeout (unlimited in Go) must be capped to safe default so it doesn't cause GFE RSTs.
+
 	unlimited := &http.Transport{MaxIdleConns: 0, IdleConnTimeout: 0}
 	applyAntigravityPoolLimits(unlimited, poolCfg)
 	if unlimited.MaxIdleConns != 0 {
@@ -153,15 +153,15 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 		t.Fatalf("IdleConnTimeout = %v, want default %v", unlimited.IdleConnTimeout, antigravityDefaultIdleConnTimeout)
 	}
 
-	// A negative MaxIdleConnsPerHost is how an operator disables idle pooling; Go never
-	// pools a connection in that case, so the intent must survive.
+
+
 	disabled := &http.Transport{MaxIdleConnsPerHost: -1}
 	applyAntigravityPoolLimits(disabled, poolCfg)
 	if disabled.MaxIdleConnsPerHost != -1 {
 		t.Fatalf("MaxIdleConnsPerHost = %d, want -1 (pooling disabled) to be preserved", disabled.MaxIdleConnsPerHost)
 	}
 
-	// Go's zero value defaults to 2 and 30s when enabled.
+
 	defaulted := &http.Transport{}
 	applyAntigravityPoolLimits(defaulted, poolCfg)
 	if defaulted.MaxIdleConnsPerHost != antigravityDefaultMaxIdleConnsPerHost {
@@ -171,20 +171,20 @@ func TestAntigravityPoolLimitsGuardsDefaultAndGFECutoff(t *testing.T) {
 		t.Fatalf("IdleConnTimeout = %v, want %v", defaulted.IdleConnTimeout, antigravityDefaultIdleConnTimeout)
 	}
 
-	// When cfg is nil (or default enabled: false), short mode is applied: MaxIdleConnsPerHost = -1
+
 	defaultDisabled := &http.Transport{}
 	applyAntigravityPoolLimits(defaultDisabled)
 	if defaultDisabled.MaxIdleConnsPerHost != -1 {
 		t.Fatalf("MaxIdleConnsPerHost = %d, want -1 when pooling is disabled by default", defaultDisabled.MaxIdleConnsPerHost)
 	}
 
-	applyAntigravityPoolLimits(nil) // must not panic
+	applyAntigravityPoolLimits(nil)
 }
 
-// TestNewAntigravityHTTPClientRejectsTypedNilContextTransport guards the fingerprint:
-// a typed-nil *http.Transport satisfies the interface nil check in
-// NewProxyAwareHTTPClient, and leaving it in place would make http.Client fall back to
-// http.DefaultTransport, which advertises h2 over ALPN.
+
+
+
+
 func TestNewAntigravityHTTPClientRejectsTypedNilContextTransport(t *testing.T) {
 	var typedNil *http.Transport
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", http.RoundTripper(typedNil))
@@ -202,8 +202,8 @@ func TestNewAntigravityHTTPClientRejectsTypedNilContextTransport(t *testing.T) {
 	}
 }
 
-// TestNewAntigravityHTTPClientKeepsForeignRoundTripper verifies a RoundTripper that is
-// not an *http.Transport is left untouched instead of being replaced.
+
+
 func TestNewAntigravityHTTPClientKeepsForeignRoundTripper(t *testing.T) {
 	foreign := roundTripperFunc(func(*http.Request) (*http.Response, error) {
 		return nil, errors.New("unused")
@@ -215,9 +215,9 @@ func TestNewAntigravityHTTPClientKeepsForeignRoundTripper(t *testing.T) {
 	}
 }
 
-// TestAntigravityConcurrentRequestsReusePooledConnections is the regression test for
-// the pool limit: with Go's default of 2 idle connections per host, repeated waves of
-// concurrent requests on one credential keep re-handshaking.
+
+
+
 func TestAntigravityConcurrentRequestsReusePooledConnections(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]struct{}{}
@@ -275,23 +275,23 @@ func TestAntigravityConcurrentRequestsReusePooledConnections(t *testing.T) {
 	mu.Lock()
 	distinct := len(remotes)
 	mu.Unlock()
-	// The first wave legitimately opens perWave connections. Later waves should
-	// reuse them, so a healthy pool keeps distinct near perWave. It cannot be
-	// pinned to exactly perWave: a request that finds no idle connection both
-	// waits for the next idle connection and dials. If an idle connection wins
-	// that race, net/http still finishes the dial and parks the surplus
-	// connection on the idle pool. Loaded runs have reached 11 distinct
-	// connections this way. Allow slack up to 2*perWave. With pooling genuinely
-	// absent every request dials and distinct reaches totalConns, far outside
-	// this bound.
+
+
+
+
+
+
+
+
+
 	if distinct > 2*perWave {
 		t.Fatalf("%d waves of %d concurrent requests opened %d connections, want at most %d (unpooled worst case is %d)",
 			waves, perWave, distinct, 2*perWave, totalConns)
 	}
 }
 
-// TestAntigravityConcurrentRequestsDefaultPoolLimitsToTwo verifies that when pooling is enabled
-// without specifying max-idle-conns-per-host, it defaults to 2 (matching Go's default and official agy).
+
+
 func TestAntigravityConcurrentRequestsDefaultPoolLimitsToTwo(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]struct{}{}
@@ -347,14 +347,14 @@ func TestAntigravityConcurrentRequestsDefaultPoolLimitsToTwo(t *testing.T) {
 	mu.Lock()
 	distinct := len(remotes)
 	mu.Unlock()
-	// Default MaxIdleConnsPerHost=2 keeps a bounded idle pool: a request that
-	// finds an idle connection reuses it. distinct therefore stays strictly below
-	// totalConns. Reaching totalConns would mean every request dialed its own
-	// connection, i.e. pooling is absent. There is no meaningful lower bound:
-	// under a loaded scheduler the waves partially serialize and the small pool
-	// can serve every request (a loaded run landed on 8), which is the pool
-	// working, not a defect. The configured default of 2 is asserted separately
-	// on the transport itself.
+
+
+
+
+
+
+
+
 	if distinct >= totalConns {
 		t.Fatalf("expected connection reuse with the default pool: %d requests opened %d distinct connections (pooling absent?)",
 			totalConns, distinct)
@@ -391,10 +391,10 @@ func TestNewAntigravityHTTPClientScopesPoolsByAuthIdentity(t *testing.T) {
 	}
 }
 
-// TestAntigravityHTTP11TransportReusesPoolWithoutAuthID guards the pool cache
-// against auths that carry no ID. Allocating a private pool per call would leak a
-// connection pool, and the goroutines managing it, on every request, which is the
-// pattern the original singleton transport was introduced to remove.
+
+
+
+
 func TestAntigravityHTTP11TransportReusesPoolWithoutAuthID(t *testing.T) {
 	base := http.DefaultTransport.(*http.Transport)
 
@@ -411,8 +411,8 @@ func TestAntigravityHTTP11TransportReusesPoolWithoutAuthID(t *testing.T) {
 		t.Fatal("a nil auth carries no credential to isolate and must share the same pool")
 	}
 
-	// An auth without an ID but with credential material stays isolated from both the
-	// anonymous pool and from a different credential.
+
+
 	tokenA := antigravityHTTP11Transport(&cliproxyauth.Auth{Metadata: map[string]any{"access_token": "token-a"}}, base)
 	tokenB := antigravityHTTP11Transport(&cliproxyauth.Auth{Metadata: map[string]any{"access_token": "token-b"}}, base)
 	if tokenA == first || tokenB == first {
@@ -425,7 +425,7 @@ func TestAntigravityHTTP11TransportReusesPoolWithoutAuthID(t *testing.T) {
 		t.Fatal("the same access token must resolve to the same pool across requests")
 	}
 
-	// Identified auths keep sharing their pool.
+
 	identified := &cliproxyauth.Auth{ID: "stable-identity"}
 	if antigravityHTTP11Transport(identified, base) != antigravityHTTP11Transport(identified, base) {
 		t.Fatal("an auth with a stable ID must reuse its cached pool")
@@ -462,8 +462,8 @@ func TestAntigravityTransportScopeFallsBackToStableMarkers(t *testing.T) {
 			"source:/auths/b.json",
 		},
 		{
-			// Auth.Label is a logging label with no uniqueness guarantee, so it must never
-			// become a pool scope on its own.
+
+
 			"label alone is not an identity",
 			&cliproxyauth.Auth{Label: "account-c"},
 			antigravityAnonymousTransportScope,
@@ -488,9 +488,9 @@ func TestAntigravityTransportScopeFallsBackToStableMarkers(t *testing.T) {
 	}
 }
 
-// TestAntigravityTransportScopeIgnoresNonUniqueLabel is the regression test for using
-// Auth.Label as an identity: two different credentials that happen to share a label
-// must not end up on the same TCP/TLS pool.
+
+
+
 func TestAntigravityTransportScopeIgnoresNonUniqueLabel(t *testing.T) {
 	first := &cliproxyauth.Auth{Label: "shared-label", Metadata: map[string]any{"refresh_token": "refresh-a"}}
 	second := &cliproxyauth.Auth{Label: "shared-label", Metadata: map[string]any{"refresh_token": "refresh-b"}}
@@ -504,9 +504,9 @@ func TestAntigravityTransportScopeIgnoresNonUniqueLabel(t *testing.T) {
 	}
 }
 
-// TestAntigravityTransportScopeSurvivesAccessTokenRotation covers the refresh flow:
-// refreshing an access token must not move a credential onto a new pool, and a refresh
-// request that runs before any access token exists must resolve to the same scope.
+
+
+
 func TestAntigravityTransportScopeSurvivesAccessTokenRotation(t *testing.T) {
 	refreshOnly := &cliproxyauth.Auth{Metadata: map[string]any{"refresh_token": "stable-refresh"}}
 	beforeRotation := &cliproxyauth.Auth{Metadata: map[string]any{"refresh_token": "stable-refresh", "access_token": "access-1"}}
@@ -521,8 +521,8 @@ func TestAntigravityTransportScopeSurvivesAccessTokenRotation(t *testing.T) {
 	}
 }
 
-// TestAntigravityTransportScopeNeverLeaksToken ensures the credential-derived scope
-// only carries a short digest, so a pool key can never reveal the credential.
+
+
 func TestAntigravityTransportScopeNeverLeaksToken(t *testing.T) {
 	const (
 		accessToken  = "ya29.super-secret-access-token"
@@ -549,8 +549,8 @@ func TestAntigravityTransportScopeNeverLeaksToken(t *testing.T) {
 	}
 }
 
-// TestAntigravityTransportCacheEvictsStalePools covers the bounded cache: rotating a
-// credential's proxy must not accumulate pools forever.
+
+
 func TestAntigravityTransportCacheEvictsStalePools(t *testing.T) {
 	original := antigravityTransports
 	antigravityTransports = helps.NewTransportCache[antigravityTransportKey](4)
@@ -570,8 +570,8 @@ func TestAntigravityTransportCacheEvictsStalePools(t *testing.T) {
 		t.Fatalf("cache holds %d pools, want at most the capacity of 4", got)
 	}
 
-	// A per-request base transport from the request context must not grow the cache
-	// without bound either.
+
+
 	auth := antigravityAuthWithIDAndProxy("ctx-auth", "")
 	for i := 0; i < 40; i++ {
 		fresh := http.DefaultTransport.(*http.Transport).Clone()
@@ -585,8 +585,8 @@ func TestAntigravityTransportCacheEvictsStalePools(t *testing.T) {
 	}
 }
 
-// TestAntigravityProxiedHTTP11TransportRejectsInvalidProxy verifies the caller can
-// fall back instead of caching a broken pool.
+
+
 func TestAntigravityProxiedHTTP11TransportRejectsInvalidProxy(t *testing.T) {
 	auth := antigravityAuthWithIDAndProxy("invalid-proxy", "ftp://127.0.0.1:1")
 	if transport := antigravityProxiedHTTP11Transport(auth, "ftp://127.0.0.1:1"); transport != nil {
@@ -595,7 +595,7 @@ func TestAntigravityProxiedHTTP11TransportRejectsInvalidProxy(t *testing.T) {
 	if transport := antigravityProxiedHTTP11Transport(auth, "   "); transport != nil {
 		t.Fatal("a blank proxy must not produce a transport")
 	}
-	// A failed build must not occupy a cache slot, so a later valid setting still works.
+
 	if transport := antigravityProxiedHTTP11Transport(auth, "http://127.0.0.1:18099"); transport == nil {
 		t.Fatal("a valid proxy must produce a transport")
 	}
@@ -651,9 +651,9 @@ func TestAntigravityTransportMatchesNativeTLSProfile(t *testing.T) {
 	}
 }
 
-// TestAntigravityProxiedRequestsReuseOneConnection proves the end-to-end effect:
-// repeated Antigravity clients built for the same auth send every request over a
-// single pooled connection.
+
+
+
 func TestAntigravityProxiedRequestsReuseOneConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -696,9 +696,9 @@ func TestAntigravityProxiedRequestsReuseOneConnection(t *testing.T) {
 	}
 }
 
-// TestAntigravityPoolConfigIdleTimeoutCustomAndCap verifies that custom idle-conn-timeout
-// is honored (e.g. 10s, 30s) and hard-capped at 210s when configured higher (e.g. 10m),
-// and that connection pool is disabled by default (enabled: false).
+
+
+
 func TestAntigravityPoolConfigIdleTimeoutCustomAndCap(t *testing.T) {
 	enabledTrue := true
 	enabledFalse := false
@@ -865,9 +865,9 @@ func TestAntigravityPoolConfigIdleTimeoutCustomAndCap(t *testing.T) {
 	}
 }
 
-// TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects verifies that
-// in short mode (MaxIdleConnsPerHost=-1), repeated requests do not reuse connections,
-// but the HTTP wire request never leaks "Connection: close".
+
+
+
 func TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -904,11 +904,11 @@ func TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects(t *tes
 	headers := append([]string(nil), connectionHeaders...)
 	mu.Unlock()
 
-	// In short mode, every request should use a fresh connection
+
 	if distinct != requests {
 		t.Fatalf("short mode: expected %d distinct connections, got %d", requests, distinct)
 	}
-	// Crucial: wire request must not leak "Connection: close"
+
 	for i, h := range headers {
 		if strings.Contains(strings.ToLower(h), "close") {
 			t.Fatalf("request %d leaked Connection: close header: %q", i, h)
@@ -916,8 +916,8 @@ func TestAntigravityShortModeNeverAdvertisesConnectionCloseAndDisconnects(t *tes
 	}
 }
 
-// TestCloseAntigravityAuthIdleTransportsEvictsIdlePool verifies that calling
-// closeAntigravityAuthIdleTransports cleans up cached transports for that auth.
+
+
 func TestCloseAntigravityAuthIdleTransportsEvictsIdlePool(t *testing.T) {
 	auth := antigravityAuthWithIDAndProxy("auth-to-close", "")
 	cfg := &config.Config{}
@@ -937,22 +937,22 @@ func TestCloseAntigravityAuthIdleTransportsEvictsIdlePool(t *testing.T) {
 		maxIdleConnsPerHost: settings.maxIdleConnsPerHost,
 	}
 
-	// Verify it's cached
+
 	if !antigravityTransports.Contains(key) {
 		t.Fatal("expected transport to be in cache")
 	}
 
-	// Trigger close
+
 	closeAntigravityAuthIdleTransports(auth)
 
-	// Verify it's removed from cache
+
 	if antigravityTransports.Contains(key) {
 		t.Fatal("expected transport to be removed from cache after closeAntigravityAuthIdleTransports")
 	}
 }
 
-// TestAntigravityCountTokens429EvictsIdleTransports verifies that a 429 during count_tokens
-// evicts cached transports for that auth.
+
+
 func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -982,7 +982,7 @@ func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 	}
 	exec := NewAntigravityExecutor(cfg)
 
-	// Build client to populate cache
+
 	client := newAntigravityHTTPClient(context.Background(), cfg, auth, 0)
 	if client.Transport == nil {
 		t.Fatal("expected transport to be initialized")
@@ -1001,7 +1001,7 @@ func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 		t.Fatal("expected transport to be in cache before count_tokens")
 	}
 
-	// Trigger CountTokens which returns 429
+
 	payload := []byte(`{"contents":[{"role":"user","parts":[{"text":"hello"}]}]}`)
 	_, _ = exec.CountTokens(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gemini-3.6-flash-high",
@@ -1010,23 +1010,23 @@ func TestAntigravityCountTokens429EvictsIdleTransports(t *testing.T) {
 		SourceFormat: sdktranslator.FormatGemini,
 	})
 
-	// Verify transport is evicted
+
 	if antigravityTransports.Contains(key) {
 		t.Fatal("expected transport to be evicted after 429 in CountTokens")
 	}
 }
 
-// TestAntigravityTransportKeySeparatesPoolSettingsAcrossReload verifies that clients
-// with different connection-pool settings produce distinct cache keys and never share
-// stale transports during hot-reload under load.
+
+
+
 func TestAntigravityTransportKeySeparatesPoolSettingsAcrossReload(t *testing.T) {
 	auth := antigravityAuthWithIDAndProxy("auth-key-separation", "")
 
-	// 1. Client with short connection mode (default enabled: false)
+
 	cfgShort := &config.Config{}
 	clientShort := newAntigravityHTTPClient(context.Background(), cfgShort, auth, 0)
 
-	// 2. Client with pooled mode (enabled: true)
+
 	enabledPool := true
 	cfgPooled := &config.Config{
 		Antigravity: config.AntigravityConfig{
@@ -1037,7 +1037,7 @@ func TestAntigravityTransportKeySeparatesPoolSettingsAcrossReload(t *testing.T) 
 	}
 	clientPooled := newAntigravityHTTPClient(context.Background(), cfgPooled, auth, 0)
 
-	// Transports must NOT be shared because their pool settings keys differ!
+
 	if clientShort.Transport == clientPooled.Transport {
 		t.Fatal("expected short mode and pooled mode to use distinct transports in cache")
 	}

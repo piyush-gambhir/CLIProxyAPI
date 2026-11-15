@@ -180,11 +180,11 @@ func TestSIWCStatusEndpoint(t *testing.T) {
 		}
 	}
 
-	// 1. use_siwc not enabled -> off
+
 	checkStatus("/v8/management/oauth/siwc/status?name=codex.json", http.StatusOK, `{"status":"off"}`)
 	checkStatus("/v8/management/credentials/siwc/status?name=codex.json", http.StatusOK, `{"status":"off"}`)
 
-	// 2. Bind SIWC with valid future expires_at -> valid
+
 	registered, _ := manager.GetByID("codex.json")
 	_, errBind := manager.BindCodexSIWC(context.Background(), "codex.json", registered.RegistrationEpoch, "", &codex.CodexSIWCTokenData{
 		AccessToken:  "siwc-valid-1",
@@ -201,7 +201,7 @@ func TestSIWCStatusEndpoint(t *testing.T) {
 	checkStatus("/v8/management/oauth/siwc/status?name=codex.json", http.StatusOK, `{"status":"valid"}`)
 	checkStatus("/v8/management/oauth/siwc/status?auth_index="+bound.Index, http.StatusOK, `{"status":"valid"}`)
 
-	// 3. SIWC request receives 401 -> invalid
+
 	manager.MarkResult(context.Background(), coreauth.Result{
 		AuthID:            "codex.json",
 		CredentialVersion: bound.CredentialVersion,
@@ -212,7 +212,7 @@ func TestSIWCStatusEndpoint(t *testing.T) {
 	})
 	checkStatus("/v8/management/oauth/siwc/status?name=codex.json", http.StatusOK, `{"status":"invalid"}`)
 
-	// 4. Missing parameter or unknown target
+
 	checkStatus("/v8/management/oauth/siwc/status", http.StatusBadRequest, "")
 	checkStatus("/v8/management/oauth/siwc/status?name=missing.json", http.StatusNotFound, "")
 }

@@ -31,7 +31,7 @@ func TestManagerWeightedPinsShareCreditsWithoutAffinity(t *testing.T) {
 			a := &Auth{ID: t.Name() + "-a", Provider: providers[0], Attributes: map[string]string{AttributeWeight: "3"}}
 			b := &Auth{ID: t.Name() + "-b", Provider: providers[len(providers)-1], Attributes: map[string]string{AttributeWeight: "1"}}
 			auths := []*Auth{a, b}
-			// A zero-weight higher tier must not hide eligible positive-weight peers.
+
 			auths = append(auths, &Auth{ID: t.Name() + "-zero", Provider: providers[0], Attributes: map[string]string{AttributeWeight: "0", "priority": "100"}})
 			if scenario == "lower-priority" {
 				auths = append(auths, &Auth{ID: t.Name() + "-higher", Provider: providers[0], Attributes: map[string]string{"priority": "1"}})
@@ -57,7 +57,7 @@ func TestManagerWeightedPinsShareCreditsWithoutAffinity(t *testing.T) {
 					t.Fatal(errRegister)
 				}
 			}
-			// Normalize single/mixed entrypoints while retaining their real routing decisions.
+
 			pick := func(ctx context.Context, opts cliproxyexecutor.Options) *Auth {
 				t.Helper()
 				var auth *Auth
@@ -86,7 +86,7 @@ func TestManagerWeightedPinsShareCreditsWithoutAffinity(t *testing.T) {
 				t.Fatalf("wrong pin accounting: current=%v inFlight=%d", state.currentForTest(), state.inFlight)
 			}
 			if scenario == "lower-priority" || scenario == "http-pin" {
-				// Traffic in a different priority/transport pool must not repay this pool.
+
 				for range 4 {
 					pick(ctx, cliproxyexecutor.Options{})
 				}
@@ -100,7 +100,7 @@ func TestManagerWeightedPinsShareCreditsWithoutAffinity(t *testing.T) {
 				}
 			}
 			for i := range 12 {
-				// Headers must not enable sticky bindings when affinity is disabled.
+
 				opts := cliproxyexecutor.Options{Headers: http.Header{"Session_id": {fmt.Sprintf("fresh-%d", i)}}}
 				if auth := pick(ctx, opts); auth.ID != a.ID {
 					t.Fatalf("request %d failed to repay pinned debt: got %q, want %q", i, auth.ID, a.ID)

@@ -334,7 +334,7 @@ func TestStreamingTool_MixedEmptyNameAndValid(t *testing.T) {
 	if len(starts) != 2 {
 		t.Fatalf("expected two tool_use starts (valid mid-stream + synthetic empty-name), got %d", len(starts))
 	}
-	// Valid name+id is emitted mid-stream first; empty-name is belated at finish.
+
 	if name := ojson.Get(starts[0].Payload, "content_block.name").String(); name != "do_it" {
 		t.Fatalf("first tool name = %q, want %q", name, "do_it")
 	}
@@ -1019,7 +1019,7 @@ func TestStreaming_InterleavedContentAndToolUse_StrictSequentialBlocks(t *testin
 
 	assertSequentialContentBlocks(t, events)
 
-	// Ensure tool call arguments were preserved and complete
+
 	var toolDeltas []sseEvent
 	for _, e := range events {
 		if e.Type == "content_block_delta" && ojson.Get(e.Payload, "delta.type").String() == "input_json_delta" {
@@ -1092,11 +1092,11 @@ func TestStreaming_InterleavedTextAndThinkingPreservesOrder(t *testing.T) {
 
 	assertSequentialContentBlocks(t, events)
 
-	// Block sequence should be:
-	// 0: tool_use (Bash, command: "pwd")
-	// 1: text ("Note A: running check")
-	// 2: thinking ("Thinking about safety")
-	// 3: text ("Note B: done")
+
+
+
+
+
 	var blockStarts []string
 	for _, e := range events {
 		if e.Type == "content_block_start" {
@@ -1113,7 +1113,7 @@ func TestStreaming_InterleavedTextAndThinkingPreservesOrder(t *testing.T) {
 		}
 	}
 
-	// Verify text and thinking contents
+
 	var textDeltas []string
 	var thinkingDeltas []string
 	var toolDelta string
@@ -1313,7 +1313,7 @@ func TestStreaming_EmptyReasoningContentFallsBackToReasoning(t *testing.T) {
 func TestNonStream_ReasoningFieldEmitsThinkingBlock(t *testing.T) {
 	rawJSON := []byte(`{"id":"chatcmpl-1","object":"chat.completion","model":"deepseek","choices":[{"index":0,"message":{"role":"assistant","content":"Done","reasoning":"Thought process"},"finish_reason":"stop"}]}`)
 
-	// Test ConvertOpenAIResponseToClaudeNonStream
+
 	out := ConvertOpenAIResponseToClaudeNonStream(context.Background(), "", nil, nil, rawJSON, nil)
 	content := ojson.GetBytesNoCopy(out, "content").Array()
 	var thinkingTexts []string
@@ -1326,7 +1326,7 @@ func TestNonStream_ReasoningFieldEmitsThinkingBlock(t *testing.T) {
 		t.Fatalf("expected non-stream content to contain thinking block 'Thought process', got %v (output: %s)", thinkingTexts, string(out))
 	}
 
-	// Test convertOpenAINonStreamingToAnthropic (via ConvertOpenAIResponseToClaude with non-stream payload)
+
 	var paramAny any
 	emitted := ConvertOpenAIResponseToClaude(context.Background(), "", []byte(`{"stream":false}`), nil, append([]byte("data: "), rawJSON...), &paramAny)
 	if len(emitted) == 0 {
@@ -1479,7 +1479,7 @@ func TestConvertOpenAIResponseToClaude_StreamFlagResolvedOncePerStream(t *testin
 		t.Fatalf("expected streaming events on first chunk, got %q", bytes.Join(first, nil))
 	}
 
-	// An empty original request on subsequent chunks would parse as non-streaming if re-read.
+
 	second := ConvertOpenAIResponseToClaude(context.Background(), "test-model", nil, nil, []byte(streamFlagTestChunk), &param)
 	if !bytes.Contains(bytes.Join(second, nil), []byte("content_block_delta")) {
 		t.Fatalf("expected cached stream flag to be reused on subsequent chunks, got %q", bytes.Join(second, nil))
@@ -1493,8 +1493,8 @@ func TestConvertOpenAIResponseToClaude_ToolNameMapResolvedOnceWhenNoTools(t *tes
 		t.Fatalf("expected streaming events on first chunk, got %q", bytes.Join(first, nil))
 	}
 
-	// Even when the first chunk resolved ToolNameMap to nil (no tools in request),
-	// later chunks must not re-parse originalRequestRawJSON to rebuild ToolNameMap.
+
+
 	toolChunk := `data: {"id":"chatcmpl_1","model":"test-model","created":1,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"bash","arguments":"{}"}}]},"finish_reason":null}]}`
 	laterReqWithTools := []byte(`{"model":"m","stream":true,"tools":[{"name":"Bash"}]}`)
 	second := ConvertOpenAIResponseToClaude(context.Background(), "test-model", laterReqWithTools, nil, []byte(toolChunk), &param)
@@ -1516,7 +1516,7 @@ func TestConvertOpenAIResponseToClaude_NonStreamingRequestStaysNonStreaming(t *t
 			t.Fatalf("request %s must not produce streaming events, got %q", original, joined)
 		}
 
-		// Subsequent call with stream:true must still use the cached non-streaming decision.
+
 		second := ConvertOpenAIResponseToClaude(context.Background(), "test-model", []byte(`{"model":"m","stream":true}`), nil, []byte(streamFlagTestChunk), &param)
 		secondJoined := bytes.Join(second, nil)
 		if len(second) != 1 || ojson.GetBytesNoCopy(secondJoined, "type").String() != "message" || bytes.Contains(secondJoined, []byte("content_block_delta")) {
@@ -1790,7 +1790,7 @@ func TestNonStream_ContentPartsArrayThinkingAndBlockOrder(t *testing.T) {
 		t.Fatalf("convertOpenAINonStreamingToAnthropic blocks = %s, want [thinking, text]", string(emitted[0]))
 	}
 
-	// Verify top-level reasoning_content + string message.content emits [thinking, text] order
+
 	topLevelReasoningResp := []byte(`{"id":"chatcmpl-2","object":"chat.completion","model":"deepseek","choices":[{"index":0,"message":{"role":"assistant","content":"Final answer","reasoning_content":"Step by step"},"finish_reason":"stop"}]}`)
 	outTopLevel := ConvertOpenAIResponseToClaudeNonStream(context.Background(), "", nil, nil, topLevelReasoningResp, nil)
 	topBlocks := ojson.GetBytesNoCopy(outTopLevel, "content").Array()

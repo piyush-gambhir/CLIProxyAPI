@@ -11,9 +11,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// lockAuthMutation acquires the reload barrier, then the credential gate, before
-// m.mu. Keep both until publication completes. Load never takes credential or
-// refresh locks. Store callbacks may read the manager, but must not mutate it.
+
+
+
 func (m *Manager) lockAuthMutation(id string) func() {
 	release, _ := m.lockAuthMutationContext(context.Background(), id)
 	return release
@@ -155,7 +155,7 @@ func (m *Manager) beginForegroundStoreSave(ctx context.Context) (func(), error) 
 	return release, nil
 }
 
-// lockAuthMutationContext lets fallible mutations cancel either lock wait.
+
 func (m *Manager) lockAuthMutationContext(ctx context.Context, id string) (func(), error) {
 	return m.lockAuthMutationWithPersistCancel(ctx, id, nil)
 }
@@ -186,7 +186,7 @@ func (m *Manager) lockAuthMutationWithPersistCancel(ctx context.Context, id stri
 	}
 	select {
 	case gate <- struct{}{}:
-		// Cancellation may race with the gate becoming available.
+
 		if errContext := ctx.Err(); errContext != nil {
 			<-gate
 			m.authLoadGate.Release(1)
@@ -220,9 +220,9 @@ func (m *Manager) lockAuthMutationWithPersistCancel(ctx context.Context, id stri
 	}, nil
 }
 
-// persistLocked requires m.mu and the credential mutation gate. Never pass a
-// published object to Store.Save: readers and runtime-only writers remain live
-// during I/O. Only the store's delta is merged back, preserving intervening edits.
+
+
+
 func (m *Manager) persistLocked(ctx context.Context, auth *Auth) error {
 	before := auth.Clone()
 	saved := auth.Clone()
@@ -233,10 +233,10 @@ func (m *Manager) persistLocked(ctx context.Context, auth *Auth) error {
 	return err
 }
 
-// mergeAuthSaveDelta handles all exported value fields, not a store-specific
-// allowlist. Map entries are independent fields; nested values are atomic.
-// Identity/version fields belong exclusively to the manager. Store-owned shared
-// objects must be replaced rather than mutated in place (see Store.Save).
+
+
+
+
 func mergeAuthSaveDelta(target, before, after *Auth, preserveConcurrent bool) {
 	dst := reflect.ValueOf(target).Elem()
 	base := reflect.ValueOf(before).Elem()
@@ -334,11 +334,11 @@ func equalSaveValue(a, b reflect.Value) bool {
 	return reflect.DeepEqual(a.Interface(), b.Interface())
 }
 
-// PersistMetadataEntry updates a single metadata entry on the runtime auth for
-// the given registration epoch and persists it to the backing store without
-// advancing Generation or firing credential-lifecycle hooks. If a foreground
-// credential mutation contends for the same auth while store I/O is in flight,
-// the metadata save is preempted so foreground operations do not stall.
+
+
+
+
+
 func (m *Manager) PersistMetadataEntry(ctx context.Context, id string, expectedEpoch uint64, key string, value any, validate func(existing *Auth) bool) (bool, bool) {
 	if m == nil || id == "" || key == "" {
 		return false, false

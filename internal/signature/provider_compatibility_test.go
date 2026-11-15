@@ -30,9 +30,9 @@ func testClaudeThinkingSignature() string {
 	return base64.StdEncoding.EncodeToString(payload)
 }
 
-// TestBase64AlphabetSet_MatchesEncoderAlphabets pins the charset lookup tables
-// against the encoders they stand in for. A wrong table would silently accept
-// bytes that are not valid base64, or reject a legal payload character.
+
+
+
 func TestBase64AlphabetSet_MatchesEncoderAlphabets(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -57,9 +57,9 @@ func TestBase64AlphabetSet_MatchesEncoderAlphabets(t *testing.T) {
 	}
 }
 
-// replaySafeEnvelopeFixtures returns one fixture per self-describing provider
-// envelope that carries replayable state. Every entry must survive the structural
-// pre-filter, because losing one would silently reclassify that provider.
+
+
+
 func replaySafeEnvelopeFixtures(t *testing.T) map[string]struct {
 	sig  string
 	want SignatureProvider
@@ -79,12 +79,12 @@ func replaySafeEnvelopeFixtures(t *testing.T) map[string]struct {
 	}
 }
 
-// TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope guards the
-// structural pre-filter. DetectSignatureProviderForBlock skips every provider
-// validator when maybeSelfDescribingSignatureEnvelope returns false, so an
-// envelope missing from selfDescribingSignatureFirstChars would silently fall
-// through to the residual class. Adding a provider envelope without registering
-// its base64 first character fails here.
+
+
+
+
+
+
 func TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope(t *testing.T) {
 	for name, fixture := range replaySafeEnvelopeFixtures(t) {
 		if !maybeSelfDescribingSignatureEnvelope(fixture.sig) {
@@ -93,8 +93,8 @@ func TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope(t *testing.T
 		}
 	}
 
-	// The pre-filter must not be so wide that it stops filtering. Opaque xAI
-	// ciphertext is the shape it exists to reject.
+
+
 	for _, sig := range []string{
 		"K1ZAIbzDbO",
 		"jQDLUr+fD8RFP8nbkkfI",
@@ -106,14 +106,14 @@ func TestSelfDescribingSignatureFirstChars_CoversEveryKnownEnvelope(t *testing.T
 	}
 }
 
-// TestGeminiASCIIUUIDIsGateIndependent documents why ascii_uuid is excluded from
-// selfDescribingSignatureFirstChars. Its first byte is the first hex character of
-// the UUID, so the base64 first character spreads over several values, and none of
-// them need to be registered: the envelope is never replay-safe, so it resolves to
-// SignatureProviderUnknown either way and Gemini model parts recover it through the
-// bypass sentinel keyed on block kind.
+
+
+
+
+
+
 func TestGeminiASCIIUUIDIsGateIndependent(t *testing.T) {
-	// First hex digit chosen to land on distinct base64 first characters.
+
 	for _, uuid := range []string{
 		"09743975-4bb0-4936-9e28-d5b0d21bdc48",
 		"49743975-4bb0-4936-9e28-d5b0d21bdc48",
@@ -133,9 +133,9 @@ func TestGeminiASCIIUUIDIsGateIndependent(t *testing.T) {
 	}
 }
 
-// TestDetectSignatureProviderForBlock_ClassifiesEveryKnownEnvelope pins the
-// classification of each envelope so a reordering of the validator chain cannot
-// silently reassign one provider's signatures to another.
+
+
+
 func TestDetectSignatureProviderForBlock_ClassifiesEveryKnownEnvelope(t *testing.T) {
 	for name, fixture := range replaySafeEnvelopeFixtures(t) {
 		if got := DetectSignatureProvider(fixture.sig); got != fixture.want {
@@ -144,13 +144,13 @@ func TestDetectSignatureProviderForBlock_ClassifiesEveryKnownEnvelope(t *testing
 	}
 }
 
-// TestGeminiEnvelopeNeverClaimsClaudeSignatures pins the invariant that keeps
-// Claude and Gemini separable independently of probe order in
-// DetectSignatureProviderForBlock. Gemini validates wire shape only and has no
-// literal marker, so it is the weakest judge; Claude envelopes survive it solely
-// because they carry extra top-level fields beyond the container and therefore
-// fail Gemini's single-record shape. Loosening the Gemini envelope check would
-// make probe order start mattering, and fails here first.
+
+
+
+
+
+
+
 func TestGeminiEnvelopeNeverClaimsClaudeSignatures(t *testing.T) {
 	for name, sig := range map[string]string{
 		"single-layer E":        testClaudeThinkingSignature(),
@@ -191,8 +191,8 @@ func TestDetectSignatureProvider_RejectsMisleadingClaudePrefix(t *testing.T) {
 }
 
 func TestDetectSignatureProvider_Gemini3EPrefixDoesNotLookClaude(t *testing.T) {
-	// This byte shape base64-encodes with an E prefix but is a Gemini field-2
-	// envelope, not a Claude thinking-signature tree.
+
+
 	geminiSig := testGemini3ThoughtSignature([]byte{0x01, 0x0c, 0x39, 0xd6, 0xc7, 0x34})
 	if !strings.HasPrefix(geminiSig, "E") {
 		t.Fatalf("test signature should start with E, got %q", geminiSig[:1])

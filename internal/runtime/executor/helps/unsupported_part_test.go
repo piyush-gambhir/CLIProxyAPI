@@ -9,8 +9,8 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// A turn that only holds a file the target cannot receive is refused with a named
-// 400, through both the single and the pair translation, with and without compat.
+
+
 func TestClaudeContainerUploadReturns400(t *testing.T) {
 	payload := []byte(`{"messages":[{"role":"user","content":[{"type":"container_upload","file_id":"file-example"}]}]}`)
 	for _, to := range []sdktranslator.Format{sdktranslator.FormatGemini, sdktranslator.FormatOpenAI, sdktranslator.FormatCodex, sdktranslator.FormatInteractions} {
@@ -26,8 +26,8 @@ func TestClaudeContainerUploadReturns400(t *testing.T) {
 	}
 }
 
-// TestByteWrappersKeepAJSONBodyForAnUnsendableFile guards the executors that still
-// ignore the error: they must get a request body, never an empty one.
+
+
 func TestByteWrappersKeepAJSONBodyForAnUnsendableFile(t *testing.T) {
 	payload := []byte(`{"model":"m","messages":[{"role":"user","content":[{"type":"container_upload","file_id":"file-absent"}]}]}`)
 	for _, to := range []sdktranslator.Format{sdktranslator.FormatOpenAI, sdktranslator.FormatCodex, sdktranslator.FormatInteractions, sdktranslator.FormatGemini} {

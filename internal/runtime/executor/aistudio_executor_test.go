@@ -154,7 +154,7 @@ func TestAIStudioTranslateRequestAppendsTrailingUserForTrailingModelTurn(t *test
 
 func TestAIStudioTranslateRequestCountTokensPreservesTrailingModelTurn(t *testing.T) {
 	executor := NewAIStudioExecutor(&config.Config{}, "aistudio", nil)
-	// When action is countTokens, trailing model turn must not be modified
+
 	_, body, err := executor.translateRequest(context.Background(), cliproxyexecutor.Request{
 		Model: "gemini-3.7-flash",
 		Payload: []byte(`{"contents":[` +
@@ -396,7 +396,7 @@ func TestAIStudioApplyPatchExecutorReuse(t *testing.T) {
 			if i == 0 {
 				responses = []wsrelay.Message{{ID: msg.ID, Type: wsrelay.MessageTypeHTTPResp, Payload: map[string]any{"status": 200, "body": executorPatchResponse}}}
 			} else {
-				// A snapshot-only upstream can stream text, but not patch generation progress.
+
 				for _, response := range []wsrelay.Message{
 					{ID: msg.ID, Type: wsrelay.MessageTypeStreamStart, Payload: map[string]any{"status": 200}},
 					{ID: msg.ID, Type: wsrelay.MessageTypeStreamChunk, Payload: map[string]any{"data": "data: {\"responseId\":\"patch\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"preparing\"}]}}]}\n\n"}},

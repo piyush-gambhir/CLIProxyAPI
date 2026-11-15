@@ -172,8 +172,8 @@ func TestPutOpenAICompatConcurrentWithAuthFieldsPatch_Issue6559(t *testing.T) {
 	close(start)
 	wg.Wait()
 
-	// Ensure the final persisted configuration is reloaded through the watcher pipeline
-	// and verify both the patched auth prefix and final openai-compatibility model are registered.
+
+
 	service.reloadConfigFromWatcher()
 	service.registerConfigAPIKeyAuths(ctx, service.currentConfig())
 

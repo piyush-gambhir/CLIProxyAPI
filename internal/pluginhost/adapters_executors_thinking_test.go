@@ -184,7 +184,7 @@ func TestExecutorAdapterCallsPluginThinkingApplierWithoutModelThinkingMetadata(t
 		thinking.ClearPluginProviders()
 	})
 
-	// ModelInfo is registered with Thinking: nil and UserDefined: false.
+
 	host.modelRegistrations[record.id] = pluginModelRegistration{
 		pluginID:    record.id,
 		provider:    provider,
@@ -324,7 +324,7 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 	}, []sdktranslator.Format{sdktranslator.FormatClaude}, []sdktranslator.Format{sdktranslator.FormatClaude})
 	adapter.provider = provider
 
-	// Invalid suffix ("bogus") -> rejected with ThinkingError.
+
 	_, errBogus := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model(bogus)",
 		Format:  sdktranslator.FormatClaude,
@@ -341,7 +341,7 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 		t.Fatalf("plugin Execute was called %d times on bogus suffix", executeCalls)
 	}
 
-	// Unsupported level suffix -> rejected with ThinkingError (ErrLevelNotSupported).
+
 	_, errLevel := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model(xhigh)",
 		Format:  sdktranslator.FormatClaude,
@@ -358,7 +358,7 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 		t.Fatalf("plugin Execute was called %d times on invalid level", executeCalls)
 	}
 
-	// Out-of-range budget in request body -> rejected with ThinkingError (ErrBudgetOutOfRange).
+
 	_, errBudget := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model",
 		Format:  sdktranslator.FormatClaude,
@@ -375,7 +375,7 @@ func TestExecutorAdapterValidatesThinkingAndClampsOrRejectsOutOfRange(t *testing
 		t.Fatalf("plugin Execute was called %d times on out-of-range body budget", executeCalls)
 	}
 
-	// Out-of-range numeric suffix (9000 > Max 8192) -> clamped to 8192 by central validation.
+
 	_, errSuffixClamp := adapter.Execute(context.Background(), nil, coreexecutor.Request{
 		Model:   "my-model(9000)",
 		Format:  sdktranslator.FormatClaude,

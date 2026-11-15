@@ -23,8 +23,8 @@ func TestAntigravityExecutorExecuteStreamInteractionsEmitsDoneAfterSplitTerminal
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
-		// No traceId: FilterSSEUsageMetadata renames the split usage frame to
-		// cpaUsageMetadata instead of forwarding it unchanged.
+
+
 		_, _ = io.WriteString(w, "data: {\"response\":{\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"first\"}]},\"finishReason\":\"STOP\"}],\"modelVersion\":\"gemini-3.8-flash-high\",\"responseId\":\"resp-split\"}}\n\n")
 		if flusher != nil {
 			flusher.Flush()
@@ -33,15 +33,15 @@ func TestAntigravityExecutorExecuteStreamInteractionsEmitsDoneAfterSplitTerminal
 		if flusher != nil {
 			flusher.Flush()
 		}
-		// Hold the upstream open: the terminal events must be produced by the
-		// usage frame itself, not by the executor's clean-EOF [DONE] tail.
+
+
 		select {
 		case <-terminalReceived:
 		case <-r.Context().Done():
 		}
 	}))
-	// Cancel before closing: on a regression the handler may still be waiting
-	// for terminalReceived, and only the request cancellation releases it.
+
+
 	t.Cleanup(func() {
 		cancel()
 		server.Close()
@@ -114,9 +114,9 @@ consume:
 }
 
 func TestAntigravityExecutorExecuteStreamInteractionsCompletesToolCallWithoutFinishReason(t *testing.T) {
-	// Mirrors a real upstream shape (see antigravity_executor_finish_reason_test.go):
-	// a complete tool-call chunk with usage but no finishReason, ended by a
-	// clean EOF. The Interactions stream must still terminate normally.
+
+
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		_, _ = io.WriteString(w, antigravityNoFinishReasonSSE)
@@ -144,8 +144,8 @@ func TestAntigravityExecutorExecuteStreamInteractionsCompletesToolCallWithoutFin
 }
 
 func TestAntigravityExecutorExecuteStreamInteractionsNoTerminalOnReadError(t *testing.T) {
-	// A mid-stream connection drop (read error, not a clean EOF) must not be
-	// reported as a successful completion, even for Interactions clients.
+
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, ok := w.(http.Flusher)

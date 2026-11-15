@@ -20,7 +20,7 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
-	// Test case 1: Disable strict-mode, clear mode, remove cache-user-id.
+
 	cfg := &Config{
 		ClaudeKey: []ClaudeKey{
 			{
@@ -44,8 +44,8 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 
-	// In issue #5935, mode: always, strict-mode: true, and cache-user-id: true remained in config.yaml
-	// even when strict-mode was set to false, mode was cleared, and cache-user-id was disabled.
+
+
 	if strings.Contains(savedText, "mode: always") {
 		t.Errorf("saved YAML still contains 'mode: always' after clearing mode; got:\n%s", savedText)
 	}
@@ -56,7 +56,7 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 		t.Errorf("saved YAML still contains 'cache-user-id: true' after disabling cache-user-id; got:\n%s", savedText)
 	}
 
-	// Loading the saved config must reflect the updated false/empty values, while preserving explicit Cloak.
+
 	loadedCfg, errLoad := LoadConfigOptional(configPath, false)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
@@ -147,7 +147,7 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalse(t *testing.T) {
 
 func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalseWhenFieldPreviouslyAbsent(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	// Initial YAML only has mode: always. cache-user-id is completely absent.
+
 	initialYAML := `claude-api-key:
   - api-key: sk-ant-test
     cloak:
@@ -180,7 +180,7 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalseWhenFieldPreviouslyA
 	}
 	savedText := string(savedBytes)
 
-	// An explicit pointer false for cache-user-id must be added to YAML even if previously absent.
+
 	if !strings.Contains(savedText, "cache-user-id: false") {
 		t.Errorf("saved YAML missing newly-added 'cache-user-id: false'; got:\n%s", savedText)
 	}
@@ -211,7 +211,7 @@ func TestSaveConfigPreserveComments_ClaudeCloakRemovedWhenNil(t *testing.T) {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
-	// Cloak explicitly set to nil (removed)
+
 	cfg := &Config{
 		ClaudeKey: []ClaudeKey{
 			{
@@ -282,7 +282,7 @@ claude-api-key:
 	}
 	savedText := string(savedBytes)
 
-	// Deleted header Custom-B must be pruned from claude-api-key.headers
+
 	if strings.Contains(savedText, "Custom-B") {
 		t.Errorf("saved YAML still contains deleted header 'Custom-B'; got:\n%s", savedText)
 	}
@@ -290,7 +290,7 @@ claude-api-key:
 		t.Errorf("saved YAML missing retained header 'Custom-A: valA'; got:\n%s", savedText)
 	}
 
-	// Non-target root mapping (remote-management) must be preserved
+
 	if !strings.Contains(savedText, "allow-remote: true") {
 		t.Errorf("saved YAML lost 'allow-remote: true'; got:\n%s", savedText)
 	}
@@ -314,7 +314,7 @@ func TestSaveConfigPreserveComments_SensitiveWordsReplaceEmptyValueAndPruning(t 
 				t.Fatalf("initial LoadConfigOptional() error = %v", errLoad)
 			}
 
-			// Step 1: Save empty-string deletion entries in all three scopes.
+
 			cfg.Antigravity.SensitiveWordsReplace = map[string]string{
 				"You are Codex, an agent based on GPT-5.": "",
 				"TempAntigrav": "Keep",
@@ -348,7 +348,7 @@ func TestSaveConfigPreserveComments_SensitiveWordsReplaceEmptyValueAndPruning(t 
 				t.Fatalf("Claude empty replacement lost: %#v", reloaded.ClaudeKey[0].Cloak.SensitiveWordsReplace)
 			}
 
-			// Step 2: Prune individual keys and clear Devin replacements completely.
+
 			delete(reloaded.Antigravity.SensitiveWordsReplace, "TempAntigrav")
 			reloaded.Devin.SensitiveWordsReplace = nil
 			delete(reloaded.ClaudeKey[0].Cloak.SensitiveWordsReplace, "OldClaudeTarget")

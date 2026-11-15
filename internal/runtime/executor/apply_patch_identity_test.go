@@ -16,7 +16,7 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Check every lifecycle identity, not merely the final snapshot or event counts.
+
 func assertApplyPatchIdentityLifecycle(t *testing.T, events [][]byte, id, call, input string, index int, fragments []string) {
 	t.Helper()
 	counts := map[string]int{}
@@ -163,7 +163,7 @@ func TestApplyPatchNamedLateIdentityActualTransports(t *testing.T) {
 						fragments := []string{"p", "q"}
 						if snapshot {
 							fragments = nil
-							// Interactions retains its existing one-snapshot compatibility delta.
+
 							if interactions {
 								fragments = []string{"pq"}
 							}

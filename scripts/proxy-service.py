@@ -100,7 +100,7 @@ def restart(target, label):
     try:
         point_to(target)
     finally:
-        # bootout can return before launchd finishes unloading the service.
+
         for _ in range(20):
             started = run('launchctl', 'bootstrap', DOMAIN, str(PLIST), check=False)
             if started.returncode == 0:

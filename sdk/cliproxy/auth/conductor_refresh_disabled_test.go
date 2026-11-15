@@ -63,7 +63,7 @@ func TestRefreshAuthForRequest_NormalDisabledAuth_RefreshesTokenSuccessfully(t *
 	executor := &mockOAuthErrorExecutor{id: "test-provider"}
 	manager.RegisterExecutor(executor)
 
-	// Normal disabled auth without invalid_grant should refresh tokens normally (expected behavior)
+
 	auth := &Auth{
 		ID:       "normal-disabled-auth",
 		Provider: "test-provider",
@@ -117,7 +117,7 @@ func TestRefreshAuthForRequest_DisabledAuth_InvalidGrant_NeverRetries(t *testing
 		t.Fatalf("Register error: %v", err)
 	}
 
-	// 1st call encounters invalid_grant
+
 	_, errRefresh := manager.refreshAuthForRequest(ctx, auth.ID, "")
 	if errRefresh == nil {
 		t.Fatalf("expected refresh error, got nil")
@@ -130,7 +130,7 @@ func TestRefreshAuthForRequest_DisabledAuth_InvalidGrant_NeverRetries(t *testing
 	if current == nil {
 		t.Fatalf("auth not found in manager")
 	}
-	// Disabled + invalid_grant must never schedule retry
+
 	if current.Status != StatusDisabled {
 		t.Fatalf("auth status = %v, want StatusDisabled", current.Status)
 	}
@@ -138,7 +138,7 @@ func TestRefreshAuthForRequest_DisabledAuth_InvalidGrant_NeverRetries(t *testing
 		t.Fatalf("NextRefreshAfter = %v, want zero time (never refresh)", current.NextRefreshAfter)
 	}
 
-	// 2nd call should be blocked immediately without calling executor
+
 	callsBefore := executor.refreshCalls.Load()
 	_, errSecond := manager.refreshAuthForRequest(ctx, auth.ID, "")
 	if errSecond == nil {
@@ -179,7 +179,7 @@ func TestRefreshAuthForRequest_EnabledAuth_InvalidGrant_ExponentialBackoff(t *te
 		t.Fatalf("Register error: %v", err)
 	}
 
-	// 1st failure: backoff 1m
+
 	t1 := time.Now()
 	_, _ = manager.refreshAuthForRequest(ctx, auth.ID, "")
 	manager.mu.RLock()
@@ -196,7 +196,7 @@ func TestRefreshAuthForRequest_EnabledAuth_InvalidGrant_ExponentialBackoff(t *te
 		t.Fatalf("attempt 1: backoff diff = %v, want ~1m", diff1)
 	}
 
-	// 2nd failure: backoff 2m
+
 	t2 := time.Now()
 	_, _ = manager.refreshAuthForRequest(ctx, auth.ID, "")
 	manager.mu.RLock()
@@ -210,7 +210,7 @@ func TestRefreshAuthForRequest_EnabledAuth_InvalidGrant_ExponentialBackoff(t *te
 		t.Fatalf("attempt 2: backoff diff = %v, want ~2m", diff2)
 	}
 
-	// 3rd failure: backoff 4m
+
 	t3 := time.Now()
 	_, _ = manager.refreshAuthForRequest(ctx, auth.ID, "")
 	manager.mu.RLock()
@@ -257,7 +257,7 @@ func TestManager_AutoRefreshLoop_DisabledAuthWithInvalidGrantNeverRefreshes(t *t
 	manager.StartAutoRefresh(ctx, 10*time.Millisecond)
 	defer manager.StopAutoRefresh()
 
-	// Wait 100ms to allow refresh loop cycles
+
 	time.Sleep(100 * time.Millisecond)
 
 	if calls := executor.refreshCalls.Load(); calls != 0 {
@@ -268,7 +268,7 @@ func TestManager_AutoRefreshLoop_DisabledAuthWithInvalidGrantNeverRefreshes(t *t
 func TestRefreshAuthForRequest_RawFmtError_RecognizesInvalidGrant(t *testing.T) {
 	ctx := context.Background()
 	manager := NewManager(nil, &RoundRobinSelector{}, nil)
-	// Error created via fmt.Errorf without implementing StatusCode()
+
 	rawErr := fmt.Errorf("oauth token refresh failed: invalid_grant: account checkpoint required")
 	executor := &mockOAuthErrorExecutor{
 		id:          "test-provider",
@@ -313,7 +313,7 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 	lead := CodexOuterRefreshLead
 	setRefreshLeadFactory(t, "codex", func() *time.Duration { return &lead })
 
-	// Access token still valid for 66h, i.e. inside the 96h CodexOuterRefreshLead window.
+
 	exp := now.Add(66 * time.Hour)
 	payload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"exp":%d}`, exp.Unix())))
 	accessToken := "eyJhbGciOiJub25lIn0." + payload + ".sig"
@@ -343,7 +343,7 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("Register error: %v", errReg)
 	}
 
-	// 1. First refresh attempt fails terminally; NextRefreshAfter must be deferred to exp (not 5m backoff).
+
 	m.refreshAuth(ctx, a.ID)
 	got, _ := m.GetByID(a.ID)
 	if got == nil {
@@ -359,8 +359,8 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("NextRefreshAfter = %v, want access token expiry %v", got.NextRefreshAfter, exp)
 	}
 
-	// 2. Even if NextRefreshAfter has elapsed while the access token is still valid inside the 96h lead window,
-	// a refresh job must restore NextRefreshAfter=exp and the scheduler must not spin or re-trigger before exp.
+
+
 	m.mu.Lock()
 	m.auths[a.ID].NextRefreshAfter = now.Add(-time.Second)
 	epoch := m.auths[a.ID].RegistrationEpoch
@@ -384,7 +384,7 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("upstream RefreshCalls = %d, want 1", ex.RefreshCalls())
 	}
 
-	// 3. Even with NextRefreshAfter cleared, shouldRefresh must be false and nextRefreshCheckAt must defer to exp.
+
 	m.mu.Lock()
 	m.auths[a.ID].NextRefreshAfter = time.Time{}
 	gen0 := m.auths[a.ID].Generation
@@ -413,7 +413,7 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("Generation bumped from %d to %d without due refresh", gen0, afterLoop.Generation)
 	}
 
-	// 4. Once the access token expires on the disabled credential, it must be unscheduled and retain StatusDisabled.
+
 	afterExp := exp.Add(time.Second)
 	m.mu.RLock()
 	cur = m.auths[a.ID]
@@ -424,8 +424,8 @@ func TestDisabledCodexRejectedRefreshTokenDoesNotSpin(t *testing.T) {
 		t.Fatalf("at access token expiry for disabled credential: shouldRefresh=%v scheduled=%v, want false/false", shouldRefExpired, okExpired)
 	}
 
-	// 5. A disabled credential whose access token is already expired on the first terminal refresh failure
-	// must unschedule immediately with NextRefreshAfter=zero and keep StatusDisabled.
+
+
 	expPast := now.Add(-time.Hour)
 	expiredPayload := base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf(`{"exp":%d}`, expPast.Unix())))
 	expiredAccessToken := "eyJhbGciOiJub25lIn0." + expiredPayload + ".sig"

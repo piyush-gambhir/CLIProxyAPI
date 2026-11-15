@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// fakeClock is a controllable clock. AGENTS.md forbids wall-clock sleeps in
-// ordering and expiry tests, so every time-dependent test drives this instead.
+
+
 type fakeClock struct {
 	now time.Time
 }
@@ -44,7 +44,7 @@ func TestStoreNewestReadingPerWindowWins(t *testing.T) {
 		t.Fatalf("used percent = %.1f, want 35", window.UsedPercent)
 	}
 
-	// An out-of-order writer must not resurrect the older watermark.
+
 	store.Observe(identity, map[string]Window{
 		WindowSevenDay: {UsedPercent: 20, ResetAt: storeBase.Add(72 * time.Hour), Known: true, LearnedAt: storeBase},
 	}, storeBase)
@@ -64,7 +64,7 @@ func TestStorePassedResetMeansTheWindowIsFull(t *testing.T) {
 		WindowSevenDay: {UsedPercent: 90, ResetAt: storeBase.Add(48 * time.Hour), Known: true},
 	}, clock.Now())
 
-	// Before the reset the reading stands as observed.
+
 	reading, _ := store.Lookup("a")
 	if window, _ := reading.Window(WindowFiveHour); window.UsedPercent != 100 || !window.HardLimited {
 		t.Fatalf("five hour before reset = %+v, want spent and hard limited", window)
@@ -83,7 +83,7 @@ func TestStorePassedResetMeansTheWindowIsFull(t *testing.T) {
 	if !short.ResetAt.Equal(wantReset) {
 		t.Fatalf("projected reset = %s, want %s", short.ResetAt, wantReset)
 	}
-	// The long window has not reset, so it is untouched.
+
 	if long, _ := reading.Window(WindowSevenDay); long.UsedPercent != 90 {
 		t.Fatalf("seven day used percent = %.1f, want 90", long.UsedPercent)
 	}
@@ -110,7 +110,7 @@ func TestStoreMarkHardLimitedTargetsTheWindowNearestTheRecovery(t *testing.T) {
 		t.Fatal("the seven day window should be untouched")
 	}
 
-	// Leaving cooldown clears the flag even before a new reading lands.
+
 	store.MarkHardLimited(identity, false, time.Time{})
 	reading, _ = store.Lookup("a")
 	if short, _ = reading.Window(WindowFiveHour); short.HardLimited {
@@ -151,7 +151,7 @@ func TestStoreMarkHardLimitedOnAnUnknownCredential(t *testing.T) {
 	if window, _ := reading.Window(WindowFiveHour); !window.HardLimited {
 		t.Fatalf("five hour = %+v, want hard limited", window)
 	}
-	// Nothing to clear when the credential was never refused.
+
 	store.Forget("fresh")
 	if store.MarkHardLimited(Identity{AuthID: "fresh"}, false, time.Time{}) {
 		t.Fatal("clearing a hard limit on an unknown credential should be a no-op")
@@ -167,7 +167,7 @@ func TestStoreAReadingAfterTheResetClearsAHardLimit(t *testing.T) {
 		WindowSevenDay: {UsedPercent: 100, HardLimited: true, ResetAt: storeBase.Add(time.Hour), Known: true},
 	}, clock.Now())
 
-	// A fresh reading learned after the old reset drops the flag.
+
 	clock.Advance(2 * time.Hour)
 	store.Observe(identity, map[string]Window{
 		WindowSevenDay: {UsedPercent: 5, ResetAt: clock.Now().Add(sevenDayWindow), Known: true},
@@ -214,14 +214,14 @@ func TestStoreSnapshotIsKeyedByAuthFileName(t *testing.T) {
 	if _, ok := snapshot["claude-a@example.com.json"]; !ok {
 		t.Fatalf("snapshot keys = %v, want the auth file name", keysOf(snapshot))
 	}
-	// With no file name the auth ID is the key, so nothing is silently dropped.
+
 	if _, ok := snapshot["id-2"]; !ok {
 		t.Fatalf("snapshot keys = %v, want the auth ID fallback", keysOf(snapshot))
 	}
 	if snapshot["claude-a@example.com.json"].Plan != "max" {
 		t.Fatal("plan should round-trip")
 	}
-	// The snapshot is a copy: mutating it must not reach the store.
+
 	snapshot["claude-a@example.com.json"].Windows[WindowSevenDay] = Window{UsedPercent: 99, Known: true}
 	reading, _ := store.Lookup("id-1")
 	if window, _ := reading.Window(WindowSevenDay); window.UsedPercent != 1 {

@@ -24,26 +24,26 @@ func TestSummaryIntentTranslation(t *testing.T) {
 		wantExists bool
 	}{
 		{name: "Chat effort leaves Claude display unspecified", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatClaude, body: `{"model":"claude-opus-5","reasoning_effort":"high","messages":[{"role":"user","content":"hi"}]}`, path: "thinking.display"},
-		// Anthropic rejects display next to a disabled thinking block, so a "none"
-		// effort must leave the field off rather than write "omitted".
+
+
 		{name: "Chat none leaves disabled Claude thinking without display", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatClaude, body: `{"model":"claude-opus-5","reasoning_effort":"none","messages":[{"role":"user","content":"hi"}]}`, path: "thinking.display"},
-		// Anthropic requires thinking.type. For an unregistered target CPA cannot
-		// safely guess adaptive versus manual thinking, so it must not emit an
-		// invalid display-only object. Registered targets are covered below.
+
+
+
 		{name: "Unknown Claude target does not get display only thinking", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatClaude, body: `{"model":"unregistered-claude-model","reasoning":{"exclude":false},"messages":[{"role":"user","content":"hi"}]}`, path: "thinking"},
 		{name: "Unknown Claude target from Interactions stays valid", from: sdktranslator.FormatInteractions, to: sdktranslator.FormatClaude, body: `{"model":"unregistered-claude-model","generation_config":{"thinking_summaries":"auto"},"input":"hi"}`, path: "thinking"},
 		{name: "Chat none omits Codex summary", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatCodex, body: `{"model":"gpt-5.4","reasoning_effort":"none","messages":[{"role":"user","content":"hi"}]}`, path: "reasoning.summary"},
-		// The Responses API makes reasoning.summary an explicit opt-in, so an
-		// absent source intent must remain absent when translated to Codex.
+
+
 		{name: "Claude absent display leaves Codex summary absent", from: sdktranslator.FormatClaude, to: sdktranslator.FormatCodex, body: `{"model":"gpt-5.4","max_tokens":1024,"thinking":{"type":"adaptive"},"output_config":{"effort":"high"},"messages":[{"role":"user","content":"hi"}]}`, path: "reasoning.summary"},
 		{name: "Gemini absent includeThoughts leaves Codex summary absent", from: sdktranslator.FormatGemini, to: sdktranslator.FormatCodex, body: `{"model":"gpt-5.4","generationConfig":{"thinkingConfig":{"thinkingLevel":"high"}},"contents":[{"role":"user","parts":[{"text":"hi"}]}]}`, path: "reasoning.summary"},
 		{name: "Claude summarized enables Codex summary", from: sdktranslator.FormatClaude, to: sdktranslator.FormatCodex, body: `{"model":"gpt-5.4","max_tokens":1024,"thinking":{"type":"adaptive","display":"summarized"},"output_config":{"effort":"high"},"messages":[{"role":"user","content":"hi"}]}`, path: "reasoning.summary", want: "auto", wantExists: true},
 		{name: "Interactions none omits Codex summary", from: sdktranslator.FormatInteractions, to: sdktranslator.FormatCodex, body: `{"model":"gpt-5.4","generation_config":{"thinking_level":"high","thinking_summaries":"none"},"input":"hi"}`, path: "reasoning.summary"},
 		{name: "Chat effort enables Codex summary", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatCodex, body: `{"model":"gpt-5.4","reasoning_effort":"high","messages":[{"role":"user","content":"hi"}]}`, path: "reasoning.summary", want: "auto", wantExists: true},
 		{name: "Responses summary only invents no Chat effort", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatOpenAI, body: `{"model":"gpt-5.4","reasoning":{"summary":"auto"},"input":"hi"}`, path: "reasoning_effort"},
-		// Chat has no field for "reason but hide": OpenAI documents none and rejects
-		// unknown parameters, so a disabled summary must leave the requested effort
-		// alone instead of turning reasoning off upstream.
+
+
+
 		{name: "Responses disabled summary keeps Chat effort", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatOpenAI, body: `{"model":"gpt-5.4","reasoning":{"effort":"high","summary":null},"input":"hi"}`, path: "reasoning_effort", want: "high", wantExists: true},
 		{name: "Gemini disabled summary keeps Chat effort", from: sdktranslator.FormatGemini, to: sdktranslator.FormatOpenAI, body: `{"model":"gpt-5.4","generationConfig":{"thinkingConfig":{"thinkingLevel":"high","includeThoughts":false}},"contents":[{"role":"user","parts":[{"text":"hi"}]}]}`, path: "reasoning_effort", want: "high", wantExists: true},
 		{name: "Claude omitted display keeps Chat effort", from: sdktranslator.FormatClaude, to: sdktranslator.FormatOpenAI, body: `{"model":"gpt-5.4","thinking":{"type":"adaptive","display":"omitted"},"output_config":{"effort":"high"},"messages":[{"role":"user","content":"hi"}]}`, path: "reasoning_effort", want: "high", wantExists: true},
@@ -122,9 +122,9 @@ func TestSummaryIntentFinalPipeline(t *testing.T) {
 		wantExists bool
 	}{
 		{name: "Responses summary only activates visible Claude thinking", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatClaude, model: "claude-sonnet-4-6-model", body: `{"model":"claude-sonnet-4-6-model","reasoning":{"summary":"auto"},"input":"hi"}`, path: "thinking.display", want: "summarized", wantExists: true},
-		// Summary visibility must not override Claude's per-model thinking default.
-		// Sonnet 4.6 defaults off; newer default-on models remain default-on without
-		// CPA injecting an explicit thinking block.
+
+
+
 		{name: "Responses null summary alone preserves Claude thinking default", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatClaude, model: "claude-sonnet-4-6-model", body: `{"model":"claude-sonnet-4-6-model","reasoning":{"summary":null},"input":"hi"}`, path: "thinking"},
 		{name: "Responses default keeps Claude display default", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatClaude, model: "claude-sonnet-4-6-model", body: `{"model":"claude-sonnet-4-6-model","input":"hi"}`, path: "thinking.display"},
 		{name: "Chat summary alias only activates valid Claude thinking", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatClaude, model: "claude-sonnet-4-6-model", body: `{"model":"claude-sonnet-4-6-model","reasoning":{"exclude":false},"messages":[{"role":"user","content":"hi"}]}`, path: "thinking.display", want: "summarized", wantExists: true},
@@ -136,9 +136,9 @@ func TestSummaryIntentFinalPipeline(t *testing.T) {
 		{name: "Responses summary reaches Antigravity", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatAntigravity, model: "antigravity-budget-model", body: `{"model":"antigravity-budget-model","reasoning":{"effort":"medium","summary":"auto"},"input":"hi"}`, path: "request.generationConfig.thinkingConfig.includeThoughts", want: "true", wantExists: true},
 		{name: "Responses null summary alone hides default Gemini thoughts", from: sdktranslator.FormatOpenAIResponse, to: sdktranslator.FormatGemini, model: "gemini-mixed-model", body: `{"model":"gemini-mixed-model","reasoning":{"summary":null},"input":"hi"}`, path: "generationConfig.thinkingConfig.includeThoughts", want: "false", wantExists: true},
 		{name: "Google Chat extension false survives Gemini applier", from: sdktranslator.FormatOpenAI, to: sdktranslator.FormatGemini, model: "gemini-mixed-model", body: `{"model":"gemini-mixed-model","reasoning_effort":"high","extra_body":{"google":{"thinking_config":{"include_thoughts":false}}},"messages":[{"role":"user","content":"hi"}]}`, path: "generationConfig.thinkingConfig.includeThoughts", want: "false", wantExists: true},
-		// Captured from isolated Claude Code 2.1.220 with
-		// alwaysThinkingEnabled:true. Sonnet uses adaptive thinking, while Haiku
-		// uses manual enabled thinking with a budget; both explicitly omit text.
+
+
+
 		{name: "Claude Code Sonnet omitted thinking reaches Gemini", from: sdktranslator.FormatClaude, to: sdktranslator.FormatGemini, model: "gemini-mixed-model", body: `{"model":"claude-sonnet-4-6","thinking":{"type":"adaptive","display":"omitted"},"output_config":{"effort":"high"},"messages":[{"role":"user","content":"hi"}]}`, path: "generationConfig.thinkingConfig.includeThoughts", want: "false", wantExists: true},
 		{name: "Claude Code Sonnet omitted thinking reaches Antigravity", from: sdktranslator.FormatClaude, to: sdktranslator.FormatAntigravity, model: "antigravity-budget-model", body: `{"model":"claude-sonnet-4-6","thinking":{"type":"adaptive","display":"omitted"},"output_config":{"effort":"high"},"messages":[{"role":"user","content":"hi"}]}`, path: "request.generationConfig.thinkingConfig.includeThoughts", want: "false", wantExists: true},
 		{name: "Claude Code Haiku omitted thinking reaches Gemini", from: sdktranslator.FormatClaude, to: sdktranslator.FormatGemini, model: "gemini-mixed-model", body: `{"model":"claude-haiku-4-5-20251001","thinking":{"type":"enabled","budget_tokens":31999,"display":"omitted"},"messages":[{"role":"user","content":"hi"}]}`, path: "generationConfig.thinkingConfig.includeThoughts", want: "false", wantExists: true},
@@ -227,9 +227,9 @@ func TestNativeClaudeMissingDisplayPreservesSignatureOnlyHistory(t *testing.T) {
 	}
 }
 
-// Antigravity wraps Gemini generateContent, where includeThoughts is an
-// independent opt-in. Thinking level/budget changes must preserve explicit
-// booleans and leave an omitted visibility control omitted.
+
+
+
 func TestAntigravityIncludeThoughtsPreservesExplicitness(t *testing.T) {
 	reg := registry.GetGlobalRegistry()
 	uid := fmt.Sprintf("antigravity-summary-default-%d", time.Now().UnixNano())

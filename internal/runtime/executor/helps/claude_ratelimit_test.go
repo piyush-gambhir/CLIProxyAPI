@@ -50,7 +50,7 @@ func TestParseClaudeRateLimitReset_AllCases(t *testing.T) {
 
 	t.Run("5h rejected and 7d allowed with unified reset", func(t *testing.T) {
 		h := make(http.Header)
-		// Missing Anthropic-Ratelimit-Unified-Status, 5h is rejected, 7d is allowed
+
 		h.Set("Anthropic-Ratelimit-Unified-5h-Status", "rejected")
 		h.Set("Anthropic-Ratelimit-Unified-5h-Reset", strconv.FormatInt(now.Add(5*time.Hour).Unix(), 10))
 		h.Set("Anthropic-Ratelimit-Unified-7d-Status", "allowed")
@@ -162,7 +162,7 @@ func TestParseClaudeRateLimitReset_AllCases(t *testing.T) {
 
 	t.Run("missing unified status with allowed_warning shared windows ignores unified reset and uses retry-after", func(t *testing.T) {
 		h := make(http.Header)
-		// Missing Anthropic-Ratelimit-Unified-Status, shared windows are allowed_warning
+
 		h.Set("Anthropic-Ratelimit-Unified-5h-Status", "allowed_warning")
 		h.Set("Anthropic-Ratelimit-Unified-7d-Status", "allowed_warning")
 		h.Set("Anthropic-Ratelimit-Unified-Reset", strconv.FormatInt(now.Add(7*24*time.Hour).Unix(), 10))
@@ -301,10 +301,10 @@ func TestClaudeHeadersIndicateUnifiedRateLimitRejection_AllowedWarning(t *testin
 }
 
 func TestClaudeHeadersIndicateUnifiedRateLimitRejection_OverageRejection_Issue5915(t *testing.T) {
-	// Exact headers reported in Issue #5915:
-	// 5h window status is omitted by Anthropic because 5h utilization is 0.00.
-	// 7d window is allowed (0.69).
-	// Overage / 7d_oi is rejected due to org spend cap reached.
+
+
+
+
 	headers := http.Header{
 		"Anthropic-Ratelimit-Unified-Status":                  []string{"rejected"},
 		"Anthropic-Ratelimit-Unified-Representative-Claim":    []string{"seven_day_overage_included"},
@@ -371,8 +371,8 @@ func TestClaudeHeadersIndicateUnifiedRateLimitRejection_OverageRejection_Utiliza
 	}
 }
 
-// Issue #6465: an overage claim with no shared-window headers must not bench
-// the credential until Anthropic's monthly billing reset.
+
+
 func TestOverageClaimWithoutSharedWindowsDoesNotCoolUntilBillingReset_Issue6465(t *testing.T) {
 	now := time.Date(2026, 10, 7, 20, 46, 4, 0, time.UTC)
 	headers := http.Header{

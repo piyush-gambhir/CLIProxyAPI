@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// claudeThinkingReplayScope reuses the bounded replay state shape shared with Kimi.
+
 type claudeThinkingReplayScope = kimiThinkingReplayScope
 
 func claudeThinkingReplayEnabled(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) bool {
@@ -33,7 +33,7 @@ func claudeThinkingReplayEnabled(auth *cliproxyauth.Auth, req cliproxyexecutor.R
 	return strings.TrimSpace(apiKey) != "" && !isClaudeOAuthToken(apiKey)
 }
 
-// A missing session identity intentionally disables replay instead of sharing hidden reasoning across callers.
+
 func claudeThinkingReplayScopeFromRequest(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) claudeThinkingReplayScope {
 	sessionKey := codexReasoningReplaySessionKey(ctx, sdktranslator.FormatClaude, req, opts, req.Payload)
 	sessionKey = xaiReasoningReplayIsolateSessionKey(ctx, sessionKey)

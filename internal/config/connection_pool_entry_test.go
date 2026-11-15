@@ -6,8 +6,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// TestPerEntryConnectionPoolAccepted pins the per-credential opt-in shape: the
-// global pool stays off while a single api-keys entry turns pooling on for itself.
+
+
 func TestPerEntryConnectionPoolAccepted(t *testing.T) {
 	raw := []byte(`config-version: 8
 api-keys:
@@ -47,8 +47,8 @@ api-keys:
 	}
 }
 
-// TestPerEntryConnectionPoolRejectsUnknownKey keeps KnownFields strict inside the
-// new nested block.
+
+
 func TestPerEntryConnectionPoolRejectsUnknownKey(t *testing.T) {
 	raw := []byte(`config-version: 8
 api-keys:
@@ -65,9 +65,9 @@ api-keys:
 	}
 }
 
-// TestEmptyConnectionPoolBlockStaysOptIn pins that a block with no fields is still an
-// opt-in (it asks for the defaults), including when it stands alone. A nil result here
-// silently disabled pooling for `connection-pool: {}`.
+
+
+
 func TestEmptyConnectionPoolBlockStaysOptIn(t *testing.T) {
 	raw := []byte(`config-version: 8
 api-keys:
@@ -98,9 +98,9 @@ api-keys:
 	}
 }
 
-// TestPerKeyConnectionPoolOverridesGroup pins per-key control inside one provider
-// group: keys may switch pooling on or off independently, and a partial override keeps
-// inheriting the group values it does not mention.
+
+
+
 func TestPerKeyConnectionPoolOverridesGroup(t *testing.T) {
 	raw := []byte(`config-version: 8
 api-keys:
@@ -156,7 +156,7 @@ api-keys:
 		t.Fatalf("partial override must inherit max-idle-conns-per-host, got %+v", partial)
 	}
 
-	// An empty per-key block only overrides nothing, so it inherits the whole group block.
+
 	empty := byKey["empty-block"]
 	if empty == nil || empty.Enabled == nil || !*empty.Enabled || empty.IdleConnTimeout != "300s" {
 		t.Fatalf("empty per-key block must inherit the group block, got %+v", empty)

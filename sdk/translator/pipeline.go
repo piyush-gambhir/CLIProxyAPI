@@ -6,20 +6,20 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 )
 
-// RequestEnvelope represents a request in the translation pipeline.
+
 type RequestEnvelope struct {
 	Format    Format
 	Model     string
 	Stream    bool
 	Body      []byte
 	ModelInfo *registry.ModelInfo
-	// ConfigurationUpdatesChanged reports that a plugin normalizer modified Responses updates.
+
 	ConfigurationUpdatesChanged bool
-	// Err is a request-scoped translation failure. Callers must not send Body upstream when it is set.
+
 	Err error
 }
 
-// ResponseEnvelope represents a response in the translation pipeline.
+
 type ResponseEnvelope struct {
 	Format Format
 	Model  string
@@ -28,26 +28,26 @@ type ResponseEnvelope struct {
 	Chunks [][]byte
 }
 
-// RequestMiddleware decorates request translation.
+
 type RequestMiddleware func(ctx context.Context, req RequestEnvelope, next RequestHandler) (RequestEnvelope, error)
 
-// ResponseMiddleware decorates response translation.
+
 type ResponseMiddleware func(ctx context.Context, resp ResponseEnvelope, next ResponseHandler) (ResponseEnvelope, error)
 
-// RequestHandler performs request translation between formats.
+
 type RequestHandler func(ctx context.Context, req RequestEnvelope) (RequestEnvelope, error)
 
-// ResponseHandler performs response translation between formats.
+
 type ResponseHandler func(ctx context.Context, resp ResponseEnvelope) (ResponseEnvelope, error)
 
-// Pipeline orchestrates request/response transformation with middleware support.
+
 type Pipeline struct {
 	registry           *Registry
 	requestMiddleware  []RequestMiddleware
 	responseMiddleware []ResponseMiddleware
 }
 
-// NewPipeline constructs a pipeline bound to the provided registry.
+
 func NewPipeline(registry *Registry) *Pipeline {
 	if registry == nil {
 		registry = Default()
@@ -55,21 +55,21 @@ func NewPipeline(registry *Registry) *Pipeline {
 	return &Pipeline{registry: registry}
 }
 
-// UseRequest adds request middleware executed in registration order.
+
 func (p *Pipeline) UseRequest(mw RequestMiddleware) {
 	if mw != nil {
 		p.requestMiddleware = append(p.requestMiddleware, mw)
 	}
 }
 
-// UseResponse adds response middleware executed in registration order.
+
 func (p *Pipeline) UseResponse(mw ResponseMiddleware) {
 	if mw != nil {
 		p.responseMiddleware = append(p.responseMiddleware, mw)
 	}
 }
 
-// TranslateRequest applies middleware and registry transformations.
+
 func (p *Pipeline) TranslateRequest(ctx context.Context, from, to Format, req RequestEnvelope) (RequestEnvelope, error) {
 	terminal := func(ctx context.Context, input RequestEnvelope) (RequestEnvelope, error) {
 		return p.registry.TranslateRequestEnvelope(ctx, from, to, input), nil
@@ -87,7 +87,7 @@ func (p *Pipeline) TranslateRequest(ctx context.Context, from, to Format, req Re
 	return handler(ctx, req)
 }
 
-// TranslateResponse applies middleware and registry transformations.
+
 func (p *Pipeline) TranslateResponse(ctx context.Context, from, to Format, resp ResponseEnvelope, originalReq, translatedReq []byte, param *any) (ResponseEnvelope, error) {
 	terminal := func(ctx context.Context, input ResponseEnvelope) (ResponseEnvelope, error) {
 		if input.Stream {

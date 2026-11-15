@@ -27,7 +27,7 @@ const (
 	defaultConfigKey     = "config"
 )
 
-// PostgresStoreConfig captures configuration required to initialize a Postgres-backed store.
+
 type PostgresStoreConfig struct {
 	DSN           string
 	Schema        string
@@ -37,8 +37,8 @@ type PostgresStoreConfig struct {
 	SpoolDir      string
 }
 
-// PostgresStore persists configuration and authentication metadata using PostgreSQL as backend
-// while mirroring data to a local workspace so existing file-based workflows continue to operate.
+
+
 type PostgresStore struct {
 	db                 *sql.DB
 	cfg                PostgresStoreConfig
@@ -52,7 +52,7 @@ type PostgresStore struct {
 	refreshSchemaReady bool
 }
 
-// NewPostgresStore establishes a connection to PostgreSQL and prepares the local workspace.
+
 func NewPostgresStore(ctx context.Context, cfg PostgresStoreConfig) (*PostgresStore, error) {
 	trimmedDSN := strings.TrimSpace(cfg.DSN)
 	if trimmedDSN == "" {
@@ -110,7 +110,7 @@ func NewPostgresStore(ctx context.Context, cfg PostgresStoreConfig) (*PostgresSt
 	return store, nil
 }
 
-// Close releases the underlying database connection.
+
 func (s *PostgresStore) Close() error {
 	if s == nil || s.db == nil {
 		return nil
@@ -118,7 +118,7 @@ func (s *PostgresStore) Close() error {
 	return s.db.Close()
 }
 
-// EnsureSchema creates the required tables (and schema when provided).
+
 func (s *PostgresStore) EnsureSchema(ctx context.Context) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("postgres store: not initialized")
@@ -168,7 +168,7 @@ func (s *PostgresStore) EnsureSchema(ctx context.Context) error {
 	return s.ensureRefreshSchema(ctx)
 }
 
-// Bootstrap synchronizes configuration and auth records between PostgreSQL and the local workspace.
+
 func (s *PostgresStore) Bootstrap(ctx context.Context, exampleConfigPath string) error {
 	if err := s.EnsureSchema(ctx); err != nil {
 		return err
@@ -182,7 +182,7 @@ func (s *PostgresStore) Bootstrap(ctx context.Context, exampleConfigPath string)
 	return nil
 }
 
-// ConfigPath returns the managed configuration file path inside the spool directory.
+
 func (s *PostgresStore) ConfigPath() string {
 	if s == nil {
 		return ""
@@ -190,7 +190,7 @@ func (s *PostgresStore) ConfigPath() string {
 	return s.configPath
 }
 
-// AuthDir returns the local directory containing mirrored auth files.
+
 func (s *PostgresStore) AuthDir() string {
 	if s == nil {
 		return ""
@@ -198,7 +198,7 @@ func (s *PostgresStore) AuthDir() string {
 	return s.authDir
 }
 
-// WorkDir exposes the root spool directory used for mirroring.
+
 func (s *PostgresStore) WorkDir() string {
 	if s == nil {
 		return ""
@@ -206,11 +206,11 @@ func (s *PostgresStore) WorkDir() string {
 	return s.spoolRoot
 }
 
-// SetBaseDir implements the optional interface used by authenticators; it is a no-op because
-// the Postgres-backed store controls its own workspace.
+
+
 func (s *PostgresStore) SetBaseDir(string) {}
 
-// Save persists authentication metadata to disk and PostgreSQL.
+
 func (s *PostgresStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (string, error) {
 	if auth == nil {
 		return "", fmt.Errorf("postgres store: auth is nil")
@@ -228,9 +228,9 @@ func (s *PostgresStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 		return "", fmt.Errorf("postgres store: missing file path attribute for %s", auth.ID)
 	}
 
-	// Runtime updates must not recreate a disabled credential whose source file
-	// was deliberately removed. Login and migration callers explicitly mark the
-	// save when creating a missing disabled credential is intentional.
+
+
+
 	if auth.Disabled && !cliproxyauth.HasAuthCreationIntent(ctx) {
 		if _, statErr := os.Stat(path); errors.Is(statErr, fs.ErrNotExist) {
 			return "", nil
@@ -307,7 +307,7 @@ func (s *PostgresStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (stri
 	return path, nil
 }
 
-// List enumerates all auth records stored in PostgreSQL.
+
 func (s *PostgresStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error) {
 	query := fmt.Sprintf("SELECT id, content, created_at, updated_at FROM %s ORDER BY id", s.fullTableName(s.cfg.AuthTable))
 	rows, err := s.db.QueryContext(ctx, query)
@@ -379,7 +379,7 @@ func (s *PostgresStore) List(ctx context.Context) ([]*cliproxyauth.Auth, error) 
 	return auths, nil
 }
 
-// Delete removes an auth file and the corresponding database record.
+
 func (s *PostgresStore) Delete(ctx context.Context, id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -403,7 +403,7 @@ func (s *PostgresStore) Delete(ctx context.Context, id string) error {
 	return s.deleteAuthRecord(ctx, relID)
 }
 
-// PersistAuthFiles stores the provided auth file changes in PostgreSQL.
+
 func (s *PostgresStore) PersistAuthFiles(ctx context.Context, _ string, paths ...string) error {
 	if len(paths) == 0 {
 		return nil
@@ -418,7 +418,7 @@ func (s *PostgresStore) PersistAuthFiles(ctx context.Context, _ string, paths ..
 		}
 		relID, err := s.relativeAuthID(trimmed)
 		if err != nil {
-			// Attempt to resolve absolute path under authDir.
+
 			abs := trimmed
 			if !filepath.IsAbs(abs) {
 				abs = filepath.Join(s.authDir, trimmed)
@@ -437,7 +437,7 @@ func (s *PostgresStore) PersistAuthFiles(ctx context.Context, _ string, paths ..
 	return nil
 }
 
-// PersistConfig mirrors the local configuration file to PostgreSQL.
+
 func (s *PostgresStore) PersistConfig(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -452,7 +452,7 @@ func (s *PostgresStore) PersistConfig(ctx context.Context) error {
 	return s.persistConfig(ctx, data)
 }
 
-// syncConfigFromDatabase writes the database-stored config to disk or seeds the database from template.
+
 func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfigPath string) error {
 	query := fmt.Sprintf("SELECT content FROM %s WHERE id = $1", s.fullTableName(s.cfg.ConfigTable))
 	var content string
@@ -473,9 +473,9 @@ func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfi
 				}
 			}
 		}
-		// Seed the database with the file the startup load leaves behind, so a plaintext
-		// management secret never reaches it. Fail instead of skipping: the startup load
-		// could turn a refused file into one that a later start would upload.
+
+
+
 		if errPrepare := config.PrepareConfigFileForUpload(s.configPath); errPrepare != nil {
 			return fmt.Errorf("postgres store: prepare local config for seeding: %w", errPrepare)
 		}
@@ -500,7 +500,7 @@ func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfi
 	return nil
 }
 
-// syncAuthFromDatabase populates the local auth directory from PostgreSQL data.
+
 func (s *PostgresStore) syncAuthFromDatabase(ctx context.Context) error {
 	query := fmt.Sprintf("SELECT id, content FROM %s", s.fullTableName(s.cfg.AuthTable))
 	rows, err := s.db.QueryContext(ctx, query)

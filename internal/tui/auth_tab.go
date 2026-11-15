@@ -11,10 +11,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// editableField represents an editable field on an auth file.
+
 type editableField struct {
 	label string
-	key   string // API field key: "prefix", "proxy_url", "priority"
+	key   string
 }
 
 var authEditableFields = []editableField{
@@ -23,7 +23,7 @@ var authEditableFields = []editableField{
 	{label: "Priority", key: "priority"},
 }
 
-// authTabModel displays auth credential files with interactive management.
+
 type authTabModel struct {
 	client   *Client
 	viewport viewport.Model
@@ -33,15 +33,15 @@ type authTabModel struct {
 	height   int
 	ready    bool
 	cursor   int
-	expanded int // -1 = none expanded, >=0 = expanded index
-	confirm  int // -1 = no confirmation, >=0 = confirm delete for index
+	expanded int
+	confirm  int
 	status   string
 
-	// Editing state
-	editing      bool            // true when editing a field
-	editField    int             // index into authEditableFields
-	editInput    textinput.Model // text input for editing
-	editFileName string          // name of file being edited
+
+	editing      bool
+	editField    int
+	editInput    textinput.Model
+	editFileName string
 }
 
 type authFilesMsg struct {
@@ -50,7 +50,7 @@ type authFilesMsg struct {
 }
 
 type authActionMsg struct {
-	action string // "deleted", "toggled", "updated"
+	action string
 	err    error
 }
 
@@ -104,17 +104,17 @@ func (m authTabModel) Update(msg tea.Msg) (authTabModel, tea.Cmd) {
 		return m, m.fetchFiles
 
 	case tea.KeyMsg:
-		// ---- Editing mode ----
+
 		if m.editing {
 			return m.handleEditInput(msg)
 		}
 
-		// ---- Delete confirmation mode ----
+
 		if m.confirm >= 0 {
 			return m.handleConfirmInput(msg)
 		}
 
-		// ---- Normal mode ----
+
 		return m.handleNormalInput(msg)
 	}
 
@@ -123,7 +123,7 @@ func (m authTabModel) Update(msg tea.Msg) (authTabModel, tea.Cmd) {
 	return m, cmd
 }
 
-// startEdit activates inline editing for a field on the currently selected auth file.
+
 func (m *authTabModel) startEdit(fieldIdx int) tea.Cmd {
 	if m.cursor >= len(m.files) {
 		return nil
@@ -133,7 +133,7 @@ func (m *authTabModel) startEdit(fieldIdx int) tea.Cmd {
 	m.editField = fieldIdx
 	m.editing = true
 
-	// Pre-populate with current value
+
 	key := authEditableFields[fieldIdx].key
 	currentVal := getAnyString(f, key)
 	m.editInput.SetValue(currentVal)
@@ -241,13 +241,13 @@ func (m authTabModel) renderContent() string {
 		sb.WriteString(rowStyle.Render(row))
 		sb.WriteString("\n")
 
-		// Delete confirmation
+
 		if m.confirm == i {
 			sb.WriteString(warningStyle.Render(fmt.Sprintf("    "+T("confirm_delete"), name)))
 			sb.WriteString("\n")
 		}
 
-		// Inline edit input
+
 		if m.editing && i == m.cursor {
 			sb.WriteString(m.editInput.View())
 			sb.WriteString("\n")
@@ -255,7 +255,7 @@ func (m authTabModel) renderContent() string {
 			sb.WriteString("\n")
 		}
 
-		// Expanded detail view
+
 		if m.expanded == i {
 			sb.WriteString(m.renderDetail(f))
 		}
@@ -335,7 +335,7 @@ func (m authTabModel) renderDetail(f map[string]any) string {
 	return sb.String()
 }
 
-// getAnyString converts any value to its string representation.
+
 func getAnyString(m map[string]any, key string) string {
 	v, ok := m[key]
 	if !ok || v == nil {
@@ -464,11 +464,11 @@ func (m authTabModel) handleNormalInput(msg tea.KeyMsg) (authTabModel, tea.Cmd) 
 		}
 		return m, nil
 	case "1":
-		return m, m.startEdit(0) // prefix
+		return m, m.startEdit(0)
 	case "2":
-		return m, m.startEdit(1) // proxy_url
+		return m, m.startEdit(1)
 	case "3":
-		return m, m.startEdit(2) // priority
+		return m, m.startEdit(2)
 	case "r":
 		m.status = ""
 		return m, m.fetchFiles

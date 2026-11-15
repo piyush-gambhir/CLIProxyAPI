@@ -60,11 +60,11 @@ func TestUtlsFallbackProxyConnectionPool(t *testing.T) {
 	}
 }
 
-// TestUtlsAnthropicTransportPoolsPerCredential pins the Anthropic fingerprint path:
-// it is built by its own pool kind, so the credential's settings apply and two keys
-// never share one connection. Previously this transport was always the shared
-// per-proxy cache entry, which mixed distinct identities on one TLS connection and
-// ignored max-idle-conns-per-host.
+
+
+
+
+
 func TestUtlsAnthropicTransportPoolsPerCredential(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -94,14 +94,14 @@ func TestUtlsAnthropicTransportPoolsPerCredential(t *testing.T) {
 		t.Fatal("two credentials share one Anthropic transport")
 	}
 
-	// Zero bounds disable keep-alives on the fingerprint transport too.
+
 	zero := 0
 	if transport := anthropicTransport("key-a", &cliproxyauth.ProxyConnectionPoolOverride{MaxIdleConnsPerHost: &zero}); !transport.DisableKeepAlives {
 		t.Fatal("max-idle-conns-per-host: 0 must disable keep-alives on the Anthropic transport")
 	}
 
-	// Credentials that did not opt in keep the shared Claude Code transport with
-	// idle connection pooling disabled, while opted-in credentials enable pooling.
+
+
 	plain := func(id string) *http.Transport {
 		t.Helper()
 		client := NewUtlsHTTPClient(context.Background(), cfg, &cliproxyauth.Auth{ID: id}, 0)
@@ -119,11 +119,11 @@ func TestUtlsAnthropicTransportPoolsPerCredential(t *testing.T) {
 	}
 }
 
-// TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool verifies
-// that by default (including OAuth and unpooled API keys) the Claude Code uTLS
-// transport closes connections after each request instead of leaving them in an
-// idle pool, while an API key that explicitly configures connection-pool still
-// reuses its pooled connection.
+
+
+
+
+
 func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
@@ -205,8 +205,8 @@ func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *t
 		return append([]bool(nil), reused...)
 	}
 
-	// 1. Default / OAuth transport: must NOT reuse connections across requests,
-	// while keeping the wire Connection: keep-alive header intact.
+
+
 	defaultTransport := newClaudeCodeRoundTripperForDialerAndRoots(dialer, roots)
 	reusedDefault := doTwoRequests(t, defaultTransport)
 	if got := newConns.Load(); got != 2 {
@@ -224,8 +224,8 @@ func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *t
 		}
 	}
 
-	// 2. Explicit connection-pool opt-in on claude-api-key: MUST still reuse
-	// connections across requests.
+
+
 	newConns.Store(0)
 	cfg := testConfig()
 	pooled, ok := pooledTransport(proxyPoolKindClaudeCode, "direct", cfg, poolOptInAuth("claude-key-pooled"), func() (*http.Transport, error) {
@@ -243,10 +243,10 @@ func TestUtlsClaudeCodeDefaultDisablesConnectionReusePreservingExplicitPool(t *t
 	}
 }
 
-// TestUtlsLazyPoolsDoNotEvictUsedPool pins that a request only populates the pool
-// kind it actually uses. Eagerly populating both the standard and Anthropic pools
-// consumed two cache slots per key, so 300 non-Anthropic keys exceeded the 512-slot
-// cache and evicted their own live pools on every second pass.
+
+
+
+
 func TestUtlsLazyPoolsDoNotEvictUsedPool(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)

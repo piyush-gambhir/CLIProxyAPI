@@ -14,9 +14,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// xaiSpeechRequestError marks upstream speech failures caused by the request itself,
-// such as an unknown voice id answered with 404, so the auth manager neither retries
-// them on other credentials nor cools down the credential or model.
+
+
+
 type xaiSpeechRequestError struct {
 	statusErr
 }
@@ -25,8 +25,8 @@ func (xaiSpeechRequestError) IsRequestScoped() bool {
 	return true
 }
 
-// xaiSpeechModelUnavailablePatterns mirror the auth manager's model-support phrases so
-// model availability failures keep their credential rotation and model cooldown handling.
+
+
 var xaiSpeechModelUnavailablePatterns = [...]string{
 	"model_not_found",
 	"model_not_supported",
@@ -42,8 +42,8 @@ var xaiSpeechModelUnavailablePatterns = [...]string{
 	"not available for your account",
 }
 
-// xaiSpeechModelUnavailable reports whether an upstream error body says the speech model
-// itself is missing, unsupported or unavailable, as opposed to a bad request value.
+
+
 func xaiSpeechModelUnavailable(body []byte) bool {
 	if !ojson.ValidBytes(body) {
 		return xaiSpeechModelUnavailableText(string(body))
@@ -66,10 +66,10 @@ func xaiSpeechModelUnavailableText(text string) bool {
 	return false
 }
 
-// xaiSpeechStatusErr keeps credential, rate-limit, server and model-availability failures on
-// the regular xAI error path. Only other 404s, such as an unknown voice id, are flagged as
-// request-scoped. 400/422 stay unwrapped because the auth manager already treats them as
-// request faults while still honoring model-support errors.
+
+
+
+
 func xaiSpeechStatusErr(code int, body []byte) error {
 	err := xaiStatusErr(code, body)
 	if err.code == http.StatusNotFound && !xaiSpeechModelUnavailable(body) {
@@ -90,7 +90,7 @@ func (e *XAIExecutor) executeSpeech(ctx context.Context, auth *cliproxyauth.Auth
 	requestURL := xaiSpeechRequestURL(auth)
 	logXAIResolvedBaseURL(ctx, strings.TrimSuffix(requestURL, xaiTTSPath))
 
-	// Payload rules target the "openai" protocol, matching xAI image/video and config.example.yaml.
+
 	doc := ojson.NewDoc(req.Payload)
 	helps.FinalizePayloadDoc(helps.WithPayloadFinalizer(ctx, helps.NewPayloadFinalizer(e.cfg, e.Identifier(), model, "openai", "", req.Payload, req, opts)), doc)
 	payload := doc.Bytes()
@@ -100,7 +100,7 @@ func (e *XAIExecutor) executeSpeech(ctx context.Context, auth *cliproxyauth.Auth
 		return resp, err
 	}
 	applyXAIHeaders(httpReq, auth, token, false, "", opts.Headers)
-	// Official TTS returns raw audio. The media header helper asks for JSON.
+
 	httpReq.Header.Set("Accept", "*/*")
 	e.recordXAIRequest(ctx, auth, requestURL, httpReq.Header.Clone(), payload)
 

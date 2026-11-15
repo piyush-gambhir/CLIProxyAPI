@@ -97,7 +97,7 @@ func TestAntigravityConnectionTraceRedirect(t *testing.T) {
 					t.Fatalf("secret leaked: %s", formatted)
 				}
 			}
-			// The wrapper must not attach its trace to the original request context.
+
 			if trace := httptrace.ContextClientTrace(ctx); trace == nil {
 				t.Fatal("original trace lost")
 			}

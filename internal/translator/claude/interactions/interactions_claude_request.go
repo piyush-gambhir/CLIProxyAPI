@@ -15,8 +15,8 @@ func ConvertInteractionsRequestToClaude(modelName string, inputRawJSON []byte, s
 
 }
 
-// convertInteractionsRequestToClaude also reports a user turn that was left empty
-// because its only media part has no Claude equivalent.
+
+
 func convertInteractionsRequestToClaude(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	var run interactionsClaudeUserRun
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
@@ -35,10 +35,10 @@ func convertInteractionsRequestToClaude(modelName string, inputRawJSON []byte, s
 	return outDoc.Bytes(), run.drops.Err()
 }
 
-// interactionsClaudeUserRun follows the consecutive user content that the message
-// accumulator merges into one Claude user message. A media part Claude cannot
-// carry is refused only when that whole turn is left with nothing to send, so
-// text or a tool result in a neighbouring step still keeps the turn alive.
+
+
+
+
 type interactionsClaudeUserRun struct {
 	drops    translatorcommon.UserTurnDrops
 	sendable int
@@ -52,7 +52,7 @@ func (r *interactionsClaudeUserRun) drop(partType string) {
 	r.drops.Drop(partType)
 }
 
-// end closes the current user turn; call it when a non-user message starts or the input ends.
+
 func (r *interactionsClaudeUserRun) end() {
 	r.drops.EndTurn(r.sendable)
 	r.sendable = 0
@@ -207,10 +207,10 @@ func appendInteractionsInputItemToClaude(accumulator *translatorcommon.ClaudeMes
 	}
 }
 
-// appendInteractionsStepToClaude adds one step. instruction says the step sits in
-// a developer or system wrapper. Developer and system content is sent as user
-// content, but it is not the user's own turn: it closes the open user turn and
-// never counts toward keeping an emptied one alive.
+
+
+
+
 func appendInteractionsStepToClaude(accumulator *translatorcommon.ClaudeMessageAccumulator, step ojson.Result, defaultRole string, instruction bool, run *interactionsClaudeUserRun) {
 	role := defaultRole
 	if stepRole := step.Get("role").String(); stepRole == "user" || stepRole == "assistant" {
@@ -248,7 +248,7 @@ func appendInteractionsStepToClaude(accumulator *translatorcommon.ClaudeMessageA
 		part, _ = ojson.SetBytes(part, "text", text.String())
 		appendPart(util.ParseGJSONBytesNoCopy(part))
 	} else if interactionsClaudeDroppedMedia(step) != "" {
-		// A bare media content object stands for a step of its own.
+
 		appendPart(step)
 	}
 	if len(contentItems) == 0 {
@@ -292,9 +292,9 @@ func interactionsContentToClaude(part ojson.Result, role string) []byte {
 			textPart, _ = ojson.SetBytes(textPart, "text", text)
 			return textPart
 		}
-		// A user attachment Claude cannot carry is never replaced by placeholder text;
-		// the caller records it as dropped. Assistant and tool result content only
-		// echoes earlier output, so it keeps the placeholder.
+
+
+
 		if role != "user" && (part.Get("data").String() != "" || part.Get("file_data").String() != "") {
 			textPart := []byte(`{"type":"text","text":""}`)
 			textPart, _ = ojson.SetBytes(textPart, "text", fmt.Sprintf("[%s content omitted]", partType))
@@ -348,7 +348,7 @@ func appendInteractionsFunctionResultToClaude(accumulator *translatorcommon.Clau
 	}
 	msg := []byte(`{"role":"user","content":[]}`)
 	msg, _ = ojson.SetRawBytes(msg, "content", translatorcommon.JoinRawArray([][]byte{toolResultDoc.Bytes()}))
-	// A tool result is content the model reads, so it keeps the surrounding user turn.
+
 	run.add()
 	accumulator.Append(msg)
 }
@@ -489,9 +489,9 @@ func interactionsClaudeText(value ojson.Result) string {
 	return ""
 }
 
-// interactionsClaudeMediaPart maps an Interactions image or document onto a Claude
-// block. Inline bytes become a base64 source and an http(s) uri becomes a url
-// source. It reports false when the part carries neither.
+
+
+
 func interactionsClaudeMediaPart(part ojson.Result, claudeType string) ([]byte, bool) {
 	mimeType := firstClaudeInteractionsExisting(part, "mime_type", "mimeType", "media_type", "mediaType").String()
 	data := firstClaudeInteractionsExisting(part, "data", "file_data", "fileData").String()
@@ -521,8 +521,8 @@ func interactionsClaudeMediaPart(part ojson.Result, claudeType string) ([]byte, 
 	return nil, false
 }
 
-// interactionsClaudeDroppedMedia names the media type of a part that
-// interactionsContentToClaude left out, or returns "" when the part is not media.
+
+
 func interactionsClaudeDroppedMedia(part ojson.Result) string {
 	switch partType := part.Get("type").String(); partType {
 	case "image", "audio", "video", "document":
@@ -533,9 +533,9 @@ func interactionsClaudeDroppedMedia(part ojson.Result) string {
 	return ""
 }
 
-// interactionsClaudeDroppedPart names the type of a user part that
-// interactionsContentToClaude left out: media, or any other part that carries
-// bytes. It returns "" when the part holds nothing to report.
+
+
+
 func interactionsClaudeDroppedPart(part ojson.Result) string {
 	if mediaType := interactionsClaudeDroppedMedia(part); mediaType != "" {
 		return mediaType
@@ -546,8 +546,8 @@ func interactionsClaudeDroppedPart(part ojson.Result) string {
 	return ""
 }
 
-// interactionsClaudePartIsSendable reports whether a converted Claude block gives
-// the model something to read. Blank text does not.
+
+
 func interactionsClaudePartIsSendable(converted []byte) bool {
 	block := util.ParseGJSONBytesNoCopy(converted)
 	return block.Get("type").String() != "text" || strings.TrimSpace(block.Get("text").String()) != ""

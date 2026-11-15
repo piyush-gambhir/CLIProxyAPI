@@ -31,14 +31,14 @@ func TestAntigravityCompactionSealAndUnseal(t *testing.T) {
 		t.Fatalf("summary mismatch: got %q, want %q", gotSummary, summary)
 	}
 
-	// Test tampered capsule
+
 	tampered := capsule[:len(capsule)-4] + "AAAA"
 	_, errTampered := UnsealAntigravityCompaction(tampered)
 	if errTampered == nil {
 		t.Fatal("expected error when decrypting tampered capsule, got nil")
 	}
 
-	// Test invalid prefix
+
 	_, errPrefix := UnsealAntigravityCompaction("invalid-prefix:abc")
 	if errPrefix == nil {
 		t.Fatal("expected error for invalid prefix, got nil")
@@ -46,13 +46,13 @@ func TestAntigravityCompactionSealAndUnseal(t *testing.T) {
 }
 
 func TestAntigravityCompactionPersistentSecretAcrossAccountSwitch(t *testing.T) {
-	// 1. Account A seals a capsule using the fixed secret
+
 	capsule, errSeal := SealAntigravityCompaction("State before account failover", "gemini-3.7-flash")
 	if errSeal != nil {
 		t.Fatalf("seal before failover: %v", errSeal)
 	}
 
-	// 2. Account failover: account switches, capsule must successfully unseal without being bound to old account ID
+
 	summaryAfterSwitch, errUnseal := UnsealAntigravityCompaction(capsule)
 	if errUnseal != nil {
 		t.Fatalf("failed to unseal capsule after account switch: %v", errUnseal)
@@ -196,7 +196,7 @@ func TestExpandAntigravityCompactionCapsules(t *testing.T) {
 		t.Fatalf("expected original summary preserved without corruption, got: %q", expandedText)
 	}
 
-	// Test invalid capsule returns error
+
 	badPayload := []byte(`{
 		"model": "gemini-3.7-flash",
 		"input": [
@@ -211,7 +211,7 @@ func TestExpandAntigravityCompactionCapsules(t *testing.T) {
 }
 
 func TestExtractAntigravitySummaryText_ReasoningBeforeMessage(t *testing.T) {
-	// Responses format where output.0 is reasoning and output.1 is the actual message
+
 	resp := []byte(`{
 		"output": [
 			{
@@ -236,7 +236,7 @@ func TestExtractAntigravitySummaryText_ReasoningBeforeMessage(t *testing.T) {
 		t.Fatalf("expected actual summary text, got %q", text)
 	}
 
-	// Empty output must return an error rather than placeholder
+
 	emptyResp := []byte(`{"output": [{"type": "reasoning"}]}`)
 	_, errEmpty := ExtractAntigravitySummaryText(emptyResp)
 	if errEmpty == nil {

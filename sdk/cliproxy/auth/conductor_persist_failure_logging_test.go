@@ -11,7 +11,7 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
-// persistFailureStore always fails Save to simulate an unwritable auth file.
+
 type persistFailureStore struct{}
 
 func (s *persistFailureStore) List(context.Context) ([]*Auth, error) { return nil, nil }
@@ -22,8 +22,8 @@ func (s *persistFailureStore) Save(context.Context, *Auth) (string, error) {
 
 func (s *persistFailureStore) Delete(context.Context, string) error { return nil }
 
-// assertWarnEntry verifies that a warn entry exists matching needle, authID, provider, and errText,
-// and verifies that formatting with internal/logging.LogFormatter preserves auth ID, provider, and error.
+
+
 func assertWarnEntry(t *testing.T, hook *logtest.Hook, needle, authID, provider, errText string) {
 	t.Helper()
 	var matched *log.Entry
@@ -76,8 +76,8 @@ func assertWarnEntry(t *testing.T, hook *logtest.Hook, needle, authID, provider,
 	}
 }
 
-// A persist failure after registering an auth must surface at warn level:
-// the credential may exist only in memory while the disk copy is stale.
+
+
 func TestRegisterPersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
 	m := NewManager(&persistFailureStore{}, nil, nil)
@@ -98,7 +98,7 @@ func TestRegisterPersistFailureLogsWarn(t *testing.T) {
 	assertWarnEntry(t, hook, "failed to persist registered auth", "auth-register-persist-1", "claude", "permission denied")
 }
 
-// A persist failure after an update must surface at warn level.
+
 func TestUpdatePersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
 	m := NewManager(&persistFailureStore{}, nil, nil)
@@ -120,9 +120,9 @@ func TestUpdatePersistFailureLogsWarn(t *testing.T) {
 	assertWarnEntry(t, hook, "failed to persist updated auth", "auth-update-persist-1", "claude", "permission denied")
 }
 
-// The issue scenario: a token refresh succeeds in memory but the store rejects
-// the write. The refresh itself must keep succeeding, and the lost persistence
-// must be visible at warn level (previously silent for non-meta providers).
+
+
+
 func TestRefreshPersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
 	m := NewManager(&persistFailureStore{}, nil, nil)
@@ -149,8 +149,8 @@ func TestRefreshPersistFailureLogsWarn(t *testing.T) {
 	assertWarnEntry(t, hook, "failed to persist updated auth", "auth-refresh-persist-1", "claude", "permission denied")
 }
 
-// Meta mint persist failures propagate as errors and must be logged at warn
-// level (previously debug only, invisible at the default log level).
+
+
 func TestMetaRefreshPersistFailureLogsWarn(t *testing.T) {
 	hook := setupTestLoggerHook(t)
 	m := NewManager(&persistFailureStore{}, nil, nil)

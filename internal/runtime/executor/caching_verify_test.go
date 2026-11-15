@@ -11,7 +11,7 @@ import (
 )
 
 func TestEnsureCacheControl(t *testing.T) {
-	// Test case 1: System prompt as string
+
 	t.Run("String System Prompt", func(t *testing.T) {
 		input := []byte(`{"model": "claude-3-5-sonnet", "system": "This is a long system prompt", "messages": []}`)
 		output := ensureCacheControl(input)
@@ -22,12 +22,12 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 2: System prompt as array
+
 	t.Run("Array System Prompt", func(t *testing.T) {
 		input := []byte(`{"model": "claude-3-5-sonnet", "system": [{"type": "text", "text": "Part 1"}, {"type": "text", "text": "Part 2"}], "messages": []}`)
 		output := ensureCacheControl(input)
 
-		// cache_control should only be on the LAST element
+
 		res0 := ojson.GetBytes(output, "system.0.cache_control")
 		res1 := ojson.GetBytes(output, "system.1.cache_control.type")
 
@@ -39,7 +39,7 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 3: Native Claude Code does not auto-stamp tools; system still caches.
+
 	t.Run("Tools Not Auto Cached", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -60,16 +60,16 @@ func TestEnsureCacheControl(t *testing.T) {
 		if systemCache.Get("type").String() != "ephemeral" {
 			t.Errorf("cache_control not found in system. Output: %s", string(output))
 		}
-		// The native constructor spreads ttl in only when a ttl is selected, so the
-		// default breakpoint carries none. upgradeClaudeCacheControlTTL adds it later
-		// for the credentials native uses the 1h pool on.
+
+
+
 		if systemCache.Get("ttl").Exists() {
 			t.Errorf("default system cache_control must not carry ttl. Output: %s", string(output))
 		}
 	})
 
-	// Test case 4: Tools and system are INDEPENDENT breakpoints
-	// Per Anthropic docs: Up to 4 breakpoints allowed, tools and system are cached separately
+
+
 	t.Run("Independent Cache Breakpoints", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -81,25 +81,25 @@ func TestEnsureCacheControl(t *testing.T) {
 		}`)
 		output := ensureCacheControl(input)
 
-		// Tool already has cache_control - should not be changed
+
 		tool0Cache := ojson.GetBytes(output, "tools.0.cache_control.type")
 		if tool0Cache.String() != "ephemeral" {
 			t.Errorf("existing cache_control was incorrectly removed")
 		}
 
-		// System SHOULD get cache_control because it is an INDEPENDENT breakpoint
-		// Tools and system are separate cache levels in the hierarchy
+
+
 		systemCache := ojson.GetBytes(output, "system.0.cache_control.type")
 		if systemCache.String() != "ephemeral" {
 			t.Errorf("system should have its own cache_control breakpoint (independent of tools)")
 		}
 	})
 
-	// Test case 5: tools without any system prompt. Native always sends a system
-	// prompt, so this shape only reaches CPA from OpenAI/Gemini translation where the
-	// caller supplied no system message. Without a tools breakpoint the sole marker
-	// would sit on the volatile final message and a stateless caller would rewrite
-	// the whole tools prefix on every request.
+
+
+
+
+
 	t.Run("Only Tools No System Falls Back To Tools Breakpoint", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -143,8 +143,8 @@ func TestEnsureCacheControl(t *testing.T) {
 				if got := ojson.GetBytes(output, "tools.0.cache_control.type").String(); got != "ephemeral" {
 					t.Errorf("an unusable system prompt must still yield a tools breakpoint: %s", string(output))
 				}
-				// Empty/blank string system must not be rewritten into a marked text
-				// block; that would double-stamp tools + a whitespace system host.
+
+
 				if bytes.Contains(output, []byte(`"text":""`)) || bytes.Contains(output, []byte(`"text":"   "`)) {
 					t.Errorf("unusable string system must stay unconverted: %s", string(output))
 				}
@@ -158,9 +158,9 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 6: Many tools (Claude Code scenario) — default skips tools.
+
 	t.Run("Many Tools (Claude Code Scenario)", func(t *testing.T) {
-		// Simulate Claude Code with many tools
+
 		toolsJSON := `[`
 		for i := 0; i < 50; i++ {
 			if i > 0 {
@@ -199,19 +199,19 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 7: Empty tools array
+
 	t.Run("Empty Tools Array", func(t *testing.T) {
 		input := []byte(`{"model": "claude-3-5-sonnet", "tools": [], "system": "Test", "messages": []}`)
 		output := ensureCacheControl(input)
 
-		// System should still get cache_control
+
 		systemCache := ojson.GetBytes(output, "system.0.cache_control.type")
 		if systemCache.String() != "ephemeral" {
 			t.Errorf("system should have cache_control even with empty tools array")
 		}
 	})
 
-	// Test case 8: Messages caching follows native Claude Code (latest user turn).
+
 	t.Run("Messages Caching Latest User", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -236,8 +236,8 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// The native final-system special case is narrow: it requires non-empty STRING
-	// content and replaces it with a single freshly marked text block.
+
+
 	t.Run("Messages Caching Trailing System String", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -264,9 +264,9 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// An array-content trailing system turn is NOT the native special case: native
-	// requires string content there, so the marker falls back to the last eligible
-	// user/assistant turn instead.
+
+
+
 	t.Run("Messages Caching Trailing System Array Falls Back", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -331,7 +331,7 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 9: Cloaking first-user marker must not suppress latest-user rolling write.
+
 	t.Run("Messages Inject Despite Cloaking First User Marker", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -361,7 +361,7 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 10: Existing marker on the latest user turn is preserved / not duplicated.
+
 	t.Run("Messages Skip When Latest User Already Has Cache Control", func(t *testing.T) {
 		input := []byte(`{
 			"model": "claude-3-5-sonnet",
@@ -381,7 +381,7 @@ func TestEnsureCacheControl(t *testing.T) {
 		}
 	})
 
-	// Test case 11: Generated cache controls preserve native JSON property order.
+
 	t.Run("Native Cache Control Wire Order", func(t *testing.T) {
 		input := []byte(`{
 			"system": [{"type": "text", "text": "System"}],
@@ -542,7 +542,7 @@ func TestInjectToolsCacheControlSkipsDeferredTools(t *testing.T) {
 	}
 }
 
-// TestCacheControlOrder verifies the correct order: tools -> system -> messages
+
 func TestCacheControlOrder(t *testing.T) {
 	input := []byte(`{
 		"model": "claude-sonnet-4",
@@ -561,12 +561,12 @@ func TestCacheControlOrder(t *testing.T) {
 
 	output := ensureCacheControl(input)
 
-	// Native default path does not stamp tools.
+
 	if ojson.GetBytes(output, "tools.0.cache_control").Exists() || ojson.GetBytes(output, "tools.1.cache_control").Exists() {
 		t.Error("default ensureCacheControl must not stamp tools[*].cache_control")
 	}
 
-	// Last system element has the default cache_control, which carries no ttl.
+
 	if ojson.GetBytes(output, "system.1.cache_control.type").String() != "ephemeral" {
 		t.Error("last system element should have cache_control")
 	}
@@ -577,15 +577,15 @@ func TestCacheControlOrder(t *testing.T) {
 		t.Errorf("upgraded last system element ttl = %q, want 1h", got)
 	}
 
-	// First system element has NO cache_control
+
 	if ojson.GetBytes(output, "system.0.cache_control").Exists() {
 		t.Error("first system element should NOT have cache_control")
 	}
 }
 
-// The native ttl helper only touches blocks that already carry a cache_control and
-// have no ttl yet. It must never create a breakpoint, because placement is decided
-// by ensureCacheControl before this step runs.
+
+
+
 func TestUpgradeClaudeCacheControlTTL(t *testing.T) {
 	t.Run("Upgrades Only Existing Markers", func(t *testing.T) {
 		input := []byte(`{` +
@@ -643,11 +643,11 @@ func TestUpgradeClaudeCacheControlTTL(t *testing.T) {
 	})
 }
 
-// End-to-end guard for #4855. Cloaking stamps the first real user block, and the
-// old global `countCacheControls(body) == 0` gate then skipped every remaining
-// section, freezing the rolling breakpoint on messages[0] for the whole
-// conversation. Section-independent ensure has to keep that breakpoint advancing
-// as the history grows, so a reintroduced global short-circuit fails here.
+
+
+
+
+
 func TestClaudeExecutorCloakedRollingCacheBreakpointAdvances(t *testing.T) {
 	buildConversation := func(exchanges int) []byte {
 		messages := make([]string, 0, exchanges*2)
@@ -662,7 +662,7 @@ func TestClaudeExecutorCloakedRollingCacheBreakpointAdvances(t *testing.T) {
 			`"messages":[` + strings.Join(messages, ",") + `]}`)
 	}
 
-	// lastMarkedMessage reports the highest message index carrying a breakpoint.
+
 	lastMarkedMessage := func(body []byte) int {
 		last := -1
 		ojson.GetBytes(body, "messages").ForEach(func(msgIdx, message ojson.Result) bool {
@@ -689,11 +689,11 @@ func TestClaudeExecutorCloakedRollingCacheBreakpointAdvances(t *testing.T) {
 	if longMarked <= shortMarked {
 		t.Fatalf("rolling breakpoint did not advance with history: short=%d long=%d\n%s", shortMarked, longMarked, longBody)
 	}
-	// The rolling marker must land on the final turn, not an early frozen prefix.
+
 	if want := int(ojson.GetBytes(longBody, "messages.#").Int()) - 1; longMarked != want {
 		t.Fatalf("rolling breakpoint at message %d, want final message %d: %s", longMarked, want, longBody)
 	}
-	// Cloaking's own first-user marker must still be present alongside it.
+
 	if !ojson.GetBytes(longBody, "messages.0.content.1.cache_control").Exists() {
 		t.Fatalf("cloak first-user breakpoint lost: %s", longBody)
 	}

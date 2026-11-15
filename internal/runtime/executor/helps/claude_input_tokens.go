@@ -22,7 +22,7 @@ var (
 	claudeInputTokenizerErr   error
 )
 
-// ClaudeInputTokenState tracks the one-time input token update for a translated Claude stream.
+
 type ClaudeInputTokenState struct {
 	upstreamFormat  sdktranslator.Format
 	responseFormat  sdktranslator.Format
@@ -31,7 +31,7 @@ type ClaudeInputTokenState struct {
 	handled         bool
 }
 
-// NewClaudeInputTokenState creates request-scoped state for translated Claude input token usage.
+
 func NewClaudeInputTokenState(sourceFormat, upstreamFormat, responseFormat sdktranslator.Format, originalRequest []byte) *ClaudeInputTokenState {
 	enabled := sourceFormat == sdktranslator.FormatClaude &&
 		upstreamFormat != sdktranslator.FormatClaude &&
@@ -44,7 +44,7 @@ func NewClaudeInputTokenState(sourceFormat, upstreamFormat, responseFormat sdktr
 	}
 }
 
-// TranslateStreamWithClaudeInputTokens translates a stream chunk and estimates Claude message_start input usage once.
+
 func TranslateStreamWithClaudeInputTokens(
 	ctx context.Context,
 	upstreamFormat, responseFormat sdktranslator.Format,
@@ -84,7 +84,7 @@ func claudeInputTokenizer() (tokenizer.Codec, error) {
 	return claudeInputTokenizerCodec, claudeInputTokenizerErr
 }
 
-// CountClaudeInputTokens estimates tokens for a Claude request with the O200kBase tokenizer.
+
 func CountClaudeInputTokens(payload []byte) (int64, error) {
 	enc, err := claudeInputTokenizer()
 	if err != nil {

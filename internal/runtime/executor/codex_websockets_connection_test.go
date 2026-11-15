@@ -18,7 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// compressionFrameRecorder observes the first WebSocket frame after HTTP hijacking.
+
 type compressionFrameRecorder struct {
 	net.Conn
 	firstByte chan byte

@@ -17,8 +17,8 @@ import (
 
 type claudeCompactionSummaryContextKey struct{}
 
-// expandClaudeResponsesCompaction rewrites sealed compaction items into context
-// before translation. Unrecognized capsules fail the request instead of being dropped.
+
+
 func expandClaudeResponsesCompaction(req *cliproxyexecutor.Request, opts *cliproxyexecutor.Options) error {
 	return helps.ExpandResponsesCompactionCapsules(req, opts, "claude")
 }
@@ -79,7 +79,7 @@ func (e *ClaudeExecutor) executeClaudeCompactionStream(ctx context.Context, auth
 	if errSummary != nil {
 		return nil, errSummary
 	}
-	// Reuse the capsule and usage already sealed for the non-stream response.
+
 	item := ojson.GetBytesNoCopy(summaryResp.Payload, "output.0")
 	capsule := item.Get("encrypted_content").String()
 	if item.Get("type").String() != "compaction" || capsule == "" {
@@ -122,8 +122,8 @@ func claudeCompactionSummaryFromContext(ctx context.Context) bool {
 	return ok && flag
 }
 
-// prepareClaudeCompactionSummaryPayload keeps tool definitions that Claude needs
-// in order to accept tool_use history, while still asking for a text summary.
+
+
 func prepareClaudeCompactionSummaryPayload(payload []byte, modelName string) []byte {
 	tools := ojson.GetBytesNoCopy(payload, "tools")
 	additionalTools := ojson.GetBytesNoCopy(payload, "additional_tools")
@@ -138,10 +138,10 @@ func prepareClaudeCompactionSummaryPayload(payload []byte, modelName string) []b
 	return doc.Bytes()
 }
 
-// finalizeClaudeCompactionSummaryBody runs after built-in translation and before
-// user payload rules. Tool history stays structured when definitions exist, and
-// tool_choice none stops the summary turn from calling a tool. History without
-// definitions is flattened so Anthropic does not reject orphan tool blocks.
+
+
+
+
 func finalizeClaudeCompactionSummaryBody(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !finalizeClaudeCompactionSummaryBodyDoc(doc) {
@@ -234,8 +234,8 @@ func flattenClaudeToolBlocksForCompactionDoc(doc *ojson.Doc) bool {
 	return doc.SetRawBytes("messages", []byte("["+strings.Join(rewritten, ",")+"]")) == nil
 }
 
-// claudeCompactionResponsesUsage matches the Responses translator: input includes
-// cache creation and cache read, cached_tokens is cache read, and total is their sum.
+
+
 func claudeCompactionResponsesUsage(payload []byte) (inputTokens, outputTokens, totalTokens, cachedTokens int) {
 	usage := ojson.GetBytesNoCopy(payload, "usage")
 	if !usage.Exists() {

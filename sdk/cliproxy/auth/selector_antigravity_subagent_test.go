@@ -28,7 +28,7 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent request binds to auth-ag-1
+
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-100"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -42,8 +42,8 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
 
-	// 2. Subagent-1 request carries subagent ID.
-	// For Antigravity/Gemini, subagent MUST NOT inherit parent auth to prevent 429 concurrency gate.
+
+
 	subagent1Opts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-100"},
@@ -63,7 +63,7 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		t.Fatalf("subagent 1 auth = %q, want auth-ag-2", subagent1Auth.ID)
 	}
 
-	// 3. Subagent-1 second turn must stay sticky to auth-ag-2
+
 	subagent1Turn2Opts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-100"},
@@ -80,7 +80,7 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		t.Fatalf("subagent 1 turn 2 did not stay sticky: got %q, want auth-ag-2", subagent1Turn2Auth.ID)
 	}
 
-	// 4. Subagent-2 request must select next available credential (auth-ag-1) and not be locked into auth-ag-2
+
 	subagent2Opts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-100"},
@@ -97,7 +97,7 @@ func TestSessionAffinityAntigravitySubagentDoesNotInheritParentBinding(t *testin
 		t.Fatalf("subagent 2 auth = %q, want auth-ag-1", subagent2Auth.ID)
 	}
 
-	// 5. Main parent session next turn must stay sticky to auth-ag-1
+
 	parentTurn2Opts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-100"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent follow-up"}]}`),
@@ -127,7 +127,7 @@ func TestSessionAffinityMixedProviderAntigravitySubagentIsolation(t *testing.T) 
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent request in mixed pool binds to auth-ag-1
+
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-200"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -144,7 +144,7 @@ func TestSessionAffinityMixedProviderAntigravitySubagentIsolation(t *testing.T) 
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
 
-	// 2. Subagent request in mixed pool with Antigravity candidates must NOT inherit parent auth
+
 	subOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-200"},
@@ -182,7 +182,7 @@ func TestSessionAffinityClaudeAndCodexStillInheritParentBinding(t *testing.T) {
 		{ID: "auth-claude-2", Provider: "claude"},
 	}
 
-	// 1. Claude parent binds to auth-claude-1
+
 	claudeParentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-300"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"claude parent"}]}`),
@@ -196,7 +196,7 @@ func TestSessionAffinityClaudeAndCodexStillInheritParentBinding(t *testing.T) {
 		t.Fatalf("claude parent auth = %q, want auth-claude-1", claudeParentAuth.ID)
 	}
 
-	// 2. Claude subagent MUST inherit parent auth for KV cache reuse
+
 	claudeSubOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-300"},
@@ -213,7 +213,7 @@ func TestSessionAffinityClaudeAndCodexStillInheritParentBinding(t *testing.T) {
 		t.Fatalf("claude subagent auth = %q, want inherited parent auth-claude-1", claudeSubAuth.ID)
 	}
 
-	// 3. Codex parent and subagent inheritance
+
 	codexAuths := []*Auth{
 		{ID: "auth-codex-1", Provider: "codex"},
 		{ID: "auth-codex-2", Provider: "codex"},
@@ -257,7 +257,7 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 	})
 	defer selector.Stop()
 
-	// 1. Parent session selects Claude credential in mixed pool
+
 	claudeCandidate := []*Auth{
 		{ID: "auth-claude-primary", Provider: "claude"},
 	}
@@ -277,8 +277,8 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("parent auth = %q, want auth-claude-primary", parentAuth.ID)
 	}
 
-	// 2. Subagent of Claude parent in mixed pool (where both Claude and Antigravity are available)
-	// MUST inherit auth-claude-primary for prompt cache reuse
+
+
 	mixedAuths := []*Auth{
 		{ID: "auth-ag-other", Provider: "antigravity"},
 		{ID: "auth-claude-primary", Provider: "claude"},
@@ -302,7 +302,7 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("subagent in mixed pool with Claude parent did not inherit Claude auth: got %q, want auth-claude-primary", subClaudeAuth.ID)
 	}
 
-	// 3. Parent session that selected Antigravity credential in mixed pool
+
 	agCandidate := []*Auth{
 		{ID: "auth-ag-primary", Provider: "antigravity"},
 	}
@@ -322,8 +322,8 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("parent Ag auth = %q, want auth-ag-primary", parentAgAuth.ID)
 	}
 
-	// 4. Subagent of Antigravity parent in mixed pool under unified inheritance
-	// MUST inherit parent auth-ag-primary for prompt cache reuse
+
+
 	mixedCandidates := []*Auth{
 		{ID: "auth-ag-primary", Provider: "antigravity"},
 		{ID: "auth-claude-primary", Provider: "claude"},
@@ -347,12 +347,12 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("subagent with Antigravity parent did not inherit parent auth: got %q, want %q", subAgAuth.ID, parentAgAuth.ID)
 	}
 
-	// 5. Verify parent binding in cache remains intact
+
 	if bound, ok := selector.cache.Get("mixed::claude:mixed-sess-ag::claude-3-7-sonnet"); !ok || bound != "auth-ag-primary" {
 		t.Fatalf("parent cache binding was lost: got (%q, %v), want (auth-ag-primary, true)", bound, ok)
 	}
 
-	// 6. Subagent turn 2 must stay sticky to auth-ag-primary
+
 	subAgTurn2Auth, errSubAg2 := selector.Pick(context.Background(), "mixed", "claude-3-7-sonnet", subAgOpts, mixedCandidates)
 	if errSubAg2 != nil {
 		t.Fatalf("subagent turn 2 Pick() error = %v", errSubAg2)
@@ -361,7 +361,7 @@ func TestSessionAffinityMixedPoolSubagentInheritsParentAcrossProviders(t *testin
 		t.Fatalf("subagent turn 2 auth = %q, want auth-ag-primary", subAgTurn2Auth.ID)
 	}
 
-	// 7. Parent turn 2 must stay sticky to auth-ag-primary
+
 	parentAgTurn2Auth, errParentAg2 := selector.Pick(context.Background(), "mixed", "claude-3-7-sonnet", parentAgOpts, mixedCandidates)
 	if errParentAg2 != nil {
 		t.Fatalf("parent turn 2 Pick() error = %v", errParentAg2)
@@ -385,7 +385,7 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent request in mixed pool binds to auth-ag-1 with model claude-3-7-sonnet
+
 	parentOpts := cliproxyexecutor.Options{
 		Headers:         http.Header{"X-Claude-Code-Session-Id": []string{"claude-root-500"}},
 		OriginalRequest: []byte(`{"messages":[{"role":"user","content":"parent task"}]}`),
@@ -402,12 +402,12 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 		t.Fatalf("parent auth = %q, want auth-ag-1", parentAuth.ID)
 	}
 
-	// Verify parent key is bound in cache
+
 	if bound, ok := selector.cache.Get("mixed::claude:claude-root-500::claude-3-7-sonnet"); !ok || bound != "auth-ag-1" {
 		t.Fatalf("parent cache binding = (%q, %v), want (auth-ag-1, true)", bound, ok)
 	}
 
-	// 2. Subagent in mixed pool with exact same namespace and model
+
 	subOpts := cliproxyexecutor.Options{
 		Headers: http.Header{
 			"X-Claude-Code-Session-Id": []string{"claude-root-500"},
@@ -419,7 +419,7 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 			cliproxyexecutor.SessionAffinityModelMetadataKey:    "claude-3-7-sonnet",
 		},
 	}
-	// Simulate subagent executing on auth-ag-1 (same auth ID as parent) and hitting 429
+
 	selector.OnResult(Result{
 		AuthID:   "auth-ag-1",
 		Provider: "antigravity",
@@ -429,12 +429,12 @@ func TestSessionAffinityAntigravitySubagentOnResultFailureDoesNotUnbindParent(t 
 		Options:  subOpts,
 	})
 
-	// 3. Parent binding in cache must remain untouched
+
 	if bound, ok := selector.cache.Get("mixed::claude:claude-root-500::claude-3-7-sonnet"); !ok || bound != "auth-ag-1" {
 		t.Fatalf("parent cache binding was destroyed by subagent OnResult failure: got (%q, %v)", bound, ok)
 	}
 
-	// 4. Simulate subagent success on auth-ag-2: must not touch or overwrite parent key
+
 	selector.OnResult(Result{
 		AuthID:   "auth-ag-2",
 		Provider: "antigravity",
@@ -514,7 +514,7 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		{ID: "auth-ag-2", Provider: "antigravity"},
 	}
 
-	// 1. Parent request with nested request payload binds to auth-ag-1
+
 	parentOpts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -534,7 +534,7 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		t.Fatalf("parent canonical session ID = %v, want session:root-task", got)
 	}
 
-	// 2. Subagent 1 request with nested metadata.agent_id must NOT inherit parent's auth-ag-1
+
 	subagent1Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -560,7 +560,7 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		t.Fatalf("subagent 1 canonical session ID = %v, want session:root-task:agent:worker-1", got)
 	}
 
-	// 3. Subagent 1 turn 2 must stay sticky to auth-ag-2
+
 	subagent1Turn2Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -580,7 +580,7 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		t.Fatalf("subagent 1 turn 2 did not stay sticky: got %q, want auth-ag-2", subagent1Turn2Auth.ID)
 	}
 
-	// 4. Subagent 2 request with metadata.subagent_id must select next available credential (auth-ag-1)
+
 	subagent2Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {
@@ -600,7 +600,7 @@ func TestSessionAffinityNestedAntigravitySubagentIsolation(t *testing.T) {
 		t.Fatalf("subagent 2 auth = %q, want auth-ag-1", subagent2Auth.ID)
 	}
 
-	// 5. Parent second turn must stay sticky to auth-ag-1
+
 	parentTurn2Opts := cliproxyexecutor.Options{
 		OriginalRequest: []byte(`{
 			"request": {

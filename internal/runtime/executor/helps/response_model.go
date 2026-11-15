@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	// maxResponseModelLength is a defensive bound on an upstream-controlled string
-	// reaching logs and usage records; known model ids stay under ~128 bytes.
+
+
 	maxResponseModelLength = 128
 )
 
-// extractResponseModelEvent returns the model an upstream reports serving, read
-// from a raw JSON frame or an SSE line, and whether the event terminates the response.
+
+
 func extractResponseModelEvent(payload []byte, provider string) (model string, terminal bool) {
 	data := jsonPayload(payload)
 	if len(data) == 0 {
@@ -33,7 +33,7 @@ func extractResponseModelEvent(payload []byte, provider string) (model string, t
 	}
 }
 
-// extractClaudeResponseModelEvent extracts the response model from an Anthropic Claude response.
+
 func extractClaudeResponseModelEvent(data []byte) (model string, terminal bool) {
 	eventType := ojson.GetBytesNoCopy(data, "type").String()
 	switch eventType {
@@ -119,7 +119,7 @@ func extractClaudeFallbackIterationModel(iterations ojson.Result) string {
 	return strings.Clone(served)
 }
 
-// extractGeminiResponseModelEvent extracts the response model from a Google Gemini / Vertex / AIStudio response.
+
 func extractGeminiResponseModelEvent(data []byte) (model string, terminal bool) {
 	if !ojson.ValidBytes(data) {
 		return "", false
@@ -164,7 +164,7 @@ func extractGeminiResponseModelEvent(data []byte) (model string, terminal bool) 
 	return served, terminal
 }
 
-// extractGenericResponseModelEvent extracts the response model from standard JSON / SSE responses.
+
 func extractGenericResponseModelEvent(data []byte) (model string, terminal bool) {
 	if !ojson.ValidBytes(data) {
 		return "", false
@@ -242,15 +242,15 @@ func isInteractionsTerminal(eventType, status string) bool {
 	return false
 }
 
-// extractCodexResponseModelEvent returns the model a codex upstream reports serving, read
-// from a raw JSON frame or an SSE line, and whether the event terminates the response.
+
+
 func extractCodexResponseModelEvent(payload []byte) (model string, terminal bool) {
 	data := jsonPayload(payload)
 	if len(data) == 0 {
 		return "", false
 	}
-	// The event type is checked before the payload is validated, so the hot path
-	// (output deltas) stays a single cheap lookup.
+
+
 	carriesModel, terminal := codexResponseModelEventKind(ojson.GetBytesNoCopy(data, "type").String())
 	if !carriesModel {
 		return "", false
@@ -258,8 +258,8 @@ func extractCodexResponseModelEvent(payload []byte) (model string, terminal bool
 	if !ojson.ValidBytes(data) {
 		return "", false
 	}
-	// The value is upstream-controlled: reject non-string and oversized names
-	// rather than propagating them into logs and usage records.
+
+
 	modelResult := ojson.GetBytesNoCopy(data, "response.model")
 	if modelResult.Type != ojson.String {
 		return "", terminal
@@ -271,8 +271,8 @@ func extractCodexResponseModelEvent(payload []byte) (model string, terminal bool
 	return strings.Clone(model), terminal
 }
 
-// codexResponseModelEventKind reports whether a codex event embeds the authoritative
-// response object, and whether that event terminates the response.
+
+
 func codexResponseModelEventKind(eventType string) (carriesModel bool, terminal bool) {
 	switch strings.TrimSpace(eventType) {
 	case "response.created", "response.in_progress":
@@ -284,8 +284,8 @@ func codexResponseModelEventKind(eventType string) (carriesModel bool, terminal 
 	}
 }
 
-// normalizeModelName lower-cases a model id and drops its thinking suffix,
-// which never reaches the upstream request body.
+
+
 func normalizeModelName(model string) string {
 	return strings.TrimSpace(thinking.ParseSuffix(strings.ToLower(strings.TrimSpace(model))).ModelName)
 }
@@ -297,8 +297,8 @@ func stripModelProviderPrefix(model string) string {
 	return model
 }
 
-// IsModelSubstituted reports whether the upstream served a model other than the
-// requested one for any provider; dated aliases and snapshot pins are accepted.
+
+
 func IsModelSubstituted(requested, served string) bool {
 	servedModel := normalizeModelName(served)
 	if servedModel == "" {

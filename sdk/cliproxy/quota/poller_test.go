@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-// recordingDoer answers every usage request from a scripted reply and records
-// which endpoint was asked. It replaces the network entirely, so no test ever
-// contacts a provider or needs a credential.
+
+
+
 type recordingDoer struct {
 	mu       sync.Mutex
 	calls    []string
@@ -85,9 +85,9 @@ func newTestPoller(t *testing.T, targets []Target, doer *recordingDoer) (*Poller
 	return newTestPollerWith(t, targets, doer, nil)
 }
 
-// newTestPollerWith lets a test override the spacing settings. The defaults put
-// the provider-wide gap (10 min) above the first backoff (5 min), so a test that
-// needs to observe the backoff on its own shortens the gap.
+
+
+
 func newTestPollerWith(t *testing.T, targets []Target, doer *recordingDoer, tune func(*PollerConfig)) (*Poller, *Store, *fakeClock) {
 	t.Helper()
 	clock := &fakeClock{now: storeBase}
@@ -162,8 +162,8 @@ func TestPollerClaudeGapIsProviderWide(t *testing.T) {
 	}
 	poller, _, clock := newTestPoller(t, targets, doer)
 
-	// Three idle Claude credentials, but only one call may go out: the gap is
-	// shared across every credential because the throttle may be keyed by IP.
+
+
 	poller.RunOnce(context.Background())
 	if got := doer.callCount(); got != 1 {
 		t.Fatalf("calls in the first pass = %d, want 1", got)
@@ -204,8 +204,8 @@ func TestPollerSkipsFreshCredentials(t *testing.T) {
 		{AuthID: "codex-1", Provider: "codex", AccessToken: "test-token"},
 	}, doer)
 
-	// A reading from response headers is as good as a polled one, so a busy
-	// credential is never polled.
+
+
 	store.Observe(Identity{AuthID: "codex-1", Provider: "codex"},
 		map[string]Window{WindowWeekly: {UsedPercent: 5, Known: true}}, clock.Now())
 	poller.RunOnce(context.Background())
@@ -239,8 +239,8 @@ func TestPollerClaude429BacksOffProviderWideAndDoubles(t *testing.T) {
 	t.Parallel()
 
 	doer := &recordingDoer{body: claudeUsageBody, statuses: []int{http.StatusTooManyRequests}}
-	// The gap is shortened below the backoff so the backoff is what blocks the
-	// second call, not the gap.
+
+
 	poller, store, clock := newTestPollerWith(t, []Target{
 		{AuthID: "claude-1", Provider: "claude", AccessToken: "test-token"},
 		{AuthID: "claude-2", Provider: "claude", AccessToken: "test-token"},
@@ -257,19 +257,19 @@ func TestPollerClaude429BacksOffProviderWideAndDoubles(t *testing.T) {
 	if !until.Equal(storeBase.Add(DefaultClaudeBackoffStart)) {
 		t.Fatalf("backoff until = %s, want %s", until, storeBase.Add(DefaultClaudeBackoffStart))
 	}
-	// A 429 leaves the previous reading alone; there just is not a new one.
+
 	if _, ok := store.Lookup("claude-1"); ok {
 		t.Fatal("a 429 must not write a reading")
 	}
 
-	// Inside the backoff nothing goes out, even once the minimum gap has passed.
+
 	clock.Advance(2 * time.Minute)
 	poller.RunOnce(context.Background())
 	if got := doer.callCount(); got != 1 {
 		t.Fatalf("calls during the backoff = %d, want 1", got)
 	}
 
-	// The next 429 doubles the pause.
+
 	clock.Advance(DefaultClaudeBackoffStart)
 	poller.RunOnce(context.Background())
 	if got := doer.callCount(); got != 2 {
@@ -300,7 +300,7 @@ func TestPollerClaudeBackoffIsCappedAndClearedOnSuccess(t *testing.T) {
 		t.Fatalf("capped backoff = %s, want %s", backoff, DefaultClaudeBackoffMax)
 	}
 
-	// A clean read clears the pause for every Claude credential.
+
 	doer.statuses = []int{http.StatusOK}
 	poller.RunOnce(context.Background())
 	backoff, until := poller.ClaudeBackoff()

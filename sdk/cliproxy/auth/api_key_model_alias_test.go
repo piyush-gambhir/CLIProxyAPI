@@ -33,23 +33,23 @@ func TestLookupAPIKeyUpstreamModel(t *testing.T) {
 		input  string
 		want   string
 	}{
-		// Fast path + suffix preservation
+
 		{"alias with suffix", "a1", "g25p(8192)", "gemini-2.5-pro-exp-03-25(8192)"},
 		{"alias without suffix", "a1", "g25p", "gemini-2.5-pro-exp-03-25"},
 
-		// Config suffix takes priority
+
 		{"config suffix priority", "a1", "g25f(high)", "gemini-2.5-flash(low)"},
 		{"config suffix no user suffix", "a1", "g25f", "gemini-2.5-flash(low)"},
 
-		// Case insensitive
+
 		{"uppercase alias", "a1", "G25P", "gemini-2.5-pro-exp-03-25"},
 		{"mixed case with suffix", "a1", "G25p(4096)", "gemini-2.5-pro-exp-03-25(4096)"},
 
-		// Direct name lookup
+
 		{"upstream name direct", "a1", "gemini-2.5-pro-exp-03-25", "gemini-2.5-pro-exp-03-25"},
 		{"upstream name with suffix", "a1", "gemini-2.5-pro-exp-03-25(8192)", "gemini-2.5-pro-exp-03-25(8192)"},
 
-		// Cache miss scenarios
+
 		{"non-existent auth", "non-existent", "g25p", ""},
 		{"unknown alias", "a1", "unknown-alias", ""},
 		{"empty auth ID", "", "g25p", ""},
@@ -103,12 +103,12 @@ func TestAPIKeyModelAlias_ConfigHotReload(t *testing.T) {
 	ctx := context.Background()
 	_, _ = mgr.Register(ctx, &Auth{ID: "a1", Provider: "gemini", Attributes: map[string]string{"api_key": "k"}})
 
-	// Initial alias
+
 	if resolved := mgr.lookupAPIKeyUpstreamModel("a1", "g25p"); resolved != "gemini-2.5-pro-exp-03-25" {
 		t.Fatalf("before reload: got %q, want %q", resolved, "gemini-2.5-pro-exp-03-25")
 	}
 
-	// Hot reload with new alias
+
 	mgr.SetConfig(&internalconfig.Config{
 		GeminiKey: []internalconfig.GeminiKey{
 			{
@@ -118,7 +118,7 @@ func TestAPIKeyModelAlias_ConfigHotReload(t *testing.T) {
 		},
 	})
 
-	// New alias should take effect
+
 	if resolved := mgr.lookupAPIKeyUpstreamModel("a1", "g25p"); resolved != "gemini-2.5-flash" {
 		t.Fatalf("after reload: got %q, want %q", resolved, "gemini-2.5-flash")
 	}
@@ -322,13 +322,13 @@ func TestLookupAPIKeyUpstreamModel_MetaKey(t *testing.T) {
 		t.Fatalf("register auth: %v", err)
 	}
 
-	// 1. Fast path: lookup per-auth mapping table compiled during register.
+
 	resolved := mgr.lookupAPIKeyUpstreamModel("meta-auth-1", "muse-latest")
 	if resolved != "muse-spark-1.3" {
 		t.Fatalf("lookupAPIKeyUpstreamModel() = %q, want muse-spark-1.3", resolved)
 	}
 
-	// 2. Slow path: directly call mgr.applyAPIKeyModelAliasWithRouting with an empty alias table to exercise config resolution fallback.
+
 	slowRouting := &apiKeyModelRoutingSnapshot{
 		config:  cfg,
 		aliases: make(apiKeyModelAliasTable),
@@ -338,13 +338,13 @@ func TestLookupAPIKeyUpstreamModel_MetaKey(t *testing.T) {
 		t.Fatalf("applyAPIKeyModelAliasWithRouting(slow) = %q, want muse-spark-1.3", slowResolved)
 	}
 
-	// 3. Model alias result with force mapping / alias metadata
+
 	aliasResult := mgr.resolveAPIKeyModelAliasWithResult(auth, "muse-latest")
 	if aliasResult.UpstreamModel != "muse-spark-1.3" {
 		t.Fatalf("resolveAPIKeyModelAliasWithResult() upstream = %q, want muse-spark-1.3", aliasResult.UpstreamModel)
 	}
 
-	// 4. Configured alias entries helper
+
 	entries := configuredModelAliasEntries(cfg, auth)
 	found := false
 	for _, e := range entries {

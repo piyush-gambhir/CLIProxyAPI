@@ -10,7 +10,7 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Run the R1 source trace through the actual Interactions HTTP executor and usage boundary.
+
 func TestApplyPatchInteractionsSourceStopActualFailures(t *testing.T) {
 	for _, first := range []string{"item", "call", "neither"} {
 		for _, lateName := range []bool{false, true} {

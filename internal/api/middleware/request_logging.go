@@ -1,6 +1,6 @@
-// Package middleware provides HTTP middleware components for the CLI Proxy API server.
-// This file contains the request logging middleware that captures comprehensive
-// request and response data when enabled through configuration.
+
+
+
 package middleware
 
 import (
@@ -22,16 +22,16 @@ import (
 )
 
 const (
-	maxErrorOnlyCapturedRequestBodyBytes       int64  = 1 << 20  // 1 MiB
-	maxDeferredErrorRequestBodyBytes           int64  = 32 << 20 // 32 MiB
-	maxCapturedZstdWindowBytes                        = 8 << 20  // 8 MiB: covers every zstd level up to 19
+	maxErrorOnlyCapturedRequestBodyBytes       int64  = 1 << 20
+	maxDeferredErrorRequestBodyBytes           int64  = 32 << 20
+	maxCapturedZstdWindowBytes                        = 8 << 20
 	authenticatedRequestBodyCapturerContextKey string = "CPA_AUTHENTICATED_REQUEST_BODY_CAPTURER"
 )
 
-// RequestLoggingMiddleware creates a Gin middleware that logs HTTP requests and responses.
-// It captures detailed information about the request and response, including headers and body,
-// and uses the provided RequestLogger to record this data. When full request logging is disabled,
-// large and unknown-size bodies are spooled to disk and retained only for error logs.
+
+
+
+
 func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if logger == nil {
@@ -54,14 +54,14 @@ func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 		hasMatchedRoute := c.FullPath() != ""
 		captureBody := hasMatchedRoute && shouldCaptureRequestBody(loggerEnabled, c.Request)
 
-		// Capture request metadata before authentication without reading the request body.
+
 		requestInfo, err := captureRequestInfo(c, false)
 		if err != nil {
 			c.Next()
 			return
 		}
 
-		// Create response writer wrapper
+
 		wrapper := NewResponseWriterWrapper(c.Writer, logger, requestInfo)
 		wrapper.ginContext = c
 		if !loggerEnabled {
@@ -92,8 +92,8 @@ func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 			})
 		}
 
-		// Finalize logging after request processing, even if a downstream handler panics
-		// and unwinds to an outer recovery middleware.
+
+
 		defer func() {
 			recovered := recover()
 			if recovered != nil && !isAbortHandlerPanic(recovered) {
@@ -106,15 +106,15 @@ func RequestLoggingMiddleware(logger logging.RequestLogger) gin.HandlerFunc {
 				}
 			}
 			if errFinalize := wrapper.Finalize(c); errFinalize != nil {
-				// Log error but don't interrupt the response
-				// In a real implementation, you might want to use a proper logger here
+
+
 			}
 			if recovered != nil {
 				panic(recovered)
 			}
 		}()
 
-		// Process the request
+
 		c.Next()
 	}
 }
@@ -128,8 +128,8 @@ type fileBodySourceFactory interface {
 	NewFileBodySource(prefix string) (*logging.FileBodySource, error)
 }
 
-// CaptureAuthenticatedRequestBody eagerly captures the request body when full request
-// logging is enabled after the request has passed authentication.
+
+
 func CaptureAuthenticatedRequestBody(c *gin.Context) {
 	if c == nil {
 		return
@@ -408,21 +408,21 @@ func shouldCaptureRequestBody(loggerEnabled bool, req *http.Request) bool {
 	return req != nil && req.Body != nil
 }
 
-// captureRequestInfo extracts relevant information from the incoming HTTP request.
-// It captures the URL, method, headers, and body. The request body is read and then
-// restored so that it can be processed by subsequent handlers.
+
+
+
 func captureRequestInfo(c *gin.Context, captureBody bool) (*RequestInfo, error) {
-	// Capture URL with sensitive query parameters masked
+
 	maskedQuery := util.MaskSensitiveQuery(c.Request.URL.RawQuery)
 	url := c.Request.URL.Path
 	if maskedQuery != "" {
 		url += "?" + maskedQuery
 	}
 
-	// Capture method
+
 	method := c.Request.Method
 
-	// Capture headers
+
 	var headers map[string][]string
 	if c.Request.Header != nil {
 		headers = c.Request.Header.Clone()
@@ -454,8 +454,8 @@ func captureRequestInfoBody(c *gin.Context, info *RequestInfo) error {
 		return err
 	}
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	// The decoded body is bounded even when no max-request-body-bytes is configured:
-	// a small zstd body can expand to gigabytes.
+
+
 	maxBytes := c.GetInt64("maxRequestBodyBytes")
 	if maxBytes <= 0 || maxBytes > maxDeferredErrorRequestBodyBytes {
 		maxBytes = maxDeferredErrorRequestBodyBytes
@@ -500,7 +500,7 @@ func decodeCapturedRequestBodyForLogWithLimit(raw []byte, encoding string, limit
 }
 
 func decodeCapturedZstdRequestBodyWithLimit(raw []byte, limit int64) ([]byte, bool, error) {
-	// One decoder goroutine and a bounded window: a frame that declares a larger window is not decoded (the raw bytes are logged).
+
 	decoder, errNewReader := zstd.NewReader(bytes.NewReader(raw), zstd.WithDecoderConcurrency(1), zstd.WithDecoderMaxWindow(maxCapturedZstdWindowBytes))
 	if errNewReader != nil {
 		return nil, false, fmt.Errorf("failed to create zstd request decoder: %w", errNewReader)
@@ -521,9 +521,9 @@ func decodeCapturedZstdRequestBodyWithLimit(raw []byte, limit int64) ([]byte, bo
 	return decoded, false, nil
 }
 
-// shouldLogRequest determines whether the request should be logged.
-// It skips management endpoints to avoid leaking secrets but allows
-// all other routes, including module-provided ones, to honor request-log.
+
+
+
 func shouldLogRequest(path string) bool {
 	if strings.HasPrefix(path, "/v0/management") || strings.HasPrefix(path, "/v8/management") || strings.HasPrefix(path, "/management") {
 		return false

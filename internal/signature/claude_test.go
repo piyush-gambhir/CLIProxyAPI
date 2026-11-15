@@ -189,9 +189,9 @@ const observedFable51CAQSNarrationSample = "CAQS1wcKEQgRGAI4AUIJbmFycmF0aW9uEgx5
 
 const observedContextID = "d9743975-4bb0-4936-9e28-d5b0d21bdc48"
 
-// claudeCAISParts builds Claude CAIS signatures field by field so tests can
-// assert both the observed layout and the upstream drift the validator must
-// tolerate or reject.
+
+
+
 type claudeCAISParts struct {
 	includeTopEnvelope   bool
 	topEnvelope          uint64
@@ -211,8 +211,8 @@ type claudeCAISParts struct {
 	contextID            string
 }
 
-// defaultClaudeCAISParts mirrors the layout observed on claude-fable-5 and
-// claude-opus-5 responses.
+
+
 func defaultClaudeCAISParts(model string) claudeCAISParts {
 	return claudeCAISParts{
 		includeTopEnvelope:   true,
@@ -540,9 +540,9 @@ func TestSanitizeClaudeMessagesForClaudeUpstream_ClaudeCAIS(t *testing.T) {
 	}
 }
 
-// TestClaudeCAISSignature_ToleratesUpstreamFieldDrift pins the deliberately
-// structural validation: rejecting a signature drops the whole thinking block,
-// so incidental values observed today must not become hard requirements.
+
+
+
 func TestClaudeCAISSignature_ToleratesUpstreamFieldDrift(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -639,10 +639,10 @@ func TestClaudeCAISSignature_RejectsMalformedPayloads(t *testing.T) {
 		{"whitespace only", "   "},
 		{"not base64", "CAIS!!!not-base64"},
 		{"truncated payload", truncated},
-		// 'E' prefix is the classic Claude form and must not reach CAIS parsing.
+
 		{"classic claude prefix", base64.StdEncoding.EncodeToString([]byte{0x12, 0x00})},
-		// 'C' prefix but a non-0x08 marker byte, the only way to reach the marker
-		// check (a 'C' prefix constrains the first byte to 0x08-0x0b).
+
+
 		{"wrong marker byte", base64.StdEncoding.EncodeToString([]byte{0x0a, 0x00})},
 		{"no container", func() string {
 			p := defaultClaudeCAISParts("claude-opus-5")
@@ -704,9 +704,9 @@ func TestClaudeCAISSignature_RejectsMalformedPayloads(t *testing.T) {
 	}
 }
 
-// TestClaudeCAISSignature_DoesNotShadowClassicClaudeSignature guards the
-// detection order: CAIS validation runs before classic Claude validation, so it
-// must not claim E/R signatures and change how they are normalized.
+
+
+
 func TestClaudeCAISSignature_DoesNotShadowClassicClaudeSignature(t *testing.T) {
 	classic := testClaudeThinkingSignature()
 	if IsValidClaudeCAISSignature(classic) {
@@ -726,10 +726,10 @@ func TestClaudeCAISSignature_DoesNotShadowClassicClaudeSignature(t *testing.T) {
 	}
 }
 
-// TestClaudeCAISSignature_CachePrefixSurvivesClaudeUpstreamSanitize covers the
-// cached-signature path: cache.GetModelGroup collapses every Claude model to the
-// "claude" prefix, so a CAIS signature reaches the sanitizer as "claude#..." and
-// must be replayed with the prefix stripped instead of being dropped.
+
+
+
+
 func TestClaudeCAISSignature_CachePrefixSurvivesClaudeUpstreamSanitize(t *testing.T) {
 	for _, prefix := range []string{"claude#", "anthropic#", "cais#", "ccmax#"} {
 		t.Run(prefix, func(t *testing.T) {

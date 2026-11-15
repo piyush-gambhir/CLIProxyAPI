@@ -20,8 +20,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ResolveSIWCBindPath resolves a target Codex credential file path (either an absolute path
-// or a bare filename looked up under cfg.AuthDir) and validates that it is an existing Codex JSON file.
+
+
 func ResolveSIWCBindPath(cfg *config.Config, target string) (string, error) {
 	raw := strings.TrimSpace(target)
 	if raw == "" {
@@ -125,7 +125,7 @@ func saveSIWCToCodexCredentialFile(authFilePath string, siwcData *codex.CodexSIW
 		if errValidate := validateSIWCBindCredential(diskMap); errValidate != nil {
 			return errValidate
 		}
-		// Binding is an explicit SIWC replacement, not a stale snapshot merge.
+
 		diskMap["use_siwc"] = true
 		diskMap["siwc"] = siwcData.ToMap()
 
@@ -133,8 +133,8 @@ func saveSIWCToCodexCredentialFile(authFilePath string, siwcData *codex.CodexSIW
 	})
 }
 
-// DoSIWCBind runs the OpenAI Sign in with ChatGPT (SIWC) OAuth flow and writes the resulting
-// SIWC credential section and use_siwc=true into the specified Codex credential file.
+
+
 func DoSIWCBind(cfg *config.Config, target string, options *LoginOptions) {
 	if cfg == nil {
 		cfg = &config.Config{}

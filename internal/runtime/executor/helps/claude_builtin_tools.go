@@ -21,9 +21,9 @@ func newClaudeBuiltinToolRegistry() map[string]bool {
 	return registry
 }
 
-// IsClaudeServerToolType reports whether a typed declaration is a recognized
-// Anthropic-operated tool. Client-defined type:"custom" declarations are not
-// server tools and must remain eligible for MCP aliasing.
+
+
+
 func IsClaudeServerToolType(toolType string) bool {
 	toolType = strings.ToLower(strings.TrimSpace(toolType))
 	for _, prefix := range []string{

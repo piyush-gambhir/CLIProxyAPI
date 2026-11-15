@@ -12,17 +12,17 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// An external edit is read and queued; when the queue applies it, an in-place rewrite of the
-// file (O_TRUNC) is under way, so the manager discards the snapshot and the service tells the
-// watcher (RereadDiscardedFileSnapshot). The rewrite ends with the edit's bytes, or the same
-// content reformatted, so neither the hash of the file nor the snapshot's digest changed: the
-// watcher must still resend the file and the manager must end with the edit.
+
+
+
+
+
 func TestAddOrUpdateClientDiscardedSnapshotResentAfterInPlaceRewrite(t *testing.T) {
 	const initial = `{"type":"codex","email":"a@b.c","disabled":false,"prefix":"pfx-0"}`
 	const edit = `{"type":"codex","email":"a@b.c","disabled":false,"prefix":"pfx-1"}`
 	for _, tc := range []struct {
 		name, final string
-		// eventBeforeReread processes the rewrite's file event before the service's call.
+
 		eventBeforeReread bool
 	}{
 		{name: "identical bytes", final: edit},
@@ -141,7 +141,7 @@ func TestRereadDiscardedFileSnapshotPreservesKnownFileForRemoveEvent(t *testing.
 		t.Fatal("the edit was not queued")
 	}
 
-	// Remove the file before the queued snapshot is applied so the digest fence discards it.
+
 	if errRemove := os.Remove(path); errRemove != nil {
 		t.Fatal(errRemove)
 	}
@@ -155,7 +155,7 @@ func TestRereadDiscardedFileSnapshotPreservesKnownFileForRemoveEvent(t *testing.
 
 	w.RereadDiscardedFileSnapshot(snapshot.Auth)
 
-	// A subsequent fsnotify.Remove event must still recognize the path as a known auth file.
+
 	w.handleEvent(fsnotify.Event{Name: path, Op: fsnotify.Remove})
 	deleteUpdate, ok := takeQueuedAuthUpdate(w, "acct.json")
 	if !ok || deleteUpdate.Action != AuthUpdateActionDelete || deleteUpdate.ID != "acct.json" {

@@ -38,7 +38,7 @@ type clusterLatencyEntry struct {
 	probeBackoff   time.Duration
 }
 
-// Shared across replacement lifetimes; pending PINGs belong only to a subscription sampler.
+
 type clusterLatencyHistory struct {
 	mu            sync.Mutex
 	sequence      int64
@@ -80,7 +80,7 @@ func (h *clusterLatencyHistory) probeDue(node clusterNode, reportAt time.Time) b
 	if reportAt.Before(entry.nextProbeAt) {
 		return false
 	}
-	// Round against one fixed baseline so ticker jitter cannot skip the next report cycle.
+
 	return h.probeBaseline.IsZero() || int64(reportAt.Sub(h.probeBaseline).Round(time.Minute)/time.Minute) >= entry.nextProbeCycle
 }
 
@@ -159,11 +159,11 @@ func (s *clusterRTTSampler) expire(now time.Time, force bool) {
 	}
 }
 
-// runClusterLatency returns subscription transport failures; report and probe failures remain telemetry-only.
+
 func (c *Client) runClusterLatency(ctx context.Context, pubsub *redis.PubSub, sampler *clusterRTTSampler) error {
 	sampleTimer := time.NewTimer(clusterLatencySampleDelay())
 	defer sampleTimer.Stop()
-	// Spread simultaneously started clients across a minute, then keep a fixed report cadence.
+
 	reportTicker := time.NewTicker(clusterLatencyReportDelay())
 	defer reportTicker.Stop()
 	firstReport := true
@@ -179,20 +179,20 @@ func (c *Client) runClusterLatency(ctx context.Context, pubsub *redis.PubSub, sa
 				token := sampler.begin(time.Now())
 				if errPing := pubsub.Ping(ctx, token); errPing != nil {
 					sampler.expire(time.Now(), true)
-					// go-redis may already have resubscribed; only the lifecycle manager may replace membership.
+
 					return fmt.Errorf("Home subscription telemetry PING: %w", errPing)
 				}
 			}
 			sampleTimer.Reset(clusterLatencySampleDelay())
 		case reportAt := <-reportTicker.C:
 			if firstReport {
-				// Reset before the RPC so report duration never adds to the recurring interval.
+
 				reportTicker.Reset(time.Minute)
 				firstReport = false
 			}
 			sampler.expire(time.Now(), false)
 			if errReport := c.reportClusterLatency(ctx, sampler.history, reportAt); errReport != nil {
-				// Telemetry failure must not end a healthy subscription or reclaim its membership.
+
 				log.Warnf("Home latency telemetry failed: %v", errReport)
 			}
 		}
@@ -226,7 +226,7 @@ func (c *Client) reportClusterLatency(ctx context.Context, history *clusterLaten
 	if errClient != nil {
 		return fmt.Errorf("get Home latency command client: %w", errClient)
 	}
-	// Reuse the command pool; telemetry must never close dispatch transports on cancellation.
+
 	commandCtx, cancelCommand := context.WithTimeout(ctx, clusterLatencyTimeout)
 	raw, errReport := command.Do(commandCtx, "CLUSTER", "BALANCE", "LATENCY", string(payload)).Text()
 	cancelCommand()
@@ -257,7 +257,7 @@ func (c *Client) reportClusterLatency(ctx context.Context, history *clusterLaten
 	if !known || current || target.IP == "" || target.Port <= 0 || target.Port > 65535 {
 		return nil
 	}
-	// One worker, at most one probe per report cycle, with per-target failure backoff.
+
 	if !history.probeDue(target, reportAt) {
 		return nil
 	}
@@ -272,12 +272,12 @@ func (c *Client) reportClusterLatency(ctx context.Context, history *clusterLaten
 	return nil
 }
 
-// The first PING establishes mTLS; only the second round trip is timed. Neither subscribes.
+
 func (c *Client) probeClusterLatency(ctx context.Context, address string) (time.Duration, error) {
 	c.mu.Lock()
 	options, tlsSettings := c.redisOptionsSnapshotLocked(address)
 	c.mu.Unlock()
-	// Loading and parsing certificate files must not block dispatch on the client's mutex.
+
 	tlsConfig, errTLS := newHomeTLSConfig(tlsSettings, "")
 	if errTLS != nil {
 		return 0, errTLS

@@ -16,7 +16,7 @@ type modelAliasEntry interface {
 	GetForceMapping() bool
 }
 
-// oauthModelAliasEntry stores the upstream model name and mapping flags for an alias.
+
 type oauthModelAliasEntry struct {
 	upstreamModel string
 	configAlias   string
@@ -24,15 +24,15 @@ type oauthModelAliasEntry struct {
 }
 
 type oauthModelAliasTable struct {
-	// reverse maps channel -> alias (lower) -> entry with upstream model and flags.
+
 	reverse map[string]map[string]oauthModelAliasEntry
 }
 
-// OAuthModelAliasResult contains the resolved upstream model and mapping metadata.
+
 type OAuthModelAliasResult struct {
-	UpstreamModel string // resolved upstream model name (empty if no mapping found)
-	ForceMapping  bool   // whether to rewrite model name in responses
-	OriginalAlias string // client-visible model for response rewrite; only applied when ForceMapping is true (see rewriteForceMappedResponse / wrapStreamResult)
+	UpstreamModel string
+	ForceMapping  bool
+	OriginalAlias string
 }
 
 func compileOAuthModelAliasTable(aliases map[string][]internalconfig.OAuthModelAlias) *oauthModelAliasTable {
@@ -77,15 +77,15 @@ func compileOAuthModelAliasTable(aliases map[string][]internalconfig.OAuthModelA
 	return out
 }
 
-// SetOAuthModelAlias updates the OAuth model name alias table used during execution.
-// The alias is applied per-auth channel to resolve the upstream model name while keeping the
-// client-visible model name unchanged for translation/response formatting.
+
+
+
 func (m *Manager) SetOAuthModelAlias(aliases map[string][]internalconfig.OAuthModelAlias) {
 	if m == nil {
 		return
 	}
 	table := compileOAuthModelAliasTable(aliases)
-	// atomic.Value requires non-nil store values.
+
 	if table == nil {
 		table = &oauthModelAliasTable{}
 	}
@@ -140,8 +140,8 @@ func (m *Manager) configuredOAuthAliasRoutes(auth *Auth) []oauthResolvedAliasRou
 	return routes
 }
 
-// applyOAuthModelAlias resolves the upstream model from OAuth model alias.
-// If an alias exists, the returned model is the upstream model.
+
+
 func (m *Manager) applyOAuthModelAlias(auth *Auth, requestedModel string) string {
 	upstreamModel := m.resolveOAuthUpstreamModel(auth, requestedModel)
 	if upstreamModel == "" {
@@ -296,13 +296,13 @@ func resolveModelAliasResultFromConfigModels(requestedModel string, models []mod
 	return OAuthModelAliasResult{}
 }
 
-// resolveOAuthUpstreamModel resolves the upstream model name from OAuth model alias.
-// If an alias exists, returns the original (upstream) model name that corresponds
-// to the requested alias.
-//
-// If the requested model contains a thinking suffix (e.g., "gemini-2.5-pro(8192)"),
-// the suffix is preserved in the returned model name. However, if the alias's
-// original name already contains a suffix, the config suffix takes priority.
+
+
+
+
+
+
+
 func (m *Manager) resolveOAuthUpstreamModel(auth *Auth, requestedModel string) string {
 	result := m.resolveOAuthModelAliasWithResult(auth, requestedModel)
 	return result.UpstreamModel
@@ -326,7 +326,7 @@ func authAttributes(auth *Auth) map[string]string {
 	return auth.Attributes
 }
 
-// SetOAuthModelAliasesAttribute stores sanitized per-auth OAuth model aliases on an auth entry.
+
 func SetOAuthModelAliasesAttribute(auth *Auth, aliases []internalconfig.OAuthModelAlias) {
 	if auth == nil {
 		return
@@ -345,7 +345,7 @@ func SetOAuthModelAliasesAttribute(auth *Auth, aliases []internalconfig.OAuthMod
 	auth.Attributes[oauthModelAliasesAttributeKey] = string(data)
 }
 
-// OAuthModelAliasesFromAttributes returns sanitized per-auth OAuth model aliases from auth attributes.
+
 func OAuthModelAliasesFromAttributes(attributes map[string]string) []internalconfig.OAuthModelAlias {
 	if len(attributes) == 0 {
 		return nil
@@ -503,9 +503,9 @@ func resolveUpstreamModelFromAliasTable(m *Manager, auth *Auth, requestedModel, 
 	return OAuthModelAliasResult{}
 }
 
-// modelAliasChannel extracts the OAuth model alias channel from an Auth object.
-// It determines the provider and auth kind from the Auth's attributes and delegates
-// to OAuthModelAliasChannel for the actual channel resolution.
+
+
+
 func modelAliasChannel(auth *Auth) string {
 	if auth == nil {
 		return ""
@@ -515,12 +515,12 @@ func modelAliasChannel(auth *Auth) string {
 	return OAuthModelAliasChannel(provider, authKind)
 }
 
-// OAuthModelAliasChannel returns the OAuth model alias channel name for a given provider
-// and auth kind. Returns empty string if the provider/authKind combination doesn't support
-// OAuth model alias (e.g., API key authentication).
-//
-// Built-in channels: vertex, aistudio, antigravity, claude, codex, kimi, xai, meta.
-// Plugin OAuth providers use their normalized provider key as the channel.
+
+
+
+
+
+
 func OAuthModelAliasChannel(provider, authKind string) string {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	authKind = normalizeOAuthModelAliasAuthKind(authKind)

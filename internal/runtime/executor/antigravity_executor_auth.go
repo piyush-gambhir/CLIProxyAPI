@@ -19,7 +19,7 @@ import (
 
 const antigravityCredentialAcquisitionTimeout = 30 * time.Second
 
-// Refresh refreshes the authentication credentials using the refresh token.
+
 func (e *AntigravityExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
@@ -118,7 +118,7 @@ func (e *AntigravityExecutor) refreshToken(ctx context.Context, auth *cliproxyau
 	refreshToken = strings.TrimSpace(refreshToken)
 
 	result, errRefresh, _ := antigravityRefreshGroup.Do(refreshToken, func() (interface{}, error) {
-		// A caller may leave, but shared credential acquisition must still be bounded.
+
 		refreshCtx, cancelRefresh := context.WithTimeout(context.WithoutCancel(ctx), antigravityCredentialAcquisitionTimeout)
 		defer cancelRefresh()
 		return e.refreshTokenSingleFlight(refreshCtx, auth, refreshToken)
@@ -163,7 +163,7 @@ func (e *AntigravityExecutor) refreshTokenSingleFlight(ctx context.Context, auth
 	}
 	httpReq.Header.Set("Host", "oauth2.googleapis.com")
 	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// Real Antigravity uses Go's default User-Agent for OAuth token refresh
+
 	httpReq.Header.Set("User-Agent", "Go-http-client/2.0")
 
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
@@ -236,7 +236,7 @@ func (e *AntigravityExecutor) fetchAntigravityProjectID(ctx context.Context, aut
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	// Project discovery is required credential preparation, not a generation request.
+
 	acquisitionCtx, cancelAcquisition := context.WithTimeout(ctx, antigravityCredentialAcquisitionTimeout)
 	defer cancelAcquisition()
 	httpClient := newAntigravityHTTPClient(acquisitionCtx, e.cfg, auth, 0)

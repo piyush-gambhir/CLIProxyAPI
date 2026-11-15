@@ -325,7 +325,7 @@ func TestRequestCodexTokenLoginDoesNotRaceConfigV8Save(t *testing.T) {
 		CancelOAuthSession(payload.State)
 	}
 
-	// The login goroutine outlives the response, so this save runs concurrently with it.
+
 	state := requestCodexTokenState(t, router)
 	defer CompleteOAuthSession(state)
 	saveRetry(`0`)

@@ -8,9 +8,9 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// The internal commentary marker is an implementation contract between the
-// Codex-to-Claude response translator and the Claude-to-Codex request
-// translator. It must never be forwarded to an upstream as a signature.
+
+
+
 const testCommentaryMarkerSignature = codexCommentarySignatureMarker
 
 func TestConvertCodexResponseToClaudeNonStream_CommentaryCarriesInternalMarker(t *testing.T) {

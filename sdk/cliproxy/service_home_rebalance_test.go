@@ -20,7 +20,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executionregistry"
 )
 
-// rebalanceAdmissionHome controls subscription migration and the delivery of an issued RPOP.
+
 type rebalanceAdmissionHome struct {
 	listener       net.Listener
 	target         string
@@ -180,7 +180,7 @@ func (s *rebalanceAdmissionHome) serve(conn net.Conn) {
 				return
 			}
 			close(s.issued)
-			// No more commands are expected on this connection until the old client closes.
+
 			s.workers.Add(1)
 			go func() {
 				defer s.workers.Done()
@@ -298,7 +298,7 @@ func TestServicePlannedRebalanceFencesAdmissionAndSettlesResponseProcessing(t *t
 				response <- errDispatch
 				<-processResponse
 				if home.IsAmbiguousDispatchError(errDispatch) {
-					// Match conductor ordering: record ambiguity before releasing the pending token.
+
 					client.AbortAmbiguousDispatch()
 				}
 				if errDispatch != nil {
@@ -311,7 +311,7 @@ func TestServicePlannedRebalanceFencesAdmissionAndSettlesResponseProcessing(t *t
 				}
 				scope, errScope := registry.Install(pending, executionregistry.ScopeSpec{RequestID: "newly-dispatched"})
 				if errScope == nil {
-					// Keep this execution running across migration, without a model completion barrier.
+
 					errScope = scope.Bind(func() error {
 						drainOnce.Do(func() { close(drained) })
 						go scope.End("unsafe replacement")
@@ -322,7 +322,7 @@ func TestServicePlannedRebalanceFencesAdmissionAndSettlesResponseProcessing(t *t
 			}()
 			awaitRebalanceEvent(t, source.issued)
 			close(source.migrate)
-			// Observe the admission fence without issuing network traffic or adding sleeps.
+
 			fenceDeadline := time.NewTimer(5 * time.Second)
 			defer fenceDeadline.Stop()
 			for {
@@ -386,7 +386,7 @@ func TestServicePlannedRebalanceFencesAdmissionAndSettlesResponseProcessing(t *t
 					t.Fatal("safe migration drained an active model execution")
 				default:
 				}
-				// A stale request may register after migration's empty pending-set observation.
+
 				late, errLateBegin := registry.BeginDispatch()
 				if errLateBegin != nil {
 					t.Fatal(errLateBegin)

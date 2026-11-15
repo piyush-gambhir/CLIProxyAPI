@@ -114,7 +114,7 @@ func TestAntigravityConnectionTrace(t *testing.T) {
 		}
 	}
 
-	// Credential-discovery helpers create their own requests using the supplied client.
+
 	hook.Reset()
 	tracedClient := WithAntigravityHTTPClientTrace(client, auth, "project_discovery")
 	if client.Transport != transport || tracedClient == client {

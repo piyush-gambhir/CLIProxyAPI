@@ -19,8 +19,8 @@ func TestClaudeResponsesServerToolStopReason(t *testing.T) {
 		errCode string
 		endTurn string
 	}{
-		// pause_turn is an unfinished but valid turn: completed with end_turn=false
-		// so the client continues it by sending the paused content back.
+
+
 		{reason: "pause_turn", status: "completed", endTurn: "false"},
 		{reason: " PAUSE_TURN ", status: "completed", endTurn: "false"},
 		{reason: "max_tokens", status: "incomplete", detail: `{"reason":"max_output_tokens"}`},

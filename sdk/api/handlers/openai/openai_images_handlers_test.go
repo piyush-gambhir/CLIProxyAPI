@@ -1359,10 +1359,10 @@ func TestImagesStreamKeepAliveDoesNotSplitCompletedEventMidLine_Issue7330(t *tes
 		go func() {
 			data <- []byte(keepAliveFrame)
 			data <- []byte(completedPart1)
-			// Tick while in the middle of the image_generation.completed data: line.
+
 			tickChan <- time.Unix(1, 0)
 			data <- []byte(completedPart2)
-			// Tick after the SSE event has completed with \n\n.
+
 			tickChan <- time.Unix(2, 0)
 			close(data)
 		}()
@@ -1430,14 +1430,14 @@ func TestImagesStreamKeepAliveDoesNotSplitCompletedEventMidLine_Issue7330(t *tes
 			})
 
 			go func() {
-				// First chunk itself is an incomplete SSE event (first 32KB read of image_generation.completed).
+
 				chunks <- coreexecutor.StreamChunk{Payload: []byte(completedPart1)}
-				// Keep-alive tick fires before the second chunk of the same line arrives.
+
 				tickChan <- time.Unix(1, 0)
 				chunks <- coreexecutor.StreamChunk{Payload: []byte(completedPart2)}
-				// Wait until the handler receives completedPart2 and resets the keep-alive timer.
+
 				<-resetCh
-				// Keep-alive tick fires at the completed event boundary.
+
 				tickChan <- time.Unix(2, 0)
 				close(chunks)
 			}()
@@ -1530,10 +1530,10 @@ func TestImagesStreamKeepAliveDoesNotSplitCompletedEventMidLine_Issue7330(t *tes
 
 		firstChunk := []byte("event: response.created\ndata: {\"type\":\"response.created\"}\n\n")
 		go func() {
-			// Ignored non-image event and buffered incomplete frame produce no downstream output.
+
 			data <- []byte("event: response.in_progress\ndata: {\"type\":\"response.in_progress\"}\n\n")
 			data <- []byte("event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"output\":[{\"type\":\"image_generation_call\",")
-			// Keep-alive tick must still be written while downstream has received no output.
+
 			tickChan <- time.Unix(1, 0)
 			data <- []byte("\"result\":\"aW1hZ2U=\"}]}}\n\n")
 			close(data)

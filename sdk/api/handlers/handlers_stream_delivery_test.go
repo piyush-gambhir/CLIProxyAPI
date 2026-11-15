@@ -36,7 +36,7 @@ func TestIssue6332LifecycleDeliveryReadyBoundary(t *testing.T) {
 				cancel()
 				chunks := make(chan coreexecutor.StreamChunk)
 				close(chunks)
-				// Both EOF and cancellation are ready before the shared select.
+
 				_, _, canceled := nextStreamChunk(ctx, nil, nil, chunks)
 				outcome, status, err := pluginapi.RequestCompletionSucceeded, http.StatusOK, error(nil)
 				if canceled {
@@ -138,7 +138,7 @@ func TestIssue6332LifecycleValidationFailureSurvivesDeliveryCancellation(t *test
 	h.SetPluginHost(&handlerInterceptorTestHost{
 		interceptStreamChunk: func(_ context.Context, req pluginapi.StreamChunkInterceptRequest) pluginapi.StreamChunkInterceptResponse {
 			if len(req.Body) > 0 {
-				// Make cancellation and the buffered error send ready together.
+
 				finish(nil)
 				cancel()
 			}
@@ -161,9 +161,9 @@ func TestIssue6332LifecycleValidationFailureSurvivesDeliveryCancellation(t *test
 	}
 }
 
-// A stream channel that is closed while the request context is canceled was cut by the cancellation: the shared select picks at
-// random when both are ready, and the plain close ended the request as a success. The cancellation wins every time; a close on a
-// live context is still the end of the stream.
+
+
+
 func TestNextStreamChunkReportsCancellationWhenTheChannelClosesWithIt(t *testing.T) {
 	for range 200 {
 		ctx, cancel := context.WithCancel(context.Background())

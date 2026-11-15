@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-// claudeCode2321MainBetas is the Anthropic-Beta value native Claude Code 2.1.321
-// sent for an interactive cli main-thread turn on Fable 5.2, Fable 5.1, Opus 5.5
-// and Sonnet 5.5 (captured against api.anthropic.com on 2026-11-09 with OAuth,
-// in an auto-mode session, hence afk-mode).
+
+
+
+
 const claudeCode2321MainBetas = "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14," +
 	"context-management-2025-06-27,prompt-caching-scope-2026-01-05,per-turn-control-2026-07-01," +
 	"mid-conversation-tool-changes-2026-07-01,inline-tools-2026-09-15,advisor-tool-2026-03-01," +
@@ -17,9 +17,9 @@ const claudeCode2321MainBetas = "claude-code-20250219,oauth-2025-04-20,interleav
 	"thinking-display-updates-2026-08-18,afk-mode-2026-01-31,extended-cache-ttl-2025-04-11," +
 	"cache-diagnosis-2026-04-07,message-threads-2026-08-12"
 
-// claudeCode2321MainBody keeps only the fields of the captured main-thread body
-// that gate betas: a role=system turn with an inline tool_addition, a deferred
-// tool, the advisor tool, safeguards, thread, diagnostics, and a 1h cache TTL.
+
+
+
 func claudeCode2321MainBody(model, display string) []byte {
 	return []byte(`{"model":"` + model + `","max_tokens":128000,` +
 		`"messages":[{"role":"user","content":[{"type":"text","text":"say ok"}]},` +
@@ -38,11 +38,11 @@ func claudeCode2321MainBody(model, display string) []byte {
 }
 
 func TestClaudeCodeCLIBetas_MatchesClaudeCode2321Captures(t *testing.T) {
-	// Haiku 5.5 moves claude-code-20250219 behind prompt-caching-scope.
+
 	haiku55 := strings.Replace(claudeCode2321MainBetas,
 		"claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,prompt-caching-scope-2026-01-05,",
 		"oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,", 1)
-	// The sdk-cli entrypoint sends thinking.display=omitted.
+
 	sdkCLI := withoutClaudeBeta(claudeCode2321MainBetas, claudeThinkingDisplayUpdatesBeta)
 
 	tests := []struct {
@@ -68,8 +68,8 @@ func TestClaudeCodeCLIBetas_MatchesClaudeCode2321Captures(t *testing.T) {
 			if got := claudeCodeCLIBetas(tt.body, requested, true); got != tt.native {
 				t.Fatalf("with native betas requested:\n got: %s\nwant: %s", got, tt.native)
 			}
-			// A caller that sends no betas gets the same list minus afk-mode,
-			// which Claude Code only sends from auto-mode sessions.
+
+
 			want := withoutClaudeBeta(tt.native, claudeAFKModeBeta)
 			if got := claudeCodeCLIBetas(tt.body, nil, true); got != want {
 				t.Fatalf("with no betas requested:\n got: %s\nwant: %s", got, want)
@@ -78,7 +78,7 @@ func TestClaudeCodeCLIBetas_MatchesClaudeCode2321Captures(t *testing.T) {
 	}
 }
 
-// The 2.1.321 capture of the prompt "say ok" carried cc_version=2.1.321.20d.
+
 func TestComputeFingerprintMatchesClaudeCode2321Capture(t *testing.T) {
 	if got := computeFingerprint("say ok", "2.1.321"); got != "20d" {
 		t.Fatalf("computeFingerprint() = %q, want 20d", got)

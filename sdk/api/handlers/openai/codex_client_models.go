@@ -29,19 +29,19 @@ func (h *OpenAIAPIHandler) codexClientModelsResponse(clientVersion ...string) ma
 	return codexmodels.BuildResponseForClientWithToolCapabilities(h.Models(), modelRegistry.GetModelProviders, modelRegistry.GetResponsesWebSearchCapability, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, version)
 }
 
-// CodexClientModelsResponse builds a Codex client model response.
+
 func CodexClientModelsResponse(models []map[string]any) map[string]any {
 	return codexmodels.BuildResponse(models, nil, false)
 }
 
-// CodexClientModelsResponseWithMultiAgentV2 builds a Codex client model response
-// and advertises multi-agent v2 for synthesized models when enabled.
+
+
 func CodexClientModelsResponseWithMultiAgentV2(models []map[string]any, enabled bool) map[string]any {
 	return codexmodels.BuildResponse(models, nil, enabled)
 }
 
-// CodexClientModelsResponseForClient builds a Codex client model response
-// tailored for a specific client version.
+
+
 func CodexClientModelsResponseForClient(models []map[string]any, clientVersion string, enabled bool) map[string]any {
 	return codexmodels.BuildResponseForClient(models, nil, enabled, clientVersion)
 }

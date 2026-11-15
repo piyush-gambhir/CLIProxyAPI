@@ -10,25 +10,25 @@ import (
 	"sync/atomic"
 )
 
-// DefaultTransportCacheCapacity bounds how many transports a TransportCache keeps
-// alive at once. Every cached transport owns an independent connection pool, so an
-// unbounded cache would let idle sockets and the goroutines managing them grow
-// without limit whenever keys churn, for example when a credential's proxy is
-// rotated through the management API or when an SDK embedder supplies a freshly
-// built base transport per request.
+
+
+
+
+
+
 const DefaultTransportCacheCapacity = 64
 
-// TransportCache memoizes HTTP transports under a comparable key using a bounded
-// LRU. Evicting an entry closes its idle connections so neither the pool nor its
-// background goroutines outlive the cache entry.
-//
-// The key type is generic so callers can mix value identity (a normalized proxy
-// URL) with pointer identity (a base transport supplied by the caller) without the
-// cache retaining either beyond the LRU window.
+
+
+
+
+
+
+
 type TransportCache[K comparable] struct {
 	mu       sync.Mutex
 	capacity int
-	// order keeps the most recently used entry at the front.
+
 	order *list.List
 	items map[K]*list.Element
 }
@@ -39,13 +39,13 @@ type transportCacheEntry[K comparable] struct {
 	retired   atomic.Bool
 }
 
-// attachTransportRetirementGuard ensures a transport that has been evicted or
-// closed from the cache cannot rebuild an idle pool if a descheduled caller
-// performs a RoundTrip on it after eviction. In net/http, queueForIdleConn
-// clears t.closeIdle before dialConn invokes DialContext/DialTLSContext;
-// re-arming CloseIdleConnections inside the dial callback while retired is true
-// leaves the in-flight connection open for the current request and causes
-// tryPutIdleConn to close it immediately once the response finishes.
+
+
+
+
+
+
+
 func attachTransportRetirementGuard(transport *http.Transport, retired *atomic.Bool) {
 	if transport == nil || retired == nil {
 		return
@@ -81,8 +81,8 @@ func attachTransportRetirementGuard(transport *http.Transport, retired *atomic.B
 	}
 }
 
-// NewTransportCache returns a cache holding at most capacity transports. A
-// non-positive capacity falls back to DefaultTransportCacheCapacity.
+
+
 func NewTransportCache[K comparable](capacity int) *TransportCache[K] {
 	if capacity <= 0 {
 		capacity = DefaultTransportCacheCapacity
@@ -94,12 +94,12 @@ func NewTransportCache[K comparable](capacity int) *TransportCache[K] {
 	}
 }
 
-// Get returns the transport cached under key, calling build on the first use of
-// that key. Concurrent callers observe the same instance.
-//
-// A build error is propagated without being cached, so a later call can retry and
-// a failed lookup never occupies a cache slot. build must not call back into the
-// same cache.
+
+
+
+
+
+
 func (c *TransportCache[K]) Get(key K, build func() (*http.Transport, error)) (*http.Transport, error) {
 	if c == nil {
 		return nil, errors.New("transport cache: nil cache")
@@ -129,7 +129,7 @@ func (c *TransportCache[K]) Get(key K, build func() (*http.Transport, error)) (*
 		return nil, errors.New("transport cache: build returned no transport")
 	}
 
-	// Double check in case key was populated while build was running
+
 	if element, ok := c.items[key]; ok {
 		c.order.MoveToFront(element)
 		existing := element.Value.(*transportCacheEntry[K]).transport
@@ -152,11 +152,11 @@ func (c *TransportCache[K]) Get(key K, build func() (*http.Transport, error)) (*
 	return transport, nil
 }
 
-// evictLocked drops least recently used entries until the cache fits its capacity,
-// returning a slice of evicted transports to be closed outside the lock.
-// Closing idle connections is what actually releases the evicted pool; in-flight
-// requests still holding the transport are unaffected because CloseIdleConnections
-// only reaps connections that are currently idle.
+
+
+
+
+
 func (c *TransportCache[K]) evictLocked() []*http.Transport {
 	var evicted []*http.Transport
 	for c.order.Len() > c.capacity {
@@ -173,7 +173,7 @@ func (c *TransportCache[K]) evictLocked() []*http.Transport {
 	return evicted
 }
 
-// Len reports how many transports the cache currently holds.
+
 func (c *TransportCache[K]) Len() int {
 	if c == nil {
 		return 0
@@ -183,7 +183,7 @@ func (c *TransportCache[K]) Len() int {
 	return c.order.Len()
 }
 
-// Contains reports whether key exists in the cache.
+
 func (c *TransportCache[K]) Contains(key K) bool {
 	if c == nil {
 		return false
@@ -194,8 +194,8 @@ func (c *TransportCache[K]) Contains(key K) bool {
 	return ok
 }
 
-// CloseKey removes the transport cached under key (if present) and closes its idle connections.
-// Returns true if the entry was found and closed.
+
+
 func (c *TransportCache[K]) CloseKey(key K) bool {
 	if c == nil {
 		return false
@@ -217,8 +217,8 @@ func (c *TransportCache[K]) CloseKey(key K) bool {
 	return true
 }
 
-// detachMatching removes every cached transport whose key satisfies predicate and returns
-// the detached transports so callers can close idle connections outside outer locks.
+
+
 func (c *TransportCache[K]) detachMatching(predicate func(key K) bool) []*http.Transport {
 	if c == nil || predicate == nil {
 		return nil
@@ -240,8 +240,8 @@ func (c *TransportCache[K]) detachMatching(predicate func(key K) bool) []*http.T
 	return toClose
 }
 
-// CloseMatching removes and closes idle connections for every cached transport whose key
-// satisfies predicate. Returns the number of closed transports.
+
+
 func (c *TransportCache[K]) CloseMatching(predicate func(key K) bool) int {
 	toClose := c.detachMatching(predicate)
 	for _, t := range toClose {
@@ -250,7 +250,7 @@ func (c *TransportCache[K]) CloseMatching(predicate func(key K) bool) int {
 	return len(toClose)
 }
 
-// Purge drops every entry and closes the idle connections it was holding.
+
 func (c *TransportCache[K]) Purge() {
 	if c == nil {
 		return

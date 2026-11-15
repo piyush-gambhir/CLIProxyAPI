@@ -2,8 +2,8 @@ package helps
 
 import "bytes"
 
-// RelaySSEBuffer reassembles SSE frames across arbitrary relay chunk boundaries.
-// Bare JSON relay messages remain whole, including pretty-printed JSON.
+
+
 type RelaySSEBuffer struct {
 	pending   []byte
 	sse       bool
@@ -11,7 +11,7 @@ type RelaySSEBuffer struct {
 	lineStart int
 }
 
-// Feed returns complete frames and retains an unfinished SSE frame for the next chunk.
+
 func (b *RelaySSEBuffer) Feed(chunk []byte) [][]byte {
 	b.pending = append(b.pending, chunk...)
 	if !b.sse {
@@ -57,7 +57,7 @@ func (b *RelaySSEBuffer) Feed(chunk []byte) [][]byte {
 	return frames
 }
 
-// Finish flushes a final frame from relays that omit its trailing blank line.
+
 func (b *RelaySSEBuffer) Finish() [][]byte {
 	if len(b.pending) == 0 {
 		return nil

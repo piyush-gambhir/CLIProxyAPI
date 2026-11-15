@@ -1,26 +1,26 @@
-// Package tui provides a terminal-based management interface for CLIProxyAPI.
+
 package tui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Color palette
+
 var (
-	colorPrimary   = lipgloss.Color("#7C3AED") // violet
-	colorSecondary = lipgloss.Color("#6366F1") // indigo
-	colorSuccess   = lipgloss.Color("#22C55E") // green
-	colorWarning   = lipgloss.Color("#EAB308") // yellow
-	colorError     = lipgloss.Color("#EF4444") // red
-	colorInfo      = lipgloss.Color("#3B82F6") // blue
-	colorMuted     = lipgloss.Color("#6B7280") // gray
-	colorBg        = lipgloss.Color("#1E1E2E") // dark bg
-	colorSurface   = lipgloss.Color("#313244") // slightly lighter
-	colorText      = lipgloss.Color("#CDD6F4") // light text
-	colorSubtext   = lipgloss.Color("#A6ADC8") // dimmer text
-	colorBorder    = lipgloss.Color("#45475A") // border
-	colorHighlight = lipgloss.Color("#F5C2E7") // pink highlight
+	colorPrimary   = lipgloss.Color("#7C3AED")
+	colorSecondary = lipgloss.Color("#6366F1")
+	colorSuccess   = lipgloss.Color("#22C55E")
+	colorWarning   = lipgloss.Color("#EAB308")
+	colorError     = lipgloss.Color("#EF4444")
+	colorInfo      = lipgloss.Color("#3B82F6")
+	colorMuted     = lipgloss.Color("#6B7280")
+	colorBg        = lipgloss.Color("#1E1E2E")
+	colorSurface   = lipgloss.Color("#313244")
+	colorText      = lipgloss.Color("#CDD6F4")
+	colorSubtext   = lipgloss.Color("#A6ADC8")
+	colorBorder    = lipgloss.Color("#45475A")
+	colorHighlight = lipgloss.Color("#F5C2E7")
 )
 
-// Tab bar styles
+
 var (
 	tabActiveStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -39,7 +39,7 @@ var (
 			PaddingBottom(0)
 )
 
-// Content styles
+
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -83,7 +83,7 @@ var (
 			Foreground(colorMuted)
 )
 
-// Log level styles
+
 var (
 	logDebugStyle = lipgloss.NewStyle().Foreground(colorMuted)
 	logInfoStyle  = lipgloss.NewStyle().Foreground(colorInfo)
@@ -91,7 +91,7 @@ var (
 	logErrorStyle = lipgloss.NewStyle().Foreground(colorError)
 )
 
-// Table styles
+
 var (
 	tableHeaderStyle = lipgloss.NewStyle().
 				Bold(true).

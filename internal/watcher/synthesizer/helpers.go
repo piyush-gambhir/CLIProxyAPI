@@ -12,20 +12,20 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// StableIDGenerator generates stable, deterministic IDs for auth entries.
-// It uses SHA256 hashing with collision handling via counters.
-// It is not safe for concurrent use.
+
+
+
 type StableIDGenerator struct {
 	counters map[string]int
 }
 
-// NewStableIDGenerator creates a new StableIDGenerator instance.
+
 func NewStableIDGenerator() *StableIDGenerator {
 	return &StableIDGenerator{counters: make(map[string]int)}
 }
 
-// Next generates a stable ID based on the kind and parts.
-// Returns the full ID (kind:hash) and the short hash portion.
+
+
 func (g *StableIDGenerator) Next(kind string, parts ...string) (string, string) {
 	if g == nil {
 		return kind + ":000000000000", "000000000000"
@@ -51,12 +51,12 @@ func (g *StableIDGenerator) Next(kind string, parts ...string) (string, string) 
 	return fmt.Sprintf("%s:%s", kind, short), short
 }
 
-// ApplyAuthExcludedModelsMeta stores the credential's own excluded models on an auth entry.
-// It computes a hash of excluded models and sets the auth_kind attribute when authKind is set.
-// Existing excluded_models attributes are never cleared, so callers rebuilding them on an
-// existing auth must drop stale values first.
-// Global oauth-excluded-models are intentionally not merged here: they are resolved at
-// model registration time, and a nonempty credential list overrides them.
+
+
+
+
+
+
 func ApplyAuthExcludedModelsMeta(auth *coreauth.Auth, perKey []string, authKind string) {
 	if auth == nil {
 		return
@@ -79,7 +79,7 @@ func ApplyAuthExcludedModelsMeta(auth *coreauth.Auth, perKey []string, authKind 
 	if hash != "" {
 		auth.Attributes["excluded_models_hash"] = hash
 	}
-	// Store only the credential's own rules so global config changes apply without rewriting credentials.
+
 	if len(combined) > 0 {
 		auth.Attributes["excluded_models"] = strings.Join(combined, ",")
 	}
@@ -88,8 +88,8 @@ func ApplyAuthExcludedModelsMeta(auth *coreauth.Auth, perKey []string, authKind 
 	}
 }
 
-// addRequestRetryToMetadata copies a per-credential request-retry override into metadata.
-// Nil or negative values are treated as unset and are not written.
+
+
 func addRequestRetryToMetadata(requestRetry *int, metadata map[string]any) {
 	if requestRetry == nil || *requestRetry < 0 || metadata == nil {
 		return
@@ -97,7 +97,7 @@ func addRequestRetryToMetadata(requestRetry *int, metadata map[string]any) {
 	metadata["request_retry"] = *requestRetry
 }
 
-// addRequestScopedErrorsToMetadata copies per-credential request-scoped error rules into metadata.
+
 func addRequestScopedErrorsToMetadata(rules []config.RequestScopedErrorRule, metadata map[string]any) {
 	if len(rules) == 0 || metadata == nil {
 		return
@@ -118,9 +118,9 @@ func fingerprintProfileFromMetadata(metadata map[string]any) string {
 	return ""
 }
 
-// applyFingerprintProfileAttribute copies fingerprint-profile from an OAuth JSON
-// file (Kimi, Claude, etc.) onto auth attributes so Claude Messages opt-in works
-// the same way as claude-api-key config.
+
+
+
 func applyFingerprintProfileAttribute(auth *coreauth.Auth, metadata map[string]any) {
 	if auth == nil {
 		return
@@ -135,8 +135,8 @@ func applyFingerprintProfileAttribute(auth *coreauth.Auth, metadata map[string]a
 	auth.Attributes["fingerprint_profile"] = profile
 }
 
-// addConfigHeadersToAttrs adds header configuration to auth attributes.
-// Headers are prefixed with "header:" in the attributes map.
+
+
 func addConfigHeadersToAttrs(headers map[string]string, attrs map[string]string) {
 	if len(headers) == 0 || attrs == nil {
 		return

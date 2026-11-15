@@ -7,9 +7,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 )
 
-// ResolveModelInfo returns a private capability snapshot for a configured model.
-// Static capabilities come from the suffix-free upstream name, while explicit
-// configuration takes precedence.
+
+
+
 func ResolveModelInfo(name, modelType string, support *registry.ThinkingSupport) *registry.ModelInfo {
 	trimmedName := strings.TrimSpace(name)
 	baseName := strings.TrimSpace(thinking.ParseSuffix(trimmedName).ModelName)
@@ -21,8 +21,8 @@ func ResolveModelInfo(name, modelType string, support *registry.ThinkingSupport)
 	info.Type = strings.TrimSpace(modelType)
 	if support != nil {
 		normalized := NormalizeThinkingSupport(support)
-		// Configured levels replace the catalog entry, but the way a known model
-		// turns thinking off is an upstream API fact, not a level choice.
+
+
 		if normalized.DisableType == "" && info.Thinking != nil {
 			normalized.DisableType = info.Thinking.DisableType
 		}
@@ -32,7 +32,7 @@ func ResolveModelInfo(name, modelType string, support *registry.ThinkingSupport)
 	return info
 }
 
-// NormalizeThinkingSupport clones and normalizes configured reasoning levels.
+
 func NormalizeThinkingSupport(raw *registry.ThinkingSupport) *registry.ThinkingSupport {
 	if raw == nil {
 		return nil

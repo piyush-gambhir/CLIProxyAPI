@@ -34,9 +34,9 @@ func requireDevinUnsupportedPart(t *testing.T, err error, wantType string) {
 	}
 }
 
-// Devin cannot fetch a remote uri or take audio, video or documents, so a user
-// turn that only holds such media is refused before any HTTP call, for both
-// execution paths and for Interactions and non-Interactions sources.
+
+
+
 func TestDevinExecutorRefusesAnUnsendableMediaOnlyTurnBeforeCallingUpstream(t *testing.T) {
 	var upstreamCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

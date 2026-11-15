@@ -226,7 +226,7 @@ func BenchmarkManagerPinnedLegacy1000(b *testing.B) {
 			opts := cliproxyexecutor.Options{Metadata: map[string]any{
 				cliproxyexecutor.PinnedAuthMetadataKey: "bench-gemini-0000",
 			}}
-			// Warm up index assignment and selection metadata outside the timed loop.
+
 			if mixed {
 				if _, _, _, errWarm := manager.pickNextMixedLegacy(ctx, providers, model, opts, nil); errWarm != nil {
 					b.Fatal(errWarm)

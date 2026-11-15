@@ -254,13 +254,13 @@ func TestStartLoginPassesMetadataAndClonesMap(t *testing.T) {
 		t.Fatalf("receivedMetadata = %#v, want region=us-east-1", receivedMetadata)
 	}
 
-	// Verify metadata cloning: mutating original meta map must not mutate received map
+
 	meta["region"] = "mutated"
 	if receivedMetadata["region"] != "us-east-1" {
 		t.Fatalf("receivedMetadata was mutated when caller map changed: %#v", receivedMetadata)
 	}
 
-	// Verify calling StartLogin without metadata sets req.Metadata to nil
+
 	called = false
 	receivedMetadata = nil
 	_, _, errNoMeta := host.StartLogin(context.Background(), "plugin-provider", "http://localhost:8080/login")
@@ -1036,7 +1036,7 @@ func TestAuthProviderMultiPortalRegistrationAndRouting(t *testing.T) {
 			},
 		})
 
-		// Log in via portal-one first, then portal-two; portal-two must NOT overwrite portal-one's credential handler.
+
 		pollOne, handled, errPoll := host.PollLogin(context.Background(), "portal-one", "state-1")
 		if errPoll != nil || !handled || pollOne.Status != pluginapi.AuthLoginStatusSuccess {
 			t.Fatalf("PollLogin(portal-one) = (%#v, %v, %v), want success", pollOne, handled, errPoll)
@@ -1100,14 +1100,14 @@ func TestAuthProviderMultiPortalRegistrationAndRouting(t *testing.T) {
 			},
 		})
 
-		// "vendor-cn" must NOT implicitly claim "vendor" via prefix guessing
+
 		if host.HasAuthProvider("vendor") {
 			t.Fatal("HasAuthProvider(vendor) = true for vendor-cn plugin, want false")
 		}
 		if host.SameAuthProvider("vendor", "vendor-cn") {
 			t.Fatal("SameAuthProvider(vendor, vendor-cn) = true without ownership declaration, want false")
 		}
-		// ParseAuth with an explicit unrelated provider ("claude" or "vendor") must NOT broadcast to vendor-cn
+
 		_, handled, errParse := host.ParseAuth(context.Background(), pluginapi.AuthParseRequest{
 			Provider: "claude",
 			RawJSON:  []byte(`{"type":"claude","access_token":"tok"}`),
@@ -1118,8 +1118,8 @@ func TestAuthProviderMultiPortalRegistrationAndRouting(t *testing.T) {
 	})
 
 	t.Run("cold_start_parse_and_refresh_without_executor", func(t *testing.T) {
-		// Simulate a fresh Host after restart where an auth-only plugin has portal identifiers
-		// ("zai", "bigmodel") and either persisted oauth_provider metadata in RawJSON or declared CredentialProviders.
+
+
 		refreshed := false
 		host := newHostWithRecords(capabilityRecord{
 			id:       "omc-zcode-oauth",

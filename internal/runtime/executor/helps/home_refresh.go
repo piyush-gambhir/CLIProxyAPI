@@ -87,9 +87,9 @@ var currentHomeRefreshClient = func() homeRefreshClient {
 	return home.Current()
 }
 
-// RefreshAuthViaHome replaces local refresh logic when home control plane integration is enabled.
-// It returns (updatedAuth, true, nil) when home refresh succeeds; (nil, true, err) when home is
-// enabled but refresh fails; and (nil, false, nil) when home is disabled.
+
+
+
 func RefreshAuthViaHome(ctx context.Context, cfg *config.Config, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, bool, error) {
 	if cfg == nil || !cfg.Home.Enabled {
 		return nil, false, nil

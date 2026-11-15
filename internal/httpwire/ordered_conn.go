@@ -1,4 +1,4 @@
-// Package httpwire contains narrowly scoped HTTP/1.1 wire helpers.
+
 package httpwire
 
 import (
@@ -14,14 +14,14 @@ import (
 
 const maxBufferedRequestHeader = 1 << 20
 
-// RequestHeaderOrder returns the desired header-name order for one HTTP/1.1
-// request. Names are compared case-insensitively. Headers omitted from the
-// returned list retain their original relative order after the listed headers.
+
+
+
 type RequestHeaderOrder func(method, requestTarget string) []string
 
-// NewOrderedRequestConn wraps conn and rewrites HTTP/1.1 request-header order
-// and matches header casing to the desired order list. Request lines, unlisted
-// header casing and values, and body bytes remain intact.
+
+
+
 func NewOrderedRequestConn(conn net.Conn, order RequestHeaderOrder) net.Conn {
 	if conn == nil || order == nil {
 		return conn
@@ -107,9 +107,9 @@ func (c *orderedRequestConn) Write(p []byte) (int, error) {
 
 		ordered, contentLength, chunked := orderRequestHeader(header, c.order)
 		if _, errWrite := writeAll(c.Conn, ordered); errWrite != nil {
-			// All caller bytes were accepted into the wrapper before the transformed
-			// header write failed. Return the full input count with the terminal
-			// connection error so callers do not replay an ambiguous partial header.
+
+
+
 			return originalLength, errWrite
 		}
 		consumed += currentHeaderBytes

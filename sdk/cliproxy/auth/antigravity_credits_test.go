@@ -315,7 +315,7 @@ func TestManagerExecuteAndStream_ExpiredNegativeCreditsHintRecoversDuringModelCo
 				t.Fatalf("register auth: %v", errRegister)
 			}
 
-			// Fresh negative hint must still suppress credits fallback while model is in cooldown.
+
 			SetAntigravityCreditsHint(authID, AntigravityCreditsHint{
 				Known:     true,
 				Available: false,
@@ -334,7 +334,7 @@ func TestManagerExecuteAndStream_ExpiredNegativeCreditsHintRecoversDuringModelCo
 				t.Fatalf("executor calls during fresh negative hint = (%d, %d), want (0, 0)", len(executor.executeCreditsRequested), len(executor.streamCreditsRequested))
 			}
 
-			// Once the negative hint expires, execution must enter credits fallback even while model cooldown is active.
+
 			SetAntigravityCreditsHint(authID, AntigravityCreditsHint{
 				Known:     true,
 				Available: false,

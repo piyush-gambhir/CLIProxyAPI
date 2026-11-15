@@ -1,4 +1,4 @@
-// Package antigravity provides OAuth2 authentication functionality for the Antigravity provider.
+
 package antigravity
 
 import (
@@ -17,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TokenResponse represents OAuth token response from Google
+
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -25,12 +25,12 @@ type TokenResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-// userInfo represents Google user profile
+
 type userInfo struct {
 	Email string `json:"email"`
 }
 
-// HTTPStatusError represents an HTTP error response with status code.
+
 type HTTPStatusError struct {
 	StatusCodeValue int
 	Message         string
@@ -50,12 +50,12 @@ func (e *HTTPStatusError) StatusCode() int {
 	return e.StatusCodeValue
 }
 
-// AntigravityAuth handles Antigravity OAuth authentication
+
 type AntigravityAuth struct {
 	httpClient *http.Client
 }
 
-// NewAntigravityAuth creates a new Antigravity auth service.
+
 func NewAntigravityAuth(cfg *config.Config, httpClient *http.Client) *AntigravityAuth {
 	if cfg == nil {
 		cfg = &config.Config{}
@@ -138,7 +138,7 @@ func defaultAntigravityTierID(loadResp map[string]any) string {
 	return "free-tier"
 }
 
-// BuildAuthURL generates the OAuth authorization URL.
+
 func (o *AntigravityAuth) BuildAuthURL(state, redirectURI string) string {
 	if strings.TrimSpace(redirectURI) == "" {
 		redirectURI = fmt.Sprintf("http://localhost:%d/oauth-callback", CallbackPort)
@@ -154,7 +154,7 @@ func (o *AntigravityAuth) BuildAuthURL(state, redirectURI string) string {
 	return AuthEndpoint + "?" + params.Encode()
 }
 
-// ExchangeCodeForTokens exchanges authorization code for access and refresh tokens
+
 func (o *AntigravityAuth) ExchangeCodeForTokens(ctx context.Context, code, redirectURI string) (*TokenResponse, error) {
 	data := url.Values{}
 	data.Set("code", code)
@@ -199,7 +199,7 @@ func (o *AntigravityAuth) ExchangeCodeForTokens(ctx context.Context, code, redir
 	return &token, nil
 }
 
-// FetchUserInfo retrieves user email from Google
+
 func (o *AntigravityAuth) FetchUserInfo(ctx context.Context, accessToken string) (string, error) {
 	accessToken = strings.TrimSpace(accessToken)
 	if accessToken == "" {
@@ -245,7 +245,7 @@ func (o *AntigravityAuth) FetchUserInfo(ctx context.Context, accessToken string)
 	return email, nil
 }
 
-// FetchProjectID retrieves the project ID for the authenticated user via loadCodeAssist
+
 func (o *AntigravityAuth) FetchProjectID(ctx context.Context, accessToken string) (string, error) {
 	userAgent := o.shortUserAgent()
 	loadReqBody := map[string]any{
@@ -309,7 +309,7 @@ func (o *AntigravityAuth) FetchProjectID(ctx context.Context, accessToken string
 	return projectID, nil
 }
 
-// OnboardUser attempts to fetch the project ID via onboardUser by polling for completion
+
 func (o *AntigravityAuth) OnboardUser(ctx context.Context, accessToken, tierID string) (string, error) {
 	log.Infof("Antigravity: onboarding user with tier: %s", tierID)
 	userAgent := o.nodeUserAgent()

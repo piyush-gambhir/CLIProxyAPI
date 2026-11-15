@@ -18,11 +18,11 @@ import (
 type claudeToResponsesState struct {
 	translatorcommon.ApplyPatchErrorState
 	ApplyPatchCalls map[string]*translatorcommon.ApplyPatchCallState
-	// ToolSearch is upstream.claude.tool-search as pinned for this response.
+
 	ToolSearch bool
-	// RequestEcho holds the request fields echoed into the completed
-	// response, extracted once in the constructor so the request body
-	// itself is neither retained nor re-scanned per chunk.
+
+
+
 	RequestEcho             responsesRequestEcho
 	ToolWinners             map[string]responsesToolDescriptor
 	ToolNames               claudeToolNames
@@ -44,21 +44,21 @@ type claudeToResponsesState struct {
 	MessageOpen             bool
 	ContentPartOpen         bool
 	MessageOutputIndex      int
-	FuncArgsBuf             map[int]*strings.Builder // index -> args
+	FuncArgsBuf             map[int]*strings.Builder
 	FuncArgsDone            map[int]bool
 	FuncItemDone            map[int]bool
 	FuncItemStatus          map[int]string
-	// function call bookkeeping for output aggregation
-	FuncNames         map[int]string // Claude block index -> function name
-	FuncCallIDs       map[int]string // Claude block index -> call id
-	FuncCustom        map[int]bool   // Claude block index -> freeform custom tool
-	FuncOutputIndices map[int]int    // Claude block index -> Responses output index
-	// message text aggregation
+
+	FuncNames         map[int]string
+	FuncCallIDs       map[int]string
+	FuncCustom        map[int]bool
+	FuncOutputIndices map[int]int
+
 	TextBuf            strings.Builder
 	CurrentTextBuf     strings.Builder
 	MessageAnnotations []any
 	MessageItems       []claudeResponsesMessageItem
-	// reasoning state
+
 	ReasoningActive     bool
 	ReasoningDeltasDone bool
 	ReasoningItemID     string
@@ -66,15 +66,15 @@ type claudeToResponsesState struct {
 	ReasoningSignature  string
 	ReasoningIndex      int
 	ReasoningItems      []claudeResponsesReasoningItem
-	// server-side web search state: a Claude server_tool_use block and its
-	// web_search_tool_result block fold into one Responses web_search_call item.
+
+
 	WebSearchByBlock  map[int]*claudeResponsesWebSearchItem
 	WebSearchByToolID map[string]*claudeResponsesWebSearchItem
 	WebSearchItems    []*claudeResponsesWebSearchItem
 	StopReason        string
 	FallbackModel     string
 	Fallbacks         translatorcommon.ClaudeFallbackChain
-	// usage aggregation
+
 	Usage claudeResponsesUsageTokens
 }
 
@@ -117,20 +117,20 @@ type claudeResponsesUsageTokens struct {
 
 var dataTag = []byte("data:")
 
-// ClaudeResponsesRedactedThinkingPrefix marks a Responses reasoning item whose
-// encrypted_content carries an Anthropic redacted_thinking payload instead of a
-// thinking signature. Responses has no redacted reasoning item type, and
-// Anthropic requires redacted_thinking blocks to be replayed verbatim, so the
-// payload rides in encrypted_content behind this marker and is restored on the
-// way back. The marker is not a valid signature for any provider, so a foreign
-// upstream drops the block instead of replaying an unusable value.
+
+
+
+
+
+
+
 const ClaudeResponsesRedactedThinkingPrefix = "claude-redacted-thinking:"
 
-// claudeReasoningCarrier returns the encrypted_content value for the Responses
-// reasoning item that mirrors a Claude thinking or redacted_thinking block.
-// Streaming thinking blocks usually announce an empty signature and fill it in
-// through signature_delta, so an empty result here is expected and later
-// replaced.
+
+
+
+
+
 func claudeReasoningCarrier(contentBlock ojson.Result) string {
 	if contentBlock.Get("type").String() == "redacted_thinking" {
 		if data := contentBlock.Get("data"); data.Exists() && data.String() != "" {
@@ -176,26 +176,26 @@ func claudeResponsesIncompleteDetails(stopReason string) ([]byte, bool) {
 	case "max_tokens", "model_context_window_exceeded":
 		return []byte(`{"reason":"max_output_tokens"}`), true
 	case "refusal":
-		// Safety classifiers stop the turn with a normal 200. Responses clients
-		// treat content_filter as a retryable refusal instead of a finished answer:
-		// https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons#refusal
+
+
+
 		return []byte(`{"reason":"content_filter"}`), true
 	}
 	return nil, false
 }
 
-// claudeStopReasonPauseTurn reports Anthropic's server-tool iteration pause.
-// The turn is unfinished but valid: the client continues it by sending the
-// paused assistant content back unchanged, so Responses ends the response as
-// completed with end_turn=false instead of an error:
-// https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons#pause_turn
+
+
+
+
+
 func claudeStopReasonPauseTurn(stopReason string) bool {
 	return strings.EqualFold(strings.TrimSpace(stopReason), "pause_turn")
 }
 
-// claudeResponsesWebSearchStatus keeps a paused or tool_use-deferred search
-// that never received its result in_progress, so the next request can send it
-// back without a result.
+
+
+
 func claudeResponsesWebSearchStatus(stopReason, status string, hasResults bool) string {
 	if !hasResults && (claudeStopReasonPauseTurn(stopReason) || strings.EqualFold(strings.TrimSpace(stopReason), "tool_use")) {
 		return "in_progress"
@@ -228,11 +228,11 @@ func pickRequestJSON(originalRequestRawJSON, requestRawJSON []byte) []byte {
 	return nil
 }
 
-// responsesRequestEcho carries the typed values of the Responses request
-// fields echoed into response objects. Extraction walks the top level of
-// the request once; apply writes the fields in the same fixed order and
-// with the same typed conversions as the previous per-field lookups, so
-// the emitted JSON is unchanged.
+
+
+
+
+
 type responsesRequestEcho struct {
 	instructions          string
 	hasInstructions       bool
@@ -429,10 +429,10 @@ func (e responsesRequestEcho) applyDoc(doc *ojson.Doc, prefix string) {
 	}
 }
 
-// applyFunctionCallNamespaceFieldsDoc resolves a function call's (name,
-// namespace) from the winners and tool names built once for this stream,
-// matching splitResponsesQualifiedFunctionCallFromRequest without
-// re-parsing the request on every tool call.
+
+
+
+
 func (st *claudeToResponsesState) applyFunctionCallNamespaceFieldsDoc(doc *ojson.Doc, qualifiedName string, itemPath string) {
 	qualifiedName = strings.TrimSpace(qualifiedName)
 	name, namespace := qualifiedName, ""
@@ -486,8 +486,8 @@ func (st *claudeToResponsesState) functionOutputIndex(blockIndex int) int {
 	return index
 }
 
-// startWebSearch opens the Responses item that stands for a Claude server-side
-// search block.
+
+
 func (st *claudeToResponsesState) startWebSearch(blockIndex int, toolUseID string) *claudeResponsesWebSearchItem {
 	item := &claudeResponsesWebSearchItem{ToolUseID: toolUseID, OutputIndex: st.allocateOutputIndex()}
 	st.WebSearchByBlock[blockIndex] = item
@@ -496,8 +496,8 @@ func (st *claudeToResponsesState) startWebSearch(blockIndex int, toolUseID strin
 	return item
 }
 
-// finalizeWebSearchWithStatus emits output_item.done once the result block has been seen,
-// or at message_stop when the turn ended without one.
+
+
 func (st *claudeToResponsesState) finalizeWebSearchWithStatus(item *claudeResponsesWebSearchItem, status string, nextSeq func() int) [][]byte {
 	if item == nil || item.Emitted {
 		return nil
@@ -511,21 +511,21 @@ func (st *claudeToResponsesState) finalizeWebSearchWithStatus(item *claudeRespon
 	return [][]byte{emitEvent("response.output_item.done", doneDoc.Bytes())}
 }
 
-// isApplyPatch consults the original request's winning declaration, not the
-// sanitized upstream name or a discarded declaration with the same name.
+
+
 func (st *claudeToResponsesState) isApplyPatch(name string) bool {
 	d, ok := st.ToolWinners[st.ToolNames.identity(name)]
 	return ok && d.toolType == "custom" && applypatch.IsCustomTool(d.tool)
 }
 
-// isToolSearch reports whether a Claude tool name maps to the client
-// tool_search declaration.
+
+
 func (st *claudeToResponsesState) isToolSearch(name string) bool {
 	return st.ToolWinners[st.ToolNames.identity(name)].clientSearch
 }
 
-// validateApplyPatchSnapshots permits equivalent JSON spellings but never
-// silently replaces one complete patch input with another.
+
+
 func validateApplyPatchSnapshots(previous, current string) error {
 	var call translatorcommon.ApplyPatchCallState
 	if previous != "" {
@@ -537,9 +537,9 @@ func validateApplyPatchSnapshots(previous, current string) error {
 	return errFinishArguments
 }
 
-// finishClaudeApplyPatchArguments treats complete streamed JSON as a complete
-// snapshot, not a prefix that a later snapshot may silently extend. A partial
-// source can still be completed by a consistent full snapshot.
+
+
+
 func finishClaudeApplyPatchArguments(call *translatorcommon.ApplyPatchCallState, arguments, snapshot string) (string, string, error) {
 	if snapshot == "" {
 		return call.FinishArguments(arguments)
@@ -896,7 +896,7 @@ func newClaudeToResponsesState(requestJSON []byte, toolSearch bool) *claudeToRes
 	}
 }
 
-// ConvertClaudeResponseToOpenAIResponses converts Claude SSE to OpenAI Responses SSE events.
+
 func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = newClaudeToResponsesState(pickRequestJSON(originalRequestRawJSON, requestRawJSON), ClientToolSearchEnabledFor(ctx))
@@ -906,7 +906,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 		return nil
 	}
 
-	// Expect `data: {..}` from Claude clients
+
 	if !bytes.HasPrefix(rawJSON, dataTag) {
 		return [][]byte{}
 	}
@@ -922,7 +922,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 		if msg := root.Get("message"); msg.Exists() {
 			st.ResponseID = strings.Clone(msg.Get("id").String())
 			st.CreatedAt = time.Now().Unix()
-			// Reset per-message aggregation state
+
 			st.TextBuf.Reset()
 			st.CurrentTextBuf.Reset()
 			st.MessageAnnotations = nil
@@ -962,7 +962,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			st.FuncOutputIndices = make(map[int]int)
 			st.Usage = claudeResponsesUsageTokens{}
 			st.Usage.Merge(msg.Get("usage"))
-			// response.created
+
 			createdDoc := ojson.NewDocString(`{"type":"response.created","sequence_number":0,"response":{"id":"","object":"response","created_at":0,"status":"in_progress","background":false,"error":null,"output":[]}}`)
 			_ = createdDoc.Set("sequence_number", nextSeq())
 			_ = createdDoc.Set("response.id", st.ResponseID)
@@ -985,7 +985,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				_ = createdDoc.SetRawBytes("response.fallbacks", st.Fallbacks.ArrayBytes())
 			}
 			out = append(out, emitEvent("response.created", createdDoc.Bytes()))
-			// response.in_progress
+
 			inprogDoc := ojson.NewDocString(`{"type":"response.in_progress","sequence_number":0,"response":{"id":"","object":"response","created_at":0,"status":"in_progress","output":[]}}`)
 			_ = inprogDoc.Set("sequence_number", nextSeq())
 			_ = inprogDoc.Set("response.id", st.ResponseID)
@@ -1007,19 +1007,19 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 		idx := int(root.Get("index").Int())
 		typ := cb.Get("type").String()
 
-		// Keep adjacent text blocks in the same assistant message.
+
 		if typ != "text" {
 			out = append(out, st.finalizeAssistantMessage(nextSeq)...)
 		}
-		// Finalize previous reasoning item
+
 		if st.ReasoningActive || st.ReasoningItemID != "" {
 			out = append(out, st.finalizeReasoningItem("completed", nextSeq)...)
 		}
-		// Finalize any previous completed function calls
+
 		for prevIdx := range st.FuncCallIDs {
 			if !st.FuncItemDone[prevIdx] && prevIdx != idx {
-				// Patch calls may interleave; a new block is not a completion
-				// snapshot for a still-open (or not-yet-named) call.
+
+
 				if (st.isApplyPatch(st.FuncNames[prevIdx]) || st.FuncNames[prevIdx] == "") && !st.FuncBlockStopped[prevIdx] {
 					continue
 				}
@@ -1029,7 +1029,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				}
 			}
 		}
-		// Finalize any previous web search items
+
 		for _, item := range st.WebSearchItems {
 			if !item.Emitted && item.Results != nil {
 				out = append(out, st.finalizeWebSearchWithStatus(item, "completed", nextSeq)...)
@@ -1091,7 +1091,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			st.InFuncBlock = true
 			callID, name := strings.Clone(cb.Get("id").String()), strings.Clone(cb.Get("name").String())
 			oldID, oldName := st.FuncCallIDs[idx], st.FuncNames[idx]
-			// Pending identity evidence must survive later matching updates.
+
 			if callID != "" && oldID != "" && callID != oldID {
 				st.FuncIdentityConflicts[idx] = true
 			}
@@ -1101,8 +1101,8 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				}
 			}
 			if !st.FuncItemAdded[idx] {
-				// Keep the block key even before its ID arrives so terminal
-				// validation cannot overlook an unnamed or ID-less call.
+
+
 				if callID != "" || oldID == "" {
 					st.FuncCallIDs[idx] = callID
 				}
@@ -1115,16 +1115,16 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			if st.FuncArgsBuf[idx] == nil {
 				st.FuncArgsBuf[idx] = &strings.Builder{}
 			}
-			// Empty start input is a Claude placeholder, not an arguments fragment.
-			// Retain populated snapshot evidence without fabricating progress.
+
+
 			if input := cb.Get("input"); input.Exists() && (!input.IsObject() || len(input.Map()) > 0) {
-				// Validate without emitting or finishing the live decoder; defer
-				// failures until classification selects the patch bridge.
+
+
 				if errValidateApplyPatchSnapshots := validateApplyPatchSnapshots(st.FuncInputSnapshot[idx], input.Raw); errValidateApplyPatchSnapshots != nil && st.FuncInputSnapshotErrors[idx] == nil {
 					st.FuncInputSnapshotErrors[idx] = errValidateApplyPatchSnapshots
 				}
-				// Item completion does not seal the response. Compare late snapshots
-				// against this call's finished decoder without emitting more input.
+
+
 				if st.FuncItemDone[idx] {
 					if patchCall := st.ApplyPatchCalls[fmt.Sprint(idx)]; patchCall != nil {
 						if _, _, errFinishArguments := patchCall.FinishArguments(input.Raw); errFinishArguments != nil {
@@ -1143,8 +1143,8 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			out = append(out, st.emitPendingFuncArgs(idx, nextSeq)...)
 		} else if typ == "server_tool_use" {
 			if name := cb.Get("name").String(); name != claudeWebSearchToolName {
-				// Reachability guard: only web_search can be enabled on Claude by
-				// this translator, so anything else means a new upstream tool.
+
+
 				log.Debugf("claude->responses: unmapped server_tool_use %q at block %d", name, idx)
 			} else {
 				item := st.startWebSearch(idx, strings.Clone(cb.Get("id").String()))
@@ -1155,16 +1155,16 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				out = append(out, emitEvent("response.output_item.added", addedDoc.Bytes()))
 			}
 		} else if typ == "web_search_tool_result" {
-			// A result block carries its full content up front and has no deltas.
-			// Results are stored here and the item is closed when the next block
-			// starts or at message_stop so the final stop_reason is respected.
+
+
+
 			toolUseID := strings.Clone(cb.Get("tool_use_id").String())
 			if item := st.WebSearchByToolID[toolUseID]; item != nil {
 				item.Results = claudeWebSearchResultsToResponses(cb.Get("content"))
 			} else if toolUseID != "" {
-				// A continuation after pause_turn delivers the result of a search
-				// whose server_tool_use arrived in the previous response. Surface it
-				// under the same id so the client keeps the result in its history.
+
+
+
 				item := st.startWebSearch(idx, toolUseID)
 				item.Results = claudeWebSearchResultsToResponses(cb.Get("content"))
 				addedDoc := ojson.NewDocString(`{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"","type":"web_search_call","status":"in_progress","action":{"type":"search","query":""}}}`)
@@ -1176,7 +1176,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				log.Debugf("claude->responses: web_search_tool_result without matching server_tool_use at block %d", idx)
 			}
 		} else if typ == "thinking" || typ == "redacted_thinking" {
-			// start reasoning item
+
 			st.ReasoningActive = true
 			st.ReasoningDeltasDone = false
 			st.ReasoningIndex = st.allocateOutputIndex()
@@ -1189,7 +1189,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			_ = itemDoc.Set("item.id", st.ReasoningItemID)
 			_ = itemDoc.Set("item.encrypted_content", st.ReasoningSignature)
 			out = append(out, emitEvent("response.output_item.added", itemDoc.Bytes()))
-			// add a summary part placeholder
+
 			partDoc := ojson.NewDocString(`{"type":"response.reasoning_summary_part.added","sequence_number":0,"item_id":"","output_index":0,"summary_index":0,"part":{"type":"summary_text","text":""}}`)
 			_ = partDoc.Set("sequence_number", nextSeq())
 			_ = partDoc.Set("item_id", st.ReasoningItemID)
@@ -1210,7 +1210,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 				_ = msgDoc.Set("output_index", st.messageOutputIndex())
 				_ = msgDoc.Set("delta", t.String())
 				out = append(out, emitEvent("response.output_text.delta", msgDoc.Bytes()))
-				// aggregate text for response.output
+
 				st.TextBuf.WriteString(t.String())
 				st.CurrentTextBuf.WriteString(t.String())
 			}
@@ -1321,7 +1321,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 		if claudeStopReasonPauseTurn(st.StopReason) {
 			_ = completedDoc.Set("response.end_turn", false)
 		}
-		// Inject original request fields into response as per docs/response.completed.json
+
 		st.RequestEcho.applyDoc(completedDoc, "response.")
 		if st.FallbackModel != "" {
 			_ = completedDoc.Set("response.model", st.FallbackModel)
@@ -1331,10 +1331,10 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			_ = completedDoc.SetRawBytes("response.fallbacks", st.Fallbacks.ArrayBytes())
 		}
 
-		// Build response.output from aggregated state
+
 		outputsWrapperDoc := ojson.NewDocString(`{"arr":[]}`)
 		hasOutputs := false
-		// reasoning items
+
 		for _, reasoning := range st.ReasoningItems {
 			status := reasoning.Status
 			if status == "" {
@@ -1350,7 +1350,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			_ = outputsWrapperDoc.SetRawBytes(fmt.Sprintf("arr.%d", reasoning.OutputIndex), itemDoc.Bytes())
 			hasOutputs = true
 		}
-		// assistant message items
+
 		for _, message := range st.MessageItems {
 			itemDoc := ojson.NewDocString(`{"id":"","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":""}],"role":"assistant"}`)
 			_ = itemDoc.Set("id", message.ID)
@@ -1362,7 +1362,7 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			_ = outputsWrapperDoc.SetRawBytes(fmt.Sprintf("arr.%d", message.OutputIndex), itemDoc.Bytes())
 			hasOutputs = true
 		}
-		// web_search_call items
+
 		for _, item := range st.WebSearchItems {
 			status := item.Status
 			if status == "" {
@@ -1372,14 +1372,14 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 			_ = outputsWrapperDoc.SetRawBytes(fmt.Sprintf("arr.%d", item.OutputIndex), item.render())
 			hasOutputs = true
 		}
-		// function_call items (in ascending index order for determinism)
+
 		if len(st.FuncArgsBuf) > 0 {
-			// collect indices
+
 			idxs := make([]int, 0, len(st.FuncArgsBuf))
 			for idx := range st.FuncArgsBuf {
 				idxs = append(idxs, idx)
 			}
-			// simple sort (small N), avoid adding new imports
+
 			for i := 0; i < len(idxs); i++ {
 				for j := i + 1; j < len(idxs); j++ {
 					if idxs[j] < idxs[i] {
@@ -1462,14 +1462,14 @@ func ConvertClaudeResponseToOpenAIResponses(ctx context.Context, modelName strin
 	return noSSEOutput(out)
 }
 
-// ConvertClaudeResponseToOpenAIResponsesNonStream aggregates Claude SSE into a single OpenAI Responses JSON.
+
 func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) []byte {
 	rawJSON, nativeModel := translatorcommon.ClaudeMessagesJSONToSSE(rawJSON)
-	// Aggregate Claude SSE lines into a single OpenAI Responses JSON (non-stream)
-	// We follow the same aggregation logic as the streaming variant but produce
-	// one final object matching docs/out.json structure.
 
-	// Collect SSE data: lines start with "data: "; ignore others
+
+
+
+
 	var chunks [][]byte
 	remaining := rawJSON
 	for len(remaining) > 0 {
@@ -1495,10 +1495,10 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		*param = st
 	}
 
-	// Base OpenAI Responses (non-stream) object
+
 	outDoc := ojson.NewDocString(`{"id":"","object":"response","created_at":0,"status":"completed","background":false,"error":null,"incomplete_details":null,"output":[],"usage":{"input_tokens":0,"input_tokens_details":{"cached_tokens":0},"output_tokens":0,"output_tokens_details":{},"total_tokens":0}}`)
 
-	// Aggregation state
+
 	var (
 		responseID    string
 		createdAt     int64
@@ -1545,11 +1545,11 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		return item
 	}
 
-	// Walk through SSE chunks to fill state
+
 	for _, ch := range chunks {
 		root := util.ParseGJSONBytesNoCopy(ch)
 		ev := root.Get("type").String()
-		// Match the streaming path: no input after the protocol terminator.
+
 		if ev == "message_stop" {
 			break
 		}
@@ -1669,8 +1669,8 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 				item.id = responsesWebSearchCallID(toolUseID)
 				item.callID = toolUseID
 				webSearchByToolID[toolUseID] = item
-				// Streaming announces an empty input and fills it through
-				// input_json_delta; only seed when the query is already present.
+
+
 				if input := cb.Get("input"); input.IsObject() && claudeWebSearchQuery(input.Raw) != "" {
 					item.args.WriteString(input.Raw)
 				}
@@ -1679,8 +1679,8 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 				if item := webSearchByToolID[toolUseID]; item != nil {
 					item.results = claudeWebSearchResultsToResponses(cb.Get("content"))
 				} else if toolUseID != "" {
-					// Continuation after pause_turn: the search started in the
-					// previous response; keep its result under the same id.
+
+
 					item := newOutputItem("web_search_call", idx)
 					item.id = responsesWebSearchCallID(toolUseID)
 					item.callID = toolUseID
@@ -1742,7 +1742,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 			}
 
 		case "content_block_stop":
-			// Output items are finalized after all deltas have been aggregated.
+
 
 		case "message_delta":
 			usage := root.Get("usage")
@@ -1760,7 +1760,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		}
 	}
 
-	// Populate base fields
+
 	_, responseStatus, incompleteDetails := claudeResponsesTerminalState(stopReason)
 	_ = outDoc.Set("id", responseID)
 	_ = outDoc.Set("created_at", createdAt)
@@ -1772,11 +1772,11 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		_ = outDoc.Set("end_turn", false)
 	}
 
-	// Inject request echo fields as top-level (similar to streaming variant)
+
 	st.RequestEcho.applyDoc(outDoc, "")
 
-	// A native response's model is authoritative; otherwise retain request echo
-	// behavior, including the existing SSE path.
+
+
 	if nativeModel != "" {
 		_ = outDoc.Set("model", nativeModel)
 	}
@@ -1788,7 +1788,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		_ = outDoc.SetRawBytes("fallbacks", fallbacks.ArrayBytes())
 	}
 
-	// Build output array in the order of the original content blocks.
+
 	outputs := make([][]byte, 0, len(outputItems))
 	for i, outputItem := range outputItems {
 		itemStatus := "completed"
@@ -1867,7 +1867,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		_ = outDoc.SetRawBytes("output", translatorcommon.JoinRawArray(outputs))
 	}
 
-	// Usage
+
 	inputTokens, outputTokens, totalTokens, cachedTokens := usageTokens.OpenAIResponsesUsage()
 	if inputTokens != 0 {
 		_ = outDoc.Set("usage.input_tokens", inputTokens)
@@ -1888,7 +1888,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 		}
 	}
 	if reasoningLength > 0 {
-		// Rough estimate similar to chat completions
+
 		reasoningTokens := int64(reasoningLength / 4)
 		if reasoningTokens > 0 {
 			_ = outDoc.Set("usage.output_tokens_details.reasoning_tokens", reasoningTokens)
@@ -1898,7 +1898,7 @@ func ConvertClaudeResponseToOpenAIResponsesNonStream(ctx context.Context, modelN
 	return outDoc.Bytes()
 }
 
-// FinalizeToolInput rejects a patch-enabled stream lacking its source terminator.
+
 func (st *claudeToResponsesState) FinalizeToolInput() [][]byte {
 	if st.ToolInputError() != nil || st.CompletedEmitted {
 		return nil

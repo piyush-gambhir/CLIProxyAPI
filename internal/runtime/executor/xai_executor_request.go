@@ -59,13 +59,13 @@ type xaiNamespaceToolRef struct {
 	children     map[string]struct{}
 }
 
-// xaiClientToolKey identifies a client-declared callable tool using the
-// post-restore Responses shape (short name + optional namespace) and the
-// effective upstream tool type after normalizeXAITool (client custom tools are
-// sent as function). Response call types are matched against this effective
-// kind so internal custom_tool_call traces are not exempted merely because a
-// client declared an ordinary function/custom tool with the same short name,
-// while legitimate function_call responses for normalized custom tools are kept.
+
+
+
+
+
+
+
 type xaiClientToolKey struct {
 	namespace string
 	name      string
@@ -146,8 +146,8 @@ func (e *XAIExecutor) prepareResponsesRequestToDoc(ctx context.Context, req clip
 			applyPatch.AddDispatcher(name, ref.namespace)
 		}
 	}
-	// Collect before normalizeXAITools flattens namespace wrappers so keys match
-	// the post-restore (namespace, short-name) shape used by the response filter.
+
+
 	clientDeclaredTools := collectXAIClientDeclaredToolKeysDoc(doc)
 	normalizeXAIToolsWithFoldDoc(doc, shouldFold)
 	promoteXAIAdditionalToolsDoc(doc)
@@ -156,18 +156,18 @@ func (e *XAIExecutor) prepareResponsesRequestToDoc(ctx context.Context, req clip
 		webSearchAlias = xaiResolveClientWebSearchAliasDoc(doc)
 		aliasXAIClientWebSearchFunctionDoc(doc, webSearchAlias, namespaceTools)
 	}
-	// Drop choices that point at tools removed by normalizeXAITools before any
-	// configured x_search injection, so no surviving choice references a deleted tool.
+
+
 	normalizeXAINamespaceToolChoiceWithFoldDoc(doc, shouldFold)
-	// Prune before rewriting hosted tool choices so older models that still
-	// strip the tool do not keep a leftover "required" selection.
+
+
 	pruneXAIOrphanedToolChoiceDoc(doc)
 	normalizeXAIForcedWebSearchToolChoiceDoc(doc)
 	normalizeXAIForcedImageGenerationToolChoiceDoc(doc)
 	normalizeXAIToolChoiceForToolsDoc(doc)
-	// Skip x_search injection when the request was forced to a hosted tool and
-	// the remaining tools list is only that hosted tool. "required" plus extra
-	// tools would let Grok call x_search instead of the forced hosted tool.
+
+
+
 	if e.cfg != nil && e.cfg.XAI.InjectXSearch && !xaiToolChoiceRequiresHostedToolOnlyAnyDoc(doc) {
 		ensureXAINativeXSearchToolDoc(doc)
 	}
@@ -185,8 +185,8 @@ func (e *XAIExecutor) prepareResponsesRequestToDoc(ctx context.Context, req clip
 	normalizeXAIInputReasoningItemsDoc(doc)
 	sanitizeXAIInputEncryptedContentWithOptionsDoc(doc, true)
 	normalizeCodexInstructionsDoc(doc)
-	// stop is supported by Chat Completions but not by xAI's Responses API.
-	// Thinking was handled before payload overrides and must not be revalidated here.
+
+
 	_ = doc.Delete("stop")
 	if xaiBytesMayContainImageRef(body) {
 		normalizeXAIImageRefsDoc(doc)
@@ -257,8 +257,8 @@ func xaiCreds(auth *cliproxyauth.Auth) (token, baseURL string) {
 	return token, baseURL
 }
 
-// xaiUsingAPI reports whether this xAI auth should use the official API path
-// for HTTP chat and media. OAuth defaults to false to use Grok Build.
+
+
 func xaiUsingAPI(auth *cliproxyauth.Auth) bool {
 	if auth == nil {
 		return true
@@ -292,14 +292,14 @@ func xaiUsingAPI(auth *cliproxyauth.Auth) bool {
 	return !strings.EqualFold(xaiMetadataString(auth.Metadata, "auth_kind"), "oauth")
 }
 
-// xaiChatBaseURL returns the base URL for xAI HTTP chat and media (image/video) requests.
-// When auth using_api is true, the official API base URL logic is used. When it
-// is false (including its OAuth default), empty or official default base_url is
-// rewritten to the CLI chat-proxy endpoint; an explicit non-default base_url is
-// still honored.
-// Websocket, compact, and speech intentionally do not use this helper:
-// cli-chat-proxy does not implement /responses/compact (404), websocket
-// upgrades (405), or /tts. Speech uses xaiSpeechRequestURL.
+
+
+
+
+
+
+
+
 func xaiChatBaseURL(auth *cliproxyauth.Auth) string {
 	_, baseURL := xaiCreds(auth)
 	if xaiUsingAPI(auth) {
@@ -314,10 +314,10 @@ func xaiChatBaseURL(auth *cliproxyauth.Auth) string {
 	return xaiauth.CLIChatProxyBaseURL
 }
 
-// xaiCompactBaseURL returns the base URL for xAI /responses/compact requests.
-// Compact must stay on the official API (or an explicit non-CLI-proxy base_url).
-// Reusing xaiChatBaseURL would pin OAuth traffic to cli-chat-proxy, which returns
-// 404 for /responses/compact and then cools down the auth pool as not_found.
+
+
+
+
 func xaiCompactBaseURL(auth *cliproxyauth.Auth) string {
 	_, baseURL := xaiCreds(auth)
 	if baseURL == "" || xaiIsCLIChatProxyBaseURL(baseURL) {
@@ -338,7 +338,7 @@ func xaiIsCLIChatProxyBaseURL(baseURL string) bool {
 	return xaiNormalizeBaseURL(baseURL) == xaiNormalizeBaseURL(xaiauth.CLIChatProxyBaseURL)
 }
 
-// xaiBaseURLSource classifies a resolved xAI base URL for logging.
+
 func xaiBaseURLSource(baseURL string) string {
 	switch {
 	case xaiIsDefaultAPIBaseURL(baseURL):
@@ -350,7 +350,7 @@ func xaiBaseURLSource(baseURL string) string {
 	}
 }
 
-// logXAIResolvedBaseURL emits a console log for the resolved upstream base URL.
+
 func logXAIResolvedBaseURL(ctx context.Context, baseURL string) {
 	helps.LogWithRequestID(ctx).Infof("xai: using base_url=%s source=%s", baseURL, xaiBaseURLSource(baseURL))
 }
@@ -398,12 +398,12 @@ func applyXAICustomHeaders(r *http.Request, auth *cliproxyauth.Auth, clientHeade
 	util.ApplyCustomHeadersFromAttrs(r, attrs, clientHeaders...)
 }
 
-// applyXAIChatHeaders applies standard xAI headers for non-image/video chat
-// requests. When using_api is true or a custom non-CLI-proxy base URL is used,
-// this matches the standard applyXAIHeaders behavior (forwarding the downstream
-// User-Agent or falling back to the Grok workspace User-Agent). CLI chat-proxy
-// identity headers are only attached when using_api is false and the resolved
-// chat base URL is the official CLI chat-proxy endpoint.
+
+
+
+
+
+
 func applyXAIChatHeaders(r *http.Request, auth *cliproxyauth.Auth, token string, stream bool, sessionID string, clientHeaders ...http.Header) {
 	if xaiUsingAPI(auth) || !xaiIsCLIChatProxyBaseURL(xaiChatBaseURL(auth)) {
 		applyXAIHeaders(r, auth, token, stream, sessionID, clientHeaders...)
@@ -470,14 +470,14 @@ func xaiImageEndpointPath(opts cliproxyexecutor.Options) string {
 	return xaiDefaultImageEndpointPath
 }
 
-// normalizeXAIImageRefs rewrites OpenAI-style image object fields to the xAI
-// image API shape before the payload is sent upstream:
-//
-//	{"image":{"image_url":"https://..."}} → {"image":{"url":"https://..."}}
-//
-// Applies to image / images / reference_images anywhere in the JSON tree,
-// including nested objects and array items. Does not rewrite chat content
-// parts shaped as {"type":"image_url","image_url":{...}}.
+
+
+
+
+
+
+
+
 func xaiBytesMayContainImageRef(b []byte) bool {
 	return bytes.Contains(b, []byte(`"image"`)) ||
 		bytes.Contains(b, []byte(`"images"`)) ||
@@ -1136,8 +1136,8 @@ func xaiIsSpeechRequest(opts cliproxyexecutor.Options) bool {
 	return opts.SourceFormat.String() == xaiSpeechHandlerType
 }
 
-// xaiSpeechRequestURL stays on the official API. cli-chat-proxy does not implement /tts,
-// and a 404 there would cool the OAuth auth down as not_found.
+
+
 func xaiSpeechRequestURL(auth *cliproxyauth.Auth) string {
 	return strings.TrimSuffix(xaiCompactBaseURL(auth), "/") + xaiTTSPath
 }
@@ -1219,9 +1219,9 @@ func preserveXAIResponsesOutputControlsDoc(doc *ojson.Doc, source []byte, from s
 	return changed
 }
 
-// xaiGrokImageGenerationMinVersion is the first Grok line that accepts xAI's
-// native Responses image_generation tool. Older conversation models still
-// reject that hosted type, so the executor keeps stripping it there.
+
+
+
 var xaiGrokImageGenerationMinVersion = xaiGrokVersion{major: 4, minor: 6}
 
 type xaiGrokVersion struct {
@@ -1229,9 +1229,9 @@ type xaiGrokVersion struct {
 	minor int
 }
 
-// xaiSupportsNativeImageGeneration reports whether the Grok model accepts
-// xAI's native Responses image_generation tool. grok-4.20-* is an older
-// product line whose dotted minor is not comparable to grok-4.6.
+
+
+
 func xaiSupportsNativeImageGeneration(model string) bool {
 	name := strings.ToLower(strings.TrimSpace(thinking.ParseSuffix(model).ModelName))
 	if idx := strings.LastIndex(name, "/"); idx >= 0 {
@@ -1304,12 +1304,12 @@ func xaiCompareGrokVersion(a, b xaiGrokVersion) int {
 	return 0
 }
 
-// ensureXAINativeXSearchTool appends {"type":"x_search"} when the final tools
-// list does not already include native X Search. When tool_choice restricts the
-// model to allowed_tools, x_search is also added there (without duplicates) so
-// Grok can select the injected tool. When injection is enabled, HTTP and websocket
-// executors both prepare payloads through prepareResponsesRequestTo, so this runs
-// once before the body is submitted upstream.
+
+
+
+
+
+
 func ensureXAINativeXSearchTool(body []byte) []byte {
 	if !ojson.ValidBytes(body) {
 		return body
@@ -1344,8 +1344,8 @@ func ensureXAINativeXSearchToolDoc(doc *ojson.Doc) bool {
 	return changed
 }
 
-// ensureXAINativeXSearchAllowedTools appends x_search to tool_choice.tools when
-// the choice mode is allowed_tools and x_search is not already listed.
+
+
 func ensureXAINativeXSearchAllowedTools(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !ensureXAINativeXSearchAllowedToolsDoc(doc) {
@@ -1374,8 +1374,8 @@ func ensureXAINativeXSearchAllowedToolsDoc(doc *ojson.Doc) bool {
 	return doc.SetRawBytes("tool_choice.tools.-1", xaiXSearchToolJSON) == nil
 }
 
-// xaiHasClientWebSearchFunction reports whether body declares a client function
-// or custom tool named "web_search" (without namespace), excluding folded namespace dispatchers.
+
+
 func xaiHasClientWebSearchFunction(body []byte, namespaceTools map[string]xaiNamespaceToolRef) bool {
 	if !ojson.ValidBytes(body) {
 		return false
@@ -1407,7 +1407,7 @@ func xaiHasClientWebSearchFunctionResult(tools ojson.Result, namespaceTools map[
 	return false
 }
 
-// xaiBodyHasToolNamed reports whether any tool in tools or input has the given name.
+
 func xaiBodyHasToolNamed(body []byte, name string) bool {
 	return xaiToolsOrInputHaveToolNamed(ojson.GetBytesNoCopy(body, "tools"), ojson.GetBytesNoCopy(body, "input"), name)
 }
@@ -1444,8 +1444,8 @@ func xaiToolsOrInputHaveToolNamed(tools, input ojson.Result, name string) bool {
 	return false
 }
 
-// xaiResolveClientWebSearchAlias picks a candidate alias that does not collide
-// with any client tool already present in the request.
+
+
 func xaiResolveClientWebSearchAlias(body []byte) string {
 	candidate := xaiClientWebSearchAlias
 	if !xaiBodyHasToolNamed(body, candidate) {
@@ -1472,8 +1472,8 @@ func xaiResolveClientWebSearchAliasDoc(doc *ojson.Doc) string {
 	}
 }
 
-// aliasXAIClientWebSearchInput renames client-declared function calls named
-// "web_search" to alias in replayed input history.
+
+
 func aliasXAIClientWebSearchInput(body []byte, alias string, namespaceTools map[string]xaiNamespaceToolRef) []byte {
 	if !ojson.ValidBytes(body) || alias == "" {
 		return body
@@ -1511,10 +1511,10 @@ func aliasXAIClientWebSearchInputDoc(doc *ojson.Doc, alias string, namespaceTool
 	return changed
 }
 
-// aliasXAIClientWebSearchFunction renames client-declared function tools named
-// "web_search" to a non-colliding alias in tools declarations, tool_choice,
-// and replayed input history to prevent xAI from hijacking them into hosted
-// server-side search. Namespace dispatcher tools named "web_search" are untouched.
+
+
+
+
 func aliasXAIClientWebSearchFunction(body []byte, alias string, namespaceTools map[string]xaiNamespaceToolRef) []byte {
 	if !ojson.ValidBytes(body) || alias == "" {
 		return body
@@ -1531,7 +1531,7 @@ func aliasXAIClientWebSearchFunctionDoc(doc *ojson.Doc, alias string, namespaceT
 		return false
 	}
 	changed := false
-	// 1. Alias in tools (excluding namespace dispatchers)
+
 	tools := doc.Get("tools")
 	if tools.IsArray() {
 		for idx, tool := range tools.Array() {
@@ -1548,7 +1548,7 @@ func aliasXAIClientWebSearchFunctionDoc(doc *ojson.Doc, alias string, namespaceT
 		}
 	}
 
-	// 2. Alias in tool_choice (only when unnamespaced and not a namespace dispatcher)
+
 	choice := doc.Get("tool_choice")
 	if choice.IsObject() {
 		if fnName := choice.Get("function.name"); fnName.Exists() && strings.TrimSpace(fnName.String()) == xaiWebSearchToolType {
@@ -1595,15 +1595,15 @@ func aliasXAIClientWebSearchFunctionDoc(doc *ojson.Doc, alias string, namespaceT
 		}
 	}
 
-	// 3. Alias in input (conversation history, only when unnamespaced)
+
 	if aliasXAIClientWebSearchInputDoc(doc, alias, namespaceTools) {
 		changed = true
 	}
 	return changed
 }
 
-// normalizeXAIForcedWebSearchToolChoice rewrites web_search choices into a
-// ModelToolChoice variant accepted by xAI chat-proxy.
+
+
 func normalizeXAIForcedWebSearchToolChoice(body []byte) []byte {
 	return normalizeXAIForcedHostedToolChoice(body, xaiWebSearchToolType)
 }
@@ -1612,8 +1612,8 @@ func normalizeXAIForcedWebSearchToolChoiceDoc(doc *ojson.Doc) bool {
 	return normalizeXAIForcedHostedToolChoiceDoc(doc, xaiWebSearchToolType)
 }
 
-// normalizeXAIForcedImageGenerationToolChoice rewrites image_generation choices
-// into a ModelToolChoice variant accepted by xAI chat-proxy.
+
+
 func normalizeXAIForcedImageGenerationToolChoice(body []byte) []byte {
 	return normalizeXAIForcedHostedToolChoice(body, xaiImageGenerationToolType)
 }
@@ -1622,14 +1622,14 @@ func normalizeXAIForcedImageGenerationToolChoiceDoc(doc *ojson.Doc) bool {
 	return normalizeXAIForcedHostedToolChoiceDoc(doc, xaiImageGenerationToolType)
 }
 
-// normalizeXAIForcedHostedToolChoice rewrites choices for a hosted tool (web_search
-// or image_generation) into a ModelToolChoice variant accepted by xAI chat-proxy.
-// `{type: <toolType>}` becomes the string "required" and the tools list is reduced
-// to that hosted tool so later x_search injection cannot broaden the restriction.
-// An allowed_tools list that only names that hosted tool becomes the original mode
-// ("auto" or "required") and is likewise reduced to that hosted tool. Mixed lists
-// drop the hosted tool entry so the remaining hosted/function choices can still
-// deserialize.
+
+
+
+
+
+
+
+
 func normalizeXAIForcedHostedToolChoice(body []byte, toolType string) []byte {
 	doc := ojson.NewDoc(body)
 	if !normalizeXAIForcedHostedToolChoiceDoc(doc, toolType) {
@@ -1771,10 +1771,10 @@ func xaiSetToolChoiceString(body []byte, value string) []byte {
 	return updated
 }
 
-// pruneXAIOrphanedToolChoice removes tool_choice entries that no longer match
-// any remaining tool after normalizeXAITools filtering. Forced choices that
-// reference a deleted tool are dropped entirely; allowed_tools lists keep only
-// choices that still resolve against the post-normalization tools set.
+
+
+
+
 func pruneXAIOrphanedToolChoice(body []byte) []byte {
 	if !ojson.ValidBytes(body) {
 		return body
@@ -1796,7 +1796,7 @@ func pruneXAIOrphanedToolChoiceDoc(doc *ojson.Doc) bool {
 	}
 	available := collectXAIAvailableToolChoiceKeysDoc(doc)
 	if choice.Type == ojson.String {
-		// auto / none / required are not tool references.
+
 		return false
 	}
 	if !choice.IsObject() {
@@ -1852,9 +1852,9 @@ func pruneXAIAllowedToolsChoiceDoc(doc *ojson.Doc, available map[xaiToolChoiceKe
 	return doc.SetRawBytes("tool_choice.tools", helps.JoinRawJSONArray(filtered)) == nil
 }
 
-// xaiToolChoiceKey identifies a selectable tool the way xAI tool_choice entries
-// reference it after namespace qualification: type alone for host tools, or
-// type+name for function tools.
+
+
+
 type xaiToolChoiceKey struct {
 	toolType string
 	name     string
@@ -1946,7 +1946,7 @@ func xaiCountFlattenedToolsWithSeen(tools ojson.Result, seenFunctionNames map[st
 				count++
 			}
 		case xaiToolSearchType:
-			// Tool search is stripped by normalizeXAITool
+
 		case xaiFunctionToolType, xaiCustomToolType:
 			name := strings.TrimSpace(tool.Get("name").String())
 			if name != "" && seenFunctionNames != nil {
@@ -2338,9 +2338,9 @@ func clampXAIToolsLimitDoc(doc *ojson.Doc, maxTools int, refs map[string]xaiName
 	return true
 }
 
-// xaiDeduplicatedToolName returns the unique name key for tool declarations that
-// must not repeat in the final xAI tools list (functions, custom tools, and
-// namespace dispatchers). Hosted tools without a function name return "".
+
+
+
 func xaiDeduplicatedToolName(tool ojson.Result) string {
 	switch strings.TrimSpace(tool.Get("type").String()) {
 	case xaiFunctionToolType, xaiCustomToolType, xaiNamespaceToolType:
@@ -2350,10 +2350,10 @@ func xaiDeduplicatedToolName(tool ojson.Result) string {
 	}
 }
 
-// promoteXAIAdditionalTools moves Responses Lite tool declarations to the
-// top-level tools array because xAI does not accept additional_tools input items.
-// Declarations are deduplicated by tool name with first-wins precedence so
-// top-level tools remain authoritative over historical additional_tools copies.
+
+
+
+
 func promoteXAIAdditionalTools(body []byte) []byte {
 	if !ojson.ValidBytes(body) {
 		return body
@@ -2499,10 +2499,10 @@ func normalizeXAIToolArrayWithNamespaces(tools ojson.Result, keepImageGeneration
 	return helps.JoinRawJSONArray(filtered), true, true
 }
 
-// normalizeXAIToolChoiceForTools drops tool_choice and parallel_tool_calls
-// when tools are absent or empty (including after normalizeXAITools filtering).
-// xAI rejects payloads that include tool_choice without any tools defined.
-// Existence checks avoid unnecessary sjson parse/copy passes.
+
+
+
+
 func normalizeXAIToolChoiceForTools(body []byte) []byte {
 	doc := ojson.NewDoc(body)
 	if !normalizeXAIToolChoiceForToolsDoc(doc) {
@@ -2551,9 +2551,9 @@ func normalizeXAIToolChoiceForToolsDoc(doc *ojson.Doc) bool {
 	return changed
 }
 
-// normalizeXAINamespaceToolChoice qualifies namespaced function choices using
-// the same names sent in the flattened tools list. xAI does not accept the
-// Responses namespace field on tool choices.
+
+
+
 func normalizeXAINamespaceToolChoice(body []byte) []byte {
 	return normalizeXAINamespaceToolChoiceWithFold(body, xaiShouldFoldNamespaceTools(body, false))
 }
@@ -2635,13 +2635,13 @@ func normalizeXAINamespaceToolChoiceWithFoldDoc(doc *ojson.Doc, shouldFold bool)
 	return true
 }
 
-// xaiUnsupportedWebSearchFields are OpenAI Responses web_search options that the
-// xAI Responses API rejects with "Argument not supported". Options xAI accepts,
-// such as filters, user_location and search_content_types, are forwarded as is.
+
+
+
 var xaiUnsupportedWebSearchFields = [...]string{"external_web_access", "search_context_size"}
 
-// stripUnsupportedXAIWebSearchFields removes web_search options that xAI rejects
-// and reports which ones were removed.
+
+
 func stripUnsupportedXAIWebSearchFields(raw []byte) ([]byte, []string, bool) {
 	doc := ojson.NewDoc(raw)
 	removed, ok := stripUnsupportedXAIWebSearchFieldsDoc(doc)
@@ -2744,8 +2744,8 @@ func normalizeXAITool(tool ojson.Result, namespaceName string, keepImageGenerati
 		}
 		changed = true
 	}
-	// Simplify the Codex Desktop automation schema and root unions that xAI
-	// rejects because function parameters must resolve exclusively to objects.
+
+
 	if toolType == xaiFunctionToolType && xaiFunctionParametersNeedSimplificationFields(tool.Get("type").String(), getField("name").String(), getField("parameters"), namespaceName) {
 		td := ensureToolDoc()
 		if errSet := td.SetRawBytes("parameters", []byte(xaiSafeFunctionParameters)); errSet != nil {

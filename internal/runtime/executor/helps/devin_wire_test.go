@@ -39,14 +39,14 @@ func TestGenerateDevinDeviceFingerprint(t *testing.T) {
 	if len(fp1) != DevinFingerprintHexLen {
 		t.Fatalf("fp1 len = %d, want %d", len(fp1), DevinFingerprintHexLen)
 	}
-	// Check hex characters
+
 	for _, c := range fp1 {
 		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
 			t.Fatalf("invalid hex char in fingerprint: %c", c)
 		}
 	}
 
-	// Deterministic seed produces deterministic fingerprint
+
 	fp2 := GenerateDevinDeviceFingerprint("seed-1")
 	if fp1 != fp2 {
 		t.Fatalf("fingerprints for same seed do not match: %s != %s", fp1, fp2)
@@ -101,7 +101,7 @@ func TestBuildDevinGetChatMessageRequest(t *testing.T) {
 		t.Fatal("encoded request is empty")
 	}
 
-	// Envelope check
+
 	framed := WrapConnectEnvelope(req)
 	flag, readPayload, err := ReadConnectFrame(bytes.NewReader(framed))
 	if err != nil {
@@ -128,13 +128,13 @@ func TestBuildDevinGetChatMessageRequest_SensitiveWordsOnlyInSystemPrompt(t *tes
 			},
 		},
 	}
-	// Sensitive word in system prompt MUST be obfuscated
+
 	reqWithSys := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "System prompt containing SECRET_TOKEN", prompts, nil, nil, 100, "s", "c", matcher)
 	if bytes.Contains(reqWithSys, []byte("System prompt containing SECRET_TOKEN")) {
 		t.Fatalf("expected SECRET_TOKEN in system prompt to be obfuscated")
 	}
 
-	// Tool call arguments and history prompt content MUST NOT be obfuscated
+
 	if !bytes.Contains(reqWithSys, []byte(`{"key":"SECRET_TOKEN"}`)) {
 		t.Fatalf("tool call arguments should preserve original raw text without obfuscation")
 	}
@@ -226,7 +226,7 @@ func TestBuildDevinGetChatMessageRequest_WithImages(t *testing.T) {
 		t.Fatal("encoded request with images is empty")
 	}
 
-	// Verify that the payload contains the image base64 data and mime type
+
 	if !bytes.Contains(req, []byte("iVBORw0KGgoAAAANSUhEUgAA...")) {
 		t.Error("encoded payload missing image base64 data")
 	}
@@ -236,8 +236,8 @@ func TestBuildDevinGetChatMessageRequest_WithImages(t *testing.T) {
 }
 
 func TestParseDevinFrame(t *testing.T) {
-	// Synthesize a response frame containing:
-	// #1 output_id, #3 delta_text, #9 delta_thinking, #10 delta_signature, #21 delta_signature_type
+
+
 	var payload []byte
 	payload = appendFieldBytes(payload, 1, []byte("bot-uuid-123"))
 	payload = appendFieldBytes(payload, 3, []byte("Hello world"))
@@ -325,7 +325,7 @@ func TestParseDevinTrailerError(t *testing.T) {
 		t.Errorf("status code = %d, want 504 for deadline_exceeded", code)
 	}
 
-	// Case: transient high-demand capacity error encoded as permission_denied → 429
+
 	highDemandJSON := []byte(`{"error":{"code":"permission_denied","message":"The model is currently in high demand, please try again later (trace ID: 00000000000000000000000000000000)"}}`)
 	code, err = ParseDevinTrailerError(highDemandJSON)
 	if err == nil {
@@ -335,7 +335,7 @@ func TestParseDevinTrailerError(t *testing.T) {
 		t.Errorf("status code = %d, want 429 for transient high-demand permission_denied", code)
 	}
 
-	// Case: genuine permission error remains 403
+
 	genuinePermJSON := []byte(`{"error":{"code":"permission_denied","message":"model access is not allowed for this account"}}`)
 	code, err = ParseDevinTrailerError(genuinePermJSON)
 	if err == nil {
@@ -345,7 +345,7 @@ func TestParseDevinTrailerError(t *testing.T) {
 		t.Errorf("status code = %d, want 403 for genuine permission_denied", code)
 	}
 
-	// Case: resource_exhausted remains 429 (unchanged behavior)
+
 	resourceExhaustedJSON := []byte(`{"error":{"code":"resource_exhausted","message":"rate limit exceeded"}}`)
 	code, err = ParseDevinTrailerError(resourceExhaustedJSON)
 	if err == nil {
@@ -355,7 +355,7 @@ func TestParseDevinTrailerError(t *testing.T) {
 		t.Errorf("status code = %d, want 429 for resource_exhausted", code)
 	}
 
-	// Case: high-demand matching is case-insensitive
+
 	highDemandLowerJSON := []byte(`{"error":{"code":"permission_denied","message":"HIGH DEMAND: please retry"}}`)
 	code, err = ParseDevinTrailerError(highDemandLowerJSON)
 	if code != 429 {
@@ -365,10 +365,10 @@ func TestParseDevinTrailerError(t *testing.T) {
 
 func TestUTF8SplitBuffer(t *testing.T) {
 	buf := &UTF8SplitBuffer{}
-	// Multi-byte UTF-8 test: \xe4\xbd\xa0 \xe5\xa5\xbd (3 bytes each)
-	chunk1 := []byte{0xe4, 0xbd}       // first 2 bytes of char 1
-	chunk2 := []byte{0xa0, 0xe5, 0xa5} // last 1 byte of char 1, first 2 bytes of char 2
-	chunk3 := []byte{0xbd}             // last 1 byte of char 2
+
+	chunk1 := []byte{0xe4, 0xbd}
+	chunk2 := []byte{0xa0, 0xe5, 0xa5}
+	chunk3 := []byte{0xbd}
 
 	s1 := buf.Feed(chunk1)
 	if s1 != "" {
@@ -429,7 +429,7 @@ func TestBuildDevinUpstreamLogBody(t *testing.T) {
 	}
 	temp := 0.5
 
-	// Case 1: from non-interactions source format (e.g. OpenAI chat completions)
+
 	logBody := BuildDevinUpstreamLogBody(
 		interactions,
 		false,
@@ -463,7 +463,7 @@ func TestBuildDevinUpstreamLogBody(t *testing.T) {
 		t.Errorf("expected body to contain tool get_weather")
 	}
 
-	// Case 2: direct interactions source
+
 	logBodyDirect := BuildDevinUpstreamLogBody(
 		interactions,
 		true,
@@ -510,7 +510,7 @@ func TestBuildDevinGetChatMessageRequest_Field15TurnIndex(t *testing.T) {
 	sessID0 := "sess-turn0-" + uuid.New().String()
 	defer ResetDevinSessionTurnIndex(sessID0)
 
-	// 1. Turn 0 with user prompt: turnIndex=0 (omitted), 15.4=14 emitted on user boundary
+
 	promptsTurn0 := []DevinPrompt{
 		{MessageID: "u1", Source: 1, Content: "hello"},
 	}
@@ -532,7 +532,7 @@ func TestBuildDevinGetChatMessageRequest_Field15TurnIndex(t *testing.T) {
 	sessIDTool := "sess-tool-" + uuid.New().String()
 	defer ResetDevinSessionTurnIndex(sessIDTool)
 
-	// 2. Tool-result continuation (source=4): 15.4 should be omitted
+
 	promptsTool := []DevinPrompt{
 		{MessageID: "u1", Source: 1, Content: "read file"},
 		{MessageID: "a1", Source: 2, Content: "calling tool"},
@@ -553,21 +553,21 @@ func TestBuildDevinGetChatMessageRequest_Field15SequentialCounter(t *testing.T) 
 		{MessageID: "u1", Source: 1, Content: "hi"},
 	}
 
-	// Request 1: fresh session -> turnIndex 0 (omitted from wire)
+
 	req1 := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "", prompts, nil, nil, 1000, sessionID, "casc-1", nil)
 	_, sub1 := extractField15Subfields(t, req1)
 	if _, hasF2 := sub1[2]; hasF2 {
 		t.Errorf("Request 1 in fresh session should omit 15.2, got %v", sub1[2])
 	}
 
-	// Request 2: turnIndex 1
+
 	req2 := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "", prompts, nil, nil, 1000, sessionID, "casc-1", nil)
 	_, sub2 := extractField15Subfields(t, req2)
 	if sub2[2] != 1 {
 		t.Errorf("Request 2 should have 15.2 = 1, got %v", sub2[2])
 	}
 
-	// Request 3: turnIndex 2
+
 	req3 := BuildDevinGetChatMessageRequest("tok", "seed", "swe-2-high", "", prompts, nil, nil, 1000, sessionID, "casc-1", nil)
 	_, sub3 := extractField15Subfields(t, req3)
 	if sub3[2] != 2 {
@@ -588,7 +588,7 @@ func TestGenerateDevinDeviceFingerprint_RandomWhenEmptySeed(t *testing.T) {
 		t.Fatalf("fingerprints without explicit seed must be unique per call: %q == %q", fp1, fp2)
 	}
 
-	// With explicit seed, it must be deterministic
+
 	seeded1 := GenerateDevinDeviceFingerprint("my-stable-seed")
 	seeded2 := GenerateDevinDeviceFingerprint("my-stable-seed")
 	if seeded1 != seeded2 {
@@ -677,7 +677,7 @@ func TestParseDevinUsageField_HeadersAndField4(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 6, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 66)
 
-	// Submessage 1: openai-version
+
 	var h1 []byte
 	h1 = protowire.AppendTag(h1, 1, protowire.BytesType)
 	h1 = protowire.AppendString(h1, "openai-version")
@@ -686,7 +686,7 @@ func TestParseDevinUsageField_HeadersAndField4(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 8, protowire.BytesType)
 	f7Bytes = protowire.AppendBytes(f7Bytes, h1)
 
-	// Submessage 2: x-request-id
+
 	var h2 []byte
 	h2 = protowire.AppendTag(h2, 1, protowire.BytesType)
 	h2 = protowire.AppendString(h2, "x-request-id")
@@ -695,7 +695,7 @@ func TestParseDevinUsageField_HeadersAndField4(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 8, protowire.BytesType)
 	f7Bytes = protowire.AppendBytes(f7Bytes, h2)
 
-	// Submessage 3: openai-processing-ms
+
 	var h3 []byte
 	h3 = protowire.AppendTag(h3, 1, protowire.BytesType)
 	h3 = protowire.AppendString(h3, "openai-processing-ms")
@@ -752,7 +752,7 @@ func TestParseDevinUsageField_AnthropicRequestId(t *testing.T) {
 	f7Bytes = protowire.AppendTag(f7Bytes, 5, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 577)
 
-	// Anthropic uses capitalized "Request-Id"
+
 	var h []byte
 	h = protowire.AppendTag(h, 1, protowire.BytesType)
 	h = protowire.AppendString(h, "Request-Id")
@@ -781,12 +781,12 @@ func TestParseDevinUsageField_AnthropicRequestId(t *testing.T) {
 
 func TestParseDevinResponseDimensionGroups(t *testing.T) {
 	buildMetric := func(key string, val float32) []byte {
-		// Dimension submessage (Tag 4 of Metric)
+
 		var dim []byte
 		dim = protowire.AppendTag(dim, 2, protowire.Fixed32Type)
 		dim = protowire.AppendFixed32(dim, math.Float32bits(val))
 
-		// Metric submessage (Tag 2 of Group)
+
 		var metric []byte
 		metric = protowire.AppendTag(metric, 4, protowire.BytesType)
 		metric = protowire.AppendBytes(metric, dim)
@@ -795,7 +795,7 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 		return metric
 	}
 
-	// Build Group (Tag 28)
+
 	var group []byte
 	group = protowire.AppendTag(group, 1, protowire.BytesType)
 	group = protowire.AppendString(group, "Token Usage")
@@ -809,7 +809,7 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 	group = protowire.AppendTag(group, 2, protowire.BytesType)
 	group = protowire.AppendBytes(group, buildMetric("cached_input_tokens", 128.0))
 
-	// Envelope Tag 28
+
 	var root []byte
 	root = protowire.AppendTag(root, 28, protowire.BytesType)
 	root = protowire.AppendBytes(root, group)
@@ -828,13 +828,13 @@ func TestParseDevinResponseDimensionGroups(t *testing.T) {
 		t.Errorf("cachedTokens = %d, want 128", cachedTokens)
 	}
 
-	// Verify inner group directly (as extracted by ParseDevinFrame case 28)
+
 	p2, c2, ca2, found2 := ParseDevinResponseDimensionGroups(group)
 	if !found2 || p2 != 575 || c2 != 5 || ca2 != 128 {
 		t.Errorf("inner group ParseDevinResponseDimensionGroups = (%d,%d,%d,%t), want (575,5,128,true)", p2, c2, ca2, found2)
 	}
 
-	// Verify multi-group where unrelated group precedes Token Usage
+
 	var latencyGroup []byte
 	latencyGroup = protowire.AppendTag(latencyGroup, 1, protowire.BytesType)
 	latencyGroup = protowire.AppendString(latencyGroup, "Latency Metrics")
@@ -957,11 +957,11 @@ func TestRegressionIssue5910_ClientMetadata(t *testing.T) {
 
 func TestRegressionIssue5910_UsageStatsCacheWriteTokens(t *testing.T) {
 	var f7Bytes []byte
-	// Field 2: input_tokens = 3
+
 	f7Bytes = protowire.AppendTag(f7Bytes, 2, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 3)
 
-	// Field 4: cache_write_tokens = 14361
+
 	f7Bytes = protowire.AppendTag(f7Bytes, 4, protowire.VarintType)
 	f7Bytes = protowire.AppendVarint(f7Bytes, 14361)
 
@@ -980,22 +980,22 @@ func TestRegressionIssue5910_UsageStatsCacheWriteTokens(t *testing.T) {
 
 func TestRegressionIssue5910_ToolCallDeltaFields(t *testing.T) {
 	var tcBytes []byte
-	// Field 1: id
+
 	tcBytes = protowire.AppendTag(tcBytes, 1, protowire.BytesType)
 	tcBytes = protowire.AppendString(tcBytes, "call_999")
-	// Field 2: name
+
 	tcBytes = protowire.AppendTag(tcBytes, 2, protowire.BytesType)
 	tcBytes = protowire.AppendString(tcBytes, "custom_bash")
-	// Field 3: arguments
+
 	tcBytes = protowire.AppendTag(tcBytes, 3, protowire.BytesType)
 	tcBytes = protowire.AppendString(tcBytes, `{"cmd":"pwd"}`)
-	// Field 4: invalid_json_str
+
 	tcBytes = protowire.AppendTag(tcBytes, 4, protowire.BytesType)
 	tcBytes = protowire.AppendString(tcBytes, `pwd && ls`)
-	// Field 5: invalid_json_err
+
 	tcBytes = protowire.AppendTag(tcBytes, 5, protowire.BytesType)
 	tcBytes = protowire.AppendString(tcBytes, "syntax error near unexpected token")
-	// Field 6: is_custom_tool_call
+
 	tcBytes = protowire.AppendTag(tcBytes, 6, protowire.VarintType)
 	tcBytes = protowire.AppendVarint(tcBytes, 1)
 

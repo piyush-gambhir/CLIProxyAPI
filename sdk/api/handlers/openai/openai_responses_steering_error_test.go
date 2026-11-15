@@ -22,8 +22,8 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// Exercise both WebSocket endpoints with the real handler, manager and executor.
-// Only a later payload error on an opted-in duplex route is nonterminal.
+
+
 func TestResponsesSteeringErrorRecoveryIntegration(t *testing.T) {
 	for _, tc := range []struct {
 		name                            string
@@ -213,7 +213,7 @@ func TestResponsesWebsocketClosesOnIdleCodexDisconnect(t *testing.T) {
 						return
 					}
 				}
-				// Close only after the client receives the completed response.
+
 				select {
 				case <-closeUpstream:
 				case <-t.Context().Done():
@@ -228,7 +228,7 @@ func TestResponsesWebsocketClosesOnIdleCodexDisconnect(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// Match the SDK flag populated by the server's effectiveSDKConfig.
+
 			cfg.CodexResponseSteering = cfg.Codex.ResponseSteering
 			manager := coreauth.NewManager(nil, nil, nil)
 			manager.SetConfig(cfg)

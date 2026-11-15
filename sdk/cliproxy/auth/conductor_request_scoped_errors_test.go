@@ -162,12 +162,12 @@ func TestRequestScopedErrors_ActionStop(t *testing.T) {
 	if _, okStatus := errExec.(customStatusError); !okStatus {
 		t.Fatalf("Execute() error = %T/%v, want original customStatusError", errExec, errExec)
 	}
-	// Action: stop should return immediately on the first credential and not rotate to auth2.
+
 	if execCount != 1 {
 		t.Fatalf("execCount = %d, want 1 (should stop immediately)", execCount)
 	}
 
-	// Verify auth1 is NOT in cooldown
+
 	a1, ok1 := m.GetByID("auth-claude-1")
 	if !ok1 || a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth1 not to be in cooldown, got unavailable=%v, nextRetry=%v", a1.Unavailable, a1.NextRetryAfter)
@@ -235,12 +235,12 @@ func TestRequestScopedErrors_ActionStopAndCooldown(t *testing.T) {
 	if errExec == nil {
 		t.Fatal("expected error, got nil")
 	}
-	// Action: stop-and-cooldown should return immediately on the first credential and not rotate to auth2.
+
 	if execCount != 1 {
 		t.Fatalf("execCount = %d, want 1 (should stop immediately)", execCount)
 	}
 
-	// Verify auth1 IS in cooldown
+
 	a1, ok1 := m.GetByID("auth-claude-stop-cool")
 	if !ok1 || !a1.Unavailable || a1.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth1 to be in cooldown, got unavailable=%v, nextRetry=%v", a1.Unavailable, a1.NextRetryAfter)
@@ -314,12 +314,12 @@ func TestRequestScopedErrors_ActionContinue(t *testing.T) {
 	if string(resp.Payload) != `{"result":"success"}` {
 		t.Fatalf("unexpected response: %s", string(resp.Payload))
 	}
-	// Action: continue should continue to auth2 and succeed.
+
 	if execCount != 2 {
 		t.Fatalf("execCount = %d, want 2", execCount)
 	}
 
-	// Verify auth1 is NOT in cooldown
+
 	a1, ok1 := m.GetByID("auth-claude-continue-1")
 	if !ok1 || a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth1 not to be in cooldown, got unavailable=%v, nextRetry=%v", a1.Unavailable, a1.NextRetryAfter)
@@ -393,12 +393,12 @@ func TestRequestScopedErrors_ActionContinueAndCooldown(t *testing.T) {
 	if string(resp.Payload) != `{"result":"success"}` {
 		t.Fatalf("unexpected response: %s", string(resp.Payload))
 	}
-	// Action: continue-and-cooldown should continue to auth2 and succeed.
+
 	if execCount != 2 {
 		t.Fatalf("execCount = %d, want 2", execCount)
 	}
 
-	// Verify auth1 IS in cooldown
+
 	a1, ok1 := m.GetByID("auth-claude-continue-cool-1")
 	if !ok1 || !a1.Unavailable || a1.NextRetryAfter.IsZero() {
 		t.Fatalf("expected auth1 to be in cooldown, got unavailable=%v, nextRetry=%v", a1.Unavailable, a1.NextRetryAfter)
@@ -689,7 +689,7 @@ func TestRequestScopedErrors_Stop_StopsOuterRetryOn429(t *testing.T) {
 	if errExec == nil {
 		t.Fatal("expected error, got nil")
 	}
-	// Even though 429 with retry-after would normally retry 3 times, action: stop must stop immediately.
+
 	if execCount != 1 {
 		t.Fatalf("execCount = %d, want 1 (should stop outer retries immediately)", execCount)
 	}
@@ -944,7 +944,7 @@ func TestRequestScopedErrors_NonMatching_FallsBackToDefault(t *testing.T) {
 	exec := &mockCustomErrorExecutor{
 		identifier: "claude",
 		executeFn: func(ctx context.Context, auth *Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
-			// Status 400 with standard request-fault message (unmatched by rule)
+
 			return cliproxyexecutor.Response{}, customStatusError{
 				code: 400,
 				msg:  `{"error": {"message": "Invalid request parameter", "type": "invalid_request_error"}}`,
@@ -958,7 +958,7 @@ func TestRequestScopedErrors_NonMatching_FallsBackToDefault(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	// Unmatched 400 request fault should still use default request fault handling (no cooldown)
+
 	a1, _ := m.GetByID("auth-nomatch-1")
 	if a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatal("expected auth1 not to be in cooldown under default fallback")
@@ -1019,11 +1019,11 @@ func TestRequestScopedErrors_StreamSubsequentChunkError(t *testing.T) {
 
 	for chunk := range streamResult.Chunks {
 		if chunk.Err != nil {
-			// Chunk error encountered
+
 		}
 	}
 
-	// Verify auth1 was put into cooldown via action: stop-and-cooldown applied in wrapStreamResult
+
 	a1, _ := m.GetByID("auth-stream-subsequent-1")
 	if !a1.Unavailable || a1.NextRetryAfter.IsZero() {
 		t.Fatal("expected auth1 to be in cooldown after mid-stream chunk error")
@@ -1081,7 +1081,7 @@ func TestRequestScopedErrors_UnmatchedBootstrapError_PreservesDefault(t *testing
 		t.Fatal("expected error, got nil")
 	}
 
-	// Default request invalid error skips cooldown
+
 	a1, _ := m.GetByID("auth-unmatched-boot-1")
 	if a1.Unavailable || !a1.NextRetryAfter.IsZero() {
 		t.Fatal("expected auth1 not to be cooled down under default fallback for 400 bootstrap error")
@@ -1270,7 +1270,7 @@ func TestRequestScopedErrors_ResponseBodyProvider_MatchesUnderlyingPayload(t *te
 	exec := &mockCustomErrorExecutor{
 		identifier: "claude",
 		executeFn: func(ctx context.Context, auth *Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
-			// Error() returns a generic wrapper text, while ResponseBody() provides the underlying json payload
+
 			return cliproxyexecutor.Response{}, wrappedResponseBodyError{
 				status: 400,
 				msg:    "claude Fast upstream request failed with status 400",

@@ -28,8 +28,8 @@ import (
 
 const (
 	homeCertificateRequestTimeout = 30 * time.Second
-	maxHomeCertificateRESPBulkLen = 1 << 20  // 1 MiB
-	maxHomeCertificateRESPLineLen = 64 << 10 // 64 KiB
+	maxHomeCertificateRESPBulkLen = 1 << 20
+	maxHomeCertificateRESPLineLen = 64 << 10
 )
 
 type homeJWTClaims struct {
@@ -55,7 +55,7 @@ type certificatePaths struct {
 	CACert     string
 }
 
-// ConfigFromJWT prepares a Home config from the JWT and ensures local mTLS files exist.
+
 func ConfigFromJWT(ctx context.Context, rawJWT string) (config.HomeConfig, error) {
 	claims, errClaims := parseHomeJWTClaims(rawJWT)
 	if errClaims != nil {

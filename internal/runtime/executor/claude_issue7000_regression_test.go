@@ -33,7 +33,7 @@ type claudeIssue7000Executor interface {
 	CountTokens(context.Context, *cliproxyauth.Auth, cliproxyexecutor.Request, cliproxyexecutor.Options) (cliproxyexecutor.Response, error)
 }
 
-// Capture only the network boundary; translation and all request preparation stay real.
+
 func captureClaudeIssue7000(t *testing.T, executor claudeIssue7000Executor, auth *cliproxyauth.Auth, request cliproxyexecutor.Request, options cliproxyexecutor.Options, method string) ([]byte, http.Header) {
 	t.Helper()
 	var captured []byte
@@ -264,7 +264,7 @@ func TestClaudeExecutor_Issue7000PayloadRulesRemainFinal(t *testing.T) {
 				name = method + "/filter"
 			}
 			t.Run(name, func(t *testing.T) {
-				// Conditions must see auto and surviving thinking, not the incoming forced choice.
+
 				models := []config.PayloadModelRule{{Name: model, Exist: []string{"thinking"}, Match: []map[string]any{{"tool_choice.type": "auto"}}}}
 				cfg := &config.Config{Payload: config.PayloadConfig{Override: []config.PayloadRule{{Models: models, Params: map[string]any{"tool_choice": map[string]any{"type": "tool", "name": "user_override"}, "observed_builtin": true}}}}}
 				if filter {
@@ -314,7 +314,7 @@ func TestClaudeExecutor_Issue7000LocalCountPayloadRulesRemainFinal(t *testing.T)
 				}
 				return ojson.GetBytes(resp.Payload, "input_tokens").Int()
 			}
-			// The legacy model supplies an independent baseline without 5.5 normalization.
+
 			want := count(NewClaudeExecutor(&config.Config{}), "claude-opus-5", claudeIssue7000Payload("claude-opus-5", controlChoice))
 			if got := count(NewClaudeExecutor(cfg), model, claudeIssue7000Payload("spoofed-body-model", forced)); got != want {
 				t.Errorf("local configured count = %d, want %d after final %s", got, want, name)

@@ -347,13 +347,13 @@ func TestApplyOAuthModelAlias_Devin(t *testing.T) {
 		t.Errorf("applyOAuthModelAlias() model = %q, want %q", resolvedModel, "devin/claude-fable-5-1")
 	}
 
-	// Suffix preservation with Devin thinking effort
+
 	suffixed := mgr.applyOAuthModelAlias(auth, "fable-5-1(max)")
 	if suffixed != "devin/claude-fable-5-1(max)" {
 		t.Errorf("applyOAuthModelAlias() suffixed model = %q, want %q", suffixed, "devin/claude-fable-5-1(max)")
 	}
 
-	// Force mapping result
+
 	result := mgr.applyOAuthModelAliasWithResult(auth, "fable-5-1(max)")
 	if result.UpstreamModel != "devin/claude-fable-5-1(max)" {
 		t.Errorf("UpstreamModel = %q, want %q", result.UpstreamModel, "devin/claude-fable-5-1(max)")
@@ -384,7 +384,7 @@ func TestApplyOAuthModelAlias_Meta(t *testing.T) {
 	mgr.SetConfig(&internalconfig.Config{})
 	mgr.SetOAuthModelAlias(aliases)
 
-	// Meta OAuth credentials mint an LLM API key; aliases must still apply.
+
 	auth := &Auth{
 		ID:       "meta-auth",
 		Provider: "meta",

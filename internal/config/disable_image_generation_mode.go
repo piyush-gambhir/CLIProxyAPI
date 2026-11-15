@@ -9,14 +9,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DisableImageGenerationMode is a four-state config value for disable-image-generation.
-//
-// It supports:
-//   - false: enabled
-//   - true: disabled everywhere (including /v1/images/* endpoints)
-//   - "chat": disabled for all non-images endpoints, but enabled for /v1/images/generations and /v1/images/edits
-//   - "passthrough": never inject and never strip image_generation on non-images endpoints
-//     (the client payload is forwarded unchanged); on /v1/images/* endpoints behave like "chat"
+
+
+
+
+
+
+
+
 type DisableImageGenerationMode int
 
 const (
@@ -90,7 +90,7 @@ func parseDisableImageGenerationNode(value *yaml.Node) (DisableImageGenerationMo
 		return DisableImageGenerationOff, nil
 	}
 
-	// First try a typed bool decode (covers unquoted true/false and YAML 1.1 bools).
+
 	var b bool
 	if err := value.Decode(&b); err == nil && value.Kind == yaml.ScalarNode && value.ShortTag() == "!!bool" {
 		if b {
@@ -99,7 +99,7 @@ func parseDisableImageGenerationNode(value *yaml.Node) (DisableImageGenerationMo
 		return DisableImageGenerationOff, nil
 	}
 
-	// Fall back to string decoding (covers quoted "true"/"false" and "chat").
+
 	var s string
 	if err := value.Decode(&s); err != nil {
 		return DisableImageGenerationOff, fmt.Errorf("invalid disable-image-generation value")
@@ -113,7 +113,7 @@ func parseDisableImageGenerationJSON(data []byte) (DisableImageGenerationMode, e
 		return DisableImageGenerationOff, nil
 	}
 
-	// bool
+
 	var b bool
 	if err := json.Unmarshal(trimmed, &b); err == nil {
 		if b {
@@ -122,7 +122,7 @@ func parseDisableImageGenerationJSON(data []byte) (DisableImageGenerationMode, e
 		return DisableImageGenerationOff, nil
 	}
 
-	// string
+
 	var s string
 	if err := json.Unmarshal(trimmed, &s); err != nil {
 		return DisableImageGenerationOff, fmt.Errorf("invalid disable-image-generation value")

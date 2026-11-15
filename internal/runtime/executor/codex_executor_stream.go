@@ -169,7 +169,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 	if buffering {
 		bootstrapTimeout = e.cfg.Codex.StreamBootstrapTimeoutDuration()
 	}
-	// Start the bootstrap clock at response headers, before decoding may read body bytes.
+
 	responseReady := func(response *http.Response) {
 		if buffering && response.StatusCode >= 200 && response.StatusCode < 300 {
 			bootstrapStart = nowCodexBootstrap()
@@ -204,7 +204,7 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 	budgetExhausted := false
 	exhaustedReason := ""
 
-	scanner := helps.NewCodexSSEScanner(ctx, httpResp.Body, 52_428_800) // 50MB
+	scanner := helps.NewCodexSSEScanner(ctx, httpResp.Body, 52_428_800)
 	scanner.SetOnLine(func(rawLine []byte) {
 		helps.AppendAPIResponseChunk(ctx, e.cfg, rawLine)
 	})
@@ -239,9 +239,9 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 	streamStarted := false
 	immediateTerminal := false
 	immediateIncomplete := false
-	// bootstrapTerminalErr holds a non-overload terminal failure seen while buffering. It is
-	// delivered as an in-stream chunk after the buffered handshake so downstream behaviour stays
-	// identical to the unbuffered path instead of silently turning into a credential failover.
+
+
+
 	var bootstrapTerminalErr error
 
 	closeBootstrapBody := func() {
@@ -286,10 +286,10 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 						timeSinceStart := nowCodexBootstrap().Sub(bootstrapStart)
 						timeoutReached := bootstrapTimeout > 0 && timeSinceStart >= bootstrapTimeout
 						if !timeoutReached {
-							// Transient capacity rejection smuggled into an HTTP 200 stream. Fail the
-							// attempt before the downstream headers are committed so the conductor can
-							// transparently retry on another credential, and report the status the
-							// upstream refused to put on the wire.
+
+
+
+
 							helps.LogWithRequestID(ctx).Debugf("codex executor: bootstrap overload rejection after %d buffered lines, failing over", bufferedFrames)
 							return nil, newCodexBootstrapOverloadErr(terminalBody)
 						}
@@ -306,11 +306,11 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 					streamErr := newCodexEmptyIncompleteStreamError()
 					helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
 					reporter.PublishFailure(ctx, streamErr)
-					// Not an overload rejection, so it keeps its in-stream delivery: flush what is
-					// held and hand the error downstream, matching the websocket executor and the
-					// contract that only overload and rate-limit rejections fail the attempt over.
-					// The conductor commits a stream once it has seen a payload, so this only takes
-					// effect for downstream formats that render the held frames into a chunk.
+
+
+
+
+
 					bootstrapTerminalErr = streamErr
 					break
 				}
@@ -339,10 +339,10 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 					translatedLine = append([]byte("data: "), data...)
 				}
 			} else {
-				// Lines that are not data: frames - SSE comments, event:, id:, retry: and the blank
-				// separator - carry no event to check against the allow-list, so they are held with
-				// the frame they belong to. They spend the same budgets.
-				// Non-data lines also need owned storage before translation can retain them.
+
+
+
+
 				translatedLine = bytes.Clone(line)
 				isHandshake = true
 			}
@@ -387,8 +387,8 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 		if !streamStarted && bootstrapTerminalErr == nil {
 			closeBootstrapBody()
 			if errScan := scanner.Err(); errScan != nil {
-				// A cancelled downstream request must not be recorded as an upstream failure or
-				// penalise the credential; mirror the unbuffered goroutine's guard.
+
+
 				if ctx.Err() != nil {
 					return nil, ctx.Err()
 				}
@@ -429,8 +429,8 @@ func (e *CodexExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Au
 		out <- cliproxyexecutor.StreamChunk{Incomplete: true}
 	}
 	if bootstrapTerminalErr != nil {
-		// Buffered handshake payloads are flushed first so the conductor observes a committed
-		// stream and delivers this failure in-stream, exactly as the unbuffered path would.
+
+
 		out <- cliproxyexecutor.StreamChunk{Err: bootstrapTerminalErr}
 		close(out)
 		return &cliproxyexecutor.StreamResult{Headers: httpResp.Header.Clone(), Chunks: out}, nil

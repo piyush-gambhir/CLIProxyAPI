@@ -271,20 +271,20 @@ func TestConvertClaudeRequestToAntigravity_PreservesToolPairingWithInterveningSy
 		t.Fatalf("expected 3 merged contents (user, model, user), got %d: %s", len(contents), output)
 	}
 
-	// First turn: user
+
 	if contents[0].Get("role").String() != "user" {
 		t.Fatalf("expected turn 0 role user, got %s", contents[0].Get("role").String())
 	}
-	// Second turn: model (2 function calls)
+
 	if contents[1].Get("role").String() != "model" {
 		t.Fatalf("expected turn 1 role model, got %s", contents[1].Get("role").String())
 	}
-	// Third turn: user (1 system reminder + 2 aligned function responses)
+
 	if contents[2].Get("role").String() != "user" {
 		t.Fatalf("expected turn 2 role user, got %s", contents[2].Get("role").String())
 	}
 
-	// Verify response ordering matches call ordering
+
 	parts := contents[2].Get("parts").Array()
 	var respIDs []string
 	for _, p := range parts {
@@ -898,24 +898,24 @@ func TestConvertClaudeRequestToAntigravity_BasicStructure(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5", inputJSON, false)
 	outputStr := string(output)
 
-	// Check model
+
 	if ojson.Get(outputStr, "model").String() != "claude-sonnet-4-5" {
 		t.Errorf("Expected model 'claude-sonnet-4-5', got '%s'", ojson.Get(outputStr, "model").String())
 	}
 
-	// Check contents exist
+
 	contents := ojson.Get(outputStr, "request.contents")
 	if !contents.Exists() || !contents.IsArray() {
 		t.Error("request.contents should exist and be an array")
 	}
 
-	// Check role mapping (assistant -> model)
+
 	firstContent := ojson.Get(outputStr, "request.contents.0")
 	if firstContent.Get("role").String() != "user" {
 		t.Errorf("Expected role 'user', got '%s'", firstContent.Get("role").String())
 	}
 
-	// Check systemInstruction
+
 	sysInstruction := ojson.Get(outputStr, "request.systemInstruction")
 	if !sysInstruction.Exists() {
 		t.Error("systemInstruction should exist")
@@ -937,7 +937,7 @@ func TestConvertClaudeRequestToAntigravity_RoleMapping(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5", inputJSON, false)
 	outputStr := string(output)
 
-	// assistant should be mapped to model
+
 	secondContent := ojson.Get(outputStr, "request.contents.1")
 	if secondContent.Get("role").String() != "model" {
 		t.Errorf("Expected role 'model' (mapped from 'assistant'), got '%s'", secondContent.Get("role").String())
@@ -950,7 +950,7 @@ func TestConvertClaudeRequestToAntigravity_ThinkingBlocks(t *testing.T) {
 	nativeSignature, antigravitySignature := testAntigravityClaudeSignature(t)
 	thinkingText := "Let me think..."
 
-	// Pre-cache the signature (simulating a previous response for the same thinking text)
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [
@@ -973,7 +973,7 @@ func TestConvertClaudeRequestToAntigravity_ThinkingBlocks(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// Check thinking block conversion (now in contents.1 due to user message)
+
 	firstPart := ojson.Get(outputStr, "request.contents.1.parts.0")
 	if !firstPart.Get("thought").Bool() {
 		t.Error("thinking block should have thought: true")
@@ -1489,11 +1489,11 @@ func TestConvertClaudeRequestToAntigravity_CacheModeDropsInvalidSignature(t *tes
 		cache.ClearSignatureCache("")
 	})
 
-	// Seed cache with a valid signature for the same thinking text.
+
 	validNativeSig := testAnthropicNativeSignature(t)
 	cache.CacheSignature("claude-sonnet-4-5-thinking", "Let me think...", validNativeSig)
 
-	// Client explicitly sends an invalid signature. Cache MUST NOT be used to replace it.
+
 	invalidRawSignature := testNonAnthropicRawSignature(t)
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
@@ -1531,7 +1531,7 @@ func TestConvertClaudeRequestToAntigravity_CacheModeRecoversSignatureWhenClientO
 	expectedAntigravitySig := base64.StdEncoding.EncodeToString([]byte(validNativeSig))
 	cache.CacheSignature("claude-sonnet-4-5-thinking", "Let me think...", validNativeSig)
 
-	// Client omitted signature (signature is empty or absent).
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [
@@ -1720,7 +1720,7 @@ func TestConvertClaudeRequestToAntigravity_BypassModeDropsGeminiEPrefixSignature
 func TestConvertClaudeRequestToAntigravity_ThinkingBlockWithoutSignature(t *testing.T) {
 	cache.ClearSignatureCache("")
 
-	// Unsigned thinking blocks should be removed entirely (not converted to text)
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [
@@ -1737,13 +1737,13 @@ func TestConvertClaudeRequestToAntigravity_ThinkingBlockWithoutSignature(t *test
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// Without signature, thinking block should be removed (not converted to text)
+
 	parts := ojson.Get(outputStr, "request.contents.0.parts").Array()
 	if len(parts) != 1 {
 		t.Fatalf("Expected 1 part (thinking removed), got %d", len(parts))
 	}
 
-	// Only text part should remain
+
 	if parts[0].Get("thought").Bool() {
 		t.Error("Thinking block should be removed, not preserved")
 	}
@@ -1774,7 +1774,7 @@ func TestConvertClaudeRequestToAntigravity_ToolDeclarations(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("gemini-1.5-pro", inputJSON, false)
 	outputStr := string(output)
 
-	// Check tools structure
+
 	tools := ojson.Get(outputStr, "request.tools")
 	if !tools.Exists() {
 		t.Error("Tools should exist in output")
@@ -1785,7 +1785,7 @@ func TestConvertClaudeRequestToAntigravity_ToolDeclarations(t *testing.T) {
 		t.Errorf("Expected tool name 'test_tool', got '%s'", funcDecl.Get("name").String())
 	}
 
-	// Check input_schema renamed to parametersJsonSchema
+
 	if funcDecl.Get("parametersJsonSchema").Exists() {
 		t.Log("parametersJsonSchema exists (expected)")
 	}
@@ -1909,13 +1909,13 @@ func TestConvertClaudeRequestToAntigravity_ToolUse(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5", inputJSON, false)
 	outputStr := string(output)
 
-	// Now we expect only 1 part (tool_use), no dummy thinking block injected
+
 	parts := ojson.Get(outputStr, "request.contents.0.parts").Array()
 	if len(parts) != 1 {
 		t.Fatalf("Expected 1 part (tool only, no dummy injection), got %d", len(parts))
 	}
 
-	// Check function call conversion at parts[0]
+
 	funcCall := parts[0].Get("functionCall")
 	if !funcCall.Exists() {
 		t.Error("functionCall should exist at parts[0]")
@@ -2080,7 +2080,7 @@ func TestConvertClaudeRequestToAntigravity_ToolUse_DoesNotReuseThinkingSignature
 func TestConvertClaudeRequestToAntigravity_ReorderThinking(t *testing.T) {
 	cache.ClearSignatureCache("")
 
-	// Case: text block followed by thinking block -> should be reordered to thinking first
+
 	nativeSignature, _ := testAntigravityClaudeSignature(t)
 	thinkingText := "Planning..."
 
@@ -2106,7 +2106,7 @@ func TestConvertClaudeRequestToAntigravity_ReorderThinking(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// Verify order: Thinking block MUST be first (now in contents.1 due to user message)
+
 	parts := ojson.Get(outputStr, "request.contents.1.parts").Array()
 	if len(parts) != 2 {
 		t.Fatalf("Expected 2 parts, got %d", len(parts))
@@ -2121,10 +2121,10 @@ func TestConvertClaudeRequestToAntigravity_ReorderThinking(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToAntigravity_ReorderTextAfterFunctionCall(t *testing.T) {
-	// Bug: text part after tool_use in an assistant message causes Antigravity
-	// to split at functionCall boundary, creating an extra assistant turn that
-	// breaks tool_use↔tool_result adjacency (upstream issue #989).
-	// Fix: reorder parts so functionCall comes last.
+
+
+
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5",
 		"messages": [
@@ -2162,7 +2162,7 @@ func TestConvertClaudeRequestToAntigravity_ReorderTextAfterFunctionCall(t *testi
 		t.Fatalf("Expected 3 parts, got %d", len(parts))
 	}
 
-	// Text parts should come before functionCall
+
 	if parts[0].Get("text").String() != "Let me check..." {
 		t.Errorf("Expected first text part first, got %s", parts[0].Raw)
 	}
@@ -2313,13 +2313,13 @@ func TestConvertClaudeRequestToAntigravity_ReorderThinkingAndTextBeforeFunctionC
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// contents.1 = assistant message (contents.0 = user)
+
 	parts := ojson.Get(outputStr, "request.contents.1.parts").Array()
 	if len(parts) != 4 {
 		t.Fatalf("Expected 4 parts, got %d", len(parts))
 	}
 
-	// Order: thinking → text → text → functionCall
+
 	if !parts[0].Get("thought").Bool() {
 		t.Error("First part should be thinking")
 	}
@@ -2365,7 +2365,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResult(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5", inputJSON, false)
 	outputStr := string(output)
 
-	// Check function response conversion
+
 	funcResp := ojson.Get(outputStr, "request.contents.1.parts.0.functionResponse")
 	if !funcResp.Exists() {
 		t.Error("functionResponse should exist")
@@ -2678,9 +2678,9 @@ func TestConvertClaudeRequestToAntigravity_ToolResultName_NoMatchingToolUse_RawI
 }
 
 func TestConvertClaudeRequestToAntigravity_ThinkingConfig(t *testing.T) {
-	// Note: This test requires the model to be registered in the registry
-	// with Thinking metadata. If the registry is not populated in test environment,
-	// thinkingConfig won't be added. We'll test the basic structure only.
+
+
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [],
@@ -2693,7 +2693,7 @@ func TestConvertClaudeRequestToAntigravity_ThinkingConfig(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// Check thinking config conversion (only if model supports thinking in registry)
+
 	thinkingConfig := ojson.Get(outputStr, "request.generationConfig.thinkingConfig")
 	if thinkingConfig.Exists() {
 		if thinkingConfig.Get("thinkingBudget").Int() != 8000 {
@@ -2730,7 +2730,7 @@ func TestConvertClaudeRequestToAntigravity_ImageContent(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5", inputJSON, false)
 	outputStr := string(output)
 
-	// Check inline data conversion
+
 	inlineData := ojson.Get(outputStr, "request.contents.0.parts.0.inlineData")
 	if !inlineData.Exists() {
 		t.Error("inlineData should exist")
@@ -2771,12 +2771,12 @@ func TestConvertClaudeRequestToAntigravity_GenerationConfig(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// Trailing Unsigned Thinking Block Removal
-// ============================================================================
+
+
+
 
 func TestConvertClaudeRequestToAntigravity_TrailingUnsignedThinking_Removed(t *testing.T) {
-	// Last assistant message ends with unsigned thinking block - should be removed
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [
@@ -2797,7 +2797,7 @@ func TestConvertClaudeRequestToAntigravity_TrailingUnsignedThinking_Removed(t *t
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// The last part of the last assistant message should NOT be a thinking block
+
 	lastMessageParts := ojson.Get(outputStr, "request.contents.1.parts")
 	if !lastMessageParts.IsArray() {
 		t.Fatal("Last message should have parts array")
@@ -2807,7 +2807,7 @@ func TestConvertClaudeRequestToAntigravity_TrailingUnsignedThinking_Removed(t *t
 		t.Fatal("Last message should have at least one part")
 	}
 
-	// The unsigned thinking should be removed, leaving only the text
+
 	lastPart := parts[len(parts)-1]
 	if lastPart.Get("thought").Bool() {
 		t.Error("Trailing unsigned thinking block should be removed")
@@ -2817,7 +2817,7 @@ func TestConvertClaudeRequestToAntigravity_TrailingUnsignedThinking_Removed(t *t
 func TestConvertClaudeRequestToAntigravity_TrailingSignedThinking_Kept(t *testing.T) {
 	cache.ClearSignatureCache("")
 
-	// Last assistant message ends with signed thinking block - should be kept
+
 	nativeSignature, _ := testAntigravityClaudeSignature(t)
 	thinkingText := "Valid thinking..."
 
@@ -2843,7 +2843,7 @@ func TestConvertClaudeRequestToAntigravity_TrailingSignedThinking_Kept(t *testin
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// The signed thinking block should be preserved
+
 	lastMessageParts := ojson.Get(outputStr, "request.contents.1.parts")
 	parts := lastMessageParts.Array()
 	if len(parts) < 2 {
@@ -2852,7 +2852,7 @@ func TestConvertClaudeRequestToAntigravity_TrailingSignedThinking_Kept(t *testin
 }
 
 func TestConvertClaudeRequestToAntigravity_MiddleUnsignedThinking_Removed(t *testing.T) {
-	// Middle message has unsigned thinking - should be removed entirely
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [
@@ -2873,13 +2873,13 @@ func TestConvertClaudeRequestToAntigravity_MiddleUnsignedThinking_Removed(t *tes
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// Unsigned thinking should be removed entirely
+
 	parts := ojson.Get(outputStr, "request.contents.0.parts").Array()
 	if len(parts) != 1 {
 		t.Fatalf("Expected 1 part (thinking removed), got %d", len(parts))
 	}
 
-	// Only text part should remain
+
 	if parts[0].Get("thought").Bool() {
 		t.Error("Thinking block should be removed, not preserved")
 	}
@@ -2888,12 +2888,12 @@ func TestConvertClaudeRequestToAntigravity_MiddleUnsignedThinking_Removed(t *tes
 	}
 }
 
-// ============================================================================
-// Tool + Thinking System Hint Injection
-// ============================================================================
+
+
+
 
 func TestConvertClaudeRequestToAntigravity_ToolAndThinking_HintInjected(t *testing.T) {
-	// When both tools and thinking are enabled, hint should be injected into system instruction
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}],
@@ -2911,13 +2911,13 @@ func TestConvertClaudeRequestToAntigravity_ToolAndThinking_HintInjected(t *testi
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// System instruction should contain the interleaved thinking hint
+
 	sysInstruction := ojson.Get(outputStr, "request.systemInstruction")
 	if !sysInstruction.Exists() {
 		t.Fatal("systemInstruction should exist")
 	}
 
-	// Check if hint is appended
+
 	sysText := sysInstruction.Get("parts").Array()
 	found := false
 	for _, part := range sysText {
@@ -2932,7 +2932,7 @@ func TestConvertClaudeRequestToAntigravity_ToolAndThinking_HintInjected(t *testi
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolsOnly_NoHint(t *testing.T) {
-	// When only tools are present (no thinking), hint should NOT be injected
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5",
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}],
@@ -2949,7 +2949,7 @@ func TestConvertClaudeRequestToAntigravity_ToolsOnly_NoHint(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5", inputJSON, false)
 	outputStr := string(output)
 
-	// System instruction should NOT contain the hint
+
 	sysInstruction := ojson.Get(outputStr, "request.systemInstruction")
 	if sysInstruction.Exists() {
 		for _, part := range sysInstruction.Get("parts").Array() {
@@ -2961,7 +2961,7 @@ func TestConvertClaudeRequestToAntigravity_ToolsOnly_NoHint(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToAntigravity_ThinkingOnly_NoHint(t *testing.T) {
-	// When only thinking is enabled (no tools), hint should NOT be injected
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}],
@@ -2972,7 +2972,7 @@ func TestConvertClaudeRequestToAntigravity_ThinkingOnly_NoHint(t *testing.T) {
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// System instruction should NOT contain the hint (no tools)
+
 	sysInstruction := ojson.Get(outputStr, "request.systemInstruction")
 	if sysInstruction.Exists() {
 		for _, part := range sysInstruction.Get("parts").Array() {
@@ -2984,7 +2984,7 @@ func TestConvertClaudeRequestToAntigravity_ThinkingOnly_NoHint(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultNoContent(t *testing.T) {
-	// Bug repro: tool_result with no content field produces invalid JSON
+
 	inputJSON := []byte(`{
 		"model": "claude-opus-4-6-thinking",
 		"messages": [
@@ -3018,7 +3018,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultNoContent(t *testing.T) {
 		t.Errorf("Result is not valid JSON:\n%s", outputStr)
 	}
 
-	// Verify the functionResponse has a valid result value
+
 	fr := ojson.Get(outputStr, "request.contents.1.parts.0.functionResponse.response.result")
 	if !fr.Exists() {
 		t.Error("functionResponse.response.result should exist")
@@ -3026,7 +3026,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultNoContent(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultNullContent(t *testing.T) {
-	// Bug repro: tool_result with null content produces invalid JSON
+
 	inputJSON := []byte(`{
 		"model": "claude-opus-4-6-thinking",
 		"messages": [
@@ -3063,9 +3063,9 @@ func TestConvertClaudeRequestToAntigravity_ToolResultNullContent(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultWithImage(t *testing.T) {
-	// tool_result with array content containing text + image should place
-	// image data inside functionResponse.parts as inlineData, not as a
-	// sibling part in the outer content (to avoid base64 context bloat).
+
+
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3102,19 +3102,19 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithImage(t *testing.T) {
 		t.Fatalf("Result is not valid JSON:\n%s", outputStr)
 	}
 
-	// Image should be inside functionResponse.parts, not as outer sibling part
+
 	funcResp := ojson.Get(outputStr, "request.contents.0.parts.0.functionResponse")
 	if !funcResp.Exists() {
 		t.Fatal("functionResponse should exist")
 	}
 
-	// Text content should be in response.result
+
 	resultText := funcResp.Get("response.result.text").String()
 	if resultText != "File content here" {
 		t.Errorf("Expected response.result.text = 'File content here', got '%s'", resultText)
 	}
 
-	// Image should be in functionResponse.parts[0].inlineData
+
 	inlineData := funcResp.Get("parts.0.inlineData")
 	if !inlineData.Exists() {
 		t.Fatal("functionResponse.parts[0].inlineData should exist")
@@ -3126,7 +3126,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithImage(t *testing.T) {
 		t.Error("data mismatch")
 	}
 
-	// Image should NOT be in outer parts (only functionResponse part should exist)
+
 	outerParts := ojson.Get(outputStr, "request.contents.0.parts")
 	if outerParts.IsArray() && len(outerParts.Array()) > 1 {
 		t.Errorf("Expected only 1 outer part (functionResponse), got %d", len(outerParts.Array()))
@@ -3134,8 +3134,8 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithImage(t *testing.T) {
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultWithSingleImage(t *testing.T) {
-	// tool_result with single image object as content should place
-	// image data inside functionResponse.parts, not as outer sibling part.
+
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3171,12 +3171,12 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithSingleImage(t *testing.
 		t.Fatal("functionResponse should exist")
 	}
 
-	// response.result should be empty (image only)
+
 	if funcResp.Get("response.result").String() != "" {
 		t.Errorf("Expected empty response.result for image-only content, got '%s'", funcResp.Get("response.result").String())
 	}
 
-	// Image should be in functionResponse.parts[0].inlineData
+
 	inlineData := funcResp.Get("parts.0.inlineData")
 	if !inlineData.Exists() {
 		t.Fatal("functionResponse.parts[0].inlineData should exist")
@@ -3185,7 +3185,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithSingleImage(t *testing.
 		t.Errorf("Expected mimeType 'image/jpeg', got '%s'", inlineData.Get("mimeType").String())
 	}
 
-	// Image should NOT be in outer parts
+
 	outerParts := ojson.Get(outputStr, "request.contents.0.parts")
 	if outerParts.IsArray() && len(outerParts.Array()) > 1 {
 		t.Errorf("Expected only 1 outer part, got %d", len(outerParts.Array()))
@@ -3193,8 +3193,8 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithSingleImage(t *testing.
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultWithMultipleImagesAndTexts(t *testing.T) {
-	// tool_result with array content: 2 text items + 2 images
-	// All images go into functionResponse.parts, texts into response.result array
+
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3234,7 +3234,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithMultipleImagesAndTexts(
 		t.Fatal("functionResponse should exist")
 	}
 
-	// Multiple text items => response.result is an array
+
 	resultArr := funcResp.Get("response.result")
 	if !resultArr.IsArray() {
 		t.Fatalf("Expected response.result to be an array, got: %s", resultArr.Raw)
@@ -3244,7 +3244,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithMultipleImagesAndTexts(
 		t.Fatalf("Expected 2 result items, got %d", len(results))
 	}
 
-	// Both images should be in functionResponse.parts
+
 	imgParts := funcResp.Get("parts").Array()
 	if len(imgParts) != 2 {
 		t.Fatalf("Expected 2 image parts in functionResponse.parts, got %d", len(imgParts))
@@ -3262,7 +3262,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithMultipleImagesAndTexts(
 		t.Errorf("Expected second image data 'BBBB', got '%s'", imgParts[1].Get("inlineData.data").String())
 	}
 
-	// Only 1 outer part (the functionResponse itself)
+
 	outerParts := ojson.Get(outputStr, "request.contents.0.parts").Array()
 	if len(outerParts) != 1 {
 		t.Errorf("Expected 1 outer part, got %d", len(outerParts))
@@ -3270,7 +3270,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithMultipleImagesAndTexts(
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultWithOnlyMultipleImages(t *testing.T) {
-	// tool_result with only images (no text) — response.result should be empty string
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3308,12 +3308,12 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithOnlyMultipleImages(t *t
 		t.Fatal("functionResponse should exist")
 	}
 
-	// No text => response.result should be empty string
+
 	if funcResp.Get("response.result").String() != "" {
 		t.Errorf("Expected empty response.result, got '%s'", funcResp.Get("response.result").String())
 	}
 
-	// Both images in functionResponse.parts
+
 	imgParts := funcResp.Get("parts").Array()
 	if len(imgParts) != 2 {
 		t.Fatalf("Expected 2 image parts, got %d", len(imgParts))
@@ -3325,7 +3325,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithOnlyMultipleImages(t *t
 		t.Error("second image mimeType mismatch")
 	}
 
-	// Only 1 outer part
+
 	outerParts := ojson.Get(outputStr, "request.contents.0.parts").Array()
 	if len(outerParts) != 1 {
 		t.Errorf("Expected 1 outer part, got %d", len(outerParts))
@@ -3333,7 +3333,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultWithOnlyMultipleImages(t *t
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultImageNotBase64(t *testing.T) {
-	// image with source.type != "base64" should be treated as non-image (falls through)
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3368,8 +3368,8 @@ func TestConvertClaudeRequestToAntigravity_ToolResultImageNotBase64(t *testing.T
 		t.Fatal("functionResponse should exist")
 	}
 
-	// Non-base64 image is treated as non-image, so it goes into the filtered results
-	// along with the text item. Since there are 2 non-image items, result is array.
+
+
 	resultArr := funcResp.Get("response.result")
 	if !resultArr.IsArray() {
 		t.Fatalf("Expected response.result to be an array (2 non-image items), got: %s", resultArr.Raw)
@@ -3379,14 +3379,14 @@ func TestConvertClaudeRequestToAntigravity_ToolResultImageNotBase64(t *testing.T
 		t.Fatalf("Expected 2 result items, got %d", len(results))
 	}
 
-	// No functionResponse.parts (no base64 images collected)
+
 	if funcResp.Get("parts").Exists() {
 		t.Error("functionResponse.parts should NOT exist when no base64 images")
 	}
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultImageMissingData(t *testing.T) {
-	// image with source.type=base64 but missing data field
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3421,8 +3421,8 @@ func TestConvertClaudeRequestToAntigravity_ToolResultImageMissingData(t *testing
 		t.Fatal("functionResponse should exist")
 	}
 
-	// The image is still classified as base64 image (type check passes),
-	// but data field is missing => inlineData has mimeType but no data
+
+
 	imgParts := funcResp.Get("parts").Array()
 	if len(imgParts) != 1 {
 		t.Fatalf("Expected 1 image part, got %d", len(imgParts))
@@ -3436,7 +3436,7 @@ func TestConvertClaudeRequestToAntigravity_ToolResultImageMissingData(t *testing
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolResultImageMissingMediaType(t *testing.T) {
-	// image with source.type=base64 but missing media_type field
+
 	inputJSON := []byte(`{
 		"model": "claude-3-5-sonnet-20240620",
 		"messages": [
@@ -3471,8 +3471,8 @@ func TestConvertClaudeRequestToAntigravity_ToolResultImageMissingMediaType(t *te
 		t.Fatal("functionResponse should exist")
 	}
 
-	// The image is still classified as base64 image,
-	// but media_type is missing => inlineData has data but no mimeType
+
+
 	imgParts := funcResp.Get("parts").Array()
 	if len(imgParts) != 1 {
 		t.Fatalf("Expected 1 image part, got %d", len(imgParts))
@@ -3739,7 +3739,7 @@ func TestConvertClaudeRequestToAntigravity_BypassMode_MultiTurnRedactedThinking(
 }
 
 func TestConvertClaudeRequestToAntigravity_ToolAndThinking_NoExistingSystem(t *testing.T) {
-	// When tools + thinking but no system instruction, should create one with hint
+
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5-thinking",
 		"messages": [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}],
@@ -3756,7 +3756,7 @@ func TestConvertClaudeRequestToAntigravity_ToolAndThinking_NoExistingSystem(t *t
 	output, _ := ConvertClaudeRequestToAntigravity("claude-sonnet-4-5-thinking", inputJSON, false)
 	outputStr := string(output)
 
-	// System instruction should be created with hint
+
 	sysInstruction := ojson.Get(outputStr, "request.systemInstruction")
 	if !sysInstruction.Exists() {
 		t.Fatal("systemInstruction should be created when tools + thinking are active")
@@ -3775,11 +3775,11 @@ func TestConvertClaudeRequestToAntigravity_ToolAndThinking_NoExistingSystem(t *t
 	}
 }
 
-// TestConvertClaudeRequestToAntigravityStripsPropertyNames covers the reported ingress route: a
-// Claude Messages request carrying MCP-style tool schemas. The private Gemini backend rejects the
-// standard JSON Schema keyword "propertyNames" with an unknown-field 400 before inference, so it
-// must not survive translation. Both reported nestings are exercised, including the one where the
-// keyword sits inside a property that is itself named "properties".
+
+
+
+
+
 func TestConvertClaudeRequestToAntigravityStripsPropertyNames(t *testing.T) {
 	inputJSON := []byte(`{
 		"model": "claude-sonnet-4-5",
@@ -3822,7 +3822,7 @@ func TestConvertClaudeRequestToAntigravityStripsPropertyNames(t *testing.T) {
 	if strings.Contains(decls.Raw, `"propertyNames"`) {
 		t.Errorf("propertyNames survived translation: %s", decls.Raw)
 	}
-	// The declarations must still be usable, not emptied out by the cleaning.
+
 	if !decls.Get("0.parametersJsonSchema.properties.records.items.properties.name").Exists() {
 		t.Errorf("array item property was lost: %s", decls.Get("0").Raw)
 	}

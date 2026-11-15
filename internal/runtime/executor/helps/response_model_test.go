@@ -74,21 +74,21 @@ func TestExtractCodexResponseModel(t *testing.T) {
 			want:    "",
 		},
 		{
-			// /responses/compact answers with a compaction object that carries no
-			// event type and no response.model, so that route reports nothing.
+
+
 			name:    "responses compact object",
 			payload: `{"id":"resp_1","object":"response.compaction","usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}`,
 			want:    "",
 		},
 		{
-			// The direct /images/generations and /images/edits endpoints answer in the
-			// Images API shape, which never names the model that served the request.
+
+
 			name:    "images api response",
 			payload: `{"created":1745539200,"data":[{"b64_json":"aGk="}]}`,
 			want:    "",
 		},
 		{
-			// Direct image streams emit image_generation.* events only.
+
 			name:    "image generation completed event",
 			payload: `data: {"type":"image_generation.completed","b64_json":"aGk="}`,
 			want:    "",
@@ -190,7 +190,7 @@ func TestIsModelSubstituted(t *testing.T) {
 	}
 }
 
-// setupResponseModelLoggerHook captures warnings from the process-global logrus logger.
+
 func setupResponseModelLoggerHook(t *testing.T) *logtest.Hook {
 	t.Helper()
 	logger := log.StandardLogger()
@@ -206,7 +206,7 @@ func setupResponseModelLoggerHook(t *testing.T) *logtest.Hook {
 	return hook
 }
 
-// codexUsageTestExecutor mirrors the production reporter construction path.
+
 type codexUsageTestExecutor struct{}
 
 func (codexUsageTestExecutor) Identifier() string { return "codex" }
@@ -240,7 +240,7 @@ func newSubstitutionTestAuth() *cliproxyauth.Auth {
 	}
 }
 
-// Relies on the global logrus logger and warning throttle; do not add t.Parallel.
+
 func TestUsageReporterRecordsSubstitutedCodexResponseModelAndWarnsOnce(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -264,7 +264,7 @@ func TestUsageReporterRecordsSubstitutedCodexResponseModelAndWarnsOnce(t *testin
 	if record.Model != "gpt-6-astra" {
 		t.Fatalf("record model = %q, want %q", record.Model, "gpt-6-astra")
 	}
-	// Observing events must not log anything; the warning belongs to the attempt.
+
 	if warnings := substitutionWarnings(hook); len(warnings) != 0 {
 		t.Fatalf("expected no warning before the attempt published, got %#v", warnings)
 	}
@@ -280,13 +280,13 @@ func TestUsageReporterRecordsSubstitutedCodexResponseModelAndWarnsOnce(t *testin
 	if warnings[0] != want {
 		t.Fatalf("warning = %q, want %q", warnings[0], want)
 	}
-	// The credential file name carries the account e-mail and must stay out of logs.
+
 	if strings.Contains(warnings[0], "example.com") || strings.Contains(warnings[0], "auth_file") {
 		t.Fatalf("warning leaked credential details: %q", warnings[0])
 	}
 }
 
-// Relies on the global logrus logger; do not add t.Parallel.
+
 func TestUsageReporterDoesNotWarnWhenCodexResponseModelMatches(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -303,7 +303,7 @@ func TestUsageReporterDoesNotWarnWhenCodexResponseModelMatches(t *testing.T) {
 	}
 }
 
-// Relies on the global logrus logger; do not add t.Parallel.
+
 func TestUsageReporterIgnoresPayloadsWithoutResponseModel(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -320,13 +320,13 @@ func TestUsageReporterIgnoresPayloadsWithoutResponseModel(t *testing.T) {
 	if len(warnings) != 1 {
 		t.Fatalf("substitution warnings = %d, want 1: %#v", len(warnings), warnings)
 	}
-	// A reporter without a credential must still produce a usable label.
+
 	if !strings.HasSuffix(warnings[0], "(auth_index=nil)") {
 		t.Fatalf("warning = %q, want an auth_index=nil suffix", warnings[0])
 	}
 }
 
-// Relies on the global logrus logger; do not add t.Parallel.
+
 func TestUsageReporterWarnsOnceUnderConcurrentObservationsAndPublishes(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -361,7 +361,7 @@ func TestUsageReporterWarnsOnceUnderConcurrentObservationsAndPublishes(t *testin
 	}
 }
 
-// Relies on the global logrus logger; do not add t.Parallel.
+
 func TestUsageReporterEmitsWarningOnRepeatedSubstitutionsWithoutThrottle(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -379,14 +379,14 @@ func TestUsageReporterEmitsWarningOnRepeatedSubstitutionsWithoutThrottle(t *test
 		t.Fatalf("substitution warnings = %d, want 2 without throttle: %#v", len(warnings), warnings)
 	}
 
-	// A different credential is also recorded without throttle.
+
 	publishSubstitutedAttempt("codex-auth-2", "auth-index-8")
 	if warnings := substitutionWarnings(hook); len(warnings) != 3 {
 		t.Fatalf("substitution warnings = %d, want 3: %#v", len(warnings), warnings)
 	}
 }
 
-// Relies on the global logrus logger; do not add t.Parallel.
+
 func TestUsageReporterEmitsWarningAcrossServedModelCaseWithoutThrottle(t *testing.T) {
 	hook := setupResponseModelLoggerHook(t)
 	ctx := context.Background()
@@ -421,8 +421,8 @@ func TestUsageReporterAdditionalModelRecordOmitsResponseModel(t *testing.T) {
 	if additionalRecord.Model != "gpt-image-1.5" {
 		t.Fatalf("additional record model = %q, want %q", additionalRecord.Model, "gpt-image-1.5")
 	}
-	// The upstream response model describes the main text model, never the image
-	// generation tool model, so consumers must not see a fake substitution here.
+
+
 	if additionalRecord.ResponseModel != "" {
 		t.Fatalf("additional record response model = %q, want empty", additionalRecord.ResponseModel)
 	}

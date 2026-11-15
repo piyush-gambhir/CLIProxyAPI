@@ -483,7 +483,7 @@ func TestStartOAuthV8ParallelSessionsWithDifferentProxiesOutOfOrderCallbacks(t *
 	stateA := startWithProxy(proxyA.URL)
 	stateB := startWithProxy(proxyB.URL)
 
-	// Deliver callback B first, then callback A (out of order)
+
 	if _, errWrite := WriteOAuthCallbackFileForPendingSession(authDir, "codex", stateB, "b", ""); errWrite != nil {
 		t.Fatalf("write callback B: %v", errWrite)
 	}
@@ -691,7 +691,7 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 	router.GET("/status", h.GetAuthStatus)
 	router.DELETE("/session", h.CancelAuthSession)
 
-	// 1. Antigravity session with proxy_url covers token exchange, userinfo, and project discovery
+
 	agBody, _ := json.Marshal(map[string]string{"provider": "antigravity", "proxy_url": proxyServer.URL})
 	agRec := httptest.NewRecorder()
 	router.ServeHTTP(agRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(string(agBody))))
@@ -714,7 +714,7 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 		t.Fatalf("antigravity proxyHits=%d directHits=%d, want 3 and 0", proxyHits.Load(), directHits.Load())
 	}
 
-	// Simulate restart by synthesizing the saved Antigravity credential from disk and routing traffic
+
 	agPath := filepath.Join(authDir, antigravity.CredentialFileName("ag-user@example.test"))
 	agRaw, errReadAg := os.ReadFile(agPath)
 	if errReadAg != nil {
@@ -742,7 +742,7 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 		t.Fatalf("after runtime request: proxyHits=%d directHits=%d, want 4 and 0", proxyHits.Load(), directHits.Load())
 	}
 
-	// 2. Plugin OAuth session with proxy_url covers StartLogin, PollLogin, and saved credential
+
 	pluginBody, _ := json.Marshal(map[string]string{"provider": "custom-sso", "proxy_url": proxyServer.URL})
 	pluginRec := httptest.NewRecorder()
 	router.ServeHTTP(pluginRec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(string(pluginBody))))
@@ -766,7 +766,7 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 		t.Fatalf("plugin credential proxy_url = %v, want %q", pluginCredMap["proxy_url"], proxyServer.URL)
 	}
 
-	// 3. Cancellation and expiry discard temporary session proxy data
+
 	RegisterOAuthSessionWithProxy("cancel-proxy-state", "codex", proxyServer.URL)
 	if got := GetOAuthSessionProxyURL("cancel-proxy-state"); got != proxyServer.URL {
 		t.Fatalf("GetOAuthSessionProxyURL before cancel = %q, want %q", got, proxyServer.URL)
@@ -780,7 +780,7 @@ func TestStartOAuthV8AntigravityAndPluginSessionProxyAndRestartPersistence(t *te
 		t.Fatalf("GetOAuthSessionProxyURL after cancel = %q, want empty", got)
 	}
 
-	// Verify session expiry purges temporary proxy data
+
 	oauthSessions.mu.Lock()
 	oauthSessions.sessions["expired-proxy-state"] = oauthSession{
 		Provider:  "codex",
@@ -940,7 +940,7 @@ func TestStartOAuthV8PluginPollCancelRaceDoesNotDropProxyOrSaveCancelledSession(
 					if _, errDo := req.HTTPClient.Do(ctx, pluginapi.HTTPRequest{Method: http.MethodGet, URL: upstream.URL + "/poll"}); errDo != nil {
 						return pluginapi.AuthLoginPollResponse{}, errDo
 					}
-					// Simulate concurrent session cancellation while PollLogin is in flight
+
 					CancelOAuthSession(raceState)
 					return pluginapi.AuthLoginPollResponse{
 						Status: pluginapi.AuthLoginStatusSuccess,
@@ -981,8 +981,8 @@ func TestStartOAuthV8PluginPollCancelRaceDoesNotDropProxyOrSaveCancelledSession(
 		t.Fatalf("expected cancelled plugin session not to save credential file, stat err = %v", errStat)
 	}
 
-	// 2. Verify that once commit begins (postAuthHook barrier), CancelOAuthSession returns false
-	// so cancellation and credential commit are mutually exclusive.
+
+
 	const commitState = "plugin-commit-barrier-state"
 	host.RegisterPluginForTest("commit-plugin", pluginapi.Plugin{
 		Capabilities: pluginapi.Capabilities{
@@ -1035,9 +1035,9 @@ func TestStartOAuthV8PluginPollCancelRaceDoesNotDropProxyOrSaveCancelledSession(
 		t.Fatal("expected CancelOAuthSession during in-flight commit to return false")
 	}
 
-	// 3. Verify that two concurrent in-flight PollLogin requests (Poll #1 returning success,
-	// Poll #2 returning error while Poll #1 is committing in postAuthHook) cannot overwrite
-	// the committing session.
+
+
+
 	const interleaveState = "plugin-interleave-poll-state"
 	var pollCall atomic.Int32
 	poll1Entered := make(chan struct{})
@@ -1185,7 +1185,7 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 	router.POST("/v8/management/oauth/auth-url", h.StartOAuthV8)
 	router.GET("/status", h.GetAuthStatus)
 
-	// 1. Default behavior without proxy_url override
+
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/v8/management/oauth/auth-url", strings.NewReader(`{"provider":"codex"}`)))
 	if rec.Code != http.StatusOK {
@@ -1216,7 +1216,7 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 		}
 	}
 
-	// 2. End-to-end OAuth login with session proxy -> persist to disk -> synthesize from disk -> production RefreshAuth()
+
 	refreshProvider := &proxyRefreshTestAuthProvider{
 		identifier: "refresh-sso",
 		startLogin: func(_ context.Context, _ pluginapi.AuthLoginStartRequest) (pluginapi.AuthLoginStartResponse, error) {
@@ -1298,7 +1298,7 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 		t.Fatalf("after refresh-sso login: proxyHits=%d directHits=%d, want 1 and 1", hitsAfterLogin, directHits.Load())
 	}
 
-	// Load the saved credential file from disk with a blank global config and fresh plugin host (simulating server restart)
+
 	savedCredPath := filepath.Join(authDir, "refresh-sso-user.json")
 	rawSavedCred, errRead := os.ReadFile(savedCredPath)
 	if errRead != nil {
@@ -1322,7 +1322,7 @@ func TestStartOAuthV8WithoutProxyPreservesDefaultBehaviorAndPersistedProxyRefres
 		t.Fatalf("synthesized refresh-sso Auth.ProxyURL = %q, want %q", synthAuths[0].ProxyURL, proxyServer.URL)
 	}
 
-	// Invoke real production RefreshAuth on freshHost (no global ProxyURL, no session context)
+
 	refreshedAuth, handled, errRefresh := freshHost.RefreshAuth(context.Background(), synthAuths[0])
 	if errRefresh != nil || !handled {
 		t.Fatalf("production RefreshAuth via persisted proxy_url: handled=%v err=%v", handled, errRefresh)

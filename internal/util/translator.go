@@ -1,6 +1,6 @@
-// Package util provides utility functions for the CLI Proxy API server.
-// It includes helper functions for JSON manipulation, proxy configuration,
-// and other common operations used across the application.
+
+
+
 package util
 
 import (
@@ -16,26 +16,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Walk recursively traverses a JSON structure to find all occurrences of a specific field.
-// It builds paths to each occurrence and adds them to the provided paths slice.
-//
-// Parameters:
-//   - value: The ojson.Result object to traverse
-//   - path: The current path in the JSON structure (empty string for root)
-//   - field: The field name to search for
-//   - paths: Pointer to a slice where found paths will be stored
-//
-// The function works recursively, building dot-notation paths to each occurrence
-// of the specified field throughout the JSON structure.
+
+
+
+
+
+
+
+
+
+
+
 func Walk(value ojson.Result, path, field string, paths *[]string) {
 	walk(value, path, field, paths, false)
 }
 
-// WalkSchema is Walk for JSON Schema documents: it records the field wherever a schema keyword
-// may appear, but does not descend into literal values (default, example, examples, const, enum),
-// whose contents are client data rather than subschemas. The literal keyword itself is still
-// recorded when it is the searched field, and under a property-name map a key spelled like one is
-// a property name whose subschema is still walked.
+
+
+
+
+
 func WalkSchema(value ojson.Result, path, field string, paths *[]string) {
 	walk(value, path, field, paths, true)
 }
@@ -43,13 +43,13 @@ func WalkSchema(value ojson.Result, path, field string, paths *[]string) {
 func walk(value ojson.Result, path, field string, paths *[]string, schemaAware bool) {
 	switch value.Type {
 	case ojson.JSON:
-		// For JSON objects and arrays, iterate through each child
+
 		value.ForEach(func(key, val ojson.Result) bool {
 			var childPath string
-			// Escape special characters for gjson/sjson path syntax
-			// . -> \.
-			// * -> \*
-			// ? -> \?
+
+
+
+
 			keyStr := key.String()
 			safeKey := escapeGJSONPathKey(keyStr)
 
@@ -68,25 +68,25 @@ func walk(value ojson.Result, path, field string, paths *[]string, schemaAware b
 			return true
 		})
 	case ojson.String, ojson.Number, ojson.True, ojson.False, ojson.Null:
-		// Terminal types - no further traversal needed
+
 	}
 }
 
-// RenameKey renames a key in a JSON string by moving its value to a new key path
-// and then deleting the old key path.
-//
-// Parameters:
-//   - jsonStr: The JSON string to modify
-//   - oldKeyPath: The dot-notation path to the key that should be renamed
-//   - newKeyPath: The dot-notation path where the value should be moved to
-//
-// Returns:
-//   - string: The modified JSON string with the key renamed
-//   - error: An error if the operation fails
-//
-// The function performs the rename in two steps:
-// 1. Sets the value at the new key path
-// 2. Deletes the old key path
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func RenameKey(jsonStr, oldKeyPath, newKeyPath string) (string, error) {
 	value := ojson.Get(jsonStr, oldKeyPath)
 
@@ -106,33 +106,33 @@ func RenameKey(jsonStr, oldKeyPath, newKeyPath string) (string, error) {
 	return doc.String(), nil
 }
 
-// FixJSON converts non-standard JSON that uses single quotes for strings into
-// RFC 8259-compliant JSON by converting those single-quoted strings to
-// double-quoted strings with proper escaping.
-//
-// Examples:
-//
-//	{'a': 1, 'b': '2'}      => {"a": 1, "b": "2"}
-//	{"t": 'He said "hi"'} => {"t": "He said \"hi\""}
-//
-// Rules:
-//   - Existing double-quoted JSON strings are preserved as-is.
-//   - Single-quoted strings are converted to double-quoted strings.
-//   - Inside converted strings, any double quote is escaped (\").
-//   - Common backslash escapes (\n, \r, \t, \b, \f, \\) are preserved.
-//   - \' inside single-quoted strings becomes a literal ' in the output (no
-//     escaping needed inside double quotes).
-//   - Unicode escapes (\uXXXX) inside single-quoted strings are forwarded.
-//   - The function does not attempt to fix other non-JSON features beyond quotes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func FixJSON(input string) string {
 	var out bytes.Buffer
 
 	inDouble := false
 	inSingle := false
-	escaped := false // applies within the current string state
+	escaped := false
 
-	// Helper to write a rune, escaping double quotes when inside a converted
-	// single-quoted string (which becomes a double-quoted string in output).
+
+
 	writeConverted := func(r rune) {
 		if r == '"' {
 			out.WriteByte('\\')
@@ -149,7 +149,7 @@ func FixJSON(input string) string {
 		if inDouble {
 			out.WriteRune(r)
 			if escaped {
-				// end of escape sequence in a standard JSON string
+
 				escaped = false
 				continue
 			}
@@ -165,29 +165,29 @@ func FixJSON(input string) string {
 
 		if inSingle {
 			if escaped {
-				// Handle common escape sequences after a backslash within a
-				// single-quoted string
+
+
 				escaped = false
 				switch r {
 				case 'n', 'r', 't', 'b', 'f', '/', '"':
-					// Keep the backslash and the character (except for '"' which
-					// rarely appears, but if it does, keep as \" to remain valid)
+
+
 					out.WriteByte('\\')
 					out.WriteRune(r)
 				case '\\':
 					out.WriteByte('\\')
 					out.WriteByte('\\')
 				case '\'':
-					// \' inside single-quoted becomes a literal '
+
 					out.WriteRune('\'')
 				case 'u':
-					// Forward \uXXXX if possible
+
 					out.WriteByte('\\')
 					out.WriteByte('u')
-					// Copy up to next 4 hex digits if present
+
 					for k := 0; k < 4 && i+1 < len(runes); k++ {
 						peek := runes[i+1]
-						// simple hex check
+
 						if (peek >= '0' && peek <= '9') || (peek >= 'a' && peek <= 'f') || (peek >= 'A' && peek <= 'F') {
 							out.WriteRune(peek)
 							i++
@@ -196,34 +196,34 @@ func FixJSON(input string) string {
 						}
 					}
 				default:
-					// Unknown escape: preserve the backslash and the char
+
 					out.WriteByte('\\')
 					out.WriteRune(r)
 				}
 				continue
 			}
 
-			if r == '\\' { // start escape sequence
+			if r == '\\' {
 				escaped = true
 				continue
 			}
-			if r == '\'' { // end of single-quoted string
+			if r == '\'' {
 				out.WriteByte('"')
 				inSingle = false
 				continue
 			}
-			// regular char inside converted string; escape double quotes
+
 			writeConverted(r)
 			continue
 		}
 
-		// Outside any string
+
 		if r == '"' {
 			inDouble = true
 			out.WriteRune(r)
 			continue
 		}
-		if r == '\'' { // start of non-standard single-quoted string
+		if r == '\'' {
 			inSingle = true
 			out.WriteByte('"')
 			continue
@@ -231,8 +231,8 @@ func FixJSON(input string) string {
 		out.WriteRune(r)
 	}
 
-	// If input ended while still inside a single-quoted string, close it to
-	// produce the best-effort valid JSON.
+
+
 	if inSingle {
 		out.WriteByte('"')
 	}
@@ -246,17 +246,17 @@ func CanonicalToolName(name string) string {
 	return strings.ToLower(canonical)
 }
 
-// ToolNameMapFromClaudeRequest returns a canonical-name -> original-name map extracted from a Claude request.
-// It is used to restore exact tool name casing for clients that require strict tool name matching (e.g. Claude Code).
+
+
 func ToolNameMapFromClaudeRequest(rawJSON []byte) map[string]string {
 	return toolNameMapFromClaudeRequest(rawJSON, false)
 }
 
-// UnambiguousToolNameMapFromClaudeRequest precomputes the legacy Claude mapper's
-// collision policy so response chunks only need MapToolName, not the request body.
-// Ambiguous canonical keys are stored with an empty value, so the returned map is
-// only meaningful with MapToolName (which keeps the upstream name for empty
-// values); do not index it directly.
+
+
+
+
+
 func UnambiguousToolNameMapFromClaudeRequest(rawJSON []byte) map[string]string {
 	return toolNameMapFromClaudeRequest(rawJSON, true)
 }
@@ -330,8 +330,8 @@ func toolNameMapFromClaudeRequest(rawJSON []byte, rejectAmbiguous bool) map[stri
 		if previous, exists := out[key]; !exists {
 			out[key] = name
 		} else if rejectAmbiguous && previous != name {
-			// An empty value preserves the upstream name for every spelling of
-			// an ambiguous canonical key, including exact declared names.
+
+
 			out[key] = ""
 		}
 	}
@@ -362,12 +362,12 @@ func MapToolName(toolNameMap map[string]string, name string) string {
 	return name
 }
 
-// MapClaudeToolName restores the client-facing tool name while preferring an exact
-// declared name over canonical (case/leading-underscore-insensitive) restoration.
-// It re-scans the request body on every call; hot paths should precompute with
-// UnambiguousToolNameMapFromClaudeRequest and use MapToolName instead.
-// This prevents distinct tools such as "Read" and "read" from being collapsed to
-// the first declaration when the upstream already returned an exact name.
+
+
+
+
+
+
 func MapClaudeToolName(toolNameMap map[string]string, originalRequestRawJSON []byte, name string) string {
 	if name == "" {
 		return name
@@ -415,9 +415,9 @@ func MapClaudeToolName(toolNameMap map[string]string, originalRequestRawJSON []b
 	return MapToolName(toolNameMap, name)
 }
 
-// SanitizedFunctionNameMap builds an original-name → sanitized-name map from request tools.
-// Exact duplicate names share a mapping. Distinct names that sanitize to the same value receive
-// deterministic hash suffixes so every declaration remains addressable within the 64-byte limit.
+
+
+
 func SanitizedFunctionNameMap(rawJSON []byte) map[string]string {
 	names := functionNamesFromRequest(rawJSON)
 	if len(names) == 0 {
@@ -461,7 +461,7 @@ func SanitizedFunctionNameMap(rawJSON []byte) map[string]string {
 	return out
 }
 
-// MapSanitizedFunctionName returns the request-specific sanitized name when available.
+
 func MapSanitizedFunctionName(nameMap map[string]string, name string) string {
 	if mapped := nameMap[name]; mapped != "" {
 		return mapped
@@ -469,8 +469,8 @@ func MapSanitizedFunctionName(nameMap map[string]string, name string) string {
 	return SanitizeFunctionName(name)
 }
 
-// DisambiguatedToolNameMap builds a sanitized-name → original-name map using the
-// same collision-aware mapping as SanitizedFunctionNameMap.
+
+
 func DisambiguatedToolNameMap(rawJSON []byte) map[string]string {
 	forward := SanitizedFunctionNameMap(rawJSON)
 	if len(forward) == 0 {
@@ -489,9 +489,9 @@ func DisambiguatedToolNameMap(rawJSON []byte) map[string]string {
 	return out
 }
 
-// SanitizedToolNameMap builds the legacy sanitized-name → original-name map from
-// top-level Claude-style tools. Collision-aware translators should use
-// DisambiguatedToolNameMap instead.
+
+
+
 func SanitizedToolNameMap(rawJSON []byte) map[string]string {
 	if len(rawJSON) == 0 || !ojson.ValidBytes(rawJSON) {
 		return nil
@@ -596,7 +596,7 @@ func disambiguateSanitizedFunctionName(base, original string, used map[string]st
 	}
 }
 
-// DeduplicateFunctionDeclarations removes duplicate named declarations while preserving order.
+
 func DeduplicateFunctionDeclarations(raw []byte) []byte {
 	result := ParseGJSONBytesNoCopy(raw)
 	if !result.IsArray() {
@@ -618,9 +618,9 @@ func DeduplicateFunctionDeclarations(raw []byte) []byte {
 	return []byte("[" + strings.Join(parts, ",") + "]")
 }
 
-// RestoreSanitizedToolName looks up a sanitized function name in the provided map
-// and returns the original client-facing name. If no mapping exists, it returns
-// the sanitized name unchanged.
+
+
+
 func RestoreSanitizedToolName(toolNameMap map[string]string, sanitizedName string) string {
 	if sanitizedName == "" || toolNameMap == nil {
 		return sanitizedName
@@ -645,9 +645,9 @@ type claudeObjectSchemaInfo struct {
 }
 
 func claudeSchemaAllowsDynamic(schema ojson.Result) bool {
-	// patternProperties permit matching keys even when additionalProperties is false
-	// (the latter only restricts keys matching no pattern), so pattern permission is
-	// never cancelled by an additionalProperties: false sibling.
+
+
+
 	if schema.Get("patternProperties").IsObject() && len(schema.Get("patternProperties").Map()) > 0 {
 		return true
 	}
@@ -775,12 +775,12 @@ func analyzeClaudeObjectSchemaDepth(schema ojson.Result, root ojson.Result, dept
 		info.declaresObject = true
 	}
 	if claudeSchemaHasUnanalyzedKeyword(schema) {
-		// Any keyword outside the explicitly analyzed set (enum, const, contains,
-		// conditionals, unevaluated*, $dynamicRef, vendor applicators, ...) may
-		// constrain legal values in ways this analyzer does not model. Such schemas
-		// are unsafe-complex (unlike multi-branch unions, whose branches are
-		// collected): no destructive cleaning may run on them at all, even when a
-		// union keyword is also present.
+
+
+
+
+
+
 		info.complex = true
 		info.unsafeComplex = true
 		return info
@@ -792,12 +792,12 @@ func analyzeClaudeObjectSchemaDepth(schema ojson.Result, root ojson.Result, dept
 			return info
 		}
 		if len(branches) > 1 {
-			// Multi-branch unions stay complex so this level never normalizes arguments,
-			// but collect every branch's declared properties so child recursion and
-			// placeholder protection still see the full original declaration. The
-			// per-branch infos are kept separately because union branches are
-			// alternatives: their dynamic-property policies must not be combined as
-			// simultaneous constraints.
+
+
+
+
+
+
 			for _, branch := range branches {
 				branchInfo := analyzeClaudeObjectSchemaDepth(branch, root, depth+1, visitedRefs)
 				info.branchInfos = append(info.branchInfos, branchInfo)
@@ -823,9 +823,9 @@ func analyzeClaudeObjectSchemaDepth(schema ojson.Result, root ojson.Result, dept
 					info.properties[key] = appendUniqueSchema(info.properties[key], value)
 				}
 			}
-			// Sibling $ref/allOf applicators still constrain this node alongside the
-			// union; collect them too or their declared child properties would be
-			// invisible to protection and child recursion.
+
+
+
 			if ref := schema.Get("$ref"); ref.Exists() {
 				refValue := ref.String()
 				if !visitedRefs[refValue] {
@@ -1014,10 +1014,10 @@ func findClaudeToolSchema(originalRequestRawJSON []byte, toolName string) (ojson
 	return ojson.Result{}, root, false
 }
 
-// ClaudeToolIsParameterless reports whether the tool was declared in the original
-// Claude request with a missing schema or an explicitly closed empty object schema
-// (additionalProperties: false). Schemas that allow dynamic additional or pattern
-// properties, including objects that omit additionalProperties, are not parameterless.
+
+
+
+
 func ClaudeToolIsParameterless(toolName string, originalRequestRawJSON []byte) bool {
 	schema, root, found := findClaudeToolSchema(originalRequestRawJSON, toolName)
 	if !found {
@@ -1111,8 +1111,8 @@ func claudeArraySchemaUnsafe(schema ojson.Result, root ojson.Result) bool {
 func cleanClaudeToolArray(argsJSON string, schemas []ojson.Result, root ojson.Result, path string) string {
 	for _, schema := range schemas {
 		if claudeArraySchemaUnsafe(schema, root) {
-			// Value-constraining keywords on the array itself (e.g. enum of whole
-			// arrays) are not analyzed; keep the array untouched.
+
+
 			return argsJSON
 		}
 	}
@@ -1125,9 +1125,9 @@ func cleanClaudeToolArray(argsJSON string, schemas []ojson.Result, root ojson.Re
 			continue
 		}
 		if len(resolvedItems) == 0 {
-			// A candidate without an items schema (e.g. free-form "{}") accepts
-			// arbitrary elements; it must stay in the candidate set so element
-			// cleaning sees the free alternative instead of only strict siblings.
+
+
+
 			itemSchemas = appendUniqueSchema(itemSchemas, schema)
 			continue
 		}
@@ -1304,9 +1304,9 @@ func findTranslatedClaudeToolSchemas(translatedRequestRawJSON []byte, toolName s
 	}
 	canonicalToolName := CanonicalToolName(toolName)
 	sanitizedToolName := SanitizeFunctionName(toolName)
-	// Request translation renames colliding tool names via the request-wide
-	// disambiguated map (hash suffixes); the response name is the restored
-	// client name, so match the actually-sent name when it can be derived.
+
+
+
 	sentName := ""
 	if forward := SanitizedFunctionNameMap(originalRequestRawJSON); forward != nil {
 		sentName = forward[toolName]
@@ -1383,15 +1383,15 @@ func claudeInfoAnyBranchAllowsDynamic(info claudeObjectSchemaInfo) bool {
 }
 
 func claudeBranchMayAccept(info claudeObjectSchemaInfo, key string, current ojson.Result) bool {
-	// patternProperties permit matching keys regardless of additionalProperties.
+
 	if info.hasPatternProperties {
 		return true
 	}
-	// A branch that does not explicitly forbid additional properties accepts the
-	// key by JSON Schema default. To avoid treating every unconstrained sibling
-	// branch as permission (which would mask genuine placeholder cleaning), this
-	// implicit permission only counts when the current object matches the branch
-	// by carrying every property the branch requires.
+
+
+
+
+
 	if !info.forbidsDynamic {
 		matches := true
 		for requiredName := range info.required {
@@ -1410,8 +1410,8 @@ func claudeBranchMayAccept(info claudeObjectSchemaInfo, key string, current ojso
 	for _, branch := range info.branchInfos {
 		_, branchDeclaresKey := branch.properties[key]
 		if branchDeclaresKey {
-			// This branch constrains the key with its own explicit schema,
-			// which is already part of the collected candidates.
+
+
 			continue
 		}
 		if claudeBranchMayAccept(branch, key, current) {
@@ -1529,8 +1529,8 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 		return argsJSON
 	}
 	if originalInfo.complex {
-		// Multi-branch unions in the original cannot be analyzed declaratively; fall through
-		// and rely on the translated schema, which records the actually-sent branches.
+
+
 		hasUnion := false
 		for _, original := range originals {
 			if original.Get("anyOf").IsArray() || original.Get("oneOf").IsArray() {
@@ -1542,7 +1542,7 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 		}
 	}
 	cleaned := argsJSON
-	// Recurse into declared children using matching translated child schemas.
+
 	if originalInfo.hasProperties {
 		keys := make([]string, 0, len(originalInfo.properties))
 		for key := range originalInfo.properties {
@@ -1571,10 +1571,10 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 				currentForBranch = ojson.Get(cleaned, path)
 			}
 			if claudeParentBranchAcceptsChild(originalInfo, key, currentForBranch) || claudeOriginalsMayPermitChild(originals, root, key, currentForBranch) {
-				// Another alternative branch/candidate may accept this key without an
-				// explicit property schema (dynamic, pattern, or implicit-open matched
-				// permission); the collected explicit candidates do not constrain it
-				// then, so skip destructive recursion into this subtree.
+
+
+
+
 				continue
 			}
 			if child.IsObject() && len(originalChildren) > 0 {
@@ -1600,21 +1600,21 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 			continue
 		}
 		if claudeInfoAnyBranchAllowsDynamic(originalInfo) || claudeOriginalsAnyBranchAllowsDynamic(originals, root) {
-			// Some alternative branch (or candidate schema) accepts dynamic keys, so
-			// this value may be legitimate user data under that branch even though
-			// another branch received an injected placeholder. Never delete it.
+
+
+
 			continue
 		}
 		if claudeOriginalsAnyCandidateAcceptsImplicitly(originals, root, currentAfterChildren) {
-			// Alternative candidate child schemas extracted from different union
-			// branches: one candidate that the current object matches accepts the
-			// key implicitly, so the value may be legitimate under that candidate.
+
+
+
 			continue
 		}
 		if claudeParentBranchAcceptsChild(originalInfo, placeholder, currentAfterChildren) {
-			// An alternative branch that the current object matches (it carries all
-			// of the branch's required keys) accepts this key by implicit-open or
-			// pattern permission, so the value may be legitimate under that branch.
+
+
+
 			continue
 		}
 		declaredDeep := false
@@ -1649,7 +1649,7 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 						injected = true
 					}
 				}
-				// Also check required on union branches flattened into the analyzed info.
+
 				if !injected {
 					for _, req := range translated.Get("required").Array() {
 						if req.String() == "reason" {
@@ -1663,12 +1663,12 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 						injected = true
 					}
 				}
-				// The "_" placeholder is also marked required by addEmptySchemaPlaceholder;
-				// when branch flattening drops required, its boolean type is the fallback signal
-				// only for nested objects. At the top level, the Antigravity executor wraps tool
-				// schemas before its second sanitization pass, which can also inject "_" after
-				// translation; that post-translation injection is handled below by re-running
-				// the same schema cleaning on the translated schema.
+
+
+
+
+
+
 				if !injected && !topLevel {
 					for _, placeholderSchema := range placeholderSchemas {
 						if placeholderSchema.Get("type").String() == "boolean" {
@@ -1678,11 +1678,11 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 				}
 			}
 		}
-		// Union branches: analyzeClaudeObjectSchema only resolves single-branch unions,
-		// so also scan raw union branches. A required placeholder alone does not prove
-		// injection (the original may legitimately require it in a branch, which the
-		// deep-declaration check above already excluded); here the original declares the
-		// field nowhere, so a required occurrence in a sent branch is the injected one.
+
+
+
+
+
 		if !injected {
 			for _, translated := range translatedSchemas {
 				for _, keyword := range []string{"anyOf", "oneOf"} {
@@ -1700,19 +1700,19 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 				}
 			}
 		}
-		// The Antigravity executor re-sanitizes tool schemas after translation (wrapping
-		// them so top-level objects become nested), which can inject placeholders that the
-		// translated request seen here does not yet contain. Re-running the same cleaning
-		// on the translated schema reproduces that final sent schema; if the placeholder
-		// appears there as required, it was injected post-translation. This simulation is
-		// only applied to closed objects (additionalProperties: false): open objects may
-		// legitimately carry the key as user data on routes without executor injection,
-		// and deleting based on a simulated injection would lose real arguments there.
+
+
+
+
+
+
+
+
 		if !injected && topLevel && originalInfo.forbidsDynamic {
 			for _, translated := range translatedSchemas {
-				// Mirror the executor's cleanNestedSchema wrapping: the schema is nested
-				// under a wrapper key before cleaning, so its top-level object counts as
-				// nested and can receive the "_" placeholder.
+
+
+
 				wrapped, errWrap := ojson.SetRaw("{}", "schema", translated.Raw)
 				if errWrap != nil {
 					continue
@@ -1743,11 +1743,11 @@ func cleanClaudeToolArgumentsByTranslatedSchema(argsJSON string, translatedSchem
 			docModified = true
 		}
 	}
-	// Closed parameterless objects: if the original declared no properties and
-	// explicitly forbids additional properties (additionalProperties: false) without
-	// any candidate or union branch permitting dynamic data, normalize to "{}".
-	// Implicitly open objects (additionalProperties omitted) keep non-placeholder
-	// arguments after proven injected placeholders have been removed above.
+
+
+
+
+
 	allCandidatesDeclareObject := true
 	for _, original := range originals {
 		if !analyzeClaudeObjectSchema(original, root).declaresObject {
@@ -1834,13 +1834,13 @@ func cleanClaudeTranslatedArray(argsJSON string, translatedArraySchemas []ojson.
 	return cleaned
 }
 
-// CleanClaudeToolArgumentsWithTranslated strips placeholder arguments ("reason" or "_")
-// only when the translated (actually-sent) tool schema shows that the placeholder was
-// injected for that object (present in the translated schema with the placeholder
-// description or marked required, while absent from the original declaration). When no
-// translated schema is available it falls back to the original-schema inference used by
-// CleanClaudeToolArguments. Parameterless tools are still normalized to "{}" because a
-// strict Claude client rejects any argument for them.
+
+
+
+
+
+
+
 func CleanClaudeToolArgumentsWithTranslated(rawArgs string, toolName string, originalRequestRawJSON []byte, translatedRequestRawJSON []byte) string {
 	if translatedSchemas := findTranslatedClaudeToolSchemas(translatedRequestRawJSON, toolName, originalRequestRawJSON); len(translatedSchemas) > 0 {
 		rawArgs = strings.TrimSpace(rawArgs)
@@ -1862,15 +1862,15 @@ func CleanClaudeToolArgumentsWithTranslated(rawArgs string, toolName string, ori
 	return CleanClaudeToolArguments(rawArgs, toolName, originalRequestRawJSON)
 }
 
-// CleanClaudeToolArguments strips placeholder arguments ("reason" or "_") injected during
-// schema normalization for empty object schemas when returning responses to Claude clients.
-// If the tool was declared with empty or missing properties and additionalProperties: false,
-// the arguments are normalized to "{}". Placeholder fields are also stripped recursively from declared nested object
-// properties when they were not declared there. Free-form nested schemas that do not declare
-// an object type or properties are preserved because no placeholder is injected for them.
-// Tools that legitimately declared those fields or use union schemas that cannot be resolved
-// deterministically are left untouched. Deterministic allOf, single-branch unions, and local
-// $ref schemas are resolved within the tool schema scope, matching request translation.
+
+
+
+
+
+
+
+
+
 func CleanClaudeToolArguments(rawArgs string, toolName string, originalRequestRawJSON []byte) string {
 	rawArgs = strings.TrimSpace(rawArgs)
 	if rawArgs == "" || rawArgs == "{}" {

@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-// testMetaReasoningSignature builds a synthetic Meta Muse envelope with the
-// observed fixed header and a power-of-two payload bucket. The body bytes are
-// deterministic filler; recognition is a transport-shape check, so no real
-// captured value is needed (or permitted) here.
+
+
+
+
 func testMetaReasoningSignature(payloadLen int) string {
 	return base64.RawURLEncoding.EncodeToString(testMetaReasoningSignatureBytes(payloadLen, nil))
 }
@@ -26,8 +26,8 @@ func testMetaReasoningSignatureBytes(payloadLen int, mutate func([]byte)) []byte
 	return decoded
 }
 
-// testMetaRouterSuffix builds a synthetic router suffix in the observed
-// OpenRouter shape: a single run of 67 alphanumeric characters.
+
+
 func testMetaRouterSuffix() string {
 	return strings.Repeat("Ab3", 23)[:67]
 }
@@ -128,7 +128,7 @@ func TestInspectMetaReasoningSignature_RouterSuffixed(t *testing.T) {
 		t.Fatalf("CompatibleSignatureForProvider(Meta, routed) = (%q..., %v), want verbatim routed value", got[:16], ok)
 	}
 
-	// The routed form is still a foreign envelope to non-Meta targets.
+
 	decision := DecideSignatureCompatibility(SignatureProviderGPT, routed, SignatureBlockKindUnknown)
 	if decision.Compatible || decision.DetectedProvider != SignatureProviderMeta || decision.Action != SignatureActionDropBlock {
 		t.Fatalf("GPT target decision for routed = %+v, want detected Meta + drop_block", decision)
@@ -194,8 +194,8 @@ func TestSignatureProviderFromModelName_Meta(t *testing.T) {
 			t.Errorf("SignatureProviderFromModelName(%q) = %q, want %q", model, got, SignatureProviderMeta)
 		}
 	}
-	// The match is anchored to the "muse-" model-id boundary so unrelated
-	// names containing the substring "muse" stay unmapped.
+
+
 	for _, model := range []string{"museum-1", "amuse-model", "meta-llama-4"} {
 		if got := SignatureProviderFromModelName(model); got != SignatureProviderUnknown {
 			t.Errorf("SignatureProviderFromModelName(%q) = %q, want %q", model, got, SignatureProviderUnknown)
@@ -234,8 +234,8 @@ func TestSignatureProviderFromModelName_NamespacedTailWins(t *testing.T) {
 }
 
 func TestMetaCachePrefixUnsupported(t *testing.T) {
-	// No producer emits provider-prefixed Meta signatures, so unlike GPT or
-	// Claude there is deliberately no cache-prefix alias for Meta yet.
+
+
 	sig := testMetaReasoningSignature(1024)
 	for _, prefixed := range []string{"meta#" + sig, "muse#" + sig} {
 		if got := DetectSignatureProvider(prefixed); got != SignatureProviderUnknown {

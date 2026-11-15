@@ -108,10 +108,10 @@ func TestConvertOpenAIRequestToInteractionsInfersToolNamesForOutOfOrderResults(t
 		]
 	}`)
 	out, _ := ConvertOpenAIRequestToInteractions("gemini-3.1-flash-lite", raw, false)
-	// input.0: function_call call_1 (lookup)
-	// input.1: function_call call_2 (weather)
-	// input.2: function_result call_2 (weather)
-	// input.3: function_result call_1 (lookup)
+
+
+
+
 	if got := ojson.GetBytesNoCopy(out, "input.2.call_id").String(); got != "call_2" {
 		t.Fatalf("input.2.call_id = %q, want call_2. Output: %s", got, string(out))
 	}
@@ -176,7 +176,7 @@ func TestConvertOpenAIRequestToInteractions_AntigravitySanitizesGenerationConfig
 		"tools":[{"type":"function","function":{"name":"search","parameters":{"type":"object"}}}]
 	}`)
 	out, _ := ConvertOpenAIRequestToInteractions("antigravity-preview-05-2026", raw, false)
-	// generation_config should not contain temperature, top_p, max_output_tokens
+
 	for _, knob := range []string{"temperature", "top_p", "top_k", "stop_sequences", "max_output_tokens"} {
 		if ojson.GetBytesNoCopy(out, "generation_config."+knob).Exists() {
 			t.Fatalf("generation_config.%s should be stripped for antigravity model. Output: %s", knob, string(out))

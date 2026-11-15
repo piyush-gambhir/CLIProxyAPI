@@ -12,13 +12,13 @@ import (
 
 const pluginStatusReportTimeout = 10 * time.Second
 
-// PluginStatusClient defines the interface for pushing plugin status reports.
+
 type PluginStatusClient interface {
 	RPushPluginStatus(ctx context.Context, payload []byte) error
 }
 
-// ReportPluginStatus marshals the given report, sets NodeID and UpdatedAt,
-// and pushes it to the provided client with a timeout.
+
+
 func ReportPluginStatus(ctx context.Context, client PluginStatusClient, nodeID string, report homeplugins.SyncReport) error {
 	if client == nil {
 		return fmt.Errorf("home plugin status client is unavailable")

@@ -348,7 +348,7 @@ func TestResponseCompressionReusesPooledEncoders(t *testing.T) {
 		const rounds = 16
 		for round := 0; round < rounds; round++ {
 			if round%2 == 1 {
-				// A failed client write must not poison the encoder handed to the next response.
+
 				context, _ := gin.CreateTestContext(httptest.NewRecorder())
 				context.Header("Content-Type", "application/json")
 				writer := &responseCompressionWriter{ResponseWriter: &compressionErrorWriter{ResponseWriter: context.Writer}, encoding: encoding, minBytes: 1}

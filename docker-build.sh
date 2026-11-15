@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-#
-# build.sh - Linux/macOS Build Script
-#
-# This script automates the process of building and running the Docker container
-# with version information dynamically injected at build time.
+
+
+
+
+
 
 set -euo pipefail
 
@@ -13,13 +13,13 @@ if [[ "${1:-}" != "" ]]; then
   exit 1
 fi
 
-# --- Step 1: Choose Environment ---
+
 echo "Please select an option:"
 echo "1) Run using Pre-built Image (Recommended)"
 echo "2) Build from Source and Run (For Developers)"
 read -r -p "Enter choice [1-2]: " choice
 
-# --- Step 2: Execute based on choice ---
+
 case "$choice" in
   1)
     echo "--- Running with Pre-built Image ---"
@@ -30,7 +30,7 @@ case "$choice" in
   2)
     echo "--- Building from Source and Running ---"
 
-    # Get Version Information
+
     VERSION="$(git describe --tags --always --dirty)"
     COMMIT="$(git rev-parse --short HEAD)"
     BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -41,7 +41,7 @@ case "$choice" in
     echo "  Build Date: ${BUILD_DATE}"
     echo "----------------------------------------"
 
-    # Build and start the services with a local-only image tag
+
     export CLI_PROXY_IMAGE="cli-proxy-api:local"
 
     echo "Building the Docker image..."

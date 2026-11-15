@@ -13,10 +13,10 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// On a duplex socket a rejected queued create can fail while another response
-// is still running. That failure must not end the live response's interrupt
-// window, the running response's own terminal event must, and an unknown id
-// must be rejected even while a different response is active.
+
+
+
+
 func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 	received := make(chan string, 8)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,11 +30,11 @@ func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 				t.Errorf("close upstream: %v", errClose)
 			}
 		}()
-		// Hold the completion until the active-r1 interrupt has arrived, so
-		// the read loop cannot process it before the checks below run.
+
+
 		for _, payload := range []string{
 			`{"type":"response.created","response":{"id":"r1"}}`,
-			// A queued create rejected before its own response.created.
+
 			`{"type":"response.failed","response":{"id":"queued-1"}}`,
 		} {
 			if errWrite := conn.WriteMessage(websocket.TextMessage, []byte(payload)); errWrite != nil {
@@ -96,23 +96,23 @@ func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 		return exec.InterruptExecutionSession(context.Background(), sessionID, []byte(payload))
 	}
 
-	read() // response.created r1
-	read() // response.failed queued-1
+	read()
+	read()
 
-	// The queued rejection must not close r1's interrupt window.
+
 	if errInterrupt := interrupt(`{"type":"response.interrupt","response_id":"r1"}`); errInterrupt != nil {
 		t.Fatalf("interrupt active r1 after queued failure = %v, want nil (forwarded)", errInterrupt)
 	}
-	// An unknown id is not the running response: reject outright, without
-	// inviting a local HTTP fallback against the live websocket turn.
+
+
 	if errUnknown := interrupt(`{"type":"response.interrupt","response_id":"unknown"}`); !errors.Is(errUnknown, cliproxyexecutor.ErrUpstreamWebsocketInterruptRejected) {
 		t.Fatalf("unknown interrupt during r1 = %v, want ErrUpstreamWebsocketInterruptRejected", errUnknown)
 	}
 
-	read() // response.completed r1
+	read()
 
-	// The terminal id itself stays idempotent, but an id that never ran must
-	// be rejected while teardown of the active channel is still pending.
+
+
 	if errTerminal := interrupt(`{"type":"response.interrupt","response_id":"r1"}`); errTerminal != nil {
 		t.Fatalf("interrupt completed r1 = %v, want nil (already terminal)", errTerminal)
 	}
@@ -120,7 +120,7 @@ func TestInterruptExecutionSessionTracksActiveResponseIdentity(t *testing.T) {
 		t.Fatalf("unknown interrupt after completion = %v, want ErrUpstreamWebsocketInterruptRejected", errUnknown)
 	}
 
-	// Only the active-r1 interrupt may have reached the socket.
+
 	if errWrite := client.WriteMessage(websocket.TextMessage, []byte("barrier")); errWrite != nil {
 		t.Fatal(errWrite)
 	}

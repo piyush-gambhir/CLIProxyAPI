@@ -8,8 +8,8 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 )
 
-// IsAuthTokenPayloadKey returns true if key is a credential or token lifecycle field
-// that should not overwrite newly acquired OAuth credentials during metadata merge.
+
+
 func IsAuthTokenPayloadKey(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
 	case "access_token", "refresh_token", "id_token", "session_id",
@@ -21,8 +21,8 @@ func IsAuthTokenPayloadKey(key string) bool {
 	}
 }
 
-// MergeExistingAuthMetadata merges user-configured metadata fields from existingMap
-// into target.Metadata and target.Storage if target does not already define them.
+
+
 func MergeExistingAuthMetadata(target *Auth, existingMap map[string]any) {
 	if target == nil || len(existingMap) == 0 {
 		return
@@ -62,15 +62,15 @@ func MergeExistingAuthMetadata(target *Auth, existingMap map[string]any) {
 	}
 }
 
-// MergePreparedAuth merges prepared request auth updates into current without modifying
-// refresh lifecycle fields (such as LastRefreshedAt, LastError, or cooldown status).
+
+
 func MergePreparedAuth(base, current, updated *Auth) *Auth {
 	return mergeAuthContent(base, current, updated)
 }
 
-// MergeRefreshedAuth merges the refresh results from updated (derived from base)
-// into the latest runtime auth current, preserving concurrent user modifications
-// and active cooldowns.
+
+
+
 func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 	merged := mergeAuthContent(base, current, updated)
 	if merged == nil || current == nil || updated == nil {
@@ -82,7 +82,7 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 
 	merged.CodexRefreshPatch = updated.CodexRefreshPatch
 
-	// 1. Refresh Lifecycle Timestamps
+
 	applyPreservedRejectedTokens(current, merged, true)
 	if !updated.LastRefreshedAt.IsZero() {
 		merged.LastRefreshedAt = updated.LastRefreshedAt
@@ -91,7 +91,7 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 		merged.NextRefreshAfter = updated.NextRefreshAfter
 	}
 
-	// 2. Error and Status recovery
+
 	baseErrMsg := ""
 	if base != nil && base.LastError != nil {
 		baseErrMsg = base.LastError.Message
@@ -102,7 +102,7 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 	}
 	hasNewConcurrentError := currentErrMsg != "" && currentErrMsg != baseErrMsg
 
-	// 2. Disabled status three-way merge
+
 	baseDisabled := base != nil && (base.Disabled || base.Status == StatusDisabled)
 	currentDisabled := current.Disabled || current.Status == StatusDisabled
 	updatedDisabled := updated.Disabled || updated.Status == StatusDisabled
@@ -127,23 +127,23 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 		merged.Metadata["disabled"] = false
 
 		if hasNewConcurrentError {
-			// A new error occurred concurrently (e.g. 503, 429, timeout). Preserve it.
+
 			merged.LastError = current.LastError
 			merged.Status = current.Status
 			merged.Unavailable = current.Unavailable
 			merged.StatusMessage = current.StatusMessage
 		} else if current.Quota.Exceeded && current.Quota.Reason == "credential_quota" && current.Quota.NextRecoverAt.After(time.Now()) && !devinQuotaObservationRestored(merged, current, time.Now()) {
-			// Preserve active credential quota
+
 			merged.Unavailable = current.Unavailable
 			merged.Status = current.Status
 			merged.StatusMessage = current.StatusMessage
 		} else if current.Unavailable && current.NextRetryAfter.After(time.Now()) {
-			// Preserve active cooldown
+
 			merged.Unavailable = current.Unavailable
 			merged.Status = current.Status
 			merged.StatusMessage = current.StatusMessage
 		} else if (updated.Status == StatusActive || updated.Status == "") && (!merged.RequiresSignIn || merged.HasValidAccessToken(time.Now())) && (merged.RejectedAccessToken == "" || authAccessToken(merged) != merged.RejectedAccessToken) {
-			// Successful refresh clears previous auth error and restores active
+
 			merged.Status = StatusActive
 			merged.Unavailable = false
 			merged.StatusMessage = ""
@@ -151,17 +151,17 @@ func MergeRefreshedAuth(base, current, updated *Auth) *Auth {
 		}
 	}
 
-	// 2b. Quota observations: adopt the refreshed snapshot when it is newer.
-	// Without this, executor Refresh results (e.g. Devin quota reset signals)
-	// never reach the stored auth and cannot drive scheduling. Cooldown
-	// fields stay with current so concurrent failures are never lost.
-	// The merge happens after the status branches above (they only copy
-	// scalar fields), so ordering relative to them is safe.
+
+
+
+
+
+
 	merged.Quota = mergeQuotaObservation(merged.Quota, updated.Quota)
 
-	// 3. ModelStates: three-way merge to preserve concurrent cooldown/quota
-	// Independent layers follow the same current-wins rule: executor refresh
-	// results are derived from the base snapshot and never move them.
+
+
+
 	for model, mergedState := range merged.ModelStates {
 		if mergedState == nil {
 			continue
@@ -222,7 +222,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		return current.Clone()
 	}
 	if base != nil && current.RegistrationEpoch != base.RegistrationEpoch {
-		// Stale update from a previous registration cycle; keep current state.
+
 		return current.Clone()
 	}
 
@@ -236,7 +236,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		baseMeta = base.Metadata
 	}
 
-	// 1. Three-way merge for Metadata (excluding proxy_url which has dedicated canonical merge)
+
 	if updated.Metadata != nil {
 		for k, v := range updated.Metadata {
 			if strings.EqualFold(strings.TrimSpace(k), "proxy_url") {
@@ -277,13 +277,13 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 			changedByUser := hadInBase != hadInCurrent || (hadInBase && !reflect.DeepEqual(baseVal, currentVal))
 
 			if changedByExecutor {
-				// Apply executor change if user didn't modify it, or if it is a token payload field
+
 				if !changedByUser || IsAuthTokenPayloadKey(k) {
 					merged.Metadata[k] = v
 				}
 			}
 		}
-		// Deletions by executor: only delete if user didn't modify the field concurrently
+
 		if baseMeta != nil {
 			for k, baseVal := range baseMeta {
 				trimmedKey := strings.ToLower(strings.TrimSpace(k))
@@ -305,7 +305,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		merged.Metadata = updated.CodexRefreshPatch.Apply(merged.Metadata)
 	}
 
-	// 2. Storage and Runtime
+
 	if updated.Storage != nil {
 		merged.Storage = updated.Storage
 	}
@@ -313,7 +313,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		merged.Runtime = updated.Runtime
 	}
 
-	// 3. ProxyURL three-way merge (supporting both struct field and metadata modifications)
+
 	baseStruct := ""
 	if base != nil {
 		baseStruct = strings.TrimSpace(base.ProxyURL)
@@ -351,7 +351,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 	}
 
 	if userChangedStruct || userChangedMeta {
-		// User modified proxy concurrently; user takes precedence over executor.
+
 		if userChangedStruct && !userChangedMeta {
 			finalProxy = currentStruct
 		} else if userChangedMeta && !userChangedStruct {
@@ -362,7 +362,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 			finalProxy = currentMetaProxy
 		}
 	} else if execChangedStruct || execChangedMeta {
-		// Executor modified proxy and user did not touch it.
+
 		if execChangedStruct && !execChangedMeta {
 			finalProxy = updatedStruct
 		} else if execChangedMeta && !execChangedStruct {
@@ -382,7 +382,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		delete(merged.Metadata, "proxy_url")
 	}
 
-	// 4. Prefix (three-way merge, user modification takes precedence)
+
 	basePrefix := ""
 	if base != nil {
 		basePrefix = strings.TrimSpace(base.Prefix)
@@ -396,7 +396,7 @@ func mergeAuthContent(base, current, updated *Auth) *Auth {
 		merged.Prefix = currentPrefix
 	}
 
-	// 5. Attributes (three-way merge)
+
 	if updated.Attributes != nil {
 		if merged.Attributes == nil {
 			merged.Attributes = make(map[string]string)

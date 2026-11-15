@@ -79,9 +79,9 @@ func TestConvertGeminiResponseToOpenAINonStream_EmptyTextProducesEmptyString(t *
 	}
 }
 
-// Gemini 3.5 Transcribe returns its transcript in an audioTranscription part instead
-// of the regular text part. Without handling it, the transcript is silently dropped
-// and the OpenAI client sees an empty assistant message.
+
+
+
 func TestConvertGeminiResponseToOpenAINonStream_AudioTranscriptionPartProducesContent(t *testing.T) {
 	response := []byte(`{"candidates":[{"content":{"parts":[{"text":""},{"audioTranscription":{"text":"Hello world"}}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":185,"totalTokenCount":185}}`)
 	result := ConvertGeminiResponseToOpenAINonStream(context.Background(), "model", nil, nil, response, nil)
@@ -131,7 +131,7 @@ func TestConvertGeminiResponseToOpenAINonStream_TextPrecedenceOverAudioTranscrip
 func TestConvertGeminiResponseToOpenAI_PinsSanitizedNameMapPerStream(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Only the first chunk carries the request with a sanitized tool name.
+
 	var param any
 	reqWithTool := []byte(`{"model":"gemini-2.5-flash","tools":[{"name":"mcp/search"}]}`)
 	chunk1 := []byte(`{"candidates":[{"content":{"parts":[{"text":"thinking"}]}}]}`)
@@ -146,7 +146,7 @@ func TestConvertGeminiResponseToOpenAI_PinsSanitizedNameMapPerStream(t *testing.
 		t.Fatalf("restored tool name = %q, want mcp/search", got)
 	}
 
-	// 2. When the first chunk's request produces a nil SanitizedNameMap, later chunks must not rebuild it.
+
 	var nilMapParam any
 	reqNoSanitize := []byte(`{"model":"gemini-2.5-flash","tools":[{"name":"plain_tool"}]}`)
 	ConvertGeminiResponseToOpenAI(ctx, "gemini-2.5-flash", reqNoSanitize, nil, chunk1, &nilMapParam)

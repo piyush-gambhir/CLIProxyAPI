@@ -8,17 +8,17 @@ import (
 	"testing"
 )
 
-// inPlaceSJSONTokens are the sjson knobs that let a write reuse the caller's
-// backing array instead of allocating a new one.
+
+
 var inPlaceSJSONTokens = []string{"ReplaceInPlace", "Optimistic"}
 
-// inPlaceSJSONAllowlist holds files that are allowed to opt into in-place
-// sjson writes. A file may only be added here once it is proven that no
-// no-copy GJSON result (GetGJSONBytesNoCopy / ParseGJSONBytesNoCopy) derived
-// from the same buffer can still be alive at that point.
+
+
+
+
 var inPlaceSJSONAllowlist = map[string]struct{}{}
 
-// forEachSourceFile visits every non-test Go file in the repository.
+
 func forEachSourceFile(t *testing.T, root string, visit func(rel string, data []byte)) {
 	t.Helper()
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -54,16 +54,16 @@ func forEachSourceFile(t *testing.T, root string, visit func(rel string, data []
 	}
 }
 
-// TestNoInPlaceSJSONWrites protects the invariant that request payload buffers
-// stay immutable for their whole lifetime.
-//
-// GetGJSONBytesNoCopy and ParseGJSONBytesNoCopy hand out ojson.Result values
-// whose Raw and Str alias the caller's []byte. Go strings must never change,
-// so any in-place mutation of that buffer turns already-derived results into
-// silently wrong data: re-parsing sees the new bytes, and strings that were
-// used as map keys keep a hash computed from the old ones. The race detector
-// cannot see this, and normal tests rarely trigger it, so the invariant is
-// enforced statically here instead.
+
+
+
+
+
+
+
+
+
+
 func TestNoInPlaceSJSONWrites(t *testing.T) {
 	root := repoRoot(t)
 	var offenders []string
@@ -84,20 +84,20 @@ func TestNoInPlaceSJSONWrites(t *testing.T) {
 	}
 }
 
-// inPlaceByteWritePatterns match the realistic ways Go code overwrites bytes
-// of an existing buffer: copying into a slice expression, or zeroing elements
-// in a loop. They do not catch every possible form, so they are a tripwire for
-// new code rather than a proof of absence.
+
+
+
+
 var inPlaceByteWritePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`\bcopy\([a-zA-Z_][A-Za-z0-9_.]*\[`),
 	regexp.MustCompile(`^\s*[a-zA-Z_][A-Za-z0-9_.]*\[[a-zA-Z0-9_]+\] = 0\r?$`),
 }
 
-// reviewedInPlaceByteWrites records the reviewed in-place byte writes per file.
-// The count is part of the contract: a new write inside an already reviewed file
-// must be reviewed too, so the count must be updated deliberately. Each reason
-// states why the write cannot corrupt a no-copy GJSON result, either because the
-// buffer is private to the writer or because every reader copies out first.
+
+
+
+
+
 type reviewedInPlaceByteWrite struct {
 	count  int
 	reason string
@@ -118,10 +118,10 @@ var reviewedInPlaceByteWrites = map[string]reviewedInPlaceByteWrite{
 	"sdk/cliproxy/auth/selector_weighted.go":                        {2, "shifts []weightedPoolMember entries to insert or remove a pool member; no byte of any payload is rewritten"},
 }
 
-// TestInPlaceByteWritesAreReviewed keeps the set of in-place byte writes small
-// and justified. Any change to the set, including a new write in an already
-// reviewed file, fails until the author proves that no no-copy GJSON result
-// derived from that buffer can still be alive and records it above.
+
+
+
+
 func TestInPlaceByteWritesAreReviewed(t *testing.T) {
 	root := repoRoot(t)
 	found := make(map[string][]string)

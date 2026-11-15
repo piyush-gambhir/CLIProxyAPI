@@ -1,7 +1,7 @@
-// Package gemini provides response translation functionality for Codex to Gemini API compatibility.
-// This package handles the conversion of Codex API responses into Gemini-compatible
-// JSON format, transforming streaming events and non-streaming responses into the format
-// expected by Gemini API clients.
+
+
+
+
 package gemini
 
 import (
@@ -21,44 +21,44 @@ var (
 	dataTag = []byte("data:")
 )
 
-// ConvertCodexResponseToGeminiParams holds parameters for response conversion.
+
 type ConvertCodexResponseToGeminiParams struct {
 	Model      string
 	CreatedAt  int64
 	ResponseID string
-	// StorageOutputs queues completed function-call chunks in stream order
-	// until the next non-storage event flushes them. A queue (not a single
-	// slot) so consecutive function calls can never overwrite each other.
+
+
+
 	StorageOutputs     [][]byte
 	HasOutputTextDelta bool
 	LastImageHashByID  map[string][32]byte
-	// PendingThoughtSignature holds a completed reasoning item's
-	// encrypted_content until the next visible part can carry it as a
-	// Gemini thoughtSignature, mirroring native Gemini part placement.
+
+
+
 	PendingThoughtSignature string
-	// SeenReasoningSignatures deduplicates repeated reasoning done events
-	// by item ID + signature hash within one response stream.
+
+
 	SeenReasoningSignatures map[[32]byte]bool
-	// HasReasoningDelta and StreamedReasoningItems record whether reasoning
-	// deltas were already emitted for the current or keyed reasoning item so
-	// done-only reasoning summaries can fall back cleanly.
+
+
+
 	HasReasoningDelta      bool
 	StreamedReasoningItems map[string]bool
 }
 
-// ConvertCodexResponseToGemini converts Codex streaming response format to Gemini format.
-// This function processes various Codex event types and transforms them into Gemini-compatible JSON responses.
-// It handles text content, tool calls, and usage metadata, outputting responses that match the Gemini API format.
-// The function maintains state across multiple calls to ensure proper response sequencing.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response
-//   - rawJSON: The raw JSON response from the Codex API
-//   - param: A pointer to a parameter object for maintaining state between calls
-//
-// Returns:
-//   - [][]byte: A slice of Gemini-compatible JSON responses
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &ConvertCodexResponseToGeminiParams{
@@ -81,8 +81,8 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 
 	params := (*param).(*ConvertCodexResponseToGeminiParams)
 
-	// flushStorageOutputs drains queued function-call chunks ahead of any
-	// extra chunks, preserving stream order on every return path.
+
+
 	flushStorageOutputs := func(extra ...[]byte) [][]byte {
 		outputs := make([][]byte, 0, len(params.StorageOutputs)+len(extra))
 		for _, stored := range params.StorageOutputs {
@@ -99,7 +99,7 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 		params.PendingThoughtSignature = ""
 	}
 
-	// Base Gemini response template
+
 	templateDoc := ojson.NewDocString(`{"candidates":[{"content":{"role":"model","parts":[]}}],"usageMetadata":{"trafficType":"PROVISIONED_THROUGHPUT"},"modelVersion":"gemini-2.5-pro","createTime":"2025-08-15T02:52:03.884209Z","responseId":"06CeaPH7NaCU48APvNXDyA4"}`)
 	{
 		_ = templateDoc.Set("modelVersion", params.Model)
@@ -139,7 +139,7 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 		return flushStorageOutputs(templateDoc.Bytes())
 	}
 
-	// Handle function call completion
+
 	if typeStr == "response.output_item.done" {
 		itemResult := rootResult.Get("item")
 		itemType := itemResult.Get("type").String()
@@ -170,8 +170,8 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 			}
 			var emittedParts [][]byte
 			if params.PendingThoughtSignature != "" && signature != "" {
-				// A previous reasoning step never got a visible carrier part;
-				// flush it as an empty thought part so no signature is lost.
+
+
 				part := setGeminiThoughtSignature([]byte(`{"thought":true,"text":""}`), params.PendingThoughtSignature)
 				params.PendingThoughtSignature = ""
 				emittedParts = append(emittedParts, part)
@@ -218,10 +218,10 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 			return flushStorageOutputs(templateDoc.Bytes())
 		}
 		if itemType == "function_call" {
-			// Create function call part
+
 			functionCallDoc := ojson.NewDocString(`{"functionCall":{"name":"","args":{}}}`)
 			{
-				// Restore original tool name if shortened
+
 				n := itemResult.Get("name").String()
 				rev := buildReverseMapFromGeminiOriginal(originalRequestRawJSON)
 				if orig, ok := rev[n]; ok {
@@ -230,7 +230,7 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 				_ = functionCallDoc.Set("functionCall.name", n)
 			}
 
-			// Parse and set arguments
+
 			argsStr := itemResult.Get("arguments").String()
 			if argsStr != "" {
 				argsResult := ojson.Parse(argsStr)
@@ -246,14 +246,14 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 
 			params.StorageOutputs = append(params.StorageOutputs, append([]byte(nil), templateDoc.Bytes()...))
 
-			// Use this return to storage message
+
 			return [][]byte{}
 		}
 	}
 
-	if typeStr == "response.created" { // Handle response creation - set model and response ID
-		// A new response must not inherit per-response streaming state if the
-		// caller reuses params across responses.
+	if typeStr == "response.created" {
+
+
 		params.StorageOutputs = nil
 		params.PendingThoughtSignature = ""
 		params.SeenReasoningSignatures = nil
@@ -272,7 +272,7 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 			return flushStorageOutputs(templateDoc.Bytes())
 		}
 		return [][]byte{}
-	} else if typeStr == "response.reasoning_summary_text.delta" || typeStr == "response.reasoning_text.delta" { // Handle reasoning/thinking content delta
+	} else if typeStr == "response.reasoning_summary_text.delta" || typeStr == "response.reasoning_text.delta" {
 		params.HasReasoningDelta = true
 		if itemID := strings.TrimSpace(rootResult.Get("item_id").String()); itemID != "" {
 			if params.StreamedReasoningItems == nil {
@@ -290,17 +290,17 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 		part, _ = ojson.SetBytes(part, "text", rootResult.Get("delta").String())
 		emittedParts = append(emittedParts, part)
 		translatorcommon.SetRawArrayItemsDoc(templateDoc, "candidates.0.content.parts", emittedParts)
-	} else if typeStr == "response.output_text.delta" { // Handle regular text content delta
+	} else if typeStr == "response.output_text.delta" {
 		params.HasOutputTextDelta = true
 		partDoc := ojson.NewDocString(`{"text":""}`)
 		_ = partDoc.Set("text", rootResult.Get("delta").String())
 		if rootResult.Get("delta").String() != "" {
-			// An empty text part may be discarded by clients; never spend the
-			// only signature copy on one.
+
+
 			attachPendingThoughtSignatureDoc(partDoc)
 		}
 		translatorcommon.SetRawArrayItemsDoc(templateDoc, "candidates.0.content.parts", [][]byte{partDoc.Bytes()})
-	} else if typeStr == "response.output_item.done" { // Fallback: emit final message text when no delta chunks were received
+	} else if typeStr == "response.output_item.done" {
 		itemResult := rootResult.Get("item")
 		if itemResult.Get("type").String() != "message" || params.HasOutputTextDelta {
 			return [][]byte{}
@@ -330,7 +330,7 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 			return flushStorageOutputs(templateDoc.Bytes())
 		}
 		return [][]byte{}
-	} else if typeStr == "response.completed" || typeStr == "response.incomplete" { // Handle response completion with usage metadata
+	} else if typeStr == "response.completed" || typeStr == "response.incomplete" {
 		if params.PendingThoughtSignature != "" {
 			part := setGeminiThoughtSignature([]byte(`{"thought":true,"text":""}`), params.PendingThoughtSignature)
 			params.PendingThoughtSignature = ""
@@ -352,51 +352,51 @@ func ConvertCodexResponseToGemini(_ context.Context, modelName string, originalR
 	return flushStorageOutputs(templateDoc.Bytes())
 }
 
-// ConvertCodexResponseToGeminiNonStream converts a non-streaming Codex response to a non-streaming Gemini response.
-// This function processes the complete Codex response and transforms it into a single Gemini-compatible
-// JSON response. It handles message content, tool calls, reasoning content, and usage metadata, combining all
-// the information into a single response that matches the Gemini API format.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response
-//   - rawJSON: The raw JSON response from the Codex API
-//   - param: A pointer to a parameter object for the conversion (unused in current implementation)
-//
-// Returns:
-//   - []byte: A Gemini-compatible JSON response containing all message content and metadata
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	rootResult := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Verify this is a terminal response event.
+
 	responseType := rootResult.Get("type").String()
 	if responseType != "response.completed" && responseType != "response.incomplete" {
 		return []byte{}
 	}
 
-	// Base Gemini response template for non-streaming
+
 	templateDoc := ojson.NewDocString(`{"candidates":[{"content":{"role":"model","parts":[]},"finishReason":"STOP"}],"usageMetadata":{"trafficType":"PROVISIONED_THROUGHPUT"},"modelVersion":"","createTime":"","responseId":""}`)
 
-	// Set model version
+
 	_ = templateDoc.Set("modelVersion", modelName)
 
-	// Set response metadata from the completed response
+
 	responseData := rootResult.Get("response")
 	if responseData.Exists() {
 		if responseType == "response.incomplete" {
 			_ = templateDoc.Set("candidates.0.finishReason", codexGeminiIncompleteFinishReason(responseData.Get("incomplete_details.reason").String()))
 		}
-		// Set response ID
+
 		if responseId := responseData.Get("id"); responseId.Exists() {
 			_ = templateDoc.Set("responseId", responseId.String())
 		}
 
-		// Set creation time
+
 		if createdAt := responseData.Get("created_at"); createdAt.Exists() {
 			_ = templateDoc.Set("createTime", time.Unix(createdAt.Int(), 0).Format(time.RFC3339Nano))
 		}
 
-		// Set usage metadata
+
 		if usage := responseData.Get("usage"); usage.Exists() {
 			inputTokens := usage.Get("input_tokens").Int()
 			outputTokens := usage.Get("output_tokens").Int()
@@ -407,7 +407,7 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 			_ = templateDoc.Set("usageMetadata.totalTokenCount", totalTokens)
 		}
 
-		// Process output content to build parts array
+
 		var parts [][]byte
 		var pendingFunctionCalls [][]byte
 
@@ -415,8 +415,8 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 			if len(pendingFunctionCalls) == 0 {
 				return
 			}
-			// Add all pending function calls as individual parts
-			// This maintains the original Gemini API format while ensuring consecutive calls are grouped together
+
+
 			parts = append(parts, pendingFunctionCalls...)
 			pendingFunctionCalls = nil
 		}
@@ -427,14 +427,14 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 
 				switch itemType {
 				case "reasoning":
-					// Flush any pending function calls before adding non-function content
+
 					flushPendingFunctionCalls()
 
-					// Surface the reasoning summary as thought parts and carry
-					// the encrypted reasoning state as thoughtSignature on the
-					// first of them, so a Gemini client can replay it next turn.
-					// With no summary text, emit an empty thought carrier part;
-					// dropping the signature here would silently break replay.
+
+
+
+
+
 					signature := strings.TrimSpace(value.Get("encrypted_content").String())
 					thoughtTexts := extractCodexGeminiReasoningTexts(value)
 					for i, thoughtText := range thoughtTexts {
@@ -451,10 +451,10 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 					}
 
 				case "message":
-					// Flush any pending function calls before adding non-function content
+
 					flushPendingFunctionCalls()
 
-					// Add regular text content
+
 					if content := value.Get("content"); content.Exists() && content.IsArray() {
 						content.ForEach(func(_, contentItem ojson.Result) bool {
 							if contentItem.Get("type").String() == "output_text" {
@@ -483,7 +483,7 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 					parts = append(parts, partDoc.Bytes())
 
 				case "function_call":
-					// Collect function call for potential merging with consecutive ones
+
 					functionCallDoc := ojson.NewDocString(`{"functionCall":{"args":{},"name":""}}`)
 					{
 						n := value.Get("name").String()
@@ -494,7 +494,7 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 						_ = functionCallDoc.Set("functionCall.name", n)
 					}
 
-					// Parse and set arguments
+
 					if argsStr := value.Get("arguments").String(); argsStr != "" {
 						argsResult := ojson.Parse(argsStr)
 						if argsResult.IsObject() {
@@ -508,7 +508,7 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 				return true
 			})
 
-			// Handle any remaining pending function calls at the end
+
 			flushPendingFunctionCalls()
 
 			if len(parts) > 0 {
@@ -519,7 +519,7 @@ func ConvertCodexResponseToGeminiNonStream(_ context.Context, modelName string, 
 	return templateDoc.Bytes()
 }
 
-// buildReverseMapFromGeminiOriginal builds a map[short]original from original Gemini request tools.
+
 func buildReverseMapFromGeminiOriginal(original []byte) map[string]string {
 	tools := ojson.GetBytesNoCopy(original, "tools")
 	rev := map[string]string{}
@@ -548,13 +548,13 @@ func buildReverseMapFromGeminiOriginal(original []byte) map[string]string {
 	return rev
 }
 
-// geminiCodexThoughtSignatureCarrierMagic marks a CPA carrier payload inside
-// a Gemini thoughtSignature bytes field. The Gemini JSON wire form of a bytes
-// field is standard padded base64, while Responses signatures are opaque
-// strings that may use the base64url alphabet without padding; writing such a
-// string verbatim makes official SDK []byte decoding fail. The carrier therefore
-// stores magic+rawSignature as the byte payload and relies on standard base64
-// JSON encoding, which every Gemini client decodes and echoes losslessly.
+
+
+
+
+
+
+
 func extractCodexGeminiReasoningTexts(value ojson.Result) []string {
 	var thoughtTexts []string
 	if summary := value.Get("summary"); summary.IsArray() {

@@ -10,7 +10,7 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// ResolveKimiBaseURL resolves the upstream API base URL for Kimi API requests based on auth.
+
 func ResolveKimiBaseURL(auth *cliproxyauth.Auth) string {
 	if auth != nil {
 		if auth.Attributes != nil {
@@ -30,7 +30,7 @@ func ResolveKimiBaseURL(auth *cliproxyauth.Auth) string {
 	return kimiauth.KimiAPIBaseURL
 }
 
-// ResolveKimiResponsesURL resolves the upstream URL for Kimi Responses API requests.
+
 func ResolveKimiResponsesURL(auth *cliproxyauth.Auth) string {
 	baseURL := ResolveKimiBaseURL(auth)
 	if strings.HasSuffix(baseURL, "/v1") {
@@ -39,7 +39,7 @@ func ResolveKimiResponsesURL(auth *cliproxyauth.Auth) string {
 	return baseURL + "/v1/responses"
 }
 
-// ResolveKimiChatURL resolves the upstream URL for Kimi Chat Completions requests.
+
 func ResolveKimiChatURL(auth *cliproxyauth.Auth) string {
 	baseURL := ResolveKimiBaseURL(auth)
 	if strings.HasSuffix(baseURL, "/v1") {
@@ -48,7 +48,7 @@ func ResolveKimiChatURL(auth *cliproxyauth.Auth) string {
 	return baseURL + "/v1/chat/completions"
 }
 
-// ResolveKimiClaudeBaseURL resolves the base URL for Kimi Claude Messages delegation.
+
 func ResolveKimiClaudeBaseURL(auth *cliproxyauth.Auth) string {
 	baseURL := ResolveKimiBaseURL(auth)
 	return strings.TrimSuffix(baseURL, "/v1")
@@ -64,11 +64,11 @@ func isResponsesToolOutput(item ojson.Result) bool {
 	return t == "function_call_output" || t == "custom_tool_call_output"
 }
 
-// NormalizeKimiResponsesInput normalizes the input array for Kimi Responses API requests.
-// When parallel function calls are emitted, Kimi requires all corresponding tool outputs
-// to follow immediately without intervening non-tool messages (e.g. developer/user messages).
-// This function defers intervening non-tool items until all outputs for the current batch
-// of function calls have been emitted, keeping the outputs contiguous.
+
+
+
+
+
 func NormalizeKimiResponsesInput(body []byte) ([]byte, error) {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return body, nil
@@ -84,7 +84,7 @@ func NormalizeKimiResponsesInput(body []byte) ([]byte, error) {
 	return doc.Bytes(), nil
 }
 
-// NormalizeKimiResponsesInputDoc normalizes the input array for Kimi Responses API requests in place on doc.
+
 func NormalizeKimiResponsesInputDoc(doc *ojson.Doc) (bool, error) {
 	if doc == nil || doc.Len() == 0 {
 		return false, nil

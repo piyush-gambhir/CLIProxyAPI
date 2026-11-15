@@ -12,10 +12,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-// thinkingSignatureFixtures are signature shapes that survive a JSON round trip
-// only when every stage performs targeted edits instead of re-encoding the body.
-// They cover base64 padding, JSON metacharacters, escape sequences, astral-plane
-// runes and an oversized value.
+
+
+
+
 func thinkingSignatureFixtures() []string {
 	return []string{
 		"ErUBCkYIBRgCKkDq+9zN/vQ7aB1c2dEf==",
@@ -27,8 +27,8 @@ func thinkingSignatureFixtures() []string {
 	}
 }
 
-// collectThinkingSignatures returns every messages[].content[].signature value in
-// document order.
+
+
 func collectThinkingSignatures(t *testing.T, body []byte) []string {
 	t.Helper()
 	var found []string
@@ -44,9 +44,9 @@ func collectThinkingSignatures(t *testing.T, body []byte) []string {
 	return found
 }
 
-// buildThinkingHistoryPayload renders a multi-turn conversation whose assistant
-// turns carry thinking blocks with the supplied signatures, plus a declared tool
-// so the OAuth MCP alias pass has real work to do.
+
+
+
 func buildThinkingHistoryPayload(t *testing.T, signatures []string, firstUserText string) []byte {
 	t.Helper()
 	type block map[string]any
@@ -84,10 +84,10 @@ func buildThinkingHistoryPayload(t *testing.T, signatures []string, firstUserTex
 	return encoded
 }
 
-// TestClaudeThinkingSignaturesSurviveUpstreamPreparation pins the roadmap
-// requirement that thinking-block signatures replay byte-for-byte through the
-// upstream request pipeline: cloaking (system blocks, currentDate, CCH signing)
-// followed by the OAuth MCP tool alias pass.
+
+
+
+
 func TestClaudeThinkingSignaturesSurviveUpstreamPreparation(t *testing.T) {
 	signatures := thinkingSignatureFixtures()
 	payload := buildThinkingHistoryPayload(t, signatures, "first question")
@@ -133,14 +133,14 @@ func TestClaudeThinkingSignaturesSurviveUpstreamPreparation(t *testing.T) {
 	}
 }
 
-// TestClaudeThinkingSignaturesSurviveSensitiveWordObfuscation guards the case
-// where cloaking rewrites message text: obfuscation must never reach into an
-// opaque thinking signature, even when the signature contains the trigger word.
+
+
+
 func TestClaudeThinkingSignaturesSurviveSensitiveWordObfuscation(t *testing.T) {
 	const sensitive = "proxy"
 	signature := "ErUBCkYIBRgC" + sensitive + "KkDq+9zN=="
-	// The visible user text carries the same trigger word, so the assertions below
-	// prove obfuscation ran and still left the signature untouched.
+
+
 	payload := buildThinkingHistoryPayload(t, []string{signature}, "please use the "+sensitive+" now")
 
 	cfg := &config.Config{

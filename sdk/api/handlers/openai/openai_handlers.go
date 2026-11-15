@@ -1,9 +1,9 @@
-// Package openai provides HTTP handlers for OpenAI API endpoints.
-// This package implements the OpenAI-compatible API interface, including model listing
-// and chat completion functionality. It supports both streaming and non-streaming responses,
-// and manages a pool of clients to interact with backend services.
-// The handlers translate OpenAI API requests to the appropriate backend format and
-// convert responses back to OpenAI-compatible format.
+
+
+
+
+
+
 package openai
 
 import (
@@ -27,41 +27,41 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/api/handlers"
 )
 
-// OpenAIAPIHandler contains the handlers for OpenAI API endpoints.
-// It holds a pool of clients to interact with the backend service.
+
+
 type OpenAIAPIHandler struct {
 	*handlers.BaseAPIHandler
 }
 
-// NewOpenAIAPIHandler creates a new OpenAI API handlers instance.
-// It takes an BaseAPIHandler instance as input and returns an OpenAIAPIHandler.
-//
-// Parameters:
-//   - apiHandlers: The base API handlers instance
-//
-// Returns:
-//   - *OpenAIAPIHandler: A new OpenAI API handlers instance
+
+
+
+
+
+
+
+
 func NewOpenAIAPIHandler(apiHandlers *handlers.BaseAPIHandler) *OpenAIAPIHandler {
 	return &OpenAIAPIHandler{
 		BaseAPIHandler: apiHandlers,
 	}
 }
 
-// HandlerType returns the identifier for this handler implementation.
+
 func (h *OpenAIAPIHandler) HandlerType() string {
 	return OpenAI
 }
 
-// Models returns the OpenAI-compatible model metadata supported by this handler.
+
 func (h *OpenAIAPIHandler) Models() []map[string]any {
-	// Get dynamic models from the global registry
+
 	modelRegistry := registry.GetGlobalRegistry()
 	return modelRegistry.GetAvailableModels("openai")
 }
 
-// OpenAIModels handles the /v1/models endpoint.
-// It returns a list of available AI models with their capabilities
-// and specifications in OpenAI-compatible format.
+
+
+
 func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 	if _, ok := c.Request.URL.Query()["client_version"]; ok {
 		clientVersion := c.Query("client_version")
@@ -79,10 +79,10 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 		return
 	}
 
-	// Get all available models
+
 	allModels := h.Models()
 
-	// Filter to only include the 4 required fields: id, object, created, owned_by
+
 	filteredModels := make([]map[string]any, len(allModels))
 	for i, model := range allModels {
 		filteredModel := map[string]any{
@@ -90,12 +90,12 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 			"object": model["object"],
 		}
 
-		// Add created field if it exists
+
 		if created, exists := model["created"]; exists {
 			filteredModel["created"] = created
 		}
 
-		// Add owned_by field if it exists
+
 		if ownedBy, exists := model["owned_by"]; exists {
 			filteredModel["owned_by"] = ownedBy
 		}
@@ -109,15 +109,15 @@ func (h *OpenAIAPIHandler) OpenAIModels(c *gin.Context) {
 	})
 }
 
-// ChatCompletions handles the /v1/chat/completions endpoint.
-// It determines whether the request is for a streaming or non-streaming response
-// and calls the appropriate handler based on the model provider.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
+
+
+
+
+
+
 func (h *OpenAIAPIHandler) ChatCompletions(c *gin.Context) {
 	rawJSON, err := handlers.ReadRequestBody(c)
-	// If data retrieval fails, return a 400 Bad Request error.
+
 	if err != nil {
 		c.JSON(clienterror.HTTPStatusFromErrorOr(err, http.StatusBadRequest), handlers.ErrorResponse{
 			Error: handlers.ErrorDetail{
@@ -128,12 +128,12 @@ func (h *OpenAIAPIHandler) ChatCompletions(c *gin.Context) {
 		return
 	}
 
-	// Check if the client requested a streaming response.
+
 	streamResult := ojson.GetBytesNoCopy(rawJSON, "stream")
 	stream := streamResult.Type == ojson.True
 
-	// Some clients send OpenAI Responses-format payloads to /v1/chat/completions.
-	// Convert them to Chat Completions so downstream translators preserve tool metadata.
+
+
 	if shouldTreatAsResponsesFormat(rawJSON) {
 		modelName := strings.Clone(ojson.GetBytesNoCopy(rawJSON, "model").String())
 		rawJSON, _ = responsesconverter.ConvertOpenAIResponsesRequestToOpenAIChatCompletions(modelName, rawJSON, stream)
@@ -148,8 +148,8 @@ func (h *OpenAIAPIHandler) ChatCompletions(c *gin.Context) {
 
 }
 
-// shouldTreatAsResponsesFormat detects OpenAI Responses-style payloads that are
-// accidentally sent to the Chat Completions endpoint.
+
+
 func shouldTreatAsResponsesFormat(rawJSON []byte) bool {
 	var fieldsBuf [3]ojson.Result
 	fields := ojson.GetManyBytesNoCopy(fieldsBuf[:0], rawJSON, "messages", "input", "instructions")
@@ -159,16 +159,16 @@ func shouldTreatAsResponsesFormat(rawJSON []byte) bool {
 	return fields[1].Exists() || fields[2].Exists()
 }
 
-// Completions handles the /v1/completions endpoint.
-// It determines whether the request is for a streaming or non-streaming response
-// and calls the appropriate handler based on the model provider.
-// This endpoint follows the OpenAI completions API specification.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
+
+
+
+
+
+
+
 func (h *OpenAIAPIHandler) Completions(c *gin.Context) {
 	rawJSON, err := handlers.ReadRequestBody(c)
-	// If data retrieval fails, return a 400 Bad Request error.
+
 	if err != nil {
 		c.JSON(clienterror.HTTPStatusFromErrorOr(err, http.StatusBadRequest), handlers.ErrorResponse{
 			Error: handlers.ErrorDetail{
@@ -179,7 +179,7 @@ func (h *OpenAIAPIHandler) Completions(c *gin.Context) {
 		return
 	}
 
-	// Check if the client requested a streaming response.
+
 	streamResult := ojson.GetBytesNoCopy(rawJSON, "stream")
 	if streamResult.Type == ojson.True {
 		h.handleCompletionsStreamingResponse(c, rawJSON)
@@ -189,35 +189,35 @@ func (h *OpenAIAPIHandler) Completions(c *gin.Context) {
 
 }
 
-// convertCompletionsRequestToChatCompletions converts OpenAI completions API request to chat completions format.
-// This allows the completions endpoint to use the existing chat completions infrastructure.
-//
-// Parameters:
-//   - rawJSON: The raw JSON bytes of the completions request
-//
-// Returns:
-//   - []byte: The converted chat completions request
+
+
+
+
+
+
+
+
 func convertCompletionsRequestToChatCompletions(rawJSON []byte) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Extract prompt from completions request
+
 	prompt := root.Get("prompt").String()
 	if prompt == "" {
 		prompt = "Complete this:"
 	}
 
-	// Create chat completions structure
+
 	outDoc := ojson.NewDoc([]byte(`{"model":"","messages":[{"role":"user","content":""}]}`))
 
-	// Set model
+
 	if model := root.Get("model"); model.Exists() {
 		_ = outDoc.Set("model", model.String())
 	}
 
-	// Set the prompt as user message content
+
 	_ = outDoc.Set("messages.0.content", prompt)
 
-	// Copy other parameters from completions to chat completions
+
 	if maxTokens := root.Get("max_tokens"); maxTokens.Exists() {
 		_ = outDoc.Set("max_tokens", maxTokens.Int())
 	}
@@ -261,21 +261,21 @@ func convertCompletionsRequestToChatCompletions(rawJSON []byte) []byte {
 	return outDoc.Bytes()
 }
 
-// convertChatCompletionsResponseToCompletions converts chat completions API response back to completions format.
-// This ensures the completions endpoint returns data in the expected format.
-//
-// Parameters:
-//   - rawJSON: The raw JSON bytes of the chat completions response
-//
-// Returns:
-//   - []byte: The converted completions response
+
+
+
+
+
+
+
+
 func convertChatCompletionsResponseToCompletions(rawJSON []byte) []byte {
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Base completions response structure
+
 	outDoc := ojson.NewDoc([]byte(`{"id":"","object":"text_completion","created":0,"model":"","choices":[]}`))
 
-	// Copy basic fields
+
 	if id := root.Get("id"); id.Exists() {
 		_ = outDoc.Set("id", id.String())
 	}
@@ -292,7 +292,7 @@ func convertChatCompletionsResponseToCompletions(rawJSON []byte) []byte {
 		_ = outDoc.SetRawBytes("usage", []byte(usage.Raw))
 	}
 
-	// Convert choices from chat completions to completions format
+
 	var choices []interface{}
 	if chatChoices := root.Get("choices"); chatChoices.Exists() && chatChoices.IsArray() {
 		chatChoices.ForEach(func(_, choice ojson.Result) bool {
@@ -300,24 +300,24 @@ func convertChatCompletionsResponseToCompletions(rawJSON []byte) []byte {
 				"index": choice.Get("index").Int(),
 			}
 
-			// Extract text content from message.content
+
 			if message := choice.Get("message"); message.Exists() {
 				if content := message.Get("content"); content.Exists() {
 					completionsChoice["text"] = content.String()
 				}
 			} else if delta := choice.Get("delta"); delta.Exists() {
-				// For streaming responses, use delta.content
+
 				if content := delta.Get("content"); content.Exists() {
 					completionsChoice["text"] = content.String()
 				}
 			}
 
-			// Copy finish_reason
+
 			if finishReason := choice.Get("finish_reason"); finishReason.Exists() {
 				completionsChoice["finish_reason"] = finishReason.String()
 			}
 
-			// Copy logprobs if present
+
 			if logprobs := choice.Get("logprobs"); logprobs.Exists() {
 				completionsChoice["logprobs"] = logprobs.Value()
 			}
@@ -335,47 +335,47 @@ func convertChatCompletionsResponseToCompletions(rawJSON []byte) []byte {
 	return outDoc.Bytes()
 }
 
-// convertChatCompletionsStreamChunkToCompletions converts a streaming chat completions chunk to completions format.
-// This handles the real-time conversion of streaming response chunks and filters out empty text responses.
-//
-// Parameters:
-//   - chunkData: The raw JSON bytes of a single chat completions stream chunk
-//
-// Returns:
-//   - []byte: The converted completions stream chunk, or nil if should be filtered out
+
+
+
+
+
+
+
+
 func convertChatCompletionsStreamChunkToCompletions(chunkData []byte) []byte {
 	root := util.ParseGJSONBytesNoCopy(chunkData)
 
-	// Check if this chunk has any meaningful content
+
 	hasContent := false
 	hasUsage := root.Get("usage").Exists()
 	if chatChoices := root.Get("choices"); chatChoices.Exists() && chatChoices.IsArray() {
 		chatChoices.ForEach(func(_, choice ojson.Result) bool {
-			// Check if delta has content or finish_reason
+
 			if delta := choice.Get("delta"); delta.Exists() {
 				if content := delta.Get("content"); content.Exists() && content.String() != "" {
 					hasContent = true
-					return false // Break out of forEach
+					return false
 				}
 			}
-			// Also check for finish_reason to ensure we don't skip final chunks
+
 			if finishReason := choice.Get("finish_reason"); finishReason.Exists() && finishReason.String() != "" && finishReason.String() != "null" {
 				hasContent = true
-				return false // Break out of forEach
+				return false
 			}
 			return true
 		})
 	}
 
-	// If no meaningful content and no usage, return nil to indicate this chunk should be skipped
+
 	if !hasContent && !hasUsage {
 		return nil
 	}
 
-	// Base completions stream response structure
+
 	outDoc := ojson.NewDoc([]byte(`{"id":"","object":"text_completion","created":0,"model":"","choices":[]}`))
 
-	// Copy basic fields
+
 	if id := root.Get("id"); id.Exists() {
 		_ = outDoc.Set("id", id.String())
 	}
@@ -388,7 +388,7 @@ func convertChatCompletionsStreamChunkToCompletions(chunkData []byte) []byte {
 		_ = outDoc.Set("model", model.String())
 	}
 
-	// Convert choices from chat completions delta to completions format
+
 	var choices []interface{}
 	if chatChoices := root.Get("choices"); chatChoices.Exists() && chatChoices.IsArray() {
 		chatChoices.ForEach(func(_, choice ojson.Result) bool {
@@ -396,7 +396,7 @@ func convertChatCompletionsStreamChunkToCompletions(chunkData []byte) []byte {
 				"index": choice.Get("index").Int(),
 			}
 
-			// Extract text content from delta.content
+
 			if delta := choice.Get("delta"); delta.Exists() {
 				if content := delta.Get("content"); content.Exists() && content.String() != "" {
 					completionsChoice["text"] = content.String()
@@ -407,12 +407,12 @@ func convertChatCompletionsStreamChunkToCompletions(chunkData []byte) []byte {
 				completionsChoice["text"] = ""
 			}
 
-			// Copy finish_reason
+
 			if finishReason := choice.Get("finish_reason"); finishReason.Exists() && finishReason.String() != "null" {
 				completionsChoice["finish_reason"] = finishReason.String()
 			}
 
-			// Copy logprobs if present
+
 			if logprobs := choice.Get("logprobs"); logprobs.Exists() {
 				completionsChoice["logprobs"] = logprobs.Value()
 			}
@@ -427,7 +427,7 @@ func convertChatCompletionsStreamChunkToCompletions(chunkData []byte) []byte {
 		_ = outDoc.SetRawBytes("choices", choicesJSON)
 	}
 
-	// Copy usage if present
+
 	if usage := root.Get("usage"); usage.Exists() {
 		_ = outDoc.SetRawBytes("usage", []byte(usage.Raw))
 	}
@@ -435,13 +435,13 @@ func convertChatCompletionsStreamChunkToCompletions(chunkData []byte) []byte {
 	return outDoc.Bytes()
 }
 
-// handleNonStreamingResponse handles non-streaming chat completion responses
-// for Gemini models. It selects a client from the pool, sends the request, and
-// aggregates the response before sending it back to the client in OpenAI format.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
-//   - rawJSON: The raw JSON bytes of the OpenAI-compatible request
+
+
+
+
+
+
+
 func (h *OpenAIAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
 
@@ -460,15 +460,15 @@ func (h *OpenAIAPIHandler) handleNonStreamingResponse(c *gin.Context, rawJSON []
 	cliCancel()
 }
 
-// handleStreamingResponse handles streaming responses for Gemini models.
-// It establishes a streaming connection with the backend service and forwards
-// the response chunks to the client in real-time using Server-Sent Events.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
-//   - rawJSON: The raw JSON bytes of the OpenAI-compatible request
+
+
+
+
+
+
+
 func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byte) {
-	// Get the http.Flusher interface to manually flush the response.
+
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, handlers.ErrorResponse{
@@ -515,7 +515,7 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 	}
 	upstreamHeaders = resolvedHeaders
 
-	// Peek at the first chunk to determine success or failure before setting headers
+
 	for {
 		select {
 		case <-c.Request.Context().Done():
@@ -523,7 +523,7 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 			return
 		case errMsg, ok := <-errChan:
 			if !ok {
-				// Err channel closed cleanly; wait for data channel.
+
 				errChan = nil
 				continue
 			}
@@ -535,7 +535,7 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 				h.handleStreamResult(c, flusher, func(err error) { cliCancel(err) }, make(chan []byte), pendingErrors, false)
 				return
 			}
-			// Upstream failed immediately. Return proper error status and JSON.
+
 			h.WriteErrorResponse(c, errMsg)
 			if errMsg != nil {
 				cliCancel(errMsg.Error)
@@ -562,7 +562,7 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 					}
 					return
 				}
-				// Stream closed without data? Send DONE or just headers.
+
 				commitSSE()
 				_, _ = fmt.Fprintf(c.Writer, "data: [DONE]\n\n")
 				flusher.Flush()
@@ -570,7 +570,7 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 				return
 			}
 
-			// Success! Commit to streaming headers.
+
 			stopKeepAlive()
 			commitSSE()
 
@@ -586,7 +586,7 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 				return
 			}
 
-			// Continue streaming the rest
+
 			h.handleStreamResult(c, flusher, func(err error) { cliCancel(err) }, dataChan, errChan, initialHasFinishReason)
 			return
 		case <-keepAliveC:
@@ -595,17 +595,17 @@ func (h *OpenAIAPIHandler) handleStreamingResponse(c *gin.Context, rawJSON []byt
 	}
 }
 
-// handleCompletionsNonStreamingResponse handles non-streaming completions responses.
-// It converts completions request to chat completions format, sends to backend,
-// then converts the response back to completions format before sending to client.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
-//   - rawJSON: The raw JSON bytes of the OpenAI-compatible completions request
+
+
+
+
+
+
+
 func (h *OpenAIAPIHandler) handleCompletionsNonStreamingResponse(c *gin.Context, rawJSON []byte) {
 	c.Header("Content-Type", "application/json")
 
-	// Convert completions request to chat completions format
+
 	chatCompletionsJSON := convertCompletionsRequestToChatCompletions(rawJSON)
 
 	modelName := strings.Clone(ojson.GetBytesNoCopy(chatCompletionsJSON, "model").String())
@@ -624,15 +624,15 @@ func (h *OpenAIAPIHandler) handleCompletionsNonStreamingResponse(c *gin.Context,
 	cliCancel()
 }
 
-// handleCompletionsStreamingResponse handles streaming completions responses.
-// It converts completions request to chat completions format, streams from backend,
-// then converts each response chunk back to completions format before sending to client.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request and response
-//   - rawJSON: The raw JSON bytes of the OpenAI-compatible completions request
+
+
+
+
+
+
+
 func (h *OpenAIAPIHandler) handleCompletionsStreamingResponse(c *gin.Context, rawJSON []byte) {
-	// Get the http.Flusher interface to manually flush the response.
+
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, handlers.ErrorResponse{
@@ -644,7 +644,7 @@ func (h *OpenAIAPIHandler) handleCompletionsStreamingResponse(c *gin.Context, ra
 		return
 	}
 
-	// Convert completions request to chat completions format
+
 	chatCompletionsJSON := convertCompletionsRequestToChatCompletions(rawJSON)
 
 	modelName := strings.Clone(ojson.GetBytesNoCopy(chatCompletionsJSON, "model").String())
@@ -682,7 +682,7 @@ func (h *OpenAIAPIHandler) handleCompletionsStreamingResponse(c *gin.Context, ra
 	}
 	upstreamHeaders = resolvedHeaders
 
-	// Peek at the first chunk
+
 	for {
 		select {
 		case <-c.Request.Context().Done():
@@ -690,7 +690,7 @@ func (h *OpenAIAPIHandler) handleCompletionsStreamingResponse(c *gin.Context, ra
 			return
 		case errMsg, ok := <-errChan:
 			if !ok {
-				// Err channel closed cleanly; wait for data channel.
+
 				errChan = nil
 				continue
 			}
@@ -735,7 +735,7 @@ func (h *OpenAIAPIHandler) handleCompletionsStreamingResponse(c *gin.Context, ra
 				return
 			}
 
-			// Success! Set headers.
+
 			stopKeepAlive()
 			commitSSE()
 
@@ -747,7 +747,7 @@ func (h *OpenAIAPIHandler) handleCompletionsStreamingResponse(c *gin.Context, ra
 				return
 			}
 
-			// Write the first chunk
+
 			converted := convertChatCompletionsStreamChunkToCompletions(chunk)
 			var initialHasFinishReason bool
 			if converted != nil {

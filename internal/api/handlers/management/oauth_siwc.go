@@ -29,8 +29,8 @@ type siwcOAuthService interface {
 	ExchangeSIWCCodeForTokens(ctx context.Context, code, clientID, redirectURI, deviceID string, pkce *codex.PKCECodes) (*codex.CodexSIWCTokenData, error)
 }
 
-// siwcBindSession is server-owned: callbacks cannot select a different target,
-// redirect URI, PKCE verifier, or token endpoint. It never contains an auth snapshot.
+
+
 type siwcBindSession struct {
 	mu           sync.Mutex
 	owner        *Handler
@@ -63,8 +63,8 @@ func siwcBindEligible(auth *coreauth.Auth) bool {
 	return strings.TrimSpace(authAttribute(auth, "path")) != ""
 }
 
-// resolveSIWCBindFile resolves only a server-selected auth path, confines it to
-// auth-dir, and reads the current credential rather than trusting a cached token.
+
+
 func resolveSIWCBindFile(authDir, path string) (string, map[string]any, error) {
 	dir, errResolve := util.ResolveAuthDir(authDir)
 	if errResolve != nil || strings.TrimSpace(dir) == "" {
@@ -92,8 +92,8 @@ func resolveSIWCBindFile(authDir, path string) (string, map[string]any, error) {
 			return "", nil, errAbs
 		}
 	}
-	// Match the commit-time rule: directory aliases are allowed, but the
-	// credential itself must not be a symlink.
+
+
 	originalInfo, errLstat := os.Lstat(path)
 	if errLstat != nil || !originalInfo.Mode().IsRegular() {
 		return "", nil, errors.New("credential must be an existing regular file")
@@ -135,8 +135,8 @@ func resolveSIWCBindFile(authDir, path string) (string, map[string]any, error) {
 	return realPath, metadata, nil
 }
 
-// GetSIWCStatus returns the read-only local SIWC status ("off", "valid", or "invalid")
-// for a Codex credential without triggering any upstream refresh or verification request.
+
+
 func (h *Handler) GetSIWCStatus(c *gin.Context) {
 	if h == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "handler unavailable"})
@@ -189,9 +189,9 @@ func (h *Handler) GetSIWCStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": string(target.CodexSIWCStatus(time.Now()))})
 }
 
-// StartSIWCBind creates a v8-only OAuth session for an existing Codex credential.
-// Remote browsers complete it by submitting the full loopback callback URL; no
-// listener on the server's port 1455 is required or started by this endpoint.
+
+
+
 func (h *Handler) StartSIWCBind(c *gin.Context) {
 	var req struct {
 		Name string `json:"name"`
@@ -291,9 +291,9 @@ func (s *oauthSessionStore) registerSIWC(state string, flow *siwcBindSession) bo
 	return true
 }
 
-// claimSIWCCommit keeps a session addressable until an already-started disk
-// commit finishes. Expiration must not turn a durable successful bind into an
-// unknown-state response. Cancellation is serialized by the session gate.
+
+
+
 func (s *oauthSessionStore) claimSIWCCommit(state string, flow *siwcBindSession) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -408,8 +408,8 @@ func (h *Handler) handleOAuthCallbackV8(c *gin.Context, req siwcCallbackRequest)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// fail intentionally never publishes upstream response bodies or callback values.
-// Caller holds the session gate.
+
+
 func (flow *siwcBindSession) fail(state, message string) {
 	SetOAuthSessionError(state, message)
 	flow.cancel()
@@ -418,7 +418,7 @@ func (flow *siwcBindSession) fail(state, message string) {
 
 func (flow *siwcBindSession) exchange(state, code, clientID string) {
 	defer close(flow.exchangeDone)
-	// Copy under the gate so cancellation and terminal cleanup cannot race PKCE use.
+
 	flow.mu.Lock()
 	pkce := flow.pkce
 	flow.mu.Unlock()
@@ -463,7 +463,7 @@ func (flow *siwcBindSession) exchange(state, code, clientID string) {
 		flow.fail(state, "Failed to save SIWC binding; the target may have changed")
 		return
 	}
-	// Binding is durable and published before the session reports success.
+
 	persisted = updated
 	CompleteOAuthSession(state)
 	flow.cancel()

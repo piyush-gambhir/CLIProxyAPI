@@ -368,10 +368,10 @@ func TestClaudeExecutor_ClaudeCodeCLIFingerprintOnThirdPartyGateway(t *testing.T
 	if !strings.HasPrefix(billing, "x-anthropic-billing-header:") {
 		t.Fatalf("system.0.text = %q, want billing header", billing)
 	}
-	// Native only emits cch for firstParty on api.anthropic.com or for vertex. A
-	// third-party gateway therefore gets the billing header without a per-request
-	// hash, which is both the measured shape and what keeps the gateway's prompt
-	// cache stable.
+
+
+
+
 	if strings.Contains(billing, "cch=") {
 		t.Fatalf("billing = %q, want no cch on a third-party gateway", billing)
 	}
@@ -548,8 +548,8 @@ func TestClaudeExecutor_OfficialAPIKeyClaudeCodeCLIFingerprintIncludesDiagnostic
 	if diagnostics := ojson.GetBytes(seenBody, "diagnostics"); !diagnostics.IsObject() {
 		t.Fatalf("diagnostics = %s, want object after fingerprint-profile opt-in", diagnostics.Raw)
 	}
-	// api.anthropic.com is the one API-key origin where native emits cch, so the
-	// opt-in must produce a finalized signature here.
+
+
 	billing := ojson.GetBytes(seenBody, "system.0.text").String()
 	if !strings.HasPrefix(billing, "x-anthropic-billing-header:") || !strings.Contains(billing, "cch=") {
 		t.Fatalf("billing = %q, want signed cch on api.anthropic.com", billing)
@@ -704,7 +704,7 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 	executor := NewKimiExecutor(&config.Config{})
 	payload := []byte(`{"model":"kimi-k2.5(max)","max_tokens":32,"messages":[{"role":"user","content":"hello"}]}`)
 
-	// 1. Default Kimi OAuth: no fingerprint injection.
+
 	defaultAuth := &cliproxyauth.Auth{
 		ID:         "kimi-auth-default",
 		Provider:   "kimi",
@@ -726,7 +726,7 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 		t.Fatalf("default Execute() error = %v", errDefault)
 	}
 
-	// 2. Kimi OAuth with fingerprint_profile: "claude-code-cli": opts into Claude Code CLI fingerprint.
+
 	fpAuth := &cliproxyauth.Auth{
 		ID:         "kimi-auth-profile",
 		Provider:   "kimi",
@@ -753,7 +753,7 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 		t.Fatalf("expected 2 captured requests, got %d", len(seenBodies))
 	}
 
-	// Default Kimi preserves caller fingerprint headers and strips billing/CCH.
+
 	if got := ojson.GetBytes(seenBodies[0], "metadata.user_id").String(); got != "" {
 		t.Fatalf("default Kimi request should not have metadata.user_id: %q", got)
 	}
@@ -767,9 +767,9 @@ func TestKimiExecutor_ClaudeMessagesWithAndWithoutClaudeCodeCLIFingerprint(t *te
 		t.Fatalf("default Kimi User-Agent = %q, want caller value", got)
 	}
 
-	// Opt-in Kimi requests use the complete CLI fingerprint. Kimi is not a native
-	// cch origin, so the billing header goes out unsigned, exactly as native does
-	// against a non-first-party base URL.
+
+
+
 	userID := ojson.GetBytes(seenBodies[1], "metadata.user_id").String()
 	if !helps.IsValidUserID(userID) {
 		t.Fatalf("opt-in Kimi metadata.user_id = %q, want valid synthesized user_id", userID)
@@ -866,9 +866,9 @@ func TestKimiExecutor_ClaudeCodeCLIProfileKeepsUnsignedBillingAndNativeCountToke
 	}
 }
 
-// The custom-header escape hatch must have the same scope in caller-owned mode as
-// it has on the CLI path: a non-streaming third-party gateway keeps operator
-// overrides, while api.anthropic.com and streaming requests claw them back.
+
+
+
 func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.T) {
 	newAuth := func() *cliproxyauth.Auth {
 		return &cliproxyauth.Auth{
@@ -881,12 +881,12 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 		}
 	}
 	body := []byte(`{"model":"claude-opus-4-6"}`)
-	// The caller deliberately sends neither header; only the operator configured them.
+
 	incoming := http.Header{}
 
-	// Non-streaming custom gateway: the documented escape hatch wins. This is the
-	// case the caller-owned branch used to break by resetting on "caller sent none"
-	// instead of on upstream/stream scope.
+
+
+
 	gatewayReq := httptest.NewRequest(http.MethodPost, "https://gateway.example/v1/messages", nil)
 	if err := applyClaudeHeaders(gatewayReq, newAuth(), "key-operator-headers", false, nil, body, nil, incoming, false); err != nil {
 		t.Fatalf("applyClaudeHeaders(gateway) error = %v", err)
@@ -898,8 +898,8 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 		t.Fatalf("gateway Accept-Encoding = %q, want the operator override preserved", got)
 	}
 
-	// Streaming custom gateway: transport negotiation is restored so an Accept
-	// override cannot silently disable SSE.
+
+
 	streamReq := httptest.NewRequest(http.MethodPost, "https://gateway.example/v1/messages", nil)
 	if err := applyClaudeHeaders(streamReq, newAuth(), "key-operator-headers", true, nil, body, nil, incoming, false); err != nil {
 		t.Fatalf("applyClaudeHeaders(stream) error = %v", err)
@@ -908,7 +908,7 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 		t.Fatalf("stream Accept = %q, want event-stream negotiation restored", got)
 	}
 
-	// api.anthropic.com: first-party identity is never operator-overridable.
+
 	directReq := newClaudeHeaderTestRequest(t, nil)
 	if err := applyClaudeHeaders(directReq, newAuth(), "key-operator-headers", false, nil, body, nil, incoming, false); err != nil {
 		t.Fatalf("applyClaudeHeaders(direct) error = %v", err)
@@ -918,8 +918,8 @@ func TestApplyClaudeHeaders_CallerOwnedScopesOperatorHeaderOverrides(t *testing.
 	}
 }
 
-// Restoring transport negotiation must restore the caller's own choice, not CPA's
-// default: this mode is caller-owned.
+
+
 func TestApplyClaudeHeaders_CallerOwnedRestoreKeepsCallerAccept(t *testing.T) {
 	auth := &cliproxyauth.Auth{
 		ID: "caller-owned-restore",
@@ -939,9 +939,9 @@ func TestApplyClaudeHeaders_CallerOwnedRestoreKeepsCallerAccept(t *testing.T) {
 	}
 }
 
-// A caller that sends no User-Agent must not reach the upstream as Go's transport
-// default, which reads as a bot signature. Uses a real socket because that default
-// is added by the transport, not by the header builder.
+
+
+
 func TestClaudeExecutor_CallerOwnedNeverSendsGoTransportUserAgent(t *testing.T) {
 	var seen http.Header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -969,7 +969,7 @@ func TestClaudeExecutor_CallerOwnedNeverSendsGoTransportUserAgent(t *testing.T) 
 	}
 }
 
-// A caller that does send a User-Agent keeps it verbatim.
+
 func TestClaudeExecutor_CallerOwnedForwardsCallerUserAgent(t *testing.T) {
 	var seen http.Header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -996,9 +996,9 @@ func TestClaudeExecutor_CallerOwnedForwardsCallerUserAgent(t *testing.T) {
 	}
 }
 
-// Without a profile opt-in the caller owns its count_tokens body. A caller that
-// deliberately sends context_management expects the returned count to reflect it,
-// so CPA must not quietly reshape the request into the CLI contract.
+
+
+
 func TestKimiExecutor_DefaultCountTokensRespectsCallerBody(t *testing.T) {
 	var seenBody []byte
 	ctx := context.WithValue(context.Background(), "cliproxy.roundtripper", kimiRoundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -1024,8 +1024,8 @@ func TestKimiExecutor_DefaultCountTokensRespectsCallerBody(t *testing.T) {
 	if len(seenBody) == 0 {
 		t.Fatal("expected an upstream count_tokens request")
 	}
-	// Positive pins first: assert the request really arrived for this model, so the
-	// preservation assertions below cannot pass vacuously.
+
+
 	if got := ojson.GetBytes(seenBody, "model").String(); got == "" {
 		t.Fatalf("upstream model is empty: %s", seenBody)
 	}
@@ -1040,15 +1040,15 @@ func TestKimiExecutor_DefaultCountTokensRespectsCallerBody(t *testing.T) {
 	if got := ojson.GetBytes(seenBody, "metadata.user_id").String(); got != "caller-user" {
 		t.Fatalf("metadata.user_id = %q, want the caller value preserved", got)
 	}
-	// Default mode must not add the CLI billing/CCH attribution either.
+
 	if strings.Contains(string(seenBody), "x-anthropic-billing-header:") || strings.Contains(string(seenBody), "cch=") {
 		t.Fatalf("default count_tokens must not inject billing/CCH: %s", seenBody)
 	}
 }
 
-// api.anthropic.com rejects metadata/context_management/diagnostics on
-// count_tokens regardless of profile, so upstream compatibility still strips them
-// for an unprofiled first-party API key.
+
+
+
 func TestClaudeExecutor_DefaultCountTokensStillStripsAnthropicRejectedFields(t *testing.T) {
 	var seenBody []byte
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -1170,8 +1170,8 @@ func TestKimiExecutor_StripsCallerClaudeCodeCCH(t *testing.T) {
 	}
 }
 
-// Profile resolution runs several times per request, so an unrecognized value must
-// not turn one config typo into a per-request log flood.
+
+
 func TestNormalizeClaudeFingerprintProfileWarnsOncePerValue(t *testing.T) {
 	var buf bytes.Buffer
 	previous := log.StandardLogger().Out
@@ -1207,9 +1207,9 @@ func TestNormalizeClaudeFingerprintProfileWarnsOncePerValue(t *testing.T) {
 	}
 }
 
-// The CLI profile is credential-scoped: the same credential resolves the same
-// policy regardless of which upstream URL the request is being built for. Origin
-// only decides CCH signing, through claudeCCHSigningEnabled.
+
+
+
 func TestResolveClaudeFingerprintPolicyIsOriginIndependent(t *testing.T) {
 	t.Parallel()
 

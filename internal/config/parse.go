@@ -9,8 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ParseConfigBytes parses a YAML configuration payload into Config and applies the same
-// in-memory normalizations as LoadConfigOptional, without persisting any changes to disk.
+
+
 func ParseConfigBytes(data []byte) (*Config, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("config payload is empty")
@@ -21,8 +21,8 @@ func ParseConfigBytes(data []byte) (*Config, error) {
 	}
 
 	var cfg Config
-	// Keep defaults aligned with LoadConfigOptional.
-	cfg.Host = "" // Default empty: binds to all interfaces (IPv4 + IPv6)
+
+	cfg.Host = ""
 	cfg.LoggingToFile = false
 	cfg.LogsMaxTotalSizeMB = 0
 	cfg.ErrorLogsMaxFiles = 10
@@ -65,7 +65,7 @@ func ParseConfigBytes(data []byte) (*Config, error) {
 		cfg.Discovery.Subtypes = []string{"_chat-completions", "_responses", "_messages", "_generate-content", "_interactions"}
 	}
 
-	// Hash remote management key if plaintext is detected (nested), but do NOT persist.
+
 	if cfg.RemoteManagement.SecretKey != "" && !looksLikeBcrypt(cfg.RemoteManagement.SecretKey) {
 		hashed, errHash := bcrypt.GenerateFromPassword([]byte(cfg.RemoteManagement.SecretKey), bcrypt.DefaultCost)
 		if errHash != nil {
@@ -111,7 +111,7 @@ func ParseConfigBytes(data []byte) (*Config, error) {
 		return nil, errResolvePluginsDir
 	}
 
-	// Apply the same sanitization pipeline.
+
 	cfg.SanitizeGeminiKeys()
 	cfg.SanitizeInteractionsKeys()
 	cfg.SanitizeVertexCompatKeys()

@@ -34,7 +34,7 @@ func TestServiceShutdown_ViolentShutdownImmediatelyClosesServer(t *testing.T) {
 		_ = server.Start()
 	}()
 
-	// Wait briefly for server to bind.
+
 	var conn net.Conn
 	var errDial error
 	for i := 0; i < 20; i++ {
@@ -71,7 +71,7 @@ func TestServiceShutdown_ViolentShutdownImmediatelyClosesServer(t *testing.T) {
 		t.Fatalf("service.Shutdown error = %v, want nil", errShutdown)
 	}
 
-	// Verify server port is closed.
+
 	conn2, errDial2 := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if errDial2 == nil {
 		_ = conn2.Close()
@@ -116,7 +116,7 @@ func TestServiceRun_ShutdownContextFreshAtExit(t *testing.T) {
 		runDone <- service.Run(runCtx)
 	}()
 
-	// Wait for server to accept connections.
+
 	var conn net.Conn
 	var errDial error
 	for i := 0; i < 50; i++ {
@@ -134,7 +134,7 @@ func TestServiceRun_ShutdownContextFreshAtExit(t *testing.T) {
 		t.Logf("connection close error: %v", errCloseConn)
 	}
 
-	// Trigger stop.
+
 	stopStart := time.Now()
 	cancel()
 
@@ -151,7 +151,7 @@ func TestServiceRun_ShutdownContextFreshAtExit(t *testing.T) {
 		t.Fatal("timed out waiting for service.Run to exit")
 	}
 
-	// Verify server port is closed.
+
 	connClosed, errDialClosed := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if errDialClosed == nil {
 		_ = connClosed.Close()

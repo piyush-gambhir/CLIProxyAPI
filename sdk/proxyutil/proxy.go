@@ -17,28 +17,28 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// Mode describes how a proxy setting should be interpreted.
+
 type Mode int
 
 const (
-	// ModeInherit means no explicit proxy behavior was configured.
+
 	ModeInherit Mode = iota
-	// ModeDirect means outbound requests must bypass proxies explicitly.
+
 	ModeDirect
-	// ModeProxy means a concrete proxy URL was configured.
+
 	ModeProxy
-	// ModeInvalid means the proxy setting is present but malformed or unsupported.
+
 	ModeInvalid
 )
 
-// Setting is the normalized interpretation of a proxy configuration value.
+
 type Setting struct {
 	Raw  string
 	Mode Mode
 	URL  *url.URL
 }
 
-// Parse normalizes a proxy configuration value into inherit, direct, or proxy modes.
+
 func Parse(raw string) (Setting, error) {
 	trimmed := strings.TrimSpace(raw)
 	setting := Setting{Raw: trimmed}
@@ -74,8 +74,8 @@ func Parse(raw string) (Setting, error) {
 	}
 }
 
-// ValidRequestProxy reports whether raw is a concrete execution proxy override.
-// The host must be present, and an explicit port must be in the range 1-65535.
+
+
 func ValidRequestProxy(raw string) bool {
 	setting, errParse := Parse(raw)
 	if errParse != nil || setting.Mode != ModeProxy || setting.URL == nil {
@@ -99,22 +99,22 @@ func cloneDefaultTransport() *http.Transport {
 	return &http.Transport{}
 }
 
-// NewDirectTransport returns a transport that bypasses environment proxies.
+
 func NewDirectTransport() *http.Transport {
 	clone := cloneDefaultTransport()
 	clone.Proxy = nil
 	return clone
 }
 
-// socksForwardDialer dials the SOCKS5 proxy itself. It mirrors net/http's
-// DefaultTransport dialer so the resulting upstream socket gets TCP keepalive:
-// proxy.Direct would leave keepalive at the OS default of hours, which lets a
-// silently dead peer pin an otherwise reusable connection.
+
+
+
+
 func socksForwardDialer() *net.Dialer {
 	return &net.Dialer{KeepAlive: 30 * time.Second}
 }
 
-// BuildHTTPTransport constructs an HTTP transport for the provided proxy setting.
+
 func BuildHTTPTransport(raw string) (*http.Transport, Mode, error) {
 	setting, errParse := Parse(raw)
 	if errParse != nil {
@@ -210,7 +210,7 @@ func buildHTTPSProxyDialTLSContext(
 	}
 }
 
-// BuildDialer constructs a proxy dialer for settings that operate at the connection layer.
+
 func BuildDialer(raw string) (proxy.Dialer, Mode, error) {
 	setting, errParse := Parse(raw)
 	if errParse != nil {
@@ -356,7 +356,7 @@ func proxyAuthorization(user *url.Userinfo) string {
 	return "Basic " + encoded
 }
 
-// Redact returns a log-safe proxy URL with credentials and path-like data removed.
+
 func Redact(raw string) string {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {

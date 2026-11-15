@@ -17,10 +17,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// TestAntigravityBuildRequestKeepsConnectionAlive guards the regression where the
-// upstream request forced "Connection: close", which discarded every established
-// TCP + TLS session and made connection pooling impossible. The native Antigravity
-// client omits the Connection header entirely.
+
+
+
+
 func TestAntigravityBuildRequestKeepsConnectionAlive(t *testing.T) {
 	e := &AntigravityExecutor{}
 	auth := &cliproxyauth.Auth{Metadata: map[string]any{"project_id": "project-1"}}
@@ -46,9 +46,9 @@ func TestAntigravityBuildRequestKeepsConnectionAlive(t *testing.T) {
 	}
 }
 
-// TestAntigravityExecuteStreamReusesUpstreamConnection drives the real executor
-// against a local upstream and proves that repeated streaming requests share a
-// single pooled TCP connection and never advertise Connection: close.
+
+
+
 func TestAntigravityExecuteStreamReusesUpstreamConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -127,8 +127,8 @@ func TestAntigravityExecuteStreamReusesUpstreamConnection(t *testing.T) {
 	}
 }
 
-// TestAntigravityCountTokensReusesUpstreamConnection covers the second upstream
-// request builder, which shares the same connection pool.
+
+
 func TestAntigravityCountTokensReusesUpstreamConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -196,11 +196,11 @@ func TestAntigravityCountTokensReusesUpstreamConnection(t *testing.T) {
 	}
 }
 
-// TestAntigravityHTTPRequestReusesUpstreamConnection covers the raw passthrough
-// path and verifies its whitelist does not reintroduce Connection: close.
-// It exercises both ways a downstream caller can request a close: the header,
-// which the whitelist strips, and Request.Close, which is a struct field that
-// req.WithContext copies verbatim and the header whitelist cannot reach.
+
+
+
+
+
 func TestAntigravityHTTPRequestReusesUpstreamConnection(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -240,8 +240,8 @@ func TestAntigravityHTTPRequestReusesUpstreamConnection(t *testing.T) {
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Connection", "close")
-		// Go's server sets this field for an inbound "Connection: close"; it must not
-		// reach the Antigravity upstream.
+
+
 		req.Close = true
 		resp, errDo := exec.HttpRequest(context.Background(), auth, req)
 		if errDo != nil {
@@ -269,9 +269,9 @@ func TestAntigravityHTTPRequestReusesUpstreamConnection(t *testing.T) {
 	}
 }
 
-// TestAntigravityHTTPRequestConcurrentSessionsStayIsolated forces concurrent
-// requests from one auth to complete in reverse order and verifies each caller
-// receives only its own response body.
+
+
+
 func TestAntigravityHTTPRequestConcurrentSessionsStayIsolated(t *testing.T) {
 	const sessions = 12
 	gates := make(map[string]chan struct{}, sessions)
@@ -366,9 +366,9 @@ func TestAntigravityHTTPRequestConcurrentSessionsStayIsolated(t *testing.T) {
 	}
 }
 
-// TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections verifies that by default
-// (no connection-pool configuration, or enabled: false), connection pooling is disabled.
-// Every request uses a new connection, and the wire request never emits Connection: close.
+
+
+
 func TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections(t *testing.T) {
 	var mu sync.Mutex
 	remotes := map[string]int{}
@@ -383,7 +383,7 @@ func TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections(t *testing.
 	}))
 	defer server.Close()
 
-	// Default config has ConnectionPool.Enabled = nil, which defaults to false (disabled)
+
 	exec := NewAntigravityExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
 		ID:       "antigravity-default-short-auth",
@@ -413,12 +413,12 @@ func TestAntigravityDefaultConfigDisablesPoolingAndClosesConnections(t *testing.
 	headers := append([]string(nil), connectionHeaders...)
 	mu.Unlock()
 
-	// With pooling disabled by default, every request opens a fresh connection
+
 	if distinct != requests {
 		t.Fatalf("default disabled pool: expected %d distinct connections, got %d", requests, distinct)
 	}
 
-	// Must never leak Connection: close header to upstream
+
 	for i, h := range headers {
 		if strings.Contains(strings.ToLower(h), "close") {
 			t.Fatalf("request %d leaked Connection: close header: %q", i, h)

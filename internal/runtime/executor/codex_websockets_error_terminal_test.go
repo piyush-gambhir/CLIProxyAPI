@@ -13,12 +13,12 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// Failure events terminate responses too, in the shapes duplex attribution
-// accepts (top-level response_id, or id-less while a response runs), for
-// both error and response.failed. The session must close the matching
-// interrupt window for them, must keep the running response's window open
-// for other responses' failures, and must let the next response.created
-// reopen it.
+
+
+
+
+
+
 func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 	received := make(chan string, 8)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -47,8 +47,8 @@ func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 			received <- string(payload)
 			return true
 		}
-		// r1 runs; an error for another response must not end it. Reading
-		// the forwarded r1 interrupt barriers before r1's own error.
+
+
 		if !write(`{"type":"response.created","response":{"id":"r1"}}`) {
 			return
 		}
@@ -58,10 +58,10 @@ func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 		if !readFrame() {
 			return
 		}
-		// r1 ends with a top-level response_id error. The rejected checks
-		// write nothing upstream, so after r2 is created the next frame
-		// read here must be the r2 interrupt; reading it before r2's
-		// id-less failure is sent keeps the checks deterministic.
+
+
+
+
 		if !write(`{"type":"error","response_id":"r1","error":{"message":"boom"}}`) {
 			return
 		}
@@ -125,25 +125,25 @@ func TestInterruptExecutionSessionErrorTerminalShapes(t *testing.T) {
 		}
 	}
 
-	read() // response.created r1
-	read() // error queued-1
+	read()
+	read()
 	if errInterrupt := interrupt(`{"type":"response.interrupt","response_id":"r1"}`); errInterrupt != nil {
 		t.Fatalf("interrupt r1 after queued error = %v, want nil (forwarded)", errInterrupt)
 	}
-	read() // error r1
+	read()
 	wantRejected(`{"type":"response.interrupt","response_id":"unknown"}`, "unknown interrupt after r1 error")
 	wantRejected(`{"type":"response.interrupt","response_id":"r1"}`, "interrupt r1 after its error")
 
-	read() // response.created r2
+	read()
 	if errInterrupt := interrupt(`{"type":"response.interrupt","response_id":"r2"}`); errInterrupt != nil {
 		t.Fatalf("interrupt r2 = %v, want nil (forwarded)", errInterrupt)
 	}
-	read() // id-less response.failed
+	read()
 	wantRejected(`{"type":"response.interrupt","response_id":"unknown-2"}`, "unknown interrupt after id-less failure")
-	// r2 itself is already terminal: idempotent via the recorded
-	// response.failed terminal id, and never forwarded (proven by the
-	// upstream barrier below). Returning nil here is what distinguishes
-	// "window closed" from "still active" — the latter would forward.
+
+
+
+
 	if errInterrupt := interrupt(`{"type":"response.interrupt","response_id":"r2"}`); errInterrupt != nil {
 		t.Fatalf("interrupt r2 after id-less failure = %v, want nil (already terminal)", errInterrupt)
 	}

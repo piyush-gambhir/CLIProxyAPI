@@ -372,8 +372,8 @@ func ValidatePlugin(plugin Plugin) error {
 	if !validPluginID(strings.TrimSpace(plugin.ID)) {
 		return fmt.Errorf("invalid plugin id %q", plugin.ID)
 	}
-	// The version is optional since the latest release is the source of truth;
-	// when present it is only used as a display fallback and must be valid.
+
+
 	if version := strings.TrimSpace(plugin.Version); version != "" && !validPluginVersion(version) {
 		return fmt.Errorf("invalid plugin version %q", plugin.Version)
 	}

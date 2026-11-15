@@ -33,8 +33,8 @@ func (r pluginStaticModelRegistrar) RegisterModels(context.Context, pluginapi.Mo
 	}, nil
 }
 
-// newPluginStaticModelHost loads a static-only plugin so the provider's models
-// are appended to native registrations instead of handled per auth.
+
+
 func newPluginStaticModelHost(t *testing.T, provider string) *pluginhost.Host {
 	t.Helper()
 	host := pluginhost.New()
@@ -82,7 +82,7 @@ func TestRegisterModelsForAuth_PluginStaticModelsFollowExclusions(t *testing.T) 
 				t.Fatalf("plugin static models = (%t,%t), want (%t,%t); models = %v", present[pluginStaticGlobalModel], present[pluginStaticCredentialModel], tc.wantGlobal, tc.wantCredValue, present)
 			}
 
-			// The public model list must not retain unfiltered plugin-only clients.
+
 			available := openAIModelIDSet(reg.GetAvailableModels("openai"))
 			_, hasGlobal := available[pluginStaticGlobalModel]
 			_, hasCredential := available[pluginStaticCredentialModel]
@@ -122,7 +122,7 @@ func TestPluginStaticModelAvailabilityFollowsCredentials(t *testing.T) {
 	service.registerModelsForAuth(t.Context(), inherited)
 	assertAvailable("global exclusions", false, true)
 
-	// A credential override may still expose a globally excluded model.
+
 	service.registerModelsForAuth(t.Context(), override)
 	assertAvailable("different credential exclusions", true, true)
 	override.Attributes["excluded_models"] = "plugin-static-*"
@@ -133,7 +133,7 @@ func TestPluginStaticModelAvailabilityFollowsCredentials(t *testing.T) {
 	service.registerModelsForAuth(t.Context(), inherited)
 	assertAvailable("all credentials exclude both models", false, false)
 
-	// Re-loading the catalog must not republish models excluded by every auth.
+
 	host.RegisterModels(t.Context(), registry.GetGlobalRegistry())
 	host.RegisterExecutors(coreauth.NewManager(nil, nil, nil), registry.GetGlobalRegistry())
 	assertAvailable("catalog reload", false, false)
@@ -173,7 +173,7 @@ func TestRegisterModelsForAuth_PluginStaticExclusionsDoNotMatchNativeAliases(t *
 
 	service.registerModelsForAuth(t.Context(), auth)
 
-	// Exclusions match original model IDs, so an alias named like a rule stays visible.
+
 	if !reg.ClientSupportsModel(auth.ID, nativeAlias) || reg.ClientSupportsModel(auth.ID, pluginStaticGlobalModel) {
 		t.Fatalf("models = (%s:%t, %s:%t), want native alias kept and plugin model excluded", nativeAlias, reg.ClientSupportsModel(auth.ID, nativeAlias), pluginStaticGlobalModel, reg.ClientSupportsModel(auth.ID, pluginStaticGlobalModel))
 	}

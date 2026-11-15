@@ -14,9 +14,9 @@ import (
 
 var claudeToolNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 
-// claudeToolNames maps qualified Responses tool identities to unique Claude
-// tool names for one request, and back. The request and response translators
-// build it from the same Responses JSON, so both sides agree.
+
+
+
 type claudeToolNames struct {
 	toClaude   map[string]string
 	fromClaude map[string]string
@@ -46,7 +46,7 @@ func buildClaudeToolNamesWithWinners(root ojson.Result, winners map[string]respo
 	return m
 }
 
-// claudeName returns the Claude name for a qualified Responses identity.
+
 func (m claudeToolNames) claudeName(identity string) string {
 	if name, ok := m.toClaude[identity]; ok {
 		return name
@@ -54,8 +54,8 @@ func (m claudeToolNames) claudeName(identity string) string {
 	return util.SanitizeClaudeFunctionName(identity)
 }
 
-// identity returns the qualified Responses identity for a Claude name.
-// Unknown names are returned unchanged.
+
+
 func (m claudeToolNames) identity(claudeName string) string {
 	if identity, ok := m.fromClaude[claudeName]; ok {
 		return identity
@@ -115,8 +115,8 @@ func (m claudeToolNames) allocate(identities []string, taken map[string]bool) {
 	}
 }
 
-// responsesHistoryToolIdentities lists qualified names of function_call and
-// custom_tool_call items in input, in order.
+
+
 func responsesHistoryToolIdentities(root ojson.Result) []string {
 	var ids []string
 	input := root.Get("input")

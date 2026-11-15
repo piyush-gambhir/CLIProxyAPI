@@ -69,7 +69,7 @@ func TestFileTokenStoreCodexRefreshPreservesDiskConfiguration(t *testing.T) {
 				if withStorage {
 					updated.Storage = &codex.CodexTokenStorage{AccessToken: "stale-storage"}
 				}
-				// Operator changes do not change either second-resolution refresh timestamp.
+
 				disk := base.Clone().Metadata
 				disk["use_siwc"] = false
 				disk["note"] = "disk-note"
@@ -142,7 +142,7 @@ func TestFileTokenStoreCodexConcurrentSameTimestampRefresh(t *testing.T) {
 	}
 	close(start)
 	wg.Wait()
-	// A refresh started from the same old version must not overwrite rotated tokens.
+
 	stale := base.Clone()
 	stale.Metadata["access_token"] = "outer-stale-result"
 	stale.Metadata["refresh_token"] = "outer-ref-stale-result"
@@ -154,7 +154,7 @@ func TestFileTokenStoreCodexConcurrentSameTimestampRefresh(t *testing.T) {
 	if _, errSave := store.Save(context.Background(), stale); errSave != nil {
 		t.Fatal(errSave)
 	}
-	// A stale configuration snapshot is not a credential update either.
+
 	if _, errSave := store.Save(context.Background(), base.Clone()); errSave != nil {
 		t.Fatal(errSave)
 	}

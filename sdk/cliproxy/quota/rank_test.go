@@ -7,7 +7,7 @@ import (
 
 var rankBase = time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 
-// readingOf builds a reading from a compact window description.
+
 func readingOf(provider string, windows map[string]Window) Reading {
 	out := Reading{Provider: provider, Windows: make(map[string]Window, len(windows))}
 	for id, window := range windows {
@@ -23,7 +23,7 @@ func readingOf(provider string, windows map[string]Window) Reading {
 	return out
 }
 
-// longWindowOf is shorthand for a credential whose only reading is its long window.
+
 func longWindowOf(usedPercent float64, resetIn time.Duration) Reading {
 	return readingOf("claude", map[string]Window{
 		WindowSevenDay: {UsedPercent: usedPercent, ResetAt: rankBase.Add(resetIn)},
@@ -47,8 +47,8 @@ func TestRankUrgencyOrdering(t *testing.T) {
 		want       []string
 	}{
 		{
-			// The design's first worked example: 40 percent left resetting in 3 h
-			// beats 90 percent left resetting in 4 days.
+
+
 			name: "little left and resetting soon beats plenty left and far off",
 			candidates: []Candidate{
 				{AuthID: "a", Provider: "claude", Reading: longWindowOf(60, 3*time.Hour)},
@@ -57,8 +57,8 @@ func TestRankUrgencyOrdering(t *testing.T) {
 			want: []string{"a", "b"},
 		},
 		{
-			// The design's second worked example: urgency is not earliest reset.
-			// 80 percent left in 2 h beats 1 percent left in 10 min.
+
+
 			name: "urgency beats earliest reset",
 			candidates: []Candidate{
 				{AuthID: "c", Provider: "claude", Reading: longWindowOf(99, 10*time.Minute)},
@@ -106,9 +106,9 @@ func TestRankUrgencyOrdering(t *testing.T) {
 func TestRankFableWindowUsesWhicheverHasLessLeft(t *testing.T) {
 	t.Parallel()
 
-	// The Fable window is nearly spent while the main weekly window is fresh.
-	// The design deliberately ranks on the window with LESS left, departing from
-	// bandoyer #8's "more urgent of the two".
+
+
+
 	candidate := Candidate{AuthID: "a", Provider: "claude", Reading: readingOf("claude", map[string]Window{
 		WindowSevenDay: {UsedPercent: 10, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
 		WindowFable:    {UsedPercent: 95, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
@@ -128,8 +128,8 @@ func TestRankFableWindowUsesWhicheverHasLessLeft(t *testing.T) {
 			withFableModel[0].Urgency, withoutFableModel[0].Urgency)
 	}
 
-	// When the main window has less left than the Fable window, the main one wins
-	// even for a Fable request.
+
+
 	mainTighter := Candidate{AuthID: "b", Provider: "claude", Reading: readingOf("claude", map[string]Window{
 		WindowSevenDay: {UsedPercent: 80, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
 		WindowFable:    {UsedPercent: 20, ResetAt: rankBase.Add(6 * 24 * time.Hour)},
@@ -143,8 +143,8 @@ func TestRankFableWindowUsesWhicheverHasLessLeft(t *testing.T) {
 func TestRankFiveHourGuardDemotesWithoutBlocking(t *testing.T) {
 	t.Parallel()
 
-	// "guarded" is the most urgent credential on paper but is past the guard, so
-	// it ranks behind the calmer one. It stays usable: the guard is a penalty.
+
+
 	guarded := Candidate{AuthID: "guarded", Provider: "claude", Reading: readingOf("claude", map[string]Window{
 		WindowFiveHour: {UsedPercent: 95, ResetAt: rankBase.Add(time.Hour)},
 		WindowSevenDay: {UsedPercent: 60, ResetAt: rankBase.Add(3 * time.Hour)},
@@ -165,7 +165,7 @@ func TestRankFiveHourGuardDemotesWithoutBlocking(t *testing.T) {
 		t.Fatal("the five-hour guard must demote, not block")
 	}
 
-	// Raising the guard above the reading restores the urgency order.
+
 	relaxed := Rank([]Candidate{guarded, calm}, RankOptions{Now: rankBase, FiveHourGuardPercent: 99})
 	if got := orderOf(relaxed); got[0] != "guarded" {
 		t.Fatalf("relaxed order = %v, want guarded first", got)
@@ -261,8 +261,8 @@ func TestRankUnknownsSortAfterKnownsInStableOrder(t *testing.T) {
 			t.Fatalf("order = %v, want %v", got, want)
 		}
 	}
-	// Even a credential with almost nothing left outranks a credential with no
-	// reading at all, and the unknowns report themselves as such.
+
+
 	if ranked[0].Reason != ReasonRanked {
 		t.Fatalf("known reason = %q, want %q", ranked[0].Reason, ReasonRanked)
 	}
@@ -279,8 +279,8 @@ func TestRankUnknownsSortAfterKnownsInStableOrder(t *testing.T) {
 func TestRankFallsBackToTheOnlyWindow(t *testing.T) {
 	t.Parallel()
 
-	// A provider that reports only a short window ranks on it: the five-hour
-	// window gates usability only when a long window exists.
+
+
 	candidate := Candidate{AuthID: "a", Provider: "codex", Reading: readingOf("codex", map[string]Window{
 		WindowFiveHour: {UsedPercent: 50, ResetAt: rankBase.Add(time.Hour)},
 	})}
@@ -296,12 +296,12 @@ func TestRankFallsBackToTheOnlyWindow(t *testing.T) {
 func TestUrgencyFloorsTheDenominator(t *testing.T) {
 	t.Parallel()
 
-	// A window that resets in a second must not produce an unbounded score.
+
 	window := Window{UsedPercent: 0, ResetAt: rankBase.Add(time.Second), Known: true}
 	if got := Urgency(window, rankBase); got != 100/minHoursToReset {
 		t.Fatalf("urgency = %.3f, want %.3f", got, 100/minHoursToReset)
 	}
-	// A passed reset is floored the same way; the store normalises it separately.
+
 	passed := Window{UsedPercent: 50, ResetAt: rankBase.Add(-time.Hour), Known: true}
 	if got := Urgency(passed, rankBase); got != 50/minHoursToReset {
 		t.Fatalf("urgency = %.3f, want %.3f", got, 50/minHoursToReset)

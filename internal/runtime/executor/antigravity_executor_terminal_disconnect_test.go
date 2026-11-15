@@ -16,10 +16,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailure
-// reproduces Issue #6376 where downstream client disconnects after terminal event,
-// causing upstream scanner context cancellation before upstream EOF.
-// The settlement tail must treat this as success and publish observed usage.
+
+
+
+
 func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailure(t *testing.T) {
 	const authID = "antigravity-term-disconnect-test"
 	capture := &antigravityUsageCapture{authID: authID, records: make(chan usage.Record, 4)}
@@ -39,8 +39,8 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 		if flusher, ok := w.(http.Flusher); ok {
 			flusher.Flush()
 		}
-		// Hold the upstream body open until downstream disconnects or test ends,
-		// reproducing upstream lag where body close / EOF happens after terminal event.
+
+
 		select {
 		case <-r.Context().Done():
 		case <-upstreamClosed:
@@ -80,7 +80,7 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 		t.Fatalf("ExecuteStream() error = %v", errExecute)
 	}
 
-	// Consume chunks until terminal event response.completed is observed
+
 	terminalReceived := false
 	for chunk := range result.Chunks {
 		if chunk.Err != nil {
@@ -88,7 +88,7 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 		}
 		if ojson.GetBytes(chunk.Payload, "type").String() == "response.completed" {
 			terminalReceived = true
-			// Client received completed response and terminates connection
+
 			finishDelivery(context.Canceled)
 			cancel()
 			break
@@ -112,8 +112,8 @@ func TestAntigravityStream_ClientDisconnectAfterTerminalChunkDoesNotReportFailur
 	}
 }
 
-// TestAntigravityStream_ClientDisconnectPlainContextAfterTerminalChunkDoesNotReportFailure
-// covers plain cancellation without streamDelivery tracked.
+
+
 func TestAntigravityStream_ClientDisconnectPlainContextAfterTerminalChunkDoesNotReportFailure(t *testing.T) {
 	const authID = "antigravity-plain-cancel-test"
 	capture := &antigravityUsageCapture{authID: authID, records: make(chan usage.Record, 4)}
@@ -200,8 +200,8 @@ func TestAntigravityStream_ClientDisconnectPlainContextAfterTerminalChunkDoesNot
 	}
 }
 
-// TestAntigravityStream_OpenAIChatCompletions_ClientDisconnectAfterStopChunkDoesNotReportFailure
-// covers standard chat completions FormatOpenAI streaming where client disconnects after finish_reason.
+
+
 func TestAntigravityStream_OpenAIChatCompletions_ClientDisconnectAfterStopChunkDoesNotReportFailure(t *testing.T) {
 	const authID = "antigravity-chat-disconnect-test"
 	capture := &antigravityUsageCapture{authID: authID, records: make(chan usage.Record, 4)}

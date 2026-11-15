@@ -445,7 +445,7 @@ func TestConvertOpenAIResponsesRequestToAntigravity_MidSessionDeveloperMessageDo
 		t.Fatalf("invalid JSON output: %s", out)
 	}
 
-	// In Antigravity envelope, systemInstruction is at request.systemInstruction
+
 	sysParts := ojson.GetBytesNoCopy(out, "request.systemInstruction.parts").Array()
 	if len(sysParts) != 1 {
 		t.Fatalf("request.systemInstruction parts count = %d, want 1; output=%s", len(sysParts), out)
@@ -782,7 +782,7 @@ func TestConvertOpenAIResponsesRequestToAntigravity_InterruptedMessageBeforeReal
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on Antigravity interrupted message before real output request: %v; output=%s", errPair, out)
 	}
 
-	// The user message precedes the completed tool response turn
+
 	stopText := ojson.GetBytesNoCopy(out, "request.contents.2.parts.0.text").String()
 	if stopText != "Stop, do something else instead." {
 		t.Fatalf("unexpected text in request.contents[2]: %q", stopText)
@@ -935,7 +935,7 @@ func TestConvertOpenAIResponsesRequestToAntigravity_WebSearch(t *testing.T) {
 		t.Fatalf("expected includedDomains ['go.dev'], got %s", parsed.Get("request.tools.0.googleSearch.includedDomains").Raw)
 	}
 
-	// Incapable model should not build web_search envelope
+
 	incapableInput := []byte(`{
 		"model": "` + incapableModel + `",
 		"input": "What is the newest Go release?",
@@ -970,19 +970,19 @@ func TestConvertOpenAIResponsesRequestToAntigravity_MixedToolsSuppressesGoogleSe
 	out, _ := ConvertOpenAIResponsesRequestToAntigravity(modelID, input, false)
 	parsed := util.ParseGJSONBytesNoCopy(out)
 
-	// 1. Must not build independent web_search requestType envelope
+
 	if parsed.Get("requestType").String() == "web_search" {
 		t.Fatalf("mixed tools must not build independent web_search requestType, got: %s", out)
 	}
 
-	// 2. Must not contain native googleSearch block in request.tools
+
 	for _, tool := range parsed.Get("request.tools").Array() {
 		if tool.Get("googleSearch").Exists() {
 			t.Fatalf("mixed tools must not inject native googleSearch into chat request: %s", out)
 		}
 	}
 
-	// 3. Must preserve functionDeclarations for lookup_data
+
 	fnFound := false
 	for _, tool := range parsed.Get("request.tools").Array() {
 		for _, fn := range tool.Get("functionDeclarations").Array() {
@@ -996,7 +996,7 @@ func TestConvertOpenAIResponsesRequestToAntigravity_MixedToolsSuppressesGoogleSe
 		t.Fatalf("custom function lookup_data should be preserved in request.tools: %s", out)
 	}
 
-	// 4. Must never carry includeServerSideToolInvocations or leave empty toolConfig on Antigravity
+
 	if parsed.Get("request.toolConfig.includeServerSideToolInvocations").Exists() || parsed.Get("toolConfig.includeServerSideToolInvocations").Exists() {
 		t.Fatalf("Antigravity must not carry includeServerSideToolInvocations: %s", out)
 	}
@@ -1053,11 +1053,11 @@ func TestConvertOpenAIResponsesRequestToAntigravity_CrossProviderCapabilityIsola
 	modelID := "gemini-cross-prov-search-iso"
 
 	reg := registry.GetGlobalRegistry()
-	// AI Studio client supports search on this model
+
 	reg.RegisterClient("client-aistudio-search", "aistudio", []*registry.ModelInfo{
 		{ID: modelID, SupportsWebSearch: true},
 	})
-	// Antigravity client does NOT support search on this model
+
 	reg.RegisterClient("client-antigravity-nosearch", "antigravity", []*registry.ModelInfo{
 		{ID: modelID, SupportsWebSearch: false},
 	})
@@ -1072,8 +1072,8 @@ func TestConvertOpenAIResponsesRequestToAntigravity_CrossProviderCapabilityIsola
 		"tools": [{"type": "web_search"}]
 	}`)
 
-	// Antigravity dedicated request builder must not build web_search envelope
-	// by borrowing AI Studio's capability
+
+
 	if shouldBuildAntigravityResponsesWebSearchRequest(modelID, input, nil) {
 		t.Fatalf("shouldBuildAntigravityResponsesWebSearchRequest should be false for Antigravity route when Antigravity model lacks search capability")
 	}

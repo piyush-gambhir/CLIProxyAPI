@@ -25,9 +25,9 @@ func (r devinContentCheckpointReader) Read(p []byte) (int, error) {
 func TestDevinStreamEmitsContentBeforeThinkingCloses(t *testing.T) {
 	for _, format := range []sdktranslator.Format{sdktranslator.FormatOpenAI, sdktranslator.FormatOpenAIResponse} {
 		t.Run(string(format), func(t *testing.T) {
-			// Each checkpoint runs synchronously when the executor requests the next
-			// frame, after all output for the previous frame has been enqueued.
-			// EOS is unavailable until every pre-EOS assertion has run.
+
+
+
 			out := make(chan cliproxyexecutor.StreamChunk, 64)
 			var content []string
 			var thinking strings.Builder
@@ -198,7 +198,7 @@ func TestDevinStreamContentLateSignatures(t *testing.T) {
 					case "trailer_error":
 						suffix.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{"error":{"code":"internal","message":"upstream failed"}}`)))
 					case "read_error":
-						suffix.Write([]byte{0, 0}) // Incomplete frame header causes io.ErrUnexpectedEOF.
+						suffix.Write([]byte{0, 0})
 					}
 					e := &DevinExecutor{}
 					e.streamDevinFrames(context.Background(), io.MultiReader(&prefix, checkpoint, &suffix), cliproxyexecutor.Request{Model: "devin/swe-2"}, cliproxyexecutor.Options{SourceFormat: format}, "swe-2-high", format, nil, out)

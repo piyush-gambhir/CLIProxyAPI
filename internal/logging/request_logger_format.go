@@ -66,9 +66,9 @@ func (l *FileRequestLogger) writeNonStreamingLog(
 		return errWrite
 	}
 	if isWebsocketTranscript {
-		// Intentionally omit the generic downstream HTTP response section for websocket
-		// transcripts. The durable session exchange is captured in WEBSOCKET TIMELINE,
-		// and appending a one-off upgrade response snapshot would dilute that transcript.
+
+
+
 		return nil
 	}
 	return writeResponseSection(w, statusCode, true, responseHeaders, bytes.NewReader(response), decompressErr, true)
@@ -429,29 +429,29 @@ func responseBodyStartsWithLeadingNewline(reader *bufio.Reader) bool {
 	return false
 }
 
-// formatLogContent creates the complete log content for non-streaming requests.
-//
-// Parameters:
-//   - url: The request URL
-//   - method: The HTTP method
-//   - headers: The request headers
-//   - body: The request body
-//   - websocketTimeline: The downstream websocket event timeline
-//   - apiRequest: The API request data
-//   - apiResponse: The API response data
-//   - response: The raw response data
-//   - status: The response status code
-//   - responseHeaders: The response headers
-//
-// Returns:
-//   - string: The formatted log content
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) formatLogContent(url, method string, headers map[string][]string, body, websocketTimeline, apiRequest, apiResponse, apiWebsocketTimeline, response []byte, status int, responseHeaders map[string][]string, apiResponseErrors []*interfaces.ErrorMessage) string {
 	var content strings.Builder
 	isWebsocketTranscript := hasSectionPayload(websocketTimeline)
 	downstreamTransport := inferDownstreamTransport(headers, websocketTimeline, nil)
 	upstreamTransport := inferUpstreamTransport(apiRequest, nil, apiResponse, nil, apiWebsocketTimeline, nil, apiResponseErrors)
 
-	// Request info
+
 	content.WriteString(l.formatRequestInfo(url, method, headers, body, downstreamTransport, upstreamTransport, !isWebsocketTranscript))
 
 	if len(websocketTimeline) > 0 {
@@ -518,12 +518,12 @@ func (l *FileRequestLogger) formatLogContent(url, method string, headers map[str
 	}
 
 	if isWebsocketTranscript {
-		// Mirror writeNonStreamingLog: websocket transcripts end with the dedicated
-		// timeline sections instead of a generic downstream HTTP response block.
+
+
 		return content.String()
 	}
 
-	// Response section
+
 	content.WriteString("=== RESPONSE ===\n")
 	content.WriteString(fmt.Sprintf("Status: %d\n", status))
 
@@ -542,21 +542,21 @@ func (l *FileRequestLogger) formatLogContent(url, method string, headers map[str
 	return content.String()
 }
 
-// decompressResponse decompresses response data based on Content-Encoding header.
-//
-// Parameters:
-//   - responseHeaders: The response headers
-//   - response: The response data to decompress
-//
-// Returns:
-//   - []byte: The decompressed response data
-//   - error: An error if decompression fails, nil otherwise
+
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) decompressResponse(responseHeaders map[string][]string, response []byte) ([]byte, error) {
 	if responseHeaders == nil || len(response) == 0 {
 		return response, nil
 	}
 
-	// Check Content-Encoding header
+
 	var contentEncoding string
 	for key, values := range responseHeaders {
 		if strings.ToLower(key) == "content-encoding" && len(values) > 0 {
@@ -575,19 +575,19 @@ func (l *FileRequestLogger) decompressResponse(responseHeaders map[string][]stri
 	case "zstd":
 		return l.decompressZstd(response)
 	default:
-		// No compression or unsupported compression
+
 		return response, nil
 	}
 }
 
-// decompressGzip decompresses gzip-encoded data.
-//
-// Parameters:
-//   - data: The gzip-encoded data to decompress
-//
-// Returns:
-//   - []byte: The decompressed data
-//   - error: An error if decompression fails, nil otherwise
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) decompressGzip(data []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
@@ -607,14 +607,14 @@ func (l *FileRequestLogger) decompressGzip(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-// decompressDeflate decompresses deflate-encoded data.
-//
-// Parameters:
-//   - data: The deflate-encoded data to decompress
-//
-// Returns:
-//   - []byte: The decompressed data
-//   - error: An error if decompression fails, nil otherwise
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) decompressDeflate(data []byte) ([]byte, error) {
 	reader := flate.NewReader(bytes.NewReader(data))
 	defer func() {
@@ -631,14 +631,14 @@ func (l *FileRequestLogger) decompressDeflate(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-// decompressBrotli decompresses brotli-encoded data.
-//
-// Parameters:
-//   - data: The brotli-encoded data to decompress
-//
-// Returns:
-//   - []byte: The decompressed data
-//   - error: An error if decompression fails, nil otherwise
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) decompressBrotli(data []byte) ([]byte, error) {
 	reader := brotli.NewReader(bytes.NewReader(data))
 
@@ -650,14 +650,14 @@ func (l *FileRequestLogger) decompressBrotli(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-// decompressZstd decompresses zstd-encoded data.
-//
-// Parameters:
-//   - data: The zstd-encoded data to decompress
-//
-// Returns:
-//   - []byte: The decompressed data
-//   - error: An error if decompression fails, nil otherwise
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) decompressZstd(data []byte) ([]byte, error) {
 	decoder, err := zstd.NewReader(bytes.NewReader(data))
 	if err != nil {
@@ -673,16 +673,16 @@ func (l *FileRequestLogger) decompressZstd(data []byte) ([]byte, error) {
 	return decompressed, nil
 }
 
-// formatRequestInfo creates the request information section of the log.
-//
-// Parameters:
-//   - url: The request URL
-//   - method: The HTTP method
-//   - headers: The request headers
-//   - body: The request body
-//
-// Returns:
-//   - string: The formatted request information
+
+
+
+
+
+
+
+
+
+
 func (l *FileRequestLogger) formatRequestInfo(url, method string, headers map[string][]string, body []byte, downstreamTransport string, upstreamTransport string, includeBody bool) string {
 	var content strings.Builder
 

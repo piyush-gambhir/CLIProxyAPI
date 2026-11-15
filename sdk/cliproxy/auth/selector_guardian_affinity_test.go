@@ -136,7 +136,7 @@ func TestSessionAffinityGuardianParentCredential(t *testing.T) {
 				guardianTestPick(t, selector, reviewProvider, tt.reviewModel, childOpts, []*Auth{authA}, "auth-a")
 			}
 
-			// Establish the parent through the real selection path, not a seeded cache.
+
 			parentAuth, errParent := selector.Pick(context.Background(), tt.provider, "gpt-6.1-sol", parentOpts, []*Auth{authB})
 			if errParent != nil {
 				t.Fatalf("parent Pick() error = %v", errParent)
@@ -164,7 +164,7 @@ func TestSessionAffinityGuardianParentCredential(t *testing.T) {
 			if tt.fork {
 				reviewOpts.OriginalRequest = []byte(`{"forked_from_thread_id":"main-thread"}`)
 			}
-			// The real fallback chooses auth-a, making accidental fallback observable.
+
 			reviewCandidates := []*Auth{authA, authB}
 			if tt.excludeParentAuth {
 				reviewCandidates = []*Auth{authA}
@@ -230,7 +230,7 @@ func TestSessionAffinityGuardianParentLifecycle(t *testing.T) {
 			case "read_only":
 				want = "auth-b"
 			case "expired":
-				// Move the real binding into the past without depending on wall-clock sleeps.
+
 				selector.cache.mu.Lock()
 				entry := selector.cache.entries[parentKey]
 				entry.expiresAt = time.Now().Add(-time.Hour)
@@ -287,7 +287,7 @@ func TestSessionAffinityGuardianMixedProviderIsolation(t *testing.T) {
 	guardianTestPick(t, selector, "mixed", "review-model", guardianTestOptions("codex-review", "main-thread"), []*Auth{authA, authB}, "auth-b")
 	guardianTestPick(t, selector, "codex", "review-model", guardianTestOptions("direct-review", "main-thread"), []*Auth{authA, authB}, "auth-b")
 
-	// A different real provider must not inherit the Codex-only parent's binding.
+
 	guardianTestPick(t, selector, "mixed", "parent-model", guardianTestOptions("codex-only", ""), []*Auth{authB}, "auth-b")
 	authD := &Auth{ID: "auth-d", Provider: "openai"}
 	guardianTestPick(t, selector, "mixed", "review-model", guardianTestOptions("openai-review", "codex-only"), []*Auth{authC, authD}, "auth-c")

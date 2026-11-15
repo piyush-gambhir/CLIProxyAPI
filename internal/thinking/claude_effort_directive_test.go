@@ -95,7 +95,7 @@ func TestClaudeUsageEffortPrefersDirective(t *testing.T) {
 		})
 	}
 
-	// A model suffix still wins for the client-requested effort.
+
 	body := `{"thinking":{"type":"adaptive"},"output_config":{"effort":"low"},` + directives + `}`
 	if got := thinking.ExtractReasoningEffort([]byte(body), "claude", "claude-opus-5-5(medium)"); got != "medium" {
 		t.Fatalf("ExtractReasoningEffort() with suffix = %q, want medium", got)

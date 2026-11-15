@@ -9,22 +9,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// DoKimiLogin triggers the OAuth device flow for Kimi (Moonshot AI) and saves tokens.
-// It initiates the device flow authentication, displays the verification URL for the user,
-// and waits for authorization before saving the tokens.
-//
-// Parameters:
-//   - cfg: The application configuration containing proxy and auth directory settings
-//   - options: Login options including browser behavior settings
+
+
+
+
+
+
+
 func DoKimiLogin(cfg *config.Config, options *LoginOptions) {
 	doKimiLoginWithProvider(cfg, options, "kimi", "Kimi")
 }
 
-// DoKimiAILogin triggers the OAuth device flow for Kimi.ai (Moonshot AI) and saves tokens.
-//
-// Parameters:
-//   - cfg: The application configuration containing proxy and auth directory settings
-//   - options: Login options including browser behavior settings
+
+
+
+
+
 func DoKimiAILogin(cfg *config.Config, options *LoginOptions) {
 	doKimiLoginWithProvider(cfg, options, "kimi-ai", "Kimi.ai")
 }

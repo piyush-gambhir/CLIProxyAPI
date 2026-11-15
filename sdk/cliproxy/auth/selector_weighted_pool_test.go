@@ -13,7 +13,7 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// weightedStateForTest checks that the requested accounting pool was created.
+
 func weightedStateForTest(t *testing.T, selector *WeightedRoundRobinSelector, route string, ids ...string) *weightedPoolState {
 	t.Helper()
 	weights := make(map[string]int64, len(ids))
@@ -53,7 +53,7 @@ func TestWeightedPoolsResumeCreditsAndIsolatePendingReservations(t *testing.T) {
 		_, reservation := weighted.reserve(key, auths, "b")
 		reservation.finish(true)
 	}
-	// A returning pool resumes its debt, independent of full-pool traffic.
+
 	for range 3 {
 		picked, reservation := weighted.reserve(key, []*Auth{auths[1], auths[0]}, "")
 		if picked == nil || picked.ID != "a" {
@@ -84,7 +84,7 @@ func TestWeightedPoolInterleavingMatchesIndependentSelectors(t *testing.T) {
 				pool = append(pool, auth)
 			}
 		}
-		// Membership and weights, not input order or other pools, define credit.
+
 		rng.Shuffle(len(pool), func(i, j int) { pool[i], pool[j] = pool[j], pool[i] })
 		boundID := ""
 		if rng.IntN(3) == 0 {

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// AuthErrorCode classifies authentication failures.
+
 type AuthErrorCode string
 
 const (
@@ -18,7 +18,7 @@ const (
 	AuthErrorCodeInternal          AuthErrorCode = "internal_error"
 )
 
-// AuthError carries authentication failure details and HTTP status.
+
 type AuthError struct {
 	Code       AuthErrorCode
 	Message    string
@@ -47,7 +47,7 @@ func (e *AuthError) Unwrap() error {
 	return e.Cause
 }
 
-// HTTPStatusCode returns a safe fallback for missing status codes.
+
 func (e *AuthError) HTTPStatusCode() int {
 	if e == nil || e.StatusCode <= 0 {
 		if e != nil && e.Code == AuthErrorCodeDenied {
@@ -93,7 +93,7 @@ func NewDeniedError(message string, statusCode int) *AuthError {
 	return newAuthError(AuthErrorCodeDenied, normalizedMessage, statusCode, nil)
 }
 
-// NewRequestEntityTooLargeError builds a 413 error when the request body exceeds the configured limit.
+
 func NewRequestEntityTooLargeError(cause error) *AuthError {
 	return newAuthError(AuthErrorCodeRequestTooLarge, "http: request body too large", http.StatusRequestEntityTooLarge, cause)
 }

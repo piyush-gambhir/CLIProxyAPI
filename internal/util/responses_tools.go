@@ -11,51 +11,51 @@ import (
 	applypatch "github.com/router-for-me/CLIProxyAPI/v8/internal/client/codex/apply-patch"
 )
 
-// ResponsesToolIdentity represents the resolved identity of a tool in OpenAI Responses format.
+
 type ResponsesToolIdentity struct {
 	Name       string
 	Namespace  string
 	Custom     bool
-	ApplyPatch bool // Resolved from the winning original declaration, never from the upstream name.
-	ToolSearch bool // Marks the function shim standing in for a client-executed tool_search declaration.
+	ApplyPatch bool
+	ToolSearch bool
 }
 
 const (
-	// ResponsesToolSearchType is the Responses tool type for deferred tool discovery.
+
 	ResponsesToolSearchType = "tool_search"
-	// ResponsesToolSearchExecutionClient marks a tool_search that the client executes itself.
+
 	ResponsesToolSearchExecutionClient = "client"
-	// ResponsesToolSearchFunctionName is the function name exposed to providers
-	// that have no native tool_search support.
+
+
 	ResponsesToolSearchFunctionName = "tool_search"
-	// ResponsesClientToolSearchKey is the internal forwardMap key for the
-	// client-executed tool_search shim. The leading NUL byte cannot appear in a
-	// JSON identifier, preventing collisions with user-declared tool names.
+
+
+
 	ResponsesClientToolSearchKey = "\x00client_tool_search"
-	// ResponsesToolSearchCallType is the Responses item type for a tool_search invocation.
+
 	ResponsesToolSearchCallType = "tool_search_call"
-	// ResponsesToolSearchOutputType is the Responses input item carrying discovered tools.
+
 	ResponsesToolSearchOutputType = "tool_search_output"
-	// ResponsesDiscoveredToolPriority ranks tools loaded by tool_search_output after declared tools.
+
 	ResponsesDiscoveredToolPriority = 2
 
 	responsesToolSearchDefaultParameters = `{"type":"object","properties":{"query":{"type":"string","description":"Search query for deferred tools."},"limit":{"type":"number","description":"Maximum number of tools to return."}},"required":["query"],"additionalProperties":false}`
 )
 
-// ResponsesToolDescriptor is an internal representation of a tool declaration in a Responses request.
+
 type ResponsesToolDescriptor struct {
-	Name           string // Qualified name (e.g. "functions__exec" or "exec")
-	LocalName      string // Local name without namespace (e.g. "exec")
-	Namespace      string // Namespace if any (e.g. "functions")
-	ToolType       string // "function", "custom", etc.
+	Name           string
+	LocalName      string
+	Namespace      string
+	ToolType       string
 	Tool           ojson.Result
-	SourcePriority int  // 0 for top-level tools, 1 for additional_tools, 2 for tool_search_output
-	Direct         bool // true if declared directly, false if declared as namespace child
-	Order          int  // original discovery order
-	ClientSearch   bool // true for a client-executed tool_search declaration
+	SourcePriority int
+	Direct         bool
+	Order          int
+	ClientSearch   bool
 }
 
-// QualifyResponsesNamespaceToolName qualifies a child tool name with its namespace.
+
 func QualifyResponsesNamespaceToolName(namespaceName, childName string) string {
 	childName = strings.TrimSpace(childName)
 	namespaceName = strings.TrimSpace(namespaceName)
@@ -117,16 +117,16 @@ func responsesToolSourcesFromGetter(get func(string) ojson.Result, includeClient
 	return sources
 }
 
-// IsResponsesClientToolSearchDeclaration reports whether a tool declaration is
-// a client-executed Responses tool_search.
+
+
 func IsResponsesClientToolSearchDeclaration(tool ojson.Result) bool {
 	return strings.TrimSpace(tool.Get("type").String()) == ResponsesToolSearchType &&
 		strings.TrimSpace(tool.Get("execution").String()) == ResponsesToolSearchExecutionClient
 }
 
-// IsResponsesClientToolSearchItem reports whether a tool_search_call or
-// tool_search_output input item belongs to client-executed tool search.
-// Hosted server search explicitly sets execution to "server".
+
+
+
 func IsResponsesClientToolSearchItem(item ojson.Result) bool {
 	execution := strings.TrimSpace(item.Get("execution").String())
 	return execution == "" || execution == ResponsesToolSearchExecutionClient
@@ -139,7 +139,7 @@ func responsesToolName(tool ojson.Result) string {
 	return strings.TrimSpace(tool.Get("function.name").String())
 }
 
-// ResponsesToolDescription extracts the description from a tool or function object.
+
 func ResponsesToolDescription(tool ojson.Result) string {
 	if description := tool.Get("description").String(); description != "" {
 		return description
@@ -151,7 +151,7 @@ func responsesToolDescription(tool ojson.Result) string {
 	return ResponsesToolDescription(tool)
 }
 
-// ResponsesToolParameters extracts the schema/parameters from a tool or function object.
+
 func ResponsesToolParameters(tool ojson.Result) ojson.Result {
 	for _, path := range []string{
 		"parameters",
@@ -171,12 +171,12 @@ func responsesToolParameters(tool ojson.Result) ojson.Result {
 	return ResponsesToolParameters(tool)
 }
 
-// CollectResponsesToolDescriptors extracts all tool descriptors from a Responses request root.
+
 func CollectResponsesToolDescriptors(root ojson.Result) []ResponsesToolDescriptor {
 	return collectResponsesToolDescriptors(root, false)
 }
 
-// CollectResponsesToolDescriptorsDoc extracts all tool descriptors from a Responses request doc.
+
 func CollectResponsesToolDescriptorsDoc(doc *ojson.Doc) []ResponsesToolDescriptor {
 	if doc == nil || doc.Len() == 0 {
 		return nil
@@ -284,12 +284,12 @@ func responsesToolDescriptorPrecedes(left, right ResponsesToolDescriptor) bool {
 	return left.Order < right.Order
 }
 
-// CollectResponsesToolWinners collects deduplicated winning descriptors for each qualified tool name.
+
 func CollectResponsesToolWinners(root ojson.Result) map[string]ResponsesToolDescriptor {
 	return collectResponsesToolWinnersFromDescriptors(CollectResponsesToolDescriptors(root))
 }
 
-// CollectResponsesToolWinnersDoc collects deduplicated winning descriptors from doc.
+
 func CollectResponsesToolWinnersDoc(doc *ojson.Doc) map[string]ResponsesToolDescriptor {
 	return collectResponsesToolWinnersFromDescriptors(CollectResponsesToolDescriptorsDoc(doc))
 }
@@ -363,13 +363,13 @@ type responsesToolWinnerKey struct {
 	clientSearch bool
 }
 
-// BuildGeminiFunctionDeclarations builds Gemini function declarations, forward name mapping, and reverse identity mapping.
+
 func BuildGeminiFunctionDeclarations(root ojson.Result) ([][]byte, map[string]string, map[string]ResponsesToolIdentity) {
 	return buildGeminiFunctionDeclarations(root, true)
 }
 
-// buildGeminiFunctionDeclarations skips per-tool declaration construction and schema
-// cleanup when the caller only needs the name and identity maps.
+
+
 func buildGeminiFunctionDeclarations(root ojson.Result, withDeclarations bool) ([][]byte, map[string]string, map[string]ResponsesToolIdentity) {
 	descriptors := collectResponsesToolDescriptors(root, true)
 	winners := make(map[responsesToolWinnerKey]ResponsesToolDescriptor, len(descriptors))
@@ -450,8 +450,8 @@ func buildGeminiFunctionDeclarations(root ojson.Result, withDeclarations bool) (
 			used[mappedName] = origName
 		}
 		if !userOwnsExactToolSearch {
-			// Reserve "tool_search" for the client tool_search shim and
-			// disambiguate any non-exact tool (e.g. "tool.search") that sanitized to it.
+
+
 			if collidingOrig, taken := used[ResponsesToolSearchFunctionName]; taken && collidingOrig != ResponsesToolSearchFunctionName {
 				used[ResponsesToolSearchFunctionName] = ResponsesClientToolSearchKey
 				newMapped := disambiguateResponsesSanitizedName(ResponsesToolSearchFunctionName, collidingOrig, used)
@@ -534,8 +534,8 @@ func buildGeminiFunctionDeclarations(root ojson.Result, withDeclarations bool) (
 		declarations = append(declarations, funcDeclDoc.Bytes())
 	}
 
-	// Populate local-name aliases after all direct/qualified names are registered
-	// so a namespace child's local name never shadows a direct tool or the search shim.
+
+
 	for _, desc := range winningList {
 		if !desc.ClientSearch && desc.LocalName != "" && desc.LocalName != desc.Name {
 			if _, exists := forwardMap[desc.LocalName]; !exists {
@@ -557,7 +557,7 @@ func buildGeminiToolSearchParametersSchema(tool ojson.Result) []byte {
 	return []byte(responsesToolSearchDefaultParameters)
 }
 
-// ResponsesToolReverseIdentityMap builds a Gemini function name -> ResponsesToolIdentity map from a Responses request raw JSON.
+
 func ResponsesToolReverseIdentityMap(rawJSON []byte) map[string]ResponsesToolIdentity {
 	if len(rawJSON) == 0 || !ojson.ValidBytes(rawJSON) {
 		return nil
@@ -570,7 +570,7 @@ func ResponsesToolReverseIdentityMap(rawJSON []byte) map[string]ResponsesToolIde
 	return reverseMap
 }
 
-// MapResponsesToolName returns the mapped Gemini function name if present in forwardMap, else sanitized name.
+
 func MapResponsesToolName(forwardMap map[string]string, name string) string {
 	if mapped, ok := forwardMap[name]; ok && mapped != "" {
 		return mapped
@@ -578,8 +578,8 @@ func MapResponsesToolName(forwardMap map[string]string, name string) string {
 	return SanitizeFunctionName(name)
 }
 
-// MapResponsesClientToolSearchName returns the mapped Gemini function name for
-// the client-executed tool_search shim.
+
+
 func MapResponsesClientToolSearchName(forwardMap map[string]string) string {
 	if mapped, ok := forwardMap[ResponsesClientToolSearchKey]; ok && mapped != "" {
 		return mapped
@@ -587,7 +587,7 @@ func MapResponsesClientToolSearchName(forwardMap map[string]string) string {
 	return ResponsesToolSearchFunctionName
 }
 
-// ConvertResponsesToolChoiceToGemini translates Responses tool_choice into Gemini functionCallingConfig JSON.
+
 func ConvertResponsesToolChoiceToGemini(toolChoice ojson.Result, forwardMap map[string]string) ([]byte, bool) {
 	if !toolChoice.Exists() {
 		return nil, false
@@ -651,7 +651,7 @@ func ConvertResponsesToolChoiceToGemini(toolChoice ojson.Result, forwardMap map[
 	return cfgDoc.Bytes(), true
 }
 
-// UnwrapResponsesCustomToolInput extracts the raw input string from custom tool arguments JSON or plain string.
+
 func UnwrapResponsesCustomToolInput(arguments string) string {
 	arguments = strings.TrimSpace(arguments)
 	if arguments == "" || arguments == "{}" {

@@ -13,9 +13,9 @@ var devinModelsURLs = []string{
 	"https://models.router-for.me/devin_models.json",
 }
 
-// StartDevinModelsUpdater starts a background updater that fetches the
-// Devin model catalog immediately and refreshes it every 3 hours.
-// Safe to call multiple times; only one updater runs.
+
+
+
 func StartDevinModelsUpdater(ctx context.Context) {
 	devinCatalogUpdater.configure(ctx, "")
 }

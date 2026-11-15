@@ -1,5 +1,5 @@
-// Package management provides the management API handlers and middleware
-// for configuring the server and managing auth files.
+
+
 package management
 
 import (
@@ -27,16 +27,16 @@ import (
 type attemptInfo struct {
 	count        int
 	blockedUntil time.Time
-	lastActivity time.Time // track last activity for cleanup
+	lastActivity time.Time
 }
 
-// attemptCleanupInterval controls how often stale IP entries are purged
+
 const attemptCleanupInterval = 1 * time.Hour
 
-// attemptMaxIdleTime controls how long an IP can be idle before cleanup
+
 const attemptMaxIdleTime = 2 * time.Hour
 
-// Handler aggregates config reference, persistence path and helpers.
+
 type Handler struct {
 	cfg                     *config.Config
 	configFilePath          string
@@ -46,7 +46,7 @@ type Handler struct {
 	reloadGeneration        uint64
 	appliedReloadGeneration uint64
 	attemptsMu              sync.Mutex
-	failedAttempts          map[string]*attemptInfo // keyed by client IP
+	failedAttempts          map[string]*attemptInfo
 	authManager             *coreauth.Manager
 	tokenStore              coreauth.Store
 	localPassword           string
@@ -71,7 +71,7 @@ type configReloadSnapshot struct {
 	generation uint64
 }
 
-// NewHandler creates a new management handler instance.
+
 func NewHandler(cfg *config.Config, configFilePath string, manager *coreauth.Manager) *Handler {
 	envSecret, _ := os.LookupEnv("MANAGEMENT_PASSWORD")
 	envSecret = strings.TrimSpace(envSecret)
@@ -89,8 +89,8 @@ func NewHandler(cfg *config.Config, configFilePath string, manager *coreauth.Man
 	return h
 }
 
-// startAttemptCleanup launches a background goroutine that periodically
-// removes stale IP entries from failedAttempts to prevent memory leaks.
+
+
 func (h *Handler) startAttemptCleanup() {
 	go func() {
 		ticker := time.NewTicker(attemptCleanupInterval)
@@ -101,32 +101,32 @@ func (h *Handler) startAttemptCleanup() {
 	}()
 }
 
-// purgeStaleAttempts removes IP entries that have been idle beyond attemptMaxIdleTime
-// and whose ban (if any) has expired.
+
+
 func (h *Handler) purgeStaleAttempts() {
 	now := time.Now()
 	h.attemptsMu.Lock()
 	defer h.attemptsMu.Unlock()
 	for ip, ai := range h.failedAttempts {
-		// Skip if still banned
+
 		if !ai.blockedUntil.IsZero() && now.Before(ai.blockedUntil) {
 			continue
 		}
-		// Remove if idle too long
+
 		if now.Sub(ai.lastActivity) > attemptMaxIdleTime {
 			delete(h.failedAttempts, ip)
 		}
 	}
 }
 
-// NewHandler creates a new management handler instance.
+
 func NewHandlerWithoutConfigFilePath(cfg *config.Config, manager *coreauth.Manager) *Handler {
 	return NewHandler(cfg, "", manager)
 }
 
-// SetConfig updates the in-memory config reference when the server hot-reloads.
-// A config parsed from an older version of the config file is ignored: a later
-// save already changed the file, and the reload for that save publishes it.
+
+
+
 func (h *Handler) SetConfig(cfg *config.Config) {
 	if h == nil {
 		return
@@ -141,16 +141,16 @@ func (h *Handler) SetConfig(cfg *config.Config) {
 	h.cfg = cloned
 }
 
-// configSnapshot reads h.cfg under h.mu, for code that runs outside the request holding it.
+
 func (h *Handler) configSnapshot() *config.Config {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.cfg
 }
 
-// oauthConfigWithProxy returns a configuration snapshot for an OAuth session.
-// When proxyURL is non-empty, it returns a cloned config with ProxyURL overridden
-// without mutating the shared handler configuration.
+
+
+
 func (h *Handler) oauthConfigWithProxy(proxyURL string) *config.Config {
 	cfg := h.configSnapshot()
 	proxyURL = strings.TrimSpace(proxyURL)
@@ -171,9 +171,9 @@ func (h *Handler) oauthConfigWithProxy(proxyURL string) *config.Config {
 	return cloned
 }
 
-// isStaleConfigFileSnapshotLocked reports whether cfg was parsed from config file
-// bytes that are no longer on disk. Management saves hold h.mu, so none can land
-// during the check. Callers must hold h.mu.
+
+
+
 func (h *Handler) isStaleConfigFileSnapshotLocked(cfg *config.Config) bool {
 	if cfg == nil || cfg.SourceHash == "" || h.configFilePath == "" {
 		return false
@@ -185,7 +185,7 @@ func (h *Handler) isStaleConfigFileSnapshotLocked(cfg *config.Config) bool {
 	return config.ComputeSourceHash(data) != cfg.SourceHash
 }
 
-// SetAuthManager updates the auth manager reference used by management endpoints.
+
 func (h *Handler) SetAuthManager(manager *coreauth.Manager) {
 	if h == nil {
 		return
@@ -197,7 +197,7 @@ func (h *Handler) SetAuthManager(manager *coreauth.Manager) {
 	h.mu.Unlock()
 }
 
-// SetPluginHost updates the plugin host used by plugin-backed management endpoints.
+
 func (h *Handler) SetPluginHost(host *pluginhost.Host) {
 	if h == nil {
 		return
@@ -209,7 +209,7 @@ func (h *Handler) SetPluginHost(host *pluginhost.Host) {
 	h.mu.Unlock()
 }
 
-// SetConfigReloadHook updates the callback used after management saves config changes.
+
 func (h *Handler) SetConfigReloadHook(hook func(context.Context, *config.Config)) {
 	if h == nil {
 		return
@@ -219,8 +219,8 @@ func (h *Handler) SetConfigReloadHook(hook func(context.Context, *config.Config)
 	h.mu.Unlock()
 }
 
-// reloadSnapshotConfigLocked clones the runtime config and assigns a reload generation.
-// Callers must hold h.mu.
+
+
 func (h *Handler) reloadSnapshotConfigLocked() configReloadSnapshot {
 	if h == nil || h.cfg == nil {
 		return configReloadSnapshot{}
@@ -232,8 +232,8 @@ func (h *Handler) reloadSnapshotConfigLocked() configReloadSnapshot {
 	}
 }
 
-// saveConfigAndSnapshotLocked saves h.cfg and returns a full runtime config snapshot.
-// Callers must hold h.mu.
+
+
 func (h *Handler) saveConfigAndSnapshotLocked(c *gin.Context) (configReloadSnapshot, bool) {
 	if errSave := config.SaveConfigPreserveComments(h.configFilePath, h.cfg, c.GetBool(ConfigV8ContextKey)); errSave != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save config: %v", errSave)})
@@ -242,8 +242,8 @@ func (h *Handler) saveConfigAndSnapshotLocked(c *gin.Context) (configReloadSnaps
 	return h.reloadSnapshotConfigLocked(), true
 }
 
-// reloadConfigAfterManagementSave reloads from an independent config snapshot.
-// Callers must pass a full Config clone captured immediately after a successful save.
+
+
 func (h *Handler) reloadConfigAfterManagementSave(ctx context.Context, snapshot configReloadSnapshot) {
 	if h == nil || snapshot.cfg == nil || snapshot.generation == 0 {
 		return
@@ -272,8 +272,8 @@ func (h *Handler) reloadConfigAfterManagementSave(ctx context.Context, snapshot 
 	h.mu.Unlock()
 }
 
-// reloadConfigAfterManagementSaveAsync reloads from an independent config snapshot.
-// Callers must pass a full Config clone captured immediately after a successful save.
+
+
 func (h *Handler) reloadConfigAfterManagementSaveAsync(ctx context.Context, snapshot configReloadSnapshot) {
 	if h == nil || snapshot.cfg == nil || snapshot.generation == 0 {
 		return
@@ -292,10 +292,10 @@ func (h *Handler) reloadConfigAfterManagementSaveAsync(ctx context.Context, snap
 	}()
 }
 
-// SetLocalPassword configures the runtime-local password accepted for localhost requests.
+
 func (h *Handler) SetLocalPassword(password string) { h.localPassword = password }
 
-// SetLogDirectory updates the directory where main.log should be looked up.
+
 func (h *Handler) SetLogDirectory(dir string) {
 	if dir == "" {
 		return
@@ -308,19 +308,19 @@ func (h *Handler) SetLogDirectory(dir string) {
 	h.logDir = dir
 }
 
-// SetPostAuthHook registers a hook to be called after auth record creation but before persistence.
+
 func (h *Handler) SetPostAuthHook(hook coreauth.PostAuthHook) {
 	h.postAuthHook = hook
 }
 
-// SetPostAuthPersistHook registers a hook to be called after auth persistence.
+
 func (h *Handler) SetPostAuthPersistHook(hook coreauth.PostAuthHook) {
 	h.postAuthPersistHook = hook
 }
 
-// Middleware enforces access control for management endpoints.
-// All requests (local and remote) require a valid management key.
-// Additionally, remote access requires allow-remote-management=true.
+
+
+
 func (h *Handler) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("X-CPA-VERSION", buildinfo.Version)
@@ -331,7 +331,7 @@ func (h *Handler) Middleware() gin.HandlerFunc {
 		clientIP := c.ClientIP()
 		localClient := clientIP == "127.0.0.1" || clientIP == "::1"
 
-		// Accept either Authorization: Bearer <key> or X-Management-Key
+
 		var provided string
 		if ah := c.GetHeader("Authorization"); ah != "" {
 			parts := strings.SplitN(ah, " ", 2)
@@ -354,8 +354,8 @@ func (h *Handler) Middleware() gin.HandlerFunc {
 	}
 }
 
-// AuthenticateManagementKey verifies the provided management key for the given client.
-// It mirrors the behaviour of Middleware() so non-HTTP callers can reuse the same logic.
+
+
 func (h *Handler) AuthenticateManagementKey(clientIP string, localClient bool, provided string) (bool, int, string) {
 	const maxFailures = 5
 	const banDuration = 30 * time.Minute
@@ -389,7 +389,7 @@ func (h *Handler) AuthenticateManagementKey(clientIP string, localClient bool, p
 			h.attemptsMu.Unlock()
 			return false, http.StatusForbidden, fmt.Sprintf("IP banned due to too many failed attempts. Try again in %s", remaining)
 		}
-		// Ban expired, reset state
+
 		ai.blockedUntil = time.Time{}
 		ai.count = 0
 	}
@@ -457,10 +457,10 @@ func (h *Handler) AuthenticateManagementKey(clientIP string, localClient bool, p
 	return true, 0, ""
 }
 
-// persistLocked saves the current in-memory config to disk.
-// It expects the caller to hold h.mu.
+
+
 func (h *Handler) persistLocked(c *gin.Context) bool {
-	// Preserve comments when writing
+
 	if err := config.SaveConfigPreserveComments(h.configFilePath, h.cfg, c.GetBool(ConfigV8ContextKey)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to save config: %v", err)})
 		return false
@@ -475,8 +475,8 @@ func (h *Handler) persistLocked(c *gin.Context) bool {
 	return true
 }
 
-// Helper methods for simple types. The setter and the save run under h.mu, so a
-// reload publishing h.cfg cannot replace it between the change and the save.
+
+
 func (h *Handler) updateBoolField(c *gin.Context, set func(bool)) {
 	var body struct {
 		Value *bool `json:"value"`

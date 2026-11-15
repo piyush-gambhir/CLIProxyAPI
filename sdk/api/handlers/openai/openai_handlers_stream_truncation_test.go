@@ -88,9 +88,9 @@ func runMockStreamTestWithError(t *testing.T, chunks []string, trailingErr error
 	return recorder.Body.String()
 }
 
-// Issue #6371: A stream that emits multiple chunks and then cleanly closes without
-// any chunk carrying finish_reason is truncated. It must NOT be answered with [DONE],
-// but must surface an error so clients can detect truncation and retry.
+
+
+
 func TestChatCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant"}}]}`,
@@ -108,8 +108,8 @@ func TestChatCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T)
 	}
 }
 
-// A translated terminal error chunk ends the stream on its own: the handler
-// must not add a second "closed before finish_reason" error after it.
+
+
 func TestChatCompletionsStreamTerminalErrorChunkIsTheOnlyError(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
@@ -146,7 +146,7 @@ func TestChatCompletionsStreamTerminalErrorChunkIsTheOnlyError(t *testing.T) {
 	}
 }
 
-// Issue #6371: A stream with explicit null or empty finish_reason must still be detected as truncated.
+
 func TestChatCompletionsStreamExplicitNullOrEmptyFinishReasonIsReportedAsError(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant","content":"part1"},"finish_reason":null}]}`,
@@ -161,8 +161,8 @@ func TestChatCompletionsStreamExplicitNullOrEmptyFinishReasonIsReportedAsError(t
 	}
 }
 
-// Issue #6371: A stream that emits only 1 chunk without finish_reason and closes must also
-// be flagged as truncated, not [DONE].
+
+
 func TestChatCompletionsStreamSingleChunkWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant","content":"hello"}}]}`,
@@ -176,7 +176,7 @@ func TestChatCompletionsStreamSingleChunkWithoutFinishReasonIsReportedAsError(t 
 	}
 }
 
-// Control: A multi-chunk stream that does carry finish_reason must complete with [DONE].
+
 func TestChatCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"role":"assistant"}}]}`,
@@ -192,7 +192,7 @@ func TestChatCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	}
 }
 
-// Control: A single-chunk stream that carries finish_reason must complete with [DONE].
+
 func TestChatCompletionsStreamSingleChunkWithFinishReasonStillCompletes(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"content":"instant"},"finish_reason":"stop"}]}`,
@@ -206,7 +206,7 @@ func TestChatCompletionsStreamSingleChunkWithFinishReasonStillCompletes(t *testi
 	}
 }
 
-// Issue #6371: Legacy /v1/completions stream that ends without finish_reason must also be flagged as error.
+
 func TestCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -244,7 +244,7 @@ func TestCompletionsStreamWithoutFinishReasonIsReportedAsError(t *testing.T) {
 	}
 }
 
-// Control: Legacy /v1/completions stream that carries finish_reason completes with [DONE].
+
 func TestCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -282,7 +282,7 @@ func TestCompletionsStreamWithFinishReasonStillCompletes(t *testing.T) {
 	}
 }
 
-// Control: A stream with usage chunk arriving after finish_reason chunk must complete with [DONE].
+
 func TestChatCompletionsStreamUsageAfterFinishReasonStillCompletes(t *testing.T) {
 	chunks := []string{
 		`{"choices":[{"index":0,"delta":{"content":"hi"}}]}`,
@@ -298,7 +298,7 @@ func TestChatCompletionsStreamUsageAfterFinishReasonStillCompletes(t *testing.T)
 	}
 }
 
-// Control: Legacy /v1/completions single-chunk stream with finish_reason completes with [DONE].
+
 func TestCompletionsStreamSingleChunkWithFinishReasonStillCompletes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

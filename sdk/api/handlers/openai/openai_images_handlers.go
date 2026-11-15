@@ -2051,7 +2051,7 @@ func (h *OpenAIAPIHandler) streamImagesFromResponses(c *gin.Context, responsesRe
 		flusher.Flush()
 	}
 
-	// Peek for the first chunk/error while still allowing configured SSE heartbeats.
+
 	for {
 		select {
 		case <-c.Request.Context().Done():

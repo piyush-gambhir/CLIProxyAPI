@@ -67,7 +67,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_ModelSettings(t *testing.T) {
 							cfg.SanitizeOAuthSettings()
 						case "api-key-config":
 							cfg.VertexCompatAPIKey[0].Models = []config.VertexCompatModel{{Name: name, Alias: rule.Alias, OpenAPI: &enabled}}
-							// The config model takes precedence over per-auth model rules.
+
 							auth.Metadata["models"] = []config.OAuthModelAlias{{Name: name, Alias: rule.Alias, OpenAPI: &fallback}}
 						}
 						opts := cliproxyexecutor.Options{Metadata: map[string]any{cliproxyexecutor.RequestedModelMetadataKey: requested}}
@@ -155,7 +155,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_RequestedModelAndAliasPriority(t *
 func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation(t *testing.T) {
 	enabled, disabled := true, false
 
-	// 1. Credential prefix is stripped from requestedModel before matching model alias rules
+
 	prefixedAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Prefix:   "tenant",
@@ -173,7 +173,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected prefixed request 'tenant/public-model' to match alias 'public-model' with openapi=true")
 	}
 
-	// 2. Exact suffixed alias takes precedence over an earlier unsuffixed base alias
+
 	suffixAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Metadata: map[string]any{
@@ -197,7 +197,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected 'public-model(low)' to fall back to base alias 'public-model' (openapi=false), not match 'public-model(high)'")
 	}
 
-	// 3. Global OAuth model aliases and OAuth settings must not affect API-key Vertex credentials
+
 	cfg := &config.Config{
 		OAuthModelAlias: map[string][]config.OAuthModelAlias{
 			"vertex": {{Name: "gemini-2.5-pro", Alias: "gemini-oauth-openapi", OpenAPI: &enabled}},
@@ -217,7 +217,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected global OAuth settings/aliases not to route API-key Vertex credential through OpenAPI")
 	}
 
-	// 4. Resolved upstream model is not stripped when auth.Prefix matches publisher name
+
 	publisherPrefixAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Prefix:   "deepseek-ai",
@@ -232,7 +232,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected resolved upstream model 'deepseek-ai/deepseek-v4.1-flash-maas' to keep publisher prefix even when auth.Prefix is 'deepseek-ai'")
 	}
 
-	// 5. model_aliases precedes models when both define the same alias with conflicting openapi flags
+
 	precedenceAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Metadata: map[string]any{
@@ -252,7 +252,7 @@ func TestShouldExecuteVertexOpenAPIForRequest_PrefixExactSuffixAndOAuthIsolation
 		t.Fatal("expected model_aliases entry to take precedence over models entry for duplicate alias")
 	}
 
-	// 6. Per-auth alias without explicit openapi shadows global alias with openapi=false
+
 	shadowAuth := &cliproxyauth.Auth{
 		Provider: "vertex",
 		Metadata: map[string]any{

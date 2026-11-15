@@ -1,6 +1,6 @@
 package handlers
 
-// SupportsApplyPatchModel follows the same public, non-image routing as execution.
+
 func (h *BaseAPIHandler) SupportsApplyPatchModel(model string) bool {
 	if h == nil || h.AuthManager == nil {
 		return false

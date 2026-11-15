@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// IgnoredInterfacePrefixes defines interface prefixes to exclude by default (virtual/container/VPN/P2P).
+
 var IgnoredInterfacePrefixes = []string{
 	"docker",
 	"veth",
@@ -24,9 +24,9 @@ var IgnoredInterfacePrefixes = []string{
 	"llw",
 }
 
-// FilterInterfaces selects qualified physical multicast-capable LAN interfaces according to Strategy C.
-// If include is non-empty, only matching interface names are accepted.
-// If exclude is non-empty, matching interface names are dropped.
+
+
+
 func FilterInterfaces(include, exclude []string) ([]net.Interface, error) {
 	all, err := net.Interfaces()
 	if err != nil {
@@ -35,39 +35,39 @@ func FilterInterfaces(include, exclude []string) ([]net.Interface, error) {
 
 	var valid []net.Interface
 	for _, iface := range all {
-		// 1. Must be UP, not Loopback, not Point-to-Point
+
 		if iface.Flags&net.FlagUp == 0 ||
 			iface.Flags&net.FlagLoopback != 0 ||
 			iface.Flags&net.FlagPointToPoint != 0 {
 			continue
 		}
 
-		// 2. Must support Multicast
+
 		if iface.Flags&net.FlagMulticast == 0 {
 			continue
 		}
 
 		name := strings.ToLower(iface.Name)
 
-		// 3. User explicit exclude list
+
 		if len(exclude) > 0 && matchesAny(name, exclude) {
 			continue
 		}
 
-		// 4. Default allow-list: accept common physical LAN adapters and
-		// bonded LAN interfaces unless the user provides an include list.
+
+
 		if len(include) == 0 {
 			if isVirtualOrTunnel(name) || !isLikelyPhysicalLAN(name) {
 				continue
 			}
 		}
 
-		// 5. User explicit include list
+
 		if len(include) > 0 && !matchesAny(name, include) {
 			continue
 		}
 
-		// 6. Must have at least one valid non-loopback IP address
+
 		addrs, errAddrs := iface.Addrs()
 		if errAddrs != nil || len(addrs) == 0 {
 			continue

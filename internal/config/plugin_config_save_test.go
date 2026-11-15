@@ -60,8 +60,8 @@ empty_list: []
 	}
 	savedText := string(savedBytes)
 
-	// In the reported bug, newly added false booleans, zeros, empty strings and empty lists
-	// are silently dropped by mergeMappingPreserve/isKnownDefaultValue.
+
+
 	for _, expected := range []string{
 		"enabled: false",
 		"timeout: 0",
@@ -131,7 +131,7 @@ nested:
 	}
 	savedText := string(savedBytes)
 
-	// In the reported bug, mergeMappingPreserve does not delete stale keys in mappings.
+
 	if strings.Contains(savedText, "stale_key") {
 		t.Errorf("saved config unexpectedly contains stale_key; got:\n%s", savedText)
 	}
@@ -161,7 +161,7 @@ func TestSaveConfigPreserveComments_PluginConfigPreservesSequenceReordering(t *t
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
-	// Reorder sequence: model-b first, then model-a, with detail modified.
+
 	cfg := &Config{
 		Plugins: PluginsConfig{
 			Enabled: true,
@@ -349,7 +349,7 @@ func TestSaveConfigPreserveComments_PluginConfigDeletesPluginAndClearsConfigs(t 
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
-	// Step 1: remove plugin-a, keep plugin-b
+
 	cfg := &Config{
 		Plugins: PluginsConfig{
 			Enabled: true,
@@ -375,7 +375,7 @@ func TestSaveConfigPreserveComments_PluginConfigDeletesPluginAndClearsConfigs(t 
 		t.Errorf("saved config step 1 missing plugin-b; got:\n%s", savedText)
 	}
 
-	// Step 2: clear all configs
+
 	cfg.Plugins.Configs = map[string]PluginInstanceConfig{}
 	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
 		t.Fatalf("SaveConfigPreserveComments() step 2 error = %v", errSave)

@@ -227,7 +227,7 @@ func TestClaudeExecutor_PromptCacheOptionsMode_ImplicitOrMissing_PreservesAutoCa
 				t.Fatalf("Execute() error = %v", err)
 			}
 
-			// In normal mode without client markers, system and message should receive auto-injected cache_control.
+
 			if !ojson.GetBytes(seenBody, "system.0.cache_control").Exists() {
 				t.Fatalf("expected system cache_control in implicit mode: %s", string(seenBody))
 			}
@@ -499,15 +499,15 @@ func TestClaudeExecutor_PromptCacheOptionsMode_Explicit_Cloaked_PreservesClientS
 	if count := countCacheControls(seenBody); count != 1 {
 		t.Fatalf("expected exactly 1 cache_control block (the client system one), got %d: %s", count, string(seenBody))
 	}
-	// Verify CPA synthetic agent block does NOT have cache_control
+
 	if ojson.GetBytes(seenBody, "system.1.cache_control").Exists() {
 		t.Fatalf("CPA synthetic agent block must not have cache_control: %s", string(seenBody))
 	}
-	// Verify user message does NOT have cache_control
+
 	if ojson.GetBytes(seenBody, "messages.0.content.0.cache_control").Exists() {
 		t.Fatalf("first user message must not receive auto cache_control: %s", string(seenBody))
 	}
-	// Verify client system prompt has cache_control preserved
+
 	foundClientSystemCC := false
 	messages := ojson.GetBytes(seenBody, "messages")
 	if messages.IsArray() {
@@ -580,8 +580,8 @@ func TestClaudeExecutor_CountTokens_StripsPromptCacheOptions(t *testing.T) {
 		t.Fatal("expected non-empty CountTokens payload")
 	}
 
-	// For custom base_url, CountTokens uses the local estimator after stripping fields.
-	// Now test countTokensUpstream specifically to verify upstream payload body:
+
+
 	upstreamResp, errUpstream := executor.countTokensUpstream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-3-5-sonnet-20241022",
 		Payload: originalReq,
@@ -668,7 +668,7 @@ func TestClaudeExecutor_PromptCacheOptionsMode_Explicit_ProbePreservesClient1hTT
 		"base_url": server.URL,
 	}}
 
-	// "Hi" is a classic probe text that would trigger isProbeOrHelper in native cloaking.
+
 	originalReq := []byte(`{
 		"model": "claude-3-5-sonnet-20241022",
 		"prompt_cache_options": {
@@ -757,11 +757,11 @@ func TestClaudeExecutor_CountTokensUpstream_Cloaked_ExplicitPreservesClientSyste
 	if count := countCacheControls(seenBody); count != 1 {
 		t.Fatalf("expected exactly 1 cache_control in count_tokens explicit mode, got %d: %s", count, string(seenBody))
 	}
-	// Verify user message did not get auto-cached
+
 	if ojson.GetBytes(seenBody, "messages.0.content.0.cache_control").Exists() {
 		t.Fatalf("user message must not receive auto cache_control: %s", string(seenBody))
 	}
-	// Verify client system breakpoint was preserved with scope: global.
+
 	foundClientSystemCC := false
 	system := ojson.GetBytes(seenBody, "system")
 	if system.IsArray() {
@@ -800,7 +800,7 @@ func TestClaudeExecutor_PromptCacheOptionsMode_Explicit_Cloaked_LegacyModelPrese
 		"base_url": server.URL,
 	}}
 
-	// claude-3-5-haiku-20241022 is in claudeLegacySystemReminderModels, so it uses legacy system reminders
+
 	originalReq := []byte(`{
 		"model": "claude-3-5-haiku-20241022",
 		"prompt_cache_options": {
@@ -833,11 +833,11 @@ func TestClaudeExecutor_PromptCacheOptionsMode_Explicit_Cloaked_LegacyModelPrese
 	if count := countCacheControls(seenBody); count != 1 {
 		t.Fatalf("expected exactly 1 cache_control block in legacy model explicit mode, got %d: %s", count, string(seenBody))
 	}
-	// Verify system.1 agent block does not have cache_control
+
 	if ojson.GetBytes(seenBody, "system.1.cache_control").Exists() {
 		t.Fatalf("agent block must not have cache_control: %s", string(seenBody))
 	}
-	// Verify the prepended reminder on user message preserves scope: global
+
 	foundReminderCC := false
 	messages := ojson.GetBytes(seenBody, "messages")
 	if messages.IsArray() {

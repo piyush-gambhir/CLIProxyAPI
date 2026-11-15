@@ -25,7 +25,7 @@ func TestBrowseQueriesRefreshPTRBeforeExpiry(t *testing.T) {
 		if c.queryDue(7, q, state, now) {
 			state.sent(now)
 			messages := c.queryMessages(7, q, now)
-			// A normal peer suppresses a response while our known answer is fresh.
+
 			if len(messages[0].Answer) == 0 {
 				browseTestIngest(t, c, 7, now, records[0])
 			}

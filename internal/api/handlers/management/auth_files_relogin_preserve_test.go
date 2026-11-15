@@ -69,7 +69,7 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 	fileName := "codex-user@example.com.json"
 	filePath := filepath.Join(authDir, fileName)
 
-	// User configured fields on existing OAuth account
+
 	initialContent := map[string]any{
 		"type":          "codex",
 		"email":         "user@example.com",
@@ -98,7 +98,7 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 	}
 	h := NewHandler(cfg, "", nil)
 
-	// Re-login arrives with new OAuth tokens
+
 	tokenStorage := &codex.CodexTokenStorage{
 		Type:         "codex",
 		Email:        "user@example.com",
@@ -136,7 +136,7 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 		t.Fatalf("Unmarshal error: %v", errUnmarshal)
 	}
 
-	// Verify new OAuth token data was updated
+
 	if saved["access_token"] != "new-access-token" {
 		t.Errorf("access_token = %v, want new-access-token", saved["access_token"])
 	}
@@ -144,7 +144,7 @@ func TestSaveTokenRecord_PreservesExistingAuthFileSettings(t *testing.T) {
 		t.Errorf("refresh_token = %v, want new-refresh-token", saved["refresh_token"])
 	}
 
-	// Verify user-configured fields were preserved
+
 	if saved["prefix"] != "custom-prefix" {
 		t.Errorf("prefix = %v, want custom-prefix", saved["prefix"])
 	}
@@ -415,8 +415,8 @@ func TestSaveTokenRecord_SubjectOnlyReloginKeepsEmailCredential(t *testing.T) {
 		t.Fatalf("write canonical credential: %v", errWrite)
 	}
 
-	// The upstream stops returning an email, so the record is named after
-	// the subject; its identity keys omit the missing email.
+
+
 	tokenStorage := &xai.TokenStorage{
 		AccessToken:  "new-token",
 		RefreshToken: "new-refresh",
@@ -503,7 +503,7 @@ func TestPatchAuthFileFields_DeletesPluginFields(t *testing.T) {
 	cfg := &config.Config{AuthDir: authDir}
 	h := NewHandlerWithoutConfigFilePath(cfg, manager)
 
-	// Patch weight: null to delete weight
+
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 	body := `{"name":"plugin-auth.json","weight":null}`

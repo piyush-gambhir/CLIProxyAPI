@@ -1,6 +1,6 @@
-// Package main provides the entry point for the CLI Proxy API server.
-// This server acts as a proxy that provides OpenAI/Gemini/Claude compatible API interfaces
-// for CLI models, allowing CLI models to be used with tools and libraries designed for standard AI APIs.
+
+
+
 package main
 
 import (
@@ -50,7 +50,7 @@ var (
 	DefaultConfigPath = ""
 )
 
-// init initializes the shared logger setup.
+
 func init() {
 	logging.SetupBaseLogger()
 	buildinfo.Version = Version
@@ -68,9 +68,9 @@ func shouldEnableExampleAPIKeySafeMode(cfg *config.Config, commandMode, tuiMode,
 	return safemode.HasExampleAPIKeys(cfg.APIKeys)
 }
 
-// main is the entry point of the application.
-// It parses command-line flags, loads configuration, and starts the appropriate
-// service based on the provided flags (login, codex-login, or server mode).
+
+
+
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "discover" {
 		discoverFlags := flag.NewFlagSet("discover", flag.ExitOnError)
@@ -97,14 +97,14 @@ func main() {
 		os.Exit(code)
 	}
 
-	// For legacy --discover-json flag or JSON requests, keep stdout clean
+
 	isJSONDiscover := argvEnablesBoolFlag(os.Args[1:], "discover-json")
 	isDiscoverMode := isJSONDiscover || argvEnablesBoolFlag(os.Args[1:], "discover")
 	if !isJSONDiscover {
 		fmt.Printf("CLIProxyAPI Version: %s, Commit: %s, BuiltAt: %s\n", buildinfo.Version, buildinfo.Commit, buildinfo.BuildDate)
 	}
 
-	// Command-line flags to control the application's behavior.
+
 	var codexLogin bool
 	var codexDeviceLogin bool
 	var claudeLogin bool
@@ -135,7 +135,7 @@ func main() {
 	var managementBaseURL string
 	var localModel bool
 
-	// Define command-line flags for different operation modes.
+
 	flag.BoolVar(&codexLogin, "codex-login", false, "Login to Codex using OAuth")
 	flag.BoolVar(&codexDeviceLogin, "codex-device-login", false, "Login to Codex using device code flow")
 	flag.BoolVar(&claudeLogin, "claude-login", false, "Login to Claude using OAuth")
@@ -201,7 +201,7 @@ func main() {
 		}
 	}
 
-	// Parse the command-line flags.
+
 	flag.Parse()
 
 	if discoverGateways || discoverJSON {
@@ -217,7 +217,7 @@ func main() {
 		os.Exit(code)
 	}
 
-	// Core application variables.
+
 	var err error
 	var cfg *config.Config
 	var isCloudDeploy bool
@@ -254,7 +254,7 @@ func main() {
 		return
 	}
 
-	// Load environment variables from .env if present.
+
 	if errLoad := godotenv.Load(filepath.Join(wd, ".env")); errLoad != nil {
 		if !errors.Is(errLoad, os.ErrNotExist) {
 			log.WithError(errLoad).Warn("failed to load .env file")
@@ -332,15 +332,15 @@ func main() {
 		objectStoreLocalPath = value
 	}
 
-	// Check for cloud deploy mode only on first execution
-	// Read env var name in uppercase: DEPLOY
+
+
 	deployEnv := os.Getenv("DEPLOY")
 	if deployEnv == "cloud" {
 		isCloudDeploy = true
 	}
 
-	// Determine and load the configuration file.
-	// Prefer the Postgres store when configured, otherwise fallback to git or local files.
+
+
 	var configFilePath string
 	if strings.TrimSpace(homeJWT) != "" {
 		configLoadedFromHome = true
@@ -433,15 +433,15 @@ func main() {
 		}
 		cfg = parsed
 
-		// Keep a non-empty config path for downstream components (log paths, management assets, etc),
-		// but do not require the file to exist when loading config from home.
+
+
 		if strings.TrimSpace(configPath) != "" {
 			configFilePath = configPath
 		} else {
 			configFilePath = filepath.Join(wd, "config.yaml")
 		}
 
-		// Local stores are intentionally disabled when config is loaded from home.
+
 		usePostgresStore = false
 		useObjectStore = false
 		useGitStore = false
@@ -606,22 +606,22 @@ func main() {
 		cfg = &config.Config{}
 	}
 
-	// In cloud deploy mode, check if we have a valid configuration
+
 	var configFileExists bool
 	if isCloudDeploy {
 		if configLoadedFromHome && cfg != nil {
 			configFileExists = cfg.Port != 0
 		} else {
 			if info, errStat := os.Stat(configFilePath); errStat != nil {
-				// Don't mislead: API server will not start until configuration is provided.
+
 				log.Info("Cloud deploy mode: No configuration file detected; standing by for configuration")
 				configFileExists = false
 			} else if info.IsDir() {
 				log.Info("Cloud deploy mode: Config path is a directory; standing by for configuration")
 				configFileExists = false
 			} else if cfg.Port == 0 {
-				// LoadConfigOptional returns empty config when file is empty or invalid.
-				// Config file exists but is empty or invalid; treat as missing config
+
+
 				log.Info("Cloud deploy mode: Configuration file is empty or invalid; standing by for valid configuration")
 				configFileExists = false
 			} else {
@@ -642,7 +642,7 @@ func main() {
 
 	log.Infof("CLIProxyAPI Version: %s, Commit: %s, BuiltAt: %s", buildinfo.Version, buildinfo.Commit, buildinfo.BuildDate)
 
-	// Set the log level based on the configuration.
+
 	util.SetLogLevel(cfg)
 
 	if resolvedAuthDir, errResolveAuthDir := util.ResolveAuthDir(cfg.AuthDir); errResolveAuthDir != nil {
@@ -654,7 +654,7 @@ func main() {
 	githubauth.SetToken(cfg.GitHubToken)
 	managementasset.SetCurrentConfig(cfg)
 
-	// Create login options to be used in authentication flows.
+
 	options := &cmd.LoginOptions{
 		NoBrowser:    noBrowser,
 		CallbackPort: oauthCallbackPort,
@@ -672,7 +672,7 @@ func main() {
 		serverOptions = append(serverOptions, api.WithExampleAPIKeySafeMode())
 	}
 
-	// Register the shared token store once so all components use the same persistence backend.
+
 	if usePostgresStore {
 		sdkAuth.RegisterTokenStore(pgStoreInst)
 	} else if useObjectStore {
@@ -683,7 +683,7 @@ func main() {
 		sdkAuth.RegisterTokenStore(sdkAuth.NewFileTokenStore())
 	}
 
-	// Register built-in access providers before constructing services.
+
 	configaccess.Register(&cfg.SDKConfig)
 	pluginHost.ApplyConfig(context.Background(), cfg)
 	if configLoadedFromHome && homePluginStatusReady {
@@ -700,8 +700,8 @@ func main() {
 		}
 	}
 	if homeClient != nil {
-		// The bootstrap client is not owned by the runtime service. Close it after
-		// the final startup report so it cannot retain an idle RESP connection.
+
+
 		homeClient.Close()
 		homeClient = nil
 	}
@@ -714,25 +714,25 @@ func main() {
 		}
 	}
 
-	// Handle different command modes based on the provided flags.
+
 
 	if vertexImport != "" {
-		// Handle Vertex service account import
+
 		cmd.DoVertexImport(cfg, vertexImport, vertexImportPrefix)
 	} else if siwcBind != "" {
-		// Handle Sign in with ChatGPT (SIWC) credential binding
+
 		cmd.DoSIWCBind(cfg, siwcBind, options)
 	} else if antigravityLogin {
-		// Handle Antigravity login
+
 		cmd.DoAntigravityLogin(cfg, options)
 	} else if codexLogin {
-		// Handle Codex login
+
 		cmd.DoCodexLogin(cfg, options)
 	} else if codexDeviceLogin {
-		// Handle Codex device-code login
+
 		cmd.DoCodexDeviceLogin(cfg, options)
 	} else if claudeLogin {
-		// Handle Claude login
+
 		cmd.DoClaudeLogin(cfg, options)
 	} else if kimiLogin {
 		cmd.DoKimiLogin(cfg, options)
@@ -745,9 +745,9 @@ func main() {
 	} else if metaLogin {
 		cmd.DoMetaLogin(cfg, options)
 	} else {
-		// In cloud deploy mode without config file, just wait for shutdown signals
+
 		if isCloudDeploy && !configFileExists {
-			// No config file available, just wait for shutdown
+
 			cmd.WaitForCloudDeploy()
 			return
 		}
@@ -756,7 +756,7 @@ func main() {
 		}
 		if tuiMode {
 			if standalone {
-				// Standalone mode: start an embedded local server and connect TUI client to it.
+
 				managementasset.StartAutoUpdater(context.Background(), configFilePath)
 				misc.StartAntigravityVersionUpdater(context.Background())
 				registry.SetLocalModelCatalogs(localModel)
@@ -823,15 +823,15 @@ func main() {
 				cancel()
 				<-done
 			} else {
-				// Default TUI mode: pure management client.
-				// The proxy server must already be running (locally or remotely).
+
+
 				baseURL := resolveManagementBaseURL(managementBaseURL, cfg)
 				if errRun := tui.RunWithBaseURL(baseURL, password, nil, os.Stdout); errRun != nil {
 					fmt.Fprintf(os.Stderr, "TUI error: %v\n", errRun)
 				}
 			}
 		} else {
-			// Start the main proxy service
+
 			managementasset.StartAutoUpdater(context.Background(), configFilePath)
 			misc.StartAntigravityVersionUpdater(context.Background())
 			registry.SetLocalModelCatalogs(localModel)
@@ -840,8 +840,8 @@ func main() {
 	}
 }
 
-// resolveManagementBaseURL determines the management API base URL for TUI client mode.
-// Priority: command-line flag > config file remote-management.base-url > default localhost.
+
+
 func resolveManagementBaseURL(flagURL string, cfg *config.Config) string {
 	baseURL := strings.TrimSpace(flagURL)
 	if baseURL != "" {
@@ -860,10 +860,10 @@ func resolveManagementBaseURL(flagURL string, cfg *config.Config) string {
 	return fmt.Sprintf("http://127.0.0.1:%d", port)
 }
 
-// persistSeededConfig persists a config file freshly copied from the template. The file
-// is first rewritten as the startup load would, so a plaintext management secret never
-// reaches the remote store. When that fails, the copy is removed and an error returned,
-// so every start refuses the template instead of running from an unpersisted config.
+
+
+
+
 func persistSeededConfig(ctx context.Context, configFilePath string, persist func(context.Context) error) error {
 	if errPrepare := config.PrepareConfigFileForUpload(configFilePath); errPrepare != nil {
 		if errRemove := os.Remove(configFilePath); errRemove != nil {

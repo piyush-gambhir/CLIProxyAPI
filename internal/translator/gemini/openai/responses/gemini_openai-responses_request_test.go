@@ -444,7 +444,7 @@ func TestConvertOpenAIResponsesRequestToGemini_DoesNotRetargetExtraPreviousCarri
 			},
 			assert: func(t *testing.T, parts []ojson.Result) {
 				if len(parts) != 3 || parts[0].Get("functionCall.id").String() != "call-1" || parts[0].Get("thoughtSignature").String() != testResponsesGeminiThoughtSignature || !parts[1].Get("text").Exists() || parts[1].Get("text").String() != "" || parts[1].Get("thoughtSignature").String() != signature2 || parts[2].Get("functionCall.id").String() != "call-2" || parts[2].Get("thoughtSignature").String() != "skip_thought_signature_validator" {
-					// call-2 follows a text part, so it gets the bypass sentinel rather than signature2.
+
 					t.Fatalf("extra previous function carrier retargeted: %v", parts)
 				}
 			},
@@ -1052,7 +1052,7 @@ func TestConvertOpenAIResponsesRequestToGemini_MidSessionDeveloperMessageDoesNot
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-	// systemInstruction must remain strictly unchanged (only original instructions, not developer notice)
+
 	systemInstruction := result.Get("systemInstruction")
 	if !systemInstruction.Exists() {
 		t.Fatalf("systemInstruction missing; output=%s", output)
@@ -1065,7 +1065,7 @@ func TestConvertOpenAIResponsesRequestToGemini_MidSessionDeveloperMessageDoesNot
 		t.Fatalf("systemInstruction part = %q, want %q; output=%s", got, "Be a helpful assistant", output)
 	}
 
-	// contents should contain user, model, user (with merged developer notice + turn 2 user text)
+
 	contents := result.Get("contents").Array()
 	if len(contents) != 3 {
 		t.Fatalf("contents count = %d, want 3; output=%s", len(contents), output)
@@ -1217,13 +1217,13 @@ func TestConvertOpenAIResponsesRequestToGemini_MultipleMidSessionDeveloperMessag
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-	// systemInstruction only contains original instructions
+
 	parts := result.Get("systemInstruction.parts").Array()
 	if len(parts) != 1 || parts[0].Get("text").String() != "Be a helpful assistant" {
 		t.Fatalf("systemInstruction corrupted: %s", output)
 	}
 
-	// All mid-session developer messages coalesced into the final user turn
+
 	contents := result.Get("contents").Array()
 	if len(contents) != 3 {
 		t.Fatalf("contents count = %d, want 3; output=%s", len(contents), output)
@@ -1277,18 +1277,18 @@ func TestConvertOpenAIResponsesRequestToGemini_InterveningDeveloperMessagePreser
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-	// Validate function call pairing passes strictly (no content turn before pending functionResponse)
+
 	if errPair := internalsignature.ValidateGeminiFunctionCallPairing(output); errPair != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed: %v; output=%s", errPair, output)
 	}
 
-	// systemInstruction only contains original instructions
+
 	parts := result.Get("systemInstruction.parts").Array()
 	if len(parts) != 1 || parts[0].Get("text").String() != "Be a helpful assistant" {
 		t.Fatalf("systemInstruction corrupted: %s", output)
 	}
 
-	// Function response should have matching call id and name
+
 	foundFR := false
 	for _, content := range result.Get("contents").Array() {
 		for _, part := range content.Get("parts").Array() {
@@ -1336,7 +1336,7 @@ func TestConvertOpenAIResponsesRequestToGemini_InterveningDeveloperAndUserMessag
 	output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-3.5-flash", []byte(inputJSON), false)
 	result := util.ParseGJSONBytesNoCopy(output)
 
-	// Pairing should be valid
+
 	if errPair := internalsignature.ValidateGeminiFunctionCallPairing(output); errPair != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed: %v; output=%s", errPair, output)
 	}
@@ -2000,7 +2000,7 @@ func TestConvertOpenAIResponsesRequestToGemini_ReplaysCustomToolCallAndOutput(t 
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_TwoTurnCustomToolRoundtripWithReasoning(t *testing.T) {
-	// Turn 2 request: includes reasoning carrier before custom_tool_call, then custom_tool_call_output
+
 	inputJSON := `{
 		"model": "gemini-3.6-flash-high",
 		"input": [
@@ -2158,8 +2158,8 @@ func TestConvertOpenAIResponsesRequestToGemini_FunctionCallOutputAlternateIDsAnd
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_ParallelFunctionCallOutputsAlternateIDs(t *testing.T) {
-	// Two tool calls: call-1 and call-2
-	// Two outputs: reversed order with tool_call_id and id
+
+
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2186,7 +2186,7 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelFunctionCallOutputsAltern
 		t.Fatalf("expected 2 response parts, got %d; output=%s", len(responses), string(output))
 	}
 
-	// Must be ordered call-1 then call-2 to match model functionCall order
+
 	if gotID := responses[0].Get("functionResponse.id").String(); gotID != "call-1" {
 		t.Fatalf("first response id = %q, want call-1", gotID)
 	}
@@ -2202,8 +2202,8 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelFunctionCallOutputsAltern
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOverItemID(t *testing.T) {
-	// Items have item IDs (id: "item_b", "item_a") in addition to tool_call_id ("call_b", "call_a") in reverse order.
-	// Dedicated tool_call_id must take precedence over item id so content results are not swapped.
+
+
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2230,7 +2230,7 @@ func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOve
 		t.Fatalf("expected 2 responses, got %d; output=%s", len(responses), string(output))
 	}
 
-	// First response must pair with call_a and have content_a
+
 	if gotID := responses[0].Get("functionResponse.id").String(); gotID != "call_a" {
 		t.Fatalf("first response id = %q, want call_a", gotID)
 	}
@@ -2238,7 +2238,7 @@ func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOve
 		t.Fatalf("first response result = %q, want content_a (tool_call_id precedence check failed)", gotResult)
 	}
 
-	// Second response must pair with call_b and have content_b
+
 	if gotID := responses[1].Get("functionResponse.id").String(); gotID != "call_b" {
 		t.Fatalf("second response id = %q, want call_b", gotID)
 	}
@@ -2248,8 +2248,8 @@ func TestConvertOpenAIResponsesRequestToGemini_DedicatedCallIDTakesPrecedenceOve
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_ExplicitUnmatchedCallIDNotRebound(t *testing.T) {
-	// Pending call is call_1, but output has an explicit call_id: "call_other".
-	// It must NOT be hijacked and rewritten to call_1; emit it as user text.
+
+
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2283,11 +2283,11 @@ func TestConvertOpenAIResponsesRequestToGemini_ExplicitUnmatchedCallIDNotRebound
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_MixedMissingAndExplicitParallelOutputsAcrossUserMessage(t *testing.T) {
-	// Call A, Call B.
-	// Output 1 has NO ID (result B).
-	// Intervening user message.
-	// Output 2 explicitly has call_id: call_a (result A).
-	// Call A must NOT be stolen by Output 1; Output 1 must get Call B.
+
+
+
+
+
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2323,11 +2323,11 @@ func TestConvertOpenAIResponsesRequestToGemini_MixedMissingAndExplicitParallelOu
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_AllPendingCallsReservedByFutureExplicitOutputsDoesNotDuplicate(t *testing.T) {
-	// Call A is the only pending call.
-	// Output 1 has NO ID.
-	// Intervening user message.
-	// Output 2 explicitly has call_id: call_a.
-	// Output 1 must NOT be bound to call_a; call_a must not be duplicated.
+
+
+
+
+
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2355,7 +2355,7 @@ func TestConvertOpenAIResponsesRequestToGemini_AllPendingCallsReservedByFutureEx
 		}
 	}
 
-	// Verify call_a is not duplicated
+
 	callACount := 0
 	for _, id := range responseIDs {
 		if id == "call_a" {
@@ -2366,7 +2366,7 @@ func TestConvertOpenAIResponsesRequestToGemini_AllPendingCallsReservedByFutureEx
 		t.Fatalf("call_a appeared %d times in responseIDs %v, want exactly 1", callACount, responseIDs)
 	}
 
-	// The response that carries call_a must be result_2 (the explicit one), not result_1
+
 	for idx, id := range responseIDs {
 		if id == "call_a" && responseResults[idx] != "result_2" {
 			t.Fatalf("call_a was bound to result %q, want result_2", responseResults[idx])
@@ -2391,12 +2391,12 @@ func TestConvertOpenAIResponsesRequestToGemini_InterruptedFunctionCallPreservesP
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on Gemini request: %v; output=%s", err, result)
 	}
 
-	// Verify synthesized response for c1
+
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.2.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
 		t.Fatalf("unexpected synthesized response for c1: %s", c1Resp.Raw)
 	}
-	// Verify real response for c2
+
 	c2Resp := ojson.GetBytesNoCopy(result, "contents.5.parts.0.functionResponse")
 	if c2Resp.Get("id").String() != "c2" || c2Resp.Get("name").String() != "shell" || c2Resp.Get("response.result").String() != "/tmp\n" {
 		t.Fatalf("unexpected real response for c2: %s", c2Resp.Raw)
@@ -2422,7 +2422,7 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelInterruptedFunctionCallPr
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on parallel interrupted request: %v; output=%s", err, result)
 	}
 
-	// In the response turn for [c1, c2], c1 must be first (synthesized) and c2 must be second (real)
+
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.2.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
 		t.Fatalf("unexpected response part 0 for c1: %s", c1Resp.Raw)
@@ -2449,7 +2449,7 @@ func TestConvertOpenAIResponsesRequestToGemini_TrailingPartialParallelCallsPrese
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on trailing partial parallel request: %v; output=%s", err, result)
 	}
 
-	// In the response turn for [c1, c2], c1 must be first (synthesized) and c2 must be second (real)
+
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.2.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
 		t.Fatalf("unexpected response part 0 for c1: %s", c1Resp.Raw)
@@ -2477,12 +2477,12 @@ func TestConvertOpenAIResponsesRequestToGemini_InterruptedMessageBeforeRealOutpu
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed on interrupted message before real output request: %v; output=%s", err, result)
 	}
 
-	// The user message precedes the completed tool response turn
+
 	stopText := ojson.GetBytesNoCopy(result, "contents.2.parts.0.text").String()
 	if stopText != "Stop, do something else instead." {
 		t.Fatalf("unexpected text in contents[2]: %q", stopText)
 	}
-	// In the response turn for [c1, c2], c1 must be first (synthesized) and c2 must be second (real)
+
 	c1Resp := ojson.GetBytesNoCopy(result, "contents.3.parts.0.functionResponse")
 	if c1Resp.Get("id").String() != "c1" || c1Resp.Get("name").String() != "shell" || c1Resp.Get("response.result").String() != "call interrupted, no output" {
 		t.Fatalf("unexpected response part 0 for c1: %s", c1Resp.Raw)
@@ -2527,8 +2527,8 @@ func TestConvertOpenAIResponsesRequestToGemini_FunctionCallOutputWithFCOItemID(t
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_OrphanFunctionCallOutputBecomesUserText(t *testing.T) {
-	// Codex multi-agent sub-threads inject a send_message_to_thread card as
-	// function_call_output with an fco_ item id and no preceding function_call.
+
+
 	inputJSON := `{
 		"model": "gemini-3.7-flash-high",
 		"input": [
@@ -2968,7 +2968,7 @@ func TestConvertOpenAIResponsesRequestToGemini_TopLevelVideoAndTextCombined(t *t
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_FallbackMIMEOnGenericDataURL(t *testing.T) {
-	// Image data URL with generic MIME and explicit mime_type or filename
+
 	imgInput := `{
 		"model": "gemini-2.5-flash",
 		"input": [
@@ -3364,7 +3364,7 @@ func TestConvertOpenAIResponsesRequestToGemini_InvalidDataURLsRejected(t *testin
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			output, _ := ConvertOpenAIResponsesRequestToGemini("gemini-2.5-flash", []byte(tc.inputJSON), false)
-			// No inline_data should be created for invalid data URLs
+
 			contents := ojson.GetBytesNoCopy(output, "contents").Array()
 			for _, content := range contents {
 				for _, part := range content.Get("parts").Array() {
@@ -3530,8 +3530,8 @@ func TestConvertOpenAIResponsesRequestToGemini_FunctionResponseJSONRef(t *testin
 }
 
 func TestConvertOpenAIResponsesRequestToGemini_UnsignedModelTextDoesNotSynthesizeBypassSignature(t *testing.T) {
-	// When reasoning item has no signature (empty encrypted_content), the following assistant text
-	// should not be injected with the synthetic "skip_thought_signature_validator".
+
+
 	inputJSON := `{
 		"input": [
 			{
@@ -3575,7 +3575,7 @@ func TestConvertOpenAIResponsesRequestToGemini_UnsignedModelTextDoesNotSynthesiz
 		t.Fatalf("visible text part should not have synthetic thoughtSignature, got: %s", textPart.Raw)
 	}
 
-	// Verify with sanitizer: this payload must NOT trigger any drop or bypass replacement
+
 	sanitized := internalsignature.SanitizeGeminiRequestThoughtSignatures(output, "contents")
 	sanitizedParts := ojson.GetBytesNoCopy(sanitized, "contents.0.parts").Array()
 	if len(sanitizedParts) != 2 {
@@ -3608,7 +3608,7 @@ func TestConvertOpenAIResponsesRequestToGemini_ParallelOutputsAcrossNotices(t *t
 							}
 						}
 						items = append(items, map[string]any{"type": "function_call_output", "call_id": fmt.Sprintf("call-%d", id), "output": output})
-						// Codex also emits role-only messages without an explicit type.
+
 						note := map[string]any{"role": role, "content": fmt.Sprintf("<image_resize_notice>notice-%d</image_resize_notice>", i)}
 						if i%2 == 0 {
 							note["type"] = "message"

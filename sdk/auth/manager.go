@@ -15,14 +15,14 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/proxyutil"
 )
 
-// Manager aggregates authenticators and coordinates persistence via a token store.
+
 type Manager struct {
 	authenticators map[string]Authenticator
 	store          coreauth.Store
 }
 
-// NewManager constructs a manager with the provided token store and authenticators.
-// If store is nil, the caller must set it later using SetStore.
+
+
 func NewManager(store coreauth.Store, authenticators ...Authenticator) *Manager {
 	mgr := &Manager{
 		authenticators: make(map[string]Authenticator),
@@ -34,7 +34,7 @@ func NewManager(store coreauth.Store, authenticators ...Authenticator) *Manager 
 	return mgr
 }
 
-// Register adds or replaces an authenticator keyed by its provider identifier.
+
 func (m *Manager) Register(a Authenticator) {
 	if a == nil {
 		return
@@ -45,12 +45,12 @@ func (m *Manager) Register(a Authenticator) {
 	m.authenticators[a.Provider()] = a
 }
 
-// SetStore updates the token store used for persistence.
+
 func (m *Manager) SetStore(store coreauth.Store) {
 	m.store = store
 }
 
-// Login executes the provider login flow and persists the resulting auth record.
+
 func (m *Manager) Login(ctx context.Context, provider string, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, string, error) {
 	auth, ok := m.authenticators[provider]
 	if !ok {
@@ -117,19 +117,19 @@ func (m *Manager) Login(ctx context.Context, provider string, cfg *config.Config
 		metadataStringValue(record.Metadata, "sub") != "" &&
 		metadataStringValue(legacyXAICredential.Metadata, "email") != ""
 	if adoptXAICredential {
-		// The upstream stopped returning the email; keep the account on its
-		// richer email-named credential (richest-known name wins) so the next
-		// login that returns the email finds the same file again. Renaming is
-		// limited to stores that resolve the save path from the record name;
-		// every built-in backend (file, git, Postgres, object) exposes the
-		// SetBaseDir capability, so unknown stores keep the ordinary
-		// migration instead of risking a rename they cannot honor.
+
+
+
+
+
+
+
 		if _, isFileNameStore := m.store.(interface{ SetBaseDir(string) }); !isFileNameStore {
 			adoptXAICredential = false
 		} else if disabled, hasDisabled := record.Metadata["disabled"].(bool); hasDisabled && disabled {
-			// The destination file deliberately disables this credential; renaming
-			// would leave it disabled while the richer file gets deleted, losing
-			// the operator's opt-out and the saved credential on re-login.
+
+
+
 			adoptXAICredential = false
 		}
 	}
@@ -204,12 +204,12 @@ func metadataStringValue(metadata map[string]any, key string) string {
 	return strings.TrimSpace(value)
 }
 
-// adoptLegacyXAIFileName points a subject-only xAI record at the existing
-// email-named credential so the save refreshes that file in place. The token
-// storage email is backfilled because SaveTokenToFile merges the record
-// metadata over the serialized storage and would otherwise drop the email.
-// Path attributes pointing at the superseded subject-named file are cleared
-// so the store resolves the adopted name.
+
+
+
+
+
+
 func adoptLegacyXAIFileName(record, legacy *coreauth.Auth) {
 	legacyFileName := strings.TrimSpace(legacy.FileName)
 	if legacyFileName == "" {

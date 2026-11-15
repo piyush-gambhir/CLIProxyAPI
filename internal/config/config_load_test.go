@@ -39,7 +39,7 @@ func uploadTestBcrypt(t *testing.T) string {
 	return string(hashed)
 }
 
-// uploadTestSecret returns the secret-key stored under section and whether it exists.
+
 func uploadTestSecret(t *testing.T, data, section string) (string, bool) {
 	t.Helper()
 	var doc map[string]any
@@ -90,7 +90,7 @@ func TestPrepareConfigFileForUploadHashesPlaintextSecret(t *testing.T) {
 	}
 }
 
-// Keys only name settings, so a secret spelled like a key must not block the upload.
+
 func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 	hashed := uploadTestBcrypt(t)
 	for _, tc := range []struct {
@@ -133,7 +133,7 @@ func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 	}
 }
 
-// A YAML null elsewhere is not the string secret "null", so it must not block the upload.
+
 func TestPrepareConfigFileForUploadIgnoresYAMLNullBesideStringNullSecret(t *testing.T) {
 	path := writeUploadTestConfig(t, "proxy-url: null\nmanagement:\n  secret-key: 'null'\n")
 
@@ -148,8 +148,8 @@ func TestPrepareConfigFileForUploadIgnoresYAMLNullBesideStringNullSecret(t *test
 	}
 }
 
-// A partially migrated config can keep a legacy plaintext secret next to the v8 key.
-// The startup load drops that conflicting legacy field, so it must not be uploaded.
+
+
 func TestPrepareConfigFileForUploadDropsConflictingLegacySecret(t *testing.T) {
 	hashed := uploadTestBcrypt(t)
 	for _, tc := range []struct {
@@ -207,8 +207,8 @@ func TestPrepareConfigFileForUploadLeavesSettledConfigUntouched(t *testing.T) {
 	}
 }
 
-// A config whose secret cannot be hashed into the file still holds the plaintext, so
-// callers must hear about it and not upload the file.
+
+
 func TestPrepareConfigFileForUploadReportsSecretItCannotHash(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
@@ -249,10 +249,10 @@ func TestPrepareConfigFileForUploadReportsSecretItCannotHash(t *testing.T) {
 	}
 }
 
-// Hashing replaces only the effective key. A YAML anchor keeps the plaintext at its
-// source, and rewriting the source could change other settings sharing it, so the file
-// must be refused and left as it was; otherwise a later call would find the key hashed
-// and accept the file with the plaintext still at the anchor.
+
+
+
+
 func TestPrepareConfigFileForUploadRefusesPlaintextKeptByReferences(t *testing.T) {
 	anchoredLegacy := "defaults: &legacy\n  secret-key: " + uploadTestPlaintextSecret + "\nremote-management: *legacy\nmanagement:\n  secret-key: "
 	for name, content := range map[string]string{
@@ -260,8 +260,8 @@ func TestPrepareConfigFileForUploadRefusesPlaintextKeptByReferences(t *testing.T
 		"scalar anchor":  "password: &password " + uploadTestPlaintextSecret + "\nmanagement:\n  secret-key: *password\n",
 		"merge key":      "defaults: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nmanagement:\n  <<: *management\n  allow-remote: true\n",
 		"shared anchor":  "management: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nother: *management\n",
-		// The overridden legacy secret is dropped from remote-management, but its anchor
-		// still holds the plaintext.
+
+
 		"anchored legacy beside plaintext v8": anchoredLegacy + "current-plaintext-secret\n",
 		"anchored legacy beside hashed v8":    anchoredLegacy + "'" + uploadTestBcrypt(t) + "'\n",
 	} {

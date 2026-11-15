@@ -13,13 +13,13 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// claudeCode2_1_220WireHeaderOrder is the header name sequence captured from a
-// real Claude Code 2.1.220 OAuth POST /v1/messages over HTTP/1.1, minus the four
-// names the Node HTTP layer appends after the sorted block (Connection, Host,
-// Accept-Encoding, Content-Length) and minus User-Agent. Go hardcodes Host,
-// User-Agent and Content-Length ahead of the sorted block, so those four
-// positions cannot be matched without replacing the request serialiser; the real
-// client carries User-Agent inside the sorted block at index 3.
+
+
+
+
+
+
+
 var claudeCode2_1_220WireHeaderOrder = []string{
 	"Accept",
 	"Authorization",
@@ -49,15 +49,15 @@ func newClaudeWireProbeRequest(t *testing.T, rawURL string) *http.Request {
 	if err := applyClaudeHeaders(req, auth, "sk-ant-oat01-wire", false, nil, body, nil, nil, false); err != nil {
 		t.Fatalf("applyClaudeHeaders: %v", err)
 	}
-	// Mirror the production sequence: the casing pass runs at the send boundary,
-	// not inside applyClaudeHeaders, so Header.Get keeps working everywhere else.
+
+
 	applyClaudeWireHeaderCasing(req)
 	return req
 }
 
-// The casing pass must stay at the send boundary. Running it inside
-// applyClaudeHeaders would make these headers invisible to Header.Get for the
-// rest of the pipeline, which is how the first attempt broke ten other tests.
+
+
+
 func TestApplyClaudeHeaders_LeavesHeadersCanonicalForThePipeline(t *testing.T) {
 	auth := &cliproxyauth.Auth{ID: "wire", Metadata: map[string]any{"access_token": "sk-ant-oat01-wire"}}
 	req := httptest.NewRequest(http.MethodPost, "https://api.anthropic.com/v1/messages?beta=true", strings.NewReader("{}"))
@@ -73,8 +73,8 @@ func TestApplyClaudeHeaders_LeavesHeadersCanonicalForThePipeline(t *testing.T) {
 	}
 }
 
-// serializedHeaderNames reads the names off the actual serialized request, which
-// is the only representation the server ever sees.
+
+
 func serializedHeaderNames(t *testing.T, req *http.Request) []string {
 	t.Helper()
 	var buf bytes.Buffer
@@ -83,7 +83,7 @@ func serializedHeaderNames(t *testing.T, req *http.Request) []string {
 	}
 	var names []string
 	scanner := bufio.NewScanner(&buf)
-	scanner.Scan() // request line
+	scanner.Scan()
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -98,16 +98,16 @@ func serializedHeaderNames(t *testing.T, req *http.Request) []string {
 	return names
 }
 
-// The wire casing is a fingerprint in its own right: CPA negotiates ALPN
-// http/1.1, so names are not lowercased by HPACK and reach Anthropic verbatim.
+
+
 func TestApplyClaudeHeaders_WireCasingMatchesRealClient(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.anthropic.com/v1/messages?beta=true")
 	got := serializedHeaderNames(t, req)
 
 	transportOwned := map[string]bool{
 		"Host": true, "Content-Length": true, "Connection": true, "Accept-Encoding": true,
-		// Go writes User-Agent before the sorted block; the real client keeps it
-		// inside it. Tracked separately below.
+
+
 		"User-Agent": true,
 	}
 	var sdkNames []string
@@ -128,9 +128,9 @@ func TestApplyClaudeHeaders_WireCasingMatchesRealClient(t *testing.T) {
 	}
 }
 
-// Documents the one ordering gap the casing fix cannot close. If Go ever stops
-// hoisting User-Agent, or the serialiser is replaced, this test fails and the
-// name can move back into claudeCode2_1_220WireHeaderOrder.
+
+
+
 func TestApplyClaudeHeaders_UserAgentStillHoistedByGo(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.anthropic.com/v1/messages?beta=true")
 	names := serializedHeaderNames(t, req)
@@ -154,8 +154,8 @@ func TestApplyClaudeHeaders_UserAgentStillHoistedByGo(t *testing.T) {
 	}
 }
 
-// Guards the property that makes the casing fix sufficient: the real client's
-// order is a plain bytewise sort, which is also what Go emits.
+
+
 func TestClaudeWireHeaderOrderIsBytewiseSorted(t *testing.T) {
 	sorted := append([]string(nil), claudeCode2_1_220WireHeaderOrder...)
 	sort.Strings(sorted)
@@ -166,7 +166,7 @@ func TestClaudeWireHeaderOrderIsBytewiseSorted(t *testing.T) {
 	}
 }
 
-// Every fingerprint rule is keyed on the upstream host, never on the caller.
+
 func TestApplyClaudeHeaders_WireCasingIsAnthropicOnly(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.moonshot.cn/v1/messages")
 	for _, name := range serializedHeaderNames(t, req) {
@@ -179,8 +179,8 @@ func TestApplyClaudeHeaders_WireCasingIsAnthropicOnly(t *testing.T) {
 	}
 }
 
-// The rewritten keys are unreachable through Header.Get, so the pass has to run
-// after every other mutation. This pins that the values survived the rewrite.
+
+
 func TestApplyClaudeHeaders_WireCasingPreservesValues(t *testing.T) {
 	req := newClaudeWireProbeRequest(t, "https://api.anthropic.com/v1/messages?beta=true")
 	for canonical, wire := range claudeWireHeaderCasing {
@@ -193,10 +193,10 @@ func TestApplyClaudeHeaders_WireCasingPreservesValues(t *testing.T) {
 	}
 }
 
-// The three Claude request paths must all leave through doClaudeUpstreamRequest.
-// A direct client.Do would skip the wire-casing pass silently, and no behavioural
-// test can catch that for a path it does not exercise, so the invariant is
-// checked structurally.
+
+
+
+
 func TestClaudeExecutorHasSingleUpstreamSendBoundary(t *testing.T) {
 	paths := []string{
 		"claude_executor_execute.go",

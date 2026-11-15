@@ -113,7 +113,7 @@ func TestOAuthTabEscRemoteIncrementsGenerationAndClearsState(t *testing.T) {
 	if updated.authState != "" || updated.authURL != "" || updated.deviceFlow {
 		t.Fatalf("remote fields not cleared: state=%q url=%q device=%v", updated.authState, updated.authURL, updated.deviceFlow)
 	}
-	// client is nil, so cancel command should be nil
+
 	if cmd != nil {
 		t.Fatal("expected nil cancel command when client is nil")
 	}
@@ -149,7 +149,7 @@ func TestOAuthTabEscWithActiveCallbackInputCancelsRemoteSession(t *testing.T) {
 	if updated.authState != "" || updated.authURL != "" {
 		t.Fatalf("remote fields not cleared: state=%q url=%q", updated.authState, updated.authURL)
 	}
-	// client is nil, so cancel command should be nil
+
 	if cmd != nil {
 		t.Fatal("expected nil cancel command when client is nil")
 	}
@@ -171,7 +171,7 @@ func TestOAuthTabStaleStartIsIgnored(t *testing.T) {
 	if updated.state != oauthIdle {
 		t.Fatalf("state = %v, want oauthIdle after stale start", updated.state)
 	}
-	// client is nil in this unit test; cancel is skipped but state remains idle.
+
 	if cmd != nil {
 		t.Fatal("expected nil cancel command when client is nil")
 	}

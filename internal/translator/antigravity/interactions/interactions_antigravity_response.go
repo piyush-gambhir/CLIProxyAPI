@@ -90,10 +90,10 @@ func ConvertAntigravityResponseToInteractions(ctx context.Context, modelName str
 				st.UsageAfterSeen = true
 			}
 		}
-		// Complete only on usage observed at or after the finish frame.
-		// Usage cached from earlier content frames is a fallback for the
-		// explicit [DONE] terminator, not a completion trigger: a later
-		// frame may still carry the final usage.
+
+
+
+
 		if st.UsageAfterSeen && st.Finished && !st.Completed {
 			out = appendAntigravityInteractionsCompleted(out, st, modelName, st.PendingUsage)
 			out = appendAntigravityInteractionsDone(out, st)
@@ -134,8 +134,8 @@ func ConvertAntigravityResponseToInteractionsNonStream(ctx context.Context, mode
 func antigravityStreamPayloads(rawJSON []byte) [][]byte {
 	trimmed := bytes.TrimSpace(rawJSON)
 	if bytes.Equal(trimmed, []byte("[DONE]")) {
-		// The bare sentinel is not a JSON array; without this guard the
-		// array branch below misparses it into a bogus payload.
+
+
 		return [][]byte{trimmed}
 	}
 	if bytes.HasPrefix(trimmed, []byte("data:")) {

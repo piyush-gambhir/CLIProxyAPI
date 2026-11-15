@@ -22,20 +22,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// codexDuplexConnectionError keeps a connection failure from cooling the shared
-// credential. The socket still fails visibly; no reconnect or replay is attempted.
-// Auth/quota failures from the initial handshake retain the normal policy.
+
+
+
 type codexDuplexConnectionError struct{ cause error }
 
 func (e *codexDuplexConnectionError) Error() string         { return e.cause.Error() }
 func (e *codexDuplexConnectionError) Unwrap() error         { return e.cause }
 func (e *codexDuplexConnectionError) IsRequestScoped() bool { return true }
 
-// streamCodexDuplex owns the already authenticated socket until downstream
-// disconnect. A response terminal event is not a connection terminal event:
-// accepted steering may produce a successor or wait for client tool results.
-// There is no redial, credential selection, local acknowledgement, or replay
-// in this path. Only the upstream can take ownership of a steering submission.
+
+
+
+
+
 func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 	ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options,
 	sess *codexWebsocketSession, conn *websocket.Conn, readCh chan codexWebsocketRead,
@@ -43,10 +43,10 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 	initialReporter *helps.UsageReporter, headers http.Header, unlock func(),
 ) *cliproxyexecutor.StreamResult {
 	streamCtx, cancel := context.WithCancel(ctx)
-	// Duplex successors bypass dispatch, including automatic steering responses.
-	// Reader usage reporting uses ctx so post-cancel failure publishing still has
-	// request metadata; writer-side local HTTP calls derive from streamCtx so an
-	// upstream websocket disconnect cancels in-flight HTTP compaction immediately.
+
+
+
+
 	followupCtx := ctx
 	writerFollowupCtx := streamCtx
 	if selection := coreusage.HomeSelectionFromContext(ctx); selection != nil {
@@ -56,22 +56,22 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 		writerFollowupCtx = coreusage.WithHomeSelection(streamCtx, reusedSelection)
 	}
 	out := make(chan cliproxyexecutor.StreamChunk)
-	// This first frame was successfully written by ExecuteStream before handoff.
+
 	log.Infof("codex websockets: request forwarded session=%s auth=%s url=%s event=response.create", sess.sessionID, auth.ID, initial.wsURL)
 	type writerFailure struct {
 		err                    error
 		preserveClassification bool
 	}
 	writeErrors := make(chan writerFailure, 1)
-	// Explicit creates have their own request settings. Automatic successors
-	// inherit the preceding response settings, just as they do upstream.
+
+
 	var metadataMu sync.Mutex
 	pending := []*codexWebsocketPrepared{initial}
-	// Serialize explicit creates against steering continuations. A response.created
-	// alone does not identify whether upstream created it automatically.
+
+
 	type codexSteerSubmission struct{ parent, eventID string }
-	// successorID is set once the response that consumes the steer has started; the steer
-	// stays outstanding until that response ends.
+
+
 	type codexAcceptedSteer struct{ parent, eventID, successorID string }
 	var unacknowledgedSteers []codexSteerSubmission
 	acceptedSteers := make(map[string]codexAcceptedSteer)
@@ -140,13 +140,13 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			}
 		}
 	}
-	// Do not consume follow-ups until bootstrap succeeds. A rejected initial
-	// request may retry on another credential using the same input channel.
+
+
 	inputReady := make(chan struct{})
 	writerDone := make(chan struct{})
 	var pendingCreates [][]byte
-	// Only the writer mutates this; the loss path reads it after joining writerDone.
-	// A message the writer took from input but neither sent nor queued was never written.
+
+
 	var consumedPayload []byte
 	readyForCreate := func() bool {
 		metadataMu.Lock()
@@ -190,8 +190,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				"status": status,
 				"error":  errBody,
 			})
-			// Reader cleanup joins this writer before closing out. Cancellation must
-			// also release a local error blocked behind a disconnected downstream.
+
+
 			select {
 			case out <- cliproxyexecutor.StreamChunk{Payload: payload}:
 				consumedPayload = nil
@@ -477,8 +477,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			}
 			payload = createDoc.Bytes()
 			nextReq, nextOpts := req, opts
-			// Dispatch already resolved aliases to the bound upstream execution model.
-			// The client model above is only used for authorization and consistency.
+
+
 			nextReq.Model = req.Model
 			nextReq.Payload = payload
 			nextOpts.OriginalRequest = payload
@@ -507,9 +507,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					fail(fmt.Errorf("websocket credential is no longer enabled"))
 					return false
 				}
-				// Build business settings snapshot from the turn request (before summary
-				// prompt preparation strips tools/fields) so subsequent response.append
-				// or synthetic-parent continuations inherit this turn's instructions.
+
+
+
 				snapshotDoc := ojson.NewDoc([]byte("{}"))
 				if reasoning := ojson.GetBytesNoCopy(nextReq.Payload, "reasoning"); reasoning.Exists() {
 					_ = snapshotDoc.SetRawBytes("reasoning", []byte(reasoning.Raw))
@@ -626,7 +626,7 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				return false
 			}
 			pending = append(pending, prepared)
-			consumedPayload = nil // pending owns it now, including a possibly partial write
+			consumedPayload = nil
 			metadataMu.Unlock()
 			if prepared.optimizeMultiAgentV2 || prepared.multiAgentV2Conflict {
 				sess.setMultiAgentV2Optimized(conn, prepared.optimizeMultiAgentV2 && !prepared.multiAgentV2Conflict)
@@ -683,8 +683,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					return
 				}
 				if !cliproxyexecutor.WebsocketAuthEnabled(streamCtx, auth.ID) {
-					// A fresh client connection can select an enabled credential. Do not send
-					// this frame on a disabled account or replay it on a different socket.
+
+
 					fail(fmt.Errorf("websocket credential is no longer enabled"))
 					return
 				}
@@ -713,7 +713,7 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 						}
 						continue
 					}
-					// Steering carries business input but must not inherit response.create defaults.
+
 					steerReq := req
 					steerReq.Payload = payload
 					steerOpts := opts
@@ -760,9 +760,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 						steeringSettings[parent] = settings
 					}
 					metadataMu.Unlock()
-					// Control frames bypass response.create translations and built-in defaults.
-					// Except for SIWC configuration_update stripping, unknown fields and unsupported
-					// input are left to upstream validation.
+
+
+
 					if !cliproxyexecutor.WebsocketAuthEnabled(streamCtx, auth.ID) {
 						fail(fmt.Errorf("websocket credential is no longer enabled"))
 						return
@@ -805,8 +805,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 		defer close(out)
 		defer func() {
 			cancel()
-			// Close releases a writer blocked in the network, then join it before
-			// releasing the execution session. No goroutine outlives its socket.
+
+
 			e.invalidateUpstreamConnWithoutDisconnectNotify(sess, conn, "duplex_closed", nil)
 			<-writerDone
 			sess.clearActive(conn, readCh)
@@ -823,7 +823,7 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 		reporter := initialReporter
 		outputItems := make(map[int64][]byte)
 		var outputFallback [][]byte
-		// A business rejection followed by EOF with nothing outstanding stays terminal.
+
 		terminalBusinessRejection := false
 		for {
 			kind, payload, errRead := readCodexWebsocketMessage(streamCtx, sess, conn, readCh)
@@ -838,12 +838,12 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				if ctx.Err() == nil {
 					var connectionErr error = &codexDuplexConnectionError{cause: errRead}
 					if preserveClassification {
-						// HTTP business failures must retain credential/cooldown policy.
+
 						connectionErr = errRead
 					}
 					if lost := codexWebsocketTurnTransportError(errRead); !preserveClassification && cliproxyexecutor.IsUpstreamWebsocketTurnError(lost) {
-						// Stop and join the writer first: after that nothing else is sent
-						// upstream and the outcome of every operation is known.
+
+
 						cancel()
 						<-writerDone
 						metadataMu.Lock()
@@ -858,7 +858,7 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 							}
 						}
 						for _, prepared := range pending {
-							if !(firstResponse && prepared == initial) { // the initial create owns the turn error
+							if !(firstResponse && prepared == initial) {
 								abandon(prepared.originalPayload, false)
 							}
 						}
@@ -885,13 +885,13 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 							turnErr.NotSent = true
 						}
 						if !firstResponse && !responseActive && len(turnErr.Abandoned) > 0 {
-							// No running turn owns the loss: the correlated errors report it.
+
 							turnErr.Idle = true
 						}
 						known := terminalBusinessRejection && !responseActive && len(pending) == 0 && len(unacknowledgedSteers) == 0 && len(acceptedSteers) == 0 && len(pendingCreates) == 0 && len(consumedPayload) == 0
 						metadataMu.Unlock()
 						if known {
-							// Already forwarded; EOF only ends the finished operation. Drop the loss marker.
+
 							connectionErr = &codexDuplexConnectionError{cause: errors.Unwrap(errRead)}
 						} else {
 							if sess != nil {
@@ -948,8 +948,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				}
 				responseID = createdResponseID
 				latestTurnResponseID = createdResponseID
-				// Retain response settings, not request history or authorization headers.
-				// In-flight steering pins its parent's settings independently of this window.
+
+
 				snapshot := *current
 				snapshot.originalPayload, snapshot.wsHeaders = nil, nil
 				snapshotDoc := ojson.NewDoc([]byte("{}"))
@@ -981,8 +981,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			observeCodexTokenEvent(reporter, payload)
 			helps.AppendCodexAPIWebsocketResponse(ctx, e.cfg, payload)
 			helps.EmitWebSocketResponseEvent(ctx, opts, auth, e.Identifier(), req.Model, payload)
-			// Steering acknowledgements, pending notifications and failures are opaque:
-			// preserve their IDs, input, sequence numbers and event types byte-for-byte.
+
+
 			if strings.HasPrefix(eventType, "response.steer.") {
 				id := strings.Clone(ojson.GetBytesNoCopy(payload, "steer.id").String())
 				parent := strings.Clone(ojson.GetBytesNoCopy(payload, "steer.previous_response_id").String())
@@ -1010,8 +1010,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					}
 					releaseSteeringSettings(parent)
 				case "response.steer.pending":
-					// Tool results may already be waiting in the writer. No automatic
-					// successor can start until an explicit continuation supplies them.
+
+
 					waitingParent = parent
 				}
 				metadataMu.Unlock()
@@ -1033,9 +1033,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				}
 				var status interface{ StatusCode() int }
 				if errors.As(credentialErr, &status) && (status.StatusCode() == http.StatusUnauthorized || status.StatusCode() == http.StatusForbidden || status.StatusCode() == http.StatusTooManyRequests) {
-					// Account health is independent of which queued request failed.
-					// The conductor records the original classification without replaying
-					// this already-started stream on another credential.
+
+
+
 					reporter.PublishFailure(ctx, credentialErr)
 					if send(cliproxyexecutor.StreamChunk{Payload: payload}) {
 						send(cliproxyexecutor.StreamChunk{Err: credentialErr})
@@ -1050,9 +1050,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 					failedID = ojson.GetBytesNoCopy(payload, "response_id").String()
 				}
 				metadataMu.Lock()
-				// A failure for the running response must not consume a queued create.
-				// A rejection before response.created instead owns the oldest pending
-				// create, including its reasoning replay scope.
+
+
+
 				currentFailure := failedID != "" && failedID == responseID
 				ambiguous := failedID == "" && ((len(pending) > 0 && responseActive) || len(unacknowledgedSteers) > 0)
 				if len(pending) > 0 && !currentFailure && !ambiguous {
@@ -1068,9 +1068,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				metadataMu.Unlock()
 				wakeWriter()
 				if ambiguous {
-					// Without a response ID, assigning this failure could corrupt
-					// either request. Preserve the event and fail the socket without
-					// guessing a scope, replaying input, or cooling the credential.
+
+
+
 					connectionErr := &codexDuplexConnectionError{cause: fmt.Errorf("cannot associate websocket failure with a response or pending create")}
 					reporter.PublishFailure(ctx, connectionErr)
 					if send(cliproxyexecutor.StreamChunk{Payload: payload}) {
@@ -1081,9 +1081,9 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 			}
 			restoreMultiAgent := !eventPrepared.multiAgentV2Conflict && (eventPrepared.optimizeMultiAgentV2 || sess.isMultiAgentV2Optimized(conn))
 			payload = helps.RestoreCodexMultiAgentV2Response(payload, restoreMultiAgent)
-			// Parse and invalidate replay for every rejected request, using the
-			// metadata that belongs to this event. Only the first rejection can
-			// enter conductor bootstrap retry; later failures stay on this socket.
+
+
+
 			var terminalErr, replayErr error
 			if wsErr, ok := parseCodexWebsocketErrorWithCooling(payload, e.modelLevelCooling()); ok {
 				terminalErr = wsErr
@@ -1118,10 +1118,10 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				}
 				metadataMu.Lock()
 				if endedID == "" && !responseActive {
-					// An id-less failure that ended the running response.
+
 					endedID = responseID
 				}
-				// A steer is complete once the response that consumed it has ended.
+
 				for id, accepted := range acceptedSteers {
 					if endedID != "" && accepted.successorID == endedID {
 						removeAcceptedSteer(id)
@@ -1163,8 +1163,8 @@ func (e *CodexWebsocketsExecutor) streamCodexDuplex(
 				wakeWriter()
 			}
 			if establishing {
-				// Deliver response.created before any locally generated error so the
-				// downstream handler also observes successful bootstrap first.
+
+
 				close(inputReady)
 			}
 		}

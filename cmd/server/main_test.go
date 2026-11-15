@@ -231,8 +231,8 @@ func TestResolveManagementBaseURL(t *testing.T) {
 
 const seededConfigTestSecret = "git-seed-plaintext-secret"
 
-// persistSeededConfigForTest seeds content into configFilePath and returns what each
-// persist call found in that file.
+
+
 func persistSeededConfigForTest(t *testing.T, configFilePath, content string) ([]string, error) {
 	t.Helper()
 	if errMkdir := os.MkdirAll(filepath.Dir(configFilePath), 0o700); errMkdir != nil {
@@ -278,8 +278,8 @@ func TestPersistSeededConfigHashesSecretBeforePersisting(t *testing.T) {
 	}
 }
 
-// The template copy is removed when refused, so the next start seeds again and fails
-// again instead of running from a config the repository never received.
+
+
 func TestPersistSeededConfigRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range map[string]string{
 		"unparsable":      "remote-management:\n  secret-key: " + seededConfigTestSecret + "\nport: [8317\n",

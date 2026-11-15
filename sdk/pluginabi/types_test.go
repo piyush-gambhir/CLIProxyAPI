@@ -195,7 +195,7 @@ func TestErrorInterfaceAndConstructor(t *testing.T) {
 		t.Fatalf("unexpected error payload: %+v", env.Error)
 	}
 
-	// Test zero / omitted status
+
 	defaultErr := NewError("server_error", "unexpected error")
 	if defaultErr.StatusCode() != 0 {
 		t.Fatalf("defaultErr.StatusCode() = %d, want 0", defaultErr.StatusCode())

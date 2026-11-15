@@ -30,8 +30,8 @@ func BenchmarkWeightedPoolReserve1000(b *testing.B) {
 	}
 }
 
-// BenchmarkWeightedPoolRetainedMemory measures live cache growth separately from
-// total heap and allocation churn. Each retry subset omits a different credential.
+
+
 func BenchmarkWeightedPoolRetainedMemory(b *testing.B) {
 	const members = 1000
 	auths := make([]*Auth, members)

@@ -529,7 +529,7 @@ func TestCodexExecutor_IsCompat_V8Layout_ClientScope_Issue6233(t *testing.T) {
 	defer server.Close()
 
 	payload := codexSpawnAgentTestPayload()
-	// The historical OAuth spelling now migrates to client-wide optimization.
+
 	parsed, errParse := config.ParseConfigBytes([]byte("oauth: {providers: {codex: {optimize-multi-agent-v2: true, orphan-delegation-compatibility: true}}}"))
 	if errParse != nil {
 		t.Fatalf("parse historical config: %v", errParse)
@@ -732,7 +732,7 @@ func TestCodexExecutorOptimizeMultiAgentV2RestoresDottedFlatToolName(t *testing.
 	req := cliproxyexecutor.Request{Model: "gpt-5.4", Payload: payload}
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FromString("openai-response"), Headers: headers}
 
-	// Test streaming execution
+
 	result, errStream := executor.ExecuteStream(ctx, auth, req, opts)
 	if errStream != nil {
 		t.Fatalf("ExecuteStream() error = %v", errStream)
@@ -746,7 +746,7 @@ func TestCodexExecutorOptimizeMultiAgentV2RestoresDottedFlatToolName(t *testing.
 		t.Fatalf("stream output name = %q, want spawn_agent", name)
 	}
 
-	// Test non-streaming execution
+
 	response, errExecute := executor.Execute(ctx, auth, req, opts)
 	if errExecute != nil {
 		t.Fatalf("Execute() error = %v", errExecute)

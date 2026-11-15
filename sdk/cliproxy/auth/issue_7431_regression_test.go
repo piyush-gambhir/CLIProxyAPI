@@ -64,7 +64,7 @@ func TestIssue7431_LargeWeightedPoolRotatesAcrossTransientExclusionsAndCooldowns
 			for i := 0; i < totalCreds; i++ {
 				id := fmt.Sprintf("thk-%s-%04d", name, i)
 				authIDs[i] = id
-				// First 4 IDs and every 40th ID fail with 429 so transient exclusions churn continuously.
+
 				if i < 4 || i%failingEvery == 0 {
 					failSet[id] = true
 				}
@@ -192,7 +192,7 @@ func TestIssue7431_SchedulerRebuildPreservesUnchangedShardCursors(t *testing.T) 
 		}
 	}
 
-	// Simulate scheduler rebuild triggered by unrelated config/provider updates.
+
 	manager.scheduler.rebuild(manager.snapshotAuths())
 
 	pickedAfter, _, errPick := manager.pickNext(ctx, "openai", model, cliproxyexecutor.Options{}, nil)
@@ -297,7 +297,7 @@ func TestIssue7431_DisableCoolingPreservesActiveForceCooldownOnReloadAndUpdate(t
 		t.Fatalf("expected %s to enter force cooldown before reload", auth0.ID)
 	}
 
-	// 1. Unrelated config reload must NOT erase active ErrorCodeForceCooldown under disable-cooling: true.
+
 	manager.SetConfig(buildConfig("sk-ant-unrelated"))
 	got0AfterReload, _ := manager.GetByID(auth0.ID)
 	if IsAuthAvailableForModel(got0AfterReload, model, now) {
@@ -308,7 +308,7 @@ func TestIssue7431_DisableCoolingPreservesActiveForceCooldownOnReloadAndUpdate(t
 		t.Fatalf("scheduler selected %v (err=%v) after config reload, want %s while %s is force-cooled", pickedAfterReload, errPick, auth1.ID, auth0.ID)
 	}
 
-	// 2. Non-credential metadata update on auth0 must NOT erase active ErrorCodeForceCooldown.
+
 	updatedAuth0 := got0AfterReload.Clone()
 	updatedAuth0.Attributes["label_note"] = "reloaded"
 	if _, errUpd := manager.Update(ctx, updatedAuth0); errUpd != nil {
@@ -319,7 +319,7 @@ func TestIssue7431_DisableCoolingPreservesActiveForceCooldownOnReloadAndUpdate(t
 		t.Fatalf("Update() erased active ErrorCodeForceCooldown on %s when disable-cooling: true", auth0.ID)
 	}
 
-	// 3. CooldownStateStore persistence & restore must also retain active ErrorCodeForceCooldown under disable-cooling: true.
+
 	manager.PersistCooldownStates(ctx)
 	if len(store.savedRecords()) == 0 {
 		t.Fatalf("expected active ErrorCodeForceCooldown record to be persisted even with disable-cooling: true")
@@ -371,7 +371,7 @@ func TestIssue7431_LargeWeightedPoolEdgeCases(t *testing.T) {
 		}
 		res.finish(true)
 
-		// Shrink temporarily to just 2 low-weight members; edge-auth-0000 is absent (e.g. cooled).
+
 		subset := []*Auth{full[1], full[2]}
 		pickedSub, resSub := sel.reserve(route, subset, "")
 		if pickedSub == nil {
@@ -379,8 +379,8 @@ func TestIssue7431_LargeWeightedPoolEdgeCases(t *testing.T) {
 		}
 		resSub.finish(true)
 
-		// When edge-auth-0000 returns, its large negative debt (-10490) must still hold it back,
-		// rather than having been clamped to -200 (subsetTotal=20 * 10).
+
+
 		pickedNext, resNext := sel.reserve(route, full, "")
 		if pickedNext == nil {
 			t.Fatal("next full pick returned nil")
@@ -438,7 +438,7 @@ func TestIssue7431_LargeWeightedPoolEdgeCases(t *testing.T) {
 			t.Fatalf("pick = %v (err=%v), want prio-hi-0000", picked, errPick)
 		}
 
-		// Deregistering prio-hi-0000 must prune it from largeStates via ForgetAuth.
+
 		if !manager.RemoveIf(ctx, "prio-hi-0000", nil) {
 			t.Fatalf("RemoveIf(prio-hi-0000) returned false")
 		}
@@ -549,7 +549,7 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			t.Fatal("expected expired ErrorCodeForceCooldown on model-expired-force to be cleared")
 		}
 
-		// Explicit admin ResetQuota must still clear ErrorCodeForceCooldown.
+
 		if _, _, errReset := manager.ResetQuota(ctx, auth.ID); errReset != nil {
 			t.Fatalf("ResetQuota: %v", errReset)
 		}
@@ -558,8 +558,8 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			t.Fatal("expected explicit ResetQuota to clear ErrorCodeForceCooldown")
 		}
 
-		// Auth-level (Model == "") ErrorCodeForceCooldown recorded alongside existing ModelStates
-		// must also survive SetConfig reload under disable-cooling: true.
+
+
 		retry := 2 * time.Minute
 		manager.MarkResult(ctx, Result{
 			AuthID:     auth.ID,
@@ -596,7 +596,7 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			}},
 		}
 
-		// Order A: Force credential_quota first, followed by ordinary model error overwriting auth.LastError.
+
 		mgrA := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgrA.SetConfig(cfgCoolingOff)
 		authA := &Auth{
@@ -632,8 +632,8 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			t.Fatalf("ordinary model error overwrote auth.LastError and caused SetConfig to erase active force credential_quota: quota=%+v", gotA.Quota)
 		}
 
-		// Order B: Ordinary credential_quota first (cooling enabled), followed by model-scoped force cooldown,
-		// then reload enabling disable-cooling: true.
+
+
 		mgrB := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgrB.SetConfig(cfgCoolingOn)
 		authB := &Auth{
@@ -673,7 +673,7 @@ func TestIssue7431_ForceCooldownEdgeCases(t *testing.T) {
 			t.Fatal("expected model-2's independent force cooldown to survive after ordinary credential_quota was cleared")
 		}
 
-		// Persistence + restore after auth.LastError was overwritten in Order A must also preserve force credential_quota.
+
 		storeA := &recordingCooldownStateStore{}
 		mgrA.SetCooldownStateStore(storeA)
 		mgrA.PersistCooldownStates(ctx)
@@ -728,14 +728,14 @@ func TestIssue7431_DynamicPoolBoundsAndReservationLifecycle(t *testing.T) {
 		}
 		inFlightRes.finish(false)
 
-		// All-in-flight eviction must isolate stale reservations from newly created state for the same route.
+
 		sel2 := &WeightedRoundRobinSelector{maxKeys: 2}
 		_, evictResA := sel2.reserve("openai-compatible-cap:a", pool, "")
 		_, evictResB := sel2.reserve("openai-compatible-cap:b", pool, "")
 		_, evictResC := sel2.reserve("openai-compatible-cap:c", pool, "")
 		evictResB.finish(true)
 		evictResC.finish(true)
-		// Re-create route "a" and commit one clean pick, then roll back stale evictResA.
+
 		_, freshResA := sel2.reserve("openai-compatible-cap:a", pool, "")
 		freshResA.finish(true)
 		evictResA.finish(false)
@@ -767,13 +767,13 @@ func TestIssue7431_DynamicPoolBoundsAndReservationLifecycle(t *testing.T) {
 			t.Fatalf("first pick = %v, want epoch-auth-0000", picked1)
 		}
 
-		// Permanently remove epoch-auth-0000 while staleRes is still in-flight,
-		// then re-register a fresh credential with the same ID.
+
+
 		sel.ForgetAuth("epoch-auth-0000")
 		_, freshRes := sel.reserve(route, pool, "")
 		freshRes.finish(true)
 
-		// Roll back staleRes; it must NOT write +1029 pending credit onto the newly registered epoch-auth-0000.
+
 		staleRes.finish(false)
 
 		sel.mu.Lock()
@@ -891,7 +891,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}
 
 		twoMin := 2 * time.Minute
-		// 1. Same model: force 503 followed by in-flight ordinary 500 under disable-cooling: true.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID:     authModel.ID,
 			Provider:   providerKey,
@@ -918,7 +918,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("SetConfig after ordinary 500 on same model cleared active force cooldown: state=%+v", gotModelAfterReload.ModelStates["model-same"])
 		}
 
-		// 2. Model-less auth level (Model == ""): force 503 followed by in-flight ordinary 500 under disable-cooling: true.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID:     authGlobal.ID,
 			Provider:   providerKey,
@@ -969,9 +969,9 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		mgr1.SetCooldownStateStore(fileStore)
 		mgr1.SetConfig(cfgOn)
 
-		// Auth 1: 2m force cooldown on model-x, then extended to 10m by an ordinary 429.
+
 		a1 := &Auth{ID: "disk-auth-1", Provider: providerKey, Status: StatusActive, Attributes: map[string]string{"provider_key": providerKey}}
-		// Auth 2: 2m force credential_quota on model-a + 10m force independent shadow on model-b.
+
 		a2 := &Auth{ID: "disk-auth-2", Provider: providerKey, Status: StatusActive, Attributes: map[string]string{"provider_key": providerKey}}
 		if _, errReg := mgr1.Register(WithSkipPersist(ctx), a1); errReg != nil {
 			t.Fatalf("register a1: %v", errReg)
@@ -1001,7 +1001,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		})
 		mgr1.PersistCooldownStates(ctx)
 
-		// Restart with disable-cooling: true and restore from real .cds files on disk.
+
 		mgr2 := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgr2.SetCooldownStateStore(NewFileCooldownStateStore(cdsDir))
 		mgr2.SetConfig(cfgOff)
@@ -1114,14 +1114,14 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			}
 		}
 
-		// Pick once so fr-auth-0000 (epoch 1) enters largeStates.
+
 		picked1, _, errPick1 := mgr.pickNext(ctx, providerKey, model, cliproxyexecutor.Options{}, nil)
 		if errPick1 != nil || picked1 == nil || picked1.ID != "fr-auth-0000" {
 			t.Fatalf("first pick = %v (err=%v), want fr-auth-0000", picked1, errPick1)
 		}
 
-		// Remove fr-auth-0000, then immediately re-register fr-auth-0000 (higher RegistrationEpoch)
-		// and select again so the new instance is active in largeStates with credit.
+
+
 		if !mgr.RemoveIf(ctx, "fr-auth-0000", nil) {
 			t.Fatal("RemoveIf(fr-auth-0000) returned false")
 		}
@@ -1132,12 +1132,12 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if errReReg != nil {
 			t.Fatalf("re-register fr-auth-0000: %v", errReReg)
 		}
-		// Pick on the pool so re-registered fr-auth-0000 (epoch >= 3) is tracked in largeStates.
+
 		if _, _, errPick2 := mgr.pickNext(ctx, providerKey, model, cliproxyexecutor.Options{}, nil); errPick2 != nil {
 			t.Fatalf("second pick failed: %v", errPick2)
 		}
 
-		// Simulate a delayed ForgetAuth from the prior RemoveIf (whose tombstoneEpoch < reRegistered.RegistrationEpoch).
+
 		staleTombstoneEpoch := reRegistered.RegistrationEpoch - 1
 		mgr.forgetWeightedAuthUpTo("fr-auth-0000", staleTombstoneEpoch, ^uint64(0))
 
@@ -1228,7 +1228,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		const model = "gpt-5-ws-mixed"
 		wsCtx := cliproxyexecutor.WithDownstreamWebsocket(ctx)
 
-		// 1. Direct selector / legacy path: excluding the sole HTTP peer in tried must not switch dynamic pool keys.
+
 		sel := &WeightedRoundRobinSelector{}
 		all := make([]*Auth, 0, 1031)
 		wsOnly := make([]*Auth, 0, 1030)
@@ -1267,7 +1267,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("selector pick after HTTP peer excluded = %v (err=%v), want codex-ws-0003", pickedWithoutHTTP, errPick)
 		}
 
-		// 2. Scheduler fast path: cooling the sole HTTP peer must not switch dynamic pool keys.
+
 		schedSel := &WeightedRoundRobinSelector{}
 		mgr := NewManager(nil, schedSel, nil)
 		mgr.RegisterExecutor(&mockCustomErrorExecutor{identifier: "codex"})
@@ -1326,7 +1326,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			return out
 		}
 
-		// 1. In-place Register replacement (without RemoveIf) advances small-0's RegistrationEpoch.
+
 		pickedStale, staleRegRes := sel.reserve(route, currentPool(), "")
 		if pickedStale == nil || pickedStale.ID != "small-0" {
 			t.Fatalf("initial pick = %v, want small-0", pickedStale)
@@ -1337,8 +1337,8 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}); errReg != nil {
 			t.Fatalf("in-place Register replacement: %v", errReg)
 		}
-		// New small-0 (epoch 2) must not inherit staleRegRes's -2 pending debt, and a delayed
-		// commit of staleRegRes must be ignored rather than charging the new small-0.
+
+
 		pickedFresh, freshRegRes := sel.reserve(route, currentPool(), "")
 		if pickedFresh == nil || pickedFresh.ID != "small-0" {
 			t.Fatalf("pick after in-place Register replacement = %v, want fresh small-0 (not suppressed by stale pending)", pickedFresh)
@@ -1359,7 +1359,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}
 		sel.mu.Unlock()
 
-		// 2. Manager.Load advances RegistrationEpoch across retained IDs while a reservation is in-flight.
+
 		_, staleLoadRes := sel.reserve(route, currentPool(), "")
 		store.auths = []*Auth{loadItems[0].Clone(), loadItems[1].Clone(), loadItems[2].Clone()}
 		if errLoad := mgr.Load(ctx); errLoad != nil {
@@ -1401,7 +1401,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		mgr.SetConfig(cfg)
 
 		past := time.Now().Add(-time.Minute)
-		// Pre-seed BackoffLevel=3 (expired window) so next escalated quota backoff is 1s * 2^3 = 8s (>> 1s base).
+
 		authModel := &Auth{
 			ID:         "backoff-model-auth",
 			Provider:   providerKey,
@@ -1433,7 +1433,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 				t.Fatalf("Register %s: %v", a.ID, errReg)
 			}
 		}
-		// Restore BackoffLevel=3 in runtime after initial Register cleared expired QuotaState.
+
 		mgr.mu.Lock()
 		mgr.auths[authModel.ID].ModelStates["m1"].Quota.BackoffLevel = 3
 		mgr.auths[authCred.ID].Quota.Exceeded = true
@@ -1457,7 +1457,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		})
 
 		mgr.SetConfig(cfg)
-		probeAt := beforeMark.Add(4 * time.Second) // > 1s base floor, < 8s escalated backoff
+		probeAt := beforeMark.Add(4 * time.Second)
 		gotModel, _ := mgr.GetByID(authModel.ID)
 		if IsAuthAvailableForModel(gotModel, "m1", probeAt) {
 			t.Fatalf("SetConfig truncated escalated model force 429 backoff to <=4s (want ~8s): state=%+v", gotModel.ModelStates["m1"])
@@ -1476,8 +1476,8 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		const model = "gpt-5-http-bound"
 		wsCtx := cliproxyexecutor.WithDownstreamWebsocket(ctx)
 
-		// 1. Legacy SessionAffinitySelector path: HTTP-bound session charges 1030 HTTP peers;
-		// excluding the sole WS peer must keep charging the same "http" dynamic pool.
+
+
 		baseSel := &WeightedRoundRobinSelector{}
 		affSel := NewSessionAffinitySelector(baseSel)
 		t.Cleanup(affSel.Stop)
@@ -1509,7 +1509,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}
 
 		stickyOpts := cliproxyexecutor.Options{Headers: http.Header{"Session_id": {"http-sticky-sess"}}}
-		// Bind session to codex-http-0000 on an HTTP request first, then send downstream WS requests.
+
 		if _, errBind := affSel.Pick(ctx, "codex", model, stickyOpts, httpOnly); errBind != nil {
 			t.Fatalf("bind HTTP session: %v", errBind)
 		}
@@ -1534,7 +1534,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("expected HTTP-bound WS traffic to accumulate both picks in 'http' bucket (debt=%d, want %d; buckets=%d, want 2)", httpBoundDebt, -2*1029, largeBucketCount)
 		}
 
-		// 2. Scheduler fast path: pinned HTTP auth on downstream WS keeps using the same "http" dynamic pool after sole WS peer cools.
+
 		schedSel := &WeightedRoundRobinSelector{}
 		mgr := NewManager(nil, schedSel, nil)
 		mgr.RegisterExecutor(&mockCustomErrorExecutor{identifier: "codex"})
@@ -1614,7 +1614,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}()
 		<-loadEntered
 
-		// Record a newer 10-minute auth-level force cooldown while store.Load is in flight.
+
 		tenMin := 10 * time.Minute
 		mgr.MarkResult(ctx, Result{
 			AuthID: "delayed-auth-0", Provider: providerKey, RetryAfter: &tenMin,
@@ -1704,7 +1704,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			AuthID: "ml429-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &fiveMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusTooManyRequests, Message: "force cred 429"},
 		})
-		// Ordinary model-less 429 under disable-cooling must not clobber credential_quota force state.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "ml429-auth", Provider: providerKey,
 			Error: &Error{Code: "rate_limited", HTTPStatus: http.StatusTooManyRequests, Message: "ordinary global 429"},
@@ -1768,7 +1768,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		twoMin := 2 * time.Minute
 		tenMin := 10 * time.Minute
 
-		// Order A: 2m credential-scoped force 429, then 10m model-less force 503.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "dual-short-cred-long-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &twoMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusTooManyRequests, Message: "2m cred force"},
@@ -1778,7 +1778,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusServiceUnavailable, Message: "10m auth force"},
 		})
 
-		// Order B: 10m credential-scoped force 429, then 2m model-less force 429.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "dual-long-cred-short-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &tenMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusTooManyRequests, Message: "10m cred force"},
@@ -1895,7 +1895,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("Update: %v", errUpd)
 		}
 
-		// Reload config: restored 10m force provenance must have survived mergeAuthSaveDelta.
+
 		mgr.SetConfig(cfg)
 		got, _ := mgr.GetByID("save-race-auth")
 		if IsAuthAvailableForModel(got, "", baseNow.Add(5*time.Minute)) {
@@ -1934,7 +1934,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		gotBeforeModelErr, _ := mgr.GetByID("agg-force-auth")
 		wantDeadline := gotBeforeModelErr.NextRetryAfter
 
-		// Subsequent ordinary model-level 500 under disable-cooling must not clear auth-level force cooldown.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "agg-force-auth", Provider: providerKey, Model: "m1",
 			Error: &Error{Code: "upstream_500", HTTPStatus: http.StatusInternalServerError, Message: "ordinary 500"},
@@ -1988,7 +1988,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			}
 		}
 
-		// Hold an in-flight reservation on the retained 1030 prefix while seeding 5000 members.
+
 		_, seedRes := sel.reserve(route, hugePool, "")
 		seedRes.finish(true)
 		_, inFlightRes := sel.reserve(route, hugePool[:1030], "")
@@ -1996,7 +1996,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatal("expected in-flight reservation on retained 1030 subset")
 		}
 
-		// Permanently remove 3970 credentials so 1030 (> 1024) remain.
+
 		for i := 1030; i < len(hugePool); i++ {
 			sel.ForgetAuth(hugePool[i].ID)
 		}
@@ -2034,12 +2034,12 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		baseNow := time.Now()
 		twoMin := 2 * time.Minute
 		tenMin := 10 * time.Minute
-		// 1. Ordinary 2m credential-scoped 429 on m1 (CredQuotaForceCooldownUntil == zero).
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "ord-cred-force-auth", Provider: "xai", Model: "m1", CredentialScope: true, RetryAfter: &twoMin,
 			Error: &Error{Code: "rate_limited", HTTPStatus: http.StatusTooManyRequests, Message: "ordinary 2m cred quota"},
 		})
-		// 2. Independent 10m model-less force 503 (ForceCooldownUntil == +10m).
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "ord-cred-force-auth", Provider: "xai", RetryAfter: &tenMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusServiceUnavailable, Message: "10m auth force"},
@@ -2057,7 +2057,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("RestoreCooldownStates: %v", errRestore)
 		}
 
-		// At +3m: 2m ordinary credential_quota has expired, but 10m independent auth force must still block m1 and "".
+
 		got, _ := mgr2.GetByID("ord-cred-force-auth")
 		if IsAuthAvailableForModel(got, "m1", baseNow.Add(3*time.Minute)) || IsAuthAvailableForModel(got, "", baseNow.Add(3*time.Minute)) {
 			t.Fatalf("restored auth lost 10m independent auth force after 2m ordinary credential_quota expired: %+v", got)
@@ -2147,19 +2147,19 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		twentyMin := 20 * time.Minute
 		twoMin := 2 * time.Minute
 
-		// 1. Ordinary 20m credential-scoped 429 while cooling is enabled.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "reverse-dual-auth", Provider: providerKey, Model: "m1", CredentialScope: true, RetryAfter: &twentyMin,
 			Error: &Error{Code: "rate_limited", HTTPStatus: http.StatusTooManyRequests, Message: "ordinary 20m cred 429"},
 		})
-		// 2. Independent 2m model-less force 503.
+
 		mgr.MarkResult(ctx, Result{
 			AuthID: "reverse-dual-auth", Provider: providerKey, RetryAfter: &twoMin,
 			Error: &Error{Code: ErrorCodeForceCooldown, HTTPStatus: http.StatusServiceUnavailable, Message: "2m auth force 503"},
 		})
 		mgr.PersistCooldownStates(ctx)
 
-		// 3. Reload with disable-cooling: true: 2m force must stay active at +1m, 20m ordinary tail must clear by +3m.
+
 		mgr.SetConfig(cfgCoolOff)
 		gotReload, _ := mgr.GetByID("reverse-dual-auth")
 		if IsAuthAvailableForModel(gotReload, "m1", baseNow.Add(time.Minute)) || IsAuthAvailableForModel(gotReload, "", baseNow.Add(time.Minute)) {
@@ -2169,7 +2169,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("20m ordinary credential cooldown survived disable-cooling reload past 2m force window (+3m): NextRetryAfter=%v Quota=%+v", gotReload.NextRetryAfter, gotReload.Quota)
 		}
 
-		// 4. Also verify restoring pre-reload .cds directly into a disable-cooling: true manager clamps to 2m.
+
 		mgr2 := NewManager(nil, &RoundRobinSelector{}, nil)
 		mgr2.SetCooldownStateStore(NewFileCooldownStateStore(cdsPath))
 		mgr2.SetConfig(cfgCoolOff)
@@ -2265,7 +2265,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}()
 		<-loadEntered
 
-		// Newer 3m model force arrives while store.Load is blocked.
+
 		threeMin := 3 * time.Minute
 		mgr.MarkResult(ctx, Result{
 			AuthID: "delayed-shadow-auth", Provider: providerKey, Model: "m1", RetryAfter: &threeMin,
@@ -2360,7 +2360,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		}()
 		<-loadEntered
 
-		// Newer 10m credential-scoped force 429 arrives while store.Load is blocked.
+
 		tenMin := 10 * time.Minute
 		mgr.MarkResult(ctx, Result{
 			AuthID: "stale-combo-auth", Provider: providerKey, Model: "m-live", CredentialScope: true, RetryAfter: &tenMin,
@@ -2415,9 +2415,9 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		tenMinUntil := baseNow.Add(10 * time.Minute)
 		forceErr := &Error{Code: ErrorCodeForceCooldown, HTTPStatus: 503, Message: "model-a force 503"}
 
-		// Legacy store snapshot (ForceCooldownEvaluated == false):
-		// 1) legacy-dual-auth: model-a failed with force 503 AND old code persisted an aggregated Model=="" record.
-		// 2) legacy-global-auth: genuine model-less force 503 (only Model=="" record).
+
+
+
 		legacyStore := &recordingCooldownStateStore{
 			load: []CooldownStateRecord{
 				{
@@ -2473,7 +2473,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 		if !IsAuthAvailableForModel(gotDual, "model-b", baseNow.Add(2*time.Minute)) {
 			t.Fatalf("legacy aggregated auth record falsely promoted model-a force cooldown to block sibling model-b: %+v", gotDual)
 		}
-		// Subsequent success on model-a must clear the credential completely.
+
 		mgr.MarkResult(ctx, Result{AuthID: "legacy-dual-auth", Provider: providerKey, Model: "model-a", Success: true})
 		gotDualAfterSuccess, _ := mgr.GetByID("legacy-dual-auth")
 		if !IsAuthAvailableForModel(gotDualAfterSuccess, "model-a", baseNow.Add(2*time.Minute)) ||
@@ -2481,7 +2481,7 @@ func TestIssue7431_SameLayerForceCooldownAndPersistenceAndEpochRaces(t *testing.
 			t.Fatalf("model-a success failed to clear legacy-dual-auth: %+v", gotDualAfterSuccess)
 		}
 
-		// Genuine legacy model-less force record must still block all models.
+
 		gotGlobal, _ := mgr.GetByID("legacy-global-auth")
 		if IsAuthAvailableForModel(gotGlobal, "model-b", baseNow.Add(2*time.Minute)) ||
 			IsAuthAvailableForModel(gotGlobal, "", baseNow.Add(2*time.Minute)) {

@@ -21,10 +21,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// silentConnectProxy reproduces the production failure in Issue #6615: it
-// accepts HTTP CONNECT, returns a successful tunnel response, drains the
-// TLS ClientHello, and then sends no TLS bytes. closed is signaled only
-// after the drain observes EOF, proving the client released that socket.
+
+
+
+
 type silentConnectProxy struct {
 	attempts atomic.Int32
 	closed   chan struct{}
@@ -53,10 +53,10 @@ func startSilentConnectProxy(t *testing.T) (*silentConnectProxy, string) {
 			t.Errorf("close silent CONNECT proxy listener: %v", errClose)
 		}
 		<-acceptDone
-		// A regression could leave a handshake blocked forever. Closing
-		// tracked accepted sockets releases those goroutines so cleanup
-		// reports the original test failure instead of hanging until the
-		// whole package times out.
+
+
+
+
 		proxy.closeTrackedConnections(t)
 		handlers.Wait()
 		proxy.mu.Lock()
@@ -127,8 +127,8 @@ func (p *silentConnectProxy) closeTrackedConnections(t *testing.T) {
 }
 
 func (p *silentConnectProxy) reportError(err error) {
-	// Hold mu through the non-blocking send so cleanup cannot close errs
-	// between the stopped check and a late handler report.
+
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.stopped {
@@ -183,11 +183,11 @@ func (p *silentConnectProxy) handle(conn net.Conn) {
 	p.closed <- struct{}{}
 }
 
-// TestClaudeExecutorManagerRetriesSilentTLSHandshakeThroughConnectProxy is
-// the end-to-end Issue #6615 regression: a real CONNECT proxy stays silent
-// after ClientHello, the real Claude executor and shared uTLS client fail
-// each handshake at the configured one-second bound, and Manager performs
-// the initial attempt plus all three request-retry rounds on one credential.
+
+
+
+
+
 func TestClaudeExecutorManagerRetriesSilentTLSHandshakeThroughConnectProxy(t *testing.T) {
 	proxy, proxyURL := startSilentConnectProxy(t)
 

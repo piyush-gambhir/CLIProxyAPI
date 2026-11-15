@@ -23,7 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Execute performs a non-streaming request to the Antigravity API.
+
 func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	if helps.HasResponsesCompactionItem(req.Payload) {
 		expanded, errExpand := helps.ExpandAntigravityCompactionCapsules(req.Payload)
@@ -76,7 +76,7 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 		return resp, errValidate
 	}
 	req.Payload = originalPayload
-	// Observe a translation refusal before the token refresh or any upstream call.
+
 	modelInfo, _ := cliproxyauth.ResolvedModelInfo(req)
 	translationReq := sdktranslator.RequestEnvelope{Format: from, Model: baseModel, ModelInfo: modelInfo}
 	originalTranslated, translated, errTranslate := helps.TranslateRequestEnvelopePairWithCodexMultiAgentV2(ctx, opts.Headers, e.cfg, from, to, translationReq, originalPayload, req.Payload)
@@ -107,8 +107,8 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	baseURL := resolveAntigravityRequestBaseURL(auth)
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	httpClient = reporter.TrackHTTPClient(httpClient)
-	// Credential retry rounds are owned by the conductor. Perform one upstream
-	// request per credential so request-retry is not consumed twice.
+
+
 	if useCredits {
 		if injectEnabledCreditTypesDoc(doc) {
 			helps.MarkCreditsUsed(ctx)
@@ -176,21 +176,21 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 			if useCredits && antigravityHasExplicitCreditsBalanceExhaustedReason(bodyBytes) && !antigravityCoolingDisabled(auth, e.cfg) {
 				markAntigravityCreditsPermanentlyDisabled(auth)
 			}
-			// No credits logic - just fall through to error return below
+
 		}
 	}
 
 	if httpResp.StatusCode < http.StatusOK || httpResp.StatusCode >= http.StatusMultipleChoices {
 		log.Debugf("antigravity executor: upstream error status: %d, body: %s", httpResp.StatusCode, helps.SummarizeErrorBody(httpResp.Header.Get("Content-Type"), bodyBytes))
 		if errClear := clearAntigravityReasoningReplayOnInvalidSignature(ctx, replayScope, httpResp.StatusCode, bodyBytes); errClear != nil {
-			// Report the upstream failure rather than the cleanup failure.
+
 			logAntigravityReasoningReplayDegraded(replayScope, "invalidate", errClear)
 		}
 		err = newAntigravityStatusErr(httpResp.StatusCode, bodyBytes)
 		return resp, err
 	}
 
-	// Success
+
 	if useCredits {
 		clearAntigravityCreditsFailureState(auth)
 	}
@@ -267,7 +267,7 @@ func (e *AntigravityExecutor) executeCompaction(ctx context.Context, auth *clipr
 	}, nil
 }
 
-// executeClaudeNonStream performs a claude non-streaming request to the Antigravity API.
+
 func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (resp cliproxyexecutor.Response, err error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	if !antigravityCoolingDisabled(auth, e.cfg) {
@@ -297,7 +297,7 @@ func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *
 		return resp, errValidate
 	}
 	req.Payload = originalPayload
-	// Observe a translation refusal before the token refresh or any upstream call.
+
 	modelInfo, _ := cliproxyauth.ResolvedModelInfo(req)
 	translationReq := sdktranslator.RequestEnvelope{Format: from, Model: baseModel, Stream: true, ModelInfo: modelInfo}
 	originalTranslated, translated, errTranslate := helps.TranslateRequestEnvelopePairWithCodexMultiAgentV2(ctx, opts.Headers, e.cfg, from, to, translationReq, originalPayload, req.Payload)
@@ -329,8 +329,8 @@ func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *
 	httpClient := newAntigravityHTTPClient(ctx, e.cfg, auth, 0)
 	httpClient = reporter.TrackHTTPClient(httpClient)
 
-	// Credential retry rounds are owned by the conductor. Perform one upstream
-	// request per credential so request-retry is not consumed twice.
+
+
 	if useCredits {
 		if injectEnabledCreditTypesDoc(doc) {
 			helps.MarkCreditsUsed(ctx)
@@ -405,19 +405,19 @@ func (e *AntigravityExecutor) executeClaudeNonStream(ctx context.Context, auth *
 				if useCredits && antigravityHasExplicitCreditsBalanceExhaustedReason(bodyBytes) && !antigravityCoolingDisabled(auth, e.cfg) {
 					markAntigravityCreditsPermanentlyDisabled(auth)
 				}
-				// No credits logic - just fall through to error return below
+
 			}
 		}
 
 		if errClear := clearAntigravityReasoningReplayOnInvalidSignature(ctx, replayScope, httpResp.StatusCode, bodyBytes); errClear != nil {
-			// Report the upstream failure rather than the cleanup failure.
+
 			logAntigravityReasoningReplayDegraded(replayScope, "invalidate", errClear)
 		}
 		err = newAntigravityStatusErr(httpResp.StatusCode, bodyBytes)
 		return resp, err
 	}
 
-	// Stream success
+
 	if useCredits {
 		clearAntigravityCreditsFailureState(auth)
 	}

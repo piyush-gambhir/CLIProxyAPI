@@ -1,4 +1,4 @@
-// Package models builds model catalogs for official Codex clients.
+
 package models
 
 import (
@@ -17,15 +17,15 @@ type codexClientModelsPayload struct {
 	Models []map[string]any `json:"models"`
 }
 
-// ProvidersForModelFunc returns the providers registered for a model.
+
 type ProvidersForModelFunc func(string) []string
 
-// WebSearchCapabilityForModelFunc returns explicit conservative capability
-// metadata for an exact public model ID. nil means unknown.
+
+
 type WebSearchCapabilityForModelFunc func(string) *bool
 
-// ToolSearchCapabilityForModelFunc reports whether every credential serving a
-// public model ID can receive Codex tool_search as Anthropic native tool search.
+
+
 type ToolSearchCapabilityForModelFunc func(id string) bool
 
 var (
@@ -57,41 +57,41 @@ var codexClientLegacyAllowedReasoningLevels = map[string]struct{}{
 	"xhigh":   {},
 }
 
-// BuildResponse builds a Codex client model response from available models.
+
 func BuildResponse(availableModels []map[string]any, providersForModel ProvidersForModelFunc, optimizeMultiAgentV2 bool) map[string]any {
 	return BuildResponseForClient(availableModels, providersForModel, optimizeMultiAgentV2, "")
 }
 
-// BuildResponseForClient builds a Codex client model response from available models
-// tailored for a specific client version.
+
+
 func BuildResponseForClient(availableModels []map[string]any, providersForModel ProvidersForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return BuildResponseForClientWithCPACapabilities(availableModels, providersForModel, registry.GetGlobalRegistry().GetResponsesWebSearchCapability, optimizeMultiAgentV2, clientVersion)
 }
 
-// BuildResponseForClientWithCPACapabilities builds a client response while
-// allowing Home to supply capability metadata independent of the local registry.
+
+
 func BuildResponseForClientWithCPACapabilities(availableModels []map[string]any, providersForModel ProvidersForModelFunc, webSearchCapabilityForModel WebSearchCapabilityForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return BuildResponseForClientWithToolCapabilities(availableModels, providersForModel, webSearchCapabilityForModel, nil, nil, optimizeMultiAgentV2, clientVersion)
 }
 
-// BuildResponseForClientWithToolCapabilities adds executor-backed tool support
-// independently of template metadata and legacy provider restrictions.
+
+
 func BuildResponseForClientWithToolCapabilities(availableModels []map[string]any, providersForModel ProvidersForModelFunc, webSearchCapabilityForModel WebSearchCapabilityForModelFunc, applyPatchCapabilityForModel ApplyPatchCapabilityForModelFunc, toolSearchCapabilityForModel ToolSearchCapabilityForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return BuildResponseForClientWithSearchToolRoutes(availableModels, providersForModel, nil, webSearchCapabilityForModel, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, clientVersion)
 }
 
-// BuildResponseForClientWithSearchToolRoutes lets Home supply routing evidence
-// for supports_search_tool without the other provider-dependent metadata.
-// A nil searchToolProvidersForModel uses providersForModel. A nil
-// toolSearchCapabilityForModel keeps Claude routes from advertising search.
+
+
+
+
 func BuildResponseForClientWithSearchToolRoutes(availableModels []map[string]any, providersForModel, searchToolProvidersForModel ProvidersForModelFunc, webSearchCapabilityForModel WebSearchCapabilityForModelFunc, applyPatchCapabilityForModel ApplyPatchCapabilityForModelFunc, toolSearchCapabilityForModel ToolSearchCapabilityForModelFunc, optimizeMultiAgentV2 bool, clientVersion string) map[string]any {
 	return map[string]any{
 		"models": buildCodexClientModelsWithToolCapabilities(availableModels, providersForModel, searchToolProvidersForModel, webSearchCapabilityForModel, applyPatchCapabilityForModel, toolSearchCapabilityForModel, optimizeMultiAgentV2, clientVersion),
 	}
 }
 
-// MarshalCompact serializes a Codex client catalog as a single JSON line.
-// HTML escaping is disabled so instruction text is not expanded into \u003c sequences.
+
+
 func MarshalCompact(payload any) ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
@@ -549,7 +549,7 @@ func applyCodexClientMaxTokens(entry map[string]any, model map[string]any) {
 }
 
 func applyCPAWebSearchCapability(entry map[string]any, id string, capabilityForModel WebSearchCapabilityForModelFunc, clientVersion string) {
-	// Templates must not supply runtime capability claims or leak CPA-only fields.
+
 	delete(entry, "cpa_capabilities")
 	if clientVersion != "cpa" || capabilityForModel == nil {
 		return
@@ -567,8 +567,8 @@ func applyCodexClientProviderCapabilities(entry map[string]any, id string, provi
 	}
 }
 
-// nullCodexClientRequiredOptions clears capabilities that non-Codex models must not advertise.
-// Codex requires these keys to be present; omitting them rejects the entire catalog.
+
+
 func nullCodexClientRequiredOptions(entry map[string]any) {
 	entry["apply_patch_tool_type"] = nil
 	entry["tool_mode"] = "direct"
@@ -583,8 +583,8 @@ func nullCodexClientRequiredOptions(entry map[string]any) {
 
 const codexClientFallbackInstructions = "You are Codex, a coding agent. You and the user share one workspace."
 
-// useCompactCodexClientInstructions replaces cloned template prompts with a short literal.
-// Both the legacy and canonical instruction fields must be present for catalog decoding.
+
+
 func useCompactCodexClientInstructions(entry map[string]any) {
 	entry["base_instructions"] = codexClientFallbackInstructions
 	entry["model_messages"] = map[string]any{
@@ -605,8 +605,8 @@ func isPureCodexProvider(id string, providersForModel ProvidersForModelFunc) boo
 	return allCodexClientProvidersAre(codexClientModelProviders(id, providersForModel), "codex")
 }
 
-// codexClientModelProviders resolves the providers serving a model, falling
-// back to the base ID for prefixed aliases.
+
+
 func codexClientModelProviders(id string, providersForModel ProvidersForModelFunc) []string {
 	providers := providersForModel(id)
 	if len(providers) == 0 && strings.Contains(id, "/") {
@@ -617,8 +617,8 @@ func codexClientModelProviders(id string, providersForModel ProvidersForModelFun
 	return providers
 }
 
-// allCodexClientProvidersAre reports whether providers is non-empty and every
-// entry is the named provider.
+
+
 func allCodexClientProvidersAre(providers []string, name string) bool {
 	if len(providers) == 0 {
 		return false
@@ -631,10 +631,10 @@ func allCodexClientProvidersAre(providers []string, name string) bool {
 	return true
 }
 
-// applyCodexClientSearchToolSupport keeps supports_search_tool only when every
-// route serving the model can close Codex's client tool_search loop: pure Codex
-// template models, or pure Claude models whose every credential supports
-// Anthropic native tool search. Mixed and unknown routes fail closed.
+
+
+
+
 func applyCodexClientSearchToolSupport(entry map[string]any, id string, templateModel bool, providersForModel ProvidersForModelFunc, toolSearchCapabilityForModel ToolSearchCapabilityForModelFunc) {
 	supportsSearch, _ := entry["supports_search_tool"].(bool)
 	if !supportsSearch {
@@ -717,9 +717,9 @@ func applyCodexClientModelMetadata(entry map[string]any, id string, model map[st
 	if plans, ok := model["available_in_plans"]; ok {
 		entry["available_in_plans"] = cloneCodexClientModelValue(plans)
 	}
-	// Codex 0.156+ caps an explicit model_catalog_url body at 1MiB. Cloning the
-	// full template instructions onto every non-template model exceeds that limit
-	// and the client keeps its bundled catalog.
+
+
+
 	useCompactCodexClientInstructions(entry)
 }
 
@@ -751,8 +751,8 @@ func applyCodexClientVisibilityOverride(entry map[string]any, id string) {
 	}
 }
 
-// isCodexClientImageOrVideoModel reports catalog IDs that are not chat models.
-// Speech IDs are included so the Codex client does not offer them as text models.
+
+
 func isCodexClientImageOrVideoModel(id string) bool {
 	target := strings.TrimSpace(id)
 	if idx := strings.Index(target, "/"); idx != -1 {
@@ -899,9 +899,9 @@ func normalizeCodexClientReasoningLevel(rawLevel string, clientVersion string) s
 	return level
 }
 
-// supportsExtendedReasoningLevels reports whether the given clientVersion supports
-// extended reasoning effort levels ("max" and "ultra"), which require Codex CLI >= 0.144.0.
-// If the version is empty or unparseable, it returns true to preserve modern features.
+
+
+
 func supportsExtendedReasoningLevels(clientVersion string) bool {
 	clientVersion = strings.TrimSpace(clientVersion)
 	if clientVersion == "" {

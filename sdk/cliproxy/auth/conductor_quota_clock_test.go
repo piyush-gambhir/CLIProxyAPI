@@ -126,7 +126,7 @@ func TestQuotaDeadlineUsesWallClock_AuthFallbackBackoff(t *testing.T) {
 	manager.MarkResult(context.Background(), Result{
 		AuthID:   auth.ID,
 		Provider: auth.Provider,
-		Model:    "", // no model -> auth-level failure
+		Model:    "",
 		Error:    &Error{HTTPStatus: http.StatusTooManyRequests, Message: "quota exceeded"},
 	})
 

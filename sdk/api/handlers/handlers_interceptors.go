@@ -17,7 +17,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// PluginInterceptorHost applies plugin interceptors around handler execution.
+
 type PluginInterceptorHost interface {
 	InterceptRequestBeforeAuth(context.Context, pluginapi.RequestInterceptRequest) pluginapi.RequestInterceptResponse
 	InterceptRequestAfterAuth(context.Context, pluginapi.RequestInterceptRequest) pluginapi.RequestInterceptResponse
@@ -36,15 +36,15 @@ type streamInterceptorDetector interface {
 	HasStreamInterceptors() bool
 }
 
-// streamChunkRequestBodyPolicy reports whether payload stream-chunk interceptors
-// still require OriginalRequest/RequestBody (legacy schema_version < 3).
+
+
 type streamChunkRequestBodyPolicy interface {
 	StreamChunkPayloadIncludesRequestBody() bool
 }
 
-// streamChunkPayloadIncludesRequestBody returns true when at least one active
-// stream interceptor needs per-chunk request bodies. Evaluated per call so
-// mid-stream plugin reloads stay correct. Unknown hosts default to true.
+
+
+
 func streamChunkPayloadIncludesRequestBody(host PluginInterceptorHost) bool {
 	if host == nil {
 		return false
@@ -55,15 +55,15 @@ func streamChunkPayloadIncludesRequestBody(host PluginInterceptorHost) bool {
 	return true
 }
 
-// streamChunkHistoryPolicy reports whether payload stream-chunk interceptors
-// still require HistoryChunks (legacy schema_version < 5).
+
+
 type streamChunkHistoryPolicy interface {
 	StreamChunkPayloadIncludesHistory() bool
 }
 
-// streamChunkPayloadIncludesHistory returns true when at least one active
-// stream interceptor needs per-chunk history chunks. Evaluated per call so
-// mid-stream plugin reloads stay correct. Unknown hosts default to true.
+
+
+
 func streamChunkPayloadIncludesHistory(host PluginInterceptorHost) bool {
 	if host == nil {
 		return false
@@ -245,8 +245,8 @@ func nextStreamChunk(ctx context.Context, pending *[]coreexecutor.StreamChunk, c
 		case <-ctx.Done():
 			return coreexecutor.StreamChunk{}, false, true
 		case chunk, ok = <-chunks:
-			// A channel closed together with the cancellation was cut by it: the select above picks at random when both are
-			// ready, and the plain close would be reported as a success.
+
+
 			if !ok && ctx.Err() != nil {
 				return coreexecutor.StreamChunk{}, false, true
 			}
@@ -671,11 +671,11 @@ func (h *BaseAPIHandler) applyResponseInterceptors(ctx context.Context, requestI
 	return body, responseHeaders
 }
 
-// ModelDetailIDContextKey requests selection from the final, plugin-filtered catalog.
+
 const ModelDetailIDContextKey = "cliproxy.model_detail_id"
 
-// WriteModelListResponse serializes the model-list payload, applies plugin response interceptors
-// if a plugin host is configured, and writes the resulting headers and body to the Gin context.
+
+
 func (h *BaseAPIHandler) WriteModelListResponse(c *gin.Context, sourceFormat string, payload any) {
 	if c == nil {
 		return

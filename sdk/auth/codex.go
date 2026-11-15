@@ -9,7 +9,7 @@ import (
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/browser"
-	// legacy client removed
+
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/misc"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
@@ -17,12 +17,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// CodexAuthenticator implements the OAuth login flow for Codex accounts.
+
 type CodexAuthenticator struct {
 	CallbackPort int
 }
 
-// NewCodexAuthenticator constructs a Codex authenticator with default settings.
+
 func NewCodexAuthenticator() *CodexAuthenticator {
 	return &CodexAuthenticator{CallbackPort: 1455}
 }

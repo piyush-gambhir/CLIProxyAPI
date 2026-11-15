@@ -1,4 +1,4 @@
-// Package misc provides miscellaneous utility functions for the CLI Proxy API server.
+
 package misc
 
 import (
@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	// antigravityFallbackVersion is the client version reported when the hub
-	// manifest has not been fetched yet or cannot be reached. Cloud Code rejects
-	// newer models for clients below 2.23.0, so this floor must stay at or above
-	// that version.
+
+
+
+
 	antigravityFallbackVersion = "2.29.0"
 	antigravityHubPlatform     = "os_type=darwin; arch=arm64"
 	antigravityVersionCacheTTL = 6 * time.Hour
@@ -32,10 +32,10 @@ var (
 	antigravityHubLatestManifestURL = "https://antigravity-hub-auto-updater-974169037036.us-central1.run.app/manifest/latest-arm64-mac.yml"
 )
 
-// Changelists belong to specific Hub releases, not to the latest manifest in
-// general. Update the fallback release and its entry together. The 2.24.0 value
-// was verified in the official darwin-arm archive's webm_encoder build metadata.
-// Unknown releases keep their online version without claiming another build's CL.
+
+
+
+
 var antigravityHubChangelists = map[string]string{
 	"2.23.0": "998057262",
 	"2.24.0": "1000335682",
@@ -53,8 +53,8 @@ var (
 	antigravityUpdaterOnce   sync.Once
 )
 
-// StartAntigravityVersionUpdater starts a background goroutine that periodically refreshes the cached antigravity version.
-// This is intentionally decoupled from request execution to avoid blocking executors on version lookups.
+
+
 func StartAntigravityVersionUpdater(ctx context.Context) {
 	antigravityUpdaterOnce.Do(func() {
 		go runAntigravityVersionUpdater(ctx)
@@ -108,8 +108,8 @@ func refreshAntigravityVersion(ctx context.Context) {
 	log.WithError(errFetch).Debug("failed to refresh antigravity version, keeping cached value")
 }
 
-// AntigravityLatestVersion returns the cached antigravity version refreshed by StartAntigravityVersionUpdater.
-// It falls back to antigravityFallbackVersion if the cache is empty or stale.
+
+
 func AntigravityLatestVersion() string {
 	antigravityVersionMu.RLock()
 	if cachedAntigravityVersion != "" && time.Now().Before(antigravityVersionExpiry) {
@@ -122,7 +122,7 @@ func AntigravityLatestVersion() string {
 	return antigravityFallbackVersion
 }
 
-// AntigravityUserAgent returns the User-Agent string used by the Antigravity Hub family.
+
 func AntigravityUserAgent() string {
 	version := AntigravityLatestVersion()
 	metadata := "aidev_client; " + antigravityHubPlatform
@@ -153,20 +153,20 @@ func antigravityBaseUserAgent(userAgent string) string {
 	return userAgent
 }
 
-// AntigravityRequestUserAgent returns the Antigravity runtime UA used by
-// generate/stream/model-list requests.
+
+
 func AntigravityRequestUserAgent(userAgent string) string {
 	return antigravityBaseUserAgent(userAgent)
 }
 
-// AntigravityLoadCodeAssistUserAgent returns the Antigravity runtime UA used by
-// loadCodeAssist requests.
+
+
 func AntigravityLoadCodeAssistUserAgent(userAgent string) string {
 	return AntigravityRequestUserAgent(userAgent)
 }
 
-// AntigravityOnboardUserUserAgent returns the long Antigravity control-plane UA
-// used by onboardUser requests.
+
+
 func AntigravityOnboardUserUserAgent(userAgent string) string {
 	userAgent = strings.TrimSpace(userAgent)
 	if userAgent == "" {
@@ -182,8 +182,8 @@ func AntigravityOnboardUserUserAgent(userAgent string) string {
 	return antigravityBaseUserAgent(userAgent) + " " + AntigravityNodeAPIClientUA
 }
 
-// AntigravityVersionFromUserAgent extracts the Antigravity version prefix from
-// either the short or long Antigravity UA forms.
+
+
 func AntigravityVersionFromUserAgent(userAgent string) string {
 	base := antigravityBaseUserAgent(userAgent)
 	lower := strings.ToLower(base)

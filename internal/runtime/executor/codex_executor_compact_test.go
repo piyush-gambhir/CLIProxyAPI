@@ -158,7 +158,7 @@ func TestCodexExecutorCompactUseSIWCAppliesSIWCRulesBeforePayloadFinalizer(t *te
 			t.Fatalf("field %q should be omitted in SIWC compact body: %s", omitted, gotBody)
 		}
 	}
-	// PayloadFinalizer runs last and can override temperature after built-in SIWC stripping.
+
 	if gotTemp := ojson.GetBytes(gotBody, "temperature").Float(); gotTemp != 0.25 {
 		t.Fatalf("PayloadFinalizer temperature override = %v, want 0.25; body=%s", gotTemp, gotBody)
 	}
@@ -691,7 +691,7 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			defer func() { _ = conn.Close() }()
 			_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-			// 1. Initial response.create
+
 			_, first, errRead := conn.ReadMessage()
 			if errRead != nil {
 				t.Errorf("read initial create: %v", errRead)
@@ -700,7 +700,7 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			receivedFrames <- first
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"r1","output":[]}}`))
 
-			// 2. Duplex response.steer
+
 			_, second, errRead := conn.ReadMessage()
 			if errRead != nil {
 				t.Errorf("read steer: %v", errRead)
@@ -710,7 +710,7 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.steer.accepted","steer":{"id":"s1","previous_response_id":"r1"}}`))
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"r1","status":"completed","output":[],"usage":{"input_tokens":5,"output_tokens":2,"total_tokens":7}}}`))
 
-			// 3. Duplex follow-up response.create (Wait for damaged steer to abort before reaching upstream)
+
 			_, third, errRead := conn.ReadMessage()
 			if errRead == nil {
 				receivedFrames <- third
@@ -807,7 +807,7 @@ func TestCodexExecutorExpandsRecognizedCPACompactionCapsules_Issue7118(t *testin
 			if input[0].Get("type").String() != "message" || input[0].Get("role").String() != "developer" {
 				t.Fatalf("frame[%d] input[0] = %s, want developer message", idx, input[0].Raw)
 			}
-			// Verify PayloadFinalizer ran after capsule expansion and overrode input.0.content.0.text.
+
 			if gotText := input[0].Get("content.0.text").String(); gotText != "User rule override after CPA expansion" {
 				t.Fatalf("frame[%d] input[0].content.0.text = %q, want %q (PayloadFinalizer must run after capsule expansion)", idx, gotText, "User rule override after CPA expansion")
 			}
@@ -930,7 +930,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		}
 	}
 
-	// 1. Streaming ExecuteStream(compaction_trigger) on is-compat codex endpoint.
+
 	streamResult, errStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: triggerPayload,
@@ -967,7 +967,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 	}
 	assertSummaryRequest(t, seenPaths[0], seenBodies[0], "ExecuteStream")
 
-	// 2. Non-streaming Execute(compaction_trigger) on is-compat codex endpoint.
+
 	nonStreamResp, errExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: triggerPayload,
@@ -988,7 +988,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 	}
 	assertSummaryRequest(t, seenPaths[1], seenBodies[1], "Execute")
 
-	// 3. WebSocket executor delegation for compaction_trigger on is-compat codex endpoint.
+
 	wsResp, errWSExec := wsExecutor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: triggerPayload,
@@ -1027,7 +1027,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected single compaction item in ws stream response, got: %s", wsCompleted.Raw)
 	}
 
-	// 4. Subsequent replay on is-compat expands CPA capsule and drops foreign compaction items.
+
 	replayPayload := []byte(fmt.Sprintf(`{
 		"model": "deepseek-v4.1-flash",
 		"stream": true,
@@ -1063,7 +1063,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected expanded summary marker %q in replay upstream payload: %s", marker, replaySeen)
 	}
 
-	// CountTokens on is-compat also drops foreign compaction items and expands CPA capsule cleanly.
+
 	if _, errTokens := executor.CountTokens(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: replayPayload,
@@ -1074,7 +1074,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("CountTokens(replay) error = %v", errTokens)
 	}
 
-	// 5. Chained second compaction_trigger expands prior CPA capsule before summarizing.
+
 	secondTriggerPayload := []byte(fmt.Sprintf(`{
 		"model": "deepseek-v4.1-flash",
 		"input": [
@@ -1106,7 +1106,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 		t.Fatalf("expected prior summary marker %q in second summary request: %s", marker, secondSeen)
 	}
 
-	// 6. Incomplete summary must fail closed rather than sealing a truncated capsule.
+
 	returnIncomplete = true
 	if _, errIncExec := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
@@ -1131,7 +1131,7 @@ func TestCodexExecutor_IsCompatResponsesCompactionTriggerAndReplay_Issue7406(t *
 	}
 	returnIncomplete = false
 
-	// 7. Native (is-compat: false) Codex model forwards compaction_trigger untouched without local summary interception.
+
 	nativePayload := []byte(`{"model":"gpt-5.4","input":[{"type":"message","role":"user","content":"history"},{"type":"compaction_trigger"}]}`)
 	nativeResp, errNative := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.4",
@@ -1210,7 +1210,7 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 		Attributes: map[string]string{"base_url": server.URL, "api_key": "test-compat-key"},
 	}
 
-	// 1. Incremental previous_response_id + compaction_trigger must fail closed without hitting upstream.
+
 	incTrigger := []byte(`{"model":"deepseek-v4.1-flash","event_id":"ev_inc","previous_response_id":"resp_real_1","input":[{"type":"compaction_trigger"}]}`)
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, ResponseFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: incTrigger}
 	if _, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "deepseek-v4.1-flash", Payload: incTrigger}, opts); err == nil {
@@ -1222,13 +1222,13 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 		t.Fatalf("expected UpstreamWebsocketTurnError on websocket incremental trigger, got %v", errWSInc)
 	}
 
-	// 2. Empty conversation input (only compaction_trigger + additional_tools) must fail closed.
+
 	emptyTrigger := []byte(`{"model":"deepseek-v4.1-flash","input":[{"type":"additional_tools","tools":[]},{"type":"compaction_trigger"}]}`)
 	if _, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "deepseek-v4.1-flash", Payload: emptyTrigger}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: emptyTrigger}); err == nil {
 		t.Fatal("expected empty-history compaction_trigger to fail")
 	}
 
-	// 3. Synthetic resp_ag_compact_* previous_response_id on normal turn must never reach upstream.
+
 	synthCont := []byte(`{"model":"deepseek-v4.1-flash","previous_response_id":"resp_ag_compact_12345","input":[{"type":"message","role":"user","content":"hi"}]}`)
 	if _, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "deepseek-v4.1-flash", Payload: synthCont}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, OriginalRequest: synthCont}); err == nil {
 		t.Fatal("expected synthetic previous_response_id on HTTP Execute to fail")
@@ -1240,7 +1240,7 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 		t.Fatalf("upstreamHits = %d, want 0 for rejected validation cases", upstreamHits)
 	}
 
-	// 4. CountTokens semantic consistency: foreign compaction dropped + CPA capsule expanded matches expanded developer message.
+
 	capsule, errSeal := helps.SealAntigravityCompaction("Token count summary", "deepseek-v4.1-flash")
 	if errSeal != nil {
 		t.Fatalf("SealAntigravityCompaction: %v", errSeal)
@@ -1259,7 +1259,7 @@ func TestCodexExecutor_IsCompatCompactionValidationAndUsage_Issue7406(t *testing
 		t.Fatalf("CountTokens mismatch: got %s, want %s", gotCountResp.Payload, wantCountResp.Payload)
 	}
 
-	// 5. Usage outcome & token accounting across valid, incomplete, empty_summary, http500, and canceled.
+
 	validTrigger := []byte(`{"model":"deepseek-v4.1-flash","input":[{"type":"message","role":"user","content":"history"},{"type":"compaction_trigger"}]}`)
 	for _, tc := range []struct {
 		name       string
@@ -1390,7 +1390,7 @@ func TestCodexExecutor_IsCompatCompactionMatrix_Issue7406(t *testing.T) {
 		t.Fatalf("max_output_tokens = %d, want 1536; body=%s", gotMax, lastBody)
 	}
 
-	// Authoritative ResolvedModelInfo{IsCompat: false} overrides local config IsCompat: true.
+
 	overrideResp, errOverride := executor.Execute(context.Background(), siwcAuth, cliproxyexecutor.Request{
 		Model:   "deepseek-v4.1-flash",
 		Payload: trigger,
@@ -1432,7 +1432,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			}()
 			_ = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 
-			// Turn 1: initial WS response.create
+
 			_, frame1, errRead1 := conn.ReadMessage()
 			if errRead1 != nil {
 				return
@@ -1441,7 +1441,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp_ws_1","output":[]}}`))
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp_ws_1","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ack-1"}]}],"usage":{"input_tokens":5,"output_tokens":2,"total_tokens":7}}}`))
 
-			// Turn 3 (post-compaction root response.create; Turn 2 ran locally via HTTP!)
+
 			_, frame2, errRead2 := conn.ReadMessage()
 			if errRead2 != nil {
 				return
@@ -1450,7 +1450,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.created","response":{"id":"resp_ws_3","output":[]}}`))
 			_ = conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"response.completed","response":{"id":"resp_ws_3","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ack-3"}]}],"usage":{"input_tokens":8,"output_tokens":3,"total_tokens":11}}}`))
 
-			// Turn 4 (incremental continuation referencing resp_ws_3)
+
 			_, frame3, errRead3 := conn.ReadMessage()
 			if errRead3 != nil {
 				return
@@ -1554,24 +1554,24 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		}
 	}
 
-	// Drain Turn 1 completion.
+
 	_ = readNextEvent("response.completed")
 
-	// 2a. response.steer carrying compaction_trigger is rejected locally without hitting upstream WS.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.steer","event_id":"ev_steer_bad","previous_response_id":"resp_ws_1","input":[{"type":"compaction_trigger"}]}`)}
 	steerErrEv := readNextEvent("error")
 	if steerErrEv.Get("status").Int() != http.StatusBadRequest || steerErrEv.Get("error.event_id").String() != "ev_steer_bad" {
 		t.Fatalf("unexpected steer error event: %s", steerErrEv.Raw)
 	}
 
-	// 2b. Incremental response.create with previous_response_id + compaction_trigger returns 409 previous_response_not_found.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","event_id":"ev_inc_compact","previous_response_id":"resp_ws_1","input":[{"type":"compaction_trigger"}]}`)}
 	incErrEv := readNextEvent("error")
 	if incErrEv.Get("status").Int() != http.StatusConflict || incErrEv.Get("error.code").String() != "previous_response_not_found" || incErrEv.Get("error.event_id").String() != "ev_inc_compact" {
 		t.Fatalf("unexpected incremental compaction error event: %s", incErrEv.Raw)
 	}
 
-	// 2c. Full response.create with updated instructions="INSTRUCTIONS_B" + compaction_trigger executes local HTTP summary.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","model":"client-alias","instructions":"INSTRUCTIONS_B","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Remember ` + marker + `"}]},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ack-1"}]},{"type":"compaction_trigger"}]}`)}
 	compactCompleted := readNextEvent("response.completed")
 	synthRespID := compactCompleted.Get("response.id").String()
@@ -1589,7 +1589,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		t.Fatalf("duplex HTTP summary body leaked compaction_trigger or tools: %s", summaryHTTPBody)
 	}
 
-	// Invalid synthetic-parent inputs must be rejected without consuming the parent.
+
 	for _, invalid := range []string{`{}`, `42`, `true`, `null`} {
 		payload := fmt.Sprintf(`{"type":"response.create","event_id":"invalid-input","previous_response_id":%q,"input":%s}`, synthRespID, invalid)
 		inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(payload)}
@@ -1599,7 +1599,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		}
 	}
 
-	// 3. response.append without instructions or previous_response_id inherits INSTRUCTIONS_B (not initial Keep concise.) and rewrites to expanded root response.create.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.append","input":"What was the marker?"}`)}
 	turn3Completed := readNextEvent("response.completed")
 	if turn3Completed.Get("response.id").String() != "resp_ws_3" {
@@ -1628,7 +1628,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		t.Fatalf("expected expanded summary marker without raw capsule on turn 3 WS frame: %s", wsTurn3)
 	}
 
-	// 4. Subsequent incremental continuation referencing resp_ws_3 forwards previous_response_id on upstream WS.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","model":"client-alias","previous_response_id":"resp_ws_3","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"Follow up 4"}]}]}`)}
 	turn4Completed := readNextEvent("response.completed")
 	if turn4Completed.Get("response.id").String() != "resp_ws_4" {
@@ -1642,7 +1642,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexSession_Issue7406(t *testing.T) {
 		t.Fatalf("turn 4 WS previous_response_id = %q, want resp_ws_3; frame=%s", gotPrev, wsTurn4)
 	}
 
-	// 5. Unknown synthetic resp_ag_compact_* is rejected locally with 409 previous_response_not_found.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","event_id":"ev_stale_synth","previous_response_id":"resp_ag_compact_unknown","input":[{"type":"message","role":"user","content":"stale"}]}`)}
 	staleErrEv := readNextEvent("error")
 	if staleErrEv.Get("status").Int() != http.StatusConflict || staleErrEv.Get("error.code").String() != "previous_response_not_found" {
@@ -1714,14 +1714,14 @@ func TestCodexExecutor_IsCompatCompactionDuplexEOFCancelsHTTP_Issue7406(t *testi
 		t.Fatalf("ExecuteStream error = %v", errStream)
 	}
 
-	// Drain Turn 1 response.completed.
+
 	for chunk := range streamRes.Chunks {
 		if ojson.GetBytes(bytes.TrimSpace(chunk.Payload), "type").String() == "response.completed" {
 			break
 		}
 	}
 
-	// Trigger in-flight HTTP compaction, wait at synchronization barrier, then drop upstream WS.
+
 	inputCh <- cliproxyexecutor.WebsocketInput{Payload: []byte(`{"type":"response.create","event_id":"ev_compact_eof","model":"deepseek-v4.1-flash","input":[{"type":"message","role":"user","content":"turn1"},{"type":"compaction_trigger"}]}`)}
 	select {
 	case <-httpStarted:
@@ -1836,15 +1836,15 @@ func TestCodexExecutor_IsCompatCompactionDuplexDeliveryOrder_Issue7406(t *testin
 		t.Fatalf("ExecuteStream error = %v", errStream)
 	}
 
-	// Read Turn 1 response.created so inputReady is open.
+
 	firstChunk := <-streamRes.Chunks
 	if ojson.GetBytes(bytes.TrimSpace(firstChunk.Payload), "type").String() != "response.created" {
 		t.Fatalf("expected Turn 1 response.created first, got %s", firstChunk.Payload)
 	}
 
-	// Let the reader finish terminal bookkeeping, but leave its unbuffered send
-	// blocked. Only then enqueue compaction and observe the writer evaluating its
-	// fence. This proves both goroutines reached the disputed delivery window.
+
+
+
 	close(sendTurn1Complete)
 	select {
 	case <-terminalPending:
@@ -1867,7 +1867,7 @@ func TestCodexExecutor_IsCompatCompactionDuplexDeliveryOrder_Issue7406(t *testin
 		t.Fatalf("expected Turn 1 response.completed before any Turn 2 synthetic event, got: %s", secondChunk.Payload)
 	}
 
-	// Now Turn 2 synthetic events must follow in order ending with synthetic response.completed.
+
 	var sawSynthCreated, sawSynthCompleted bool
 	for !sawSynthCompleted {
 		chunk := <-streamRes.Chunks

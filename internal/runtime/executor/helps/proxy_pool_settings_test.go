@@ -7,11 +7,11 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// These tests use the process-wide pool and must not run in parallel.
+
 func TestProxyPoolSettingsAndConcurrentBuild(t *testing.T) {
 	ResetProxyTransports()
 	t.Cleanup(ResetProxyTransports)
-	// Writing the block without any field is the opt-in and must fall back to defaults.
+
 	auth := poolAuth("defaults", poolBlock())
 	cfg := testConfig()
 	tr := pooledProxyTransport("direct", cfg, auth)

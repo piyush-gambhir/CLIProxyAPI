@@ -310,19 +310,19 @@ func TestConvertInteractionsResponseToOpenAIStreamToolCall_ContiguousZeroBasedIn
 	var param any
 	chunks := [][]byte{
 		[]byte(`data: {"event_type":"interaction.created","interaction":{"id":"i1","model":"devin/swe-2"}}`),
-		// Step 0: thought
+
 		[]byte(`data: {"event_type":"step.start","index":0,"step":{"type":"thought"}}`),
 		[]byte(`data: {"event_type":"step.delta","index":0,"delta":{"type":"thought_summary","text":"planning..."}}`),
 		[]byte(`data: {"event_type":"step.stop","index":0}`),
-		// Step 1: model_output
+
 		[]byte(`data: {"event_type":"step.start","index":1,"step":{"type":"model_output"}}`),
 		[]byte(`data: {"event_type":"step.delta","index":1,"delta":{"type":"text","text":"I will call tool."}}`),
 		[]byte(`data: {"event_type":"step.stop","index":1}`),
-		// Step 2: function_call 1 (step index = 2, tool call index should be 0)
+
 		[]byte(`data: {"event_type":"step.start","index":2,"step":{"type":"function_call","id":"call_first","name":"write_file","arguments":{}}}`),
 		[]byte(`data: {"event_type":"step.delta","index":2,"delta":{"type":"arguments_delta","arguments":"{\"path\":\"a\"}"}}`),
 		[]byte(`data: {"event_type":"step.stop","index":2}`),
-		// Step 3: function_call 2 (step index = 3, tool call index should be 1)
+
 		[]byte(`data: {"event_type":"step.start","index":3,"step":{"type":"function_call","id":"call_second","name":"read_file","arguments":{}}}`),
 		[]byte(`data: {"event_type":"step.delta","index":3,"delta":{"type":"arguments_delta","arguments":"{\"path\":\"b\"}"}}`),
 		[]byte(`data: {"event_type":"step.stop","index":3}`),
@@ -335,7 +335,7 @@ func TestConvertInteractionsResponseToOpenAIStreamToolCall_ContiguousZeroBasedIn
 		out = append(out, ConvertInteractionsResponseToOpenAI(context.Background(), "devin/swe-2", nil, nil, chunk, &param)...)
 	}
 
-	// Find the start chunk for call_first
+
 	var firstToolStart []byte
 	var secondToolStart []byte
 	for _, chunk := range out {
@@ -385,7 +385,7 @@ func TestConvertInteractionsResponseToOpenAIStream_IncompleteFinishReasonLength(
 }
 
 func TestConvertInteractionsResponseToOpenAI_ContentFilterFinishReason(t *testing.T) {
-	// 1. Stream
+
 	var param any
 	chunks := [][]byte{
 		[]byte(`data: {"event_type":"interaction.created","interaction":{"id":"i1","model":"devin/swe-2"}}`),
@@ -404,7 +404,7 @@ func TestConvertInteractionsResponseToOpenAI_ContentFilterFinishReason(t *testin
 		t.Fatalf("expected finish_reason 'content_filter' for stream, got: %s", string(bytes.Join(out, []byte("\n"))))
 	}
 
-	// 2. Non-stream
+
 	raw := []byte(`{"id":"i1","model":"devin/swe-2","status":"incomplete","finish_reason":"content_filter","steps":[{"type":"model_output","content":[{"type":"text","text":"blocked"}]}]}`)
 	outNonStream := ConvertInteractionsResponseToOpenAINonStream(context.Background(), "devin/swe-2", nil, nil, raw, nil)
 	if got := ojson.GetBytesNoCopy(outNonStream, "choices.0.finish_reason").String(); got != "content_filter" {

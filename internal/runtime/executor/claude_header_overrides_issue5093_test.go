@@ -26,9 +26,9 @@ func parseIssue5093Config(t *testing.T, raw string) *config.Config {
 	return cfg
 }
 
-// Issue #5093: operators need exact strip/append levers applied after the
-// rule-derived Anthropic-Beta set. Strip filters without re-sorting, and append
-// adds names at the end without duplicating names that are already present.
+
+
+
 func TestApplyClaudeHeaders_OperatorBetaStripAndAppend(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -62,8 +62,8 @@ func TestApplyClaudeHeaders_OperatorBetaStripAndAppend(t *testing.T) {
 	}
 }
 
-// The header is assembled more than once per request; re-applying overrides must
-// not reorder names that are both stripped and appended.
+
+
 func TestApplyClaudeHeaders_OperatorBetaOverridesStableAcrossReapplication(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -96,9 +96,9 @@ func TestApplyClaudeHeaders_OperatorBetaOverridesStableAcrossReapplication(t *te
 	}
 }
 
-// Per-credential custom headers are more specific than the global header-defaults
-// overrides: they keep the last word on custom gateways, while api.anthropic.com
-// still reclaims Anthropic-Beta and applies the overrides there.
+
+
+
 func TestApplyClaudeHeaders_CredentialHeadersKeepPrecedenceOverOperatorDefaults(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -139,8 +139,8 @@ func TestApplyClaudeHeaders_CredentialHeadersKeepPrecedenceOverOperatorDefaults(
 	}
 }
 
-// Strip also filters caller-supplied betas in caller-owned passthrough mode,
-// which is the gateway use case referenced by the issue (#4750).
+
+
 func TestApplyClaudeHeaders_OperatorBetaStripAppliesToCallerOwnedBetas(t *testing.T) {
 	cfg := parseIssue5093Config(t, `upstream:
   claude:
@@ -160,8 +160,8 @@ func TestApplyClaudeHeaders_OperatorBetaStripAppliesToCallerOwnedBetas(t *testin
 	}
 }
 
-// Stripping every derived beta must remove the header instead of sending an
-// empty Anthropic-Beta value to api.anthropic.com.
+
+
 func TestApplyClaudeHeaders_OperatorBetaStripAllRemovesHeader(t *testing.T) {
 	body := []byte(`{"model":"claude-opus-5","messages":[{"role":"user","content":"hi"}]}`)
 	baseline := newClaudeHeaderTestRequest(t, nil)
@@ -185,8 +185,8 @@ func TestApplyClaudeHeaders_OperatorBetaStripAllRemovesHeader(t *testing.T) {
 	}
 }
 
-// inject-diagnostics=false keeps the cloaked body free of the CPA-injected
-// diagnostics field, so cache-diagnosis-2026-04-07 is no longer derived from it.
+
+
 func TestClaudeExecutor_InjectDiagnosticsDisabledOmitsDiagnosticsAndCacheDiagnosis(t *testing.T) {
 	disabled := parseIssue5093Config(t, "upstream: {claude: {header-defaults: {inject-diagnostics: false}}}\n")
 	for _, tc := range []struct {
@@ -264,9 +264,9 @@ func TestClaudeExecutor_InjectDiagnosticsDisabledOmitsDiagnosticsAndCacheDiagnos
 	}
 }
 
-// client-request-id selects whether first-party requests synthesize a fresh
-// x-client-request-id (on, the default), forward only the caller's value
-// (passthrough), or never send one (off).
+
+
+
 func TestApplyClaudeHeaders_ClientRequestIDModes(t *testing.T) {
 	const callerRequestID = "caller-request-id-5093"
 	withCallerID := http.Header{}

@@ -91,7 +91,7 @@ func TestBuildOpenAIResponsesStreamErrorChunkPreservesNestedError(t *testing.T) 
 }
 
 func TestBuildOpenAIResponsesStreamErrorChunkPreservesCustomAndEmptyFields(t *testing.T) {
-	// Preserves empty error object {}
+
 	emptyChunk := BuildOpenAIResponsesStreamErrorChunk(http.StatusBadRequest, `{"error":{}}`, 0)
 	var emptyPayload struct {
 		Type           string         `json:"type"`
@@ -105,7 +105,7 @@ func TestBuildOpenAIResponsesStreamErrorChunkPreservesCustomAndEmptyFields(t *te
 		t.Fatalf("expected empty error object, got %v", emptyPayload.Error)
 	}
 
-	// Preserves custom fields and types without dropping
+
 	customText := `{"error":{"type":"custom_type","code":"custom_code","custom_key":"custom_val","is_flag":true,"count":42}}`
 	customChunk := BuildOpenAIResponsesStreamErrorChunk(http.StatusBadRequest, customText, 5)
 	var customPayload struct {
@@ -306,7 +306,7 @@ func TestBuildOpenAIResponsesStreamChunksMapAnthropicPromptTooLongToContextLengt
 		t.Fatalf("failed.response.error.type = %v, want %q", got, "invalid_request_error")
 	}
 
-	// Existing code must be preserved.
+
 	withCode := BuildOpenAIResponsesStreamFailedChunk(
 		http.StatusBadRequest,
 		`{"type":"error","error":{"type":"invalid_request_error","code":"custom_code","message":"prompt is too long: 210000 tokens > 200000 maximum"}}`,
@@ -324,7 +324,7 @@ func TestBuildOpenAIResponsesStreamChunksMapAnthropicPromptTooLongToContextLengt
 		t.Fatalf("failed.response.error.code with existing code = %v, want %q", got, "custom_code")
 	}
 
-	// Unrelated invalid_request_error without a code remains unchanged.
+
 	otherErr := BuildOpenAIResponsesStreamFailedChunk(
 		http.StatusBadRequest,
 		`{"type":"error","error":{"type":"invalid_request_error","message":"messages.0.content: Field required"}}`,

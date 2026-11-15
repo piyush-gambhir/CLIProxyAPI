@@ -19,9 +19,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// A reused upstream connection whose write fails is invalidated before any reader sees the
-// failure. The loss must still be recorded, so the next continuation is answered as "resend the
-// full input" instead of requiring a replay that closes the downstream socket.
+
+
+
 func TestCodexWebsocketWriteLossIsRecordedForNextContinuation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, errUpgrade := (&websocket.Upgrader{}).Upgrade(w, r, nil)
@@ -63,9 +63,9 @@ func TestCodexWebsocketWriteLossIsRecordedForNextContinuation(t *testing.T) {
 	sess.connCloser = newWebsocketConnectionCloser(conn)
 	sess.authID = "auth-a"
 	sess.wsURL = wsURL
-	sess.readerConn = conn // no reader: only the write path can see the failure
+	sess.readerConn = conn
 	sess.connMu.Unlock()
-	// The connection is dead but nothing has marked it: the next write fails.
+
 	if errClose := conn.Close(); errClose != nil {
 		t.Fatal(errClose)
 	}
@@ -115,9 +115,9 @@ func (h *disconnectLogBarrierHook) Fire(entry *log.Entry) error {
 	return nil
 }
 
-// invalidateUpstreamConnWithNotify must advance the input loss epoch under connMu before
-// releasing the lock and logging, so a concurrent pre-loss turn observing sess.conn == nil
-// is fenced instead of dialing a new upstream connection.
+
+
+
 func TestCodexWebsocketInvalidatePublishesLossEpochBeforeReleasingConnLock(t *testing.T) {
 	var dials atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -132,9 +132,9 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.PUT("/routing/strategy", s.mgmt.PutRoutingStrategy)
 		mgmt.PATCH("/routing/strategy", s.mgmt.PutRoutingStrategy)
 
-		// The quota scheduler status is also served here because the external
-		// client that consumes this contract was written against /v0/management.
-		// The canonical route is /v8/management/quota-scheduler/status.
+
+
+
 		mgmt.GET("/quota-scheduler/status", s.mgmt.GetQuotaSchedulerStatus)
 
 		mgmt.GET("/claude-api-key", s.mgmt.GetClaudeKeys)
@@ -239,7 +239,7 @@ func (s *Server) refreshPluginManagementRoutes() {
 	s.pluginHost.RegisterManagementRoutes(context.Background(), s.registeredManagementRouteKeys())
 }
 
-// RefreshPluginManagementRoutes rebuilds plugin-owned Management API routes.
+
 func (s *Server) RefreshPluginManagementRoutes() {
 	s.refreshPluginManagementRoutes()
 }
@@ -328,8 +328,8 @@ func (s *Server) serveManagementControlPanel(c *gin.Context) {
 
 	if _, err := os.Stat(filePath); err != nil {
 		if os.IsNotExist(err) {
-			// Synchronously ensure management.html is available with a detached context.
-			// Control panel bootstrap should not be canceled by client disconnects.
+
+
 			if !managementasset.EnsureLatestManagementHTML(context.Background(), managementasset.StaticDir(s.configFilePath), cfg.ProxyURL, cfg.RemoteManagement.PanelGitHubRepository) {
 				c.AbortWithStatus(http.StatusNotFound)
 				return

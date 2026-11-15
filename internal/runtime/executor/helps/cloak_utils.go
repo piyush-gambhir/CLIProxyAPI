@@ -17,8 +17,8 @@ type claudeMetadataUserID struct {
 	SessionID   string `json:"session_id"`
 }
 
-// generateFakeUserID generates metadata.user_id in the JSON string format used
-// by Claude Code 2.1.78 and newer.
+
+
 func generateFakeUserID() string {
 	return generateFakeUserIDWithSessionID(uuid.New().String())
 }
@@ -37,7 +37,7 @@ func generateFakeUserIDWithSessionID(sessionID string) string {
 	return string(value)
 }
 
-// isValidUserID checks the Claude Code 2.1.220 metadata.user_id shape.
+
 func isValidUserID(userID string) bool {
 	var value claudeMetadataUserID
 	if errUnmarshal := json.Unmarshal([]byte(userID), &value); errUnmarshal != nil {

@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// A disk snapshot applied between an auth-level 429 and a success dispatched before
-// that 429 keeps the cooldown's watermark (#6643) along with the cooldown itself, so
-// the stale success still does not clear it.
+
+
+
 func TestFileSnapshotKeepsCooldownWatermark(t *testing.T) {
 	const authID = "snapshot-watermark-auth"
 	manager := issue6643SeqTestAuth(t, authID)
@@ -54,8 +54,8 @@ func TestFileSnapshotKeepsCooldownWatermark(t *testing.T) {
 	}
 }
 
-// An update that is no file snapshot keeps an active credential_quota cooldown (the
-// carry-over in updateInternalLocked) together with its watermark (#6643).
+
+
 func TestManager_Issue6643_CredentialQuotaCarryKeepsCooldownWatermark(t *testing.T) {
 	const authID = "credential-quota-watermark-auth"
 	manager := issue6643SeqTestAuth(t, authID)

@@ -20,9 +20,9 @@ const (
 	redisErrorsChannel = "errors"
 
 	maxRESPArrayLen   = 1024
-	maxRESPBulkLen    = 64 << 10 // 64 KiB
-	maxRESPFrameBytes = 64 << 10 // 64 KiB
-	maxRESPLineLen    = 64 << 10 // 64 KiB
+	maxRESPBulkLen    = 64 << 10
+	maxRESPFrameBytes = 64 << 10
+	maxRESPLineLen    = 64 << 10
 )
 
 type redisSubscriptionCommand struct {

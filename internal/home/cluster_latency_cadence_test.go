@@ -34,7 +34,7 @@ func testClusterLatencyProbeCadence(t *testing.T, jitter []time.Duration) {
 	var previousObservedAt time.Time
 	for cycle := range 8 {
 		reportAt := start.Add(time.Duration(cycle)*time.Minute + jitter[cycle%len(jitter)])
-		// Home receives the previous probe on the next report, not when the probe completes.
+
 		uploadAt := reportAt.Add(100 * time.Millisecond)
 		samples := history.report(reportAt)
 		if cycle == 0 {
@@ -52,7 +52,7 @@ func testClusterLatencyProbeCadence(t *testing.T, jitter []time.Duration) {
 			if !uploadedExpiry.IsZero() && !uploadAt.Before(uploadedExpiry) {
 				t.Fatalf("cycle %d: Home evidence expired at %v before upload at %v", cycle, uploadedExpiry, uploadAt)
 			}
-			// Home uses the older of observed_at and receipt time minus age_ms.
+
 			sampledAt := uploadAt.Add(-time.Duration(sample.AgeMS) * time.Millisecond)
 			if sample.ObservedAt.Before(sampledAt) {
 				sampledAt = sample.ObservedAt
@@ -62,7 +62,7 @@ func testClusterLatencyProbeCadence(t *testing.T, jitter []time.Duration) {
 		if !history.probeDue(node, reportAt) {
 			t.Fatalf("cycle %d: ticker jitter or probe duration skipped a report cycle", cycle)
 		}
-		// Vary report and probe latency without sleeping or relying on platform timers.
+
 		reportDelay := time.Duration(1+cycle%3) * 100 * time.Millisecond
 		probeDuration := time.Duration(1+cycle%2) * time.Second
 		completedAt := reportAt.Add(reportDelay + probeDuration)
@@ -83,7 +83,7 @@ func TestClusterLatencyProbeCyclesSurviveSkippedReports(t *testing.T) {
 	node := clusterNode{IP: "candidate", Port: 8327}
 	start := time.Unix(4500, 0)
 	history.observeProbe(node, time.Millisecond, true, start, start.Add(time.Second))
-	// Dropped ticks advance to their absolute cycle instead of shifting the baseline.
+
 	reportAt := start.Add(5*time.Minute - time.Nanosecond)
 	if !history.probeDue(node, reportAt) {
 		t.Fatal("skipped reports prevented a new probe")
@@ -144,7 +144,7 @@ func TestClusterLatencyReportsRespectScheduledProbeBudget(t *testing.T) {
 	client.balance.latencySupported = true
 	client.clusterNodes = []clusterNode{node}
 	history := &clusterLatencyHistory{}
-	// A slightly early next tick is a new cycle; repeated ticks in that cycle must not probe twice.
+
 	start := time.Now().Add(-3 * time.Minute)
 	for _, reportAt := range []time.Time{start, start.Add(time.Minute - time.Nanosecond), start.Add(time.Minute), start.Add(2*time.Minute - 2*time.Nanosecond)} {
 		if errReport := client.reportClusterLatency(context.Background(), history, reportAt); errReport != nil {

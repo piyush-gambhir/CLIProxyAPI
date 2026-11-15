@@ -37,7 +37,7 @@ func browseTestIngest(t *testing.T, c *browseCache, index int, now time.Time, re
 	for _, s := range records {
 		m.Answer = append(m.Answer, browseTestRR(t, s))
 	}
-	// Exercise the real DNS wire decoder as well as the cache.
+
 	wire, e := m.Pack()
 	if e != nil {
 		t.Fatal(e)
@@ -127,7 +127,7 @@ func TestNativeBrowseTTLGoodbyeAndFlush(t *testing.T) {
 	if len(got) != 1 || len(got[0].IPv4) != 1 || !got[0].IPv4[0].Equal(net.ParseIP("192.0.2.11")) {
 		t.Fatal(got)
 	}
-	// A split RRset arriving less than one second later retains both members.
+
 	rr2 := browseTestRR(t, "demo.local. 120 IN A 192.0.2.12")
 	rr2.Header().Class |= 0x8000
 	m.Answer = []dns.RR{rr2}

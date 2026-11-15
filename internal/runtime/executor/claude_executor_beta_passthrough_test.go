@@ -9,8 +9,8 @@ import (
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// fixtureAuth builds a cloaked direct-Anthropic API-key auth for header tests.
-// The key value is a placeholder that never reaches a real upstream.
+
+
 func fixtureAuth() *cliproxyauth.Auth {
 	attrs := map[string]string{}
 	attrs[cliproxyauth.AttributeAPIKey] = strings.Join([]string{"test", "fixture", "key"}, "-")
@@ -18,10 +18,10 @@ func fixtureAuth() *cliproxyauth.Auth {
 	return &cliproxyauth.Auth{Attributes: attrs}
 }
 
-// A caller the cloak does not recognize (a Claude Code newer than the pinned
-// profile) keeps betas the proxy does not manage: dropping them fails whole
-// turns whose features need the missing authorization (#5738). per-turn-control
-// and message-threads are now assembled, so this uses a beta that is still unmanaged.
+
+
+
+
 func TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas(t *testing.T) {
 	t.Parallel()
 
@@ -44,9 +44,9 @@ func TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas(t *testing.T) {
 	}
 }
 
-// Managed betas stay governed by the assembled baseline on direct Anthropic:
-// one whose gating excludes the request (effort on a Haiku model) is not
-// reinstated just because the caller asked for it.
+
+
+
 func TestApplyClaudeHeaders_StillGatesManagedCallerBetas(t *testing.T) {
 	t.Parallel()
 
@@ -105,9 +105,9 @@ func TestApplyClaudeHeaders_PreservesNativeGatewayHintsOnly(t *testing.T) {
 	}
 }
 
-// TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas_OAuth verifies the exact
-// scenario reported in #5738: an OAuth credential with an unconfirmed client
-// sending a per-turn effort directive turn.
+
+
+
 func TestApplyClaudeHeaders_ForwardsUnmanagedCallerBetas_OAuth(t *testing.T) {
 	t.Parallel()
 

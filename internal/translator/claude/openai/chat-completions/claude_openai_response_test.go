@@ -276,7 +276,7 @@ func TestConvertClaudeResponseToOpenAI_StreamAndNonStreamParity(t *testing.T) {
 		[]byte(`data: {"type":"message_stop"}`),
 	}
 
-	// 1. Process via streaming
+
 	ctx := context.Background()
 	var param any
 	var streamReasoning string
@@ -298,7 +298,7 @@ func TestConvertClaudeResponseToOpenAI_StreamAndNonStreamParity(t *testing.T) {
 		}
 	}
 
-	// 2. Process via non-stream
+
 	var rawBuffer []byte
 	for _, ev := range events {
 		rawBuffer = append(rawBuffer, ev...)
@@ -341,7 +341,7 @@ func TestConvertClaudeResponseToOpenAI_RedactedThinkingIgnored(t *testing.T) {
 		[]byte(`data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"input_tokens":10,"output_tokens":20}}`),
 	}
 
-	// Non-stream check
+
 	var rawJSON []byte
 	for _, ev := range events {
 		rawJSON = append(rawJSON, ev...)
@@ -359,7 +359,7 @@ func TestConvertClaudeResponseToOpenAI_RedactedThinkingIgnored(t *testing.T) {
 		t.Fatalf("content = %q, want %q", gotContent, "Visible reply.")
 	}
 
-	// Stream check
+
 	ctx := context.Background()
 	var param any
 	var streamContent string
@@ -453,7 +453,7 @@ func TestConvertClaudeResponseToOpenAI_StreamEmitsTrailingUsageChunkWithCacheDet
 		[]byte(`data: {"type":"content_block_stop","index":0}`),
 		[]byte(`data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":15}}`),
 		[]byte(`data: {"type":"message_stop"}`),
-		[]byte(`data: {"type":"message_stop"}`), // Duplicate message_stop should be ignored via TrailingUsageSent
+		[]byte(`data: {"type":"message_stop"}`),
 	}
 
 	var allChunks [][]byte
@@ -462,7 +462,7 @@ func TestConvertClaudeResponseToOpenAI_StreamEmitsTrailingUsageChunkWithCacheDet
 		allChunks = append(allChunks, chunks...)
 	}
 
-	// Verify exactly one trailing usage chunk with empty choices array exists as expected by OpenAI streaming spec and LiteLLM
+
 	var trailingUsageChunk []byte
 	var trailingUsageChunkIndex = -1
 	var finishReasonChunkIndex = -1
@@ -656,7 +656,7 @@ func TestConvertClaudeResponseToOpenAI_StreamPreservesUpstreamServingModel(t *te
 		t.Fatal("expected pre-token fallback stream to surface choices[0].delta.fallback")
 	}
 
-	// Also verify when message_start already reports claude-opus-4-8 AND a fallback content_block is emitted.
+
 	var paramPreBlock any
 	preBlockEvents := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_fb_preblock","model":"claude-opus-4-8","usage":{"input_tokens":10,"output_tokens":0}}}`),
@@ -680,7 +680,7 @@ func TestConvertClaudeResponseToOpenAI_StreamPreservesUpstreamServingModel(t *te
 		t.Fatal("expected fallback content_block to surface trigger in choices[0].delta.fallback even when message_start already reported target model")
 	}
 
-	// Pre-token non-stream response via iterations also surfaces choices[0].message.fallback with content_offset=0.
+
 	preNonStreamRaw := []byte(`{"id":"msg_fb_1","type":"message","role":"assistant","model":"claude-opus-4-8","content":[{"type":"text","text":"fallback answer"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":4,"iterations":[{"type":"message","model":"claude-opus-5-5","output_tokens":0},{"type":"fallback_message","model":"claude-opus-4-8","output_tokens":4}]}}`)
 	preNonStreamOut := ConvertClaudeResponseToOpenAINonStream(ctx, "claude-opus-5-5", nil, nil, preNonStreamRaw, nil)
 	preFB := ojson.GetBytesNoCopy(preNonStreamOut, "choices.0.message.fallback")
@@ -720,7 +720,7 @@ func TestConvertClaudeResponseToOpenAI_MidStreamFallbackUpdatesServingModelAndEm
 		}
 	}
 
-	// Expected sequence: message_start (5.5), partial delta (5.5), fallback boundary (4.8), fallback delta (4.8), message_delta (4.8), trailing usage (4.8).
+
 	wantModels := []string{
 		"claude-opus-5-5",
 		"claude-opus-5-5",
@@ -762,7 +762,7 @@ func TestConvertClaudeResponseToOpenAI_MidStreamFallbackUpdatesServingModelAndEm
 func TestConvertClaudeResponseToOpenAI_MultiHopFallbackAndStickyDefault(t *testing.T) {
 	ctx := context.Background()
 
-	// 1. Multi-hop chain: claude-fable-5-1 ("partA ") -> claude-opus-5 ("partB ") -> claude-opus-4-8 ("partC").
+
 	rawJSON := []byte(`{"id":"msg_chat_chain","type":"message","role":"assistant","model":"claude-fable-5-1","content":[{"type":"text","text":"partA "},{"type":"fallback","from":{"model":"claude-fable-5-1"},"to":{"model":"claude-opus-5"},"trigger":{"type":"refusal","category":"reasoning_extraction"}},{"type":"text","text":"partB "},{"type":"fallback","from":{"model":"claude-opus-5"},"to":{"model":"claude-opus-4-8"},"trigger":{"type":"refusal","category":"cyber"}},{"type":"text","text":"partC"}],"stop_reason":"end_turn","usage":{"input_tokens":10,"output_tokens":9}}`)
 	out := ConvertClaudeResponseToOpenAINonStream(ctx, "claude-fable-5-1", nil, nil, rawJSON, nil)
 	if got := ojson.GetBytesNoCopy(out, "model").String(); got != "claude-opus-4-8" {
@@ -779,7 +779,7 @@ func TestConvertClaudeResponseToOpenAI_MultiHopFallbackAndStickyDefault(t *testi
 		t.Fatalf("Chat hop[1] = %s, want opus-5 -> opus-4-8 at content_offset=12", hops[1].Raw)
 	}
 
-	// 2. Sticky routing with "fallbacks": "default" (no fallback block, no usage.iterations).
+
 	translatedDefaultReq := []byte(`{"model":"claude-opus-5-5","fallbacks":"default","messages":[{"role":"user","content":"turn 2"}]}`)
 	var stickyParam any
 	stickyStart := []byte(`data: {"type":"message_start","message":{"id":"msg_sticky_chat","model":"claude-opus-4-8","usage":{"input_tokens":5,"output_tokens":0}}}`)

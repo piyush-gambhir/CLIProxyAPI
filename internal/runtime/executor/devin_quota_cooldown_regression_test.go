@@ -14,10 +14,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Tests in this file cover issue #6690: Devin daily/weekly usage quota
-// exhaustion must cool down the whole credential until the quota reset
-// (when a valid reset timestamp is known), instead of the short
-// per-model exponential backoff.
+
+
+
+
 
 func TestDevinQuotaExhaustedError_StreamWeeklyIsCredentialScopedWithResetRetryAfter(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
@@ -102,8 +102,8 @@ func TestDevinQuotaExhaustedError_StreamPastResetYieldsNoRetryAfter(t *testing.T
 
 func TestDevinQuotaExhaustedError_StreamFarFutureResetIsRejected(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
-	// A reset further out than any weekly window (plus slack) is bogus data
-	// and must not pin the credential for months.
+
+
 	auth := devinTestAuthWithQuotaResets(now.Add(90*24*time.Hour), now.Add(90*24*time.Hour))
 
 	err := devinStreamTrailerError(t, auth, "failed_precondition", "Your weekly usage quota has been exhausted.")
@@ -198,13 +198,13 @@ func TestDevinStatusError_HTTP429WeeklyQuotaUsesResetWhenAuthKnown(t *testing.T)
 		t.Fatalf("RetryAfter = %v, want ~%v", got, want)
 	}
 
-	// The auth-less helper still guarantees credential scope (nil delay).
+
 	plain := newDevinStatusError(http.StatusTooManyRequests, http.Header{}, []byte("Your weekly usage quota has been exhausted."))
 	if !plain.IsCredentialScoped() || plain.RetryAfter() != nil {
 		t.Fatalf("auth-less HTTP 429 = %+v, want credential-scoped with nil RetryAfter", plain)
 	}
 
-	// An explicit Retry-After header keeps precedence over signal data.
+
 	hdr := http.Header{}
 	hdr.Set("Retry-After", "30")
 	withHeader := newDevinStatusErrorForAuth(http.StatusTooManyRequests, hdr, []byte("Your weekly usage quota has been exhausted."), auth)

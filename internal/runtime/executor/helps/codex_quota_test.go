@@ -183,8 +183,8 @@ func TestParseCodexQuotaEventHeadersNonQuotaEventDoesNotAllocate(t *testing.T) {
 	}
 }
 
-// Large non-quota frames must stay allocation-free: only the bounded frame
-// prefix is scanned for the type discriminator.
+
+
 func TestParseCodexQuotaEventHeadersLargeNonQuotaFrameDoesNotAllocate(t *testing.T) {
 	big := strings.Repeat("x", 4096)
 	payload := []byte(`{"sequence_number":7,"type":"response.output_text.delta","delta":"` + big + `"}`)
@@ -198,7 +198,7 @@ func TestParseCodexQuotaEventHeadersLargeNonQuotaFrameDoesNotAllocate(t *testing
 	}
 }
 
-// Quota markers live in the frame prefix, so large quota events must still be parsed.
+
 func TestParseCodexQuotaEventHeadersLargeRateLimitsFrameIsParsed(t *testing.T) {
 	padding := strings.Repeat("p", 4096)
 	payload := []byte(`{"type":"codex.rate_limits","rate_limits":{"primary":{"used_percent":42,"limit_percent":100,"window_minutes":10080,"reset_after_seconds":3600,"used_minutes":120},"secondary":{"used_percent":1,"limit_percent":100,"window_minutes":300,"reset_after_seconds":60,"used_minutes":2},"active_limit":"primary","credits":{"total_credits":"10","available_credits":"5","pct_remaining":"50"}},"padding":"` + padding + `"}`)
@@ -223,8 +223,8 @@ func TestParseCodexQuotaEventHeadersRejectsInvalidAndEmptyEvents(t *testing.T) {
 	}
 }
 
-// A malformed active-limit name must not discard the window watermarks that were
-// parsed successfully from the same event.
+
+
 func TestParseCodexQuotaEventHeadersKeepsWindowsWhenActiveLimitIsInvalid(t *testing.T) {
 	headers := ParseCodexQuotaEventHeaders([]byte(`{
 		"type":"codex.rate_limits",
@@ -242,8 +242,8 @@ func TestParseCodexQuotaEventHeadersKeepsWindowsWhenActiveLimitIsInvalid(t *test
 	}
 }
 
-// Real websocket events namespace additional limits by limit name and carry a
-// code_review_rate_limits sibling; both must survive parsing.
+
+
 func TestParseCodexQuotaEventHeadersObservedProductionEvent(t *testing.T) {
 	headers := ParseCodexQuotaEventHeaders([]byte(`{
 		"type":"codex.rate_limits",
@@ -271,14 +271,14 @@ func TestParseCodexQuotaEventHeadersObservedProductionEvent(t *testing.T) {
 			t.Fatalf("header %s = %q, want %q", key, got, want)
 		}
 	}
-	// secondary is null upstream and must not be invented.
+
 	if got := headers.Get("X-Codex-Secondary-Used-Percent"); got != "" {
 		t.Fatalf("null secondary window was materialized: %q", got)
 	}
 }
 
-// An upstream-controlled limit name containing control characters must not reach
-// the plain-text request log.
+
+
 func TestParseCodexQuotaEventHeadersRejectsControlCharactersInLimitName(t *testing.T) {
 	headers := ParseCodexQuotaEventHeaders([]byte(`{
 		"type":"codex.rate_limits",
@@ -296,11 +296,11 @@ func TestParseCodexQuotaEventHeadersRejectsControlCharactersInLimitName(t *testi
 	}
 }
 
-// Codex quota parsing must stay on the codex-specific websocket entry point.
-// The generic entry point is shared with other providers (xAI), whose frames
-// must never be reinterpreted as codex quota data: an xAI error frame really
-// does carry x-ratelimit-* headers, and merging them here would forge codex
-// quota headers into an unrelated provider's request log.
+
+
+
+
+
 func TestGenericWebsocketEntryPointDoesNotObserveCodexQuota(t *testing.T) {
 	frame := []byte(`{"type":"error","headers":{"x-ratelimit-remaining-requests":"0","retry-after":"60"}}`)
 

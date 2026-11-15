@@ -27,9 +27,9 @@ func claudeOAuthAuthForBetaPolicy() *cliproxyauth.Auth {
 	}
 }
 
-// A confirmed native client authenticates to CPA with the user's configured key
-// and cannot know CPA will pick an OAuth credential upstream, so its header never
-// carries the credential-scoped OAuth and extended-cache betas.
+
+
+
 func TestApplyClaudeHeaders_ConfirmedClientKeepsOAuthCredentialBetas(t *testing.T) {
 	incoming := http.Header{}
 	incoming.Set("Anthropic-Beta", claudeCodeBeta+",interleaved-thinking-2025-05-14,"+claudeEffortBeta)
@@ -54,7 +54,7 @@ func TestApplyClaudeHeaders_ConfirmedClientKeepsOAuthCredentialBetas(t *testing.
 	if strings.Contains(got, claudeCacheDiagnosisBeta) {
 		t.Fatalf("Anthropic-Beta = %q, contains %s without a diagnostics body", got, claudeCacheDiagnosisBeta)
 	}
-	// The caller's own betas survive the restoration.
+
 	for _, want := range []string{"interleaved-thinking-2025-05-14", claudeEffortBeta} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("Anthropic-Beta = %q, want caller beta %s preserved", got, want)
@@ -77,7 +77,7 @@ func TestApplyClaudeHeaders_ConfirmedAPIKeyClientKeepsPurePassthrough(t *testing
 	}
 }
 
-// Default API-key mode preserves body-lifted betas just like header betas.
+
 func TestApplyClaudeHeaders_UnknownBodyBetaPreservedOnAnthropic(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": "key-body-beta"}}
 	req := newClaudeHeaderTestRequest(t, nil)
@@ -102,8 +102,8 @@ func TestApplyClaudeHeaders_KnownBodyBetaStillPlacedOnAnthropic(t *testing.T) {
 	}
 }
 
-// Custom credential headers run after the whole header set is assembled, so they
-// could rewrite the reconstructed identity on Anthropic itself.
+
+
 func TestApplyClaudeHeaders_CustomHeadersCannotOverrideAnthropicIdentity(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{
 		"api_key":                "key-custom-headers",
@@ -126,10 +126,10 @@ func TestApplyClaudeHeaders_CustomHeadersCannotOverrideAnthropicIdentity(t *test
 	}
 }
 
-// Kimi rewrites base_url to api.kimi.com and custom gateways set their own host,
-// yet both delegate to ClaudeExecutor and are therefore cloaked. Keying the
-// context_management injection on the cloaked flag alone leaked a Claude Code
-// field into their traffic.
+
+
+
+
 func TestClaudeExecutor_ContextManagementNeverLeaksToOtherUpstreams(t *testing.T) {
 	var upstreamBody []byte
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -179,8 +179,8 @@ func TestIsAnthropicUpstreamBase(t *testing.T) {
 	}
 }
 
-// Streaming previously never reached the fast-mode derivation, so speed:"fast"
-// produced a 400 on every streamed request.
+
+
 func TestApplyClaudeHeaders_FastModeBetaMatchesAcrossStreamModes(t *testing.T) {
 	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": "key-fast-parity"}}
 	body := []byte(`{"model":"claude-opus-5","speed":"fast"}`)
@@ -202,8 +202,8 @@ func TestApplyClaudeHeaders_FastModeBetaMatchesAcrossStreamModes(t *testing.T) {
 	}
 }
 
-// The current OAuth CLI profile places fast-mode immediately before the
-// extended-cache-ttl trailer.
+
+
 func TestApplyClaudeHeaders_FastModePrecedesOAuthTrailer(t *testing.T) {
 	req := newClaudeHeaderTestRequest(t, nil)
 	if err := applyClaudeHeaders(req, claudeOAuthAuthForBetaPolicy(), claudeRaceProbeOAuthKey, true, nil,
@@ -239,14 +239,14 @@ func TestApplyClaudeHeaders_DiagnosticsBetaFollowsBodyInNativeOrder(t *testing.T
 	}
 }
 
-// Anthropic refuses a fast-mode request from an account without the matching
-// usage credits with 429 rate_limit_error. The generic pipeline reads 429 as
-// quota exhaustion, cools the credential down and rotates, so one speed:"fast"
-// request would walk the whole Claude pool and disable credentials that are
-// perfectly healthy for ordinary traffic.
+
+
+
+
+
 func TestClassifyClaudeUpstreamError_FastModeCreditsIsRequestScoped(t *testing.T) {
-	// Anthropic and the Claude Code CLI word this refusal differently; both must
-	// be recognised, and neither may be rewritten on the way back to the caller.
+
+
 	bodies := [][]byte{
 		[]byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Usage credits are required for fast mode."}}`),
 		[]byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Fast mode requires usage credits"}}`),
@@ -262,15 +262,15 @@ func TestClassifyClaudeUpstreamError_FastModeCreditsIsRequestScoped(t *testing.T
 		if !errors.As(err, &status) || status.StatusCode() != http.StatusTooManyRequests {
 			t.Fatalf("status was not preserved for the caller: %v", err)
 		}
-		// Pass-through must be byte-exact: the upstream body is the caller's
-		// only explanation of what to do about it.
+
+
 		if err.Error() != string(body) {
 			t.Fatalf("body was rewritten:\n got  %s\n want %s", err.Error(), body)
 		}
 	}
 }
 
-// A genuine rate limit must keep cooling the credential down and rotating.
+
 func TestClassifyClaudeUpstreamError_RealRateLimitStaysCredentialScoped(t *testing.T) {
 	cases := [][]byte{
 		[]byte(`{"type":"error","error":{"type":"rate_limit_error","message":"Number of requests has exceeded your rate limit."}}`),
@@ -286,8 +286,8 @@ func TestClassifyClaudeUpstreamError_RealRateLimitStaysCredentialScoped(t *testi
 
 func TestClassifyClaudeUpstreamError_OtherStatusesUnaffected(t *testing.T) {
 	body := []byte(`{"error":{"message":"Usage credits are required for fast mode."}}`)
-	// Only 429 carries the entitlement refusal; a 500 mentioning it is still a
-	// credential-scoped failure worth rotating away from.
+
+
 	err := classifyClaudeUpstreamError(http.StatusInternalServerError, nil, body)
 	if scoped, ok := err.(cliproxyexecutor.RequestScopedError); ok && scoped.IsRequestScoped() {
 		t.Fatal("non-429 status was misclassified as request-scoped")
@@ -463,7 +463,7 @@ func TestApplyClaudeHeaders_AdvisorToolBetaPreservedWhenCountTokens(t *testing.T
 }
 
 func TestApplyClaudeHeaders_AdvisorToolBetaRepositionedWhenOutOfOrder(t *testing.T) {
-	// Incoming header has advisor-tool at trailing position after effort
+
 	incoming := http.Header{}
 	incoming.Set("Anthropic-Beta", "claude-code-20250219,mid-conversation-system-2026-04-07,advanced-tool-use-2025-11-20,effort-2025-11-24,advisor-tool-2026-03-01")
 
@@ -505,7 +505,7 @@ func TestApplyClaudeHeaders_AdvisorToolBetaRepositionedWhenOutOfOrder(t *testing
 }
 
 func TestApplyClaudeHeaders_StructuredHelperBetaOrderPreservedWithAdvisor(t *testing.T) {
-	// Exact beta profile from measured structured Haiku helper with advisor
+
 	helperBeta := claudeCodeBeta + ",oauth-2025-04-20,interleaved-thinking-2025-05-14,redact-thinking-2026-02-12,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,advisor-tool-2026-03-01,structured-outputs-2025-12-15,cache-diagnosis-2026-04-07"
 	incoming := http.Header{}
 	incoming.Set("Anthropic-Beta", helperBeta)
@@ -524,9 +524,9 @@ func TestApplyClaudeHeaders_StructuredHelperBetaOrderPreservedWithAdvisor(t *tes
 	}
 }
 
-// A body that carries thinking.block_binding is rejected upstream unless the
-// thinking-binding-controls beta travels with it, so even caller-owned
-// (default API-key) and confirmed-passthrough modes must emit that beta.
+
+
+
 func TestApplyClaudeHeaders_BlockBindingBodyAlwaysGetsBindingBeta(t *testing.T) {
 	body := []byte(`{"model":"claude-haiku-5-5","thinking":{"type":"adaptive","block_binding":{"prefix_mismatch_behavior":"drop_block"}},"messages":[{"role":"user","content":"hi"}]}`)
 	for _, confirmed := range []bool{false, true} {

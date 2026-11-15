@@ -16,9 +16,9 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// antigravityNoFinishReasonSSE mirrors a real upstream stream captured from
-// cloudcode-pa: a single tool-call chunk that carries usageMetadata but never
-// emits finishReason.
+
+
+
 const antigravityNoFinishReasonSSE = `data: {"response":{"candidates":[{"content":{"parts":[{"thoughtSignature":"CqcECqQEARFNMg8iZ3xVniKaulgBlzhJJDlc","functionCall":{"name":"bash","args":{"command":"ls -la .."},"id":"call_524881"}}],"role":"model"}}],"modelVersion":"gemini-3.7-flash","responseId":"resp-nofr","usageMetadata":{"promptTokenCount":153609,"candidatesTokenCount":17,"totalTokenCount":153720,"thoughtsTokenCount":94}}}
 `
 
@@ -132,11 +132,11 @@ func TestAntigravityStreamSurfacesTrailingBackendError(t *testing.T) {
 	}
 }
 
-// TestAntigravityStreamDoesNotEmitClaudeMessageStopOnReadError locks in the
-// executor ordering fix on the response format where it is observable: the
-// Claude translator has always synthesized a terminal event on [DONE], so
-// translating the tail before checking scanner.Err() reported a truncated
-// upstream stream to Claude clients as a completed message.
+
+
+
+
+
 func TestAntigravityStreamDoesNotEmitClaudeMessageStopOnReadError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")

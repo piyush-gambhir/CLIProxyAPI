@@ -9,7 +9,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 )
 
-// RegisterPluginForTest registers a plugin directly on the host for testing.
+
 func (h *Host) RegisterPluginForTest(id string, plugin pluginapi.Plugin) {
 	if h == nil {
 		return
@@ -45,7 +45,7 @@ type RegisteredQuotaProviderInfo struct {
 	SupportsReset      bool     `json:"supports_reset"`
 }
 
-// QuotaProviderIdentifiers returns the list of unique quota provider identifiers.
+
 func (h *Host) QuotaProviderIdentifiers() []string {
 	if h == nil {
 		return nil
@@ -68,7 +68,7 @@ func (h *Host) QuotaProviderIdentifiers() []string {
 	return out
 }
 
-// QuotaProviders returns information about all active registered quota providers.
+
 func (h *Host) QuotaProviders(ctx context.Context) []RegisteredQuotaProviderInfo {
 	if h == nil {
 		return nil
@@ -106,24 +106,24 @@ func (h *Host) QuotaProviders(ctx context.Context) []RegisteredQuotaProviderInfo
 	return out
 }
 
-// HasQuotaProvider reports whether a quota provider exists for the given provider key.
+
 func (h *Host) HasQuotaProvider(provider string) bool {
 	return h.HasQuotaProviderContext(context.Background(), provider)
 }
 
-// HasQuotaProviderContext reports whether a quota provider exists with context cancellation support.
+
 func (h *Host) HasQuotaProviderContext(ctx context.Context, provider string) bool {
 	return h.quotaProviderRecord(ctx, provider) != nil
 }
 
-// HasQuotaProviderForPlugin reports whether the given plugin ID provides quota capabilities.
+
 func (h *Host) HasQuotaProviderForPlugin(pluginID string) bool {
 	return h.quotaProviderRecordByPlugin(pluginID) != nil
 }
 
-// QuotaProviderPluginIDs returns a point-in-time map from normalized provider keys to the ID of the
-// quota plugin that quotaProviderRecord would select for that provider, preserving its two-pass precedence.
-// This allows callers (e.g. ListAuthFiles) to resolve quota plugins with zero per-credential RPCs.
+
+
+
 func (h *Host) QuotaProviderPluginIDs(ctx context.Context) map[string]string {
 	if h == nil {
 		return nil
@@ -136,7 +136,7 @@ func (h *Host) QuotaProviderPluginIDs(ctx context.Context) map[string]string {
 		return nil
 	}
 	records := h.activeRecordsFromSnapshot(snap)
-	// Keep candidates in selection order until probing finishes, because DescribeQuota may fuse a plugin.
+
 	candidates := make(map[string][]string)
 	addCandidate := func(provider, pluginID string) {
 		if provider != "" {
@@ -144,7 +144,7 @@ func (h *Host) QuotaProviderPluginIDs(ctx context.Context) map[string]string {
 		}
 	}
 	quotaRecords := make([]capabilityRecord, 0, len(records))
-	// First pass: QuotaProvider.Identifier(), plugin ID, or AuthProvider.Identifier().
+
 	for _, record := range records {
 		if err := ctx.Err(); err != nil {
 			break
@@ -166,7 +166,7 @@ func (h *Host) QuotaProviderPluginIDs(ctx context.Context) map[string]string {
 			}
 		}
 	}
-	// Second pass: SupportedProviders declared by DescribeQuota.
+
 	for _, record := range quotaRecords {
 		if err := ctx.Err(); err != nil {
 			break
@@ -203,7 +203,7 @@ func (h *Host) quotaProviderRecord(ctx context.Context, provider string) *capabi
 		return nil
 	}
 	records := h.activeRecordsFromSnapshot(snap)
-	// First pass: match exact QuotaProvider.Identifier(), plugin ID, or AuthProvider.Identifier()
+
 	for _, record := range records {
 		if err := ctx.Err(); err != nil {
 			return nil
@@ -232,7 +232,7 @@ func (h *Host) quotaProviderRecord(ctx context.Context, provider string) *capabi
 			}
 		}
 	}
-	// Second pass: match SupportedProviders declared by DescribeQuota
+
 	for _, record := range records {
 		if err := ctx.Err(); err != nil {
 			return nil
@@ -276,7 +276,7 @@ func (snap *Snapshot) cachedQuotaSupportedProviders(ctx context.Context, h *Host
 	if snap.quotaSupportedProviders == nil {
 		snap.quotaSupportedProviders = make(map[string][]string)
 	}
-	// Cache the result (even if empty slice) on this snapshot instance
+
 	snap.quotaSupportedProviders[record.id] = supported
 	snap.quotaSupportedProvidersMu.Unlock()
 	return supported
@@ -296,7 +296,7 @@ func (h *Host) quotaProviderRecordByPlugin(pluginID string) *capabilityRecord {
 	return nil
 }
 
-// DescribeQuota queries a plugin quota provider for metadata.
+
 func (h *Host) DescribeQuota(ctx context.Context, pluginID string) (pluginapi.QuotaDescribeResponse, bool, error) {
 	record := h.quotaProviderRecordByPlugin(pluginID)
 	if record == nil {
@@ -308,7 +308,7 @@ func (h *Host) DescribeQuota(ctx context.Context, pluginID string) (pluginapi.Qu
 	return h.callQuotaDescribe(ctx, *record, record.plugin.Capabilities.QuotaProvider)
 }
 
-// FetchQuota queries quota information for a credential by provider or plugin ID.
+
 func (h *Host) FetchQuota(ctx context.Context, req pluginapi.QuotaFetchRequest) (pluginapi.QuotaFetchResponse, bool, error) {
 	record := h.quotaProviderRecord(ctx, req.Provider)
 	if record == nil && req.Provider != "" {
@@ -320,7 +320,7 @@ func (h *Host) FetchQuota(ctx context.Context, req pluginapi.QuotaFetchRequest) 
 	return h.callQuotaFetch(ctx, *record, record.plugin.Capabilities.QuotaProvider, req)
 }
 
-// FetchQuotaByPlugin queries quota information for a credential targeting a specific plugin.
+
 func (h *Host) FetchQuotaByPlugin(ctx context.Context, pluginID string, req pluginapi.QuotaFetchRequest) (pluginapi.QuotaFetchResponse, bool, error) {
 	record := h.quotaProviderRecordByPlugin(pluginID)
 	if record == nil {
@@ -329,7 +329,7 @@ func (h *Host) FetchQuotaByPlugin(ctx context.Context, pluginID string, req plug
 	return h.callQuotaFetch(ctx, *record, record.plugin.Capabilities.QuotaProvider, req)
 }
 
-// ResetQuota resets quota or usage for a credential if supported.
+
 func (h *Host) ResetQuota(ctx context.Context, req pluginapi.QuotaResetRequest) (pluginapi.QuotaResetResponse, bool, error) {
 	record := h.quotaProviderRecord(ctx, req.Provider)
 	if record == nil && req.Provider != "" {
@@ -341,7 +341,7 @@ func (h *Host) ResetQuota(ctx context.Context, req pluginapi.QuotaResetRequest) 
 	return h.callQuotaReset(ctx, *record, record.plugin.Capabilities.QuotaProvider, req)
 }
 
-// ResetQuotaByPlugin resets quota or usage for a credential targeting a specific plugin.
+
 func (h *Host) ResetQuotaByPlugin(ctx context.Context, pluginID string, req pluginapi.QuotaResetRequest) (pluginapi.QuotaResetResponse, bool, error) {
 	record := h.quotaProviderRecordByPlugin(pluginID)
 	if record == nil {

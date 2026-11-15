@@ -15,8 +15,8 @@ func ConvertInteractionsRequestToAntigravity(modelName string, inputRawJSON []by
 
 }
 
-// convertInteractionsRequestToAntigravity also reports a user turn that was left
-// empty because its only attachment has no Antigravity equivalent.
+
+
 func convertInteractionsRequestToAntigravity(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	functionNameMap := util.SanitizedFunctionNameMap(inputRawJSON)
@@ -216,9 +216,9 @@ func copyInteractionsReasoningToAntigravityDoc(outDoc *ojson.Doc, root ojson.Res
 		effort = strings.ToLower(strings.TrimSpace(reasoning.Get("thinking_level").String()))
 	}
 	if effort != "" {
-		// Thinking amount and summary visibility are independent. This OpenAI-style
-		// compatibility alias controls only the amount; includeThoughts is written
-		// below only for an explicit Interactions summary selector.
+
+
+
 		if effort == "auto" {
 			_ = outDoc.Set("request.generationConfig.thinkingConfig.thinkingBudget", -1)
 		} else {
@@ -313,16 +313,16 @@ type antigravityInteractionsInputContext struct {
 	inModelTurn      bool
 	lastStepType     string
 	pendingSignature string
-	// run follows the consecutive user content so that an attachment Antigravity
-	// cannot carry is refused only when its whole user turn is left with nothing to send.
+
+
 	run translatorcommon.UserRun
-	// instruction is set while the step being added is developer or system content.
+
 	instruction bool
 }
 
-// userRun returns the tracker for content added with role. Model content and
-// developer or system content close the open user turn and have no tracker, so
-// they can never keep an emptied user turn alive.
+
+
+
 func (ctx *antigravityInteractionsInputContext) userRun(role string) *translatorcommon.UserRun {
 	if role == "user" && !ctx.instruction {
 		return &ctx.run
@@ -331,7 +331,7 @@ func (ctx *antigravityInteractionsInputContext) userRun(role string) *translator
 	return nil
 }
 
-// appendText adds a text content; blank text does not keep a user turn alive.
+
 func (ctx *antigravityInteractionsInputContext) appendText(role, text string) {
 	appendAntigravityTextContent(&ctx.items, role, text)
 	run := ctx.userRun(role)
@@ -380,9 +380,9 @@ func appendInteractionsInputToAntigravity(items *[][]byte, input ojson.Result) e
 	return ctx.run.Err()
 }
 
-// appendInteractionsContentBlockItem accepts the shorthand where input is a bare
-// list of content blocks instead of steps. Those items have no step envelope and
-// would otherwise be dropped, losing images and files sent that way.
+
+
+
 func appendInteractionsContentBlockItem(ctx *antigravityInteractionsInputContext, item ojson.Result) bool {
 	switch strings.ToLower(strings.TrimSpace(item.Get("type").String())) {
 	case "text", "image", "audio", "video", "document":
@@ -392,9 +392,9 @@ func appendInteractionsContentBlockItem(ctx *antigravityInteractionsInputContext
 	if item.Get("content").Exists() || item.Get("steps").Exists() || item.Get("parts").Exists() {
 		return false
 	}
-	// Steps carrying an explicit role keep the step dispatch so that system or
-	// developer content still closes the open user turn instead of masking a
-	// dropped attachment.
+
+
+
 	if item.Get("role").Exists() {
 		return false
 	}
@@ -517,7 +517,7 @@ func appendInteractionsStepToAntigravity(ctx *antigravityInteractionsInputContex
 			ctx.inModelTurn = false
 		}
 		part := buildAntigravityFunctionResultPart(step)
-		// A tool result is content the model reads, so it keeps the surrounding user turn.
+
 		ctx.run.Add()
 		if ctx.lastStepType == "function_result" && len(ctx.items) > 0 && ojson.GetBytesNoCopy(ctx.items[len(ctx.items)-1], "role").String() == "user" {
 			ctx.items[len(ctx.items)-1] = appendGeminiUserContentPart(ctx.items[len(ctx.items)-1], part)
@@ -775,8 +775,8 @@ func appendInteractionsContentListToAntigravity(ctx *antigravityInteractionsInpu
 	}
 }
 
-// appendInteractionsContentPartToAntigravity adds one content part. run is nil for
-// model content; for user content it records what is sent and what cannot be.
+
+
 func appendInteractionsContentPartToAntigravity(items *[][]byte, role string, part ojson.Result, run *translatorcommon.UserRun) {
 	partJSON := appendInteractionsContentToAntigravityPart(nil, part, false)
 	if len(partJSON) == 0 {
@@ -816,7 +816,7 @@ func appendInteractionsContentToAntigravityPart(_ []byte, content ojson.Result, 
 				return antigravityInlineDataPartJSON(ojson.Parse(fmt.Sprintf(`{"mime_type":%q,"data":%q}`, mimeType, data)))
 			}
 		}
-		// uri is the Interactions spelling of file_uri.
+
 		if fileURI := firstNonEmptyString(content.Get("file_uri").String(), content.Get("fileUri").String(), content.Get("uri").String()); fileURI != "" {
 			mimeType := content.Get("mime_type").String()
 			if mimeType == "" {

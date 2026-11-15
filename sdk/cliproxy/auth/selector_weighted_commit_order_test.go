@@ -35,7 +35,7 @@ func TestWeightedReservationFinalRollbackBoundsSettledCredits(t *testing.T) {
 			for _, id := range ids {
 				for _, reservation := range reservations[id] {
 					reservation.finish(id == "a")
-					// Repeated finishing must not decrement the counter again.
+
 					reservation.finish(false)
 				}
 			}
@@ -79,7 +79,7 @@ func TestWeightedReservationUnequalWeightsOutOfOrderCommits(t *testing.T) {
 			for _, reservation := range reservations[first] {
 				reservation.finish(true)
 			}
-			// New arrivals must see the remaining offsets before the batch settles.
+
 			for _, phase := range []string{"pending", "settled"} {
 				if phase == "settled" {
 					for _, reservation := range reservations[last] {
@@ -166,7 +166,7 @@ func TestWeightedReservationOutOfOrderBalancedCommits(t *testing.T) {
 					t.Fatalf("unbalanced reservations: a=%d b=%d", len(reservations["a"]), len(reservations["b"]))
 				}
 				state := weightedStateForTest(t, weighted, "codex:model", "a", "b")
-				// A zero net pending vector does not mean all reservations settled.
+
 				if state.inFlight != 256 || len(state.pendingForTest()) != 0 {
 					t.Fatalf("in-flight=%d pending=%v, want 256 live balanced reservations", state.inFlight, state.pendingForTest())
 				}

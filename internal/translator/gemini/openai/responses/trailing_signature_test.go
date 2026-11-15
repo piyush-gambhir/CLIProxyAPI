@@ -171,8 +171,8 @@ func TestGeminiResponsesCacheRecoveryPreservesFallbackSignatureOrder(t *testing.
 	var state any
 	var completed ojson.Result
 	for index, line := range lines {
-		// A disabled Home client rejects the first cache write. Returning to
-		// local storage makes the next write succeed without timers or mocks.
+
+
 		if index == 1 {
 			homekv.SetCurrent(&homekv.Client{})
 		} else {

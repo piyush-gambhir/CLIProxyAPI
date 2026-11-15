@@ -7,8 +7,8 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// referenceIsClaudeTitleHelperRequest is isClaudeTitleHelperRequest without
-// the jsonMayContainASCII pre-filter (the v8.0.11 implementation).
+
+
 func referenceIsClaudeTitleHelperRequest(body []byte) bool {
 	props := ojson.GetBytes(body, "output_config.format.schema.properties")
 	if props.Exists() {
@@ -52,8 +52,8 @@ func referenceIsClaudeTitleHelperRequest(body []byte) bool {
 	return false
 }
 
-// referenceClaudePayloadHas1hTTL is ClaudePayloadHas1hTTL without the
-// jsonMayContainASCII pre-filter (the v8.0.11 implementation).
+
+
 func referenceClaudePayloadHas1hTTL(payload []byte) bool {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return false
@@ -94,7 +94,7 @@ func referenceClaudePayloadHas1hTTL(payload []byte) bool {
 	return has1h
 }
 
-// bs is one backslash; the seeds below build JSON escapes from it.
+
 const bs = `\`
 
 var prefilterSeeds = []string{
@@ -138,8 +138,8 @@ func TestPrefilterMatchesReferenceOnSeeds(t *testing.T) {
 	}
 }
 
-// FuzzPrefilterMatchesReference checks the pre-filtered classifiers against
-// the full walks on arbitrary bytes: go test -fuzz FuzzPrefilterMatchesReference
+
+
 func FuzzPrefilterMatchesReference(f *testing.F) {
 	for _, seed := range prefilterSeeds {
 		f.Add([]byte(seed))

@@ -15,8 +15,8 @@ import (
 
 func goldenHash(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
 
-// normalizeEvents parses SSE output, zeroes volatile created_at fields, and
-// re-marshals canonically so hashes compare structure, not timestamps.
+
+
 func normalizeEvents(t *testing.T, raw []byte) []byte {
 	t.Helper()
 	var out []byte
@@ -113,9 +113,9 @@ func claudeEchoRequests() []struct {
 	}
 }
 
-// Golden hashes captured from the pre-optimization implementation; the
-// cached namespace resolution and single-pass echo extraction must keep
-// stream and non-stream outputs identical (modulo created_at).
+
+
+
 var claudeEchoGoldenHashes = map[string][2]string{
 	"nil":            {"ab4bf61de3306512dcde13cdabb426c55226319673cc766c18751d1f41009dad", "99221176860da000324aab10d71af05082ec1ea3752234a85adfa300283d24ee"},
 	"empty":          {"ab4bf61de3306512dcde13cdabb426c55226319673cc766c18751d1f41009dad", "99221176860da000324aab10d71af05082ec1ea3752234a85adfa300283d24ee"},
@@ -146,7 +146,7 @@ func TestClaudeEchoGoldenOutputs(t *testing.T) {
 				t.Fatalf("%s: nonstream unparseable: %v", tc.name, err)
 			}
 			canon, _ := json.Marshal(zeroCreated(v))
-			// created_at is time-based in non-stream too; normalize via map walk.
+
 			non = canon
 		}
 		if got := goldenHash(non); got != want[1] {
@@ -254,9 +254,9 @@ func egChunks(names []string) [][]byte {
 	return out
 }
 
-// Edge cases for the cached namespace resolution: hashed/sanitized tool
-// names and the client tool_search winner rules. Hashes captured from the
-// pre-optimization implementation.
+
+
+
 func TestClaudeEchoGoldenEdgeCases(t *testing.T) {
 	want := map[string][2]string{
 		"long-and-invalid-names": {"41307ab5fdb3c147802cc04c12c1aebc2136c4b17fb7e0b0eb21cb750f7bd50c", "0dbf5c12e8f78697d4cdd86260fd918f1710909434738a190b2d6490ead74bcc"},

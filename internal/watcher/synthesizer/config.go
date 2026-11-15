@@ -12,18 +12,18 @@ import (
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
-// ConfigSynthesizer generates Auth entries from configuration API keys.
-// It handles Gemini, Interactions, Claude, Codex, xAI, OpenAI-compat, and Vertex-compat providers.
+
+
 type ConfigSynthesizer struct{}
 
-// NewConfigSynthesizer creates a new ConfigSynthesizer instance.
+
 func NewConfigSynthesizer() *ConfigSynthesizer {
 	return &ConfigSynthesizer{}
 }
 
-// authProxyConnectionPool converts a per-credential pool override from config into
-// the SDK representation carried on the auth record. Values are copied so the auth
-// snapshot never aliases a live config field.
+
+
+
 func authProxyConnectionPool(pool *config.ProxyConnectionPoolConfig) *coreauth.ProxyConnectionPoolOverride {
 	if pool == nil {
 		return nil
@@ -37,16 +37,16 @@ func authProxyConnectionPool(pool *config.ProxyConnectionPoolConfig) *coreauth.P
 		maxIdle := *pool.MaxIdleConnsPerHost
 		out.MaxIdleConnsPerHost = &maxIdle
 	}
-	// A block without fields is still the opt-in: it asks for the pool defaults. It
-	// must therefore stay non-nil, or an operator writing `connection-pool: {}` (or
-	// inheriting an empty group block) would silently get no pooling at all.
+
+
+
 	return out
 }
 
-// openAICompatConnectionPool resolves the pool override for one OpenAI-compatible
-// key: the per-key block wins field by field, so a key that overrides only one value
-// keeps inheriting the provider-group default for the rest.
-// OpenAICompatConnectionPool resolves the effective connection-pool config for an OpenAI-compatible entry.
+
+
+
+
 func OpenAICompatConnectionPool(compat *config.OpenAICompatibility, entry *config.OpenAICompatibilityAPIKey) *config.ProxyConnectionPoolConfig {
 	return openAICompatConnectionPool(compat, entry)
 }
@@ -85,7 +85,7 @@ func addWeightToAttrs(weight *int, attrs map[string]string) {
 	attrs[coreauth.AttributeWeight] = strconv.Itoa(normalized)
 }
 
-// Synthesize generates Auth entries from config API keys.
+
 func (s *ConfigSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, error) {
 	out := make([]*coreauth.Auth, 0, 32)
 	if ctx == nil || ctx.Config == nil {
@@ -95,32 +95,32 @@ func (s *ConfigSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth,
 		return nil, fmt.Errorf("synthesize config API key auths: %w", errValidate)
 	}
 
-	// Gemini API Keys
+
 	out = append(out, s.synthesizeGeminiKeys(ctx)...)
-	// Native Interactions API Keys
+
 	out = append(out, s.synthesizeInteractionsKeys(ctx)...)
-	// Claude API Keys
+
 	out = append(out, s.synthesizeClaudeKeys(ctx)...)
-	// Codex API Keys
+
 	out = append(out, s.synthesizeCodexKeys(ctx)...)
-	// xAI API Keys
+
 	out = append(out, s.synthesizeXAIKeys(ctx)...)
-	// Meta API Keys
+
 	out = append(out, s.synthesizeMetaKeys(ctx)...)
-	// OpenAI-compat
+
 	out = append(out, s.synthesizeOpenAICompat(ctx)...)
-	// Vertex-compat
+
 	out = append(out, s.synthesizeVertexCompat(ctx)...)
 
 	return out, nil
 }
 
-// synthesizeGeminiKeys creates Auth entries for Gemini API keys.
+
 func (s *ConfigSynthesizer) synthesizeGeminiKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeGeminiKeyEntries(ctx, ctx.Config.GeminiKey, "gemini:apikey", "gemini", "gemini-apikey", constant.Gemini)
 }
 
-// synthesizeInteractionsKeys creates Auth entries for native Interactions API keys.
+
 func (s *ConfigSynthesizer) synthesizeInteractionsKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeGeminiKeyEntries(ctx, ctx.Config.InteractionsKey, "gemini-interactions:apikey", "interactions", "interactions-apikey", constant.GeminiInteractions)
 }
@@ -191,7 +191,7 @@ func (s *ConfigSynthesizer) synthesizeGeminiKeyEntries(ctx *SynthesisContext, en
 	return out
 }
 
-// synthesizeClaudeKeys creates Auth entries for Claude API keys.
+
 func (s *ConfigSynthesizer) synthesizeClaudeKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	cfg := ctx.Config
 	now := ctx.Now
@@ -268,17 +268,17 @@ func (s *ConfigSynthesizer) synthesizeClaudeKeys(ctx *SynthesisContext) []*corea
 	return out
 }
 
-// synthesizeCodexKeys creates Auth entries for Codex API keys.
+
 func (s *ConfigSynthesizer) synthesizeCodexKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeCodexStyleKeys(ctx, ctx.Config.CodexKey, "codex")
 }
 
-// synthesizeXAIKeys creates Auth entries for xAI API keys.
+
 func (s *ConfigSynthesizer) synthesizeXAIKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeCodexStyleKeys(ctx, ctx.Config.XAIKey, "xai")
 }
 
-// synthesizeMetaKeys creates Auth entries for Meta API keys.
+
 func (s *ConfigSynthesizer) synthesizeMetaKeys(ctx *SynthesisContext) []*coreauth.Auth {
 	return s.synthesizeCodexStyleKeys(ctx, ctx.Config.MetaKey, "meta")
 }
@@ -357,7 +357,7 @@ func (s *ConfigSynthesizer) synthesizeCodexStyleKeys(ctx *SynthesisContext, entr
 	return out
 }
 
-// synthesizeOpenAICompat creates Auth entries for OpenAI-compatible providers.
+
 func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*coreauth.Auth {
 	cfg := ctx.Config
 	now := ctx.Now
@@ -378,7 +378,7 @@ func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*cor
 		base := strings.TrimSpace(compat.BaseURL)
 		disableCooling := compat.DisableCooling
 
-		// Handle new APIKeyEntries format (preferred)
+
 		createdEntries := 0
 		for j := range compat.APIKeyEntries {
 			entry := &compat.APIKeyEntries[j]
@@ -434,7 +434,7 @@ func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*cor
 			out = append(out, a)
 			createdEntries++
 		}
-		// Fallback: create entry without API key if no APIKeyEntries
+
 		if createdEntries == 0 {
 			effectivePool := openAICompatConnectionPool(compat, nil)
 			idKind := fmt.Sprintf("openai-compatibility:%s", providerName)
@@ -484,7 +484,7 @@ func (s *ConfigSynthesizer) synthesizeOpenAICompat(ctx *SynthesisContext) []*cor
 	return out
 }
 
-// synthesizeVertexCompat creates Auth entries for Vertex-compatible providers.
+
 func (s *ConfigSynthesizer) synthesizeVertexCompat(ctx *SynthesisContext) []*coreauth.Auth {
 	cfg := ctx.Config
 	now := ctx.Now

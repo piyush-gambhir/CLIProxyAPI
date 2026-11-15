@@ -6,16 +6,16 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// IsResponsesTokenEvent reports whether the given OpenAI/xAI Responses API WebSocket or SSE event
-// payload carries an actual output token, reasoning trace, tool call argument, or multimodal delta,
-// according to the official Responses API streaming / websocket specification plus Codex-compatible private events.
+
+
+
 func IsResponsesTokenEvent(payload []byte) bool {
 	payload = bytes.TrimSpace(payload)
 	if len(payload) == 0 {
 		return false
 	}
 
-	// Handle SSE line format (e.g., "data: {...}")
+
 	if bytes.HasPrefix(payload, []byte("data:")) {
 		prefixLen := len("data:")
 		if bytes.HasPrefix(payload, []byte("data: ")) {
@@ -29,7 +29,7 @@ func IsResponsesTokenEvent(payload []byte) bool {
 
 	eventType := ojson.GetBytesNoCopy(payload, "type").String()
 	switch eventType {
-	// Substantive text, reasoning, and tool argument streaming deltas
+
 	case "response.reasoning_summary_text.delta",
 		"response.reasoning.delta",
 		"response.reasoning_text.delta",
@@ -44,17 +44,17 @@ func IsResponsesTokenEvent(payload []byte) bool {
 		"response.audio.transcript.delta":
 		return len(ojson.GetBytesNoCopy(payload, "delta").String()) > 0
 
-	// Multimodal streaming deltas (audio and image generation preview)
+
 	case "response.audio.delta":
 		return len(ojson.GetBytesNoCopy(payload, "delta").String()) > 0 || len(ojson.GetBytesNoCopy(payload, "data").String()) > 0
 	case "response.image_generation_call.partial_image":
 		return len(ojson.GetBytesNoCopy(payload, "partial_image_b64").String()) > 0
 
-	// Shell call command added event when command is populated upfront
+
 	case "response.shell_call_command.added":
 		return len(ojson.GetBytesNoCopy(payload, "command").String()) > 0
 
-	// Single-chunk / non-stream completed items
+
 	case "response.reasoning_summary_text.done",
 		"response.reasoning_text.done",
 		"response.output_text.done":
@@ -99,7 +99,7 @@ func IsResponsesTokenEvent(payload []byte) bool {
 		}
 		return false
 
-	// Terminal events fallback to guarantee TTFT is never missed on truncated, failed, or fast turns
+
 	case "response.completed",
 		"response.done",
 		"response.incomplete",
@@ -107,15 +107,15 @@ func IsResponsesTokenEvent(payload []byte) bool {
 		"error":
 		return true
 
-	// All other container lifecycles (added, created, in_progress, search state machines, metadata)
+
 	default:
 		return false
 	}
 }
 
-// ObserveResponsesTokenEvent inspects a Responses API frame payload and records TTFT if the frame
-// represents the first meaningful token event. It records the first packet arrival time as a fallback
-// and exits immediately with zero allocations once effective token TTFT is set.
+
+
+
 func ObserveResponsesTokenEvent(reporter *UsageReporter, payload []byte) {
 	if reporter != nil && len(payload) > 0 {
 		reporter.ObserveResponseModel(payload)

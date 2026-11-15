@@ -11,8 +11,8 @@ import (
 
 var ErrRefreshNotSupported = errors.New("cliproxy auth: refresh not supported")
 
-// LoginOptions captures generic knobs shared across authenticators.
-// Provider-specific logic can inspect Metadata for extra parameters.
+
+
 type LoginOptions struct {
 	NoBrowser    bool
 	ProjectID    string
@@ -22,7 +22,7 @@ type LoginOptions struct {
 	ProxyURL     string
 }
 
-// Authenticator manages login and optional refresh flows for a provider.
+
 type Authenticator interface {
 	Provider() string
 	Login(ctx context.Context, cfg *config.Config, opts *LoginOptions) (*coreauth.Auth, error)

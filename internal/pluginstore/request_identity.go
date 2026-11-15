@@ -16,15 +16,15 @@ type preparedPluginStoreAuth struct {
 	authenticated bool
 }
 
-// LatestReleaseCacheKey identifies a repository under the effective credentials
-// and network scope, without retaining credential material in the key.
+
+
 func (c Client) LatestReleaseCacheKey(plugin Plugin) (string, error) {
 	_, key, errPrepare := c.PrepareLatestRelease(plugin)
 	return key, errPrepare
 }
 
-// PrepareLatestRelease binds the cache identity and initial release request to
-// the same credential snapshot, even when environment values change in a queue.
+
+
 func (c Client) PrepareLatestRelease(plugin Plugin) (Client, string, error) {
 	owner, repo, errRepository := GitHubRepositoryParts(plugin.Repository)
 	if errRepository != nil {
@@ -58,7 +58,7 @@ func requestIdentity(networkScope string, headers http.Header, authenticated boo
 	hash := sha256.New()
 	_, _ = fmt.Fprintf(hash, "%s\x00%t\x00", networkScope, authenticated)
 	if authenticated {
-		// Header.Write sorts header names, making equivalent auth rules share a key.
+
 		_ = headers.Write(hash)
 	}
 	return fmt.Sprintf("%x", hash.Sum(nil))

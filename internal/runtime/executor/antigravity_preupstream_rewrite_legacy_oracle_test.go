@@ -1,8 +1,8 @@
 package executor
 
-// This file freezes the pre-batching Antigravity function-response and schema
-// rewrites. Differential tests use it as an independent byte-for-byte oracle.
-// Do not refactor these helpers to call the production implementations.
+
+
+
 
 import (
 	"encoding/json"

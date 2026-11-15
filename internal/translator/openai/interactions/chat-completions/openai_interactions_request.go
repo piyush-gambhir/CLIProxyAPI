@@ -13,8 +13,8 @@ func ConvertOpenAIRequestToInteractions(modelName string, inputRawJSON []byte, s
 
 }
 
-// convertOpenAIRequestToInteractions also reports a file or audio part that
-// Interactions cannot receive when it leaves a user turn with nothing to send.
+
+
 func convertOpenAIRequestToInteractions(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	root := util.ParseGJSONBytesNoCopy(inputRawJSON)
 	outDoc := ojson.NewDocString(`{"model":"","input":[]}`)
@@ -113,10 +113,10 @@ func appendOpenAIMessageToInteractions(items *[][]byte, message ojson.Result, fo
 	}
 }
 
-// openAIChatContentStep converts one message content into an Interactions step.
-// A non-nil drops closes the user turn: an attachment that cannot be sent is
-// recorded, and text or any other sendable part beside it keeps the turn alive.
-// An empty text part is forwarded but does not count as sendable.
+
+
+
+
 func openAIChatContentStep(stepType string, content ojson.Result, drops *translatorcommon.UserTurnDrops) ([]byte, bool) {
 	contentItems := make([][]byte, 0, 4)
 	sendable := 0
@@ -171,8 +171,8 @@ func openAIChatPartType(part ojson.Result) string {
 	return partType
 }
 
-// isOpenAIChatAttachmentType reports the part types whose loss must be refused
-// when they leave a user turn empty, instead of being skipped silently.
+
+
 func isOpenAIChatAttachmentType(partType string) bool {
 	switch partType {
 	case "file", "input_file", "document", "input_audio", "audio":

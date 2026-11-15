@@ -15,10 +15,10 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested verifies
-// that when a Claude Code subagent explicitly requests 1h cache TTL (via subagentPromptCacheTtl: 1h),
-// the executor preserves both the 1h TTL on cache_control blocks and the extended-cache-ttl beta header.
-// Regression test for issue #5629.
+
+
+
+
 func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -70,7 +70,7 @@ func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested(
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// 1. Verify body cache_control preserves ttl: "1h"
+
 	rawBody := string(seenBody)
 	has1h := strings.Contains(rawBody, `"ttl":"1h"`) || strings.Contains(rawBody, `"ttl": "1h"`)
 	if !has1h {
@@ -86,15 +86,15 @@ func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested(
 		}
 	}
 
-	// 2. Verify extended-cache-ttl beta is preserved in Anthropic-Beta header
+
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("subagent Anthropic-Beta must preserve extended-cache-ttl-2025-04-11 when requested, got: %s", betas)
 	}
 }
 
-// TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested_Stream verifies
-// the streaming path preserves 1h TTL and the beta header for subagent requests.
+
+
 func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested_Stream(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -151,21 +151,21 @@ func TestClaudeExecutor_SubagentPreserves1hTTLAndExtendedCacheBetaWhenRequested_
 		}
 	}
 
-	// 1. Verify body cache_control preserves ttl: "1h"
+
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("subagent stream body must preserve ttl: 1h when requested by client, got: %s", rawBody)
 	}
 
-	// 2. Verify extended-cache-ttl beta is preserved in Anthropic-Beta header
+
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("subagent Anthropic-Beta must preserve extended-cache-ttl-2025-04-11 on stream when requested, got: %s", betas)
 	}
 }
 
-// TestClaudeExecutor_SubagentWithout1hKeepsDefault5m verifies that when a subagent
-// does NOT request 1h TTL, the executor keeps 5m (does not upgrade or inject extended-cache-ttl beta).
+
+
 func TestClaudeExecutor_SubagentWithout1hKeepsDefault5m(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -217,22 +217,22 @@ func TestClaudeExecutor_SubagentWithout1hKeepsDefault5m(t *testing.T) {
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// 1. Verify body cache_control does NOT have ttl: "1h"
+
 	rawBody := string(seenBody)
 	if strings.Contains(rawBody, `"ttl":"1h"`) || strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("subagent default body must not carry ttl: 1h, got: %s", rawBody)
 	}
 
-	// 2. Verify extended-cache-ttl beta is NOT present in Anthropic-Beta header
+
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("subagent default Anthropic-Beta must not contain extended-cache-ttl, got: %s", betas)
 	}
 }
 
-// TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta verifies that on a standard
-// API key credential (non-OAuth), when a subagent requests 1h TTL solely in payload cache_control,
-// the executor preserves the 1h TTL and ensures extended-cache-ttl-2025-04-11 beta is supplied.
+
+
+
 func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -270,7 +270,7 @@ func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta(t *testing.T)
 	incomingHeaders := http.Header{}
 	incomingHeaders.Set("User-Agent", "claude-cli/2.1.322 (external, cli)")
 	incomingHeaders.Set("X-Claude-Code-Agent-Id", "agent-sub-apikey-101")
-	incomingHeaders.Set("Anthropic-Beta", "claude-code-20250219") // Note: NO extended-cache-ttl beta in incoming header
+	incomingHeaders.Set("Anthropic-Beta", "claude-code-20250219")
 
 	_, err := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -283,21 +283,21 @@ func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta(t *testing.T)
 		t.Fatalf("Execute error = %v", err)
 	}
 
-	// 1. Verify body cache_control preserves ttl: "1h"
+
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("API key subagent body must preserve ttl: 1h, got: %s", rawBody)
 	}
 
-	// 2. Verify extended-cache-ttl beta is added to Anthropic-Beta header
+
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("API key subagent Anthropic-Beta must include extended-cache-ttl-2025-04-11 when 1h is in payload, got: %s", betas)
 	}
 }
 
-// TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta_Stream verifies streaming
-// on standard API key preserves 1h TTL and supplies extended-cache-ttl beta.
+
+
 func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta_Stream(t *testing.T) {
 	var seenHeaders http.Header
 	var seenBody []byte
@@ -336,7 +336,7 @@ func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta_Stream(t *tes
 	incomingHeaders := http.Header{}
 	incomingHeaders.Set("User-Agent", "claude-cli/2.1.322 (external, cli)")
 	incomingHeaders.Set("X-Claude-Code-Agent-Id", "agent-sub-apikey-stream-202")
-	incomingHeaders.Set("Anthropic-Beta", "claude-code-20250219") // Note: NO extended-cache-ttl beta in incoming header
+	incomingHeaders.Set("Anthropic-Beta", "claude-code-20250219")
 
 	result, err := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "claude-sonnet-5",
@@ -353,13 +353,13 @@ func TestClaudeExecutor_APIKeySubagentPreserves1hTTLAndInjectsBeta_Stream(t *tes
 		}
 	}
 
-	// 1. Verify body cache_control preserves ttl: "1h"
+
 	rawBody := string(seenBody)
 	if !strings.Contains(rawBody, `"ttl":"1h"`) && !strings.Contains(rawBody, `"ttl": "1h"`) {
 		t.Fatalf("API key subagent stream body must preserve ttl: 1h, got: %s", rawBody)
 	}
 
-	// 2. Verify extended-cache-ttl beta is added to Anthropic-Beta header
+
 	betas := seenHeaders.Get("Anthropic-Beta")
 	if !strings.Contains(betas, "extended-cache-ttl-2025-04-11") {
 		t.Fatalf("API key subagent Anthropic-Beta must include extended-cache-ttl-2025-04-11 when 1h is in payload on stream, got: %s", betas)

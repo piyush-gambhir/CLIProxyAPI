@@ -213,7 +213,7 @@ func TestInteractionsApplyPatchFinalSnapshotsPreserveOtherOutputsAndCalls(t *tes
 		}
 		send(index, "step.stop", "step", step)
 	}
-	// Array positions are not explicit call indexes when the supplied IDs identify other steps.
+
 	finalSteps := []any{snapshots[3], snapshots[2], snapshots[1], snapshots[0]}
 	raw := patchJSON(map[string]any{"event_type": "interaction.completed", "interaction": map[string]any{"steps": finalSteps}})
 	events := patchEvents(ConvertInteractionsResponseToOpenAIResponses(context.Background(), "devin/swe-2", request, nil, raw, &param))
@@ -437,7 +437,7 @@ func TestInteractionsApplyPatchPreNameIndexConflictRetained(t *testing.T) {
 						}
 						var events []ojson.Result
 						if entry == "step.start" || entry == "step.stop" {
-							// Unknown names must not make identity contradictions disappear later.
+
 							patchSend(&param, patchReviewSnapshot(entry, 3, conflict))
 							events = patchSend(&param, patchReviewSnapshot("interaction.completed", index, resolved))
 						} else {

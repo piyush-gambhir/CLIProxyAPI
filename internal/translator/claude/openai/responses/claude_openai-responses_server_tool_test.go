@@ -11,7 +11,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// --- L1 direction A: Claude server tool blocks -> Responses web_search_call ---
+
 
 func claudeWebSearchStreamChunks() [][]byte {
 	return [][]byte{
@@ -54,7 +54,7 @@ func TestClaudeWebSearchBlocksBecomeWebSearchCallItem(t *testing.T) {
 	if got := item.Get("results.0.url").String(); got != "https://example.com/a" {
 		t.Fatalf("results[0].url = %q", got)
 	}
-	// Anthropic validates encrypted_content on replay, so it must survive the hop.
+
 	if got := item.Get("results.0.encrypted_content").String(); got != "ENC_A" {
 		t.Fatalf("results[0].encrypted_content = %q, want ENC_A", got)
 	}
@@ -80,7 +80,7 @@ func TestClaudeWebSearchBlocksBecomeWebSearchCallItemNonStream(t *testing.T) {
 	}
 }
 
-// --- L1 direction B: Responses web_search_call -> Claude server tool blocks ---
+
 
 func TestWebSearchCallItemReplaysAsClaudeServerToolBlocks(t *testing.T) {
 	raw := responsesRequestFromItems(`{
@@ -116,9 +116,9 @@ func TestWebSearchCallItemReplaysAsClaudeServerToolBlocks(t *testing.T) {
 	}
 }
 
-// Anthropic rejects a web_search_result without genuine encrypted_content and
-// rejects a server_tool_use with no result block at all, but accepts an empty
-// result list. A client that drops the field must therefore degrade, not break.
+
+
+
 func TestWebSearchCallWithoutEncryptedContentReplaysEmptyResults(t *testing.T) {
 	raw := responsesRequestFromItems(`{
 		"type":"web_search_call","id":"ws_srvtoolu_1","status":"completed",
@@ -152,7 +152,7 @@ func TestOutputTextAnnotationsReplayAsClaudeCitations(t *testing.T) {
 	if got := block.Get("citations.0.url").String(); got != "https://example.com/a" {
 		t.Fatalf("citation url = %q", got)
 	}
-	// encrypted_index is mandatory on replay; the annotation must ride through verbatim.
+
 	if got := block.Get("citations.0.encrypted_index").String(); got != "IDX_A" {
 		t.Fatalf("citation encrypted_index = %q, want IDX_A", got)
 	}
@@ -187,7 +187,7 @@ func TestRefusalPartReplaysAsClaudeText(t *testing.T) {
 	}
 }
 
-// --- L3 contract: every reachable Claude block survives a round trip ---
+
 
 func TestRoundTripPreservesReachableClaudeBlocks(t *testing.T) {
 	chunks := [][]byte{
@@ -241,11 +241,11 @@ func TestRoundTripPreservesReachableClaudeBlocks(t *testing.T) {
 	}
 }
 
-// --- boundary and error cases ------------------------------------------------
 
-// Anthropic constrains server tool ids to ^srvtoolu_[a-zA-Z0-9_]+$. Responses
-// items that never came from Claude (a native OpenAI web_search_call) carry ids
-// that violate it, so the id must be normalised instead of trusted.
+
+
+
+
 func TestWebSearchCallIDNormalisedToClaudeServerToolPattern(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
@@ -280,8 +280,8 @@ func TestWebSearchCallWithoutIDProducesNoBlocks(t *testing.T) {
 	}
 }
 
-// A turn can end after the search block when the upstream stream is cut short;
-// the item must still be closed so the client does not see a dangling item.
+
+
 func TestClaudeWebSearchWithoutResultBlockStillEmitsItem(t *testing.T) {
 	chunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_ws","usage":{"input_tokens":1,"output_tokens":0}}}`),
@@ -334,9 +334,9 @@ func TestUnmappedServerToolProducesNoItem(t *testing.T) {
 	}
 }
 
-// A result block whose server_tool_use arrived in an earlier response is the
-// continuation of a search paused by pause_turn. It surfaces under the same id
-// so the client keeps the result in its history.
+
+
+
 func TestWebSearchResultWithoutMatchingUseKeepsContinuationResult(t *testing.T) {
 	chunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_ws","usage":{"input_tokens":1,"output_tokens":0}}}`),
@@ -375,9 +375,9 @@ func TestWebSearchResultWithoutMatchingUseKeepsContinuationResult(t *testing.T) 
 	check(t, util.ParseGJSONBytesNoCopy(output))
 }
 
-// Native OpenAI clients emit `queries` alongside `query`, and use an `open_page`
-// action with a url instead of a query; both shapes reach this translator when a
-// session started on an OpenAI provider is resumed against Claude.
+
+
+
 func TestWebSearchCallQueryAcceptsNativeOpenAIActionShapes(t *testing.T) {
 	for _, tc := range []struct{ name, action, want string }{
 		{"search with query", `{"type":"search","query":"go release","queries":["go release"]}`, "go release"},
@@ -394,8 +394,8 @@ func TestWebSearchCallQueryAcceptsNativeOpenAIActionShapes(t *testing.T) {
 	}
 }
 
-// An empty result list is distinct from a missing one: Claude reported a search
-// that returned nothing, which Anthropic accepts on replay.
+
+
 func TestClaudeWebSearchWithEmptyResultsKeepsEmptyList(t *testing.T) {
 	chunks := [][]byte{
 		[]byte(`data: {"type":"message_start","message":{"id":"msg_ws","usage":{"input_tokens":1,"output_tokens":0}}}`),
@@ -446,7 +446,7 @@ func TestClaudeWebSearchErrorResultSurvivesRoundTrip(t *testing.T) {
 		t.Fatalf("results[0].error_code = %q, want rate_limited", got)
 	}
 
-	// Replay back to Claude
+
 	req, _ := json.Marshal(map[string]any{"model": "claude-test", "input": []json.RawMessage{json.RawMessage(outputItems[0].Raw)}})
 	replayed, _ := ConvertOpenAIResponsesRequestToClaude("claude-test", req, false)
 	replayedBlocks := ojson.GetBytesNoCopy(replayed, "messages.0.content")
@@ -498,7 +498,7 @@ func TestTextSearchTextOrderPreservedInStreamingAndReplay(t *testing.T) {
 		t.Fatalf("item 2 must have citation with encrypted_index IDX_ORD, got: %s", items[2].Raw)
 	}
 
-	// Also verify non-streaming matches streaming behavior:
+
 	var lines []string
 	for _, ch := range chunks {
 		lines = append(lines, string(ch))
@@ -522,8 +522,8 @@ func TestTextSearchTextOrderPreservedInStreamingAndReplay(t *testing.T) {
 		t.Fatalf("non-stream item 2 citation encrypted_index = %q, want IDX_ORD", nonStreamItems[2].Get("content.0.annotations.0.encrypted_index").String())
 	}
 
-	// Replay back to Claude and verify the block sequence matches original Claude order:
-	// text -> server_tool_use -> web_search_tool_result -> text
+
+
 	var rawItems []json.RawMessage
 	for _, it := range items {
 		rawItems = append(rawItems, json.RawMessage(it.Raw))

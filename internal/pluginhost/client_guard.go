@@ -146,8 +146,8 @@ func (c *guardedPluginClient) Shutdown() {
 	c.ShutdownContext(context.Background())
 }
 
-// ShutdownContext detaches the client immediately and waits for active calls only
-// until ctx is canceled. Detached cleanup continues asynchronously when needed.
+
+
 func (c *guardedPluginClient) ShutdownContext(ctx context.Context) {
 	if c == nil {
 		return

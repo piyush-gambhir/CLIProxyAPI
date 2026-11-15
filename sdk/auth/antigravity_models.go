@@ -16,18 +16,18 @@ import (
 )
 
 const (
-	// AntigravityModelBaseURLDaily is the default Cloud Code endpoint for Antigravity model discovery.
+
 	AntigravityModelBaseURLDaily = "https://daily-cloudcode-pa.googleapis.com"
-	// AntigravityModelsPath is the upstream path for per-account model capability discovery.
+
 	AntigravityModelsPath = "/v1internal:fetchAvailableModels"
-	// AntigravityPersistedHintsMetaKey is the auth metadata key storing persisted model capability hints.
+
 	AntigravityPersistedHintsMetaKey = "antigravity_capability_hints"
 
 	antigravityMaxCatalogModels = 1024
 	antigravityMaxModelIDBytes  = 256
 )
 
-// AntigravityProbeStatus classifies the outcome of an Antigravity model discovery request.
+
 type AntigravityProbeStatus int
 
 const (
@@ -36,14 +36,14 @@ const (
 	AntigravityProbeStatusTransientError
 )
 
-// AntigravityModelCapabilityHints holds normalized per-account model IDs and web-search capability IDs.
+
 type AntigravityModelCapabilityHints struct {
 	WebSearchModelIDs map[string]struct{}
-	// Nil means unknown; an empty non-nil set is an authoritative empty catalog.
+
 	ModelIDs map[string]struct{}
 }
 
-// Clone returns a deep copy of the capability hints.
+
 func (h AntigravityModelCapabilityHints) Clone() AntigravityModelCapabilityHints {
 	return AntigravityModelCapabilityHints{
 		WebSearchModelIDs: maps.Clone(h.WebSearchModelIDs),
@@ -51,7 +51,7 @@ func (h AntigravityModelCapabilityHints) Clone() AntigravityModelCapabilityHints
 	}
 }
 
-// AntigravityModelProbeRequest configures a single-shot fetchAvailableModels probe.
+
 type AntigravityModelProbeRequest struct {
 	BaseURLs    []string
 	ProxyURL    string
@@ -60,8 +60,8 @@ type AntigravityModelProbeRequest struct {
 	UserAgent   string
 }
 
-// FetchAntigravityAvailableModels performs a single-shot POST /v1internal:fetchAvailableModels request
-// and parses the returned per-account model catalog and webSearchModelIds.
+
+
 func FetchAntigravityAvailableModels(ctx context.Context, req AntigravityModelProbeRequest) (AntigravityModelCapabilityHints, AntigravityProbeStatus) {
 	baseURL := ""
 	for _, candidate := range req.BaseURLs {
@@ -136,7 +136,7 @@ func FetchAntigravityAvailableModels(ctx context.Context, req AntigravityModelPr
 	return hints, AntigravityProbeStatusSuccess
 }
 
-// NormalizeAntigravityModelID normalizes an Antigravity model identifier for case-insensitive matching.
+
 func NormalizeAntigravityModelID(modelID string) string {
 	trimmed := strings.ToLower(strings.TrimSpace(modelID))
 	if len(trimmed) > antigravityMaxModelIDBytes {
@@ -157,7 +157,7 @@ func sanitizeAntigravityPersistedEndpoint(endpoint string) string {
 	return trimmed
 }
 
-// ParseAntigravityModelCapabilityHints decodes a fetchAvailableModels response payload using ojson.
+
 func ParseAntigravityModelCapabilityHints(body []byte) (AntigravityModelCapabilityHints, bool) {
 	if len(body) == 0 || !ojson.ValidBytes(body) {
 		return AntigravityModelCapabilityHints{}, false
@@ -211,8 +211,8 @@ func ParseAntigravityModelCapabilityHints(body []byte) (AntigravityModelCapabili
 	}, true
 }
 
-// BuildPersistedAntigravityCapabilityHints serializes capability hints for storage in auth metadata.
-// It returns nil when hints.ModelIDs is nil so unknown catalogs are never persisted as authoritative empty sets.
+
+
 func BuildPersistedAntigravityCapabilityHints(project, endpoint string, hints AntigravityModelCapabilityHints) map[string]any {
 	if hints.ModelIDs == nil {
 		return nil
@@ -256,7 +256,7 @@ func BuildPersistedAntigravityCapabilityHints(project, endpoint string, hints An
 	return value
 }
 
-// ParsePersistedAntigravityCapabilityHints extracts and validates persisted capability hints from auth metadata.
+
 func ParsePersistedAntigravityCapabilityHints(metadata map[string]any, expectedProject, expectedEndpoint string) (AntigravityModelCapabilityHints, bool) {
 	if metadata == nil {
 		return AntigravityModelCapabilityHints{}, false

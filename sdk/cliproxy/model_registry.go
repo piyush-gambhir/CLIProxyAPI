@@ -10,16 +10,16 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-// ModelInfo re-exports the registry model info structure.
+
 type ModelInfo = registry.ModelInfo
 
-// ClientModelProjection re-exports the registry model projection structure.
+
 type ClientModelProjection = registry.ClientModelProjection
 
-// ModelRegistryHook re-exports the registry hook interface for external integrations.
+
 type ModelRegistryHook = registry.ModelRegistryHook
 
-// ModelRegistry describes registry operations consumed by external callers.
+
 type ModelRegistry interface {
 	RegisterClient(clientID, clientProvider string, models []*ModelInfo)
 	RegisterClientIfEpochCurrent(clientID, clientProvider string, expectedEpoch uint64, models []*ModelInfo, publish func() bool) bool
@@ -37,21 +37,21 @@ type ModelRegistry interface {
 	ApplyClientModelCapabilities(clientID string, expectedEpoch uint64, mutate func(modelID string, info *ModelInfo)) bool
 }
 
-// GlobalModelRegistry returns the shared registry instance.
+
 func GlobalModelRegistry() ModelRegistry {
 	return registry.GetGlobalRegistry()
 }
 
-// SetGlobalModelRegistryHook registers an optional hook on the shared global registry instance.
+
 func SetGlobalModelRegistryHook(hook ModelRegistryHook) {
 	registry.GetGlobalRegistry().SetHook(hook)
 }
 
-// modelRegistrationFence captures the model-registration inputs and the
-// global exclusion summaries and registry epoch observed when registration began.
-// Publication takes the auth mutation lock, then the config read lock, then the
-// registry lock. Obsolete inherited exclusions must not advance the registry epoch
-// and invalidate newer work, even if the credential attributes are unchanged.
+
+
+
+
+
 type modelRegistrationFence struct {
 	globalExclusions          map[string]diff.ExcludedModelsSummary
 	exclusionProvider         string
@@ -93,9 +93,9 @@ func newModelRegistrationFence(a *coreauth.Auth, cfg *config.Config) modelRegist
 	}
 }
 
-// withAuth returns a copy of f with the auth-input fields replaced by a's
-// current values. Exclusion summaries and the registry epoch intentionally remain
-// unchanged so stale work cannot adopt newer global rules or publications.
+
+
+
 func (f modelRegistrationFence) withAuth(a *coreauth.Auth) modelRegistrationFence {
 	if a == nil {
 		return f
@@ -124,10 +124,10 @@ func (f modelRegistrationFence) publishIfCurrent(s *Service, authID string, publ
 		if s != nil && !f.disabled && f.authKind != coreauth.AuthKindAPIKey && strings.TrimSpace(f.attributes["excluded_models"]) == "" {
 			s.cfgMu.RLock()
 			defer s.cfgMu.RUnlock()
-			// Match the watcher's normalization so no-op and unrelated reloads do not
-			// discard work. A real change always schedules a replacement: the watcher
-			// redispatches affected auths, and applyConfigRuntime re-registers every
-			// auth (which also covers Home mode, where no watcher runs).
+
+
+
+
 			for _, provider := range [2]string{f.exclusionProvider, f.fallbackExclusionProvider} {
 				if provider == "" {
 					continue
@@ -137,7 +137,7 @@ func (f modelRegistrationFence) publishIfCurrent(s *Service, authID string, publ
 					return false
 				}
 			}
-			// Hold cfgMu through registry publication, not just the comparison.
+
 		}
 		return publish()
 	}

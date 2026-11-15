@@ -91,11 +91,11 @@ func TestInspectGrokEncryptedContent_RejectsGeminiThoughtSignatureEnvelope(t *te
 	}
 }
 
-// TestInspectGrokEncryptedContent_RetiredGemini25Field1Envelope covers the
-// retired Gemini 2.5 envelope. It is no longer a known Gemini envelope, so the
-// Gemini fast-reject no longer fires for it and it falls to the residual class
-// like any other opaque payload. Recorded here so the change is deliberate rather
-// than an accident of the Gemini validator being narrowed.
+
+
+
+
+
 func TestInspectGrokEncryptedContent_RetiredGemini25Field1Envelope(t *testing.T) {
 	sample := testGemini25Field1ThoughtSignatureEnvelope()
 	if IsValidGeminiThoughtSignature(sample, GeminiThoughtSignatureValidationOptions{RequireKnownEnvelope: true}) {
@@ -139,11 +139,11 @@ func TestInspectGrokEncryptedContent_RejectsAntigravityClaudeThinkingSignature(t
 	}
 }
 
-// TestInspectGrokEncryptedContent_RejectsClaudeCAISSignature covers the CAIS
-// envelope emitted by the newest Claude Code models. CAIS payloads are
-// high-entropy standard base64 and drop their padding whenever the decoded
-// length is a multiple of 3, so neither the padding gate nor the classic Claude
-// strict check excludes them on their own.
+
+
+
+
+
 func TestInspectGrokEncryptedContent_RejectsClaudeCAISSignature(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -175,9 +175,9 @@ func TestInspectGrokEncryptedContent_RejectsClaudeCAISSignature(t *testing.T) {
 	}
 }
 
-// TestInspectGrokEncryptedContent_RejectsProviderCachePrefix keeps provenance
-// envelopes out of the residual class. A prefixed value belongs to whichever
-// provider the prefix names, and must never be replayed to xAI verbatim.
+
+
+
 func TestInspectGrokEncryptedContent_RejectsProviderCachePrefix(t *testing.T) {
 	for _, prefix := range []string{"claude#", "anthropic#", "gemini#", "openai#", "codex#"} {
 		sample := prefix + testUnpaddedClaudeCAISSignature()
@@ -187,10 +187,10 @@ func TestInspectGrokEncryptedContent_RejectsProviderCachePrefix(t *testing.T) {
 	}
 }
 
-// TestInspectGrokEncryptedContent_ThresholdMargins documents that neither
-// threshold sits on observed data. The shortest observed native payload is 50
-// decoded bytes and the lowest observed entropy ratio is 0.892, so both limits
-// keep headroom for future models rather than fitting the current corpus exactly.
+
+
+
+
 func TestInspectGrokEncryptedContent_ThresholdMargins(t *testing.T) {
 	const shortestObservedDecodedLen = 50
 	const lowestObservedEntropyRatio = 0.892
@@ -303,10 +303,10 @@ func testUnpaddedClaudeThinkingSignature() string {
 	return testClaudeThinkingSignatureWithOpaqueLen(35)
 }
 
-// testUnpaddedClaudeCAISSignature builds a CAIS signature whose base64 form
-// carries no "=" padding, which is the shape that used to slip past the Grok
-// unpadded-base64 gate. The model text length is varied because padding depends
-// on the encoded payload length.
+
+
+
+
 func testUnpaddedClaudeCAISSignature() string {
 	for suffix := 0; suffix < 8; suffix++ {
 		parts := defaultClaudeCAISParts("claude-opus-5" + strings.Repeat("x", suffix))
@@ -371,11 +371,11 @@ func TestSignatureProviderFromModelName_Grok(t *testing.T) {
 	}
 }
 
-// TestDetectSignatureProvider_NeverClassifiesGrok pins the contract that xAI is
-// a target-only family. Its ciphertext carries no envelope, no version byte and
-// no fixed length, so a positive detection rule would necessarily also claim
-// unrelated opaque payloads. Callers establish an xAI target from provenance and
-// then use InspectGrokEncryptedContent as a replay-safety check.
+
+
+
+
+
 func TestDetectSignatureProvider_NeverClassifiesGrok(t *testing.T) {
 	path, ok := grokEncryptedContentSamplesPath()
 	if !ok {
@@ -405,9 +405,9 @@ func TestDetectSignatureProvider_NeverClassifiesGrok(t *testing.T) {
 	}
 }
 
-// TestDecideSignatureCompatibility_GrokDropsBlock contrasts with the Kimi
-// policy: xAI decrypts the blob and answers 400 for foreign or mutated input, so
-// an incompatible block cannot survive by shedding just its signature.
+
+
+
 func TestDecideSignatureCompatibility_GrokDropsBlock(t *testing.T) {
 	decision := DecideSignatureCompatibility(SignatureProviderGrok, observedFable5Sample, SignatureBlockKindUnknown)
 	if decision.Compatible {
@@ -419,8 +419,8 @@ func TestDecideSignatureCompatibility_GrokDropsBlock(t *testing.T) {
 }
 
 func TestInspectGrokEncryptedContent_AcceptsPayloadStartingWithTinkPrefixByte(t *testing.T) {
-	// Uniform xAI ciphertext starts with 0x01 about once in 256 values; that
-	// alone must not make it look like a Gemini Vertex bare-Tink signature.
+
+
 	for seed := 0; seed < 4096; seed++ {
 		buf := make([]byte, 0, 256)
 		for i := 0; len(buf) < 256; i++ {

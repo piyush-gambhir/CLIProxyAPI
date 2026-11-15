@@ -173,8 +173,8 @@ func TestConvertCodexResponseToClaude_StreamThinkingWithoutReasoningItemStillInc
 	}
 }
 
-// codexThinkingStreamDigest collects the thinking-related events produced by a Codex
-// stream so tests can assert block/signature counts and the reassembled thinking text.
+
+
 type codexThinkingStreamDigest struct {
 	Starts     int
 	Stops      int
@@ -266,7 +266,7 @@ func TestConvertCodexResponseToClaude_StreamThinkingEmitsSingleSignatureAcrossMu
 	if len(digest.Signatures) != 1 {
 		t.Fatalf("expected one signature_delta for one reasoning item, got %d: %v", len(digest.Signatures), digest.Signatures)
 	}
-	// output_item.done omitted encrypted_content here, so the pre-content fallback is expected.
+
 	if digest.Signatures[0] != "enc_sig_multipart" {
 		t.Fatalf("unexpected signature delta: %q", digest.Signatures[0])
 	}
@@ -275,10 +275,10 @@ func TestConvertCodexResponseToClaude_StreamThinkingEmitsSingleSignatureAcrossMu
 	}
 }
 
-// TestConvertCodexResponseToClaude_StreamThinkingNeverEmitsPreContentEncryptedContent guards the
-// real-world shape earlier tests missed: output_item.added carries a fixed-size pre-content
-// snapshot of encrypted_content that always differs from the final value on output_item.done.
-// Emitting that snapshot makes the client replay bogus reasoning items for the rest of the session.
+
+
+
+
 func TestConvertCodexResponseToClaude_StreamThinkingNeverEmitsPreContentEncryptedContent(t *testing.T) {
 	digest := digestCodexThinkingStream(t, [][]byte{
 		[]byte("data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"reasoning\",\"encrypted_content\":\"enc_sig_pre_content_snapshot\"}}"),
@@ -308,8 +308,8 @@ func TestConvertCodexResponseToClaude_StreamThinkingNeverEmitsPreContentEncrypte
 	}
 }
 
-// TestConvertCodexResponseToClaude_StreamThinkingEmitsOneBlockPerReasoningItem checks that two
-// consecutive reasoning items stay separate blocks, each signed with its own final value.
+
+
 func TestConvertCodexResponseToClaude_StreamThinkingEmitsOneBlockPerReasoningItem(t *testing.T) {
 	digest := digestCodexThinkingStream(t, [][]byte{
 		[]byte("data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"reasoning\",\"encrypted_content\":\"enc_pre_1\"}}"),
@@ -2048,11 +2048,11 @@ func TestExtractResponsesUsage(t *testing.T) {
 }
 
 func TestConvertCodexResponseToClaude_RestoresLongMidConversationToolAdditionName(t *testing.T) {
-	// Two >64-char MCP tools that share the same post-"__" suffix so the mid-conversation
-	// tool_addition collides with the top-level tool and receives a "_1" suffix.
+
+
 	topLongMCPTool := "mcp__alpha_very_long_server_name_for_testing__deliver_final_subagent_handback_report"
 	midLongMCPTool := "mcp__bravo_very_long_server_name_for_testing__deliver_final_subagent_handback_report"
-	// Use JSON Unicode escape \u005f in "tool\u005faddition" to cover escaped JSON tokens too.
+
 	originalRequest := []byte(`{
 		"model": "gpt-6.1-sol",
 		"tools": [{"name": "` + topLongMCPTool + `", "input_schema": {"type": "object"}}],
@@ -2087,7 +2087,7 @@ func TestConvertCodexResponseToClaude_RestoresLongMidConversationToolAdditionNam
 		t.Fatalf("expected distinct shortened names for colliding MCP tools, got top=%q mid=%q", topShortName, midShortName)
 	}
 
-	// 1. Streaming response restoration
+
 	var param any
 	addedEvent := []byte(fmt.Sprintf(`data: {"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":%q,"arguments":""}}`, midShortName))
 	chunks := ConvertCodexResponseToClaude(context.Background(), "gpt-6.1-sol", originalRequest, nil, addedEvent, &param)
@@ -2096,7 +2096,7 @@ func TestConvertCodexResponseToClaude_RestoresLongMidConversationToolAdditionNam
 		t.Fatalf("streaming response did not restore long mid-conversation tool name %q, got: %s", midLongMCPTool, joined)
 	}
 
-	// 2. Non-streaming response restoration
+
 	completedEvent := []byte(fmt.Sprintf(`{"type":"response.completed","response":{"id":"resp_1","model":"gpt-6.1-sol","status":"completed","output":[{"type":"function_call","id":"fc_1","call_id":"call_1","name":%q,"arguments":"{}"},{"type":"function_call","id":"fc_2","call_id":"call_2","name":%q,"arguments":"{}"}],"usage":{"input_tokens":10,"output_tokens":5}}}`, topShortName, midShortName))
 	nonStreamOut := ConvertCodexResponseToClaudeNonStream(context.Background(), "gpt-6.1-sol", originalRequest, nil, completedEvent, nil)
 	if got := ojson.GetBytesNoCopy(nonStreamOut, "content.0.name").String(); got != topLongMCPTool {

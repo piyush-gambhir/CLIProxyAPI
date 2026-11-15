@@ -1,4 +1,4 @@
-// Package executionregistry tracks Home-dispatched executions for one subscriber lifetime.
+
 package executionregistry
 
 import (
@@ -19,7 +19,7 @@ var (
 	ErrExecutionResourceAlreadyBound = errors.New("execution resource is already bound")
 )
 
-// State is the lifecycle state of a Registry.
+
 type State uint32
 
 const (
@@ -28,7 +28,7 @@ const (
 	StateClosed
 )
 
-// Registry owns all dispatches accepted during one Home subscriber lifetime.
+
 type Registry struct {
 	state atomic.Uint32
 
@@ -50,7 +50,7 @@ type Registry struct {
 	closeErr     error
 }
 
-// PendingDispatch reserves an execution slot until it is installed or ended.
+
 type PendingDispatch struct {
 	id       uint64
 	registry *Registry
@@ -58,7 +58,7 @@ type PendingDispatch struct {
 	once     sync.Once
 }
 
-// ScopeSpec describes a Home-dispatched execution.
+
 type ScopeSpec struct {
 	RequestID    string
 	CredentialID string
@@ -68,21 +68,21 @@ type ScopeSpec struct {
 	Accounted    bool
 }
 
-// ReleaseGroup identifies the cumulative release sequence for one accounted credential and model.
+
 type ReleaseGroup struct {
 	CredentialID string
 	Model        string
 }
 
-// ReleaseTicket completes after Home acknowledges a cumulative release sequence.
+
 type ReleaseTicket struct {
 	Group    ReleaseGroup
 	Sequence int64
 	done     <-chan struct{}
 }
 
-// NewReleaseTicket creates a ticket backed by done. A nil done channel represents
-// a release sink that does not support acknowledgements.
+
+
 func NewReleaseTicket(group ReleaseGroup, sequence int64, done <-chan struct{}) *ReleaseTicket {
 	if sequence <= 0 || done == nil {
 		return nil
@@ -90,7 +90,7 @@ func NewReleaseTicket(group ReleaseGroup, sequence int64, done <-chan struct{}) 
 	return &ReleaseTicket{Group: group, Sequence: sequence, done: done}
 }
 
-// Wait blocks until Home acknowledges the release or ctx expires.
+
 func (t *ReleaseTicket) Wait(ctx context.Context) error {
 	if t == nil || t.done == nil {
 		return nil
@@ -106,11 +106,11 @@ func (t *ReleaseTicket) Wait(ctx context.Context) error {
 	}
 }
 
-// ReleaseSink receives the latest cumulative sequence for a release group and
-// optionally returns an acknowledgement ticket.
+
+
 type ReleaseSink func(ReleaseGroup, int64) *ReleaseTicket
 
-// Scope owns the resource for one installed execution.
+
 type Scope struct {
 	id       uint64
 	registry *Registry
@@ -124,7 +124,7 @@ type Scope struct {
 	ended         sync.Once
 }
 
-// New creates an accepting registry.
+
 func New() *Registry {
 	registry := &Registry{
 		pending:          make(map[uint64]*PendingDispatch),
@@ -136,7 +136,7 @@ func New() *Registry {
 	return registry
 }
 
-// BeginDispatch reserves a dispatch token while the registry accepts traffic.
+
 func (r *Registry) BeginDispatch() (*PendingDispatch, error) {
 	if r == nil || State(r.state.Load()) != StateAccepting {
 		return nil, ErrRegistryNotAccepting
@@ -154,7 +154,7 @@ func (r *Registry) BeginDispatch() (*PendingDispatch, error) {
 	return pending, nil
 }
 
-// WaitPending waits until every dispatch with an unresolved Home response has ended or been installed.
+
 func (r *Registry) WaitPending(ctx context.Context) error {
 	if r == nil {
 		return ErrRegistryClosed
@@ -178,7 +178,7 @@ func (r *Registry) WaitPending(ctx context.Context) error {
 	return nil
 }
 
-// End releases a dispatch token that was not installed.
+
 func (p *PendingDispatch) End() {
 	if p == nil || p.registry == nil {
 		return
@@ -194,7 +194,7 @@ func (p *PendingDispatch) End() {
 	})
 }
 
-// Install atomically turns a pending dispatch token into an active execution scope.
+
 func (r *Registry) Install(pending *PendingDispatch, spec ScopeSpec) (*Scope, error) {
 	if r == nil || pending == nil || pending.registry != r {
 		return nil, ErrInvalidPendingDispatch
@@ -223,8 +223,8 @@ func (r *Registry) Install(pending *PendingDispatch, spec ScopeSpec) (*Scope, er
 	return scope, nil
 }
 
-// SetReleaseSink replaces the cumulative release sink and replays every known group.
-// Legacy callbacks remain supported but cannot provide acknowledgement tickets.
+
+
 func (r *Registry) SetReleaseSink(rawSink any) {
 	if r == nil {
 		return
@@ -264,7 +264,7 @@ func (r *Registry) SetReleaseSink(rawSink any) {
 	}
 }
 
-// Bind attaches the execution resource. A scope accepts exactly one resource.
+
 func (s *Scope) Bind(closeFn func() error) error {
 	if s == nil || s.registry == nil || closeFn == nil {
 		return ErrInvalidExecutionResource
@@ -285,13 +285,13 @@ func (s *Scope) Bind(closeFn func() error) error {
 	return nil
 }
 
-// End closes the bound resource and releases this execution scope exactly once.
+
 func (s *Scope) End(reason string) {
 	_ = s.EndWithRelease(reason)
 }
 
-// EndWithRelease closes the scope and returns the release acknowledgement ticket.
-// The release sink is invoked without the registry mutex held.
+
+
 func (s *Scope) EndWithRelease(_ string) *ReleaseTicket {
 	if s == nil || s.registry == nil {
 		return nil
@@ -375,7 +375,7 @@ func (s *Scope) closeResource(closeFn func() error) {
 	}
 }
 
-// Drain rejects new work, cancels active resources, and waits for all owners to end.
+
 func (r *Registry) Drain(ctx context.Context) error {
 	if r == nil {
 		return ErrRegistryClosed
@@ -415,7 +415,7 @@ func (r *Registry) Drain(ctx context.Context) error {
 	return nil
 }
 
-// Close permanently rejects new work and closes every currently bound resource.
+
 func (r *Registry) Close() error {
 	if r == nil {
 		return ErrRegistryClosed

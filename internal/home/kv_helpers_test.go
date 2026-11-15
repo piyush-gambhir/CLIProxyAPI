@@ -132,7 +132,7 @@ func TestCurrentKVClientBridgesLocalBoltStoreAndPrioritizesHome(t *testing.T) {
 		t.Fatalf("CurrentKVClient() type = %T, want *kvstore.BoltStore", client)
 	}
 
-	// When Home is active, CurrentKVClient must return the Home client even while local bbolt is enabled.
+
 	homeClient, _ := newRedisCommandTestClient(t, func(args []string) string {
 		return "+OK\r\n"
 	})

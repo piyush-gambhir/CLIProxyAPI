@@ -12,13 +12,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// HashKeyPart returns the lowercase hex-encoded SHA-256 digest of value.
+
 func HashKeyPart(value string) string {
 	sum := sha256.Sum256([]byte(value))
 	return hex.EncodeToString(sum[:])
 }
 
-// KVGetJSONRequired fetches a JSON value from the active KV store if KV mode is enabled.
+
 func KVGetJSONRequired(ctx context.Context, key string, out any) (bool, bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -34,7 +34,7 @@ func KVGetJSONRequired(ctx context.Context, key string, out any) (bool, bool, er
 	return true, true, nil
 }
 
-// KVSetJSONRequired marshals value as JSON and writes it to the active KV store if KV mode is enabled.
+
 func KVSetJSONRequired(ctx context.Context, key string, value any, ttl time.Duration) (bool, error) {
 	raw, errMarshal := json.Marshal(value)
 	if errMarshal != nil {
@@ -43,7 +43,7 @@ func KVSetJSONRequired(ctx context.Context, key string, value any, ttl time.Dura
 	return KVSetBytesRequired(ctx, key, raw, ttl)
 }
 
-// KVSetBytesRequired writes raw bytes to the active KV store if KV mode is enabled.
+
 func KVSetBytesRequired(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -59,7 +59,7 @@ func KVSetBytesRequired(ctx context.Context, key string, value []byte, ttl time.
 	return true, nil
 }
 
-// KVSetNXRequired conditionally writes value only if key does not exist in the active KV store.
+
 func KVSetNXRequired(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -69,7 +69,7 @@ func KVSetNXRequired(ctx context.Context, key string, value []byte, ttl time.Dur
 	return true, written, errSet
 }
 
-// KVDelRequired deletes keys from the active KV store if KV mode is enabled.
+
 func KVDelRequired(ctx context.Context, keys ...string) (bool, int64, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -79,7 +79,7 @@ func KVDelRequired(ctx context.Context, keys ...string) (bool, int64, error) {
 	return true, deleted, errDel
 }
 
-// KVExpireRequired updates the expiration of key in the active KV store if KV mode is enabled.
+
 func KVExpireRequired(ctx context.Context, key string, ttl time.Duration) (bool, error) {
 	client, kvMode, errClient := CurrentKVClient()
 	if !kvMode || errClient != nil {
@@ -89,7 +89,7 @@ func KVExpireRequired(ctx context.Context, key string, ttl time.Duration) (bool,
 	return true, errExpire
 }
 
-// KVGetJSONBestEffort fetches a JSON value from the active KV store, logging and swallowing errors.
+
 func KVGetJSONBestEffort(ctx context.Context, key string, out any) (bool, bool) {
 	kvMode, found, errGet := KVGetJSONRequired(ctx, key, out)
 	if errGet != nil {
@@ -99,7 +99,7 @@ func KVGetJSONBestEffort(ctx context.Context, key string, out any) (bool, bool) 
 	return kvMode, found
 }
 
-// KVSetJSONBestEffort marshals and stores value in the active KV store, logging and swallowing errors.
+
 func KVSetJSONBestEffort(ctx context.Context, key string, value any, ttl time.Duration) bool {
 	raw, errMarshal := json.Marshal(value)
 	if errMarshal != nil {
@@ -109,7 +109,7 @@ func KVSetJSONBestEffort(ctx context.Context, key string, value any, ttl time.Du
 	return KVSetBytesBestEffort(ctx, key, raw, ttl)
 }
 
-// KVSetBytesBestEffort stores raw bytes in the active KV store, logging and swallowing errors.
+
 func KVSetBytesBestEffort(ctx context.Context, key string, value []byte, ttl time.Duration) bool {
 	kvMode, errSet := KVSetBytesRequired(ctx, key, value, ttl)
 	if !kvMode {
@@ -122,7 +122,7 @@ func KVSetBytesBestEffort(ctx context.Context, key string, value []byte, ttl tim
 	return true
 }
 
-// KVSetNXBestEffort conditionally stores value if key does not exist, logging and swallowing errors.
+
 func KVSetNXBestEffort(ctx context.Context, key string, value []byte, ttl time.Duration) bool {
 	kvMode, written, errSet := KVSetNXRequired(ctx, key, value, ttl)
 	if !kvMode {
@@ -135,7 +135,7 @@ func KVSetNXBestEffort(ctx context.Context, key string, value []byte, ttl time.D
 	return written
 }
 
-// KVDelBestEffort deletes keys from the active KV store, logging and swallowing errors.
+
 func KVDelBestEffort(ctx context.Context, keys ...string) bool {
 	kvMode, _, errDel := KVDelRequired(ctx, keys...)
 	if !kvMode {
@@ -148,7 +148,7 @@ func KVDelBestEffort(ctx context.Context, keys ...string) bool {
 	return true
 }
 
-// KVExpireBestEffort updates key expiration in the active KV store, logging and swallowing errors.
+
 func KVExpireBestEffort(ctx context.Context, key string, ttl time.Duration) bool {
 	kvMode, errExpire := KVExpireRequired(ctx, key, ttl)
 	if !kvMode {

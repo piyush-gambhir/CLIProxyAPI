@@ -12,7 +12,7 @@ import (
 )
 
 func TestNormalizeCodexToolIntegerTypesSourceFields(t *testing.T) {
-	// Paths follow the input schemas and Deserialize types in codex-rs core and ext.
+
 	tests := []struct {
 		name   string
 		fields []string
@@ -154,7 +154,7 @@ func TestNormalizeCodexToolIntegerTypesPreservesUnprovenFields(t *testing.T) {
 }
 
 func TestNormalizeCodexToolIntegerTypesHistoryNotesSchemas(t *testing.T) {
-	// Parameter schemas copied from codex-rs/ext/history-notes/src/tools.rs:143-218.
+
 	fixture, errRead := os.ReadFile("testdata/history_notes_tools.json")
 	if errRead != nil {
 		t.Fatal(errRead)
@@ -176,7 +176,7 @@ func TestNormalizeCodexToolIntegerTypesHistoryNotesSchemas(t *testing.T) {
 			}
 			for _, format := range formats {
 				t.Run(format.name, func(t *testing.T) {
-					// Simulate integer declarations degraded to number, retaining the real schema shape.
+
 					input := []byte(strings.ReplaceAll(format.body, `"type": "integer"`, `"type": "number"`))
 					for _, ua := range []string{"codex", "curl", ""} {
 						want := input

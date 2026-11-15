@@ -15,13 +15,13 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// This file covers same-format plugin executor stream normalization beyond
-// the single exact-frame case: arbitrary chunk boundaries, the same-format
-// passthrough fast path, response-hook interaction, and terminal seeding.
 
-// collectDeframerOutput feeds chunks (split at the given cut points when
-// non-empty) through a deframer and returns the emitted payloads plus the
-// final flush result.
+
+
+
+
+
+
 func collectDeframerOutput(t *testing.T, input string, cuts []int) ([]string, string) {
 	t.Helper()
 	deframer := &executorSSEDeframer{}
@@ -68,8 +68,8 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("arbitrary splits", func(t *testing.T) {
-		// Split inside the data prefix, mid-JSON, inside the blank-line
-		// boundary, and several bytes at a time.
+
+
 		var cuts []int
 		for i := 3; i < len(full); i += 7 {
 			cuts = append(cuts, i)
@@ -100,7 +100,7 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 
 	t.Run("crlf split across chunks", func(t *testing.T) {
 		crlf := "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\r\n\r\n" + "data: [DONE]\r\n\r\n"
-		// Cut between the CR and LF of the blank line terminating event one.
+
 		cut := strings.Index(crlf, "}\r\n\r") + len("}\r\n\r")
 		got, tail := collectDeframerOutput(t, crlf, []int{cut})
 		want := []string{
@@ -146,9 +146,9 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("leading blank lines dropped after an sse start", func(t *testing.T) {
-		// Once a stream is in SSE mode (here: the first chunk begins an event
-		// that is still incomplete when the blanks arrive), unmatched blank
-		// lines are stale event boundaries and are dropped.
+
+
+
 		deframer := &executorSSEDeframer{}
 		if got := deframer.feed([]byte("data: {\"choices\":")); len(got) != 0 {
 			t.Fatalf("partial event emitted %q, want buffered", got)
@@ -164,9 +164,9 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("leading newline bare payload stays whole", func(t *testing.T) {
-		// A leading newline alone does not make a chunk SSE: bare JSON that
-		// opens with a newline must stay one untouched payload, never split
-		// per line.
+
+
+
 		input := "\n{\n\"choices\":[]\n}\n"
 		got, tail := collectDeframerOutput(t, input, nil)
 		assertStringsEqual(t, "bare leading newline", got, []string{input})
@@ -176,10 +176,10 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("blank line between events across chunks", func(t *testing.T) {
-		// A blank line that arrives in a later chunk, between two SSE
-		// events, is framing: the following event (itself split mid-JSON)
-		// must still be reassembled instead of leaking through with its
-		// SSE prefix intact.
+
+
+
+
 		deframer := &executorSSEDeframer{}
 		first := deframer.feed([]byte("data: {\"choices\":[]}\n\n"))
 		if len(first) != 1 || string(first[0]) != "data: {\"choices\":[]}\n\n" {
@@ -229,9 +229,9 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("data prefix without space is sse", func(t *testing.T) {
-		// The space after "data:" is optional. A no-space event split across
-		// chunks must be buffered and reassembled, not released early as a
-		// bare payload.
+
+
+
 		deframer := &executorSSEDeframer{}
 		if got := deframer.feed([]byte("data:{\"choices\":")); len(got) != 0 {
 			t.Fatalf("no-space partial event emitted %q, want buffered", got)
@@ -246,8 +246,8 @@ func TestExecutorSSEDeframerBoundaries(t *testing.T) {
 	})
 
 	t.Run("bare lines in one chunk stay one payload", func(t *testing.T) {
-		// Bare payloads keep their original chunk boundary: lines arriving in
-		// a single chunk are delivered as that chunk, not split per line.
+
+
 		input := "{\"a\":1}\n{\"b\":2}\n"
 		got, tail := collectDeframerOutput(t, input, nil)
 		assertStringsEqual(t, "bare", got, []string{"{\"a\":1}\n{\"b\":2}\n"})
@@ -361,12 +361,12 @@ func executeSameFormatStream(t *testing.T, adapter *executorAdapter, format sdkt
 	return collectStreamChunkPayloads(t, streamRes.Chunks)
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatArbitrarySplits covers the raw
-// HTTP relay case: one SSE event is split mid-JSON across two chunks and the
-// [DONE] marker shares a chunk with the final data frame. The adapter output
-// must equal exactly the bare JSON payloads with a single terminal marker
-// dropped, and re-framing them the way the OpenAI HTTP handler does must
-// produce exactly one "data: " prefix per frame and one [DONE].
+
+
+
+
+
+
 func TestExecutorAdapterExecuteStreamSameFormatArbitrarySplits(t *testing.T) {
 	adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 		[]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Hel"),
@@ -402,15 +402,15 @@ func TestExecutorAdapterExecuteStreamSameFormatArbitrarySplits(t *testing.T) {
 	}
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatMissingDoneIsSeededAndDropped
-// covers a stream that ends without [DONE]: the translation tail feeds one
-// terminal marker through the translator so it can finalize, and the marker
-// itself never reaches adapter callers (the HTTP handler writes the only
-// [DONE]).
+
+
+
+
+
 func TestExecutorAdapterExecuteStreamSameFormatBlankLineBetweenEvents(t *testing.T) {
-	// A blank line landing between two SSE events in a later chunk must
-	// not push the stream back into bare mode: the following event (split
-	// mid-JSON) must be reassembled and stripped like any other.
+
+
+
 	adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 		[]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n"),
 		[]byte("\ndata:{\"choices\":"),
@@ -427,9 +427,9 @@ func TestExecutorAdapterExecuteStreamSameFormatBlankLineBetweenEvents(t *testing
 }
 
 func TestExecutorAdapterExecuteStreamSameFormatNoSpaceDataPrefix(t *testing.T) {
-	// The space after "data:" is optional in SSE. A same-format event using
-	// the no-space form and split mid-payload across chunks must still be
-	// reassembled into one event and stripped to bare JSON.
+
+
+
 	adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 		[]byte("data:{\"choices\":"),
 		[]byte("[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata:[DONE]\n\n"),
@@ -456,10 +456,10 @@ func TestExecutorAdapterExecuteStreamSameFormatMissingDoneIsSeededAndDropped(t *
 	})
 }
 
-// TestExecutorAdapterExecuteStreamGeminiSameFormatStripsSSEFraming covers the
-// second registered same-format normalizer (Gemini to Gemini) under split
-// and coalesced chunk delivery. Gemini streams have no [DONE] marker, so
-// nothing extra is seeded when the channel closes.
+
+
+
+
 func TestExecutorAdapterExecuteStreamGeminiSameFormatStripsSSEFraming(t *testing.T) {
 	adapter := streamAdapterForTest(t, sdktranslator.FormatGemini,
 		[]byte("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hi\"}]}}"),
@@ -476,9 +476,9 @@ func TestExecutorAdapterExecuteStreamGeminiSameFormatStripsSSEFraming(t *testing
 	assertStringsEqual(t, "gemini", got, want)
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged covers plugins
-// that already emit bare payloads (as the documented examples do): they must
-// pass through both the deframer and the same-format translator untouched.
+
+
+
 func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	t.Run("no trailing newline", func(t *testing.T) {
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI, []byte("plugin-example"))
@@ -490,9 +490,9 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 
 	t.Run("bare objects keep chunk boundaries without newlines", func(t *testing.T) {
-		// Plugins that emit bare JSON objects without line breaks rely on
-		// one chunk per object: the objects must not be concatenated into
-		// one invalid payload across chunk boundaries.
+
+
+
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte(`{"choices":[{"delta":{"content":"Hi"}}]}`),
 			[]byte(`{"choices":[{"delta":{},"finish_reason":"stop"}]}`),
@@ -519,9 +519,9 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 
 	t.Run("partial sse prefix stays buffered", func(t *testing.T) {
-		// A first chunk holding only "da" must not be released as a bare
-		// payload: later bytes complete the SSE data line and the deframer
-		// must rebuild the whole event before translation.
+
+
+
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte("da"),
 			[]byte("ta: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"),
@@ -545,9 +545,9 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 
 	t.Run("leading newline bare payloads across chunks stay whole", func(t *testing.T) {
-		// In bare mode (no SSE event ever seen), consecutive newline-led
-		// chunks must keep their boundaries: they are never dropped as
-		// blank lines and never merged.
+
+
+
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte("\n{\"a\":1}"),
 			[]byte("\n{\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}"),
@@ -563,12 +563,12 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 
 	t.Run("bare lines with finish reason feed the handler", func(t *testing.T) {
-		// A plugin that emits bare JSON lines (no SSE framing anywhere) must
-		// still deliver the finish_reason frame to callers: the OpenAI HTTP
-		// handler writes its only [DONE] marker only after some chunk
-		// carried a finish_reason, and otherwise fails the stream as
-		// truncated. The [DONE] fed through the tail path is dropped by the
-		// same-format translator and never appears as an adapter payload.
+
+
+
+
+
+
 		adapter := streamAdapterForTest(t, sdktranslator.FormatOpenAI,
 			[]byte("{\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n"),
 			[]byte("{\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n"),
@@ -596,11 +596,11 @@ func TestExecutorAdapterExecuteStreamSameFormatBareJSONUnchanged(t *testing.T) {
 	})
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatFramedPassthrough covers formats
-// without a registered same-format stream translator and with no response
-// hooks installed: SSE framing (including event lines, partial frames, and
-// the [DONE] marker for responses) must reach callers byte for byte because
-// those handlers consume verbatim frames.
+
+
+
+
+
 func TestExecutorAdapterExecuteStreamSameFormatFramedPassthrough(t *testing.T) {
 	t.Run("claude event frames unchanged", func(t *testing.T) {
 		payload := []byte("event: message\ndata: {\"type\":\"message\"}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
@@ -649,11 +649,11 @@ func TestExecutorAdapterExecuteStreamSameFormatFramedPassthrough(t *testing.T) {
 	})
 }
 
-// TestExecutorAdapterExecuteStreamCrossFormatSplitKeepsUsageAndData covers
-// the safety net around the changes above: cross-format plugin streams never
-// enter the same-format deframer or passthrough gate, so a cross-format
-// split stream must still be translated frame by frame and its usage must
-// still be observed from the raw plugin chunks.
+
+
+
+
+
 func TestExecutorAdapterExecuteStreamCrossFormatKeepsUsageAndData(t *testing.T) {
 	plugin := newTestUsageCapturePlugin("plugin-provider-cross-split")
 	registerTestUsagePlugin(t, "test-executor-adapter-cross-split", plugin)
@@ -713,11 +713,11 @@ func TestExecutorAdapterExecuteStreamCrossFormatKeepsUsageAndData(t *testing.T) 
 	}
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatHooksStillApplied covers the hook
-// path of the same-format gate: when an active plugin provides response
-// translation hooks, a same-format stream without a native translator still
-// goes through TranslateStream, so hook rewrites apply. Without the hooks it
-// remains verbatim (covered by TestExecutorAdapterExecuteStreamSameFormatFramedPassthrough).
+
+
+
+
+
 func TestExecutorAdapterExecuteStreamSameFormatHooksStillApplied(t *testing.T) {
 	hookRecord := normalizeTestCapabilityRecord(capabilityRecord{
 		id: "response-hook-plugin",
@@ -773,7 +773,7 @@ func TestExecutorAdapterExecuteStreamSameFormatHooksStillApplied(t *testing.T) {
 	})
 }
 
-// testResponseNormalizerFunc adapts a function to pluginapi.ResponseNormalizer.
+
 type testResponseNormalizerFunc struct {
 	normalize func(ctx context.Context, req pluginapi.ResponseTransformRequest) (pluginapi.PayloadResponse, error)
 }
@@ -782,10 +782,10 @@ func (f *testResponseNormalizerFunc) NormalizeResponse(ctx context.Context, req 
 	return f.normalize(ctx, req)
 }
 
-// TestDeframeExecutorSSEChunksErrorFlushesPartial covers the channel-level
-// contract directly: a partial event is emitted before an error chunk, the
-// error is forwarded unchanged, and no terminal marker is synthesized at
-// this layer (the translation tail owns that).
+
+
+
+
 func TestDeframeExecutorSSEChunksErrorFlushesPartial(t *testing.T) {
 	wantErr := errors.New("stream failed")
 	in := make(chan pluginapi.ExecutorStreamChunk, 2)
@@ -809,12 +809,12 @@ func TestDeframeExecutorSSEChunksErrorFlushesPartial(t *testing.T) {
 	}
 }
 
-// TestExecutorAdapterExecuteStreamSameFormatHooksSeeTerminalOnce covers the
-// terminal-marker ownership contract: a same-format chat stream missing its
-// [DONE] marker feeds exactly one synthetic marker through translation
-// (from emitTranslatedExecutorStreamTail), so plugin response hooks observe
-// exactly one terminal payload and cannot duplicate terminal frames. The
-// deframer must not add a second one.
+
+
+
+
+
+
 func TestExecutorAdapterExecuteStreamSameFormatHooksSeeTerminalOnce(t *testing.T) {
 	var bodies [][]byte
 	hookRecord := normalizeTestCapabilityRecord(capabilityRecord{
@@ -887,10 +887,10 @@ func TestExecutorAdapterExecuteStreamSameFormatHooksSeeTerminalOnce(t *testing.T
 	}
 }
 
-// TestDeframeExecutorSSEChunksNeverSynthesizesDone asserts the channel-level
-// contract that the deframer forwards terminal markers verbatim but never
-// invents one: emitTranslatedExecutorStreamTail is the single place that
-// feeds a synthetic [DONE] through translation, exactly once.
+
+
+
+
 func TestDeframeExecutorSSEChunksNeverSynthesizesDone(t *testing.T) {
 	run := func(payload string) []string {
 		t.Helper()

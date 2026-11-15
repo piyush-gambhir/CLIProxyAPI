@@ -27,7 +27,7 @@ func TestClusterLatencySamplerMatchesOnlyItsSubscription(t *testing.T) {
 	if sampler.pong(token, now.Add(time.Second)) {
 		t.Fatal("duplicate PONG matched twice")
 	}
-	// Reporting happens much later than reception; consumer queue time must not enter RTT.
+
 	samples := history.report(now.Add(time.Minute))
 	if len(samples) != 1 || samples[0].RTTUS != 10000 || samples[0].AgeMS != 59990 || !samples[0].Valid {
 		t.Fatalf("unexpected RTT report: %+v", samples)
@@ -139,7 +139,7 @@ func TestClusterLatencyProbeBudgetAndBackoff(t *testing.T) {
 	client.balance.latencySupported = true
 	history := &clusterLatencyHistory{}
 	history.observe(clusterNode{IP: client.homeCfg.Host, Port: client.homeCfg.Port}, 100*time.Millisecond, true, time.Now())
-	// Unadvertised targets are never contacted.
+
 	if errReport := client.reportClusterLatency(context.Background(), history, time.Now()); errReport != nil {
 		t.Fatal(errReport)
 	}

@@ -49,21 +49,21 @@ var registerPluginExecutors = func(host *pluginhost.Host, manager *coreauth.Mana
 	host.RegisterExecutors(manager, registry.GetGlobalRegistry())
 }
 
-// modelRegistrationTaskHook, if set, runs after auth-update commits and before
-// model registration workers start. Tests use it to prove registration no longer
-// holds authUpdateMu.
+
+
+
 var modelRegistrationTaskHook func()
 
-// modelRegistrationTaskPostRunHook, if set, runs synchronously inside model registration
-// tasks after completeModelRegistrationForAuthWithCache completes. Tests use it to inject
-// concurrent auth updates before batch registration finishes.
+
+
+
 var modelRegistrationTaskPostRunHook func(authID string)
 
-// RegisterUsagePlugin registers a usage plugin on the global usage manager.
-// This allows external code to monitor API usage and token consumption.
-//
-// Parameters:
-//   - plugin: The usage plugin to register
+
+
+
+
+
 func (s *Service) RegisterUsagePlugin(plugin usage.Plugin) {
 	usage.RegisterPlugin(plugin)
 }
@@ -168,8 +168,8 @@ func (s *Service) refreshPluginModelRegistrations(ctx context.Context) {
 	if s == nil || s.pluginHost == nil || s.coreManager == nil {
 		return
 	}
-	// Native capability probes publish and refresh their scheduler entries
-	// asynchronously; startup and config updates must not wait for network I/O.
+
+
 	s.registerModelsForAuthBatch(ctx, s.coreManager.List())
 }
 
@@ -347,10 +347,10 @@ func modelRegistrationMaxWorkersForCategory(category string) int {
 }
 
 func (s *Service) registerModelRefreshCallback() {
-	// Register callback for startup and periodic model catalog refresh.
-	// When remote model definitions change, re-register models for affected providers.
-	// This intentionally rebuilds per-auth model availability from the latest catalog
-	// snapshot instead of preserving prior registry suppression state.
+
+
+
+
 	registry.SetModelRefreshCallback(func(changedProviders []string) {
 		if s == nil || s.coreManager == nil || len(changedProviders) == 0 {
 			return

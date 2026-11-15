@@ -23,22 +23,22 @@ import (
 const (
 	homeAuthCountMetadataKey  = "__cliproxy_home_auth_count"
 	homeRetryRoundMetadataKey = "request_retry_round"
-	// ExcludedAuthIDsMetadataKey stores credential IDs already attempted in the
-	// current request retry round.
+
+
 	ExcludedAuthIDsMetadataKey = "excluded_auth_ids"
-	// CloseAllExecutionSessionsID asks an executor to release all active execution sessions.
-	// Executors that do not support this marker may ignore it.
+
+
 	CloseAllExecutionSessionsID = "__all_execution_sessions__"
 )
 
-// HomeDispatchBundle is the immutable client and registry pair for one Home lifetime.
+
 type HomeDispatchBundle struct {
 	client     homeAuthDispatcher
 	registry   *executionregistry.Registry
 	generation uint64
 }
 
-// PublishHomeDispatch publishes the selectable Home lifetime as one atomic bundle.
+
 func (m *Manager) PublishHomeDispatch(client homeAuthDispatcher, registry *executionregistry.Registry, generation uint64) *HomeDispatchBundle {
 	if m == nil || client == nil || registry == nil {
 		return nil
@@ -48,7 +48,7 @@ func (m *Manager) PublishHomeDispatch(client homeAuthDispatcher, registry *execu
 	return bundle
 }
 
-// ClearHomeDispatchBundle removes bundle only when it still belongs to the active lifetime.
+
 func (m *Manager) ClearHomeDispatchBundle(bundle *HomeDispatchBundle) bool {
 	if m == nil || bundle == nil {
 		return false
@@ -56,7 +56,7 @@ func (m *Manager) ClearHomeDispatchBundle(bundle *HomeDispatchBundle) bool {
 	return m.homeDispatchBundle.CompareAndSwap(bundle, nil)
 }
 
-// HomeDispatchBundle returns the active Home lifetime bundle.
+
 func (m *Manager) HomeDispatchBundle() *HomeDispatchBundle {
 	if m == nil {
 		return nil
@@ -64,7 +64,7 @@ func (m *Manager) HomeDispatchBundle() *HomeDispatchBundle {
 	return m.homeDispatchBundle.Load()
 }
 
-// SetHomeExecutionRegistry preserves the legacy registry API for callers that also install the current dispatcher.
+
 func (m *Manager) SetHomeExecutionRegistry(registry *executionregistry.Registry) {
 	if m == nil {
 		return
@@ -72,7 +72,7 @@ func (m *Manager) SetHomeExecutionRegistry(registry *executionregistry.Registry)
 	m.PublishHomeDispatch(currentHomeDispatcher(), registry, 0)
 }
 
-// ClearHomeExecutionRegistry removes a matching legacy registry bundle.
+
 func (m *Manager) ClearHomeExecutionRegistry(registry *executionregistry.Registry) bool {
 	bundle := m.HomeDispatchBundle()
 	if bundle == nil || bundle.registry != registry {
@@ -81,7 +81,7 @@ func (m *Manager) ClearHomeExecutionRegistry(registry *executionregistry.Registr
 	return m.ClearHomeDispatchBundle(bundle)
 }
 
-// HomeExecutionRegistry returns the registry from the active Home lifetime bundle.
+
 func (m *Manager) HomeExecutionRegistry() *executionregistry.Registry {
 	bundle := m.HomeDispatchBundle()
 	if bundle == nil {
@@ -90,7 +90,7 @@ func (m *Manager) HomeExecutionRegistry() *executionregistry.Registry {
 	return bundle.registry
 }
 
-// HomeEnabled reports whether the home control plane integration is enabled in the runtime config.
+
 func (m *Manager) HomeEnabled() bool {
 	if m == nil {
 		return false
@@ -136,9 +136,9 @@ type homeDispatchRetryAfterError struct {
 	hasRequestRetry bool
 }
 
-// homeRetryRoundExhaustedError marks a terminal error produced after the
-// current Home credential round has been exhausted. The wrapped error retains
-// its status and retry-after metadata for the outer request retry policy.
+
+
+
 type homeRetryRoundExhaustedError struct {
 	cause         error
 	retryAfter    time.Duration
@@ -1089,7 +1089,7 @@ func (m *Manager) pickHomeDispatchSelection(ctx context.Context, model string, o
 			nodeKind = "fork"
 		}
 		if nodeKind = strings.TrimSpace(nodeKind); nodeKind != "" {
-			// Keep the caller headers unchanged when adding Home-only lineage metadata.
+
 			dispatchHeaders = dispatchHeaders.Clone()
 			if dispatchHeaders == nil {
 				dispatchHeaders = make(http.Header)
@@ -1195,7 +1195,7 @@ func (m *Manager) pickHomeDispatchSelection(ctx context.Context, model string, o
 	}
 	auth := dispatch.Auth
 	if strings.TrimSpace(auth.ID) == "" {
-		// Backward compatibility: older Home instances returned the auth directly.
+
 		if errUnmarshal := json.Unmarshal(raw, &auth); errUnmarshal != nil {
 			endScope()
 			return nil, &Error{Code: "invalid_auth", Message: "home returned invalid auth payload", HTTPStatus: http.StatusBadGateway}

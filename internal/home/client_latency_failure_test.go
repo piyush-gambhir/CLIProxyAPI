@@ -72,7 +72,7 @@ func TestClusterLatencyPingFailureBetweenReceives(t *testing.T) {
 		client := New(config.HomeConfig{})
 		client.balance.registered, client.balance.latencySupported = true, true
 		sampler := &clusterRTTSampler{history: &clusterLatencyHistory{}, node: clusterNode{IP: "home", Port: 8327}}
-		// No receive is pending: go-redis reconnects before returning the PING write error.
+
 		errLatency := client.runClusterLatency(ctx, pubsub, sampler)
 		if !errors.Is(errLatency, io.ErrClosedPipe) || ctx.Err() != nil {
 			t.Fatalf("sampler error = %v, context = %v; want immediate PING transport failure", errLatency, ctx.Err())
@@ -80,7 +80,7 @@ func TestClusterLatencyPingFailureBetweenReceives(t *testing.T) {
 		synctest.Wait()
 		subscriptions := 0
 		for _, args := range commands.All() {
-			// go-redis treats membership parameters as channels and may reorder them on resubscribe.
+
 			if strings.EqualFold(args[0], "SUBSCRIBE") {
 				subscriptions++
 			}
@@ -91,7 +91,7 @@ func TestClusterLatencyPingFailureBetweenReceives(t *testing.T) {
 		if samples := sampler.history.report(time.Now()); len(samples) != 1 || samples[0].Valid {
 			t.Fatalf("failed PING was not invalidated: %+v", samples)
 		}
-		// The new ACK cannot silently keep the old lifetime alive, even if reception wins the race.
+
 		event, errReceive := receiveSubscriptionEvent(ctx, pubsub, sampler, time.Now().Add(time.Second))
 		if errReceive == nil || isTimeoutError(errReceive) || event != nil {
 			t.Fatalf("replacement ACK was accepted: event=%v error=%v", event, errReceive)
@@ -166,7 +166,7 @@ func TestManagedSubscriberTelemetryFailureRequiresNewLifetime(t *testing.T) {
 		if errRelease := client.PushConcurrencyRelease(context.Background(), frame); !errors.Is(errRelease, ErrDispatchFenced) {
 			t.Fatalf("release after telemetry transport failure = %v", errRelease)
 		}
-		// Mirror the supervisor: close the failed client before installing a fresh lifetime.
+
 		client.Close()
 		if errPing := oldCommand.Ping(context.Background()).Err(); !errors.Is(errPing, redis.ErrClosed) {
 			t.Fatalf("old command pool remained available: %v", errPing)

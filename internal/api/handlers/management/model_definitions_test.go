@@ -264,7 +264,7 @@ func TestRefreshModelDefinitions_UpdatesCatalogAndReportsChangedProviders(t *tes
 		t.Fatal("expected claude-mgmt-refresh-7039 in GetStaticModelDefinitions after refresh")
 	}
 
-	// Invalid remote payload must return 502 Bad Gateway and keep last valid catalog.
+
 	generalPayload.Store([]byte("invalid-json"))
 	recFail := httptest.NewRecorder()
 	ctxFail, _ := gin.CreateTestContext(recFail)

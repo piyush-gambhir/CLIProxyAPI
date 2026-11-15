@@ -20,12 +20,12 @@ type openAICompatibilityRegistrationCache struct {
 	byIndex map[int]*openAICompatibilityRegistrationEntry
 }
 
-// pluginHostHasAuthProvider is overridable in tests to avoid loading real plugins.
+
 var pluginHostHasAuthProvider = func(host *pluginhost.Host, provider string) bool {
 	return host != nil && host.HasAuthProvider(provider)
 }
 
-// pluginHostHasAuthModelProvider only checks declarations, never model discovery.
+
 var pluginHostHasAuthModelProvider = func(host *pluginhost.Host, provider string) bool {
 	return host != nil && host.HasAuthModelProvider(provider)
 }
@@ -194,8 +194,8 @@ func (s *Service) registerAvailableExecutors(ctx context.Context, opts executorR
 	if ctx.Err() != nil {
 		return
 	}
-	// Keep all Service-owned executor registration paths here so native, Home,
-	// auth-derived, and plugin executors stay in the same binding order.
+
+
 	if opts.includeBaseline {
 		s.registerExecutorsForAuths(baselineExecutorAuths(), opts.forceReplaceAuths)
 	}
@@ -278,9 +278,9 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 		s.coreManager.RegisterExecutor(executor.NewCodexAutoExecutor(cfg))
 		return
 	}
-	// Skip disabled auth entries when (re)binding executors.
-	// Disabled auths can linger during config reloads (e.g., removed OpenAI-compat entries)
-	// and must not override active provider executors.
+
+
+
 	if a.Disabled {
 		return
 	}
@@ -338,16 +338,16 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 			s.unregisterOpenAICompatExecutor(providerKey)
 			return
 		}
-		// Keep native OpenAI-compat inference for base_url routing, but delegate
-		// OAuth refresh to the plugin AuthProvider when one is registered.
+
+
 		s.registerOpenAICompatProviderExecutor(providerKey, a, cfg, forceReplace, true)
 	}
 }
 
-// registerOpenAICompatProviderExecutor binds a native OpenAI-compat executor, optionally
-// wrapping it so plugin AuthProvider refresh remains available.
-// When respectNonOwned is true, an existing non-owned executor is preserved unless it is a
-// bare OpenAI-compat executor that should be upgraded to the plugin-refresh wrapper.
+
+
+
+
 func (s *Service) registerOpenAICompatProviderExecutor(providerKey string, auth *coreauth.Auth, cfg *config.Config, forceReplace bool, respectNonOwned bool) {
 	if s == nil || s.coreManager == nil {
 		return
@@ -424,7 +424,7 @@ func shouldKeepExistingOpenAICompatExecutor(s *Service, existing, next coreauth.
 		return true
 	}
 	if !respectNonOwned {
-		// Historical openai-compatibility path only short-circuits bare native executors.
+
 		return existingBare
 	}
 	if s != nil && s.pluginHost != nil && s.pluginHost.OwnsExecutor(existing) {
@@ -444,14 +444,14 @@ func shouldUpgradeOpenAICompatToPluginRefresh(existing, next coreauth.ProviderEx
 	return bareOpenAICompat
 }
 
-// registerResolvedModelsForAuthFenced publishes models only if fence still
-// matches inherited global exclusions and the current auth snapshot, and the
-// registry epoch has not advanced. A superseded registration must not
-// overwrite or remove a newer one. The returned value is false only when
-// the fence rejected the publication; true also covers no-op inputs, so
-// it never by itself proves models were published. Callers that drive a
-// completion pass use false to reconcile the latest auth instead of
-// losing the registration.
+
+
+
+
+
+
+
+
 func (s *Service) registerResolvedModelsForAuthFenced(a *coreauth.Auth, fence modelRegistrationFence, providerKey string, models []*ModelInfo) bool {
 	if a == nil || a.ID == "" {
 		return true
@@ -483,10 +483,10 @@ func (s *Service) registerResolvedModelsForAuthFenced(a *coreauth.Auth, fence mo
 	return true
 }
 
-// unregisterModelsForAuthFenced removes a client's models only if fence
-// still matches inherited global exclusions and the current auth snapshot, and
-// the registry epoch has not advanced since the registration began. The
-// returned value is false only when the fence rejected the removal.
+
+
+
+
 func (s *Service) unregisterModelsForAuthFenced(a *coreauth.Auth, fence modelRegistrationFence) bool {
 	if a == nil || a.ID == "" {
 		return true
@@ -505,9 +505,9 @@ func (s *Service) pluginModelsForProvider(providerKey string) []*ModelInfo {
 	return s.pluginHost.ModelsForProvider(providerKey)
 }
 
-// appendPluginModels appends the provider's plugin static models that are not excluded.
-// Callers filter native models before applying OAuth aliases, so plugin models are filtered
-// here by their original IDs instead of re-filtering the merged list by alias names.
+
+
+
 func (s *Service) appendPluginModels(providerKey string, models []*ModelInfo, excluded []string) []*ModelInfo {
 	pluginModels := applyExcludedModels(s.pluginModelsForProvider(providerKey), excluded)
 	if len(pluginModels) == 0 {
@@ -551,13 +551,13 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfig(ctx context.Context, 
 	return s.tryRegisterPluginModelsForAuthWithConfigFenced(ctx, cfg, a, newModelRegistrationFence(a, cfg), provider, authKind, excluded)
 }
 
-// tryRegisterPluginModelsForAuthWithConfigFenced returns whether a plugin
-// handled model registration for the auth and, when handled, whether the
-// publication fence rejected the result (reported as published=false).
-// published=true also covers plugin errors and real commit failures, so it
-// never by itself proves models were published. A handled-but-rejected
-// result means the computation was superseded and the latest auth must be
-// reconciled by the completion pass (issue #6718).
+
+
+
+
+
+
+
 func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Context, cfg *config.Config, a *coreauth.Auth, fence modelRegistrationFence, provider, authKind string, excluded []string) (bool, bool) {
 	if s == nil || s.pluginHost == nil || a == nil {
 		return false, true
@@ -602,10 +602,10 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 		}
 		updated, committed, errUpdate := s.coreManager.UpdateIfRegistrationCurrent(ctx, a, result.Auth)
 		if errUpdate != nil {
-			// A real update failure (validation, persistence) is not a
-			// fencing race: report it as handled without asking the
-			// completion pass to re-invoke the plugin against the same
-			// failing input.
+
+
+
+
 			log.WithFields(log.Fields{"auth_id": a.ID, "provider": providerKey}).Warnf("plugin model registration for auth %s failed to commit its auth update: %v", a.ID, errUpdate)
 			return true, true
 		}
@@ -613,9 +613,9 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 			activeAuth = updated.Clone()
 			pluginAuthCommitted = true
 		} else {
-			// The plugin computation's starting identity was superseded
-			// before its auth update could commit. Its models belong to
-			// that old identity and must not be laundered into the new one.
+
+
+
 			log.WithFields(log.Fields{"auth_id": a.ID, "provider": providerKey}).Warnf("plugin model registration for auth %s was superseded before its auth update could commit; discarded the stale plugin result", a.ID)
 			return true, false
 		}
@@ -636,7 +636,7 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 		activeExcluded = excluded
 		fallbackExclusionProvider = strings.ToLower(strings.TrimSpace(provider))
 	}
-	// Credential-level exclusions take priority over the global oauth-excluded-models config.
+
 	if activeAuth.Attributes != nil {
 		if val, ok := activeAuth.Attributes["excluded_models"]; ok && strings.TrimSpace(val) != "" {
 			activeExcluded = strings.Split(val, ",")
@@ -649,11 +649,11 @@ func (s *Service) tryRegisterPluginModelsForAuthWithConfigFenced(ctx context.Con
 	models = applyOAuthModelAliasForAuth(cfg, providerKey, activeAuthKind, activeAuth.Attributes, models)
 	publicationFence := fence
 	if pluginAuthCommitted {
-		// A plugin-returned auth update is a deliberate identity transition,
-		// committed conditionally against the starting identity above.
-		// Refresh only the auth inputs after that commit; retain the
-		// starting exclusion summaries and registry epoch so newer global
-		// rules or publications cannot be adopted by this older computation.
+
+
+
+
+
 		publicationFence = fence.withAuth(activeAuth)
 	}
 	publicationFence.exclusionProvider = providerKey

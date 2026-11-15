@@ -20,8 +20,8 @@ func interactionsToCodexEnvelope(input string) sdktranslator.RequestEnvelope {
 	})
 }
 
-// interactionsFinalTurnToCodex translates two history turns followed by a final
-// user step holding the given content parts.
+
+
 func interactionsFinalTurnToCodex(finalContent string) sdktranslator.RequestEnvelope {
 	return interactionsToCodexEnvelope(`{"model":"m","input":[` + interactionsCodexHistory + `,{"type":"user_input","content":[` + finalContent + `]}]}`)
 }
@@ -40,8 +40,8 @@ func requireInteractionsToCodexRefusal(t *testing.T, envelope sdktranslator.Requ
 	}
 }
 
-// TestInteractionsToCodexKeepsTheMediaGeminiToInteractionsWrites feeds the part
-// shape that the Gemini to Interactions translation emits for a fileData part.
+
+
 func TestInteractionsToCodexKeepsTheMediaGeminiToInteractionsWrites(t *testing.T) {
 	envelope := interactionsFinalTurnToCodex(`{"type":"image","uri":"gs://b/a.png","mime_type":"image/png"}`)
 	if envelope.Err != nil {
@@ -122,8 +122,8 @@ func TestInteractionsToCodexRefusesAnEmptiedTurnBeforeALaterTextTurn(t *testing.
 	requireInteractionsToCodexRefusal(t, envelope, "audio")
 }
 
-// An instruction step names itself by role or by type alone. It closes the
-// emptied user turn and must not stand in for the content that turn lost.
+
+
 func TestInteractionsToCodexInstructionStepDoesNotHideAnEmptiedTurn(t *testing.T) {
 	const emptied = `{"type":"user_input","content":[{"type":"audio","mime_type":"audio/wav","uri":"gs://b/a.wav"}]}`
 	cases := map[string]string{
@@ -141,7 +141,7 @@ func TestInteractionsToCodexInstructionStepDoesNotHideAnEmptiedTurn(t *testing.T
 	}
 }
 
-// An instruction step is still sent, as a developer message, when nothing was lost.
+
 func TestInteractionsToCodexTypeOnlyInstructionStepIsSentAsDeveloper(t *testing.T) {
 	for _, stepType := range []string{"system", "developer"} {
 		t.Run(stepType, func(t *testing.T) {

@@ -1,4 +1,4 @@
-// Package session derives stable conversation identities from protocol request roots.
+
 package session
 
 import (
@@ -41,7 +41,7 @@ type canonicalPart struct {
 
 var canonicalUUIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
-// CandidateSessionPrefixes lists recognized protocol-specific session prefixes used in affinity lookup and routing.
+
 var CandidateSessionPrefixes = []string{
 	"lcp:v1:", "lcp:",
 	"codex:", "claude:", "header:", "session:",
@@ -50,10 +50,10 @@ var CandidateSessionPrefixes = []string{
 	"pck:", "user:", "execution:", "agy:", "derived:",
 }
 
-// knownSessionPrefixes tracks legacy protocol-specific session prefixes that need to be
-// unwrapped before projecting to canonical UUIDv8.
-// Deprecated: This transitional table and string-stripping mechanism are scheduled to be
-// removed once session extraction directly produces canonical UUIDv8s at ingress.
+
+
+
+
 var knownSessionPrefixes = []string{
 	"lcp:v1:", "lcp:",
 	"ctx:v1:", "ctx:",
@@ -63,29 +63,29 @@ var knownSessionPrefixes = []string{
 	"pck:", "user:", "execution:", "agy:", "derived:",
 }
 
-// NormalizeToCanonicalUUID deterministically normalizes any session identifier to a
-// canonical 36-character lowercase UUID (RFC 4122 / RFC 9562 compliant):
-//  1. If rawID (or rawID without known protocol prefix) is already a standard UUID (e.g. Codex UUIDv7,
-//     Claude UUIDv4, Header UUID), it strips the prefix and returns the lowercase UUID.
-//  2. If rawID has known protocol prefixes, they are stripped iteratively (supporting chained
-//     wrappers such as "derived:ctx:v1:"). If no identifier remains after stripping, it returns empty.
-//  3. If rawID is not a standard UUID (e.g. LCP 64-hex hash, subagent hierarchy, or custom string),
-//     it deterministically projects it to an RFC 9562 UUIDv8 using SHA-256 with domain separation.
-//  4. Idempotent: NormalizeToCanonicalUUID(NormalizeToCanonicalUUID(x)) == NormalizeToCanonicalUUID(x).
+
+
+
+
+
+
+
+
+
 func NormalizeToCanonicalUUID(rawID string) string {
 	clean := strings.TrimSpace(rawID)
 	if clean == "" {
 		return ""
 	}
 
-	// 1. Direct UUID match (already clean UUID)
+
 	if canonicalUUIDPattern.MatchString(clean) {
 		return strings.ToLower(clean)
 	}
 
-	// 2. Strip known protocol prefixes iteratively to unwrap layered prefixes (e.g., "derived:ctx:v1:...").
-	// TODO: Deprecate and remove this legacy prefix stripping once all session extractors
-	// natively emit canonical UUIDv8 at the protocol ingress boundary.
+
+
+
 	for {
 		stripped := false
 		for _, p := range knownSessionPrefixes {
@@ -100,8 +100,8 @@ func NormalizeToCanonicalUUID(rawID string) string {
 			break
 		}
 	}
-	// If only prefix was provided without an identifier body (e.g. "slot:", "task:"), return empty
-	// rather than projecting empty string into a shared ghost UUIDv8.
+
+
 	if clean == "" {
 		return ""
 	}
@@ -109,7 +109,7 @@ func NormalizeToCanonicalUUID(rawID string) string {
 		return strings.ToLower(clean)
 	}
 
-	// 3. Check if any generic prefix "prefix:<uuid>" exists
+
 	if idx := strings.Index(clean, ":"); idx > 0 {
 		candidate := strings.TrimSpace(clean[idx+1:])
 		if canonicalUUIDPattern.MatchString(candidate) {
@@ -117,18 +117,18 @@ func NormalizeToCanonicalUUID(rawID string) string {
 		}
 	}
 
-	// 4. Deterministic projection to RFC 9562 UUIDv8 for LCP hashes and arbitrary non-UUID strings
+
 	sum := sha256.Sum256([]byte("cpa:canonical-uuid:v1\x00" + clean))
 	u := [16]byte(sum[:16])
-	u[6] = (u[6] & 0x0f) | 0x80 // RFC 9562 Version 8
-	u[8] = (u[8] & 0x3f) | 0x80 // RFC 4122 / RFC 9562 Variant
+	u[6] = (u[6] & 0x0f) | 0x80
+	u[8] = (u[8] & 0x3f) | 0x80
 
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
 		u[0:4], u[4:6], u[6:8], u[8:10], u[10:16])
 }
 
-// NormalizeExplicitID validates an explicit client-provided session identifier.
-// It preserves opaque printable values while rejecting oversized or control-bearing IDs.
+
+
 func NormalizeExplicitID(raw string) string {
 	for _, r := range raw {
 		if unicode.IsControl(r) {
@@ -142,7 +142,7 @@ func NormalizeExplicitID(raw string) string {
 	return strings.Clone(raw)
 }
 
-// ClaudeMetadataIdentities extracts session_id, parent_session_id, and agent_id from Claude user_id metadata.
+
 func ClaudeMetadataIdentities(payload []byte) (sessionID, parentSessionID, agentID string) {
 	if len(payload) == 0 {
 		return "", "", ""
@@ -192,21 +192,21 @@ func ClaudeMetadataIdentities(payload []byte) (sessionID, parentSessionID, agent
 	return "", "", ""
 }
 
-// ClaudeMetadataSessionID extracts the explicit Claude Code session from
-// current JSON metadata or the legacy user_id suffix before bounding the
-// surrounding metadata container.
+
+
+
 func ClaudeMetadataSessionID(payload []byte) string {
 	sessionID, _, _ := ClaudeMetadataIdentities(payload)
 	return sessionID
 }
 
-// ClaudeMetadataParentSessionID extracts parent_session_id from Claude user_id metadata if present.
+
 func ClaudeMetadataParentSessionID(payload []byte) string {
 	_, parentSessionID, _ := ClaudeMetadataIdentities(payload)
 	return parentSessionID
 }
 
-// CallerScope returns an irreversible namespace for a downstream caller credential.
+
 func CallerScope(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -216,7 +216,7 @@ func CallerScope(value string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// DerivedID returns a derived session identity stored in execution metadata.
+
 func DerivedID(metadata map[string]any) string {
 	if metadata == nil {
 		return ""
@@ -225,10 +225,10 @@ func DerivedID(metadata map[string]any) string {
 	return strings.TrimSpace(value)
 }
 
-// Enrich derives a session identity once and places it in both request and option metadata.
-// When opts.OriginalRequest is unset, it shares req.Payload as the read-only original request
-// baseline to avoid multi-megabyte allocations on large payloads. Callers that mutate req.Payload
-// in-place after Enrich must explicitly provide an independent opts.OriginalRequest.
+
+
+
+
 func Enrich(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Request, cliproxyexecutor.Options) {
 	payload := opts.OriginalRequest
 	if len(payload) == 0 && len(req.Payload) > 0 {
@@ -263,7 +263,7 @@ func Enrich(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (clipro
 		return req, opts
 	}
 
-	// Metadata-provided canonical or LCP session (e.g. embeddable SDK callers or pre-routed stages)
+
 	if canonicalID := firstNormalizedMetadataID(cliproxyexecutor.CanonicalSessionIDMetadataKey, opts.Metadata, req.Metadata); canonicalID != "" {
 		req.Metadata = metadataWithoutKey(req.Metadata, cliproxyexecutor.DerivedSessionIDMetadataKey)
 		opts.Metadata = metadataWithoutKey(opts.Metadata, cliproxyexecutor.DerivedSessionIDMetadataKey)
@@ -385,8 +385,8 @@ func hasExplicitSession(headers map[string][]string, payload []byte) bool {
 	if len(payload) == 0 {
 		return false
 	}
-	// Parsing without copying matters here: this runs on every request and the
-	// payload can be multiple megabytes.
+
+
 	root := newSessionObject(util.ParseGJSONBytesNoCopy(payload))
 	reqRoot := root
 	req := root.Get("request")
@@ -488,7 +488,7 @@ func headerValue(headers map[string][]string, name string) string {
 	return ""
 }
 
-// DeriveID builds a stable identity from leading instructions and the first complete user input.
+
 func DeriveID(format sdktranslator.Format, payload []byte, callerScope string) string {
 	if len(payload) == 0 {
 		return ""

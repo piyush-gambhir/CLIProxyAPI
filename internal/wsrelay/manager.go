@@ -13,8 +13,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Manager exposes a websocket endpoint that proxies Gemini requests to
-// connected clients.
+
+
 type Manager struct {
 	path      string
 	upgrader  websocket.Upgrader
@@ -30,7 +30,7 @@ type Manager struct {
 	logWarnf  func(string, ...any)
 }
 
-// Options configures a Manager instance.
+
 type Options struct {
 	Path            string
 	ProviderFactory func(*http.Request) (string, error)
@@ -41,7 +41,7 @@ type Options struct {
 	LogWarnf        func(string, ...any)
 }
 
-// NewManager builds a websocket relay manager with the supplied options.
+
 func NewManager(opts Options) *Manager {
 	path := strings.TrimSpace(opts.Path)
 	if path == "" {
@@ -79,7 +79,7 @@ func NewManager(opts Options) *Manager {
 	return mgr
 }
 
-// Path returns the HTTP path the manager expects for websocket upgrades.
+
 func (m *Manager) Path() string {
 	if m == nil {
 		return "/v1/ws"
@@ -87,12 +87,12 @@ func (m *Manager) Path() string {
 	return m.path
 }
 
-// Handler exposes an http.Handler that upgrades connections to websocket sessions.
+
 func (m *Manager) Handler() http.Handler {
 	return http.HandlerFunc(m.handleWebsocket)
 }
 
-// Stop gracefully closes all active websocket sessions.
+
 func (m *Manager) Stop(_ context.Context) error {
 	m.sessMutex.Lock()
 	sessions := make([]*session, 0, len(m.sessions))
@@ -110,7 +110,7 @@ func (m *Manager) Stop(_ context.Context) error {
 	return nil
 }
 
-// handleWebsocket upgrades the connection and wires the session into the pool.
+
 func (m *Manager) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	expectedPath := m.Path()
 	if expectedPath != "" && r.URL != nil && r.URL.Path != expectedPath {
@@ -159,8 +159,8 @@ func (m *Manager) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	go s.run(context.Background())
 }
 
-// Send forwards the message to the specific provider connection and returns a channel
-// yielding response messages.
+
+
 func (m *Manager) Send(ctx context.Context, provider string, msg Message) (<-chan Message, error) {
 	s := m.session(provider)
 	if s == nil {

@@ -561,14 +561,14 @@ func codexReplayInputPrefixFingerprint(inputItems []ojson.Result, end int) strin
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-// codexReplayPrefixFingerprints answers codexReplayInputPrefixFingerprint queries
-// from one incremental hashing pass. The anchor search probes many prefixes per
-// turn; recomputing each prefix from scratch is O(n^2) hashing and stalled large
-// long-context requests for minutes before anything was sent upstream.
+
+
+
+
 type codexReplayPrefixFingerprints struct {
 	items  []ojson.Result
 	hasher hash.Hash
-	// sums[end] is the fingerprint of items[0:end]; extended lazily.
+
 	sums []string
 }
 
@@ -585,8 +585,8 @@ func (f *codexReplayPrefixFingerprints) at(end int) string {
 	if end < 0 || end > len(f.items) {
 		return ""
 	}
-	// Sum copies the running digest state, so absorbing one item and
-	// snapshotting per step reproduces every prefix fingerprint exactly.
+
+
 	for len(f.sums) <= end {
 		next := len(f.sums) - 1
 		_, _ = f.hasher.Write([]byte("\x00item\x00"))
@@ -636,7 +636,7 @@ func filterCodexReasoningReplayItemsForInputResult(input ojson.Result, items [][
 			if len(keys) == 0 || codexReplayAnyToolCallKeyExists(existingCalls, keys) {
 				continue
 			}
-			// Only inject if there is a matching output in the request
+
 			hasMatchingOutput := false
 			callID := strings.TrimSpace(itemResult.Get("call_id").String())
 			if callID != "" {

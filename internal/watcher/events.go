@@ -1,5 +1,5 @@
-// events.go implements fsnotify event handling for config and auth file changes.
-// It normalizes paths, debounces noisy events, and triggers reload/update logic.
+
+
 package watcher
 
 import (
@@ -107,7 +107,7 @@ func (w *Watcher) processEvents(ctx context.Context) {
 }
 
 func (w *Watcher) handleEvent(event fsnotify.Event) {
-	// Filter only relevant events: config file or auth-dir JSON files.
+
 	configOps := fsnotify.Write | fsnotify.Create | fsnotify.Rename
 	normalizedName := w.normalizeAuthPath(event.Name)
 	normalizedConfigPath := w.normalizeAuthPath(w.configPath)
@@ -116,21 +116,21 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	authOps := fsnotify.Create | fsnotify.Write | fsnotify.Remove | fsnotify.Rename
 	isAuthJSON := filepath.Dir(normalizedName) == normalizedAuthDir && strings.HasSuffix(normalizedName, ".json") && event.Op&authOps != 0
 	if !isConfigEvent && !isAuthJSON {
-		// Ignore unrelated files (e.g., cookie snapshots *.cookie) and other noise.
+
 		return
 	}
 
 	now := time.Now()
 	log.Debugf("file system event detected: %s %s", event.Op.String(), event.Name)
 
-	// Handle config file changes
+
 	if isConfigEvent {
 		log.Debugf("config file change details - operation: %s, timestamp: %s", event.Op.String(), now.Format("2006-01-02 15:04:05.000"))
 		w.scheduleConfigReload()
 		return
 	}
 
-	// Handle auth directory changes incrementally (.json only)
+
 	w.authRescanMu.Lock()
 	defer w.authRescanMu.Unlock()
 	if !w.isPathInAuthDir(normalizedName, w.currentAuthDir()) {
@@ -143,8 +143,8 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 			log.Debugf("debouncing remove event for %s", filepath.Base(event.Name))
 			return
 		}
-		// Atomic replace on some platforms may surface as Rename (or Remove) before the new file is ready.
-		// Wait briefly; if the path exists again, treat as an update instead of removal.
+
+
 		time.Sleep(replaceCheckDelay)
 		if !w.isPathInAuthDir(normalizedName, w.currentAuthDir()) {
 			return
@@ -153,9 +153,9 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		if _, statErr := os.Stat(event.Name); statErr == nil {
 			statSucceeded = true
 		} else if w.isKnownAuthFile(event.Name) {
-			// On macOS (and under disk I/O pressure), atomic replace (e.g. os.Rename from temp file)
-			// can trigger a NOTE_DELETE before the target inode is fully visible. Retry briefly
-			// before treating a known auth file as permanently removed.
+
+
+
 			for attempt := 0; attempt < 3; attempt++ {
 				time.Sleep(25 * time.Millisecond)
 				if !w.isPathInAuthDir(normalizedName, w.currentAuthDir()) {
@@ -194,8 +194,8 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	}
 }
 
-// observeAuthFile invalidates in-flight scans even if hash or content deduplication
-// suppresses an update. It must not invalidate an otherwise valid queued auth event.
+
+
 func (w *Watcher) observeAuthFile(path string) {
 	normalized := w.normalizeAuthPath(path)
 	if normalized == "" {
@@ -211,8 +211,8 @@ func (w *Watcher) observeAuthFile(path string) {
 	}
 	w.fileObservations[normalized]++
 	if w.activeAuthScans > 0 {
-		// A reload may cache a hash before publishing its auth. Force the event
-		// to parse it even if the scan finishes first, retaining the known path.
+
+
 		if _, known := w.lastAuthHashes[normalized]; known {
 			w.lastAuthHashes[normalized] = ""
 		}

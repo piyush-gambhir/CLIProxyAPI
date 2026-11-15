@@ -56,7 +56,7 @@ func TestWeightedSessionAffinityCompensatesStickyRequests(t *testing.T) {
 				t.Fatalf("sticky credits: current=%v pending=%v", state.currentForTest(), state.pendingForTest())
 			}
 			for i := range 12 {
-				// Requests without an identity and cold sessions share the same credits.
+
 				opts := cliproxyexecutor.Options{}
 				if i%2 == 0 {
 					opts.Headers = http.Header{"Session_id": {fmt.Sprintf("new-%d", i)}}
@@ -163,7 +163,7 @@ func TestWeightedSessionAffinityBoundsCompensation(t *testing.T) {
 	}
 	state := weightedStateForTest(t, weighted, "codex:model", "a", "b")
 	limit := maxSmoothWeightedCreditRounds * 4
-	// A bound charge is admitted as a whole, stopping within one delta of the cap.
+
 	wantCredit := limit / 3 * 3
 	if state.currentForTest()["a"] != wantCredit || state.currentForTest()["b"] != -wantCredit {
 		t.Fatalf("bounded credits = %v, want +/- %d", state.currentForTest(), wantCredit)
@@ -192,7 +192,7 @@ func TestWeightedSessionAffinityLCPCredits(t *testing.T) {
 					`{"role":"assistant","content":"ack 2"},{"role":"user","content":"step 3"}]}`),
 				Metadata: map[string]any{cliproxyexecutor.CallerScopeMetadataKey: "caller"},
 			}
-			// Seed the matcher without consuming weighted credits.
+
 			turns := cliproxysession.ExtractCanonicalTurns(root.SourceFormat, root.OriginalRequest)
 			selector.matcher.Bind(lcpAffinityNamespace("openai", "model", root.Metadata), turns, "b")
 			opts := root

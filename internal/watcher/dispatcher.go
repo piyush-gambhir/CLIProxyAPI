@@ -1,5 +1,5 @@
-// dispatcher.go implements auth update dispatching and queue management.
-// It batches, deduplicates, and delivers auth updates to registered consumers.
+
+
 package watcher
 
 import (
@@ -252,8 +252,8 @@ func (w *Watcher) refreshAuthState(force bool) {
 		}
 		return w.normalizeAuthPath(path)
 	}
-	// A full scan may finish after a newer file or persisted-auth update. Keep
-	// those concurrent changes, including deletions, instead of publishing stale data.
+
+
 	changedDuringScan := func(auth *coreauth.Auth) bool {
 		normalized := authPath(auth)
 		return previous[auth.ID] != w.authRevisions[auth.ID] ||
@@ -272,7 +272,7 @@ func (w *Watcher) refreshAuthState(force bool) {
 		if incompletePathOrDir(authPath(auth), false) {
 			return true
 		}
-		// An unreadable auth directory is recorded as incomplete for every file in it.
+
 		return incompletePathOrDir(auth.Attributes[coreauth.AttributePath], true)
 	}
 	isFileBackedAuth := func(auth *coreauth.Auth) bool {
@@ -440,8 +440,8 @@ func (w *Watcher) prepareAuthUpdatesLocked(auths []*coreauth.Auth, force bool) [
 			updates = append(updates, AuthUpdate{Action: AuthUpdateActionModify, ID: id, Auth: auth.Clone()})
 		}
 	}
-	// A missing ID in a full scan does not imply its source file was removed.
-	// Leave these deletes unmarked so content/config changes still remove auths.
+
+
 	for id := range w.currentAuths {
 		if _, ok := newState[id]; !ok {
 			updates = append(updates, AuthUpdate{Action: AuthUpdateActionDelete, ID: id})
@@ -470,8 +470,8 @@ func (w *Watcher) prepareAuthUpdatesLocked(auths []*coreauth.Auth, force bool) [
 	return updates
 }
 
-// stampAuthUpdatesLocked records observations even without a queue and retains
-// deletion revisions so a scan cannot resurrect an auth that appeared then vanished.
+
+
 func (w *Watcher) stampAuthUpdatesLocked(updates []AuthUpdate) {
 	if len(updates) == 0 {
 		return
@@ -496,7 +496,7 @@ func (w *Watcher) dispatchAuthUpdates(updates []AuthUpdate) {
 	if len(updates) == 0 {
 		return
 	}
-	// Keep revision validation and enqueue atomic with respect to state changes.
+
 	w.clientsMutex.RLock()
 	defer w.clientsMutex.RUnlock()
 	if w.authQueue == nil {

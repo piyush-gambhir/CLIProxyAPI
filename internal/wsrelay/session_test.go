@@ -69,7 +69,7 @@ func TestPendingRequest_ConcurrentSendAndClose(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(3)
 
-		// Producer
+
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 20; i++ {
@@ -83,14 +83,14 @@ func TestPendingRequest_ConcurrentSendAndClose(t *testing.T) {
 			}
 		}()
 
-		// Consumer
+
 		go func() {
 			defer wg.Done()
 			for range req.ch {
 			}
 		}()
 
-		// Deleter / closer
+
 		go func() {
 			defer wg.Done()
 			if actual, loaded := s.pending.LoadAndDelete(reqID); loaded {
@@ -133,7 +133,7 @@ func TestSession_Request_NoGoroutineLeakOnCompletion(t *testing.T) {
 	sess, clientConn, cleanup := newTestWebsocketPair(t)
 	defer cleanup()
 
-	// Consume messages on client side and immediately reply with a terminal response.
+
 	go func() {
 		for {
 			var msg Message
@@ -154,7 +154,7 @@ func TestSession_Request_NoGoroutineLeakOnCompletion(t *testing.T) {
 		if errReq != nil {
 			t.Fatalf("request error: %v", errReq)
 		}
-		// Drain channel completely until closed.
+
 		for range ch {
 		}
 	}
@@ -168,7 +168,7 @@ func TestSession_Dispatch_NoSilentFrameLoss(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	s.pending.Store(reqID, req)
 
-	// Send 10 chunks followed by terminal message
+
 	for i := 0; i < 10; i++ {
 		s.dispatch(Message{
 			ID:   reqID,
@@ -201,7 +201,7 @@ func TestSession_Cleanup_DeliversErrorFrameWhenBufferFull(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	s.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		s.dispatch(Message{
 			ID:   reqID,
@@ -236,7 +236,7 @@ func TestSession_Dispatch_TerminalDeliveredWhenBufferFullAndSessionClosing(t *te
 	req := newPendingRequest(context.Background())
 	s.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		s.dispatch(Message{
 			ID:   reqID,
@@ -310,7 +310,7 @@ func TestSession_SlowConsumer_UnblocksOnContextCancel(t *testing.T) {
 	req := newPendingRequest(ctx)
 	sess.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{ID: reqID, Type: MessageTypeStreamChunk})
 	}
@@ -332,12 +332,12 @@ func TestSession_SlowConsumer_UnblocksOnContextCancel(t *testing.T) {
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
 
-	// Cancel context to unblock saturated dispatch
+
 	cancel()
 
 	select {
 	case <-doneDispatch:
-		// Succeeded in unblocking
+
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch remained blocked after context cancellation")
 	}
@@ -351,7 +351,7 @@ func TestSession_SlowConsumer_UnblocksOnSessionClose(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	sess.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{ID: reqID, Type: MessageTypeStreamChunk})
 	}
@@ -373,7 +373,7 @@ func TestSession_SlowConsumer_UnblocksOnSessionClose(t *testing.T) {
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
 
-	// Close session to unblock saturated dispatch
+
 	cleanupDone := make(chan struct{})
 	go func() {
 		sess.cleanup(errClosed)
@@ -388,7 +388,7 @@ func TestSession_SlowConsumer_UnblocksOnSessionClose(t *testing.T) {
 
 	select {
 	case <-doneDispatch:
-		// Succeeded in unblocking
+
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch remained blocked after session cleanup")
 	}
@@ -403,7 +403,7 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnContextCancel(t *testing.T) {
 	req := newPendingRequest(ctx)
 	sess.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{
 			ID:   reqID,
@@ -431,12 +431,12 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnContextCancel(t *testing.T) {
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
 
-	// Cancel context to unblock saturated dispatch
+
 	cancel()
 
 	select {
 	case <-doneDispatch:
-		// Succeeded in unblocking
+
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch remained blocked after context cancellation")
 	}
@@ -466,7 +466,7 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnSessionClose(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	sess.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{
 			ID:   reqID,
@@ -494,7 +494,7 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnSessionClose(t *testing.T) {
 		t.Fatalf("dispatch did not enter backpressure wait")
 	}
 
-	// Close session to unblock saturated dispatch
+
 	cleanupDone := make(chan struct{})
 	go func() {
 		sess.cleanup(errClosed)
@@ -509,7 +509,7 @@ func TestSession_SlowConsumer_Terminal_UnblocksOnSessionClose(t *testing.T) {
 
 	select {
 	case <-doneDispatch:
-		// Succeeded in unblocking
+
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch remained blocked after session cleanup")
 	}
@@ -539,7 +539,7 @@ func TestSession_SlowConsumer_TerminalError_SessionClose(t *testing.T) {
 	req := newPendingRequest(context.Background())
 	sess.pending.Store(reqID, req)
 
-	// Fill channel to buffer capacity
+
 	for i := 0; i < pendingChannelBuffer; i++ {
 		sess.dispatch(Message{
 			ID:   reqID,
@@ -587,7 +587,7 @@ func TestSession_SlowConsumer_TerminalError_SessionClose(t *testing.T) {
 
 	select {
 	case <-doneDispatch:
-		// Succeeded in unblocking
+
 	case <-time.After(time.Second):
 		t.Fatalf("dispatch remained blocked after session cleanup")
 	}

@@ -14,15 +14,15 @@ import (
 )
 
 const (
-	// claudeAnthropicVersion is the only Anthropic-Version Claude Code sends.
+
 	claudeAnthropicVersion = "2023-06-01"
-	// claudeDefaultStainlessTimeout is the X-Stainless-Timeout every measured
-	// native helper sends. It is deliberately NOT read from
-	// claude-header-defaults.timeout: applyClaudeHeaders routes a confirmed client
-	// through misc.EnsureHeader, which prefers the incoming header and only falls
-	// back to the configured value when the caller sent none. A confirmed helper
-	// therefore always forwards its own 600, so comparing against the operator
-	// value would make any non-600 configuration reject every genuine helper.
+
+
+
+
+
+
+
 	claudeDefaultStainlessTimeout = "600"
 )
 
@@ -56,10 +56,10 @@ var claudeCodeSubclientByEntrypoint = map[string]string{
 	"claude-coworker-terminal":  "claude-coworker-terminal",
 }
 
-// Only product surfaces with verified 2.1.220+ wire behavior are eligible for
-// pass-through by default. Other first-party-looking entrypoints are cloaked
-// until their CPA-reachable request shape has been captured and reviewed, or
-// until they are allowlisted in header-defaults.native-entrypoints.
+
+
+
+
 var nativeClaudeEntrypoints = map[string]bool{
 	"cli":           true,
 	"sdk-cli":       true,
@@ -108,12 +108,12 @@ const (
 	claudeCodeHelperModel = "claude-haiku-4-5-20251001"
 )
 
-// These are the exact beta sequences observed on markerless native Haiku
-// helper requests. The first six are Claude Code 2.1.220. The last is the
-// 2.1.280 title helper captured 2026-09-23: structured output, then
-// server-side fallback, fallback credit, and cache diagnosis. Keeping the
-// allowlist exact avoids turning the helper exception into a generic
-// no-claude-code-beta bypass.
+
+
+
+
+
+
 var measuredClaudeCodeHelperBetaProfiles = map[string]claudeCodeHelperShape{
 	claudeCodeHelperBetaProfile(true):  claudeCodeHelperShapeMinimal,
 	claudeCodeHelperBetaProfile(false): claudeCodeHelperShapeMinimal,
@@ -140,9 +140,9 @@ var measuredClaudeCodeHelperBetaProfiles = map[string]claudeCodeHelperShape{
 	): claudeCodeHelperShapeTitle280,
 }
 
-// ClaudeCodeRequestDetection records the strong signals and first-party
-// subclient identity used to distinguish an official Claude Code request from
-// a client that only copied its User-Agent.
+
+
+
 type ClaudeCodeRequestDetection struct {
 	Confirmed       bool
 	ConfirmedShape  bool
@@ -158,13 +158,13 @@ type ClaudeCodeRequestDetection struct {
 	AgentSDKVersion string
 }
 
-// DetectClaudeCodeRequest first mirrors CCH's strong-signal contract, then
-// applies CPA's native-client policy. Standard Messages requests require all
-// four strong signals; count_tokens omits metadata.user_id. A separate narrow
-// profile recognizes measured native Haiku helper requests that intentionally
-// omit claude-code-20250219. Unverified entrypoints (such as generic sdk-py)
-// remain unconfirmed by default and receive CLI cloaking unless cloak_mode is
-// never or the entrypoint is allowlisted in header-defaults.native-entrypoints.
+
+
+
+
+
+
+
 func DetectClaudeCodeRequest(headers http.Header, payload []byte, countTokens bool, configs ...*config.Config) ClaudeCodeRequestDetection {
 	var cfg *config.Config
 	if len(configs) > 0 {
@@ -394,10 +394,10 @@ func measuredClaudeCodeBillingAndIdentityMatch(payload []byte, entrypoint string
 		identity == "You are a Claude agent, built on Anthropic's Claude Agent SDK."
 }
 
-// normalizedClaudeBetaHeader joins every Anthropic-Beta value in wire order.
-// Values() is tried first so canonical headers keep a deterministic order; the
-// case-insensitive fallback only exists for hand-built header maps that store a
-// non-canonical key, where ranging the map alone would be order-dependent.
+
+
+
+
 func normalizedClaudeBetaHeader(headers http.Header) string {
 	if headers == nil {
 		return ""
@@ -426,16 +426,16 @@ func normalizedClaudeBetaHeader(headers http.Header) string {
 	return strings.Join(betas, ",")
 }
 
-// measuredClaudeCodeHelperHeadersMatch validates the helper transport envelope.
-//
-// Platform and software-version headers are deliberately NOT compared for
-// equality. The device-profile pipeline this detector feeds already pins OS/Arch
-// to the configured baseline and replaces a non-baseline software tuple instead
-// of rejecting it, so demanding equality here would classify a genuine Claude
-// Code helper from Windows/Linux, or from a different Node or SDK build, as a
-// foreign client and cloak it. Values that carry real discriminating power - the
-// exact beta allowlist, the body shape, the billing CCH and the session binding -
-// stay strict.
+
+
+
+
+
+
+
+
+
+
 func measuredClaudeCodeHelperHeadersMatch(headers http.Header, cfg *config.Config, shape claudeCodeHelperShape) bool {
 	profile := defaultClaudeDeviceProfile(cfg)
 	expected := map[string]string{
@@ -453,7 +453,7 @@ func measuredClaudeCodeHelperHeadersMatch(headers http.Header, cfg *config.Confi
 			return false
 		}
 	}
-	// Presence is still required: the native SDK always sends these.
+
 	for _, name := range []string{
 		"X-Stainless-Package-Version",
 		"X-Stainless-Runtime-Version",
@@ -476,12 +476,12 @@ func measuredClaudeCodeHelperHeadersMatch(headers http.Header, cfg *config.Confi
 	if !meetsClaudeDeviceProfileBaseline(candidate, profile) {
 		return false
 	}
-	// Claude Code 2.1.258 (@anthropic-ai/sdk 0.112.1), measured 2026-09-02 on the
-	// quota probe and the session-title helper: X-Stainless-Async is never sent
-	// and both shapes offer the full compression set. x-client-request-id is
-	// attached only when the client's base URL is api.anthropic.com, so a client
-	// pointed at CPA through ANTHROPIC_BASE_URL sends none while one that reaches
-	// CPA through a transparent proxy still carries the UUID; both are accepted.
+
+
+
+
+
+
 	if headerValue(headers, "X-Stainless-Async") != "" {
 		return false
 	}
@@ -505,11 +505,11 @@ func measuredClaudeCodeHelperSessionMatches(headers http.Header, payload []byte)
 	if userID.Type != ojson.String || !isValidUserID(userID.String()) {
 		return false
 	}
-	// The native metadata builder is
-	//	{...extraMetadata, device_id, account_uuid, session_id, ...parentSessionId && {parent_session_id}}
-	// in 2.1.220, 2.1.221 and 2.1.227 alike, so parent_session_id is a legitimate
-	// optional trailing key for sub-agent and forked sessions. Rejecting it would
-	// cloak the helper requests those sessions issue.
+
+
+
+
+
 	identityRaw := []byte(userID.String())
 	if !claudeJSONObjectHasKeys(identityRaw, []string{"device_id", "account_uuid", "session_id"}) &&
 		!claudeJSONObjectHasKeys(identityRaw, []string{"device_id", "account_uuid", "session_id", "parent_session_id"}) {
@@ -636,10 +636,10 @@ func measuredClaudeCodeHelperSystemMatches(system ojson.Result) bool {
 	return strings.HasPrefix(billing, "x-anthropic-billing-header:") && measuredClaudeBillingCCH(billing) && strings.HasPrefix(identity, "You are Claude Code")
 }
 
-// measuredClaudeBillingCCH validates the five lowercase hexadecimal characters the
-// native billing header carries. It duplicates isLowerHex in
-// internal/runtime/executor/claude_signing.go because the signing side lives in the
-// package that imports this one; keep the two definitions in step.
+
+
+
+
 func measuredClaudeBillingCCH(billing string) bool {
 	marker := strings.Index(billing, " cch=")
 	if marker < 0 {
@@ -689,7 +689,7 @@ func claudeJSONObjectHasKeys(raw []byte, want []string) bool {
 	return errClosing == nil && closing == json.Delim('}') && keyIndex == len(want)
 }
 
-// IsClaudeCodeUserAgent reports whether userAgent identifies a Claude Code CLI client.
+
 func IsClaudeCodeUserAgent(userAgent string) bool {
 	return claudeCodeUserAgentPattern.MatchString(strings.TrimSpace(userAgent))
 }
@@ -701,7 +701,7 @@ func plausibleClaudeCodeUserAgent(userAgent string, cfg *config.Config) bool {
 
 func plausibleClaudeCodeVersion(candidate claudeCLIVersion, cfg *config.Config) bool {
 	baseline, okBaseline := parseClaudeCLIVersion(defaultClaudeDeviceProfile(cfg).UserAgent)
-	// Patch releases (>= baseline.patch) within the release line preserve native passthrough.
+
 	return okBaseline && plausibleClaudeCLIVersion(candidate, baseline)
 }
 

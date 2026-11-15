@@ -6,9 +6,9 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// SanitizeMetaWebSearchTools strips unsupported fields from web_search tool definitions
-// for Meta Muse upstreams. Specifically, Meta rejects search_content_types when tool type
-// is "web_search" (it is only accepted on "web_search_preview" tools).
+
+
+
 func SanitizeMetaWebSearchTools(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -20,8 +20,8 @@ func SanitizeMetaWebSearchTools(body []byte) []byte {
 	return doc.Bytes()
 }
 
-// SanitizeMetaWebSearchToolsDoc strips unsupported fields from web_search tool definitions
-// in place on doc for Meta Muse upstreams.
+
+
 func SanitizeMetaWebSearchToolsDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false

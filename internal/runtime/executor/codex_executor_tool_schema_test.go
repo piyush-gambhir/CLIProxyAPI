@@ -17,9 +17,9 @@ import (
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
-// Issue #5551: Tool schema with 13-branch oneOf causes ChatGPT Codex upstream
-// to abort silently. The executor must simplify the complex union without destroying
-// property names, enum values, or sibling properties.
+
+
+
 func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 	var gotBody []byte
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +43,7 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 		},
 	}
 
-	// 13-branch oneOf reproduction payload from Issue #5551
+
 	requestPayload := []byte(`{
 		"model": "gpt-5.5",
 		"messages": [{"role": "user", "content": "Reply with exactly: OK"}],
@@ -102,7 +102,7 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 		t.Fatalf("expected tools in upstream payload, got: %s", gotBody)
 	}
 
-	// Find tool t1
+
 	var t1Tool ojson.Result
 	for _, tool := range tools {
 		if tool.Get("name").String() == "t1" {
@@ -114,30 +114,30 @@ func TestCodexExecutorSimplifiesComplexOneOfToolSchema(t *testing.T) {
 		t1Tool = tools[0]
 	}
 
-	// Complex oneOf must be removed from action property
+
 	if t1Tool.Get("parameters.properties.action.oneOf").Exists() {
 		t.Fatalf("expected complex oneOf to be removed from tool parameters, got: %s", t1Tool.Get("parameters").Raw)
 	}
-	// Action type and enum must be preserved
+
 	if t1Tool.Get("parameters.properties.action.type").String() != "string" {
 		t.Fatalf("expected action.type = string, got: %s", t1Tool.Get("parameters.properties.action.type").String())
 	}
 	if len(t1Tool.Get("parameters.properties.action.enum").Array()) != 13 {
 		t.Fatalf("expected action.enum to retain all 13 items")
 	}
-	// Sibling property target_id must be preserved
+
 	if t1Tool.Get("parameters.properties.target_id.type").String() != "string" {
 		t.Fatalf("sibling property target_id was dropped")
 	}
-	// Required field must be preserved
+
 	if t1Tool.Get("parameters.required.0").String() != "action" {
 		t.Fatalf("required list was dropped")
 	}
 }
 
-// Issue #5551: If ChatGPT Codex upstream terminates immediately with response.incomplete,
-// reason: "max_output_tokens", and output_tokens: 0 (no output produced), it must be treated
-// as an upstream failure rather than a silent successful completion.
+
+
+
 func TestCodexExecutorExecuteStream_ZeroTokenIncompleteResponseIsFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -162,11 +162,11 @@ func TestCodexExecutorExecuteStream_ZeroTokenIncompleteResponseIsFailure(t *test
 		Stream:       true,
 	})
 	if err != nil {
-		// Error returned before streaming is also valid failure
+
 		return
 	}
 
-	// If streaming started, chunks must surface an error rather than silent completion
+
 	sawError := false
 	for chunk := range res.Chunks {
 		if chunk.Err != nil {
@@ -179,8 +179,8 @@ func TestCodexExecutorExecuteStream_ZeroTokenIncompleteResponseIsFailure(t *test
 	}
 }
 
-// Issue #5551: If a stream emitted output text deltas before response.incomplete,
-// it produced partial output and must NOT be treated as a zero-token empty failure.
+
+
 func TestCodexExecutorExecuteStream_PartialDeltasIncompleteResponseIsSuccessful(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -227,8 +227,8 @@ func TestCodexExecutorExecuteStream_PartialDeltasIncompleteResponseIsSuccessful(
 	}
 }
 
-// Issue #5551: Delta seen during the buffering phase must be remembered when transitioning
-// to the streaming goroutine so zero-token response.incomplete is not falsely flagged as empty.
+
+
 func TestCodexExecutorExecuteStream_BufferingPartialDeltasIncompleteResponseIsSuccessful(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -279,8 +279,8 @@ func TestCodexExecutorExecuteStream_BufferingPartialDeltasIncompleteResponseIsSu
 	}
 }
 
-// Issue #5551: An empty string delta ("") before response.incomplete must NOT be treated as
-// meaningful output, and the stream must correctly surface the zero-token failure.
+
+
 func TestCodexExecutorExecuteStream_EmptyDeltaDoesNotBypassZeroTokenFailure(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -489,7 +489,7 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		]
 	}`)
 
-	// 1. With non-Codex User-Agent, tool types must remain unchanged (number).
+
 	_, errExecuteNonCodex := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.5",
 		Payload: requestPayload,
@@ -510,7 +510,7 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		t.Fatalf("expected non-Codex UA to preserve number, got %q", gotType)
 	}
 
-	// 2. With Codex User-Agent, tool parameter number types must NOT be rewritten to integer for Codex executor (Issue #6244).
+
 	gotBody = nil
 	_, errExecuteCodex := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.5",
@@ -552,18 +552,18 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		}
 	}
 
-	// Unrelated tool must retain number
+
 	unrelated := toolMap["unrelated_tool"]
 	if gotType := unrelated.Get("parameters.properties.unrelated_num.type").String(); gotType != "number" {
 		t.Fatalf("unrelated_tool property type = %q, want number", gotType)
 	}
 
-	// Namespace collaboration tool wait_agent must retain number (Issue #6244)
+
 	if gotType := ojson.GetBytes(gotBody, "tools.#(name==\"collaboration\").tools.0.parameters.properties.timeout_ms.type").String(); gotType != "number" {
 		t.Fatalf("collaboration.wait_agent timeout_ms type = %q, want number", gotType)
 	}
 
-	// input[].additional_tools must retain number
+
 	if gotType := ojson.GetBytes(gotBody, "input.#(type==\"additional_tools\").tools.0.parameters.properties.yield_time_ms.type").String(); gotType != "number" {
 		t.Fatalf("input additional_tools yield_time_ms type = %q, want number", gotType)
 	}
@@ -571,7 +571,7 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		t.Fatalf("input additional_tools collaboration.wait_agent timeout_ms type = %q, want number", gotType)
 	}
 
-	// 3. HTTP Stream: must also retain number
+
 	gotBody = nil
 	streamRes, errStream := executor.ExecuteStream(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.5",
@@ -595,7 +595,7 @@ func TestCodexExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAgent(t *test
 		t.Fatalf("HTTP stream input additional_tools yield_time_ms type = %q, want number", gotType)
 	}
 
-	// 4. HTTP Compact (/responses/compact): must also retain number
+
 	gotBody = nil
 	_, errCompact := executor.Execute(context.Background(), auth, cliproxyexecutor.Request{
 		Model:   "gpt-5.5",
@@ -768,7 +768,7 @@ func TestCodexWebsocketsExecutor_DoesNotNormalizeToolIntegerTypesForCodexUserAge
 		t.Fatal("timed out waiting for upstream websocket payload")
 	}
 
-	// Also test WS non-stream Execute
+
 	_, errExecWS := exec.Execute(context.Background(), auth, req, opts)
 	if errExecWS != nil {
 		t.Fatalf("WS Execute() error = %v", errExecWS)
@@ -876,7 +876,7 @@ func TestCodexWebsocketsExecutor_UpgradeFallbackToHTTP_PreservesNumber(t *testin
 		Headers:      http.Header{"User-Agent": []string{"codex_cli_rs/0.1.0"}},
 	}
 
-	// 1. Stream fallback
+
 	httpCapturedBody = nil
 	streamRes, errStream := exec.ExecuteStream(context.Background(), auth, req, opts)
 	if errStream != nil {
@@ -894,7 +894,7 @@ func TestCodexWebsocketsExecutor_UpgradeFallbackToHTTP_PreservesNumber(t *testin
 		t.Fatalf("stream fallback input additional_tools yield_time_ms type = %q, want number", got)
 	}
 
-	// 2. Non-stream fallback
+
 	httpCapturedBody = nil
 	_, errNonStream := exec.Execute(context.Background(), auth, req, opts)
 	if errNonStream != nil {

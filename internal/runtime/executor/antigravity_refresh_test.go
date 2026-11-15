@@ -198,7 +198,7 @@ func TestAntigravityRefresh_DeduplicatesConcurrentRefresh(t *testing.T) {
 	if got := atomic.LoadInt32(&tokenCalls); got != 1 {
 		t.Fatalf("expected both refresh callers to share a single upstream token call, got %d", got)
 	}
-	// Finish optional background work before restoring the test-only transport.
+
 	for _, auth := range []*cliproxyauth.Auth{authA, authB} {
 		if value, ok := antigravityCreditsHintRefreshByID.Load(auth.ID); ok {
 			state := value.(*antigravityCreditsHintRefreshState)

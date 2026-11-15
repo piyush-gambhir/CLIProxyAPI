@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-// TestSDKConfigTLSHandshakeTimeout pins the Issue #6615 contract for the
-// opt-in upstream TLS handshake bound: a positive value in seconds enables
-// the bound, while zero or negative values disable it.
+
+
+
 func TestSDKConfigTLSHandshakeTimeout(t *testing.T) {
 	tests := []struct {
 		name string
@@ -30,8 +30,8 @@ func TestSDKConfigTLSHandshakeTimeout(t *testing.T) {
 	}
 }
 
-// TestParseConfigBytesRequestsTLSHandshakeTimeout ensures the canonical v8
-// layout exposes the setting under requests and parses as integer seconds.
+
+
 func TestParseConfigBytesRequestsTLSHandshakeTimeout(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
 requests:
@@ -48,8 +48,8 @@ requests:
 	}
 }
 
-// TestParseConfigBytesRequestsTLSHandshakeTimeoutLegacyLayout ensures the
-// pre-v8 flat layout maps tls-handshake-timeout-seconds onto the same field.
+
+
 func TestParseConfigBytesRequestsTLSHandshakeTimeoutLegacyLayout(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
 tls-handshake-timeout-seconds: 7
@@ -65,9 +65,9 @@ tls-handshake-timeout-seconds: 7
 	}
 }
 
-// TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence ensures the
-// canonical requests value, including explicit zero, wins over the flat
-// spelling when a partially migrated document contains both.
+
+
+
 func TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence(t *testing.T) {
 	tests := []struct {
 		name string
@@ -98,9 +98,9 @@ func TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence(t *testing.T) {
 	}
 }
 
-// TestParseConfigBytesUpstreamClaudeTLSHandshakeTimeoutIgnored pins the
-// relocation: the never-released upstream.claude spelling must not remain
-// a second functional entry point after moving to requests.
+
+
+
 func TestParseConfigBytesUpstreamClaudeTLSHandshakeTimeoutIgnored(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
 upstream:

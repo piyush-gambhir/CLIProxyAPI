@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	// CodexEmptyIncompleteStreamMessage is the error message emitted when upstream ChatGPT Codex
-	// terminates with response.incomplete having 0 output tokens and 0 content output.
+
+
 	CodexEmptyIncompleteStreamMessage = "stream error: upstream terminated with incomplete empty response (0 tokens)"
 )
 
-// HasMeaningfulCodexOutputDelta reports whether an event carries non-empty generated content
-// (such as non-empty text, reasoning, or function call arguments delta).
+
+
 func HasMeaningfulCodexOutputDelta(eventData []byte) bool {
 	eventType := ojson.GetBytesNoCopy(eventData, "type").String()
 	switch eventType {
@@ -27,28 +27,28 @@ func HasMeaningfulCodexOutputDelta(eventData []byte) bool {
 	return false
 }
 
-// IsCodexTerminalEmptyIncomplete reports whether a response.incomplete event represents
-// an upstream silent abort where explicitly zero output tokens were generated and zero
-// output content (no output items and no non-empty output deltas) was produced.
+
+
+
 func IsCodexTerminalEmptyIncomplete(eventData []byte, outputItemsCount int, sawOutputDelta bool) bool {
 	eventType := ojson.GetBytesNoCopy(eventData, "type").String()
 	if eventType != "response.incomplete" {
 		return false
 	}
-	// If any non-empty text delta, reasoning delta, or tool argument delta was emitted, content was produced.
+
 	if sawOutputDelta {
 		return false
 	}
-	// If any completed output items exist, output was produced.
+
 	if outputItemsCount > 0 {
 		return false
 	}
-	// If response.output contains any items, output was produced.
+
 	output := ojson.GetBytesNoCopy(eventData, "response.output")
 	if output.Exists() && output.IsArray() && len(output.Array()) > 0 {
 		return false
 	}
-	// Require explicit numeric zero for output tokens (reject floats like 0.5, non-numbers, missing, or null).
+
 	outputTokens := ojson.GetBytesNoCopy(eventData, "response.usage.output_tokens")
 	if !outputTokens.Exists() || outputTokens.Type != ojson.Number {
 		return false

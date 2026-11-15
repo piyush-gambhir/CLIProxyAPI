@@ -138,8 +138,8 @@ func TestRecordAPIRequestAsyncCapturePolicySurvivesGinContextReuse(t *testing.T)
 	cancel()
 	callbackCtx := context.WithoutCancel(socketCtx)
 
-	// A completed socket can leave asynchronous plugin callbacks holding the
-	// same Gin pointer that is now serving an unrelated HTTP request.
+
+
 	ginCtx.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
 	RecordAPIRequest(parent, &config.Config{}, UpstreamRequestLog{Body: []byte("new-http-request")})
 	var callbacks sync.WaitGroup
@@ -180,7 +180,7 @@ func TestDeferredAPIResponseCapturedAndAlignedAcrossAttempts(t *testing.T) {
 	ctx := context.WithValue(context.Background(), "gin", ginCtx)
 	cfg := &config.Config{}
 
-	// Attempt 1: request recorded, then aborted before any upstream response arrives.
+
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{
 		URL:    "https://api.example.com/v1/responses",
 		Method: http.MethodPost,
@@ -194,7 +194,7 @@ func TestDeferredAPIResponseCapturedAndAlignedAcrossAttempts(t *testing.T) {
 		t.Fatal("HasPayload = true before any response details were recorded")
 	}
 
-	// Attempt 2: response metadata, SSE chunks, and read error recorded.
+
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{
 		URL:    "https://api.example.com/v1/responses",
 		Method: http.MethodPost,
@@ -217,7 +217,7 @@ func TestDeferredAPIResponseCapturedAndAlignedAcrossAttempts(t *testing.T) {
 	AppendAPIResponseChunk(ctx, cfg, []byte(`data: {"type":"response.created"}`))
 	RecordAPIResponseError(ctx, cfg, errors.New("stream disconnected"))
 
-	// Attempt 3: transport dial error with no HTTP response metadata.
+
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{
 		URL:    "https://api.example.com/v1/responses",
 		Method: http.MethodPost,
@@ -268,8 +268,8 @@ func TestDeferredAPIResponseBodyTruncatedAndBoundedAcrossAttempts(t *testing.T) 
 	ctx := context.WithValue(context.Background(), "gin", ginCtx)
 	cfg := &config.Config{}
 
-	// Pass a 2 MiB slice to verify truncation copies into a bounded buffer rather
-	// than retaining the multi-megabyte backing array.
+
+
 	largePayload := bytes.Repeat([]byte("a"), 2<<20)
 	RecordAPIRequest(ctx, cfg, UpstreamRequestLog{Method: http.MethodPost})
 	RecordAPIResponseMetadata(ctx, cfg, http.StatusOK, nil)

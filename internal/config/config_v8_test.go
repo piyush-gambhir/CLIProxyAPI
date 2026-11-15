@@ -38,7 +38,7 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 	if _, changed, errNormalize := NormalizeConfigLayout(example, false); errNormalize != nil || changed {
 		t.Fatalf("v8 template unexpectedly needs conflict cleanup: changed=%v error=%v", changed, errNormalize)
 	}
-	// Validate the provider examples exactly as operators uncomment them.
+
 	text := strings.ReplaceAll(string(example), "\r\n", "\n")
 	_, block, found := strings.Cut(text, "# BEGIN API KEY EXAMPLES\n")
 	if !found {
@@ -247,7 +247,7 @@ openai-compatibility:
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Scope metadata is intentionally added when fields move under oauth.providers.
+
 	after.OAuthOnlyFields = nil
 	if !reflect.DeepEqual(before, after) {
 		t.Fatal("migration changed effective config")
@@ -394,7 +394,7 @@ another-legacy-key:
 		t.Fatalf("expected warnings for all unmapped sections, found: %+v", foundSections)
 	}
 
-	// Repeated migration should not repeat warnings
+
 	hook.Reset()
 	remigrated, _, errRemigrate := NormalizeConfigLayout(migrated, true)
 	if errRemigrate != nil {
@@ -405,7 +405,7 @@ another-legacy-key:
 	}
 	_ = remigrated
 
-	// Test warning hook customization
+
 	var hookBuf bytes.Buffer
 	var hookMu sync.Mutex
 	SetV8MigrationWarnFunc(func(section, msg string) {
@@ -429,7 +429,7 @@ another-legacy-key:
 		t.Fatalf("expected custom hook to capture warnings, got: %s", hookOutput)
 	}
 
-	// Known-only config produces no warnings
+
 	hook.Reset()
 	hookBuf.Reset()
 	knownRaw := []byte(`host: "127.0.0.1"

@@ -247,7 +247,7 @@ func TestNormalizeGluedSSEEvents_SplitsCodexDataGlueOnly(t *testing.T) {
 	inside := []byte(`data: {"type":"delta","text":"literal }data: inside"}`)
 	gotInside := string(normalizeGluedSSEEvents(inside))
 	if strings.Contains(gotInside, "}\ndata:") && !bytes.Equal([]byte(gotInside), inside) {
-		// Only fail if we actually inserted a split (unchanged is OK)
+
 		for _, line := range bytes.Split([]byte(gotInside), []byte("\n")) {
 			if bytes.HasPrefix(line, []byte("data:")) {
 				_, jd, ok := extractSSEDataLine(line)

@@ -18,12 +18,12 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/api/handlers"
 )
 
-// Once a terminal payload (completion or failure) has been written
-// downstream, a local interrupt must no longer be accepted for that turn:
-// accepting it either fabricates a response.incomplete or drops the frame
-// when the turn ends. The data channel stays open in this test so the
-// forward loop is deterministically still in its post-terminal window when
-// deliver is attempted.
+
+
+
+
+
+
 func TestForwardResponsesWebsocketRejectsLocalInterruptAfterCompletion(t *testing.T) {
 	testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t,
 		`{"type":"response.completed","response":{"id":"resp-1","output":[]}}`, wsEventTypeCompleted, true)
@@ -48,7 +48,7 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 			close(errCh)
 		}
 	}
-	// Always end the forward turn, even on assertion failure.
+
 	defer closeStream()
 	data <- []byte(terminalPayload)
 	serverErrCh := make(chan error, 1)
@@ -67,9 +67,9 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		ctx.Request = r
 
-		// A nil handler panics on the stream-closed-before-completed path
-		// (LoggingAPIResponseError), which the failure variant reaches; use
-		// a real handler shell without an auth manager.
+
+
+
 		testHandler := NewOpenAIResponsesAPIHandler(handlers.NewBaseAPIHandlers(nil, nil))
 		_, completedResponseID, _, errMsg, errForward := testHandler.forwardResponsesWebsocket(
 			ctx,
@@ -82,9 +82,9 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 			responsesWebsocketForwardOptions{localInterrupt: local},
 		)
 		if errForward != nil {
-			// The test ends the turn by canceling the request context. The
-			// failure variant instead ends inside the pre-completion close
-			// path, which reports ErrCloseSent after closing the socket.
+
+
+
 			if errForward != context.Canceled && !errors.Is(errForward, websocket.ErrCloseSent) {
 				serverErrCh <- errForward
 				return
@@ -99,7 +99,7 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 				return
 			}
 		} else {
-			// A failed turn carries no completed identity.
+
 			if completedResponseID != "" {
 				serverErrCh <- fmt.Errorf("completed response id = %q, want empty after failure", completedResponseID)
 				return
@@ -134,12 +134,12 @@ func testForwardResponsesWebsocketRejectsLocalInterruptAfterTerminal(t *testing.
 		t.Fatalf("payload type = %s, want %s", got, terminalType)
 	}
 
-	// The terminal event was already written, so no local interrupt may be taken.
+
 	if local.deliver([]byte(`{"type":"response.interrupt","response_id":"unknown"}`)) {
 		t.Fatal("local interrupt accepted after terminal event was written downstream")
 	}
 
-	// The turn is still alive; closing the stream ends it.
+
 	closeStream()
 	if errClose := conn.Close(); errClose != nil {
 		t.Fatalf("close websocket: %v", errClose)

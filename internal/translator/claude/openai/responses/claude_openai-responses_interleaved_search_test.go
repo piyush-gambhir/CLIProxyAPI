@@ -9,12 +9,12 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// Regression for a production incident: a Claude turn that interleaved thinking
-// with server-side web searches used to lose the search blocks, leaving two
-// adjacent reasoning items. Replaying those produced two adjacent Claude
-// `thinking` blocks, which Anthropic rejects with
-// "`thinking` ... blocks in the latest assistant message cannot be modified",
-// killing the session mid-turn.
+
+
+
+
+
+
 func TestInterleavedThinkingAndSearchSurvivesRoundTrip(t *testing.T) {
 	signature := mustTestSignature(t)
 	thinking := func(index int, text string) [][]byte {

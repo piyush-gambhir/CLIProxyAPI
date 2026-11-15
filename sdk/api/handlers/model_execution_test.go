@@ -914,7 +914,7 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 
 	handler := NewBaseAPIHandlers(&sdkconfig.SDKConfig{}, manager)
 
-	// 1. Without AuthID pin, normal selection picks high priority auth
+
 	resp, errMsg := handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
 		ExitProtocol:   "openai",
@@ -934,7 +934,7 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 	}
 	mu.Unlock()
 
-	// 2. With AuthID pin to low priority auth, exact low priority auth is executed
+
 	resp, errMsg = handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
 		ExitProtocol:   "openai",
@@ -955,7 +955,7 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 	}
 	mu.Unlock()
 
-	// 3. Pinning to non-existent auth fails without falling back to high priority auth
+
 	_, errMsg = handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
 		ExitProtocol:   "openai",
@@ -968,7 +968,7 @@ func TestExecuteModelPinsExactAuthAcrossPrioritiesWithoutFallback(t *testing.T) 
 		t.Fatal("ExecuteModel() with non-existent AuthID error = nil, want auth_not_found")
 	}
 
-	// 4. Pinning to disabled auth fails without falling back
+
 	_, errMsg = handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:  "openai",
 		ExitProtocol:   "openai",
@@ -1313,7 +1313,7 @@ func TestExecuteModelReplaysInterceptedCallerScopeWithoutGinContext(t *testing.T
 		t.Fatalf("intercept Metadata[caller_scope] = (%v, %v), want %q", beforeInterceptReq.Metadata[pluginapi.CallerScopeMetadataKey], afterInterceptReq.Metadata[pluginapi.CallerScopeMetadataKey], originalCallerScope)
 	}
 
-	// Replay via ExecuteModelStream on context.Background() (no gin.Context), passing CallerScope from intercept.
+
 	replayStream, errReplayStream := handler.ExecuteModelStream(context.Background(), ModelExecutionRequest{
 		EntryProtocol:           "claude",
 		ExitProtocol:            "claude",
@@ -1336,7 +1336,7 @@ func TestExecuteModelReplaysInterceptedCallerScopeWithoutGinContext(t *testing.T
 		t.Fatalf("replay stream DerivedSessionIDMetadataKey = %v, want %q", got, originalDerivedSession)
 	}
 
-	// Replay via ExecuteModel on context.Background() (no gin.Context), passing CallerScope from intercept.
+
 	if _, errReplayExec := handler.ExecuteModel(context.Background(), ModelExecutionRequest{
 		EntryProtocol:           "claude",
 		ExitProtocol:            "claude",

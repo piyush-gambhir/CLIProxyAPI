@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build a traceable release from the committed fork checkout.
+
 set -eu
 cd "$(dirname "$0")/.."
 version=${1:-piyush-$(git rev-parse --short=12 HEAD)}

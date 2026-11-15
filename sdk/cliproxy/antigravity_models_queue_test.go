@@ -49,7 +49,7 @@ func TestAntigravityRefreshSkipsPluginOwnedModels(t *testing.T) {
 		done := make(chan struct{})
 		go func() { defer close(done); svc.runAntigravityModelRefresh(ctx) }()
 		svc.asyncProbeAntigravityCapabilities(ctx, auth, "antigravity")
-		time.Sleep(10 * time.Minute) // Synthetic time: exercise multiple native scans.
+		time.Sleep(10 * time.Minute)
 		synctest.Wait()
 		cancel()
 		<-done
@@ -58,7 +58,7 @@ func TestAntigravityRefreshSkipsPluginOwnedModels(t *testing.T) {
 		if lookups.Load() == 0 || calls.Load() != 0 || !reg.ClientSupportsModel(auth.ID, "plugin-model") {
 			t.Fatal("native refresh ignored plugin model ownership")
 		}
-		// Plugin removal must immediately make native discovery eligible again.
+
 		owned.Store(false)
 		svc.completeModelRegistrationForAuth(t.Context(), auth)
 		svc.WaitAntigravityProbes()

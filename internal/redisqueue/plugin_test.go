@@ -147,7 +147,7 @@ func TestUsageQueuePluginPayloadDefaultsGenerateTrueWhenOmitted(t *testing.T) {
 		ctx := internallogging.WithResponseStatusHolder(context.Background())
 		internallogging.SetResponseStatus(ctx, http.StatusOK)
 
-		// Legacy callers construct usage.Record without Generate; omission must publish as true.
+
 		(&usageQueuePlugin{}).HandleUsage(ctx, coreusage.Record{
 			Provider: "openai",
 			Model:    "gpt-5.4",
@@ -695,8 +695,8 @@ func TestUsageQueuePluginPayloadSameOriginFallback(t *testing.T) {
 		internallogging.SetResponseStatus(ctx, http.StatusOK)
 
 		plugin := &usageQueuePlugin{}
-		// Record explicitly defines an independent root session without parent.
-		// It should NOT pick up old-parent from context.
+
+
 		plugin.HandleUsage(ctx, coreusage.Record{
 			Provider:        "openai",
 			Model:           "gpt-5.6-sol",
@@ -743,11 +743,11 @@ func TestUsageQueuePlugin_SchemeB_ExecutionIDAndTraceID(t *testing.T) {
 	})
 
 	payload := popSinglePayload(t)
-	// Scheme B: request_id preserves the 8-character hex trace ID
+
 	requireStringField(t, payload, "request_id", "000000ab")
-	// Scheme B: execution_id carries the UUID v4 execution instance ID
+
 	requireStringField(t, payload, "execution_id", execUUID)
-	// Scheme B: trace_id explicitly carries the 8-character hex trace ID
+
 	requireStringField(t, payload, "trace_id", "000000ab")
 }
 
@@ -776,11 +776,11 @@ func TestUsageQueuePlugin_SchemeB_StrictLegacyRequestIDPreservation(t *testing.T
 	})
 
 	payload := popSinglePayload(t)
-	// request_id strictly preserves legacy GetRequestID(ctx)
+
 	requireStringField(t, payload, "request_id", "legacy-log-id")
-	// execution_id carries the UUID v4
+
 	requireStringField(t, payload, "execution_id", execUUID)
-	// trace_id reflects the record.TraceID
+
 	requireStringField(t, payload, "trace_id", "custom-trace-id")
 }
 

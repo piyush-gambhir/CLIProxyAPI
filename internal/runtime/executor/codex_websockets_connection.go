@@ -47,7 +47,7 @@ func (e *CodexWebsocketsExecutor) dialCodexWebsocket(ctx context.Context, auth *
 		enabled := e.cfg == nil || e.cfg.Codex.WebsocketCompressionEnabled()
 		conn.EnableWriteCompression(enabled)
 		if enabled {
-			// DefaultCompression avoids the fast flate tail path; configuration remains an escape hatch.
+
 			if errSetCompressionLevel := conn.SetCompressionLevel(flate.DefaultCompression); errSetCompressionLevel != nil {
 				log.Errorf("set Codex websocket compression level: %v", errSetCompressionLevel)
 			}
@@ -131,9 +131,9 @@ func mapCodexWebsocketReadError(err error) error {
 	return err
 }
 
-// codexWebsocketTurnTransportError turns a transport loss (EOF, reset, close 1006) into
-// the turn error that keeps the downstream websocket open. Status, policy and other
-// close codes are returned unchanged and keep ending the downstream socket.
+
+
+
 func codexWebsocketTurnTransportError(err error) error {
 	if err == nil || cliproxyexecutor.IsUpstreamWebsocketTurnError(err) {
 		return err
@@ -156,7 +156,7 @@ func codexWebsocketTurnTransportError(err error) error {
 	return &cliproxyexecutor.UpstreamWebsocketTurnError{Cause: err}
 }
 
-// codexWebsocketTurnEventID lets a lost turn's error carry the create's event_id.
+
 func codexWebsocketTurnEventID(err error, payload []byte) error {
 	var turnErr *cliproxyexecutor.UpstreamWebsocketTurnError
 	if !errors.As(err, &turnErr) || turnErr.EventID != "" {
@@ -186,7 +186,7 @@ func buildCodexWebsocketRequestBody(body []byte) []byte {
 	return frameCodexWebsocketRequestBody(helps.SanitizeCodexInputItemIDs(body))
 }
 
-// Framing must not normalize the configured business payload.
+
 func frameCodexWebsocketRequestBody(body []byte) []byte {
 	if len(body) == 0 {
 		return nil

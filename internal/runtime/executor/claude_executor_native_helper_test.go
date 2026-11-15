@@ -251,10 +251,10 @@ func claudeNativeHelperHeaderValue(headers http.Header, name string) string {
 	return ""
 }
 
-// The measured minimal helper has no system field at all, so injecting a billing
-// header would itself be the deviation. Keying the fallback on system presence means
-// that if a payload rule later attaches a system prompt, the billing header and its
-// CCH come back instead of shipping a system block native would never send unsigned.
+
+
+
+
 func TestClaudeBodyNeedsBillingFallbackTracksSystemPresence(t *testing.T) {
 	tests := []struct {
 		name string
@@ -291,10 +291,10 @@ func TestClaudeBodyNeedsBillingFallbackTracksSystemPresence(t *testing.T) {
 	}
 }
 
-// A 2.1.258 helper that reaches CPA through ANTHROPIC_BASE_URL carries no
-// x-client-request-id, because the client attaches it only for a first-party base
-// URL. The header must stay absent on a custom upstream instead of being
-// synthesized, while a helper that did carry one keeps its own value.
+
+
+
+
 func TestApplyClaudeHeadersHelperRequestIDFollowsUpstreamBase(t *testing.T) {
 	const nativeRequestID = "66666666-7777-4888-8999-aaaaaaaaaaaa"
 	for _, test := range []struct {

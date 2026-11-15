@@ -11,9 +11,9 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/quota"
 )
 
-// quotaWindowPayload is one quota window in the scheduler status contract.
-// Field names and the RFC3339 reset are fixed: an external client decodes this
-// shape, and renaming a field breaks it.
+
+
+
 type quotaWindowPayload struct {
 	UsedPercent float64 `json:"used_percent"`
 	ResetAt     string  `json:"reset_at,omitempty"`
@@ -21,8 +21,8 @@ type quotaWindowPayload struct {
 	HardLimited bool    `json:"hard_limited"`
 }
 
-// quotaAccountPayload is one credential in the scheduler status contract,
-// keyed in the accounts map by auth file name.
+
+
 type quotaAccountPayload struct {
 	Provider  string              `json:"provider"`
 	Plan      string              `json:"plan,omitempty"`
@@ -33,8 +33,8 @@ type quotaAccountPayload struct {
 	Fable     *quotaWindowPayload `json:"fable,omitempty"`
 }
 
-// quotaRankingPayload is one entry of the extra ranking view. The contract's
-// decoder ignores unknown top-level keys, so this is additive.
+
+
 type quotaRankingPayload struct {
 	Auth          string  `json:"auth"`
 	Provider      string  `json:"provider"`
@@ -44,7 +44,7 @@ type quotaRankingPayload struct {
 	RankingWindow string  `json:"ranking_window,omitempty"`
 }
 
-// quotaSchedulerStatusPayload is the full response body.
+
 type quotaSchedulerStatusPayload struct {
 	Accounts    map[string]quotaAccountPayload `json:"accounts"`
 	Strategy    string                         `json:"strategy"`
@@ -52,22 +52,22 @@ type quotaSchedulerStatusPayload struct {
 	Ranking     []quotaRankingPayload          `json:"ranking"`
 }
 
-// quotaStoreForStatus resolves the readings store this endpoint reads. It is a
-// variable so a test can substitute an isolated store instead of the
-// process-wide one.
+
+
+
 var quotaStoreForStatus = quota.DefaultStore
 
-// GetQuotaSchedulerStatus reports the quota readings routing is working from,
-// plus the order an unprefixed request would be served in.
-//
-// Endpoint:
-//
-//	GET /v8/management/quota-scheduler/status
-//
-// The accounts map is keyed by auth file name and carries one entry per window
-// the proxy has a reading for. An empty accounts map means no credential has
-// reported quota yet, which is the normal state right after a restart until the
-// usage poller's first pass completes.
+
+
+
+
+
+
+
+
+
+
+
 func (h *Handler) GetQuotaSchedulerStatus(c *gin.Context) {
 	now := time.Now().UTC()
 	store := quotaStoreForStatus()
@@ -76,8 +76,8 @@ func (h *Handler) GetQuotaSchedulerStatus(c *gin.Context) {
 	if h != nil && h.authManager != nil {
 		auths = h.authManager.List()
 	}
-	// Refresh from the passive header snapshot so the status reflects every
-	// credential, not only the ones a recent pick considered.
+
+
 	coreauth.IngestAuthQuota(store, auths, now)
 
 	payload := quotaSchedulerStatusPayload{
@@ -100,8 +100,8 @@ func (h *Handler) GetQuotaSchedulerStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, payload)
 }
 
-// quotaRanking builds the pick order per provider family, as reset-soonest
-// would rank an unprefixed request.
+
+
 func (h *Handler) quotaRanking(store *quota.Store, auths []*coreauth.Auth, now time.Time) []quotaRankingPayload {
 	guard := h.fiveHourGuardPercent()
 	byProvider := make(map[string][]quota.Candidate)
@@ -145,7 +145,7 @@ func (h *Handler) quotaRanking(store *quota.Store, auths []*coreauth.Auth, now t
 	return out
 }
 
-// routingStrategyName reports the effective strategy name.
+
 func (h *Handler) routingStrategyName() string {
 	if h == nil || h.cfg == nil {
 		return "round-robin"
@@ -156,7 +156,7 @@ func (h *Handler) routingStrategyName() string {
 	return strings.TrimSpace(h.cfg.Routing.Strategy)
 }
 
-// fiveHourGuardPercent reports the configured guard, or the default.
+
 func (h *Handler) fiveHourGuardPercent() float64 {
 	if h == nil || h.cfg == nil {
 		return quota.DefaultFiveHourGuardPercent
@@ -167,7 +167,7 @@ func (h *Handler) fiveHourGuardPercent() float64 {
 	return quota.DefaultFiveHourGuardPercent
 }
 
-// quotaWindowOf projects one window, or nil when there is no reading for it.
+
 func quotaWindowOf(reading quota.Reading, id string) *quotaWindowPayload {
 	window, ok := reading.Window(id)
 	if !ok {

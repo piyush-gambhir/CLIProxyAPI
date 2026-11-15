@@ -1,8 +1,8 @@
-// Package gemini provides request translation functionality for Gemini to OpenAI API.
-// It handles parsing and transforming Gemini API requests into OpenAI Chat Completions API format,
-// extracting model information, generation config, message contents, and tool declarations.
-// The package performs JSON data transformation to ensure compatibility
-// between Gemini API format and OpenAI API's expected format.
+
+
+
+
+
 package gemini
 
 import (
@@ -17,43 +17,43 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// ConvertGeminiRequestToOpenAI parses and transforms a Gemini API request into OpenAI Chat Completions API format.
-// It extracts the model name, generation config, message contents, and tool declarations
-// from the raw JSON request and returns them in the format expected by the OpenAI API.
+
+
+
 func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream bool) ([]byte, error) {
 	rawJSON := inputRawJSON
-	// Base OpenAI Chat Completions API template
+
 	outDoc := ojson.NewDocString(`{"model":"","messages":[]}`)
 
 	root := util.ParseGJSONBytesNoCopy(rawJSON)
 
-	// Model mapping
+
 	_ = outDoc.Set("model", modelName)
 
-	// Generation config mapping
+
 	if genConfig := root.Get("generationConfig"); genConfig.Exists() {
-		// Temperature
+
 		if temp := genConfig.Get("temperature"); temp.Exists() {
 			_ = outDoc.Set("temperature", temp.Float())
 		}
 
-		// Max tokens
+
 		if maxTokens := genConfig.Get("maxOutputTokens"); maxTokens.Exists() {
 			_ = outDoc.Set("max_tokens", maxTokens.Int())
 		}
 
-		// Top P
+
 		if topP := genConfig.Get("topP"); topP.Exists() {
 			_ = outDoc.Set("top_p", topP.Float())
 		}
 
-		// Top K (OpenAI doesn't have direct equivalent, but we can map it)
+
 		if topK := genConfig.Get("topK"); topK.Exists() {
-			// Store as custom parameter for potential use
+
 			_ = outDoc.Set("top_k", topK.Int())
 		}
 
-		// Stop sequences
+
 		if stopSequences := genConfig.Get("stopSequences"); stopSequences.Exists() && stopSequences.IsArray() {
 			var stops []string
 			stopSequences.ForEach(func(_, value ojson.Result) bool {
@@ -65,7 +65,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 			}
 		}
 
-		// Candidate count (OpenAI 'n' parameter)
+
 		if candidateCount := genConfig.Get("candidateCount"); candidateCount.Exists() {
 			_ = outDoc.Set("n", candidateCount.Int())
 		}
@@ -88,9 +88,9 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 			}
 		}
 
-		// Map Gemini thinkingConfig to OpenAI reasoning_effort.
-		// Always perform conversion to support allowCompat models that may not be in registry.
-		// Note: Google official Python SDK sends snake_case fields (thinking_level/thinking_budget).
+
+
+
 		if thinkingConfig := genConfig.Get("thinkingConfig"); thinkingConfig.Exists() && thinkingConfig.IsObject() {
 			thinkingLevel := thinkingConfig.Get("thinkingLevel")
 			if !thinkingLevel.Exists() {
@@ -115,22 +115,22 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-	// Stream parameter
+
 	_ = outDoc.Set("stream", stream)
 	if serviceTier := root.Get("service_tier"); serviceTier.Exists() && serviceTier.Type == ojson.String {
 		_ = outDoc.Set("service_tier", serviceTier.String())
 	}
 
-	// Process contents (Gemini messages) -> OpenAI messages
+
 	messageCapacity := root.Get("contents.#").Int()
 	if root.Get("systemInstruction").Exists() || root.Get("system_instruction").Exists() {
 		messageCapacity++
 	}
 	messageItems := translatorcommon.NewRawArrayItems(messageCapacity)
-	toolCallIDsByName := make(map[string][]string) // Track tool call IDs per function name for matching
+	toolCallIDsByName := make(map[string][]string)
 
-	// System instruction -> OpenAI system message
-	// Gemini may provide `systemInstruction` or `system_instruction`; support both keys.
+
+
 	systemInstruction := root.Get("systemInstruction")
 	if !systemInstruction.Exists() {
 		systemInstruction = root.Get("system_instruction")
@@ -145,14 +145,14 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					return true
 				}
 
-				// Handle text parts
+
 				if text := part.Get("text"); text.Exists() {
 					contentPart := []byte(`{"type":"text","text":""}`)
 					contentPart, _ = ojson.SetBytes(contentPart, "text", text.String())
 					contentItems = append(contentItems, contentPart)
 				}
 
-				// Handle inline data (e.g., images)
+
 				if contentPart, ok := openAIContentPartFromGeminiInlineData(part); ok {
 					contentItems = append(contentItems, contentPart)
 				}
@@ -199,7 +199,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						return true
 					}
 
-					// Handle text parts
+
 					if text := part.Get("text"); text.Exists() {
 						formattedText := text.String()
 						textBuilder.WriteString(formattedText)
@@ -208,7 +208,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						contentItems = append(contentItems, contentPart)
 					}
 
-					// Handle inline data (e.g., images)
+
 					if contentPart, ok := openAIContentPartFromGeminiInlineData(part); ok {
 						onlyTextContent = false
 						contentItems = append(contentItems, contentPart)
@@ -218,7 +218,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						contentItems = append(contentItems, contentPart)
 					}
 
-					// Handle function calls (Gemini) -> tool calls (OpenAI)
+
 					if functionCall := translatorcommon.GeminiPartFunctionCall(part); functionCall.Exists() {
 						funcName := functionCall.Get("name").String()
 						argsRaw := ""
@@ -235,7 +235,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						_ = toolCallDoc.Set("id", toolCallID)
 						_ = toolCallDoc.Set("function.name", funcName)
 
-						// Convert args to arguments JSON string
+
 						if argsRaw != "" {
 							_ = toolCallDoc.Set("function.arguments", argsRaw)
 						} else {
@@ -248,14 +248,14 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 						toolCallItems = append(toolCallItems, toolCallDoc.Bytes())
 					}
 
-					// Handle function responses (Gemini) -> tool role messages (OpenAI)
+
 					if functionResponse := translatorcommon.GeminiPartFunctionResponse(part); functionResponse.Exists() {
 						funcName := functionResponse.Get("name").String()
-						// Create tool message for function response
+
 						toolMsgDoc := ojson.NewDocString(`{"role":"tool","tool_call_id":"","content":""}`)
 
 						responseRaw := ""
-						// Convert response.content to JSON string
+
 						if response := functionResponse.Get("response"); response.Exists() {
 							if contentField := response.Get("content"); contentField.Exists() {
 								responseRaw = contentField.Raw
@@ -281,7 +281,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 							toolCallIDsByName[funcName] = queue[1:]
 							_ = toolMsgDoc.Set("tool_call_id", toolCallID)
 						} else {
-							// Generate a deterministic tool call ID fallback if none available
+
 							fallbackID := deterministicToolCallID("response", msgIdx, currentPartIdx, funcName, responseRaw)
 							_ = toolMsgDoc.Set("tool_call_id", fallbackID)
 						}
@@ -294,7 +294,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 				})
 			}
 
-			// Set content
+
 			if len(contentItems) > 0 {
 				if onlyTextContent {
 					_ = msgDoc.Set("content", textBuilder.String())
@@ -303,7 +303,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 				}
 			}
 
-			// Set tool calls if any.
+
 			if len(toolCallItems) > 0 {
 				_ = msgDoc.SetRawBytes("tool_calls", translatorcommon.JoinRawArray(toolCallItems))
 			}
@@ -320,7 +320,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 	}
 	translatorcommon.SetRawArrayItemsDoc(outDoc, "messages", messageItems)
 
-	// Tools mapping: Gemini tools -> OpenAI tools
+
 	if tools := root.Get("tools"); tools.Exists() && tools.IsArray() {
 		var toolItems [][]byte
 		tools.ForEach(func(_, tool ojson.Result) bool {
@@ -330,7 +330,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 					_ = openAIToolDoc.Set("function.name", funcDecl.Get("name").String())
 					_ = openAIToolDoc.Set("function.description", funcDecl.Get("description").String())
 
-					// Convert parameters schema
+
 					if parameters := funcDecl.Get("parameters"); parameters.Exists() {
 						normalizedParams := util.NormalizeJSONSchemaNumericConstraints(parameters.Raw)
 						_ = openAIToolDoc.SetRaw("function.parameters", normalizedParams)
@@ -350,7 +350,7 @@ func ConvertGeminiRequestToOpenAI(modelName string, inputRawJSON []byte, stream 
 		}
 	}
 
-	// Tool choice mapping (Gemini doesn't have direct equivalent, but we can handle it)
+
 	if toolConfig := root.Get("toolConfig"); toolConfig.Exists() {
 		if functionCallingConfig := toolConfig.Get("functionCallingConfig"); functionCallingConfig.Exists() {
 			mode := functionCallingConfig.Get("mode").String()

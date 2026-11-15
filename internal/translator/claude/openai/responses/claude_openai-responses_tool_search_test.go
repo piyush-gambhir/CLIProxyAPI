@@ -9,10 +9,10 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// Fixtures follow openai/codex: the tool_search spec from
-// core/src/tools/handlers/tool_search_spec.rs, and the tool_search_call and
-// tool_search_output items from protocol/src/models.rs. Search results are
-// namespaces whose children carry defer_loading (tools/src/tool_search.rs).
+
+
+
+
 const (
 	codexToolSearchDeclaration = `{"type":"tool_search","execution":"client","description":"# Tool discovery\n\nSearches over deferred tool metadata with BM25 and exposes matching tools for the next model call.\n\nSome of the tools may not have been provided to you upfront, and you should use this tool (` + "`tool_search`" + `) to search for the required tools.","parameters":{"type":"object","properties":{"limit":{"type":"number","description":"Maximum number of tools to return. Defaults to 8."},"query":{"type":"string","description":"Search query for deferred tools."}},"required":["query"],"additionalProperties":false}}`
 
@@ -105,7 +105,7 @@ func TestConvertOpenAIResponsesRequestToClaude_HostedToolSearchIsNotForwarded(t 
 func TestConvertOpenAIResponsesRequestToClaude_ToolSearchNameIsCollisionSafe(t *testing.T) {
 	req := convertToolSearchRequest(t, []byte(`{"model":"claude-sonnet-4-5","input":"hi","tools":[{"type":"function","name":"tool.search","parameters":{"type":"object"}},`+codexToolSearchDeclaration+`]}`))
 	names := claudeToolNamesOf(req)
-	// The third tool is the deferred anchor native tool search declares.
+
 	if len(names) != 3 || names[1] != responsesToolSearchType || names[0] == names[1] || names[2] != responsesDeferredAnchorName {
 		t.Fatalf("tool names = %v, want unique names with tool_search kept", names)
 	}
@@ -125,8 +125,8 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchHistoryReplaysAndActiva
 	if got := strings.Join(claudeToolNamesOf(turn2), ","); got != wantTurn2 {
 		t.Fatalf("turn 2 tools = %s, want %s", got, wantTurn2)
 	}
-	// Discovered tools are declared as deferred, so adding them never changes
-	// the cached tools prefix; declared tools stay eager.
+
+
 	for _, name := range []string{"mcp__codex_apps__calendar_create_event", "lookup_order"} {
 		tool := turn2.Get(`tools.#(name=="` + name + `")`)
 		if !tool.Get("defer_loading").Bool() {
@@ -156,8 +156,8 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchHistoryReplaysAndActiva
 		t.Fatalf("tool_search_output replay = %s", toolResult.Raw)
 	}
 
-	// A later turn appends newly discovered tools without reordering earlier
-	// ones, so the cached tools prefix stays stable.
+
+
 	turn3 := convertToolSearchRequest(t, codexToolSearchRequest(codexUserTurn, codexSearchCall1, codexSearchOutput1, codexNSCall, codexNSCallOutput, codexSearchCall2, codexSearchOutput2))
 	wantTurn3 := wantTurn2 + ",mcp__node_repl__js"
 	if got := strings.Join(claudeToolNamesOf(turn3), ","); got != wantTurn3 {
@@ -191,7 +191,7 @@ func TestConvertOpenAIResponsesRequestToClaude_NamespacedFunctionCallHistoryIsQu
 }
 
 func TestConvertOpenAIResponsesRequestToClaude_WithoutToolSearchIsUnchanged(t *testing.T) {
-	// Golden output captured from the translator before tool_search support.
+
 	request := `{"model":"claude-sonnet-4-5","instructions":"You are Codex.","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"run js"}]},{"type":"function_call","call_id":"call_js_1","name":"js","namespace":"mcp__node_repl__","arguments":"{\"code\":\"1+1\"}"},{"type":"function_call_output","call_id":"call_js_1","output":"2"}],"tools":[` +
 		codexExecCommandTool + `,` + codexDeferredTool + `,` + codexDeferredNSTool + `],"tool_choice":"auto","stream":true}`
 	want := `{"model":"claude-sonnet-4-5","max_tokens":32000,"messages":[{"role":"user","content":"run js"},{"role":"assistant","content":[{"type":"tool_use","id":"call_js_1","name":"mcp__node_repl__js","input":{"code":"1+1"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"call_js_1","content":"2"}]}],"metadata":{"user_id":"89d5fa27ec7781d2e5b32a000710e2eba99246913042b9a3b01805bcdc3111ef"},"stream":true,"system":[{"type":"text","text":"You are Codex."}],"tools":[{"name":"exec_command","description":"Run a command.","input_schema":{"properties":{"cmd":{"type":"string"}},"required":["cmd"],"type":"object"}},{"name":"lookup_order","description":"Look up an order.","input_schema":{"properties":{"id":{"type":"string"}},"required":["id"],"type":"object"}},{"name":"mcp__node_repl__js","description":"Run JavaScript.","input_schema":{"properties":{"code":{"type":"string"}},"required":["code"],"type":"object"}}],"tool_choice":{"type":"auto"}}`
@@ -205,8 +205,8 @@ func TestConvertOpenAIResponsesRequestToClaude_WithoutToolSearchIsUnchanged(t *t
 	}
 }
 
-// claudeToolSearchStream is a Claude stream with a tool_search call, a
-// namespaced tool call and a plain tool call.
+
+
 var claudeToolSearchStream = []string{
 	`data: {"type":"message_start","message":{"id":"msg_ts","usage":{"input_tokens":1,"output_tokens":0}}}`,
 	`data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_search","name":"tool_search","input":{}}}`,
@@ -366,10 +366,10 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchNameCollisionRoutesCons
 		`data: {"type":"message_stop"}`,
 	}, "\n")
 
-	// The first declaration wins, as for any duplicate tool name. Request and
-	// response agree on the winner, so a call is never misrouted. Deferred
-	// tools are hidden only when the client search tool wins; otherwise the
-	// model would have neither the deferred tools nor a way to find them.
+
+
+
+
 	for _, tc := range []struct {
 		name      string
 		tools     string
@@ -397,8 +397,8 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchNameCollisionRoutesCons
 		})
 	}
 
-	// When the user function wins, nothing is deferred and search output stays
-	// text, because the request has no native tool search to expand references.
+
+
 	t.Run("user function first keeps history as text", func(t *testing.T) {
 		request := []byte(`{"model":"claude-sonnet-4-5","input":[` + strings.Join([]string{codexUserTurn, codexSearchCall1, codexSearchOutput1}, ",") +
 			`],"tools":[` + userFunction + `,` + codexToolSearchDeclaration + `,` + codexDeferredTool + `]}`)
@@ -466,8 +466,8 @@ func TestConvertOpenAIResponsesRequestToClaude_ToolSearchOutputWithoutToolsKeeps
 	}
 }
 
-// Deferred tools cannot carry cache_control, so a cache marker on a discovered
-// tool definition must not survive into the deferred Claude tool.
+
+
 func TestConvertOpenAIResponsesRequestToClaude_DeferredToolsDropCacheControl(t *testing.T) {
 	cached := `{"type":"tool_search_output","call_id":"call_search_1","status":"completed","execution":"client","tools":[` +
 		`{"type":"function","name":"cached_fn","description":"Cached.","cache_control":{"type":"ephemeral"},"defer_loading":true,"parameters":{"type":"object","properties":{}}},` +
@@ -482,11 +482,11 @@ func TestConvertOpenAIResponsesRequestToClaude_DeferredToolsDropCacheControl(t *
 	}
 }
 
-// Anthropic keeps the prompt cache when deferred tools are added, but only once
-// the request already carries a deferred tool: going from no deferred tools to
-// one misses the cache (measured on claude-opus-5-5, 2026-10-12). Codex hides
-// deferred tools until a search returns them, so native tool search always
-// declares one constant deferred anchor and discoveries only append after it.
+
+
+
+
+
 func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorKeepsToolsPrefixStable(t *testing.T) {
 	turn1 := convertToolSearchRequest(t, codexToolSearchRequest(codexUserTurn))
 	turn2 := convertToolSearchRequest(t, codexToolSearchRequest(codexUserTurn, codexSearchCall1, codexSearchOutput1))
@@ -514,9 +514,9 @@ func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorKeepsToolsPrefixSta
 	}
 }
 
-// A client tool whose final Claude name equals the anchor name, directly, after
-// name normalization, or as a discovered tool, keeps its declaration and the
-// request carries no second tool with that name.
+
+
+
 func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorYieldsToClientToolName(t *testing.T) {
 	declared := func(name string) string {
 		return `{"type":"function","name":"` + name + `","description":"Client tool.","parameters":{"type":"object","properties":{}}}`
@@ -536,7 +536,7 @@ func TestConvertOpenAIResponsesRequestToClaude_DeferredAnchorYieldsToClientToolN
 	}
 }
 
-// Without native tool search nothing is deferred, so no anchor is declared.
+
 func TestConvertOpenAIResponsesRequestToClaude_NoDeferredAnchorWithoutNativeToolSearch(t *testing.T) {
 	userFunction := `{"type":"function","name":"tool_search","parameters":{"type":"object","properties":{"q":{"type":"string"}}}}`
 	for name, request := range map[string][]byte{

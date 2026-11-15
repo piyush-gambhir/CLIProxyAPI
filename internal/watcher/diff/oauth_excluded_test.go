@@ -62,7 +62,7 @@ func TestSummarizeVertexModels(t *testing.T) {
 	summary := SummarizeVertexModels([]config.VertexCompatModel{
 		{Name: "m1"},
 		{Name: " ", Alias: "alias"},
-		{}, // ignored
+		{},
 	})
 	if summary.count != 2 {
 		t.Fatalf("expected 2 vertex models, got %d", summary.count)

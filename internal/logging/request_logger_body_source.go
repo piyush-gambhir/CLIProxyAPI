@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// FileBodySource stores large log sections as ordered temp-file parts.
+
 type FileBodySource struct {
 	mu      sync.Mutex
 	dir     string
@@ -19,7 +19,7 @@ type FileBodySource struct {
 	cleaned bool
 }
 
-// NewFileBodySourceInDir creates a temp-backed source under baseDir.
+
 func NewFileBodySourceInDir(baseDir string, prefix string) (*FileBodySource, error) {
 	prefix = sanitizeTempPrefix(prefix)
 	baseDir = strings.TrimSpace(baseDir)
@@ -63,7 +63,7 @@ func sanitizeTempPrefix(prefix string) string {
 	return out
 }
 
-// CreatePart creates one ordered detail log part.
+
 func (s *FileBodySource) CreatePart(prefix string) (*os.File, error) {
 	if s == nil {
 		return nil, fmt.Errorf("file body source is nil")
@@ -85,7 +85,7 @@ func (s *FileBodySource) CreatePart(prefix string) (*os.File, error) {
 	return file, nil
 }
 
-// AppendPart appends one complete ordered part to the source.
+
 func (s *FileBodySource) AppendPart(data []byte) error {
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 {
@@ -104,7 +104,7 @@ func (s *FileBodySource) AppendPart(data []byte) error {
 	return writeErr
 }
 
-// AppendBytes appends raw bytes to a single ordered part.
+
 func (s *FileBodySource) AppendBytes(data []byte) error {
 	if s == nil {
 		return fmt.Errorf("file body source is nil")
@@ -144,7 +144,7 @@ func (s *FileBodySource) AppendBytes(data []byte) error {
 	return writeErr
 }
 
-// HasPayload reports whether any detail parts were recorded.
+
 func (s *FileBodySource) HasPayload() bool {
 	if s == nil {
 		return false
@@ -154,7 +154,7 @@ func (s *FileBodySource) HasPayload() bool {
 	return len(s.paths) > 0 && !s.cleaned
 }
 
-// Paths returns a copy of the ordered part paths.
+
 func (s *FileBodySource) Paths() []string {
 	if s == nil {
 		return nil
@@ -166,7 +166,7 @@ func (s *FileBodySource) Paths() []string {
 	return out
 }
 
-// WriteTo merges all ordered parts into w.
+
 func (s *FileBodySource) WriteTo(w io.Writer) (int64, error) {
 	if s == nil || w == nil {
 		return 0, nil
@@ -208,7 +208,7 @@ func (s *FileBodySource) WriteTo(w io.Writer) (int64, error) {
 	return totalWritten, nil
 }
 
-// Bytes merges all ordered parts into memory.
+
 func (s *FileBodySource) Bytes() ([]byte, error) {
 	var buf bytes.Buffer
 	if _, errWrite := s.WriteTo(&buf); errWrite != nil {
@@ -217,7 +217,7 @@ func (s *FileBodySource) Bytes() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Cleanup removes all temp detail parts and their directory.
+
 func (s *FileBodySource) Cleanup() error {
 	if s == nil {
 		return nil

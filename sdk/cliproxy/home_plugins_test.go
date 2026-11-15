@@ -808,9 +808,9 @@ func TestHomeConfigWorkerPreemptsFailingConfigWithNewerPayload_Issue6225(t *test
 	}
 
 	queue := newHomeConfigWorkQueue()
-	// Enqueue an invalid payload that fails config parsing and triggers the retry loop
+
 	queue.enqueue([]byte("invalid: yaml: ["))
-	// Enqueue a valid recovered config payload that should preempt the failing one during retry
+
 	queue.enqueue([]byte("plugins:\n  enabled: true\nrouting:\n  strategy: recovered\n"))
 
 	ready := make(chan struct{})

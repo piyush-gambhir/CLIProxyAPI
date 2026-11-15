@@ -68,12 +68,12 @@ func TestOpenAICompatExecutorStreamTTFTWaitsForEffectiveToken(t *testing.T) {
 			t.Cleanup(func() {
 				coreusage.RegisterNamedPlugin(t.Name(), multiProviderNoopUsagePlugin{})
 			})
-			// Keep the global usage dispatcher outside the fake-clock bubble.
+
 			coreusage.StartDefault(context.Background())
 
 			synctest.Test(t, func(t *testing.T) {
 				transport := openAICompatTTFTRoundTripFunc(func(req *http.Request) (*http.Response, error) {
-					// All sleeps use synctest's virtual clock, not wall-clock delays.
+
 					time.Sleep(250 * time.Millisecond)
 					reader, writer := io.Pipe()
 					go func() {
@@ -82,7 +82,7 @@ func TestOpenAICompatExecutorStreamTTFTWaitsForEffectiveToken(t *testing.T) {
 							_, errWrite := io.WriteString(writer, s)
 							return errWrite == nil
 						}
-						// Early role/empty frames and keepalives must not lock TTFT.
+
 						if !write(": keepalive\n\ndata: {\"model\":\"glm-5.3-flash-unc\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\"},\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"index\":0,\"delta\":{}}]}\n\ndata: {\"choices\":[],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":0}}\n\n") {
 							return
 						}
@@ -90,7 +90,7 @@ func TestOpenAICompatExecutorStreamTTFTWaitsForEffectiveToken(t *testing.T) {
 						if !write(tt.token) {
 							return
 						}
-						// Later packets and the terminal event must not replace TTFT.
+
 						time.Sleep(2 * time.Second)
 						write("data: {\"model\":\"glm-5.3-flash-unc\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"" + tt.finish + "\"}],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":1,\"total_tokens\":101}}\n\ndata: [DONE]\n\n")
 					}()

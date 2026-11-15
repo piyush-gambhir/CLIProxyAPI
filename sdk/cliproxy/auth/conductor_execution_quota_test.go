@@ -135,7 +135,7 @@ func TestExecutionAttemptsDoNotReuseQuotaResponseHeaders(t *testing.T) {
 }
 
 func TestSyncMetadataSessionToContext(t *testing.T) {
-	// 1. Canonical session from metadata overrides raw/pre-alias context session
+
 	ctxExplicit := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID: "raw-alias-sid",
 	})
@@ -147,7 +147,7 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("sessionID = %q, want canonical-override", meta1.SessionID)
 	}
 
-	// 2. Syncs canonical and parent session from metadata
+
 	res2 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.CanonicalSessionIDMetadataKey: "lcp:branch-123",
 		cliproxyexecutor.ParentSessionIDMetadataKey:    "lcp:trunk-000",
@@ -157,7 +157,7 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("synced session = (%q, %q), want (lcp:branch-123, lcp:trunk-000)", meta2.SessionID, meta2.ParentSessionID)
 	}
 
-	// 3. Eliminates self-loop
+
 	res3 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.CanonicalSessionIDMetadataKey: "same-loop",
 		cliproxyexecutor.ParentSessionIDMetadataKey:    "same-loop",
@@ -167,7 +167,7 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("self-loop session = (%q, %q), want (same-loop, empty)", meta3.SessionID, meta3.ParentSessionID)
 	}
 
-	// 4. Clears stale parent when syncing a new root session without parent metadata
+
 	ctxWithStaleParent := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID:       "old-child",
 		ParentSessionID: "old-stale-parent",
@@ -180,7 +180,7 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("stale parent not cleared: (%q, %q), want (new-root-session, empty)", meta4.SessionID, meta4.ParentSessionID)
 	}
 
-	// 5. Execution session key fallback with prefix
+
 	res5 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.ExecutionSessionMetadataKey: "call-live-123",
 	})
@@ -189,7 +189,7 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("execution session = %q, want execution:call-live-123", meta5.SessionID)
 	}
 
-	// 6. Derived session key fallback gets derived: prefix
+
 	res6 := syncMetadataSessionToContext(context.Background(), map[string]any{
 		cliproxyexecutor.DerivedSessionIDMetadataKey: "ctx:v1:raw-hash",
 	})
@@ -198,7 +198,7 @@ func TestSyncMetadataSessionToContext(t *testing.T) {
 		t.Fatalf("derived session = %q, want derived:ctx:v1:raw-hash", meta6.SessionID)
 	}
 
-	// 7. Clears hierarchy completely when metadata has no canonical session
+
 	ctxWithExistingSession := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID:       "old-stale-session",
 		ParentSessionID: "old-stale-parent",
@@ -244,7 +244,7 @@ func TestApplyRequestAfterAuthInterceptorSessionClearing(t *testing.T) {
 		t.Fatalf("parent session was not cleared from metadata after interceptor cleared headers")
 	}
 
-	// Context synced from cleared metadata also has empty session
+
 	ctxWithSession := internallogging.WithClientRequestMetadata(context.Background(), internallogging.ClientRequestMetadata{
 		SessionID:       "session:initial-session",
 		ParentSessionID: "session:initial-parent",
@@ -262,7 +262,7 @@ func TestApplyRequestAfterAuthInterceptorSessionClearing(t *testing.T) {
 }
 
 func TestGhostParentElimination(t *testing.T) {
-	// Request has explicit root session (no parent), but options metadata carries a stale parent key
+
 	req := cliproxyexecutor.Request{}
 	opts := cliproxyexecutor.Options{
 		Headers: http.Header{
@@ -286,7 +286,7 @@ func TestApplyRequestAfterAuthInterceptorPreservesOriginalRequestSessionOnUnrela
 	bodyWithSession := []byte(`{"session_id":"important-session"}`)
 	req := cliproxyexecutor.Request{
 		Model:   "gpt-5.6-luna",
-		Payload: nil, // Translated or omitted payload
+		Payload: nil,
 	}
 	opts := cliproxyexecutor.Options{
 		OriginalRequest: bodyWithSession,

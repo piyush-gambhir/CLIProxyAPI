@@ -19,7 +19,7 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 		configFilePath: writeTestConfigFile(t),
 	}
 
-	// 1. Patch to true
+
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/codex-api-key", strings.NewReader(`{"index":0,"value":{"disable-codex-cloaking":true}}`))
@@ -33,7 +33,7 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 		t.Fatalf("disable-codex-cloaking = %v, want true", h.cfg.CodexKey[0].DisableCodexCloaking)
 	}
 
-	// 2. Patch to false
+
 	rec2 := httptest.NewRecorder()
 	ctx2, _ := gin.CreateTestContext(rec2)
 	ctx2.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/codex-api-key", strings.NewReader(`{"index":0,"value":{"disable-codex-cloaking":false}}`))
@@ -47,7 +47,7 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 		t.Fatalf("disable-codex-cloaking = %v, want false", h.cfg.CodexKey[0].DisableCodexCloaking)
 	}
 
-	// 3. Patch to null (inherit)
+
 	rec3 := httptest.NewRecorder()
 	ctx3, _ := gin.CreateTestContext(rec3)
 	ctx3.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/codex-api-key", strings.NewReader(`{"index":0,"value":{"disable-codex-cloaking":null}}`))
@@ -61,7 +61,7 @@ func TestPatchCodexKeyUpdatesDisableCodexCloaking(t *testing.T) {
 		t.Fatalf("disable-codex-cloaking = %v, want nil", h.cfg.CodexKey[0].DisableCodexCloaking)
 	}
 
-	// 4. Patch with invalid non-boolean type
+
 	rec4 := httptest.NewRecorder()
 	ctx4, _ := gin.CreateTestContext(rec4)
 	ctx4.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/codex-api-key", strings.NewReader(`{"index":0,"value":{"disable-codex-cloaking":"not-a-bool"}}`))

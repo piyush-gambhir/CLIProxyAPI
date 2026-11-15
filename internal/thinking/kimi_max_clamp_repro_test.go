@@ -10,8 +10,8 @@ import (
 	_ "github.com/router-for-me/CLIProxyAPI/v8/internal/thinking/provider/kimi"
 )
 
-// TestKimiK28ClaudeMessagesMaxPreservesMax verifies that K2.8 models preserve effort=max
-// because their model definition includes "max" in thinking levels.
+
+
 func TestKimiK28ClaudeMessagesMaxPreservesMax(t *testing.T) {
 	models := registry.GetKimiModels()
 	reg := registry.GetGlobalRegistry()
@@ -29,7 +29,7 @@ func TestKimiK28ClaudeMessagesMaxPreservesMax(t *testing.T) {
 	}
 }
 
-// Reproduces Claude Code -> Kimi /v1/messages with effort=max on K2.5 (clamps to high).
+
 func TestKimiClaudeMessagesMaxClampsToHigh(t *testing.T) {
 	models := registry.GetKimiModels()
 	reg := registry.GetGlobalRegistry()

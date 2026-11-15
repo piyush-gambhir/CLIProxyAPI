@@ -28,7 +28,7 @@ func TestDeleteJSONBytesIfExistsMatchesSJSON(t *testing.T) {
 }
 
 func TestDeleteJSONBytesIfExistsMissingPathReturnsInput(t *testing.T) {
-	// A large prefix before the parent object is what sjson copies needlessly.
+
 	doc := []byte(`{"request":{"contents":"` + strings.Repeat("x", 1<<20) + `","generationConfig":{"thinkingConfig":{}}}}`)
 	const path = "request.generationConfig.thinkingConfig.include_thoughts"
 	got, errDelete := DeleteJSONBytesIfExists(doc, path)
@@ -72,8 +72,8 @@ func TestDeleteJSONBytesIfExistsPresentLargeValueAllocation(t *testing.T) {
 		}
 	}).AllocedBytesPerOp()
 
-	// GetGJSONBytesNoCopy ensures that checking existence of a 1 MiB value
-	// does not copy its Raw string (which ojson.GetBytes would).
+
+
 	if helperAllocs > sjsonAllocs+1024 {
 		t.Fatalf("present large value: helper allocated %d B/op, sjson allocated %d B/op; want difference <= 1024", helperAllocs, sjsonAllocs)
 	}

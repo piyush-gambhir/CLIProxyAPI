@@ -93,7 +93,7 @@ func TestCodexNoRefreshTokenRemovedFromAutoRefreshQueue(t *testing.T) {
 		t.Fatal("access-only credential submitted for refresh")
 	}
 
-	// A later credential update must restore scheduling without restarting the loop.
+
 	a.Metadata["refresh_token"] = "restored-refresh"
 	if _, errUpdate := m.Update(context.Background(), a); errUpdate != nil {
 		t.Fatal(errUpdate)

@@ -44,7 +44,7 @@ func detectIncomingClaudeCodeRequest(ctx context.Context, incoming http.Header, 
 	return resolved, helps.DetectClaudeCodeRequest(resolved, payload, countTokens, cfg)
 }
 
-// getWorkloadFromContext extracts workload identifier from the gin request headers.
+
 func getWorkloadFromContext(ctx context.Context) string {
 	if ginCtx, ok := ctx.Value("gin").(*gin.Context); ok && ginCtx != nil && ginCtx.Request != nil {
 		return strings.TrimSpace(ginCtx.GetHeader("X-CPA-Claude-Workload"))
@@ -52,18 +52,18 @@ func getWorkloadFromContext(ctx context.Context) string {
 	return ""
 }
 
-// getCloakConfigFromAuth extracts cloak configuration from the auth's attributes,
-// falling back to its stored metadata (the raw OAuth/token JSON). Returns
-// (cloakMode, strictMode, sensitiveWords, cacheUserID); an empty cloakMode means
-// the credential did not explicitly configure a mode.
+
+
+
+
 func getCloakConfigFromAuth(auth *cliproxyauth.Auth) (cloakMode string, strictMode bool, sensitiveWords []string, cacheUserID bool) {
 	if auth == nil {
 		return "", false, nil, false
 	}
 
-	// lookupCloakAttr prefers the executor-facing Attributes, then falls back to the
-	// raw metadata blob (e.g. the OAuth/token JSON) so file-based credentials can
-	// carry cloak settings without a matching claude-api-key config entry.
+
+
+
 	lookupCloakAttr := func(key string) string {
 		if auth.Attributes != nil {
 			if value := strings.TrimSpace(auth.Attributes[key]); value != "" {
@@ -76,8 +76,8 @@ func getCloakConfigFromAuth(auth *cliproxyauth.Auth) (cloakMode string, strictMo
 		return ""
 	}
 
-	// An empty cloakMode means this credential did not explicitly configure a mode,
-	// allowing the caller to fall back to the global/default behavior.
+
+
 	cloakMode = lookupCloakAttr("cloak_mode")
 
 	strictMode = strings.EqualFold(lookupCloakAttr("cloak_strict_mode"), "true")
@@ -134,8 +134,8 @@ func getCloakReplacementsFromAuth(auth *cliproxyauth.Auth) map[string]string {
 	return nil
 }
 
-// injectFakeUserID generates and injects a fake user ID into the request metadata.
-// When useCache is false, a new user ID is generated for every call.
+
+
 func injectFakeUserID(ctx context.Context, payload []byte, apiKey string, useCache bool) ([]byte, error) {
 	doc := ojson.NewDoc(payload)
 	changed, errInject := injectFakeUserIDDoc(ctx, doc, apiKey, useCache)
@@ -185,13 +185,13 @@ func injectFakeUserIDDoc(ctx context.Context, doc *ojson.Doc, apiKey string, use
 	return false, nil
 }
 
-// fingerprintSalt is the salt used by Claude Code to compute the 3-char build fingerprint.
+
 const fingerprintSalt = "59cf53e54c78"
 
-// computeFingerprint computes the 3-char build fingerprint that Claude Code embeds in cc_version.
-// Algorithm: SHA256(salt + messageText[4] + messageText[7] + messageText[20] + version)[:3].
-// JavaScript indexes UTF-16 code units; an isolated surrogate becomes U+FFFD
-// when Node encodes the sampled string as UTF-8 for hashing.
+
+
+
+
 func computeFingerprint(messageText, version string) string {
 	units := utf16.Encode([]rune(messageText))
 	var sampled [3]uint16
@@ -206,8 +206,8 @@ func computeFingerprint(messageText, version string) string {
 	return hex.EncodeToString(h[:])[:3]
 }
 
-// generateBillingHeader creates the x-anthropic-billing-header text block that
-// Claude Code prepends to its system prompt. cch is present only on signed paths.
+
+
 func generateBillingHeader(cchSigning bool, version, messageText, entrypoint, workload string, isSubagent bool, prevReq, promptID string, turnOrigin ...string) string {
 	if entrypoint == "" {
 		entrypoint = "cli"
@@ -273,9 +273,9 @@ func resolveClaudeContinuityTags(
 	isNewTurn := helps.IsClaudeNewPromptTurn(payload)
 	continuityKey, seq, prevMsgID, storedPrevReq, storedPromptID := helps.BeginClaudeContinuity(credIdentity, sessionID, isNewTurn, existingPromptID)
 
-	// The currentDate reminder is pinned to the session on its first request so
-	// a local-midnight flip between requests cannot rewrite it and invalidate
-	// the prompt-cache prefix in front of the whole conversation.
+
+
+
 	pinnedDate := resolveClaudeSessionPinnedDate(cfg, auth, payload, continuityKey, sessionID)
 
 	if existingPromptID != "" {
@@ -744,11 +744,11 @@ func checkSystemInstructionsWithModeDoc(doc *ojson.Doc, strictMode bool, keepCal
 	return checkSystemInstructionsWithSigningModeDoc(doc, strictMode, false, "2.1.321", "cli", "", keepAtTopLevel)
 }
 
-// checkSystemInstructionsWithSigningMode keeps the top-level system in Claude
-// Code's minimal CLI shape. Each caller system block is preserved as a separate
-// mid-conversation system message after the first user turn, where supported
-// Claude models give it operator-level authority without changing the cached
-// top-level prefix.
+
+
+
+
+
 func checkSystemInstructionsWithSigningMode(payload []byte, strictMode bool, cchSigning bool, version, entrypoint, workload string, keepCallerSystemTopLevel ...bool) []byte {
 	keepAtTopLevel := len(keepCallerSystemTopLevel) > 0 && keepCallerSystemTopLevel[0]
 	return checkSystemInstructionsWithSigningModeAt(payload, strictMode, cchSigning, version, entrypoint, workload, claudeCodeLocalDate(time.Now()), false, "", "", keepAtTopLevel, "")
@@ -759,8 +759,8 @@ func checkSystemInstructionsWithSigningModeDoc(doc *ojson.Doc, strictMode bool, 
 	return checkSystemInstructionsWithSigningModeAtDoc(doc, strictMode, cchSigning, version, entrypoint, workload, claudeCodeLocalDate(time.Now()), false, "", "", keepAtTopLevel, "")
 }
 
-// isClaudeFable51Model reports whether the model is specifically Fable 5.1 / Mythos 5.1,
-// matching native Claude Code 2.1.258 family/major/minor checks (AFo = {major:5, minor:1}).
+
+
 func isClaudeFable51Model(model string) bool {
 	m := strings.ToLower(strings.TrimSpace(model))
 	for _, target := range []string{"fable-5-1", "fable-5.1", "mythos-5-1", "mythos-5.1"} {
@@ -917,13 +917,13 @@ func checkSystemInstructionsWithSigningModeAtDoc(
 	return true
 }
 
-// relocateClaudeSystemPromptForCountTokens keeps a cloaked count_tokens request
-// in Claude Code's measured shape, which carries only model, messages and tools.
-// The Claude Code system blocks are therefore not installed here, but each caller
-// system block still has to be accounted for, so it is relocated into messages
-// using the same positional mapping as the Messages path. That keeps the counted
-// tokens aligned with the request the caller is about to send while preventing a
-// third-party system prompt from reaching Anthropic in the system slot.
+
+
+
+
+
+
+
 func relocateClaudeSystemPromptForCountTokens(payload []byte, strictMode bool, explicitCacheMode ...bool) []byte {
 	isExplicit := (len(explicitCacheMode) > 0 && explicitCacheMode[0]) || isExplicitPromptCacheMode(payload)
 	return relocateClaudeSystemPromptForCountTokensWithPolicy(payload, strictMode, isExplicit, false)
@@ -946,8 +946,8 @@ func relocateClaudeSystemPromptForCountTokensWithPolicyDoc(doc *ojson.Doc, stric
 		return false
 	}
 	isExplicit := explicitCacheMode
-	// Strict mode drops caller prompts on the Messages path, so it must not
-	// reintroduce them here either.
+
+
 	var forwardedSystemBlocks []forwardedClaudeSystemPromptBlock
 	if !strictMode {
 		forwardedSystemBlocks = collectForwardedClaudeSystemPromptBlocksWithCache(system)
@@ -956,10 +956,10 @@ func relocateClaudeSystemPromptForCountTokensWithPolicyDoc(doc *ojson.Doc, stric
 		return doc.Delete("system") == nil
 	}
 	if claudeHistoryHasAdvisorCallOrResultDoc(doc) {
-		// When an advisor call or result is present, the Messages path preserves
-		// caller system blocks in top-level system to prevent shifting message
-		// positions. Keep them in top-level system here as well so token counting
-		// remains aligned with the Messages path without splicing messages[].
+
+
+
+
 		blocks := make([]string, 0, len(forwardedSystemBlocks))
 		for _, block := range forwardedSystemBlocks {
 			blocks = append(blocks, buildForwardedSystemBlock(block.Text, block, isExplicit))
@@ -996,9 +996,9 @@ func claudeUsesLegacySystemReminderDoc(doc *ojson.Doc) bool {
 	return util.IsClaudeLegacySystemReminderModel(doc.Get("model").String())
 }
 
-// claudeCallerSystemBlockError reports a caller system block that Claude cannot
-// carry in any system slot. It is request-scoped: no other credential or upstream
-// model can accept the same body, so the request must not be retried.
+
+
+
 type claudeCallerSystemBlockError struct {
 	statusErr
 }
@@ -1019,11 +1019,11 @@ func newClaudeCallerSystemBlockError(index int, blockType string) error {
 	}}
 }
 
-// claudeMidSystemMessageModelError reports a mid-conversation
-// {"role":"system"} turn addressed to a first-party model that cannot carry
-// it. It is request-scoped for the same reason as claudeCallerSystemBlockError:
-// the body is incompatible with the model rather than evidence of unhealthy
-// credentials, so no credential should be cooled or retried.
+
+
+
+
+
 type claudeMidSystemMessageModelError struct {
 	statusErr
 }
@@ -1032,11 +1032,11 @@ func (claudeMidSystemMessageModelError) IsRequestScoped() bool {
 	return true
 }
 
-// The turn is not always the caller's. CPA normally reconciles a cloaked turn
-// when a payload rule changes the model to legacy, but it deliberately gives up
-// if the rule also rewrites the tracked messages and their provenance is no
-// longer exact. The wording therefore states the model's requirement instead of
-// assuming the caller created the turn.
+
+
+
+
+
 func newClaudeMidSystemMessageModelError(model string) error {
 	if model == "" {
 		model = "unknown"
@@ -1049,39 +1049,39 @@ func newClaudeMidSystemMessageModelError(model string) error {
 	}}
 }
 
-// validateClaudeMidSystemMessageModel rejects a request that pairs a legacy
-// model with a caller's mid-conversation {"role":"system"} turn.
-//
-// Anthropic answers that pairing with a guaranteed rejection, verified on both
-// /v1/messages and /v1/messages/count_tokens:
-//
-//	400 role 'system' is not supported on this model
-//
-// The native client never produces it either: it gates the turn on the model,
-// which is also why claudeCodeCLIBetas withholds
-// mid-conversation-system-2026-04-07 for these IDs. In 314 captured native
-// requests the turn appears only on claude-opus-5 and claude-sonnet-5, and on
-// none of the 43 requests addressed to a model in
-// claudeLegacySystemReminderModels.
-//
-// Three conditions keep the check inside the evidence that produced it:
-//
-//   - firstPartyAnthropic, because the rejection was measured against
-//     api.anthropic.com. A third-party gateway may map these model IDs onto
-//     something that accepts the turn, and answering locally would also stop
-//     failover to another credential or base URL.
-//   - confirmedClaudeCode, because a client that still matches the native
-//     fingerprint owns its wire. It gates the turn itself, so its body is
-//     forwarded untouched and any upstream error reaches it unchanged.
-//   - the pairing itself, so unknown and future model IDs stay optimistic in
-//     the same way checkSystemInstructions treats them.
-//
-// Operators who prefer the turn folded into the system slot can still set
-// rebuild_mid_system_message, which runs before this check.
-//
-// The error is request-scoped: the body/model pairing is invalid independently
-// of first-party credential health, so no credential should be cooled or
-// retried.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func validateClaudeMidSystemMessageModel(payload []byte, confirmedClaudeCode, firstPartyAnthropic bool) error {
 	if confirmedClaudeCode || !firstPartyAnthropic {
 		return nil
@@ -1102,17 +1102,17 @@ func validateClaudeMidSystemMessageModelDoc(doc *ojson.Doc, confirmedClaudeCode,
 	return newClaudeMidSystemMessageModelError(strings.Clone(doc.Get("model").String()))
 }
 
-// validateClaudeCallerSystemBlocks rejects caller system content that cannot keep
-// its operator authority. Verified against api.anthropic.com on 2026-08-03: the
-// top-level system field answers "system.<i>.type: Input should be 'text'" for
-// image, document and unknown block types, and a role=system message answers
-// "role 'system' supports text, tool_addition, and tool_removal blocks only".
-// Cloaking relocates caller blocks into one of those two slots, so a non-text
-// block has no destination. Failing here keeps the caller's instructions from
-// being silently dropped, and costs no upstream attempt.
+
+
+
+
+
+
+
+
 func validateClaudeCallerSystemBlocks(system ojson.Result) error {
 	if !system.IsArray() {
-		// A string system prompt is text by definition.
+
 		return nil
 	}
 	var blockErr error
@@ -1150,9 +1150,9 @@ func collectForwardedClaudeSystemPromptBlocks(system ojson.Result) []string {
 	return blocks
 }
 
-// buildTextBlock constructs a JSON text block with JSON.stringify-compatible
-// HTML characters. encoding/json's default \u003c escaping would change the
-// exact currentDate bytes and therefore the final CCH.
+
+
+
 func buildTextBlock(text string, cacheControl *claudeCacheControl) string {
 	block := `{"type":"text","text":` + marshalJSONStringWithoutHTMLEscape(text)
 	if cacheControl != nil && cacheControl.Type != "" {
@@ -1271,11 +1271,11 @@ func claudeCallerSystemReminder(text string) string {
 	return reminder.String()
 }
 
-// claudeHistoryHasAdvisorCallOrResult reports whether messages contains an advisor
-// tool invocation (server_tool_use) or advisor result (advisor_tool_result /
-// advisor_redacted_result). Anthropic cryptographically binds the encrypted
-// advisor result to the conversation layout; any mid-conversation system splice
-// shifts message indices and causes upstream 400 errors.
+
+
+
+
+
 func claudeHistoryHasAdvisorCallOrResult(payload []byte) bool {
 	return claudeMessagesHaveAdvisorCallOrResult(ojson.GetBytesNoCopy(payload, "messages"))
 }
@@ -1328,9 +1328,9 @@ func claudeMessagesHaveAdvisorCallOrResult(messages ojson.Result) bool {
 	return false
 }
 
-// claudeLeadingUserRunEnd skips directive-only system turns because Anthropic
-// accepts them at any position. They must not cause caller system blocks to be
-// inserted before a subsequent user turn.
+
+
+
 func claudeLeadingUserRunEnd(messageBlocks []ojson.Result, firstUserIdx int) int {
 	insertAt := firstUserIdx + 1
 	for insertAt < len(messageBlocks) {
@@ -1463,10 +1463,10 @@ func claudeMessageContentText(content ojson.Result) string {
 	return strings.Join(parts, "\n\n")
 }
 
-// claudeCodeSystemPlacementState identifies only the role=system turns that CPA
-// itself inserted while cloaking. Caller-owned turns are deliberately excluded:
-// if one is paired with a legacy model, validateClaudeMidSystemMessageModel must
-// still return 400 instead of silently rewriting the caller's wire.
+
+
+
+
 type claudeCodeSystemPlacementState struct {
 	insertAt    int
 	insertedRaw []string
@@ -1532,10 +1532,10 @@ func captureClaudeCodeSystemPlacementAfterDoc(before claudeCodeSystemPlacementBe
 	}
 }
 
-// captureClaudeCodeSystemPlacement records CPA's modern-model system placement
-// immediately after cloaking. The message-count increase is part of the proof:
-// insertClaudeMidConversationSystemMessages returns without inserting when the
-// same turns already exist, and those pre-existing turns belong to the caller.
+
+
+
+
 func captureClaudeCodeSystemPlacement(before, after []byte, cloaked bool) claudeCodeSystemPlacementState {
 	if !cloaked || claudeUsesLegacySystemReminder(before) {
 		return claudeCodeSystemPlacementState{}
@@ -1574,12 +1574,12 @@ func captureClaudeCodeSystemPlacement(before, after []byte, cloaked bool) claude
 	}
 }
 
-// reconcileClaudeCodeSystemPlacementAfterPayload repairs an otherwise stale
-// placement decision when payload rules change the final model from modern to
-// legacy. It removes only the exact contiguous turns captured above and replays
-// their text through the existing legacy <system-reminder> path. If any payload
-// rule also changed those messages, reconciliation fails closed and leaves the
-// final validation guard to return 400.
+
+
+
+
+
+
 func reconcileClaudeCodeSystemPlacementAfterPayload(payload []byte, state claudeCodeSystemPlacementState) []byte {
 	doc := ojson.NewDoc(payload)
 	if !reconcileClaudeCodeSystemPlacementAfterPayloadDoc(doc, state) {
@@ -1690,9 +1690,9 @@ func captureClaudeCodeFableState(before, after []byte, cloaked bool) claudeCodeF
 	}
 }
 
-// reconcileClaudeCodeFableModelAfterPayload reconciles model-specific additions
-// (Opus fallback, thinking.display=updates, and # Reporting outcomes system block)
-// if payload rules rewrite the request model between Fable 5.1 and non-Fable models.
+
+
+
 func reconcileClaudeCodeFableModelAfterPayload(
 	body []byte,
 	fableState claudeCodeFableState,
@@ -1724,7 +1724,7 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	}
 	changed := false
 
-	// Probes and helpers must never carry Fable additions (Opus fallback, display=updates, reporting block)
+
 	if isProbeOrHelper {
 		if fableState.injectedFallbacks && !payloadTouchedFallbacks {
 			if doc.Delete("fallbacks") == nil {
@@ -1761,8 +1761,8 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 		return changed
 	}
 	currentModel := strings.ToLower(strings.TrimSpace(doc.Get("model").String()))
-	// A model rewrite may change the native fallback target. Never override a
-	// caller or payload-rule fallback; only replace one inserted by the cloak.
+
+
 	if fableState.injectedFallbacks && !payloadTouchedFallbacks {
 		wantFallback := ""
 		switch {
@@ -1779,8 +1779,8 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	}
 
 	if isClaudeFable51Model(currentModel) {
-		// Non-Fable rewritten to Fable 5.1 (or original Fable 5.1): attach Fable additions
-		// unless matching payload rules explicitly configured or filtered them.
+
+
 		if !doc.Get("fallbacks").Exists() && !payloadTouchedFallbacks {
 			_ = doc.SetRawBytes("fallbacks", []byte(`[{"model":"claude-opus-5"}]`))
 			changed = true
@@ -1840,8 +1840,8 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	}
 	thinkingType := strings.ToLower(strings.TrimSpace(doc.Get("thinking.type").String()))
 	thinkingActive := thinkingType == "adaptive" || thinkingType == "enabled"
-	// Payload rules can disable thinking without touching display. Remove only
-	// CPA's injected value; explicit caller and operator choices remain owned.
+
+
 	if fableState.injectedDisplay && !payloadTouchedDisplay && (!thinkingActive || !claudeModelUsesProgressDisplay(currentModel)) {
 		if doc.Delete("thinking.display") == nil {
 			changed = true
@@ -1853,7 +1853,7 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 		}
 	}
 
-	// Remove Reporting outcomes if CPA automatically injected it
+
 	if fableState.injectedReporting {
 		system := doc.Get("system")
 		if system.IsArray() {
@@ -1879,8 +1879,8 @@ func reconcileClaudeCodeFableModelAfterPayloadDoc(
 	return changed
 }
 
-// claudeCodeLocalDate reproduces Claude Code 2.1.220's wcs() helper:
-// new Date(), local calendar fields, and zero-padded YYYY-MM-DD components.
+
+
 func claudeCodeLocalDate(now time.Time) string {
 	year, month, day := now.Date()
 	return fmt.Sprintf("%04d-%02d-%02d", year, int(month), day)
@@ -1978,8 +1978,8 @@ func isClaudeCodeCurrentDateReminder(text string) bool {
 	return strings.HasPrefix(text, claudeCodeCurrentDateReminderPrefix)
 }
 
-// claudeCodeCurrentDateReminderDate extracts the YYYY-MM-DD date from a
-// currentDate reminder, or "" when the reminder date is not a valid date.
+
+
 func claudeCodeCurrentDateReminderDate(text string) string {
 	rest, found := strings.CutPrefix(text, claudeCodeCurrentDateReminderPrefix)
 	if !found || len(rest) < len("2006-01-02.") || rest[len("2006-01-02")] != '.' {
@@ -2006,8 +2006,8 @@ func claudeSessionDatePinEnabled(cfg *config.Config) bool {
 	return claudeSessionDatePinRetention(cfg) > 0
 }
 
-// claudeCallerCurrentDateReminderDate returns the date of the first valid
-// caller-supplied currentDate reminder in the first user message.
+
+
 func claudeCallerCurrentDateReminderDate(payload []byte) string {
 	firstUserIdx := firstClaudeUserMessageIndex(payload)
 	if firstUserIdx < 0 {
@@ -2045,9 +2045,9 @@ func claudeCallerCurrentDateReminderDateFromContent(content ojson.Result) string
 	return ""
 }
 
-// stripClaudeCodeCurrentDateReminder removes a leading caller currentDate
-// reminder from string content so the injection path replaces it with the
-// canonical reminder instead of duplicating it.
+
+
+
 func stripClaudeCodeCurrentDateReminder(text string) string {
 	if claudeCodeCurrentDateReminderDate(text) == "" {
 		return text
@@ -2059,9 +2059,9 @@ func stripClaudeCodeCurrentDateReminder(text string) string {
 	return strings.TrimLeft(text[end+len("</system-reminder>"):], "\n")
 }
 
-// stripFirstUserClaudeCodeCurrentDateReminder strips a leading caller
-// currentDate reminder from a string-form first user message before the
-// cloaking pipeline converts the content into blocks, preserving user text.
+
+
+
 func stripFirstUserClaudeCodeCurrentDateReminder(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !stripFirstUserClaudeCodeCurrentDateReminderDoc(doc) {
@@ -2090,10 +2090,10 @@ func stripFirstUserClaudeCodeCurrentDateReminderDoc(doc *ojson.Doc) bool {
 	return doc.Set(contentPath, stripped) == nil
 }
 
-// resolveClaudeSessionPinnedDate resolves the session date pin. With a
-// configured retention, an existing pin always wins; a caller-supplied
-// currentDate reminder only seeds the first anchor, so a later caller date
-// cannot rewrite the established conversation prefix.
+
+
+
+
 func resolveClaudeSessionPinnedDate(
 	cfg *config.Config,
 	auth *cliproxyauth.Auth,
@@ -2110,8 +2110,8 @@ func resolveClaudeSessionPinnedDate(
 		if helps.IsClaudeSessionDatePinKVActive() {
 			return existing
 		}
-		// Re-pin the anchored date so the sliding retention refreshes
-		// without ever changing the established prefix.
+
+
 		return helps.PinClaudeSessionDate(continuityKey, sessionID, existing, retention)
 	}
 	if callerDate := claudeCallerCurrentDateReminderDate(payload); callerDate != "" {
@@ -2144,10 +2144,10 @@ func resolveClaudeSessionPinnedDateDoc(
 	return helps.PinClaudeSessionDate(continuityKey, sessionID, candidate, retention)
 }
 
-// injectClaudeCodeCurrentDate stamps the currentDate reminder into the first
-// user message. date is the already-resolved calendar date (the session-pinned
-// one whenever continuity is available) so the reminder text cannot change
-// between requests of one session.
+
+
+
+
 func injectClaudeCodeCurrentDate(payload []byte, date string) []byte {
 	return injectClaudeCodeCurrentDateInternal(payload, date, false)
 }
@@ -2207,9 +2207,9 @@ func injectClaudeCodeCurrentDateInternalDoc(doc *ojson.Doc, date string, isExpli
 		rawBlocks = append(rawBlocks, block.Raw)
 	}
 
-	// Anthropic requires the user message following an assistant tool_use turn
-	// to lead with its tool_result blocks, so the reminder goes after them.
-	// Every other content shape keeps the native first-block placement.
+
+
+
 	insertAt := 0
 	for insertAt < len(rawBlocks) && ojson.Parse(rawBlocks[insertAt]).Get("type").String() == "tool_result" {
 		insertAt++
@@ -2220,22 +2220,22 @@ func injectClaudeCodeCurrentDateInternalDoc(doc *ojson.Doc, date string, isExpli
 	return doc.SetRawBytes(contentPath, []byte("["+strings.Join(rawBlocks, ",")+"]")) == nil
 }
 
-// claudeCodeContextManagement is the context_management object Claude Code
-// 2.1.220 sends on every Messages request, captured 2026-08-01 from an isolated
-// profile talking to api.anthropic.com. keep:"all" retains every thinking block,
-// so replicating the client's exact value cannot produce upstream behaviour the
-// real client does not already get.
+
+
+
+
+
 const claudeCodeContextManagement = `{"edits":[{"type":"clear_thinking_20251015","keep":"all"}]}`
 
-// claudeThinkingAcceptsClearThinking reports whether the payload's thinking
-// value allows the clear_thinking_20251015 strategy. Anthropic rejects the
-// request outright otherwise:
-//
-//	`clear_thinking_20251015` strategy requires `thinking` to be enabled or adaptive
-//
-// An absent thinking field is therefore just as ineligible as an explicit
-// {"type":"disabled"}, which is why this checks for the accepted values rather
-// than excluding the disabled one.
+
+
+
+
+
+
+
+
+
 func claudeThinkingAcceptsClearThinking(payload []byte) bool {
 	switch ojson.GetBytesNoCopy(payload, "thinking.type").String() {
 	case "enabled", "adaptive":
@@ -2257,10 +2257,10 @@ func claudeThinkingAcceptsClearThinkingDoc(doc *ojson.Doc) bool {
 	}
 }
 
-// injectClaudeCodeContextManagement supplies context_management when the caller
-// omitted it. CPA already claims context-management-2025-06-27 in Anthropic-Beta,
-// so a missing body field is an observable inconsistency with the real client. A
-// caller that sent its own object keeps it untouched.
+
+
+
+
 func injectClaudeCodeContextManagement(payload []byte) ([]byte, bool) {
 	doc := ojson.NewDoc(payload)
 	if !injectClaudeCodeContextManagementDoc(doc) {
@@ -2282,8 +2282,8 @@ type claudeCodeContextManagementState struct {
 	automaticallyInjected bool
 }
 
-// reconcileClaudeCodeContextManagement resolves built-in ownership after forced
-// tool-choice processing. User payload rules run later and never need reconciliation.
+
+
 func reconcileClaudeCodeContextManagement(payload []byte, state claudeCodeContextManagementState) []byte {
 	doc := ojson.NewDoc(payload)
 	if !reconcileClaudeCodeContextManagementDoc(doc, state) {
@@ -2298,10 +2298,10 @@ func reconcileClaudeCodeContextManagementDoc(doc *ojson.Doc, state claudeCodeCon
 	}
 	contextManagement := doc.Get("context_management")
 
-	// Any thinking value the strategy does not accept must drop an object CPA
-	// injected itself. disableThinkingIfToolChoiceForced deletes the whole
-	// thinking field after injection, so this also covers a request that was
-	// still eligible when injectClaudeCodeContextManagement ran.
+
+
+
+
 	if !claudeThinkingAcceptsClearThinkingDoc(doc) {
 		if state.callerOwned || !state.automaticallyInjected {
 			return false
@@ -2318,10 +2318,10 @@ func reconcileClaudeCodeContextManagementDoc(doc *ojson.Doc, state claudeCodeCon
 	return doc.SetRawBytes("context_management", []byte(claudeCodeContextManagement)) == nil
 }
 
-// withEphemeralCacheControl stamps the native Claude Code default cache marker
-// {"type":"ephemeral"} onto a content block. A 1h ttl is not part of the default
-// shape; upgradeClaudeCacheControlTTL adds it for the credentials native uses it
-// on, after all placement decisions are final.
+
+
+
+
 func withEphemeralCacheControl(rawBlock string) string {
 	updated, err := ojson.SetRawBytes([]byte(rawBlock), "cache_control", []byte(`{"type":"ephemeral"}`))
 	if err != nil {
@@ -2331,8 +2331,8 @@ func withEphemeralCacheControl(rawBlock string) string {
 }
 
 type claudeWirePolicy struct {
-	OAuth                bool // real OAuth token runtime identity
-	ProfileClaudeCodeCLI bool // request fingerprint looks like Claude Code CLI
+	OAuth                bool
+	ProfileClaudeCodeCLI bool
 	ConfirmedClaudeCode  bool
 	Cloak                bool
 	Uncloak              bool
@@ -2514,8 +2514,8 @@ func resolveClaudeWirePolicy(cfg *config.Config, auth *cliproxyauth.Auth, apiKey
 		ExplicitNever:        explicitNever,
 	}
 	if confirmedClaudeCode {
-		// Native Claude Code is always a passthrough client unless the
-		// credential explicitly opts out of Claude Code identity via never/uncloak.
+
+
 		policy.Cloak = false
 		return policy, settings
 	}
@@ -2525,15 +2525,15 @@ func resolveClaudeWirePolicy(cfg *config.Config, auth *cliproxyauth.Auth, apiKey
 	case "never", "uncloak":
 		policy.Cloak = false
 	default:
-		// Auto applies the CLI cloak only to real Claude OAuth credentials,
-		// explicit fingerprint-profile opt-ins, or credentials with explicit cloak
-		// settings. Other API keys and delegated providers keep the caller shape.
+
+
+
 	}
 	return policy, settings
 }
 
-// applyCloaking applies the shared Messages/count_tokens wire policy. The
-// returned boolean reports whether cloaking ran.
+
+
 func applyCloaking(
 	ctx context.Context,
 	cfg *config.Config,
@@ -2591,8 +2591,8 @@ func applyCloakingInternalDoc(
 		return false, changed, nil
 	}
 	isExplicit := (len(explicitCacheMode) > 0 && explicitCacheMode[0]) || isExplicitPromptCacheModeContext(ctx)
-	// Strict mode drops caller system prompts entirely, so nothing needs a
-	// destination and an unusable block cannot lose information.
+
+
 	if !settings.strictMode {
 		if errSystem := validateClaudeCallerSystemBlocks(doc.Get("system")); errSystem != nil {
 			return false, false, errSystem
@@ -2623,14 +2623,14 @@ func applyCloakingInternalDoc(
 			}
 		}
 	}
-	// Without continuity state (probe/helper traffic, or no session identity)
-	// fall back to the per-request date, which is the pre-pinning behaviour.
+
+
 	if pinnedDate == "" {
 		pinnedDate = claudeCodeLocalDate(claudeCodeCurrentTime(cfg, auth))
 	}
 	if !isProbeOrHelper && claudeSessionDatePinEnabled(cfg) {
-		// Strip a string-form caller reminder before the pipeline turns the
-		// content into blocks, so user text is never dropped with it.
+
+
 		stripFirstUserClaudeCodeCurrentDateReminderDoc(doc)
 	}
 
@@ -2653,12 +2653,12 @@ func applyCloakingInternalDoc(
 		isSubagent,
 		prevReq,
 		promptID,
-		!policy.OAuth, // OAuth top-level caller prompts trigger Anthropic's third-party classifier (#6432).
+		!policy.OAuth,
 		turnOriginArgs...,
 	)
 
-	// Inject cross-model server-side refusal fallbacks only when explicitly
-	// enabled via upstream.claude.server-side-fallback.
+
+
 	if settings.serverSideFallback && !isProbeOrHelper && !doc.Get("fallbacks").Exists() {
 		model := strings.ToLower(strings.TrimSpace(doc.Get("model").String()))
 		if isClaudeOpus55Model(model) {
@@ -2671,23 +2671,23 @@ func applyCloakingInternalDoc(
 		applyClaudeCloakThinkingDisplayDoc(doc, false)
 	}
 
-	// Probes never use 1h cache in native Claude Code; ensure any caller-supplied
-	// 1h ttl is stripped to match extended-cache-ttl beta suppression. Subagents
-	// preserve caller-requested 1h cache TTL (e.g. subagentPromptCacheTtl: 1h).
+
+
+
 	if !isExplicit && (isProbeOrHelper || (isSubagent && !claudeSubagentRequests1hDoc(incomingHeaders, doc))) {
 		stripClaudeCacheControlTTLDoc(doc)
 	}
 
-	// Claude-Code-CLI fingerprint identity (real OAuth or fingerprint-profile=claude-code-cli)
-	// is applied later through the shared ApplyClaudeCredentialMetadata path.
-	// Other non-OAuth cloaking keeps the legacy per-request fake user_id.
+
+
+
 	if !policy.ProfileClaudeCodeCLI {
 		if _, errFakeUserID := injectFakeUserIDDoc(ctx, doc, apiKey, settings.cacheUserID); errFakeUserID != nil {
 			return false, false, errFakeUserID
 		}
 	}
 
-	// Apply sensitive word obfuscation and replacements
+
 	if obfuscateSensitiveWords {
 		if matcher := settings.buildSensitiveWordMatcher(); matcher != nil {
 			helps.ObfuscateSensitiveWordsDoc(doc, matcher)
@@ -2703,43 +2703,43 @@ type claudeCacheControl struct {
 	Scope string `json:"scope,omitempty"`
 }
 
-// claudeCodeCacheControl is the default Claude Code breakpoint shape.
-//
-// Recovered from the cache-control constructor in the installed 2.1.220,
-// 2.1.221 and 2.1.227 binaries, which is byte-identical in all three:
-//
-//	function ctor({scope, ttl} = {}) {
-//	  return {type: "ephemeral", ...ttl && {ttl}, ...scope === "global" && {scope}}
-//	}
-//
-// ttl is spread in only when the caller passes one, so the default native wire
-// shape carries no ttl at all. upgradeClaudeCacheControlTTL applies the 1h pool
-// separately, for the credentials native selects it on. The struct field order
-// preserves the native {type, ttl} key order when sjson marshals a value.
+
+
+
+
+
+
+
+
+
+
+
+
+
 var claudeCodeCacheControl = claudeCacheControl{
 	Type: "ephemeral",
 }
 
-// claudeCacheControlTTL1h is the only non-default ttl native ever selects.
+
 const claudeCacheControlTTL1h = "1h"
 
-// ensureCacheControl injects default cache_control breakpoints for translated
-// entrypoints (Responses/Chat/Gemini) after cloaking. Placement follows the
-// native request builder recovered from the installed binaries:
-//  1. LAST system block when no system marker exists
-//  2. LAST cacheable message when that message has no marker
-//
-// Tools are normally not stamped: the native Messages builder never passes a
-// cacheControl to its tool-schema converter, and a system breakpoint already
-// covers the tools prefix. The one exception is a payload with tools but no
-// system at all, which native never produces (it always sends a system prompt).
-// Without the fallback such a request has its only breakpoint on the volatile
-// final message, so a stateless caller with large tool definitions rewrites the
-// whole prefix on every request and never reads it back.
-//
-// Each section injects independently so cloaking's first-user marker cannot
-// suppress system/latest-user breakpoints. Callers still run enforceCacheControlLimit.
-// See: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ensureCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !ensureCacheControlDoc(doc) {
@@ -2792,10 +2792,10 @@ func applyTopLevelCacheControlToBlockDoc(doc *ojson.Doc, blockPath string, topCC
 	return doc.Delete("cache_control") == nil
 }
 
-// materializeTopLevelCacheControlDoc moves a top-level cache_control (Anthropic
-// automatic prompt caching) onto the last cacheable block in the request and
-// removes the top-level field so it participates in the 4-breakpoint limit and
-// TTL normalization/upgrades without duplicating the final breakpoint.
+
+
+
+
 func materializeTopLevelCacheControlDoc(doc *ojson.Doc) (bool, bool) {
 	if doc == nil || doc.Len() == 0 {
 		return false, false
@@ -2869,10 +2869,10 @@ func materializeTopLevelCacheControlDoc(doc *ojson.Doc) (bool, bool) {
 	return false, false
 }
 
-// claudePayloadHasCacheableSystem reports whether the payload has a system prompt
-// that injectSystemCacheControl can actually host a breakpoint on. An absent key, an
-// empty array, an array of only empty/whitespace text blocks, and an empty string
-// all leave the tools prefix uncovered.
+
+
+
+
 func claudePayloadHasCacheableSystem(payload []byte) bool {
 	return claudeSystemHasCacheableBlocks(ojson.GetBytesNoCopy(payload, "system"))
 }
@@ -2921,23 +2921,23 @@ func lastCacheableClaudeSystemIndex(system ojson.Result) int {
 	return lastEligible
 }
 
-// upgradeClaudeCacheControlTTL mirrors the native ttl upgrade helper, which only
-// touches blocks that already carry a cache_control without a ttl:
-//
-//	function upgrade(block, ttl) {
-//	  if (!("cache_control" in block) || !block.cache_control || block.cache_control.ttl) return block
-//	  return {...block, cache_control: {...block.cache_control, ttl}}
-//	}
-//
-// It never creates a breakpoint, so placement stays owned by ensureCacheControl.
-// Native gates the 1h selection on OAuth scopes, a non-overage account and an
-// allowlisted internal query source, and pushes extended-cache-ttl-2025-04-11
-// only when that selection produced a 1h body ttl. CPA has no query-source
-// equivalent, so the credential check is the reproducible half: OAuth is exactly
-// when claudeCodeCLIBetas emits extended-cache-ttl, which keeps body ttl and the
-// beta strictly paired the way native does. API-key credentials keep the plain
-// {"type":"ephemeral"} native default, which also avoids sending ttl to
-// Anthropic-compatible gateways that never advertised support for it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func upgradeClaudeCacheControlTTL(payload []byte, ttl string) []byte {
 	if ttl == "" || len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -2976,8 +2976,8 @@ func upgradeClaudeCacheControlTTLDoc(doc *ojson.Doc, ttl string) bool {
 		if blockType.Type != ojson.String {
 			return true
 		}
-		// Rebuild the object so the native {type, ttl, scope} key order survives
-		// instead of appending ttl after a caller-supplied scope.
+
+
 		upgraded := `{"type":` + marshalJSONStringWithoutHTMLEscape(blockType.String()) +
 			`,"ttl":` + marshalJSONStringWithoutHTMLEscape(ttl)
 		if scope := cacheControl.Get("scope"); scope.Exists() {
@@ -2992,11 +2992,11 @@ func upgradeClaudeCacheControlTTLDoc(doc *ojson.Doc, ttl string) bool {
 	return changed
 }
 
-// stripClaudeCacheControlTTL removes any ttl field from cache_control blocks in payload,
-// downgrading {"type":"ephemeral","ttl":"..."} to {"type":"ephemeral"}.
-// This ensures that when extended-cache-ttl-2025-04-11 is stripped (e.g. on probes,
-// subagents, or non-OAuth credentials), the body does not retain a ttl field that would
-// trigger Anthropic 400 errors or fingerprint mismatch.
+
+
+
+
+
 func stripClaudeCacheControlTTL(payload []byte) []byte {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -3762,9 +3762,9 @@ func (s *claudeStreamDocScanner) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// forEachClaudeCacheControlPathDoc walks every candidate cache_control in
-// Anthropic evaluation order (tools -> system -> messages) in a single O(N)
-// pass without materializing split containers.
+
+
+
 func forEachClaudeCacheControlPathDoc(doc *ojson.Doc, visit func(path string, cacheControl ojson.Result) bool) {
 	if doc == nil || doc.Len() == 0 {
 		return
@@ -3809,8 +3809,8 @@ func forEachClaudeCacheControlPathDoc(doc *ojson.Doc, visit func(path string, ca
 	}
 }
 
-// forEachClaudeCacheControlBlock walks every block that can carry cache_control
-// in Anthropic's evaluation order: tools, then system, then messages.
+
+
 func forEachClaudeCacheControlBlock(payload []byte, visit func(path string, block ojson.Result)) {
 	forEachClaudeCacheControlBlockResult(
 		ojson.GetBytesNoCopy(payload, "tools"),
@@ -3848,8 +3848,8 @@ func forEachClaudeCacheControlBlockResult(tools, system, messages ojson.Result, 
 	}
 }
 
-// isExplicitPromptCacheMode reports whether any of the candidate payloads
-// specifies prompt_cache_options.mode as "explicit" (case-insensitive).
+
+
 func isExplicitPromptCacheMode(payloads ...[]byte) bool {
 	for _, payload := range payloads {
 		if len(payload) == 0 {
@@ -3981,17 +3981,17 @@ func countCacheControlsResult(system, tools, messages ojson.Result) int {
 	return count
 }
 
-// normalizeCacheControlTTL ensures cache_control TTL values don't violate the
-// prompt-caching-scope-2026-01-05 ordering constraint: a 1h-TTL block must not
-// appear after a 5m-TTL block anywhere in the evaluation order.
-//
-// Anthropic evaluates blocks in order: tools → system (index 0..N) → messages.
-// Within each section, blocks are evaluated in array order. A 5m (default) block
-// followed by a 1h block at ANY later position is an error — including within
-// the same section (e.g. system[1]=5m then system[3]=1h).
-//
-// Strategy: walk all cache_control blocks in evaluation order. Once a 5m block
-// is seen, strip ttl from ALL subsequent 1h blocks (downgrading them to 5m).
+
+
+
+
+
+
+
+
+
+
+
 func normalizeCacheControlTTL(payload []byte) []byte {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -4030,22 +4030,22 @@ func normalizeCacheControlTTLDoc(doc *ojson.Doc) bool {
 	return modified
 }
 
-// enforceCacheControlLimit removes excess cache_control blocks from a payload
-// so the total does not exceed the Anthropic API limit (currently 4).
-//
-// Anthropic evaluates cache breakpoints in order: tools → system → messages.
-// The most valuable breakpoints are:
-//  1. Last tool         — caches ALL tool definitions
-//  2. Last system block — caches ALL system content
-//  3. Recent messages   — cache conversation context
-//
-// Removal priority (strip lowest-value first):
-//
-//	Phase 1: system blocks earliest-first, preserving the last one.
-//	Phase 2: tool blocks earliest-first, preserving the last one.
-//	Phase 3: message content blocks earliest-first.
-//	Phase 4: remaining system blocks (last system).
-//	Phase 5: remaining tool blocks (last tool).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func enforceCacheControlLimit(payload []byte, maxBlocks int) []byte {
 	if len(payload) == 0 || !ojson.ValidBytes(payload) {
 		return payload
@@ -4064,7 +4064,7 @@ func enforceCacheControlLimitDoc(doc *ojson.Doc, maxBlocks int) bool {
 
 	thread := doc.Get("thread")
 	if thread.Exists() && thread.Type != ojson.Null && maxBlocks > 0 {
-		// Anthropic reserves one cache breakpoint for thread continuation.
+
 		maxBlocks--
 	}
 
@@ -4138,22 +4138,22 @@ func enforceCacheControlLimitDoc(doc *ojson.Doc, maxBlocks int) bool {
 	return changed
 }
 
-// injectMessagesCacheControl adds cache_control to the message the native rolling
-// breakpoint selector would pick. Recovered from the marker selector in the
-// installed 2.1.220/2.1.221/2.1.227 binaries:
-//
-//	eligible(msg): a non-assistant turn is always eligible; an assistant turn with
-//	               string content is eligible; an assistant turn with array content
-//	               is eligible only when its last block is not thinking-like.
-//	last        := walk back from the end, skipping internal system turns and
-//	               ineligible turns.
-//	target      := (final turn is a system turn with non-empty STRING content and
-//	               last >= 0) ? final turn : last
-//
-// The final-system special case is deliberately narrow: native requires string
-// content there and writes a brand new single text block for it rather than
-// stamping the last element of an existing array. Markers on other messages must
-// not suppress this rolling write.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func injectMessagesCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !injectMessagesCacheControlDoc(doc) {
@@ -4258,10 +4258,10 @@ func lastCacheableClaudeMessageContentBlockIndex(message ojson.Result) int {
 	return -1
 }
 
-// claudeMessageEligibleForRollingCache reports whether the native selector would
-// consider this user/assistant turn as a rolling breakpoint host. Native rejects
-// an assistant turn whose last content block is thinking-like, because a thinking
-// block cannot host the marker, and Anthropic rejects cache_control on empty text blocks.
+
+
+
+
 func claudeMessageEligibleForRollingCache(message ojson.Result) bool {
 	content := message.Get("content")
 	if content.Type == ojson.String {
@@ -4270,8 +4270,8 @@ func claudeMessageEligibleForRollingCache(message ojson.Result) bool {
 	return lastCacheableClaudeMessageContentBlockIndex(message) >= 0
 }
 
-// injectClaudeFinalSystemCacheControl reproduces the native final-system special
-// case, which replaces the string content with a single marked text block.
+
+
 func injectClaudeFinalSystemCacheControl(payload []byte, messageIndex int, text string) []byte {
 	doc := ojson.NewDoc(payload)
 	if !injectClaudeFinalSystemCacheControlDoc(doc, messageIndex, text) {
@@ -4308,9 +4308,9 @@ func messageContentHasCacheControl(content ojson.Result) bool {
 	return false
 }
 
-// injectToolsCacheControl adds cache_control to the last non-deferred tool in the tools array.
-// Deferred tools cannot use prompt caching, so trailing deferred tools are skipped.
-// This only adds cache_control if NO tool in the array already has it.
+
+
+
 func injectToolsCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !injectToolsCacheControlDoc(doc) {
@@ -4328,7 +4328,7 @@ func injectToolsCacheControlDoc(doc *ojson.Doc) bool {
 		return false
 	}
 
-	// Check if ANY tool already has cache_control and find the last eligible tool.
+
 	hasCacheControlInTools := false
 	lastEligibleToolIndex := -1
 	idx := 0
@@ -4356,9 +4356,9 @@ func injectToolsCacheControlDoc(doc *ojson.Doc) bool {
 	return true
 }
 
-// injectSystemCacheControl adds cache_control to the last element in the system prompt.
-// Converts string system prompts to array format if needed.
-// This only adds cache_control if NO system element already has it.
+
+
+
 func injectSystemCacheControl(payload []byte) []byte {
 	doc := ojson.NewDoc(payload)
 	if !injectSystemCacheControlDoc(doc) {
@@ -4373,7 +4373,7 @@ func injectSystemCacheControlDoc(doc *ojson.Doc) bool {
 	}
 	system := doc.Get("system")
 	if system.IsArray() {
-		// Check if ANY system element already has cache_control and find the last cacheable element.
+
 		hasCacheControlInSystem := false
 		lastEligibleSystemIndex := -1
 		idx := 0
@@ -4392,7 +4392,7 @@ func injectSystemCacheControlDoc(doc *ojson.Doc) bool {
 			return false
 		}
 
-		// Add cache_control to the last cacheable system element
+
 		lastSystemPath := fmt.Sprintf("system.%d.cache_control", lastEligibleSystemIndex)
 		if errSet := doc.Set(lastSystemPath, claudeCodeCacheControl); errSet != nil {
 			log.Warnf("failed to inject cache_control into system array: %v", errSet)
@@ -4404,13 +4404,13 @@ func injectSystemCacheControlDoc(doc *ojson.Doc) bool {
 		return false
 	}
 	if system.Type == ojson.String {
-		// Empty/blank strings are not cacheable hosts. claudePayloadHasCacheableSystem
-		// already treats them as missing so tools can cover the prefix; converting them
-		// here would create a second, useless breakpoint on whitespace.
+
+
+
 		if strings.TrimSpace(system.String()) == "" {
 			return false
 		}
-		// Convert string system prompt to an ordered native text block.
+
 		newSystem := "[" + buildTextBlock(system.String(), &claudeCodeCacheControl) + "]"
 		if errSet := doc.SetRawBytes("system", []byte(newSystem)); errSet != nil {
 			log.Warnf("failed to inject cache_control into system string: %v", errSet)

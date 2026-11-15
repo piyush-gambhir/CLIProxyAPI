@@ -65,7 +65,7 @@ func TestInteractionsApplyPatchPreNameConsistentTypeConflict(t *testing.T) {
 								if resolvedIndex >= 0 {
 									resolved["index"] = resolvedIndex
 								}
-								// Both snapshots belong to the same call in this single terminal event.
+
 								events = patchSend(&param, patchTypeReviewFinal(entry, conflict, resolved))
 							}
 							assertInteractionsPatchReviewFailure(t, &param, events)

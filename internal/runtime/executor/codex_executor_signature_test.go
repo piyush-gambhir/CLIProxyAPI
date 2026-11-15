@@ -368,7 +368,7 @@ func TestCodexExecutorHonorsAuthoritativeResolvedModelInfoIsCompatFalse(t *testi
 					{
 						Name:     "gpt-5.4",
 						Alias:    "gpt-5.4-alias",
-						IsCompat: true, // Config says compat, but runtime metadata binds explicit false
+						IsCompat: true,
 					},
 				},
 			},
@@ -443,7 +443,7 @@ func TestCodexExecutorDisambiguatesConfigIndex(t *testing.T) {
 	}
 	executor := NewCodexExecutor(cfg)
 
-	// Auth pointing to index 1 (IsCompat: true)
+
 	authCompat := &cliproxyauth.Auth{
 		Provider: "codex",
 		Attributes: map[string]string{

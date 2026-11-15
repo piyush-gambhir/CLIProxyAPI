@@ -1,6 +1,6 @@
-// Package handlers provides core API handler functionality for the CLI Proxy API server.
-// It includes common types, client management, load balancing, and error handling
-// shared across all API endpoint handlers (OpenAI, Claude, Gemini).
+
+
+
 package handlers
 
 import (
@@ -30,26 +30,26 @@ import (
 	"golang.org/x/net/context"
 )
 
-// ErrorResponse represents a standard error response format for the API.
-// It contains a single ErrorDetail field.
+
+
 type ErrorResponse struct {
-	// Error contains detailed information about the error that occurred.
+
 	Error ErrorDetail `json:"error"`
 }
 
-// ErrorDetail provides specific information about an error that occurred.
-// It includes a human-readable message, an error type, and an optional error code.
+
+
 type ErrorDetail struct {
-	// Message is a human-readable message providing more details about the error.
+
 	Message string `json:"message"`
 
-	// Type is the category of error that occurred (e.g., "invalid_request_error").
+
 	Type string `json:"type"`
 
-	// Code is a short code identifying the error, if applicable.
+
 	Code string `json:"code,omitempty"`
 
-	// Retryable optionally indicates whether a retry might fix the issue automatically.
+
 	Retryable *bool `json:"retryable,omitempty"`
 }
 
@@ -58,21 +58,21 @@ const idempotencyKeyMetadataKey = "idempotency_key"
 const (
 	defaultStreamingKeepAliveSeconds = 0
 	defaultStreamingBootstrapRetries = 0
-	// Stream interceptor history is intentionally bounded and not configurable in the first SDK surface.
+
 	maxStreamInterceptorHistoryChunks = 64
 	maxStreamInterceptorHistoryBytes  = 1 << 20
 )
 
-// BuildErrorResponseBody builds an OpenAI-compatible JSON error response body.
-// If errText is already valid JSON, it is compacted to ensure single-line SSE compatibility
-// while preserving upstream error payloads.
+
+
+
 func BuildErrorResponseBody(status int, errText string) []byte {
 	return BuildErrorResponseBodyWithError(status, errText, nil)
 }
 
-// BuildErrorResponseBodyWithError builds an OpenAI-compatible JSON error response body,
-// preserving structured classifications (such as terminal upstream auth failures and retryable flags)
-// present in err.
+
+
+
 func BuildErrorResponseBodyWithError(status int, errText string, err error) []byte {
 	if status <= 0 {
 		status = http.StatusInternalServerError
@@ -173,8 +173,8 @@ func defaultStreamingKeepAliveTickerWithReset(interval time.Duration) (<-chan ti
 	return ticker.C, ticker.Stop, reset
 }
 
-// StreamingKeepAliveInterval returns the streaming keep-alive interval for this server (SSE heartbeats and WebSocket Ping frames).
-// Returning 0 disables keep-alives (default when unset).
+
+
 func StreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	seconds := defaultStreamingKeepAliveSeconds
 	if cfg != nil {
@@ -186,14 +186,14 @@ func StreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-// StreamingSendKeepAliveBeforeFT returns whether SSE keep-alives should be sent before the first token arrives.
-// It is active only when streaming.send-keepalive-before-ft is true and streaming.keepalive-seconds > 0.
+
+
 func StreamingSendKeepAliveBeforeFT(cfg *config.SDKConfig) bool {
 	return cfg != nil && cfg.Streaming.SendKeepAliveBeforeFT && StreamingKeepAliveInterval(cfg) > 0
 }
 
-// NewStreamingKeepAliveTickerWithReset returns a ticker channel, a stop function, and a reset function
-// for streaming keep-alives. When interval <= 0, it returns a nil channel and no-op functions.
+
+
 func NewStreamingKeepAliveTickerWithReset(interval time.Duration) (<-chan time.Time, func(), func()) {
 	if interval <= 0 {
 		return nil, func() {}, func() {}
@@ -208,15 +208,15 @@ func NewStreamingKeepAliveTickerWithReset(interval time.Duration) (<-chan time.T
 	return defaultStreamingKeepAliveTickerWithReset(interval)
 }
 
-// NewStreamingKeepAliveTicker returns a ticker channel and a stop function for streaming keep-alives.
-// When interval <= 0, it returns a nil channel and a no-op stop function.
+
+
 func NewStreamingKeepAliveTicker(interval time.Duration) (<-chan time.Time, func()) {
 	keepAliveC, stop, _ := NewStreamingKeepAliveTickerWithReset(interval)
 	return keepAliveC, stop
 }
 
-// NewPreFirstTokenKeepAliveTicker returns a ticker channel and a stop function for pre-first-token SSE keep-alives.
-// It is active only when streaming.send-keepalive-before-ft is true and streaming.keepalive-seconds > 0.
+
+
 func NewPreFirstTokenKeepAliveTicker(cfg *config.SDKConfig) (<-chan time.Time, func()) {
 	if !StreamingSendKeepAliveBeforeFT(cfg) {
 		return nil, func() {}
@@ -224,8 +224,8 @@ func NewPreFirstTokenKeepAliveTicker(cfg *config.SDKConfig) (<-chan time.Time, f
 	return NewStreamingKeepAliveTicker(StreamingKeepAliveInterval(cfg))
 }
 
-// SetStreamingKeepAliveTickerFactoryForTest overrides the keep-alive ticker factory for deterministic tests
-// and returns a restore function.
+
+
 func SetStreamingKeepAliveTickerFactoryForTest(factory func(interval time.Duration) (<-chan time.Time, func())) func() {
 	prev := streamingKeepAliveTickerFactory
 	if factory != nil {
@@ -236,8 +236,8 @@ func SetStreamingKeepAliveTickerFactoryForTest(factory func(interval time.Durati
 	}
 }
 
-// SetStreamingKeepAliveTickerWithResetFactoryForTest overrides the keep-alive ticker-with-reset factory
-// for deterministic tests and returns a restore function.
+
+
 func SetStreamingKeepAliveTickerWithResetFactoryForTest(factory func(interval time.Duration) (<-chan time.Time, func(), func())) func() {
 	prev := streamingKeepAliveTickerWithResetFactory
 	if factory != nil {
@@ -248,8 +248,8 @@ func SetStreamingKeepAliveTickerWithResetFactoryForTest(factory func(interval ti
 	}
 }
 
-// NonStreamingKeepAliveInterval returns the keep-alive interval for non-streaming responses.
-// Returning 0 disables keep-alives (default when unset).
+
+
 func NonStreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	seconds := 0
 	if cfg != nil {
@@ -261,7 +261,7 @@ func NonStreamingKeepAliveInterval(cfg *config.SDKConfig) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-// StreamingBootstrapRetries returns how many times a streaming request may be retried before any bytes are sent.
+
 func StreamingBootstrapRetries(cfg *config.SDKConfig) int {
 	retries := defaultStreamingBootstrapRetries
 	if cfg != nil {
@@ -273,21 +273,21 @@ func StreamingBootstrapRetries(cfg *config.SDKConfig) int {
 	return retries
 }
 
-// PassthroughHeadersEnabled returns whether upstream response headers should be forwarded to clients.
-// Default is false.
+
+
 func PassthroughHeadersEnabled(cfg *config.SDKConfig) bool {
 	return cfg != nil && cfg.PassthroughHeaders
 }
 
-// executionPassthroughHeaders keeps client responses behind passthrough-headers while
-// plugin-host internal executions always receive filtered upstream headers.
+
+
 func executionPassthroughHeaders(cfg *config.SDKConfig, internal bool) bool {
 	return internal || PassthroughHeadersEnabled(cfg)
 }
 
 func requestExecutionMetadata(ctx context.Context) map[string]any {
-	// Idempotency-Key is an optional client-supplied header used to correlate retries.
-	// Only include it if the client explicitly provides it.
+
+
 	key := ""
 	requestPath := ""
 	var ginCtx *gin.Context
@@ -356,8 +356,8 @@ func extractSessionIDsFromRequest(request *http.Request) (string, string) {
 	return "", ""
 }
 
-// EnrichContextWithSessionHierarchy extracts canonical session and parent session identities
-// from headers, payload, and metadata and records them in ClientRequestMetadata.
+
+
 func EnrichContextWithSessionHierarchy(ctx context.Context, headers http.Header, payload []byte, metadata map[string]any) context.Context {
 	meta := logging.GetClientRequestMetadata(ctx)
 	if info, ok := coresession.ExtractSessionInfo(headers, payload, metadata); ok {
@@ -456,7 +456,7 @@ func setGenerateMetadata(meta map[string]any, rawJSON []byte) {
 	if meta == nil {
 		return
 	}
-	// Missing or true means generation is enabled; only an explicit false disables generation.
+
 	generate := true
 	node := ojson.GetBytesNoCopy(rawJSON, "generate")
 	if node.Exists() && node.IsBool() && !node.Bool() {
@@ -465,35 +465,35 @@ func setGenerateMetadata(meta map[string]any, rawJSON []byte) {
 	meta[coreexecutor.GenerateMetadataKey] = generate
 }
 
-// BaseAPIHandler contains the handlers for API endpoints.
-// It holds a pool of clients to interact with the backend service and manages
-// load balancing, client selection, and configuration.
+
+
+
 type BaseAPIHandler struct {
 	runtimeMu sync.RWMutex
 
-	// AuthManager manages auth lifecycle and execution in the new architecture.
+
 	AuthManager *coreauth.Manager
 
-	// Cfg holds the current application configuration.
+
 	Cfg *config.SDKConfig
 
-	// PluginHost optionally applies plugin interceptors around upstream execution.
+
 	PluginHost PluginInterceptorHost
 
-	// ModelRouterHost optionally routes matching requests to a plugin executor, the router's own
-	// executor, or a built-in provider before model-to-provider resolution and auth selection.
+
+
 	ModelRouterHost PluginModelRouterHost
 }
 
-// NewBaseAPIHandlers creates a new API handlers instance.
-// It takes a slice of clients and configuration as input.
-//
-// Parameters:
-//   - cliClients: A slice of AI service clients
-//   - cfg: The application configuration
-//
-// Returns:
-//   - *BaseAPIHandler: A new API handlers instance
+
+
+
+
+
+
+
+
+
 func NewBaseAPIHandlers(cfg *config.SDKConfig, authManager *coreauth.Manager) *BaseAPIHandler {
 	return &BaseAPIHandler{
 		Cfg:         cfg,
@@ -501,12 +501,12 @@ func NewBaseAPIHandlers(cfg *config.SDKConfig, authManager *coreauth.Manager) *B
 	}
 }
 
-// UpdateClients updates the handlers' client list and configuration.
-// This method is called when the configuration or authentication tokens change.
-//
-// Parameters:
-//   - clients: The new slice of AI service clients
-//   - cfg: The new application configuration
+
+
+
+
+
+
 func (h *BaseAPIHandler) UpdateClients(cfg *config.SDKConfig) {
 	if h == nil {
 		return
@@ -516,7 +516,7 @@ func (h *BaseAPIHandler) UpdateClients(cfg *config.SDKConfig) {
 	h.runtimeMu.Unlock()
 }
 
-// CurrentConfig returns the current application configuration snapshot.
+
 func (h *BaseAPIHandler) CurrentConfig() *config.SDKConfig {
 	if h == nil {
 		return nil
@@ -527,7 +527,7 @@ func (h *BaseAPIHandler) CurrentConfig() *config.SDKConfig {
 	return cfg
 }
 
-// SetPluginHost configures the optional plugin interceptor host.
+
 func (h *BaseAPIHandler) SetPluginHost(host PluginInterceptorHost) {
 	if h == nil {
 		return
@@ -540,7 +540,7 @@ func (h *BaseAPIHandler) SetPluginHost(host PluginInterceptorHost) {
 	h.runtimeMu.Unlock()
 }
 
-// SetModelRouterHost configures the optional plugin model router host.
+
 func (h *BaseAPIHandler) SetModelRouterHost(host PluginModelRouterHost) {
 	if h == nil {
 		return
@@ -553,7 +553,7 @@ func (h *BaseAPIHandler) SetModelRouterHost(host PluginModelRouterHost) {
 	h.runtimeMu.Unlock()
 }
 
-// ModelRouterHostSnapshot returns the configured plugin model router host snapshot.
+
 func (h *BaseAPIHandler) ModelRouterHostSnapshot() PluginModelRouterHost {
 	if h == nil {
 		return nil
@@ -579,7 +579,7 @@ func isNilInterface(value any) bool {
 	if value == nil {
 		return true
 	}
-	// A typed nil pointer stored in an interface is not equal to nil.
+
 	reflected := reflect.ValueOf(value)
 	switch reflected.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
@@ -589,14 +589,14 @@ func isNilInterface(value any) bool {
 	}
 }
 
-// GetAlt extracts the 'alt' parameter from the request query string.
-// It checks both 'alt' and '$alt' parameters and returns the appropriate value.
-//
-// Parameters:
-//   - c: The Gin context containing the HTTP request
-//
-// Returns:
-//   - string: The alt parameter value, or empty string if it's "sse"
+
+
+
+
+
+
+
+
 func (h *BaseAPIHandler) GetAlt(c *gin.Context) string {
 	var alt string
 	var hasAlt bool
@@ -610,18 +610,18 @@ func (h *BaseAPIHandler) GetAlt(c *gin.Context) string {
 	return alt
 }
 
-// GetContextWithCancel creates a new context with cancellation capabilities.
-// It embeds the Gin context and the API handler into the new context for later use.
-// The returned cancel function also handles logging the API response if request logging is enabled.
-//
-// Parameters:
-//   - handler: The API handler associated with the request.
-//   - c: The Gin context of the current request.
-//   - ctx: The parent context (caller values/deadlines are preserved; request context adds cancellation and request ID).
-//
-// Returns:
-//   - context.Context: The new context with cancellation and embedded values.
-//   - APIHandlerCancelFunc: A function to cancel the context and log the response.
+
+
+
+
+
+
+
+
+
+
+
+
 func (h *BaseAPIHandler) GetContextWithCancel(handler interfaces.APIHandler, c *gin.Context, ctx context.Context) (context.Context, APIHandlerCancelFunc) {
 	parentCtx := ctx
 	if parentCtx == nil {
@@ -749,8 +749,8 @@ func (h *BaseAPIHandler) GetContextWithCancel(handler interfaces.APIHandler, c *
 	}
 }
 
-// StartNonStreamingKeepAlive emits blank lines every 5 seconds while waiting for a non-streaming response.
-// It returns a stop function that must be called before writing the final response.
+
+
 func (h *BaseAPIHandler) StartNonStreamingKeepAlive(c *gin.Context, ctx context.Context) func() {
 	if h == nil || c == nil {
 		return func() {}
@@ -796,13 +796,13 @@ func (h *BaseAPIHandler) StartNonStreamingKeepAlive(c *gin.Context, ctx context.
 	}
 }
 
-// appendAPIResponse preserves any previously captured API response and appends new data.
+
 func appendAPIResponse(c *gin.Context, data []byte) {
 	if c == nil || len(data) == 0 {
 		return
 	}
 
-	// Capture timestamp on first API response
+
 	if _, exists := c.Get("API_RESPONSE_TIMESTAMP"); !exists {
 		c.Set("API_RESPONSE_TIMESTAMP", time.Now())
 	}
@@ -823,6 +823,6 @@ func appendAPIResponse(c *gin.Context, data []byte) {
 	c.Set("API_RESPONSE", bytes.Clone(data))
 }
 
-// APIHandlerCancelFunc is a function type for canceling an API handler's context.
-// It can optionally accept parameters, which are used for logging the response.
+
+
 type APIHandlerCancelFunc func(params ...interface{})

@@ -18,45 +18,45 @@ import (
 
 var payloadConfigEvaluations atomic.Int64
 
-// PayloadConfigEvaluationCount returns the cumulative number of payload rule
-// engine evaluations across the process.
+
+
 func PayloadConfigEvaluationCount() int64 {
 	return payloadConfigEvaluations.Load()
 }
 
-// ApplyPayloadConfigWithRoot behaves like applyPayloadConfig but treats all parameter
-// paths as relative to the provided root path and restricts matches to the given
-// protocol when supplied. Defaults are checked
-// against the original payload when provided. requestedModel carries the client-visible
-// model name before alias resolution so payload rules can target aliases precisely.
-// requestPath is the inbound HTTP request path (when available) used for endpoint-scoped gates.
+
+
+
+
+
+
 func ApplyPayloadConfigWithRoot(cfg *config.Config, model, protocol, root string, payload, original []byte, requestedModel string, requestPath string) []byte {
 	return ApplyPayloadConfigWithRequest(cfg, model, protocol, "", root, payload, original, requestedModel, requestPath, nil)
 }
 
-// ApplyPayloadConfigWithRootDoc applies payload config in place on doc with parameter paths relative to root.
+
 func ApplyPayloadConfigWithRootDoc(cfg *config.Config, model, protocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string) {
 	ApplyPayloadConfigWithRequestDoc(cfg, model, protocol, "", root, doc, original, requestedModel, requestPath, nil)
 }
 
-// ApplyPayloadConfigWithRequest applies payload config using source protocol and request header gates.
+
 func ApplyPayloadConfigWithRequest(cfg *config.Config, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header) []byte {
 	out, _ := ApplyPayloadConfigWithRequestTracked(cfg, model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers, "")
 	return out
 }
 
-// ApplyPayloadConfigWithRequestDoc applies payload config in place on doc using source protocol and request header gates.
+
 func ApplyPayloadConfigWithRequestDoc(cfg *config.Config, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header) {
 	_ = ApplyPayloadConfigWithRequestTrackedDoc(cfg, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, "")
 }
 
-// ApplyPayloadConfigWithRequestForExecutor applies payload config with explicit target executor context.
+
 func ApplyPayloadConfigWithRequestForExecutor(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header) []byte {
 	out, _ := ApplyPayloadConfigWithTrackedPathsForExecutor(cfg, targetExecutor, model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers)
 	return out
 }
 
-// ApplyPayloadConfigWithRequestForExecutorDoc applies payload config in place on doc with explicit target executor context.
+
 func ApplyPayloadConfigWithRequestForExecutorDoc(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header) {
 	_ = ApplyPayloadConfigWithTrackedPathsForExecutorDoc(cfg, targetExecutor, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers)
 }
@@ -66,22 +66,22 @@ func isCodexTargetExecutor(targetExecutor string) bool {
 	return te == "codex" || te == "codex-websockets" || te == "codex_websockets"
 }
 
-// ApplyPayloadConfigWithTrackedPaths applies payload config and reports which
-// tracked paths (or their descendants) were targeted by an applied rule.
+
+
 func ApplyPayloadConfigWithTrackedPaths(cfg *config.Config, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPaths ...string) ([]byte, map[string]bool) {
 	return ApplyPayloadConfigWithTrackedPathsForExecutor(cfg, "", model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers, trackedPaths...)
 }
 
-// ApplyPayloadConfigWithTrackedPathsDoc applies payload config in place on doc and reports which
-// tracked paths (or their descendants) were targeted by an applied rule.
+
+
 func ApplyPayloadConfigWithTrackedPathsDoc(cfg *config.Config, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPaths ...string) map[string]bool {
 	return ApplyPayloadConfigWithTrackedPathsForExecutorDoc(cfg, "", model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, trackedPaths...)
 }
 
-// ApplyPayloadConfigWithTrackedPathsForExecutor applies payload config with target executor awareness.
-// When headers indicate a Codex client and the target executor is not Codex or Codex WebSocket,
-// it normalizes tool parameter integer types to satisfy client-side integer deserialization (#6237).
-// For Codex and Codex WebSocket targets, integer normalization is skipped (#6244).
+
+
+
+
 func ApplyPayloadConfigWithTrackedPathsForExecutor(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPaths ...string) ([]byte, map[string]bool) {
 	if len(payload) == 0 {
 		return payload, make(map[string]bool)
@@ -94,7 +94,7 @@ func ApplyPayloadConfigWithTrackedPathsForExecutor(cfg *config.Config, targetExe
 	return doc.Bytes(), touched
 }
 
-// ApplyPayloadConfigWithTrackedPathsForExecutorDoc applies payload config in place on doc with target executor awareness.
+
 func ApplyPayloadConfigWithTrackedPathsForExecutorDoc(cfg *config.Config, targetExecutor, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel, requestPath string, headers http.Header, trackedPaths ...string) map[string]bool {
 	touched, _ := applyPayloadConfigWithTrackedPathsForExecutorDoc(cfg, targetExecutor, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, trackedPaths...)
 	return touched
@@ -130,8 +130,8 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 	}
 
 	var strippedToolChoicePath string
-	// Apply disable-image-generation filtering before payload rules so config payload
-	// overrides can explicitly re-enable image_generation when desired.
+
+
 	if shouldStripImageGeneration(cfg.DisableImageGeneration, requestPath) {
 		if removeToolTypeFromPayloadWithRootDoc(doc, root, "image_generation") {
 			mutated = true
@@ -267,7 +267,7 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 				}
 			}
 
-			// Apply default rules: first write wins per field across all matching rules.
+
 			for i := range rules.Default {
 				rule := &rules.Default[i]
 				if !payloadModelRulesMatchDoc(rule.Models, protocol, fromProtocol, headers, doc, root, candidates) {
@@ -295,7 +295,7 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 					}
 				}
 			}
-			// Apply default raw rules: first write wins per field across all matching rules.
+
 			for i := range rules.DefaultRaw {
 				rule := &rules.DefaultRaw[i]
 				if !payloadModelRulesMatchDoc(rule.Models, protocol, fromProtocol, headers, doc, root, candidates) {
@@ -327,7 +327,7 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 					}
 				}
 			}
-			// Apply override rules: last write wins per field across all matching rules.
+
 			for i := range rules.Override {
 				rule := &rules.Override[i]
 				if !payloadModelRulesMatchDoc(rule.Models, protocol, fromProtocol, headers, doc, root, candidates) {
@@ -349,7 +349,7 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 					}
 				}
 			}
-			// Apply override raw rules: last write wins per field across all matching rules.
+
 			for i := range rules.OverrideRaw {
 				rule := &rules.OverrideRaw[i]
 				if !payloadModelRulesMatchDoc(rule.Models, protocol, fromProtocol, headers, doc, root, candidates) {
@@ -375,7 +375,7 @@ func applyPayloadConfigWithTrackedPathsForExecutorAndAuthDoc(cfg *config.Config,
 					}
 				}
 			}
-			// Apply filter rules: remove matching paths from payload.
+
 			for i := range rules.Filter {
 				rule := &rules.Filter[i]
 				if !payloadModelRulesMatchDoc(rule.Models, protocol, fromProtocol, headers, doc, root, candidates) {
@@ -515,15 +515,15 @@ func retractAutoInjectedImageGenerationToolAtIndexDoc(doc *ojson.Doc, toolsPath 
 	return doc.Delete(toolsPath+"."+strconv.Itoa(targetIdx)) == nil
 }
 
-// ApplyPayloadConfigWithRequestTracked applies payload config and reports whether
-// an applied rule targeted trackedPath or one of its descendants.
+
+
 func ApplyPayloadConfigWithRequestTracked(cfg *config.Config, model, protocol, fromProtocol, root string, payload, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPath string) ([]byte, bool) {
 	out, touched := ApplyPayloadConfigWithTrackedPaths(cfg, model, protocol, fromProtocol, root, payload, original, requestedModel, requestPath, headers, trackedPath)
 	return out, touched[trackedPath]
 }
 
-// ApplyPayloadConfigWithRequestTrackedDoc applies payload config in place on doc and reports whether
-// an applied rule targeted trackedPath or one of its descendants.
+
+
 func ApplyPayloadConfigWithRequestTrackedDoc(cfg *config.Config, model, protocol, fromProtocol, root string, doc *ojson.Doc, original []byte, requestedModel string, requestPath string, headers http.Header, trackedPath string) bool {
 	touched := ApplyPayloadConfigWithTrackedPathsDoc(cfg, model, protocol, fromProtocol, root, doc, original, requestedModel, requestPath, headers, trackedPath)
 	return touched[trackedPath]
@@ -537,7 +537,7 @@ func isImagesEndpointRequestPath(path string) bool {
 	if path == "/v1/images/generations" || path == "/v1/images/edits" {
 		return true
 	}
-	// Be tolerant of prefix routers that may report a longer matched route.
+
 	if strings.HasSuffix(path, "/v1/images/generations") || strings.HasSuffix(path, "/v1/images/edits") {
 		return true
 	}
@@ -547,12 +547,12 @@ func isImagesEndpointRequestPath(path string) bool {
 	return false
 }
 
-// shouldStripImageGeneration reports whether the built-in image_generation tool must be
-// removed from the outbound payload for the given mode and request path.
-//   - All: strip on every endpoint.
-//   - Chat: strip only on non-images endpoints; keep it on /v1/images/* endpoints.
-//   - Off / Passthrough: never strip. Off injects the tool elsewhere; Passthrough forwards
-//     the client payload untouched.
+
+
+
+
+
+
 func shouldStripImageGeneration(mode config.DisableImageGenerationMode, requestPath string) bool {
 	switch mode {
 	case config.DisableImageGenerationAll:
@@ -852,9 +852,9 @@ func payloadModelCandidates(model, requestedModel string) []string {
 	return candidates
 }
 
-// buildPayloadPath combines an optional root path with a relative parameter path.
-// When root is empty, the parameter path is used as-is. When root is non-empty,
-// the parameter path is treated as relative to root.
+
+
+
 func buildPayloadPath(root, path string) string {
 	r := strings.TrimSpace(root)
 	p := strings.TrimSpace(path)
@@ -1371,12 +1371,12 @@ func PayloadRequestPath(opts cliproxyexecutor.Options) string {
 	}
 }
 
-// matchModelPattern performs simple wildcard matching where '*' matches zero or more characters.
-// Examples:
-//
-//	"*-5" matches "gpt-5"
-//	"gpt-*" matches "gpt-5" and "gpt-4"
-//	"gemini-*-pro" matches "gemini-2.5-pro" and "gemini-3-pro".
+
+
+
+
+
+
 func matchModelPattern(pattern, model string) bool {
 	pattern = strings.TrimSpace(pattern)
 	model = strings.TrimSpace(model)
@@ -1386,7 +1386,7 @@ func matchModelPattern(pattern, model string) bool {
 	if pattern == "*" {
 		return true
 	}
-	// Iterative glob-style matcher supporting only '*' wildcard.
+
 	pi, si := 0, 0
 	starIdx := -1
 	matchIdx := 0

@@ -54,11 +54,11 @@ func TestAntigravityReasoningReplayAccumulatorMultiToolSSEChunks(t *testing.T) {
 }
 
 func TestPrepareAntigravityGeminiReasoningReplayPayloadToleratesHomeKVFailure(t *testing.T) {
-	// An enabled Home client with no heartbeat makes CurrentKVClient report home
-	// mode with an error, which is how every Home-side KV failure reaches the
-	// replay cache — including the "unknown command 'cas'" case from an older
-	// Home. The request must proceed without replay rather than fail, because a
-	// bare executor error would make MarkResult mark the credential unavailable.
+
+
+
+
+
 	homekv.SetCurrent(homekv.New(config.HomeConfig{Enabled: true}))
 	t.Cleanup(func() { homekv.SetCurrent(nil) })
 
@@ -785,8 +785,8 @@ func TestAntigravityReasoningReplayAccumulatorCountsExistingFunctionOccurrenceTh
 	if errPrepare != nil {
 		t.Fatal(errPrepare)
 	}
-	// The leading call gets Gemini's bypass sentinel (it carries no native
-	// signature); only the second occurrence may receive the replayed one.
+
+
 	parts := ojson.GetBytes(prepared, "request.contents.0.parts").Array()
 	if len(parts) != 2 || antigravityHasNativeThoughtSignature(parts[0].Get("thoughtSignature").String()) || parts[1].Get("thoughtSignature").String() != signature {
 		t.Fatalf("function occurrence replay targeted the wrong call: %s", prepared)
@@ -1057,9 +1057,9 @@ func TestPrepareAntigravityGeminiReasoningReplayKeepsTextSignatureOnContextDrift
 	if errPrepare != nil {
 		t.Fatal(errPrepare)
 	}
-	// The signed part itself is byte-identical, so the signature still describes
-	// it exactly. Only the surrounding turns drifted, which Gemini does not bind
-	// signatures to, so dropping it here would only force needless re-reasoning.
+
+
+
 	if got := ojson.GetBytes(out, "request.contents.1.parts.0.thoughtSignature").String(); got != "fingerprinted-signature-123456" {
 		t.Fatalf("signature = %q, want the signature replayed even though the surrounding context drifted; body=%s", got, out)
 	}
@@ -1073,8 +1073,8 @@ func TestPrepareAntigravityGeminiReasoningReplayRejectsFingerprintMismatch(t *te
 	item := buildAntigravityThoughtSignatureItem(1, 0, "fingerprinted-signature-123456", kind, fingerprint)
 	internalcache.CacheAntigravityReasoningReplayItems("gemini-3.6-flash-high", "session:edited", [][]byte{item})
 
-	// The client rewrote the signed part, so the cached signature describes text
-	// that is no longer in the request and must not be attached to the new text.
+
+
 	payload := []byte(`{"sessionId":"edited","request":{"contents":[{"role":"user","parts":[{"text":"turn"}]},{"role":"model","parts":[{"text":"edited answer"}]},{"role":"user","parts":[{"text":"next"}]}]}}`)
 	out, _, errPrepare := prepareAntigravityGeminiReasoningReplayPayload(context.Background(), "gemini-3.6-flash-high", cliproxyexecutor.Request{}, cliproxyexecutor.Options{}, payload)
 	if errPrepare != nil {
@@ -1197,8 +1197,8 @@ func TestAntigravityReasoningReplaySeparatesClaudeSessionTitleFromResumedTranscr
 	mainAccumulator1.observeResponsePayload([]byte(`{"response":{"candidates":[{"content":{"parts":[{"text":"answer one"},{"text":"","thoughtSignature":"` + sig1 + `"}]},"finishReason":"STOP"}]}}`))
 	mainAccumulator1.Commit(context.Background())
 
-	// Prepare the next main turn before the auxiliary request commits. This
-	// reproduces Claude Code's concurrent title/main request ordering.
+
+
 	mainOriginal2 := []byte(`{"messages":[{"role":"user","content":[{"type":"text","text":"root prompt"}]},{"role":"assistant","content":[{"type":"text","text":"answer one"}]},{"role":"user","content":[{"type":"text","text":"next prompt"}]}],"system":[{"type":"text","text":"You are Claude Code."}],"thinking":{"type":"enabled"},"tools":[{"name":"Read"}]}`)
 	mainRequest2 := []byte(`{"request":{"contents":[{"role":"user","parts":[{"text":"root prompt"}]},{"role":"model","parts":[{"text":"answer one"}]},{"role":"user","parts":[{"text":"next prompt"}]}]}}`)
 	prepared2, scope2, errPrepare2 := prepareAntigravityGeminiReasoningReplayPayload(context.Background(), model, cliproxyexecutor.Request{}, cliproxyexecutor.Options{Headers: headers, OriginalRequest: mainOriginal2}, mainRequest2)
@@ -1302,8 +1302,8 @@ func TestPrepareAntigravityGeminiReasoningReplayRepairsSequentialCompactedUnknow
 		t.Fatal("failed to cache replay item")
 	}
 
-	// Payload simulates Responses compaction where assistant function_call was dropped,
-	// and translator generated functionResponse with placeholder name "unknown".
+
+
 	compactedPayload := []byte(`{
 		"sessionId": "sess-seq-compact",
 		"request": {
@@ -1335,7 +1335,7 @@ func TestPrepareAntigravityGeminiReasoningReplayRepairsSequentialCompactedUnknow
 		t.Fatalf("prepare failed unexpectedly: %v", errPrepare)
 	}
 
-	// Verify restored model functionCall has name "Read" and thoughtSignature
+
 	fcName := ojson.GetBytes(out, "request.contents.1.parts.0.functionCall.name").String()
 	fcID := ojson.GetBytes(out, "request.contents.1.parts.0.functionCall.id").String()
 	fcSig := ojson.GetBytes(out, "request.contents.1.parts.0.thoughtSignature").String()
@@ -1343,14 +1343,14 @@ func TestPrepareAntigravityGeminiReasoningReplayRepairsSequentialCompactedUnknow
 		t.Fatalf("restored functionCall = name:%q id:%q sig:%q, want Read/call_seq_1/signature", fcName, fcID, fcSig)
 	}
 
-	// Verify user functionResponse.name was repaired from "unknown" to "Read"
+
 	frName := ojson.GetBytes(out, "request.contents.2.parts.0.functionResponse.name").String()
 	frID := ojson.GetBytes(out, "request.contents.2.parts.0.functionResponse.id").String()
 	if frName != "Read" || frID != "call_seq_1" {
 		t.Fatalf("repaired functionResponse = name:%q id:%q, want Read/call_seq_1", frName, frID)
 	}
 
-	// Verify ValidateGeminiFunctionCallPairing passes cleanly
+
 	if errPairing := internalsignature.ValidateGeminiFunctionCallPairing(out); errPairing != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed: %v", errPairing)
 	}
@@ -1425,21 +1425,21 @@ func TestPrepareAntigravityGeminiReasoningReplayRepairsParallelCompactedUnknownR
 		t.Fatalf("prepare parallel failed: %v", errPrepare)
 	}
 
-	// Verify parallel functionCall restoration
+
 	fc1Name := ojson.GetBytes(out, "request.contents.1.parts.0.functionCall.name").String()
 	fc2Name := ojson.GetBytes(out, "request.contents.1.parts.1.functionCall.name").String()
 	if fc1Name != "Read" || fc2Name != "Grep" {
 		t.Fatalf("restored parallel functionCalls = %q, %q, want Read, Grep", fc1Name, fc2Name)
 	}
 
-	// Verify parallel functionResponse.name repair
+
 	fr1Name := ojson.GetBytes(out, "request.contents.2.parts.0.functionResponse.name").String()
 	fr2Name := ojson.GetBytes(out, "request.contents.2.parts.1.functionResponse.name").String()
 	if fr1Name != "Read" || fr2Name != "Grep" {
 		t.Fatalf("repaired parallel functionResponses = %q, %q, want Read, Grep", fr1Name, fr2Name)
 	}
 
-	// Verify strict pairing validation succeeds
+
 	if errPairing := internalsignature.ValidateGeminiFunctionCallPairing(out); errPairing != nil {
 		t.Fatalf("ValidateGeminiFunctionCallPairing failed: %v", errPairing)
 	}
@@ -1533,8 +1533,8 @@ func TestPrepareAntigravityGeminiReasoningReplayDegradesWithoutClaudeToolProvena
 	payload := []byte(`{"sessionId":"sess-missing-provenance","request":{"contents":[{"role":"model","parts":[{"thoughtSignature":"skip_thought_signature_validator","functionCall":{"id":"` + clientID + `","name":"Read","args":{"file_path":"/tmp/a"}}}]},{"role":"user","parts":[{"functionResponse":{"id":"` + clientID + `","name":"Read","response":{"result":"ok"}}}]}]}}`)
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FromString("claude")}
 
-	// An empty ledger must not kill the conversation: the reserved IDs are
-	// rewritten to neutral synthetic IDs and the request stays valid.
+
+
 	out, _, errPrepare := prepareAntigravityGeminiReasoningReplayPayload(context.Background(), model, cliproxyexecutor.Request{Model: model, Payload: payload}, opts, payload)
 	if errPrepare != nil {
 		t.Fatalf("prepare failed: %v", errPrepare)
@@ -1617,9 +1617,9 @@ func TestPrepareAntigravityGeminiReasoningReplayRejectsChangedClaudeToolArgument
 	original := []byte(`{"tools":[{"name":"Edit","input_schema":{"type":"object","properties":{"replace_all":{"type":"boolean","default":false}}}}]}`)
 	opts := cliproxyexecutor.Options{OriginalRequest: original, SourceFormat: sdktranslator.FromString("claude")}
 
-	// The client changed the arguments, so the native call must NOT be restored.
-	// The request still goes through, but only with a neutral synthetic ID and
-	// without the native identity or the cached signature.
+
+
+
 	out, _, errPrepare := prepareAntigravityGeminiReasoningReplayPayload(context.Background(), model, cliproxyexecutor.Request{Model: model, Payload: payload}, opts, payload)
 	if errPrepare != nil {
 		t.Fatalf("prepare failed: %v", errPrepare)
@@ -1661,7 +1661,7 @@ func TestPrepareAntigravityGeminiReasoningReplayRejectsUnmatchedNonPlaceholderRe
 	}`)
 	internalcache.CacheAntigravityReasoningReplayItems(model, sessionKey, [][]byte{item})
 
-	// Payload has a non-placeholder name mismatch ("Write" != "Read")
+
 	mismatchedPayload := []byte(`{
 		"sessionId": "sess-mismatch",
 		"request": {
@@ -1705,9 +1705,9 @@ func TestPrepareAntigravityGeminiReasoningReplayRestoresIdentityOnContextDrift(t
 	const args = `{"file_path":"/tmp/a"}`
 	clientID := util.GeminiClaudeToolUseID("native-drift", "Read", args)
 	payload := []byte(`{"sessionId":"sess-context-drift","request":{"contents":[{"role":"model","parts":[{"thoughtSignature":"skip_thought_signature_validator","functionCall":{"id":"` + clientID + `","name":"Read","args":` + args + `}}]},{"role":"user","parts":[{"functionResponse":{"id":"` + clientID + `","name":"Read","response":{"result":"ok"}}}]}]}}`)
-	// A stale contextHash stands in for compacted or rewritten history: the tool
-	// identity is still provable from the opaque ID, but the cached signature is
-	// no longer valid for this conversation.
+
+
+
 	item := []byte(`{"type":"function_call_part","contentIndex":0,"partIndex":0,"targetOccurrence":0,"name":"Read","call_id":"native-drift","args":` + args + `,"thoughtSignature":"EsMTCsATARFNMg/XNVix5lDpkKaHR7Xg","contextHash":"0000000000000000000000000000000000000000000000000000000000000000"}`)
 	sessionKey := antigravityReasoningReplayScopeFromPayload(model, payload).sessionKey
 	if !internalcache.CacheAntigravityReasoningReplayItems(model, sessionKey, [][]byte{item}) {
@@ -1904,7 +1904,7 @@ func TestPrepareAntigravityGeminiReasoningReplay_ReordersPermutedParallelToolRes
 		calls[i] = fmt.Sprintf(`{"functionCall":{"id":"%s","name":"Read","args":{"file_path":"/tmp/a"}}%s}`, ids[i], sig)
 	}
 
-	// Permute responses: reverse order
+
 	for i := 0; i < count; i++ {
 		permutedIndex := count - 1 - i
 		responses[i] = fmt.Sprintf(`{"functionResponse":{"id":"%s","name":"Read","response":{"result":"ok-%d"}}}`, ids[permutedIndex], permutedIndex)
@@ -1945,8 +1945,8 @@ func TestPrepareAntigravityGeminiReasoningReplayStillRejectsBrokenPairing(t *tes
 
 	const model = "gemini-3.6-flash-high"
 	clientID := util.GeminiClaudeToolUseID("native-orphan", "Read", `{"file_path":"/tmp/a"}`)
-	// A functionResponse with no preceding functionCall is structurally invalid and
-	// must keep failing even though provenance degradation is now in play.
+
+
 	payload := []byte(`{"sessionId":"sess-orphan","request":{"contents":[{"role":"user","parts":[{"functionResponse":{"id":"` + clientID + `","name":"Read","response":{"result":"ok"}}}]}]}}`)
 	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FromString("claude")}
 
@@ -1987,8 +1987,8 @@ func TestAntigravityReasoningReplaySkipsSymmetricGeminiAndInteractionsButKeepsAs
 
 	t.Run("asymmetric_claude_haiku_alias_to_gemini_3_flash", func(t *testing.T) {
 		internalcache.ClearAntigravityReasoningReplayCache()
-		// Downstream client sends Claude /v1/messages with model="claude-haiku-4-5-20251001",
-		// which model-alias resolves to baseModel="gemini-3-flash" inside AntigravityExecutor.
+
+
 		req := cliproxyexecutor.Request{Model: model, Payload: payload}
 		opts := cliproxyexecutor.Options{
 			SourceFormat:   sdktranslator.FormatClaude,
@@ -2076,10 +2076,10 @@ func TestAntigravityReasoningReplaySkipsSymmetricGeminiAndInteractionsButKeepsAs
 			t.Fatalf("non-Antigravity functionResponse role = %q, want user", gotRole)
 		}
 
-		// Turn 2 simulates Vertex stripping wire-only functionCall.id/functionResponse.id
-		// after prepareGeminiTopLevelReasoningReplayPayloadDoc; the captured replayRequestPayload
-		// from prepareGeminiTopLevelReasoningReplayPayloadDoc must still keep canonical call_id
-		// context so Turn 3 matches both call_1 and call_2 signatures.
+
+
+
+
 		helps.StripVertexOpenAIResponsesToolCallIDsDoc(doc2, asymOpts.SourceFormat.String())
 		topLevelResponse2 := []byte(`{"candidates":[{"content":{"role":"model","parts":[{"thought":true,"text":""},{"thoughtSignature":"EsMTCsATARFNMg/XNVix5lDpkKaHR7Xg","functionCall":{"name":"get_weather","args":{"city":"Shanghai"},"id":"call_2"}}]},"finishReason":"STOP"}]}`)
 		cacheAntigravityReasoningReplayFromResponse(context.Background(), scope2, replayReq2, topLevelResponse2)
@@ -2227,9 +2227,9 @@ func TestAntigravityReasoningReplayAccumulatorAssemblesVertexStreamingPartialArg
 }
 
 func TestNonVertexSanitizesReplayedVertexBareTinkSignature(t *testing.T) {
-	// Verify that a Vertex bare-Tink thoughtSignature replayed from shared KV is
-	// downgraded to skip_thought_signature_validator when post-replay non-Vertex
-	// sanitization runs (as in GeminiExecutor and AIStudioExecutor).
+
+
+
 	const vertexBareTinkSig = "AY89a18f0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	internalcache.ClearAntigravityReasoningReplayCache()
 	const model = "gemini-3.8-flash"
@@ -2292,8 +2292,8 @@ func TestCountTokensReasoningReplayPeeksWithoutReservingTombstone(t *testing.T) 
 	if err != nil || changed || len(replayReq) != 0 {
 		t.Fatalf("countTokens prepare = scope:%+v len(replayReq):%d changed:%v err:%v", scope, len(replayReq), changed, err)
 	}
-	// A subsequent real generation turn must still be able to cache best-effort
-	// without being blocked by an unclosed countTokens reservation.
+
+
 	item := []byte(`{"type":"thought_signature","contentIndex":0,"partIndex":0,"targetOccurrence":0,"thoughtSignature":"EmcKZQFpFH0THU+YNRY5uVwt/0bo2hFo1RmXsMhlX9FCg2n6GssBe5sMV37KB6OrgeKKEP9fxN261QX"}`)
 	if !internalcache.CacheAntigravityReasoningReplayItems(model, scope.sessionKey, [][]byte{item}) {
 		t.Fatal("failed to cache replay item after countTokens peek")

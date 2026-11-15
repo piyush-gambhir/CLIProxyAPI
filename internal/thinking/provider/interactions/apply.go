@@ -1,4 +1,4 @@
-// Package interactions applies native Interactions thinking configuration.
+
 package interactions
 
 import (
@@ -10,12 +10,12 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
-// Applier implements thinking.ProviderApplier for the native Interactions API.
+
 type Applier struct{}
 
 var _ thinking.ProviderDocApplier = (*Applier)(nil)
 
-// NewApplier creates a new Interactions thinking applier.
+
 func NewApplier() *Applier {
 	return &Applier{}
 }
@@ -24,7 +24,7 @@ func init() {
 	thinking.RegisterProvider("interactions", NewApplier())
 }
 
-// Apply writes thinking configuration using native Interactions generation_config fields.
+
 func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) ([]byte, error) {
 	if config.Mode != thinking.ModeBudget && config.Mode != thinking.ModeLevel && config.Mode != thinking.ModeNone && config.Mode != thinking.ModeAuto {
 		return body, nil
@@ -39,7 +39,7 @@ func (a *Applier) Apply(body []byte, config thinking.ThinkingConfig, modelInfo *
 	return doc.Bytes(), nil
 }
 
-// ApplyDoc writes thinking configuration onto doc in place.
+
 func (a *Applier) ApplyDoc(doc *ojson.Doc, config thinking.ThinkingConfig, modelInfo *registry.ModelInfo) error {
 	if doc == nil {
 		return nil

@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-// UpdateAvailable reports whether latest should be offered as an upgrade over
-// installed. A leading "v"/"V" is ignored on both sides. Versions are compared
-// numerically when both are dotted release numbers, so an installed version
-// newer than the registry one is not reported as an update; otherwise any
-// difference counts as an update.
+
+
+
+
+
 func UpdateAvailable(installed, latest string) bool {
 	installed = normalizeVersion(installed)
 	latest = normalizeVersion(latest)
@@ -31,9 +31,9 @@ func normalizeVersion(version string) string {
 	return version
 }
 
-// compareVersions compares dotted numeric versions segment by segment, with
-// missing segments treated as zero. It reports false when either version
-// contains a non-numeric segment.
+
+
+
 func compareVersions(a, b string) (int, bool) {
 	segmentsA := strings.Split(a, ".")
 	segmentsB := strings.Split(b, ".")

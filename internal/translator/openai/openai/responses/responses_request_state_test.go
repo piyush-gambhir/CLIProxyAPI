@@ -23,7 +23,7 @@ func TestResponsesRequestSelectionAndStreamIsolation(t *testing.T) {
 	}
 	start := []byte(`data: {"id":"r","created":1,"choices":[{"index":0,"delta":{"role":"assistant"}}]}`)
 	tool := []byte(`data: {"id":"r","created":1,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"c","function":{"name":"run","arguments":"{}"}}]},"finish_reason":"tool_calls"}]}`)
-	// Interleave independent requests to catch accidental global cache reuse.
+
 	for i := range cases {
 		c := &cases[i]
 		ConvertOpenAIChatCompletionsResponseToOpenAIResponses(context.Background(), "test", c.original, c.translated, start, &c.state)

@@ -1,9 +1,9 @@
-// Package claude provides response translation functionality for Claude Code API compatibility.
-// This package handles the conversion of backend client responses into Claude Code-compatible
-// Server-Sent Events (SSE) format, implementing a sophisticated state machine that manages
-// different response types including text content, thinking processes, and function calls.
-// The translation ensures proper sequencing of SSE events and maintains state across
-// multiple response chunks to provide a seamless streaming experience.
+
+
+
+
+
+
 package claude
 
 import (
@@ -24,8 +24,8 @@ import (
 	"github.com/MoeForge/moego/ojson"
 )
 
-// decodeSignature decodes R... (2-layer Base64) to E... (1-layer Base64, Anthropic format).
-// Returns empty string if decoding fails (skip invalid signatures).
+
+
 func decodeSignature(signature string) string {
 	if signature == "" {
 		return signature
@@ -49,56 +49,56 @@ func formatGeminiClaudeCarrierValue(modelName, signature, direction, targetKind 
 }
 
 func formatClaudeSignatureValue(modelName, signature string) string {
-	// Provider signatures are emitted as provider-native opaque values without
-	// CPA-specific prefixes (such as claude#, gemini#, or gpt#).
+
+
 	if cache.GetModelGroup(modelName) == "claude" {
 		return decodeSignature(signature)
 	}
 	return signature
 }
 
-// Params holds parameters for response conversion and maintains state across streaming chunks.
-// This structure tracks the current state of the response translation process to ensure
-// proper sequencing of SSE events and transitions between different content types.
+
+
+
 type Params struct {
-	ModelName               string // Resolved once from the translated request
-	WebSearchStreamMode     bool   // Resolved once from both request formats
-	RequestMetadataResolved bool   // Also caches empty model names and disabled web search
-	HasFirstResponse        bool   // Indicates if the initial message_start event has been sent
-	ResponseType            int    // Current response type: 0=none, 1=content, 2=thinking, 3=function
-	ResponseIndex           int    // Index counter for content blocks in the streaming response
-	HasFinishReason         bool   // Tracks whether a finish reason has been observed
-	FinishReason            string // The finish reason string returned by the provider
-	HasUsageMetadata        bool   // Tracks whether usage metadata has been observed
-	PromptTokenCount        int64  // Cached prompt token count from usage metadata
-	CandidatesTokenCount    int64  // Cached candidate token count from usage metadata
-	ThoughtsTokenCount      int64  // Cached thinking token count from usage metadata
-	TotalTokenCount         int64  // Cached total token count from usage metadata
-	CachedTokenCount        int64  // Cached content token count (indicates prompt caching)
-	HasSentFinalEvents      bool   // Indicates if final content/message events have been sent
-	HasToolUse              bool   // Indicates if tool use was observed in the stream
-	HasContent              bool   // Tracks whether any content (text, thinking, or tool use) has been output
+	ModelName               string
+	WebSearchStreamMode     bool
+	RequestMetadataResolved bool
+	HasFirstResponse        bool
+	ResponseType            int
+	ResponseIndex           int
+	HasFinishReason         bool
+	FinishReason            string
+	HasUsageMetadata        bool
+	PromptTokenCount        int64
+	CandidatesTokenCount    int64
+	ThoughtsTokenCount      int64
+	TotalTokenCount         int64
+	CachedTokenCount        int64
+	HasSentFinalEvents      bool
+	HasToolUse              bool
+	HasContent              bool
 	HasSemanticContent      bool
 	LastSemanticKind        string
 	HasWebSearchTool        bool
 	WebSearchRequests       int64
 	WebSearchTextBuffer     strings.Builder
 
-	// Signature caching support
-	CurrentThinkingText   strings.Builder // Accumulates thinking text for signature caching
-	CurrentThinkingSigned bool            // Tracks whether the active thinking block already has its terminal signature
 
-	// Reverse map: sanitized Gemini function name → original Claude tool name.
-	// Populated lazily on the first response chunk from the original request JSON.
+	CurrentThinkingText   strings.Builder
+	CurrentThinkingSigned bool
+
+
+
 	ToolNameMap map[string]string
 
-	CurrentToolName            string // Client-facing name of the currently open tool_use block
-	CurrentToolIsParameterless bool   // Whether the open tool_use block was declared parameterless
-	CurrentToolInputEmitted    bool   // Whether cleaned input JSON was already emitted for the open tool_use block
-	CurrentToolPendingEmpty    bool   // Whether an empty "{}" input_json_delta is deferred awaiting tool_use completion
+	CurrentToolName            string
+	CurrentToolIsParameterless bool
+	CurrentToolInputEmitted    bool
+	CurrentToolPendingEmpty    bool
 }
 
-// toolUseIDCounter provides a process-wide unique counter for tool use identifiers.
+
 var toolUseIDCounter uint64
 
 func antigravityClaudeToolUseID(modelName string, functionCall ojson.Result, fallback string) string {
@@ -110,22 +110,22 @@ func antigravityClaudeToolUseID(modelName string, functionCall ojson.Result, fal
 	return util.SanitizeClaudeToolID(fallback)
 }
 
-// ConvertAntigravityResponseToClaude performs sophisticated streaming response format conversion.
-// This function implements a complex state machine that translates backend client responses
-// into Claude Code-compatible Server-Sent Events (SSE) format. It manages different response types
-// and handles state transitions between content blocks, thinking processes, and function calls.
-//
-// Response type states: 0=none, 1=content, 2=thinking, 3=function
-// The function maintains state across multiple calls to ensure proper SSE event sequencing.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and timeout handling
-//   - modelName: The name of the model being used for the response (unused in current implementation)
-//   - rawJSON: The raw JSON response from the Antigravity API
-//   - param: A pointer to a parameter object for maintaining state between calls
-//
-// Returns:
-//   - [][]byte: A slice of bytes, each containing a Claude Code-compatible SSE payload.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, param *any) [][]byte {
 	if *param == nil {
 		*param = &Params{
@@ -136,8 +136,8 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		}
 	}
 	params := (*param).(*Params)
-	// Request metadata is resolved once per stream; callers pass the same
-	// request bytes for the stream's lifetime.
+
+
 	if !params.RequestMetadataResolved {
 		params.ModelName = strings.Clone(ojson.GetBytesNoCopy(requestRawJSON, "model").String())
 		params.WebSearchStreamMode = shouldTranslateWebSearchGrounding(originalRequestRawJSON, requestRawJSON)
@@ -231,14 +231,14 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		return true
 	}
 
-	// Initialize the streaming session with a message_start event
-	// This is only sent for the very first response chunk to establish the streaming session
+
+
 	if !params.HasFirstResponse {
-		// Create the initial message structure with default values according to Claude Code API specification
-		// This follows the Claude Code API specification for streaming message initialization
+
+
 		messageStartDoc := ojson.NewDoc([]byte(`{"type": "message_start", "message": {"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY", "type": "message", "role": "assistant", "content": [], "model": "claude-3-5-sonnet-20241022", "stop_reason": null, "stop_sequence": null, "usage": {"input_tokens": 0, "output_tokens": 0}}}`))
 
-		// Use cpaUsageMetadata within the message_start event for Claude.
+
 		if promptTokenCount := ojson.GetBytesNoCopy(rawJSON, "response.cpaUsageMetadata.promptTokenCount"); promptTokenCount.Exists() {
 			_ = messageStartDoc.Set("message.usage.input_tokens", promptTokenCount.Int())
 		}
@@ -246,7 +246,7 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 			_ = messageStartDoc.Set("message.usage.output_tokens", candidatesTokenCount.Int())
 		}
 
-		// Override default values with actual response metadata if available from the Antigravity response
+
 		if modelVersionResult := ojson.GetBytesNoCopy(rawJSON, "response.modelVersion"); modelVersionResult.Exists() {
 			_ = messageStartDoc.Set("message.model", modelVersionResult.String())
 		}
@@ -274,8 +274,8 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		}
 	}
 
-	// Process the response parts array from the backend client
-	// Each part can contain text content, thinking content, or function calls
+
+
 	partsResult := ojson.GetBytesNoCopy(rawJSON, "response.candidates.0.content.parts")
 	if partsResult.IsArray() && webSearchStreamMode && !params.HasWebSearchTool && !handledWebSearchGrounding {
 		appendWebSearchBufferedText(partsResult, &params.WebSearchTextBuffer)
@@ -284,7 +284,7 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		for i := 0; i < len(partResults); i++ {
 			partResult := partResults[i]
 
-			// Extract the different types of content from each part
+
 			partTextResult := partResult.Get("text")
 			functionCallResult := partResult.Get("functionCall")
 			thoughtSignatureResult := partResult.Get("thoughtSignature")
@@ -304,7 +304,7 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 				continue
 			}
 
-			// Handle text content (both regular content and thinking)
+
 			if partTextResult.Exists() {
 				partText := partTextResult.String()
 				if partResult.Get("thought").Bool() {
@@ -372,8 +372,8 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 				if cache.GetModelGroup(modelName) != "claude" {
 					appendPartSignature(toolSignature, geminiClaudeCarrierNext, geminiClaudeCarrierFunction)
 				}
-				// Handle function/tool calls from the AI model
-				// This processes tool usage requests and formats them for Claude Code API compatibility
+
+
 				params.HasToolUse = true
 				fcName := util.RestoreSanitizedToolName(params.ToolNameMap, functionCallResult.Get("name").String())
 
@@ -407,8 +407,8 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 					continue
 				}
 
-				// Handle state transitions when switching to function calls
-				// Close any existing function call block first
+
+
 				if params.ResponseType == 3 {
 					flushPendingToolInput()
 					appendEvent("content_block_stop", fmt.Sprintf(`{"type":"content_block_stop","index":%d}`, params.ResponseIndex))
@@ -416,14 +416,14 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 					params.ResponseType = 0
 				}
 
-				// Special handling for thinking state transition
+
 				if params.ResponseType == 2 {
-					// output = output + "event: content_block_delta\n"
-					// output = output + fmt.Sprintf(`data: {"type":"content_block_delta","index":%d,"delta":{"type":"signature_delta","signature":null}}`, params.ResponseIndex)
-					// output = output + "\n\n\n"
+
+
+
 				}
 
-				// Close any other existing content block
+
 				if params.ResponseType != 0 {
 					flushPendingToolInput()
 					appendEvent("content_block_stop", fmt.Sprintf(`{"type":"content_block_stop","index":%d}`, params.ResponseIndex))
@@ -434,9 +434,9 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 				params.CurrentToolIsParameterless = util.ClaudeToolIsParameterless(fcName, originalRequestRawJSON)
 				params.CurrentToolInputEmitted = false
 				params.CurrentToolPendingEmpty = false
-				// Start a new tool use content block
-				// This creates the structure for a function call in Claude Code format
-				// Create the tool use block with unique ID and function details
+
+
+
 				dataDoc := ojson.NewDocString(fmt.Sprintf(`{"type":"content_block_start","index":%d,"content_block":{"type":"tool_use","id":"","name":"","input":{}}}`, params.ResponseIndex))
 				fallbackID := fmt.Sprintf("%s-%d-%d", fcName, time.Now().UnixNano(), atomic.AddUint64(&toolUseIDCounter, 1))
 				_ = dataDoc.Set("content_block.id", antigravityClaudeToolUseID(modelName, functionCallResult, fallbackID))
@@ -493,8 +493,8 @@ func ConvertAntigravityResponseToClaude(ctx context.Context, _ string, originalR
 		params.ThoughtsTokenCount = usageResult.Get("thoughtsTokenCount").Int()
 		params.TotalTokenCount = usageResult.Get("totalTokenCount").Int()
 		if params.CandidatesTokenCount == 0 && params.TotalTokenCount > 0 {
-			// totalTokenCount includes the cached part of promptTokenCount, so the
-			// fallback must use the raw prompt count, not the cache-reduced one.
+
+
 			params.CandidatesTokenCount = params.TotalTokenCount - rawPromptTokenCount - params.ThoughtsTokenCount
 			if params.CandidatesTokenCount < 0 {
 				params.CandidatesTokenCount = 0
@@ -546,7 +546,7 @@ func appendFinalEvents(params *Params, output *[]byte, force bool) {
 		return
 	}
 
-	// Only send final events if we have actually output content
+
 	if !params.HasContent {
 		return
 	}
@@ -565,8 +565,8 @@ func appendFinalEvents(params *Params, output *[]byte, force bool) {
 	stopReason := resolveStopReason(params)
 	usageOutputTokens := params.CandidatesTokenCount + params.ThoughtsTokenCount
 	if usageOutputTokens == 0 && params.TotalTokenCount > 0 {
-		// PromptTokenCount excludes cached tokens for input_tokens, while
-		// TotalTokenCount includes them; add the cache back for the fallback.
+
+
 		usageOutputTokens = params.TotalTokenCount - (params.PromptTokenCount + params.CachedTokenCount)
 		if usageOutputTokens < 0 {
 			usageOutputTokens = 0
@@ -577,7 +577,7 @@ func appendFinalEvents(params *Params, output *[]byte, force bool) {
 	if params.WebSearchRequests > 0 {
 		_ = deltaDoc.Set("usage.server_tool_use.web_search_requests", params.WebSearchRequests)
 	}
-	// Add cache_read_input_tokens if cached tokens are present (indicates prompt caching is working)
+
 	if params.CachedTokenCount > 0 {
 		if errSet := deltaDoc.Set("usage.cache_read_input_tokens", params.CachedTokenCount); errSet != nil {
 			log.Warnf("antigravity claude response: failed to set cache_read_input_tokens: %v", errSet)
@@ -609,16 +609,16 @@ func resolveAntigravityClaudeStopReason(finishReason string, hasToolUse bool) st
 	}
 }
 
-// ConvertAntigravityResponseToClaudeNonStream converts a non-streaming Antigravity response to a non-streaming Claude response.
-//
-// Parameters:
-//   - ctx: The context for the request.
-//   - modelName: The name of the model.
-//   - rawJSON: The raw JSON response from the Antigravity API.
-//   - param: A pointer to a parameter object for the conversion.
-//
-// Returns:
-//   - []byte: A Claude-compatible JSON response.
+
+
+
+
+
+
+
+
+
+
 func ConvertAntigravityResponseToClaudeNonStream(_ context.Context, _ string, originalRequestRawJSON, requestRawJSON, rawJSON []byte, _ *any) []byte {
 	toolNameMap := util.DisambiguatedToolNameMap(originalRequestRawJSON)
 	modelName := ojson.GetBytesNoCopy(requestRawJSON, "model").String()
@@ -642,7 +642,7 @@ func ConvertAntigravityResponseToClaudeNonStream(_ context.Context, _ string, or
 	_ = responseDoc.Set("model", root.Get("response.modelVersion").String())
 	_ = responseDoc.Set("usage.input_tokens", promptTokens)
 	_ = responseDoc.Set("usage.output_tokens", outputTokens)
-	// Add cache_read_input_tokens if cached tokens are present (indicates prompt caching is working)
+
 	if cachedTokens > 0 {
 		if errSet := responseDoc.Set("usage.cache_read_input_tokens", cachedTokens); errSet != nil {
 			log.Warnf("antigravity claude response: failed to set cache_read_input_tokens: %v", errSet)

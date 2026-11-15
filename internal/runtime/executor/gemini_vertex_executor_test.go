@@ -310,11 +310,11 @@ func TestGeminiVertexExecutorClaudeMalformedFunctionCallCancelAfterErrorRecordsF
 	}
 }
 
-// TestVertexAPIKeyModelsURL pinpoints the exact URL construction rule for
-// API-key mode: the configured base URL is honored as a full resource prefix
-// when it already contains "/publishers/", otherwise "/v1/publishers/google/models"
-// is inserted for it. Keeps third-party short hosts (zenmux-style) working
-// while allowing real Vertex paths that embed projects/locations.
+
+
+
+
+
 func TestVertexAPIKeyModelsURL(t *testing.T) {
 	t.Parallel()
 

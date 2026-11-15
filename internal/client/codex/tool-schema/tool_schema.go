@@ -18,13 +18,13 @@ import (
 )
 
 const (
-	// codexComplexUnionBranchThreshold is the minimum number of union branches (oneOf / anyOf)
-	// required before considering a pure constant union eligible for semantic enum normalization.
+
+
 	codexComplexUnionBranchThreshold = 8
 )
 
-// codexNumericBoundKeywords lists the JSON Schema numeric bound keywords that
-// the Codex backend rejects with HTTP 500 when set to an integer outside int64.
+
+
 var codexNumericBoundKeywords = [...]string{
 	"minimum",
 	"maximum",
@@ -32,7 +32,7 @@ var codexNumericBoundKeywords = [...]string{
 	"exclusiveMaximum",
 }
 
-// IsCodexUserAgent reports whether headers contain a User-Agent indicating a Codex client.
+
 func IsCodexUserAgent(headers http.Header) bool {
 	if headers == nil {
 		return false
@@ -57,7 +57,7 @@ func headerValueCaseInsensitive(headers http.Header, name string) string {
 	return ""
 }
 
-// Keys are explicit schema paths relative to parameters.properties, not recursive field names.
+
 var codexClientToolIntegerFields = map[string]map[string]struct{}{
 	"exec_command": {
 		"yield_time_ms":     struct{}{},
@@ -143,7 +143,7 @@ var codexClientToolIntegerFields = map[string]map[string]struct{}{
 	"notes__read_file": {
 		"start_line": struct{}{},
 		"stop_line":  struct{}{},
-		// Codex declares signed line numbers in the first nullable union branch.
+
 		"start_line.anyOf.0": struct{}{},
 		"stop_line.anyOf.0":  struct{}{},
 	},
@@ -231,9 +231,9 @@ func normalizeCodexToolFieldTypesDoc(doc *ojson.Doc, paramsPath string, params o
 	return changed
 }
 
-// NormalizeCodexToolIntegerTypes normalizes specified tool parameter declarations
-// from number to integer for Codex clients across supported tool formats (OpenAI,
-// Claude input_schema, Gemini function_declarations, and namespace tools).
+
+
+
 func NormalizeCodexToolIntegerTypes(body []byte, headers http.Header) []byte {
 	if len(body) == 0 || !IsCodexUserAgent(headers) {
 		return body
@@ -245,8 +245,8 @@ func NormalizeCodexToolIntegerTypes(body []byte, headers http.Header) []byte {
 	return doc.Bytes()
 }
 
-// NormalizeCodexToolIntegerTypesDoc normalizes specified tool parameter declarations
-// from number to integer for Codex clients directly on doc in place.
+
+
 func NormalizeCodexToolIntegerTypesDoc(doc *ojson.Doc, headers http.Header) bool {
 	if doc == nil || doc.Len() == 0 || !IsCodexUserAgent(headers) {
 		return false
@@ -254,7 +254,7 @@ func NormalizeCodexToolIntegerTypesDoc(doc *ojson.Doc, headers http.Header) bool
 
 	changed := false
 
-	// 1. Process top-level tools
+
 	toolsResult := doc.Get("tools")
 	if toolsResult.IsArray() {
 		if normalizeToolIntegerTypesInArrayDoc(doc, toolsResult, "tools", "") {
@@ -262,7 +262,7 @@ func NormalizeCodexToolIntegerTypesDoc(doc *ojson.Doc, headers http.Header) bool
 		}
 	}
 
-	// 2. Process input[].additional_tools
+
 	inputResult := doc.Get("input")
 	if inputResult.IsArray() {
 		for idx, item := range inputResult.Array() {
@@ -302,7 +302,7 @@ func normalizeToolIntegerTypesInArrayDoc(doc *ojson.Doc, tools ojson.Result, too
 }
 
 func normalizeToolIntegerTypesInElementDoc(doc *ojson.Doc, tool ojson.Result, toolPath, namespace string) bool {
-	// Handle namespace tools
+
 	if tool.Get("type").String() == "namespace" {
 		if namespace != "" {
 			return false
@@ -318,7 +318,7 @@ func normalizeToolIntegerTypesInElementDoc(doc *ojson.Doc, tool ojson.Result, to
 		return false
 	}
 
-	// Handle Gemini function declarations
+
 	for _, declKey := range []string{"function_declarations", "functionDeclarations"} {
 		decls := tool.Get(declKey)
 		if decls.IsArray() {
@@ -326,7 +326,7 @@ func normalizeToolIntegerTypesInElementDoc(doc *ojson.Doc, tool ojson.Result, to
 		}
 	}
 
-	// Standard function/custom tool or Claude tool
+
 	toolName := tool.Get("name").String()
 	paramPath := "parameters"
 	params := tool.Get("parameters")
@@ -360,12 +360,12 @@ func normalizeToolIntegerTypesInElementDoc(doc *ojson.Doc, tool ojson.Result, to
 	return normalizeCodexToolFieldTypesDoc(doc, toolPath+"."+paramPath, params, targetFields)
 }
 
-// NormalizeCodexToolSchemas inspects function tools in a Codex request payload
-// and simplifies pure constant union combinations (e.g. large oneOf branch sets
-// representing enums with descriptions, as emitted by MCP servers) into semantically
-// equivalent enum lists, and sanitizes unsupported schema patterns.
-// It does not normalize tool integer types because upstream OpenAI Codex models
-// strictly validate reserved tool schemas (e.g. collaboration.wait_agent).
+
+
+
+
+
+
 func NormalizeCodexToolSchemas(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -377,8 +377,8 @@ func NormalizeCodexToolSchemas(body []byte) []byte {
 	return doc.Bytes()
 }
 
-// NormalizeCodexToolSchemasDoc inspects function tools in doc and simplifies
-// pure constant union combinations and sanitizes unsupported schema patterns in place.
+
+
 func NormalizeCodexToolSchemasDoc(doc *ojson.Doc) bool {
 	if doc == nil || doc.Len() == 0 {
 		return false
@@ -411,7 +411,7 @@ func normalizeCodexToolListDoc(doc *ojson.Doc, tools ojson.Result, toolsPath str
 	return changed
 }
 
-// NormalizeSingleCodexTool normalizes a single non-namespace tool declaration.
+
 func NormalizeSingleCodexTool(tool ojson.Result) ([]byte, bool) {
 	if !tool.IsObject() {
 		return nil, false
@@ -425,7 +425,7 @@ func NormalizeSingleCodexTool(tool ojson.Result) ([]byte, bool) {
 
 func normalizeCodexToolDoc(doc *ojson.Doc, tool ojson.Result, toolPath string) bool {
 	toolType := tool.Get("type").String()
-	// Handle namespace tools (e.g. multi-agent nested tools)
+
 	if toolType == "namespace" {
 		nestedPath := "tools"
 		if toolPath != "" {
@@ -607,7 +607,7 @@ func stripIncompatiblePatterns(v any) bool {
 			}
 		}
 
-		// Inspect regex keys under patternProperties
+
 		if patternProps, ok := schema["patternProperties"].(map[string]any); ok {
 			for patternKey, subSchema := range patternProps {
 				if util.HasUnsupportedUnicodePropertyEscape(patternKey) {
@@ -665,7 +665,7 @@ func normalizeCodexPropertySchemaDoc(doc *ojson.Doc, propPath string, prop ojson
 
 	hasOneOf := prop.Get("oneOf").Exists()
 	hasAnyOf := prop.Get("anyOf").Exists()
-	// If both oneOf and anyOf are present on the same property, leave untouched to preserve compound constraints
+
 	if hasOneOf && hasAnyOf {
 		return false
 	}
@@ -697,7 +697,7 @@ func normalizeCodexPropertySchemaDoc(doc *ojson.Doc, propPath string, prop ojson
 			break
 		}
 		if _, seen := seenSemanticKeys[canonicalKey]; seen {
-			// Duplicate semantic value in oneOf violates exclusivity; keep original schema
+
 			pureConsts = false
 			break
 		}
@@ -706,7 +706,7 @@ func normalizeCodexPropertySchemaDoc(doc *ojson.Doc, propPath string, prop ojson
 		constRawValues = append(constRawValues, rawJSON)
 	}
 
-	// Only transform if every branch is proven to be a pure, unique const definition
+
 	if !pureConsts || len(constRawValues) == 0 {
 		return false
 	}
@@ -721,14 +721,14 @@ func normalizeCodexPropertySchemaDoc(doc *ojson.Doc, propPath string, prop ojson
 			}
 			existingEnumKeys = append(existingEnumKeys, key)
 		}
-		// Only remove the redundant union if existing enum is proven semantically identical
+
 		if equalCanonicalSets(existingEnumKeys, constSemanticKeys) {
 			return doc.Delete(propPath+"."+unionName) == nil
 		}
 		return false
 	}
 
-	// Migrate the pure const union to an enum using raw JSON tokens to avoid any numeric precision loss
+
 	rawEnumJSON := "[" + strings.Join(constRawValues, ",") + "]"
 	if errEnum := doc.SetRaw(propPath+".enum", rawEnumJSON); errEnum != nil {
 		return false
@@ -747,7 +747,7 @@ func isPureConstBranch(branch ojson.Result) (canonicalKey string, rawJSON string
 	if !constVal.Exists() {
 		return "", "", false
 	}
-	// Verify no other schema validation constraints exist in this branch
+
 	valid := true
 	branch.ForEach(func(k, _ ojson.Result) bool {
 		key := k.String()
@@ -805,9 +805,9 @@ func equalCanonicalSets(a []string, b []string) bool {
 	return len(setA) == len(a)
 }
 
-// escapeCodexSjsonKey escapes dots, colons, and backslashes in property keys so that sjson treats
-// keys containing dots (e.g. "my.field") or colons (e.g. ":action") as a single literal key rather
-// than nested paths or control syntax.
+
+
+
 func escapeCodexSjsonKey(key string) string {
 	key = strings.ReplaceAll(key, `\`, `\\`)
 	key = strings.ReplaceAll(key, `.`, `\.`)

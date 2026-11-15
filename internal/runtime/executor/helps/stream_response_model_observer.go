@@ -10,9 +10,9 @@ const (
 	streamEventLineOverhead          = 32
 )
 
-// StreamResponseModelObserver accumulates streaming chunks using a bounded buffer
-// and extracts complete SSE lines or events to observe the response model,
-// ensuring extraction does not depend on network chunk boundaries.
+
+
+
 type StreamResponseModelObserver struct {
 	reporter      *UsageReporter
 	buf           []byte
@@ -23,8 +23,8 @@ type StreamResponseModelObserver struct {
 	eventOverflow bool
 }
 
-// NewStreamResponseModelObserver creates an observer for tracking response models
-// from arbitrary streaming network chunks.
+
+
 func NewStreamResponseModelObserver(reporter *UsageReporter) *StreamResponseModelObserver {
 	return &StreamResponseModelObserver{
 		reporter: reporter,
@@ -39,7 +39,7 @@ func (o *StreamResponseModelObserver) bound() int {
 	return o.maxBound
 }
 
-// Feed ingests a raw chunk of bytes from a stream, splitting into lines and events.
+
 func (o *StreamResponseModelObserver) Feed(chunk []byte) {
 	if o == nil || o.reporter == nil || len(chunk) == 0 {
 		return
@@ -108,7 +108,7 @@ func (o *StreamResponseModelObserver) Feed(chunk []byte) {
 	}
 }
 
-// Finish flushes any pending buffered line or event at the end of the stream.
+
 func (o *StreamResponseModelObserver) Finish() {
 	if o == nil || o.reporter == nil {
 		return
@@ -132,7 +132,7 @@ func (o *StreamResponseModelObserver) handleLine(line []byte) {
 		return
 	}
 
-	// Always attempt to observe the line directly (e.g. data: {"model":"..."}, {"model":"..."}).
+
 	o.reporter.ObserveResponseModel(line)
 
 	if bytes.HasPrefix(trimmed, []byte("data:")) {

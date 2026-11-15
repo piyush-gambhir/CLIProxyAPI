@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// RateLimitError reports a GitHub API cooldown without exposing response bodies
-// or credentials. RetryAt is also populated for requests blocked locally.
+
+
 type RateLimitError struct {
 	StatusCode int
 	RetryAt    time.Time
@@ -22,7 +22,7 @@ func (err *RateLimitError) Error() string {
 	return fmt.Sprintf("GitHub API rate limited; retry after %s", err.RetryAt.UTC().Format(time.RFC3339))
 }
 
-// RetryAfterSeconds rounds up so clients never retry before the reset time.
+
 func (err *RateLimitError) RetryAfterSeconds(now time.Time) int64 {
 	delay := err.RetryAt.Sub(now)
 	if delay <= 0 {
@@ -41,9 +41,9 @@ type githubCooldown struct {
 	failures uint8
 }
 
-// GitHubRateLimiter shares cooldowns across repositories, release metadata and
-// API asset downloads. Its zero value is ready for use. Clients without an
-// explicit limiter share the process-wide default.
+
+
+
 type GitHubRateLimiter struct {
 	mu          sync.Mutex
 	entries     map[string]githubCooldown
@@ -90,9 +90,9 @@ func (limiter *GitHubRateLimiter) check(key string) error {
 	return nil
 }
 
-// pruneLocked drops inactive identities after a grace period so credential and
-// proxy rotation cannot leave cooldown state behind indefinitely. Retaining
-// recently expired entries preserves secondary-limit backoff across retries.
+
+
+
 func (limiter *GitHubRateLimiter) pruneLocked(now time.Time) {
 	if now.Before(limiter.nextPruneAt) {
 		return
@@ -105,8 +105,8 @@ func (limiter *GitHubRateLimiter) pruneLocked(now time.Time) {
 	limiter.nextPruneAt = now.Add(time.Hour)
 }
 
-// observe records even successful responses that consume the final request.
-// A late success must not clear a cooldown established by another request.
+
+
 func (limiter *GitHubRateLimiter) observe(key string, status int, headers http.Header, body []byte) error {
 	if key == "" {
 		return nil
@@ -137,8 +137,8 @@ func (limiter *GitHubRateLimiter) observe(key string, status int, headers http.H
 		if !rateLimited {
 			return nil
 		}
-		// Headerless secondary limits start at one minute and back off up to an
-		// hour. Only an actual upstream rejection increments this counter.
+
+
 		delay := time.Minute * time.Duration(1<<entry.failures)
 		if delay > time.Hour {
 			delay = time.Hour

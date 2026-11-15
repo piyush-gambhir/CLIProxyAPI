@@ -152,7 +152,7 @@ func defaultClaudeDeviceProfile(cfg *config.Config) ClaudeDeviceProfile {
 	return profile
 }
 
-// mapStainlessOS maps runtime.GOOS to Stainless SDK OS names.
+
 func mapStainlessOS() string {
 	switch runtime.GOOS {
 	case "darwin":
@@ -168,7 +168,7 @@ func mapStainlessOS() string {
 	}
 }
 
-// mapStainlessArch maps runtime.GOARCH to Stainless SDK architecture names.
+
 func mapStainlessArch() string {
 	switch runtime.GOARCH {
 	case "amd64":
@@ -212,9 +212,9 @@ func shouldUpgradeClaudeDeviceProfile(candidate, current ClaudeDeviceProfile) bo
 	return candidate.version.Compare(current.version) > 0
 }
 
-// plausibleClaudeCLIVersion treats the baseline as a floor for patch releases.
-// Claude Code auto-updates in the background; allow newer patch versions in the
-// same major/minor line to preserve native passthrough and prompt caching.
+
+
+
 func plausibleClaudeCLIVersion(candidate, baseline claudeCLIVersion) bool {
 	return candidate.major == baseline.major &&
 		candidate.minor == baseline.minor &&
@@ -285,8 +285,8 @@ func pinClaudeDeviceProfilePlatform(profile, baseline ClaudeDeviceProfile) Claud
 	return profile
 }
 
-// normalizeClaudeDeviceProfile pins stabilized profiles to the configured platform
-// and replaces any software tuple that does not exactly match the measured baseline.
+
+
 func normalizeClaudeDeviceProfile(profile, baseline ClaudeDeviceProfile) ClaudeDeviceProfile {
 	profile = pinClaudeDeviceProfilePlatform(profile, baseline)
 	if !meetsClaudeDeviceProfileBaseline(profile, baseline) {
@@ -351,9 +351,9 @@ func claudeDeviceProfileScopeKey(auth *cliproxyauth.Auth, apiKey string) string 
 	}
 }
 
-// claudeDeviceProfileSubclientScope keeps first-party clients with distinct
-// wire identities from replacing one another in a credential's stabilized
-// profile. The CLI retains the legacy base scope for cache compatibility.
+
+
+
 func claudeDeviceProfileSubclientScope(profile ClaudeDeviceProfile, configs ...*config.Config) string {
 	var cfg *config.Config
 	if len(configs) > 0 {
@@ -419,7 +419,7 @@ func ResolveClaudeDeviceProfile(auth *cliproxyauth.Auth, apiKey string, headers 
 	return profile
 }
 
-// ResolveClaudeDeviceProfileRequired resolves a stable Claude Code device profile for request-time paths.
+
 func ResolveClaudeDeviceProfileRequired(ctx context.Context, auth *cliproxyauth.Auth, apiKey string, headers http.Header, cfg *config.Config) (ClaudeDeviceProfile, error) {
 	client, homeMode, errClient := currentClaudeDeviceProfileKVClient()
 	if homeMode {
@@ -617,8 +617,8 @@ func (value claudeDeviceProfileKVValue) ToProfile() ClaudeDeviceProfile {
 	return profile
 }
 
-// ApplyClaudeDeviceProfileHeaders applies a stable software identity. An optional
-// UA from a confirmed native caller supplies only this request's extension fields.
+
+
 func ApplyClaudeDeviceProfileHeaders(r *http.Request, profile ClaudeDeviceProfile, requestUserAgent ...string) {
 	if r == nil {
 		return
@@ -650,8 +650,8 @@ func ApplyClaudeDeviceProfileHeaders(r *http.Request, profile ClaudeDeviceProfil
 	r.Header.Set("X-Stainless-Arch", profile.Arch)
 }
 
-// DefaultClaudeVersion returns the version string (e.g. "2.1.321") from the
-// current baseline device profile. It extracts the version from the User-Agent.
+
+
 func DefaultClaudeVersion(cfg *config.Config) string {
 	profile := defaultClaudeDeviceProfile(cfg)
 	if version, ok := parseClaudeCLIVersion(profile.UserAgent); ok {
@@ -704,8 +704,8 @@ func ApplyClaudeLegacyDeviceHeaders(r *http.Request, ginHeaders http.Header, cfg
 		}
 	}
 
-	// Unconfirmed clients must not leak a copied or third-party software profile
-	// into the upstream Claude Code SDK fingerprint.
+
+
 	r.Header.Set("X-Stainless-Runtime-Version", profile.RuntimeVersion)
 	r.Header.Set("X-Stainless-Package-Version", profile.PackageVersion)
 	r.Header.Set("X-Stainless-Os", profile.OS)

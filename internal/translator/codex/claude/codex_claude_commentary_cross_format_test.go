@@ -11,10 +11,10 @@ import (
 	openaiclaude "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/openai/claude"
 )
 
-// A client may replay CPA-relayed commentary history to a non-Codex upstream.
-// Every Claude request translator must restore the internal marker as plain
-// assistant text before its own thinking handling, and the marker literal must
-// never appear in the translated request.
+
+
+
+
 const crossFormatCommentaryPayload = `{"model":"test-model","messages":[{"role":"user","content":"First turn"},{"role":"assistant","content":[{"type":"thinking","thinking":"COMMENTARY_SENTINEL","signature":"cpa:commentary:v1"},{"type":"text","text":"FINAL_SENTINEL"}]},{"role":"user","content":"Next turn"}]}`
 
 func assertCommentaryRestoredAsText(t *testing.T, name string, out []byte, err error) {

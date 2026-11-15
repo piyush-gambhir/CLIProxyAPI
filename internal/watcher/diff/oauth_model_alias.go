@@ -15,7 +15,7 @@ type OAuthModelAliasSummary struct {
 	count int
 }
 
-// SummarizeOAuthModelAlias summarizes OAuth model alias per channel.
+
 func SummarizeOAuthModelAlias(entries map[string][]config.OAuthModelAlias) map[string]OAuthModelAliasSummary {
 	if len(entries) == 0 {
 		return nil
@@ -34,7 +34,7 @@ func SummarizeOAuthModelAlias(entries map[string][]config.OAuthModelAlias) map[s
 	return out
 }
 
-// DiffOAuthModelAliasChanges compares OAuth model alias maps.
+
 func DiffOAuthModelAliasChanges(oldMap, newMap map[string][]config.OAuthModelAlias) ([]string, []string) {
 	oldSummary := SummarizeOAuthModelAlias(oldMap)
 	newSummary := SummarizeOAuthModelAlias(newMap)

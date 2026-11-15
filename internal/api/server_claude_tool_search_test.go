@@ -8,7 +8,7 @@ import (
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 )
 
-// setClaudeToolSearchForTest sets upstream.claude.tool-search for one test.
+
 func setClaudeToolSearchForTest(t *testing.T, enabled bool) {
 	t.Helper()
 	previous := responsesclaude.ClientToolSearchEnabled()
@@ -16,8 +16,8 @@ func setClaudeToolSearchForTest(t *testing.T, enabled bool) {
 	t.Cleanup(func() { responsesclaude.SetClientToolSearchEnabled(previous) })
 }
 
-// The server owns upstream.claude.tool-search: it applies the switch at
-// startup and on every config reload.
+
+
 func TestServerAppliesClaudeToolSearchSwitch(t *testing.T) {
 	setClaudeToolSearchForTest(t, false)
 	cfg := &proxyconfig.Config{SDKConfig: sdkconfig.SDKConfig{APIKeys: []string{"test-key"}}}

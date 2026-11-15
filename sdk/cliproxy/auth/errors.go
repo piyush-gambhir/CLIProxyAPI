@@ -9,63 +9,63 @@ import (
 	"time"
 )
 
-// ErrorCodeRequestScoped identifies failures tied to the current request rather
-// than the selected credential.
+
+
 const ErrorCodeRequestScoped = "request_scoped"
 
 const requestScopedErrorCode = ErrorCodeRequestScoped
 
-// ErrorCodeConnectionLifecycle marks transport/session lifecycle failures that
-// must skip credential cooldown without being treated as request-scoped faults.
+
+
 const ErrorCodeConnectionLifecycle = "connection_lifecycle"
 
 const connectionLifecycleErrorCode = ErrorCodeConnectionLifecycle
 
-// ErrorCodeTransientTransport marks pre-HTTP dial/TLS/DNS/reset failures that
-// must skip credential cooldown and remain eligible for request-retry rounds.
+
+
 const ErrorCodeTransientTransport = "transient_transport"
 
 const transientTransportErrorCode = ErrorCodeTransientTransport
 
-// ErrorCodeForceCooldown marks failures that must enforce credential cooldown.
+
 const ErrorCodeForceCooldown = "force_cooldown"
 
-// ErrorCodeStreamTruncated marks locally synthesized failures for accepted
-// upstream streams that ended without a terminal frame. The public status
-// stays 502, but the credential must not cool and the generation must not be
-// replayed on another credential.
+
+
+
+
 const ErrorCodeStreamTruncated = "stream_truncated"
 
 const streamTruncatedErrorCode = ErrorCodeStreamTruncated
 
-// ErrorCodeTransientRateLimit marks a transient per-model capacity or
-// admission 429 (for example a Codex turn_rate_limit_exceeded rejection).
-// The public status stays 429, but the credential quota is not exhausted:
-// only the reporting model cools until the provider retry hint, without
-// quota labelling or quota exponential backoff.
+
+
+
+
+
 const ErrorCodeTransientRateLimit = "transient_rate_limit"
 
 const transientRateLimitErrorCode = ErrorCodeTransientRateLimit
 
-// ErrorCodeCredentialQuota marks a rate-limit/quota refusal that applies to the
-// entire credential across all models rather than only the reporting model.
+
+
 const ErrorCodeCredentialQuota = "credential_quota"
 
 const credentialQuotaErrorCode = ErrorCodeCredentialQuota
 
-// Error describes an authentication related failure in a provider agnostic format.
+
 type Error struct {
-	// Code is a short machine readable identifier.
+
 	Code string `json:"code,omitempty"`
-	// Message is a human readable description of the failure.
+
 	Message string `json:"message"`
-	// Retryable indicates whether a retry might fix the issue automatically.
+
 	Retryable bool `json:"retryable"`
-	// HTTPStatus optionally records an HTTP-like status code for the error.
+
 	HTTPStatus int `json:"http_status,omitempty"`
 }
 
-// IsTerminalAuthError checks if err or any error in its chain represents a permanent upstream auth failure.
+
 func IsTerminalAuthError(err error) bool {
 	if err == nil {
 		return false
@@ -88,7 +88,7 @@ func (e *terminalAuthError) IsTerminalAuth() bool {
 	return true
 }
 
-// NewTerminalAuthError wraps an *Error and cause as a terminal upstream authentication failure.
+
 func NewTerminalAuthError(err *Error, cause error) error {
 	if err == nil {
 		return nil
@@ -100,7 +100,7 @@ func NewTerminalAuthError(err *Error, cause error) error {
 	return &terminalAuthError{errorWithCause: &errorWithCause{base: err, cause: cause}}
 }
 
-// Error implements the error interface.
+
 func (e *Error) Error() string {
 	if e == nil {
 		return ""
@@ -111,7 +111,7 @@ func (e *Error) Error() string {
 	return e.Code + ": " + e.Message
 }
 
-// ErrorCode returns the machine-readable error code embedded in the Error.
+
 func (e *Error) ErrorCode() string {
 	if e == nil {
 		return ""
@@ -119,7 +119,7 @@ func (e *Error) ErrorCode() string {
 	return e.Code
 }
 
-// StatusCode implements optional status accessor for manager decision making.
+
 func (e *Error) StatusCode() int {
 	if e == nil {
 		return 0
@@ -127,13 +127,13 @@ func (e *Error) StatusCode() int {
 	return e.HTTPStatus
 }
 
-// IsRequestScoped reports whether the failure is tied to the current request
-// rather than the selected credential.
+
+
 func (e *Error) IsRequestScoped() bool {
 	return e != nil && e.Code == ErrorCodeRequestScoped
 }
 
-// MarkRequestScoped marks the error as request-scoped in place and returns it.
+
 func (e *Error) MarkRequestScoped() *Error {
 	if e != nil {
 		e.Code = ErrorCodeRequestScoped
@@ -141,8 +141,8 @@ func (e *Error) MarkRequestScoped() *Error {
 	return e
 }
 
-// NewRequestScopedError creates an Error explicitly flagged as request-scoped so
-// that credential cooldown is skipped.
+
+
 func NewRequestScopedError(message string, httpStatus int) *Error {
 	return &Error{
 		Code:       ErrorCodeRequestScoped,
@@ -233,7 +233,7 @@ func (e *errorWithCause) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.base)
 }
 
-// Keep Error's public four-field layout unchanged for downstream unkeyed literals.
+
 type authUnavailableError struct {
 	cause      error
 	base       *Error
@@ -338,7 +338,7 @@ func (e *authUnavailableError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.base)
 }
 
-// WithAuthError retains the trusted deadline when the handler enriches context.
+
 func (e *authUnavailableError) WithAuthError(cause *Error) error {
 	if e == nil {
 		return cause
@@ -350,7 +350,7 @@ func (e *authUnavailableError) WithAuthError(cause *Error) error {
 	}
 }
 
-// Headers exposes only the locally computed recovery hint, never upstream headers.
+
 func (e *authUnavailableError) Headers() http.Header {
 	if e == nil {
 		return nil
@@ -358,16 +358,16 @@ func (e *authUnavailableError) Headers() http.Header {
 	return safeRetryAfterHeader(e.retryAfter)
 }
 
-// trustedRetryAfterError annotates a terminal upstream rejection whose
-// locally recorded cooldown deadline governs the client-visible Retry-After.
-// The wrapped error keeps its own status, body, identity and retry hint; the
-// hint stored here is the effective deadline computed when the result was
-// recorded, so conflicting attempt headers never reach the client directly.
+
+
+
+
+
 type trustedRetryAfterError struct {
 	cause error
-	// deadline is the recovery instant captured when the result was
-	// recorded, so a terminal error revisited after waiting reports only
-	// the remaining time and never re-advertises the full duration.
+
+
+
 	deadline time.Time
 }
 
@@ -402,9 +402,9 @@ func withTrustedRetryAfter(err error, retryAfter *time.Duration) error {
 		if wrapped == bootstrap.cause {
 			return err
 		}
-		// Keep the same wrapper object so callers that already captured this
-		// error (for example as the preferred upstream attempt) observe the
-		// annotation instead of a stale pre-recording snapshot.
+
+
+
 		copyBootstrap := *bootstrap
 		copyBootstrap.cause = wrapped
 		*bootstrap = copyBootstrap
@@ -424,11 +424,11 @@ func withTrustedRetryAfter(err error, retryAfter *time.Duration) error {
 	return &trustedRetryAfterError{cause: err, deadline: time.Now().Add(*retryAfter)}
 }
 
-// annotateTrustedRetryAfterByHint trusts a positive hint extracted from the
-// same error. Executor hints already carry the effective classification
-// precedence (quota body reset, connection-limit zero, then Retry-After
-// header); a later concurrent cooldown may only have extended the deadline,
-// so a trusted annotation may under-report but never over-report recovery.
+
+
+
+
+
 func annotateTrustedRetryAfterByHint(err error) error {
 	if err == nil {
 		return err
@@ -479,16 +479,16 @@ func (e *trustedRetryAfterError) RetryAfter() *time.Duration {
 	return &remaining
 }
 
-// HasTrustedRetryDeadline reports whether err carries a locally trusted
-// recovery deadline, even after that deadline has passed. Header writers
-// use it to keep a stale raw upstream Retry-After from resurfacing.
+
+
+
 func HasTrustedRetryDeadline(err error) bool {
 	if err == nil {
 		return false
 	}
-	// An exhausted Home round owns the aggregate decision even when its
-	// RetryAfter is nil (immediate / no hint), so raw passthrough stays
-	// suppressed for the whole round.
+
+
+
 	var exhausted *homeRetryRoundExhaustedError
 	if errors.As(err, &exhausted) && exhausted != nil {
 		return true
@@ -501,9 +501,9 @@ func HasTrustedRetryDeadline(err error) bool {
 	if errors.As(err, &cooldown) && cooldown != nil && cooldown.resetIn > 0 {
 		return true
 	}
-	// Every remaining safe-header carrier (Home busy, Home dispatch
-	// cooldown, plugin-provided safe headers) outranks a raw passthrough
-	// Retry-After as well.
+
+
+
 	if SafeResponseHeaders(err).Get("Retry-After") != "" {
 		return true
 	}
@@ -511,9 +511,9 @@ func HasTrustedRetryDeadline(err error) bool {
 	return errors.As(err, &trusted) && trusted != nil && !trusted.deadline.IsZero()
 }
 
-// trustedRetryAfterFromError reads the locally trusted deadline annotation
-// only while it is still live. An expired annotation yields nil so callers
-// fall back to the underlying provider hint instead of a stale deadline.
+
+
+
 func trustedRetryAfterFromError(err error) *time.Duration {
 	if err == nil {
 		return nil
@@ -527,9 +527,9 @@ func trustedRetryAfterFromError(err error) *time.Duration {
 	return nil
 }
 
-// Headers preserves any upstream response headers the wrapped error
-// carries (for example a Codex websocket failure) so header passthrough
-// keeps working; the trusted deadline still outranks them on write.
+
+
+
 func (e *trustedRetryAfterError) Headers() http.Header {
 	if e == nil || e.cause == nil {
 		return nil
@@ -541,7 +541,7 @@ func (e *trustedRetryAfterError) Headers() http.Header {
 	return nil
 }
 
-// SafeResponseHeaders exposes only the locally trusted cooldown deadline.
+
 func (e *trustedRetryAfterError) SafeResponseHeaders() http.Header {
 	if e == nil || e.deadline.IsZero() {
 		return nil
@@ -549,7 +549,7 @@ func (e *trustedRetryAfterError) SafeResponseHeaders() http.Header {
 	return safeRetryAfterHeader(time.Until(e.deadline))
 }
 
-// WithCause wraps an *Error with an underlying cause without changing the Error struct layout.
+
 func WithCause(err *Error, cause error) error {
 	if err == nil {
 		return nil

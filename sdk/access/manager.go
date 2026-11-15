@@ -6,18 +6,18 @@ import (
 	"sync"
 )
 
-// Manager coordinates authentication providers.
+
 type Manager struct {
 	mu        sync.RWMutex
 	providers []Provider
 }
 
-// NewManager constructs an empty manager.
+
 func NewManager() *Manager {
 	return &Manager{}
 }
 
-// SetProviders replaces the active provider list.
+
 func (m *Manager) SetProviders(providers []Provider) {
 	if m == nil {
 		return
@@ -29,7 +29,7 @@ func (m *Manager) SetProviders(providers []Provider) {
 	m.mu.Unlock()
 }
 
-// Providers returns a snapshot of the active providers.
+
 func (m *Manager) Providers() []Provider {
 	if m == nil {
 		return nil
@@ -41,7 +41,7 @@ func (m *Manager) Providers() []Provider {
 	return snapshot
 }
 
-// Authenticate evaluates providers until one succeeds.
+
 func (m *Manager) Authenticate(ctx context.Context, r *http.Request) (*Result, *AuthError) {
 	if m == nil {
 		return nil, nil

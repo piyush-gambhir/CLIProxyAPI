@@ -9,8 +9,8 @@ import (
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 )
 
-// EnsureSessionContext ensures that ctx carries the internal session identity
-// for $CPA-SESSION-ID expansion in custom headers.
+
+
 func EnsureSessionContext(ctx context.Context, opts cliproxyexecutor.Options, payload []byte) context.Context {
 	if ctx == nil {
 		ctx = context.Background()

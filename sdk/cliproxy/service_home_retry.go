@@ -8,8 +8,8 @@ const (
 	homeSubscriberStablePeriod = 30 * time.Second
 )
 
-// homeSubscriberRetryBackoff belongs to the supervisor, not a replaceable client.
-// Short-lived successful subscriptions and Home switches must not reset failures.
+
+
 type homeSubscriberRetryBackoff struct {
 	delay time.Duration
 }
@@ -26,6 +26,6 @@ func (b *homeSubscriberRetryBackoff) next(healthyFor time.Duration, plannedRebal
 	} else {
 		b.delay = min(b.delay*2, homeSubscriberRetryMaximum)
 	}
-	// Equal jitter keeps a nonzero quiet period even when failures are immediate.
+
 	return b.delay/2 + time.Duration(random*float64(b.delay/2))
 }

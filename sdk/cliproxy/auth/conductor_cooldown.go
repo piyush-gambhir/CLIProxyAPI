@@ -29,23 +29,23 @@ var quotaCooldownDisabled atomic.Bool
 
 var transientErrorCooldownSeconds atomic.Int64
 
-// SetQuotaCooldownDisabled toggles auth/model cooldown scheduling globally.
+
 func SetQuotaCooldownDisabled(disable bool) {
 	quotaCooldownDisabled.Store(disable)
 }
 
-// SetTransientErrorCooldownSeconds configures cooldowns for 408/500/502/503/504.
-// 0 keeps the legacy default; negative values disable transient error cooldowns.
+
+
 func SetTransientErrorCooldownSeconds(seconds int) {
 	transientErrorCooldownSeconds.Store(int64(seconds))
 }
 
-// QuotaCooldownDisabledForAuth returns whether cooling is disabled for the auth under global settings.
+
 func QuotaCooldownDisabledForAuth(auth *Auth) bool {
 	return quotaCooldownDisabledForAuth(auth)
 }
 
-// QuotaCooldownDisabledForAuthWithConfig returns whether cooling is disabled for the auth with the given config.
+
 func QuotaCooldownDisabledForAuthWithConfig(auth *Auth, cfg *internalconfig.Config) bool {
 	return quotaCooldownDisabledForAuthWithConfig(auth, cfg)
 }
@@ -55,7 +55,7 @@ func quotaCooldownDisabledForAuth(auth *Auth) bool {
 }
 
 func quotaCooldownDisabledForAuthWithConfig(auth *Auth, cfg *internalconfig.Config) bool {
-	// Home owns cooldown state, so downstream instances must not schedule local cooldowns.
+
 	if cfg != nil && cfg.Home.Enabled {
 		return true
 	}
@@ -108,10 +108,10 @@ func recoverableFailureRetryAfter(now time.Time, disableCooling bool) time.Time 
 	return recoverableFailureRetryAfterWithHint(now, nil, disableCooling)
 }
 
-// transientRateLimitRetryAfter resolves the model-scoped cooldown for a
-// transient capacity 429. An explicit zero retry hint means the upstream
-// accepts an immediate retry and suppresses the default transient cooldown;
-// only a missing hint falls back to that default.
+
+
+
+
 func transientRateLimitRetryAfter(now time.Time, retryAfter *time.Duration, disableCooling bool) time.Time {
 	if retryAfter != nil && *retryAfter == 0 {
 		return time.Time{}
@@ -136,8 +136,8 @@ func recoverableFailureRetryAfterWithHint(now time.Time, retryAfter *time.Durati
 	return now.Add(time.Duration(seconds) * time.Second)
 }
 
-// SetConfig updates the runtime config snapshot used by request-time helpers.
-// Callers should provide the latest config on reload so per-credential alias mapping stays in sync.
+
+
 func (m *Manager) SetConfig(cfg *internalconfig.Config) {
 	if m == nil {
 		return
@@ -149,8 +149,8 @@ func (m *Manager) SetConfig(cfg *internalconfig.Config) {
 	}
 }
 
-// SetConfigSnapshot updates only in-memory configuration state. It reports whether
-// a caller must persist cleared cooldown state after its commit critical section.
+
+
 func (m *Manager) SetConfigSnapshot(cfg *internalconfig.Config) bool {
 	if m == nil {
 		return false
@@ -189,9 +189,9 @@ func (m *Manager) setConfigSnapshotLocked(cfg *internalconfig.Config) bool {
 	return clearedCooldowns
 }
 
-// ApplyConfigWithCooldownStateStore serializes a config update with its cooldown
-// store transition. It persists the resulting state to the captured old store before
-// exposing the resolved replacement store.
+
+
+
 func (m *Manager) ApplyConfigWithCooldownStateStore(ctx context.Context, cfg *internalconfig.Config, store CooldownStateStore) bool {
 	if m == nil {
 		return false
@@ -227,13 +227,13 @@ func (m *Manager) ApplyConfigWithCooldownStateStore(ctx context.Context, cfg *in
 	return true
 }
 
-// PersistCooldownStates writes the current cooldown snapshot using ctx.
+
 func (m *Manager) PersistCooldownStates(ctx context.Context) {
 	m.persistCooldownStates(ctx)
 }
 
-// SwapCooldownStateStore persists cleared state to the old store before replacing it.
-// Persistence is deliberately performed without holding the manager lock.
+
+
 func (m *Manager) SwapCooldownStateStore(ctx context.Context, store CooldownStateStore, persistOld bool) bool {
 	if m == nil {
 		return false
@@ -315,7 +315,7 @@ func (m *Manager) clearDisabledCooldownStates(cfg *internalconfig.Config) bool {
 	return len(snapshots) > 0
 }
 
-// RestoreCooldownStates restores unexpired persisted cooldown records into registered auths.
+
 func (m *Manager) RestoreCooldownStates(ctx context.Context) error {
 	if m == nil {
 		return nil
@@ -496,13 +496,13 @@ func (m *Manager) restoreCooldownRecordLocked(record CooldownStateRecord, now ti
 	}
 
 	state := ensureModelState(auth, model)
-	// Candidate independent layers for a wrapped record: the live shadow, or
-	// — when the live state is still unwrapped — the live state itself (a
-	// delayed store load must never erase a newer independent cooldown that
-	// was recorded after the snapshot was taken). A legacy pre-fix reporting
-	// state (reason "quota" whose own error is the explicit daily/weekly
-	// exhaustion message) is credential-derived and must not be captured;
-	// genuine model-scoped 429s carry different messages and stay eligible.
+
+
+
+
+
+
+
 	seedModelForceCooldownDeadline(state)
 	liveShadow := state.credentialQuotaShadow.cloneShallow()
 	if liveShadow == nil && !state.credentialQuotaPropagated && state.Quota.Reason != "credential_quota" &&
@@ -529,16 +529,16 @@ func (m *Manager) restoreCooldownRecordLocked(record CooldownStateRecord, now ti
 		forceCooldownUntil:  recordModelForceUntil,
 		forceCooldownSeeded: true,
 	})
-	// The persisted independent layer joins the merge newest-wins; a newer
-	// live independent layer (shadow or freshly captured unwrapped state,
-	// e.g. an own failure recorded during a delayed store load) is never
-	// clobbered by the older record. A wrapped record is any record whose
-	// outer reason is the propagated credential quota.
+
+
+
+
+
 	if !isWrappedRecord && wasLiveWrapped {
-		// An unwrapped independent record landing beneath a live wrap becomes
-		// the model's independent layer (unless it is itself a legacy
-		// credential-derived exhaustion state); the merged outer fields keep
-		// presenting the propagated credential quota.
+
+
+
+
 		if !isDevinQuotaExhaustionMessage(devinRecordErrorText(record)) {
 			recordShadow := &ModelState{
 				Unavailable:         true,
@@ -639,9 +639,9 @@ func recordAuthLevelForceUntil(record CooldownStateRecord) time.Time {
 	return time.Time{}
 }
 
-// isLegacyAggregatedAuthRecord reports whether a pre-ForceCooldownEvaluated
-// Model=="" record is merely the updateAggregatedAvailability copy of
-// auth.ModelStates rather than an independent model-less cooldown.
+
+
+
 func isLegacyAggregatedAuthRecord(record CooldownStateRecord, states map[string]*ModelState, now time.Time) bool {
 	if record.ForceCooldownEvaluated || len(states) == 0 || strings.TrimSpace(record.Quota.Reason) == "credential_quota" {
 		return false
@@ -690,7 +690,7 @@ func isForceCooldownRecordAt(record CooldownStateRecord, now time.Time) bool {
 	return recordOuterForceUntil(record).After(now) || recordIndependentForceUntil(record).After(now)
 }
 
-// Pure read-only force deadline accessors safe under RLock.
+
 func effectiveCredQuotaForceUntil(auth *Auth) time.Time {
 	if auth == nil {
 		return time.Time{}
@@ -748,8 +748,8 @@ func seedModelForceCooldownDeadline(state *ModelState) {
 	}
 }
 
-// seedInitialForceCooldownDeadlines initializes explicit force-cooldown provenance
-// once from pre-populated Auth/ModelState struct literals before runtime updates.
+
+
 func seedInitialForceCooldownDeadlines(auth *Auth) {
 	if auth == nil {
 		return
@@ -790,8 +790,8 @@ func clampStateToForceDeadline(state *ModelState, now time.Time) (kept bool, mut
 	return true, mutated
 }
 
-// clearDisabledCooldownStateForAuth clears ordinary cooldown/quota state for an auth
-// under disable-cooling while preserving active ErrorCodeForceCooldown deadlines.
+
+
 func clearDisabledCooldownStateForAuth(auth *Auth, now time.Time) bool {
 	if auth == nil || hasUnauthorizedAuthFailure(auth) {
 		return false
@@ -1043,7 +1043,7 @@ func dedupeStrings(values []string) []string {
 	return out
 }
 
-// ResetQuota clears quota/cooldown state for an auth and resumes registry routing.
+
 func (m *Manager) ResetQuota(ctx context.Context, authID string) (*Auth, []string, error) {
 	if m == nil {
 		return nil, nil, nil
@@ -1408,9 +1408,9 @@ func cooldownReason(statusMessage string, quota QuotaState, lastErr *Error) stri
 	return ""
 }
 
-// nextExecutionSeq stamps a new upstream dispatch with the next monotonic
-// execution sequence. The stamp travels on the execution's Result so that
-// MarkResult can order the execution against cooldowns recorded meanwhile.
+
+
+
 func (m *Manager) nextExecutionSeq() uint64 {
 	if m == nil {
 		return 0
@@ -1418,9 +1418,9 @@ func (m *Manager) nextExecutionSeq() uint64 {
 	return m.executionSeq.Add(1)
 }
 
-// currentExecutionSeq returns the latest execution sequence issued so far.
-// Capturing it as the cooldown watermark when a cooldown is recorded marks
-// every execution dispatched up to that moment as predating the cooldown.
+
+
+
 func (m *Manager) currentExecutionSeq() uint64 {
 	if m == nil {
 		return 0
@@ -1428,8 +1428,8 @@ func (m *Manager) currentExecutionSeq() uint64 {
 	return m.executionSeq.Load()
 }
 
-// isStaleExecutionResult reports whether an execution result originated from a superseded
-// credential version or an earlier registration epoch than the currently active auth.
+
+
 func isStaleExecutionResult(result Result, current *Auth) bool {
 	if current == nil {
 		return false
@@ -1445,7 +1445,7 @@ func isStaleExecutionResult(result Result, current *Auth) bool {
 	return staleVersion
 }
 
-// MarkResult records an execution result and notifies hooks.
+
 func (m *Manager) MarkResult(ctx context.Context, result Result) {
 	if result.AuthID == "" {
 		return
@@ -1467,7 +1467,7 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 	cooldownStateChanged := false
 	scheduleUnauthorizedRefresh := false
 	now := time.Now()
-	// A 401 condemns the access token, except one a -and-cooldown rule matched: that only cools the credential.
+
 	rejectsToken := !result.Success && (result.Error == nil || result.Error.Code != ErrorCodeForceCooldown) && !shouldSkipCredentialCooldown(result.Error) && (statusCodeFromResult(result.Error) == http.StatusUnauthorized || isUnauthorizedError(result.Error))
 
 	releaseMutation := m.lockAuthMutation(result.AuthID)
@@ -1518,10 +1518,10 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 		}
 		wasTerminalUnauthorized := hasUnauthorizedAuthFailure(auth)
 
-		// retainModelCooldown pins a still-live model cooldown against a success
-		// from an execution dispatched before that cooldown was recorded. Such a
-		// success predates the failure and proves nothing about recovery, so the
-		// state transition it normally causes is skipped entirely.
+
+
+
+
 		retainModelCooldown := modelKey != "" && !wasTerminalUnauthorized && result.ExecutionSeq > 0
 		if retainModelCooldown {
 			if existing := existingModelState(auth, modelKey); existing != nil && isModelStateActiveCooldown(existing, now) &&
@@ -1546,9 +1546,9 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 					resetModelState(state, now)
 				}
 			} else if auth.Quota.Reason == "credential_quota" && auth.Quota.NextRecoverAt.After(now) {
-				// Retain active credential-scoped cooldown
+
 			} else if retainModelCooldown || retainAuthCooldown {
-				// Retain a cooldown recorded after this execution was dispatched.
+
 			} else if modelKey != "" {
 				state := ensureModelState(auth, modelKey)
 				modelState = state
@@ -1571,10 +1571,10 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 					}
 					state := ensureModelState(auth, modelKey)
 					modelState = state
-					// Normalize a naturally expired credential-quota wrap before
-					// applying a new result (issue #6690): reinstate the
-					// independent layer (or a clean slate) and drop stale wrap
-					// provenance so a future window snapshots fresh state.
+
+
+
+
 					if (state.credentialQuotaPropagated || state.Quota.Reason == "credential_quota") &&
 						!(auth.Quota.Exceeded && auth.Quota.Reason == "credential_quota" && auth.Quota.NextRecoverAt.After(now)) {
 						if shadow := state.credentialQuotaShadow; shadow != nil && isModelStateActiveCooldown(shadow, now) {
@@ -1585,13 +1585,13 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 							resetModelState(state, now)
 						}
 					}
-					// Two-layer handling (issue #6690): while an auth-level
-					// credential quota wraps the credential, a non-credential
-					// own failure is applied to the independent layer (shadow)
-					// so its deadline/backoff never inherit the propagated
-					// quota; the outer fields are then composed from both
-					// layers. Credential-scoped failures refresh the outer
-					// layer and are never independent.
+
+
+
+
+
+
+
 					outerState := state
 					savedOuterState := state.cloneShallow()
 					ownLayerPending := !result.CredentialScope &&
@@ -1657,12 +1657,12 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 							state.NextRetryAfter = now.Add(30 * time.Minute)
 						}
 					} else if !result.CredentialScope && isTransientRateLimitResultError(result.Error) && statusCode == http.StatusTooManyRequests {
-						// Transient per-turn capacity rejection (issue 7017): cool
-						// only the reporting model until the provider retry hint.
-						// The credential quota is not exhausted, so no quota state
-						// is written and the quota exponential backoff never moves;
-						// a still-live genuine quota deadline is left untouched and
-						// keeps blocking through the generic retry branches below.
+
+
+
+
+
+
 						next := transientRateLimitRetryAfter(now, result.RetryAfter, disableCooling)
 						if isForceResult {
 							ownModelForceDeadline = next
@@ -1750,7 +1750,7 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 									next = prevStateRecoverAt
 									keptPriorStateQuota = true
 								} else if result.CredentialScope && result.RetryAfter == nil && auth.Quota.Exceeded && auth.Quota.Reason == "credential_quota" && auth.Quota.NextRecoverAt.After(now) {
-									// quotaCooldownAfterFailure reused the open credential_quota window.
+
 									keptPriorStateQuota = prevStateQuotaActive && prevStateRecoverAt.Equal(next)
 								}
 							}
@@ -1773,18 +1773,18 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 								BackoffLevel:    backoffLevel,
 								cooldownSignals: cooldownSignals,
 							})
-							// Non-credential own failures re-derive their independent layer
-							// below, so a stale shadow is dropped. A credential-scoped
-							// report must not erase an existing independent layer: it only
-							// refreshes the propagated outer layer.
+
+
+
+
 							if !result.CredentialScope {
 								state.credentialQuotaShadow = nil
 							} else if !disableCooling && !state.credentialQuotaPropagated && savedOuterState.Quota.Reason != "credential_quota" {
-								// First wrap of the reporting model: preserve any live prior
-								// own block (including an ordinary model-scoped 429, which
-								// quota restoration does not supersede). An outer
-								// credential_quota label instead proves a prior wrap whose
-								// state must never be snapshotted as independence.
+
+
+
+
+
 								priorIndependent := prevModelRetryAfter.After(now) && !isDevinQuotaExhaustionMessage(devinStateErrorText(savedOuterState))
 								if priorIndependent {
 									preserved := savedOuterState.cloneShallow()
@@ -1812,8 +1812,8 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 								}
 								for _, otherState := range auth.ModelStates {
 									if otherState != nil && otherState != state {
-										// Normalize a naturally expired wrap first (issue #6690) so a
-										// stale marker cannot suppress snapshotting a fresh block.
+
+
 										if (otherState.credentialQuotaPropagated || otherState.Quota.Reason == "credential_quota") &&
 											!prevAuthCredActive {
 											if shadow := otherState.credentialQuotaShadow; shadow != nil && isModelStateActiveCooldown(shadow, now) {
@@ -1824,11 +1824,11 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 												resetModelState(otherState, now)
 											}
 										}
-										// On first wrap, preserve the sibling's independent layer
-										// beneath the propagated credential quota (issue #6690):
-										// a live own block is snapshotted; healthy/propagated-only
-										// states get none. The marker keeps repeated propagation
-										// from mistaking its own earlier layer for independence.
+
+
+
+
+
 										alreadyPropagated := otherState.credentialQuotaPropagated ||
 											otherState.Quota.Reason == "credential_quota"
 										if !alreadyPropagated {
@@ -1851,8 +1851,8 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 											otherSignals = maps.Clone(otherState.Quota.cooldownSignals)
 										}
 										otherRetryAfter := otherQuotaNext
-										// Propagation only extends a sibling's still-live
-										// per-model deadline; it never shortens one.
+
+
 										if !otherState.NextRetryAfter.IsZero() && otherState.NextRetryAfter.After(otherRetryAfter) {
 											otherRetryAfter = otherState.NextRetryAfter
 										}
@@ -1890,9 +1890,9 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 										auth.credQuotaForceUntil = ownModelForceDeadline
 									}
 									auth.forceCooldownSeeded = true
-									// The reporting model is now part of the wrap too: mark it
-									// so a later credential report from another model cannot
-									// snapshot this credential-derived state as independent.
+
+
+
 									state.credentialQuotaPropagated = true
 								}
 							}
@@ -1957,20 +1957,20 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 							}
 						}
 					}
-					// A later failure only extends a still-live cooldown; it never
-					// shortens one. A deliberate zero write (disableCooling) still
-					// clears the deadline.
+
+
+
 					if !state.NextRetryAfter.IsZero() && prevModelRetryAfter.After(state.NextRetryAfter) && prevModelRetryAfter.After(now) {
 						state.NextRetryAfter = prevModelRetryAfter
 					}
-					// Capture the dispatch watermark before composing layers so the
-					// independent shadow carries this failure's stale-success
-					// protection (issue #6690).
+
+
+
 					cooldownSeq := m.currentExecutionSeq()
 					state.cooldownRecordedSeq = cooldownSeq
 					if ownLayerPending {
-						// Compose the outer presentation from the saved propagated
-						// layer and the independent layer just updated in place.
+
+
 						independent := state.cloneShallow()
 						outer := savedOuterState.cloneShallow()
 						if isModelStateActiveCooldown(independent, now) {
@@ -1979,8 +1979,8 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 							outer.credentialQuotaShadow = nil
 						}
 						outer.cooldownRecordedSeq = cooldownSeq
-						// A composed outer state is wrapped by definition; stamp it so
-						// a later credential report cannot mistake it for unwrapped.
+
+
 						outer.credentialQuotaPropagated = true
 						outer.Unavailable = true
 						outer.Status = StatusError
@@ -2114,8 +2114,8 @@ func (m *Manager) MarkResult(ctx context.Context, result Result) {
 	if authSnapshot != nil && cooldownStateChanged {
 		m.persistCooldownStates(context.Background())
 	}
-	// A newly exhausted Devin credential must join the refresh schedule so
-	// quota revalidation can detect early restoration (issue #6690).
+
+
 	if authSnapshot != nil {
 		if _, due := devinQuotaRevalidateAt(authSnapshot, now); due {
 			m.queueRefreshReschedule(result.AuthID)
@@ -2173,7 +2173,7 @@ func (m *Manager) recordExecutionResult(ctx context.Context, result Result, auth
 	m.reportHomeResult(ctx, result, auth)
 }
 
-// reportHomeResult only observes a Home dispatch result and never updates local auth state.
+
 func (m *Manager) reportHomeResult(ctx context.Context, result Result, auth *Auth) {
 	if m == nil || result.AuthID == "" {
 		return
@@ -2376,10 +2376,10 @@ func mergeModelState(target, source *ModelState) *ModelState {
 	if source.UpdatedAt.After(merged.UpdatedAt) {
 		merged.UpdatedAt = source.UpdatedAt
 	}
-	// Keep the strongest cooldown watermark from either side so merging a
-	// restored or alias-migrated state into a live auth cannot reopen the
-	// stale-success race. Both sides stay zero across a process restart,
-	// where restored cooldowns must remain clearable by any success.
+
+
+
+
 	merged.cooldownRecordedSeq = target.cooldownRecordedSeq
 	if source.cooldownRecordedSeq > merged.cooldownRecordedSeq {
 		merged.cooldownRecordedSeq = source.cooldownRecordedSeq
@@ -2403,10 +2403,10 @@ func mergeModelState(target, source *ModelState) *ModelState {
 	} else if merged.Unavailable || merged.Quota.Exceeded {
 		merged.Status = StatusError
 	}
-	// Keep the independent layer and wrap provenance from either side
-	// (newer wins) while the merged state is wrapped. The reporting model
-	// carries outer reason "quota", so wrap detection must include the
-	// marker and shadow presence, not only the propagated label.
+
+
+
+
 	if merged.Quota.Reason == "credential_quota" || merged.Quota.Reason == "quota" ||
 		target.credentialQuotaPropagated || source.credentialQuotaPropagated ||
 		target.credentialQuotaShadow != nil || source.credentialQuotaShadow != nil {
@@ -2529,8 +2529,8 @@ func updateAggregatedAvailability(auth *Auth, now time.Time) {
 	if auth == nil {
 		return
 	}
-	// A terminal unauthorized credential stays blocked until its tokens change.
-	// Model-level results must not make it selectable again.
+
+
 	if hasUnauthorizedAuthFailure(auth) {
 		auth.Unavailable = true
 		return
@@ -2629,7 +2629,7 @@ func updateAggregatedAvailability(auth *Auth, now time.Time) {
 		auth.Quota.NextRecoverAt = quotaRecover
 		auth.Quota.BackoffLevel = maxBackoffLevel
 	} else if auth.Quota.Exceeded && auth.Quota.NextRecoverAt.After(now) {
-		// Retain active auth-level quota cooldown
+
 	} else {
 		applyCooldownFields(&auth.Quota, QuotaState{})
 	}
@@ -2684,8 +2684,8 @@ func clearAuthStateOnSuccess(auth *Auth, now time.Time) {
 	auth.UpdatedAt = now
 }
 
-// isAuthActiveCooldown reports whether the auth carries a still-live
-// auth-level cooldown recorded without a model key.
+
+
 func isAuthActiveCooldown(auth *Auth, now time.Time) bool {
 	if auth == nil || auth.Disabled || auth.Status == StatusDisabled {
 		return false
@@ -2757,8 +2757,8 @@ func isRequestScopedError(err error) bool {
 	if err == nil || isCredentialScopedError(err) {
 		return false
 	}
-	// A preserved terminal response belongs to this request unless the executor
-	// explicitly classifies the rejection as safe to retry on another credential.
+
+
 	if isRequestTerminatedError(err) {
 		return true
 	}
@@ -2766,9 +2766,9 @@ func isRequestScopedError(err error) bool {
 	return ok && requestErr != nil && requestErr.IsRequestScoped()
 }
 
-// isStreamTruncatedError reports locally synthesized failures for accepted
-// upstream streams that ended without a terminal frame. Unlike a received
-// HTTP refusal, the generation was already submitted upstream.
+
+
+
 func isStreamTruncatedError(err error) bool {
 	if err == nil || isCredentialScopedError(err) {
 		return false
@@ -2807,9 +2807,9 @@ func resultErrorFromError(err error) *Error {
 	}
 	switch {
 	case isCredentialScopedError(err):
-		// A credential-scoped failure always stays on the credential quota path;
-		// normalize conflicting model-only or cooldown-skipping codes so MarkResult
-		// cannot downgrade whole-credential exhaustion.
+
+
+
 		switch strings.ToLower(strings.TrimSpace(resultErr.Code)) {
 		case transientRateLimitErrorCode,
 			requestScopedErrorCode,
@@ -2819,31 +2819,31 @@ func resultErrorFromError(err error) *Error {
 			resultErr.Code = credentialQuotaErrorCode
 		}
 	case isStreamTruncatedError(err):
-		// Preserve the local truncation classification alongside the public
-		// 502 status so MarkResult can skip credential cooldown.
+
+
 		resultErr.Code = streamTruncatedErrorCode
 	case isTransientRateLimitError(err):
-		// Preserve the transient capacity classification alongside the public
-		// 429 status so MarkResult cools only the reporting model until the
-		// provider retry hint instead of recording quota exhaustion.
+
+
+
 		resultErr.Code = transientRateLimitErrorCode
 	case isExplicitModelNotFoundError(err, ""):
 		if resultErr.Code == "" || resultErr.Code == requestScopedErrorCode {
 			resultErr.Code = "model_not_found"
 		}
 	case isRequestScopedError(err) || isRequestInvalidError(err):
-		// Prefer true request-scoped faults (including Claude OAuth cancellation)
-		// over the broader connection-lifecycle classification.
+
+
 		resultErr.Code = requestScopedErrorCode
 	case isConfiguredTLSHandshakeTimeoutError(err):
-		// An internal TLS establishment deadline is a transient transport
-		// failure, not a caller-owned context lifecycle event.
+
+
 		if resultErr.Code == "" || resultErr.Code == transientTransportErrorCode {
 			resultErr.Code = transientTransportErrorCode
 		}
 	case isConnectionLifecycleError(err):
-		// Preserve lifecycle classification for MarkResult without making the error
-		// request-scoped (which would also stop credential fallback).
+
+
 		if resultErr.Code == "" || resultErr.Code == connectionLifecycleErrorCode {
 			resultErr.Code = connectionLifecycleErrorCode
 		}
@@ -2855,9 +2855,9 @@ func resultErrorFromError(err error) *Error {
 	return resultErr
 }
 
-// shouldSkipCredentialCooldown reports failures that must not mark auth/model cooling.
-// Connection lifecycle is intentionally separate from request_scoped so transport
-// drops do not also stop credential rotation via isRequestInvalidError.
+
+
+
 func shouldSkipCredentialCooldown(err *Error) bool {
 	if err != nil && err.Code == ErrorCodeForceCooldown {
 		return false
@@ -2865,13 +2865,13 @@ func shouldSkipCredentialCooldown(err *Error) bool {
 	return isRequestScopedResultError(err) || isConnectionLifecycleResultError(err) || isTransientTransportResultError(err) || isStreamTruncatedResultError(err)
 }
 
-// isConnectionLifecycleError reports transport/session lifecycle failures that must
-// not cool credentials: client cancellation and WebSocket/HTTP/2 close/EOF disconnects.
+
+
 func isConnectionLifecycleError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Typed WebSocket close codes are an unambiguous connection lifecycle signal.
+
 	var closeErr *websocket.CloseError
 	if errors.As(err, &closeErr) && closeErr != nil {
 		switch closeErr.Code {
@@ -2879,14 +2879,14 @@ func isConnectionLifecycleError(err error) bool {
 			return true
 		}
 	}
-	// Credential/auth/quota statuses must never be reclassified from response text.
+
 	if statusCodeFromError(err) != 0 {
 		return false
 	}
 	if isConfiguredTLSHandshakeTimeoutError(err) {
 		return false
 	}
-	// Client abort and request-scoped timeouts are not credential faults.
+
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return true
 	}
@@ -2903,8 +2903,8 @@ func isConnectionLifecycleResultError(err *Error) bool {
 	if err.Code == transientTransportErrorCode {
 		return false
 	}
-	// Message fallback only when no HTTP status is attached, so 401/429/5xx
-	// response bodies cannot suppress credential cooldown.
+
+
 	if statusCodeFromResult(err) != 0 {
 		return false
 	}
@@ -2920,13 +2920,13 @@ func isConnectionLifecycleMessage(message string) bool {
 	case "context canceled", "context deadline exceeded", "eof", "unexpected eof":
 		return true
 	}
-	// gorilla/websocket CloseError.Error() and common wrappers.
+
 	if strings.Contains(lower, "websocket: close 1000") ||
 		strings.Contains(lower, "websocket: close 1001") ||
 		strings.Contains(lower, "websocket: close 1006") {
 		return true
 	}
-	// Wrapped transport disconnects (e.g. "read tcp ...: unexpected EOF").
+
 	if strings.Contains(lower, "unexpected eof") || isHTTP2ClosedConnectionMessage(lower) {
 		return true
 	}
@@ -2934,16 +2934,16 @@ func isConnectionLifecycleMessage(message string) bool {
 }
 
 func isHTTP2ClosedConnectionMessage(lower string) bool {
-	// x/net/http2 keeps these errors unexported; allow common wrappers such as url.Error.
+
 	return strings.Contains(lower, "http2: client connection force closed via clientconn.close") ||
 		strings.Contains(lower, "http2: client conn is closed")
 }
 
-// isConfiguredTLSHandshakeTimeoutError identifies the typed internal
-// establishment deadline produced by the configured TLS handshake bound.
-// Delegating to the shared executor predicate ensures classification is
-// based on error identity rather than message text and that any
-// caller-owned context error outside a configured-timeout subtree wins.
+
+
+
+
+
 func isConfiguredTLSHandshakeTimeoutError(err error) bool {
 	if err == nil || statusCodeFromError(err) != 0 {
 		return false
@@ -2951,13 +2951,13 @@ func isConfiguredTLSHandshakeTimeoutError(err error) bool {
 	return cliproxyexecutor.IsConfiguredTLSHandshakeTimeoutError(err)
 }
 
-// isTransientTransportError reports pre-HTTP dial/TLS/DNS/reset failures that
-// should retry under request-retry without cooling the selected credential.
+
+
 func isTransientTransportError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// HTTP-status failures stay on the credential/status retry path.
+
 	if statusCodeFromError(err) != 0 {
 		return false
 	}
@@ -2998,11 +2998,11 @@ func isTransientTransportResultError(err *Error) bool {
 	if statusCodeFromResult(err) != 0 {
 		return false
 	}
-	// Once an error has been reduced to a Result message, typed identity is
-	// no longer available. An explicit transient code assigned by
-	// resultErrorFromError is authoritative for configured handshake
-	// timeouts; matching text alone must not promote an external or
-	// caller-owned deadline that happens to use the same phrase.
+
+
+
+
+
 	if strings.Contains(strings.ToLower(err.Message), "tls handshake timeout") {
 		return false
 	}
@@ -3074,8 +3074,8 @@ func hasUnauthorizedAuthFailure(auth *Auth) bool {
 	return false
 }
 
-// HasUnauthorizedAuthFailure reports whether the auth has a terminal unauthorized error
-// with no pending refresh scheduled.
+
+
 func HasUnauthorizedAuthFailure(auth *Auth) bool {
 	return hasUnauthorizedAuthFailure(auth)
 }
@@ -3094,7 +3094,7 @@ func hasDisabledInvalidGrantFailure(auth *Auth) bool {
 	return false
 }
 
-// HasDisabledInvalidGrantFailure reports whether the auth is disabled and has encountered an invalid_grant error.
+
 func HasDisabledInvalidGrantFailure(auth *Auth) bool {
 	return hasDisabledInvalidGrantFailure(auth)
 }
@@ -3137,7 +3137,7 @@ func isKnownSafeOAuthErrorCode(code string) bool {
 	}
 }
 
-// SanitizeRenewalMessage strips URLs, bearer tokens, JWTs, OAuth codes/states, and secret fields from diagnostic messages.
+
 func SanitizeRenewalMessage(raw string) string {
 	return sanitizeRenewalMessage(raw)
 }
@@ -3164,7 +3164,7 @@ func redactRenewalPatterns(in string) string {
 }
 
 func sanitizeRenewalMessage(raw string) string {
-	// Redact secrets on the full input BEFORE truncation so secrets straddling the truncation boundary cannot leak.
+
 	preRedacted := redactRenewalPatterns(raw)
 	out := internallogging.SafeDiagnosticForLog(preRedacted)
 	return redactRenewalPatterns(out)
@@ -3295,18 +3295,18 @@ func retryAfterFromError(err error) *time.Duration {
 	if err == nil {
 		return nil
 	}
-	// An exhausted Home round owns the aggregated multi-credential deadline
-	// for scheduling just as it does for response headers.
+
+
 	var exhausted *homeRetryRoundExhaustedError
 	if errors.As(err, &exhausted) && exhausted != nil {
-		// The aggregate owns this error even when RetryAfter() is nil: nil
-		// encodes an explicit zero (immediate) or absent aggregate and must
-		// not be replaced by the last attempt's positive hint. Callers that
-		// need the immediate signal consult retryNow / the aggregate first.
+
+
+
+
 		return exhausted.RetryAfter()
 	}
-	// A locally trusted deadline outranks any hint on the wrapped error so a
-	// re-recorded terminal error cannot reintroduce a stale upstream value.
+
+
 	if trusted := trustedRetryAfterFromError(err); trusted != nil {
 		return trusted
 	}
@@ -3317,9 +3317,9 @@ func retryAfterFromError(err error) *time.Duration {
 	if !errors.As(err, &rap) || rap == nil {
 		return nil
 	}
-	// An expired trusted wrapper reports a negative remaining time; natural
-	// expiry is not an invalid provider hint, so fall through to the wrapped
-	// error's own hint instead of surfacing the negative value.
+
+
+
 	if _, isTrusted := rap.(*trustedRetryAfterError); isTrusted {
 		if inner := errors.Unwrap(err); inner != nil {
 			return retryAfterFromError(inner)
@@ -3334,16 +3334,16 @@ func retryAfterFromError(err error) *time.Duration {
 	return &value
 }
 
-// isTransientRateLimitError reports a transient per-model capacity/admission
-// 429 whose quota is not exhausted. The classification travels through the
-// shared executor contract, so only executors that explicitly vouch for the
-// failure opt out of quota cooldown handling.
+
+
+
+
 func isTransientRateLimitError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// A credential-scoped failure always stays on the quota path; a transient
-	// classification must never downgrade whole-credential exhaustion.
+
+
 	if isCredentialScopedError(err) {
 		return false
 	}
@@ -3505,10 +3505,10 @@ func isCloudflareChallengeErrorMessage(message string) bool {
 		(strings.Contains(lower, "just a moment") && strings.Contains(lower, "cloudflare"))
 }
 
-// isCloudflareChallengeError checks whether err is a Cloudflare bot/waf challenge.
-// Cloudflare challenges are served with HTTP 403. HTTP status >= 500 indicates an
-// upstream gateway/origin failure (such as 520-526 origin errors) and takes precedence
-// over challenge classification.
+
+
+
+
 func isCloudflareChallengeError(err error) bool {
 	if err == nil {
 		return false
@@ -3519,9 +3519,9 @@ func isCloudflareChallengeError(err error) bool {
 	return isCloudflareChallengeErrorMessage(err.Error())
 }
 
-// isCloudflareChallengeResultError checks whether err is a Cloudflare bot/waf challenge.
-// Responses with HTTP status >= 500 represent upstream gateway/origin failures
-// (such as Cloudflare 520-526) and are excluded from challenge classification.
+
+
+
 func isCloudflareChallengeResultError(err *Error) bool {
 	if err == nil {
 		return false
@@ -3848,16 +3848,16 @@ func isMissingModelPhrase(value string) bool {
 	}
 }
 
-// isRequestInvalidError returns true if the error represents a client request
-// error that should neither rotate nor penalize credentials. Model-support
-// errors remain eligible for alternate routing and keep their model-level state.
+
+
+
 func isRequestInvalidError(err error) bool {
 	if err == nil {
 		return false
 	}
 	if isStreamTruncatedError(err) {
-		// A truncated accepted stream must stop here: the generation was
-		// already submitted and must not be replayed on another credential.
+
+
 		return true
 	}
 	if isRequestScopedError(err) {
@@ -3881,8 +3881,8 @@ func isRequestInvalidError(err error) bool {
 	}
 	var authErr *Error
 	if errors.As(err, &authErr) && authErr != nil && authErr.Message != "" {
-		// When authErr.Code is non-empty, Error() formats as "Code: Message" which
-		// breaks JSON parsing in clienterror. Re-evaluate against the raw Message body.
+
+
 		if clienterror.IsRequestFault(status, errors.New(authErr.Message)) {
 			return true
 		}
@@ -3925,8 +3925,8 @@ func applyAuthFailureState(auth *Auth, resultErr *Error, retryAfter *time.Durati
 	}
 	statusCode := statusCodeFromResult(resultErr)
 	if isTransientRateLimitResultError(resultErr) && statusCode == http.StatusTooManyRequests {
-		// Without a model key the transient capacity rejection degrades to an
-		// auth-level transient cooldown (issue 7017), never quota exhaustion.
+
+
 		next := transientRateLimitRetryAfter(now, retryAfter, disableCooling)
 		if isForceAuth {
 			ownAuthForceDeadline = next
@@ -4085,18 +4085,18 @@ func applyAuthFailureState(auth *Auth, resultErr *Error, retryAfter *time.Durati
 			applyCooldownFields(&auth.Quota, restored)
 		}
 	}
-	// A later failure only extends a still-live credential cooldown; a
-	// deliberate zero write (disableCooling) still clears it.
+
+
 	if !auth.NextRetryAfter.IsZero() && prevAuthRetryAfter.After(auth.NextRetryAfter) && prevAuthRetryAfter.After(now) {
 		auth.NextRetryAfter = prevAuthRetryAfter
 	}
 }
 
-// quotaCooldownAfterFailure returns the recovery deadline and backoff level for
-// a quota failure observed at now. Failures that land while a previous quota
-// window is still open reuse that window instead of escalating, so a burst of
-// concurrent in-flight failures advances the backoff ladder at most once per
-// window.
+
+
+
+
+
 func quotaCooldownAfterFailure(quota QuotaState, now time.Time) (time.Time, int) {
 	if quota.NextRecoverAt.After(now) {
 		return quota.NextRecoverAt, quota.BackoffLevel
@@ -4109,7 +4109,7 @@ func quotaCooldownAfterFailure(quota QuotaState, now time.Time) (time.Time, int)
 	return next, nextLevel
 }
 
-// nextQuotaCooldown returns the next cooldown duration and updated backoff level for repeated quota errors.
+
 func nextQuotaCooldown(prevLevel int, disableCooling bool) (time.Duration, int) {
 	if prevLevel < 0 {
 		prevLevel = 0

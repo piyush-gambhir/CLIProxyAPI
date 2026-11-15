@@ -98,8 +98,8 @@ func TestWeightedOverloadSustainedStickyTrafficDoesNotStarveOthers(t *testing.T)
 			}
 			state := weightedStateForTest(t, weighted, "codex:model", ids...)
 			t.Logf("fresh distribution after warmup: %v; committed=%v", counts, state.currentForTest())
-			// Forced traffic makes global ratios infeasible; the remaining capacity
-			// should be shared by unbound peers rather than monopolized by one.
+
+
 			peerWeight := 0
 			for _, weight := range weights[1:] {
 				peerWeight += weight
@@ -130,8 +130,8 @@ func TestWeightedOverloadFeasibleSustainedTraffic(t *testing.T) {
 			key := "codex::" + CanonicalSessionID(sticky.Headers, nil, nil) + "::model"
 			selector.cache.Set(key, auths[0].ID)
 			counts := map[string]int{}
-			// Forced traffic is below A's target share, so exact aggregate ratios
-			// remain feasible without moving established bindings.
+
+
 			for i := range total * 2000 {
 				opts := cliproxyexecutor.Options{}
 				bound := i%(total*2) == 0
@@ -219,7 +219,7 @@ func TestWeightedOverloadPendingStickyReservationsDoNotStarveOthers(t *testing.T
 	}
 	counts := map[string]int{}
 	for i := range 3000 {
-		// Maintain a fixed backlog without sleeps or timing-dependent coordination.
+
 		reservations[i%inFlight].finish(true)
 		_, reservations[i%inFlight] = weighted.reserve(key, auths, "a")
 		picked, reservation := weighted.reserve(key, auths, "")
@@ -253,8 +253,8 @@ func TestWeightedOverloadCommitAfterSpeculativeRepaymentRollsBack(t *testing.T) 
 	_, first := weighted.reserve(key, auths, "")
 	_, second := weighted.reserve(key, auths, "")
 	t.Cleanup(func() { first.finish(false); second.finish(false) })
-	// Two pending cold selections make room for a bound delta, but neither
-	// repayment is real yet. Its later commit must recheck the committed cap.
+
+
 	picked, bound := weighted.reserve(key, auths, "b")
 	if picked == nil || picked.ID != "b" || bound == nil {
 		t.Fatal("expected bound reservation funded by pending repayments")
@@ -268,7 +268,7 @@ func TestWeightedOverloadCommitAfterSpeculativeRepaymentRollsBack(t *testing.T) 
 	if !maps.Equal(state.currentForTest(), before) || len(state.pendingForTest()) != 0 {
 		t.Fatalf("late commit crossed the cap or leaked pending credit: before=%v current=%v pending=%v", before, state.currentForTest(), state.pendingForTest())
 	}
-	// An over-limit bound selection succeeds without reserving any credit.
+
 	picked, skipped := weighted.reserve(key, auths, "b")
 	if picked == nil || picked.ID != "b" || skipped != nil || !maps.Equal(state.currentForTest(), before) || len(state.pendingForTest()) != 0 {
 		t.Fatal("saturated bound selection should preserve binding and all credits")
@@ -444,8 +444,8 @@ func TestWeightedOverloadConcurrentStickyAccounting(t *testing.T) {
 		counts[result.id]++
 	}
 	state := weightedStateForTest(t, weighted, "codex:model", "a", "b")
-	// All 64 calls share one pool. Accounting must match actual accepted picks,
-	// regardless of whether the final arrivals happened to be sticky requests.
+
+
 	if state.currentForTest()["a"] != int64(64*3-counts["a"]*4) || state.currentForTest()["b"] != int64(64-counts["b"]*4) || len(state.pendingForTest()) != 0 {
 		t.Fatalf("concurrent accounting drifted: counts=%v committed=%v pending=%v", counts, state.currentForTest(), state.pendingForTest())
 	}

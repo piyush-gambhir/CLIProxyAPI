@@ -13,14 +13,14 @@ type responsesToolIdentity struct {
 	name      string
 }
 
-// responsesToolIndex is scoped to one request. History and declarations are
-// scanned once; replayed calls and streaming events only consult these maps.
+
+
 type responsesToolIndex struct {
 	declarations []responsesToolDeclaration
 	byChat       map[string]responsesToolDeclaration
 	byIdentity   map[responsesToolIdentity]string
 	byRaw        map[string]string
-	byLocal      map[string]string // Empty means multiple distinct emitted tools.
+	byLocal      map[string]string
 	custom       map[string]struct{}
 }
 

@@ -40,8 +40,8 @@ func TestAntigravityStaleAuthCannotRestoreExcludedModel(t *testing.T) {
 	if len(GlobalModelRegistry().GetModelsForClient(auth.ID)) != 0 {
 		t.Fatal("stale publisher reinstated excluded model")
 	}
-	// Even when a stale queued task captures the new registry epoch it must not
-	// publish the old account-level model settings.
+
+
 	currentEpoch := GlobalModelRegistry().ClientRegistrationEpoch(auth.ID)
 	svc.applyAntigravityModelHints(t.Context(), auth, "antigravity", hints, key, auth.RegistrationEpoch, currentEpoch)
 	if len(GlobalModelRegistry().GetModelsForClient(auth.ID)) != 0 {
@@ -122,7 +122,7 @@ func TestAntigravityRetrySchedulerPreservesJitterDeadlines(t *testing.T) {
 		done := make(chan struct{})
 		go func() { defer close(done); svc.runAntigravityModelRefresh(ctx) }()
 		synctest.Wait()
-		time.Sleep(130 * time.Second) // Synthetic time: exercise actual scheduler, not just delay arithmetic.
+		time.Sleep(130 * time.Second)
 		synctest.Wait()
 		cancel()
 		<-done

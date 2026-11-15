@@ -62,12 +62,12 @@ func newCodexWebsocketHintServer(t *testing.T, rec *codexWebsocketHintRecorder) 
 	}))
 }
 
-// Native Codex sends the routing hint only in the websocket handshake and keeps
-// an open connection when the tier changes. The gateway mirrors that: an
-// incremental request that turns on Fast continues on the same socket with the
-// original handshake hint (its body carries the new tier), and the next fresh
-// connection is dialed with the current hint. Whether the backend honors a
-// mid-connection tier change is not established by this test.
+
+
+
+
+
+
 func TestCodexWebsocketsFastToggleKeepsIncrementalConnection(t *testing.T) {
 	var rec codexWebsocketHintRecorder
 	server := newCodexWebsocketHintServer(t, &rec)
@@ -115,10 +115,10 @@ func TestCodexWebsocketsFastToggleKeepsIncrementalConnection(t *testing.T) {
 	}
 }
 
-// An operator rule that points at a client header the request does not carry
-// is skipped by the header resolver. It must not stop the gateway from
-// replacing the forwarded client hint with the one derived from the body, and
-// a rule that does resolve must win over the derived hint.
+
+
+
+
 func TestCodexWebsocketsRoutingHintDynamicOperatorRule(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -166,10 +166,10 @@ func TestCodexWebsocketsRoutingHintDynamicOperatorRule(t *testing.T) {
 	}
 }
 
-// A native Codex client forwards its own routing hint when cloaking is
-// disabled. That hint names the model and tier the client asked for, not the
-// ones the gateway resolved, so the handshake must carry the hint derived from
-// the final upstream body.
+
+
+
+
 func TestCodexWebsocketsRoutingHintOverridesForwardedClientHint(t *testing.T) {
 	var rec codexWebsocketHintRecorder
 	server := newCodexWebsocketHintServer(t, &rec)

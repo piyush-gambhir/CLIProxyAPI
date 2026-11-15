@@ -42,8 +42,8 @@ func TestExtractSummaryConfig(t *testing.T) {
 		{name: "claude display without type is invalid", format: "claude", body: `{"thinking":{"display":"summarized"}}`, wantMode: SummaryUnspecified},
 		{name: "claude updates without type is invalid", format: "claude", body: `{"thinking":{"display":"updates"}}`, wantMode: SummaryUnspecified},
 		{name: "claude display with auto type is invalid", format: "claude", body: `{"thinking":{"type":"auto","display":"summarized"}}`, wantMode: SummaryUnspecified},
-		// ApplySummaryConfig runs before ApplyThinking fills budget_tokens, so an
-		// absent budget must not be read as inactive thinking.
+
+
 		{name: "claude enabled display without budget is valid", format: "claude", body: `{"thinking":{"type":"enabled","display":"summarized"}}`, wantMode: SummaryEnabled, wantDetail: "auto"},
 		{name: "claude enabled updates without budget is valid", format: "claude", body: `{"thinking":{"type":"enabled","display":"updates"}}`, wantMode: SummaryEnabled, wantDetail: "auto"},
 		{name: "claude enabled display with zero budget is invalid", format: "claude", body: `{"thinking":{"type":"enabled","budget_tokens":0,"display":"summarized"}}`, wantMode: SummaryUnspecified},
@@ -103,8 +103,8 @@ func TestApplySummaryConfig(t *testing.T) {
 		{name: "chat enabled invents no effort", format: "openai", config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning_effort", want: ""},
 		{name: "chat enabled preserves active effort", format: "openai", body: `{"reasoning_effort":"high"}`, config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning_effort", want: "high"},
 		{name: "chat enabled preserves disabled effort", format: "openai", body: `{"reasoning_effort":"none"}`, config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning_effort", want: "none"},
-		// Chat cannot express "reason but hide", so disabling must not fall back to
-		// reasoning_effort:"none", which would disable reasoning altogether.
+
+
 		{name: "chat disabled preserves requested effort", format: "openai", body: `{"reasoning_effort":"high"}`, config: SummaryConfig{Mode: SummaryDisabled}, path: "reasoning_effort", want: "high"},
 		{name: "chat disabled sets openrouter exclude when present", format: "openai", body: `{"reasoning":{"effort":"high","exclude":false}}`, config: SummaryConfig{Mode: SummaryDisabled}, path: "reasoning.exclude", want: "true"},
 		{name: "chat enabled clears openrouter exclude when present", format: "openai", body: `{"reasoning":{"effort":"high","exclude":true}}`, config: SummaryConfig{Mode: SummaryEnabled}, path: "reasoning.exclude", want: "false"},
@@ -198,8 +198,8 @@ func TestApplySummaryConfigNormalizesTargetAliases(t *testing.T) {
 	}
 }
 
-// Anthropic requires thinking.type, and rejects display on a disabled block, so
-// display must never be written unless thinking is already active.
+
+
 func TestApplySummaryConfig_ClaudeDisplayRequiresActiveThinking(t *testing.T) {
 	bodies := []string{
 		`{}`,
@@ -246,9 +246,9 @@ func TestApplySummaryConfigForModel_ClaudeEnabledSummaryUsesValidThinkingMode(t 
 	}
 }
 
-// Disabling summaries must not make CPA add a Claude thinking block. Absence
-// preserves the per-model default: newer models may still think by default,
-// while older models remain off.
+
+
+
 func TestApplySummaryConfigForModel_ClaudeDisabledSummaryDoesNotEnableThinking(t *testing.T) {
 	for _, model := range []string{"claude-opus-5", "claude-haiku-4-5-20251001"} {
 		body := []byte(`{"model":"` + model + `","max_tokens":32000}`)
