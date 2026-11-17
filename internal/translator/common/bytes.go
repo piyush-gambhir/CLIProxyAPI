@@ -2,11 +2,11 @@ package common
 
 import (
 	"bytes"
-	"encoding/json"
-	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	"strconv"
 
+	"github.com/MoeForge/moego/json"
 	"github.com/MoeForge/moego/ojson"
+	securityutil "github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 )
 
 func GeminiTokenCountJSON(count int64) []byte {

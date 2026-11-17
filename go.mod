@@ -5,7 +5,7 @@ go 1.26.10
 toolchain go1.27.3
 
 require (
-	github.com/MoeForge/moego v0.1.0-alpha.1
+	github.com/MoeForge/moego v0.1.0-alpha.4
 	github.com/andybalholm/brotli v1.2.7
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v1.0.0
@@ -43,8 +43,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/MoeForge/moego v0.1.0-alpha.1 => github.com/router-for-me/moego v0.1.2
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
